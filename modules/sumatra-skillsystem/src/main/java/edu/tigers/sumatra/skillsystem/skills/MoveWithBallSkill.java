@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.skillsystem.skills;
@@ -11,6 +11,7 @@ import edu.tigers.sumatra.math.AngleMath;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.skillsystem.ESkillShapesLayer;
+import edu.tigers.sumatra.skillsystem.skills.util.EDribblerMode;
 import edu.tigers.sumatra.skillsystem.skills.util.KickParams;
 import edu.tigers.sumatra.time.TimestampTimer;
 import lombok.Setter;
@@ -49,12 +50,6 @@ public class MoveWithBallSkill extends AMoveToSkill
 	@Configurable(comment = "How fast to accelerate when pushing the ball forward", defValue = "1.0")
 	private static double moveWithBallFwdAcc = 1.0;
 
-	@Configurable(comment = "Dribbler speed", defValue = "10000.0")
-	private static double dribblerSpeed = 10000;
-
-	@Configurable(comment = "Dribbler speed when pushing ball", defValue = "5000.0")
-	private static double dribblerSpeedPush = 5000;
-
 	@Configurable(defValue = "true", comment = "If false, the ball is always pulled, turning with the ball by 180° if necessary")
 	private static boolean allowPushingTheBall = true;
 
@@ -92,16 +87,16 @@ public class MoveWithBallSkill extends AMoveToSkill
 			getMoveConstraints().setAccMax(moveWithBallFwdAcc);
 			if (calmDownTimer.isRunning() && getDestinationReachedIn() < 0.1)
 			{
-				setKickParams(KickParams.disarm().withDribbleSpeed(0.0));
+				setKickParams(KickParams.disarm().withDribblerMode(EDribblerMode.OFF));
 			} else
 			{
-				setKickParams(KickParams.disarm().withDribbleSpeed(dribblerSpeedPush));
+				setKickParams(KickParams.disarm().withDribblerMode(EDribblerMode.DEFAULT));
 			}
 		} else
 		{
 			getMoveConstraints().setAccMax(moveWithBallAcc);
 			getMoveConstraints().setVelMax(moveWithBallVel);
-			setKickParams(KickParams.disarm().withDribbleSpeed(dribblerSpeed));
+			setKickParams(KickParams.disarm().withDribblerMode(EDribblerMode.DEFAULT));
 		}
 
 		super.doUpdate();

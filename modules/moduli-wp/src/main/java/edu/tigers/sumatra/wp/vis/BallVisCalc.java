@@ -88,13 +88,14 @@ public class BallVisCalc implements IWpCalc
 							.setColor(Color.magenta)));
 		}
 
-		ILineSegment rollLine = ball.getTrajectory().getTravelLineRolling();
-		if (rollLine.directionVector().getLength2() > 1)
-		{
-			DrawableLine roll = new DrawableLine(rollLine, Color.orange);
-			roll.setStrokeWidth(5);
-			shapeMap.get(EWpShapesLayer.BALL_PREDICTION).add(roll);
-		}
+		ball.getTrajectory().getTravelLinesRolling().forEach(rollLine -> {
+			if (rollLine.directionVector().getLength2() > 1)
+			{
+				DrawableLine roll = new DrawableLine(rollLine, Color.orange);
+				roll.setStrokeWidth(5);
+				shapeMap.get(EWpShapesLayer.BALL_PREDICTION).add(roll);
+			}
+		});
 
 		wfw.getSimpleWorldFrame().getKickEvent().ifPresent(event -> shapeMap.get(EWpShapesLayer.BALL_PREDICTION)
 				.add(new DrawablePoint(event.getPosition(), Color.red)

@@ -1,22 +1,21 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
  */
 
 def branch = System.getenv("CI_COMMIT_REF_NAME")
 
 sonarqube {
     properties {
-        property "sonar.projectKey", "${project.name}:${branch}"
-        property "sonar.projectName", "${project.name} ${branch}"
-        property "sonar.projectVersion", "2020" // we actually don't care about the version
-        property "sonar.host.url", System.getenv("SONAR_URL")
-        property "sonar.login", System.getenv("SONAR_AUTH_TOKEN")
-        if (branch != "master") {
-            // Only on feature branches
-            property "sonar.gitlab.project_id", System.getenv("CI_PROJECT_PATH")
-            property "sonar.gitlab.commit_sha", System.getenv("CI_COMMIT_SHA")
-            property "sonar.gitlab.ref_name", System.getenv("CI_COMMIT_REF_NAME")
-            property "sonar.gitlab.ci_merge_request_iid", System.getenv("CI_MERGE_REQUEST_IID")
+        property "sonar.projectKey", "main_Sumatra_AXyeyj5BLG1xSGHUS0Xf"
+        property "sonar.projectVersion", versionDetails.lastTag
+        property "sonar.host.url", System.getenv("SONARQUBE_URL")
+        property "sonar.login", System.getenv("SONARQUBE_AUTH_TOKEN")
+        if (System.getenv("CI_MERGE_REQUEST_IID") != null) {
+            property "sonar.pullrequest.key", System.getenv("CI_MERGE_REQUEST_IID")
+            property "sonar.pullrequest.branch", System.getenv("CI_MERGE_REQUEST_SOURCE_BRANCH_NAME")
+            property "sonar.pullrequest.base", System.getenv("CI_MERGE_REQUEST_TARGET_BRANCH_NAME")
+        } else {
+            property "sonar.branch.name", branch
         }
     }
 }

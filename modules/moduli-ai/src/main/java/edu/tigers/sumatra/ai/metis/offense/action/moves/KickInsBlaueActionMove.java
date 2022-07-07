@@ -12,7 +12,6 @@ import edu.tigers.sumatra.ai.metis.kicking.Pass;
 import edu.tigers.sumatra.ai.metis.kicking.PassFactory;
 import edu.tigers.sumatra.ai.metis.offense.OffensiveConstants;
 import edu.tigers.sumatra.ai.metis.offense.action.EActionViability;
-import edu.tigers.sumatra.ai.metis.offense.action.EOffensiveAction;
 import edu.tigers.sumatra.ai.metis.offense.action.OffensiveAction;
 import edu.tigers.sumatra.ai.metis.offense.action.OffensiveActionViability;
 import edu.tigers.sumatra.ai.metis.pass.rating.EPassRating;
@@ -65,7 +64,6 @@ public class KickInsBlaueActionMove extends AOffensiveActionMove
 		{
 			return OffensiveAction.builder()
 					.move(EOffensiveActionMove.KICK_INS_BLAUE)
-					.action(EOffensiveAction.KICK_INS_BLAUE)
 					.viability(new OffensiveActionViability(EActionViability.FALSE, 0.0))
 					.build();
 		}
@@ -96,7 +94,6 @@ public class KickInsBlaueActionMove extends AOffensiveActionMove
 				colorPicker.getColor(spot.getScore())));
 		return OffensiveAction.builder()
 				.move(EOffensiveActionMove.KICK_INS_BLAUE)
-				.action(EOffensiveAction.KICK_INS_BLAUE)
 				.viability(new OffensiveActionViability(EActionViability.PARTIALLY, spot.getScore()))
 				.pass(spot.getPass())
 				.build();
@@ -108,7 +105,6 @@ public class KickInsBlaueActionMove extends AOffensiveActionMove
 
 		return OffensiveAction.builder()
 				.move(EOffensiveActionMove.KICK_INS_BLAUE)
-				.action(EOffensiveAction.KICK_INS_BLAUE)
 				.viability(new OffensiveActionViability(EActionViability.FALSE, 0.0))
 				.build();
 

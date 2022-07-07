@@ -18,17 +18,21 @@ import lombok.Getter;
 public enum EOffensiveActionMove implements IInstanceableEnum
 {
 	/**
-	 * Pass is forced in standard situations
-	 */
-	FORCED_PASS(new InstanceableClass<>(ForcedPassActionMove.class)),
-	/**
 	 * Redirect directly to the opponent goal
 	 */
 	REDIRECT_GOAL_KICK(new InstanceableClass<>(RedirectGoalKickActionMove.class)),
 	/**
 	 * Direct kick on the opponent goal
 	 */
+	FINISHER(new InstanceableClass<>(FinisherActionMove.class)),
+	/**
+	 * Direct kick on the opponent goal
+	 */
 	GOAL_KICK(new InstanceableClass<>(GoalKickActionMove.class)),
+	/**
+	 * Pass is forced in standard situations
+	 */
+	FORCED_PASS(new InstanceableClass<>(ForcedPassActionMove.class)),
 	/**
 	 * Free the ball when its dangerous and near our penalty area
 	 */

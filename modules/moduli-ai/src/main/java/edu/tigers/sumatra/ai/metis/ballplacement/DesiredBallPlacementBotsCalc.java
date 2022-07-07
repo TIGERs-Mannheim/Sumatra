@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.ai.metis.ballplacement;
 
@@ -88,7 +88,7 @@ public class DesiredBallPlacementBotsCalc extends ADesiredBotCalc
 
 		List<BotID> availableBots = new ArrayList<>(getUnassignedBots());
 
-		IVector2 botTargetPos = getBall().getTrajectory().getTravelLineRolling().closestPointOnLine(getPlacementPos());
+		IVector2 botTargetPos = getBall().getTrajectory().closestPointTo(getPlacementPos());
 		getUnassignedBots().stream()
 				.min(Comparator.comparing(b -> getWFrame().getBot(b).getPos().distanceTo(botTargetPos)))
 				.ifPresent(b -> {

@@ -8,8 +8,9 @@ We use Gradle for building the application and IntelliJ as the primary IDE.
 All dependencies will be downloaded automatically, so you need an internet connection for the build.
 
 ## System Requirements
- * Java JDK 11
- * Internet connection
+
+* Java JDK 17
+* Internet connection
  * no limitations on OS known
 
 ## Build
@@ -57,19 +58,21 @@ Most configs can be found in the "config" view.
 ## Multiple Sumatra instances 
 If you want to run different AIs against each other, you can start a second instance of Sumatra and connect it to the first one. 
 On the second instance, you choose the "sim_remote" config. 
-The configuration of this mode can be found under user -> sim. 
-There, you can change the communication port and choose the team color that is controlled by the client. 
-It is YELLOW by default.
+The configuration of this mode can be found under user -> sim. There, you can change the communication port and choose
+the team color that is controlled by the client. It is YELLOW by default.
 
 Make sure you disable the AIs that are not used by switching them to OFF in the AI view.
 
-The simulation can only be controlled from the server. 
-The game-controller is also running on the server. 
-You can use the autoRef on the server as well. 
-The client only provides the AI including the skill system.
+The simulation can only be controlled from the server. The game-controller is also running on the server. You can use
+the autoRef on the server as well. The client only provides the AI including the skill system.
+
+To simplify the setup, there is a docker-compose setup. It described [here](./modules/moduli-statistics-saver/Readme.md)
+.
 
 ## Known issues
+
 ### UI scaling
+
 If the font size is too small (e.g. on high resolution screens), you can add following arguments to the command below.
 16 is the font size and can be adapted. You can also choose other font types.
 

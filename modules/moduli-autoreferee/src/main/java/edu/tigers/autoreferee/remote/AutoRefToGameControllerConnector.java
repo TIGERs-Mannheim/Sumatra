@@ -99,8 +99,9 @@ public class AutoRefToGameControllerConnector implements Runnable
 			log.error("Receiving AutoRefRegistration reply failed");
 		} else if (reply.getControllerReply().getStatusCode() != SslGcRcon.ControllerReply.StatusCode.OK)
 		{
-			log.error("Server did not allow registration: " + reply.getControllerReply().getStatusCode() + " - "
-					+ reply.getControllerReply().getReason());
+			log.error("Server did not allow registration: {} - {}",
+					reply.getControllerReply().getStatusCode(),
+					reply.getControllerReply().getReason());
 		} else
 		{
 			log.info("Successfully registered AutoRef");
@@ -140,7 +141,7 @@ public class AutoRefToGameControllerConnector implements Runnable
 	public void sendEvent(final IGameEvent event)
 	{
 		QueueEntry entry = new QueueEntry(event);
-		commandQueue.add(entry);
+		commandQueue.addLast(entry);
 	}
 
 
@@ -170,10 +171,14 @@ public class AutoRefToGameControllerConnector implements Runnable
 
 	private void readWriteLoop() throws InterruptedException
 	{
-		QueueEntry entry = commandQueue.take();
+		QueueEntry entry = commandQueue.pollFirst(1, TimeUnit.SECONDS);
+
 		SslGcRconAutoref.AutoRefToController.Builder req = SslGcRconAutoref.AutoRefToController
 				.newBuilder();
-		req.setGameEvent(entry.getEvent().toProtobuf());
+		if (entry != null)
+		{
+			req.setGameEvent(entry.getEvent().toProtobuf());
+		}
 
 		if (nextToken != null)
 		{
@@ -184,9 +189,11 @@ public class AutoRefToGameControllerConnector implements Runnable
 
 		if (!protocol.sendMessage(req.build()))
 		{
-
-			log.info("Put game event '{}' back into queue after lost connection", entry.getEvent());
-			commandQueue.addFirst(entry);
+			if (entry != null)
+			{
+				log.info("Put game event '{}' back into queue after lost connection", entry.getEvent());
+				commandQueue.addFirst(entry);
+			}
 			return;
 		}
 		SslGcRconAutoref.ControllerToAutoRef reply = protocol
@@ -197,9 +204,9 @@ public class AutoRefToGameControllerConnector implements Runnable
 		} else if (reply.getControllerReply()
 				.getStatusCode() != SslGcRcon.ControllerReply.StatusCode.OK)
 		{
-			log.warn(
-					"Remote control rejected command " + entry.getEvent() + " with outcome "
-							+ reply.getControllerReply().getStatusCode());
+			log.warn("Remote control rejected entry {} with outcome {}",
+					entry,
+					reply.getControllerReply().getStatusCode());
 		}
 
 		if (reply != null)

@@ -2,7 +2,7 @@
   "selectedParams":{
     "TIGER_V2016":"TIGERs v2016",
     "TIGER_V2020":"TIGERs v2020",
-    "OPPONENT":"ER-Force",
+    "OPPONENT":"Simulation",
     "SIMULATION_YELLOW":"Simulation",
     "SIMULATION_BLUE":"Simulation",
     "YELLOW_LIVE":"YELLOW",
@@ -29,9 +29,15 @@
       "kickerSpecs":{
         "chipAngle":45.0,
         "maxAbsoluteChipVelocity":5.0,
-        "maxAbsoluteStraightVelocity":8.0,
-        "maxDribbleSpeed":10000.0,
-        "dribbleSpeedGain":0.8
+        "maxAbsoluteStraightVelocity":8.0
+      },
+      "dribblerSpecs":{
+        "maxBallAcceleration":5.0,
+        "maxRetainingBallAngle":0.75,
+        "defaultSpeed":15000.0,
+        "defaultMaxCurrent":3.0,
+        "highPowerSpeed":22000.0,
+        "highPowerMaxCurrent":5.0
       }
     },
     "YELLOW":{
@@ -54,9 +60,15 @@
       "kickerSpecs":{
         "chipAngle":45.0,
         "maxAbsoluteChipVelocity":8.0,
-        "maxAbsoluteStraightVelocity":8.0,
-        "maxDribbleSpeed":10000.0,
-        "dribbleSpeedGain":1.0
+        "maxAbsoluteStraightVelocity":8.0
+      },
+      "dribblerSpecs":{
+        "maxBallAcceleration":5.0,
+        "maxRetainingBallAngle":0.75,
+        "defaultSpeed":15000.0,
+        "defaultMaxCurrent":3.0,
+        "highPowerSpeed":22000.0,
+        "highPowerMaxCurrent":5.0
       }
     },
     "Parsian":{
@@ -79,9 +91,15 @@
       "kickerSpecs":{
         "chipAngle":45.0,
         "maxAbsoluteChipVelocity":6.5,
-        "maxAbsoluteStraightVelocity":8.0,
-        "maxDribbleSpeed":10000.0,
-        "dribbleSpeedGain":1.0
+        "maxAbsoluteStraightVelocity":8.0
+      },
+      "dribblerSpecs":{
+        "maxBallAcceleration":5.0,
+        "maxRetainingBallAngle":0.75,
+        "defaultSpeed":15000.0,
+        "defaultMaxCurrent":3.0,
+        "highPowerSpeed":22000.0,
+        "highPowerMaxCurrent":5.0
       }
     },
     "BLUE":{
@@ -104,9 +122,15 @@
       "kickerSpecs":{
         "chipAngle":45.0,
         "maxAbsoluteChipVelocity":8.0,
-        "maxAbsoluteStraightVelocity":8.0,
-        "maxDribbleSpeed":10000.0,
-        "dribbleSpeedGain":1.0
+        "maxAbsoluteStraightVelocity":8.0
+      },
+      "dribblerSpecs":{
+        "maxBallAcceleration":5.0,
+        "maxRetainingBallAngle":0.75,
+        "defaultSpeed":15000.0,
+        "defaultMaxCurrent":3.0,
+        "highPowerSpeed":22000.0,
+        "highPowerMaxCurrent":5.0
       }
     },
     "TIGERs v2020":{
@@ -129,22 +153,28 @@
       "kickerSpecs":{
         "chipAngle":45.0,
         "maxAbsoluteChipVelocity":8.0,
-        "maxAbsoluteStraightVelocity":8.0,
-        "maxDribbleSpeed":20000.0,
-        "dribbleSpeedGain":1.0
+        "maxAbsoluteStraightVelocity":8.0
+      },
+      "dribblerSpecs":{
+        "maxBallAcceleration":5.0,
+        "maxRetainingBallAngle":0.75,
+        "defaultSpeed":15000.0,
+        "defaultMaxCurrent":3.0,
+        "highPowerSpeed":22000.0,
+        "highPowerMaxCurrent":5.0
       }
     },
     "Simulation":{
       "movementLimits":{
-        "velMax":3.0,
-        "accMax":3.0,
-        "brkMax":6.0,
+        "velMax":3.5,
+        "accMax":4.4,
+        "brkMax":5.9,
         "jerkMax":20.0,
-        "velMaxW":20.0,
-        "accMaxW":50.0,
+        "velMaxW":25.0,
+        "accMaxW":40.0,
         "jerkMaxW":1000.0,
         "velMaxFast":3.5,
-        "accMaxFast":3.0
+        "accMaxFast":4.4
       },
       "dimensions":{
         "center2DribblerDist":71.5,
@@ -154,9 +184,15 @@
       "kickerSpecs":{
         "chipAngle":45.0,
         "maxAbsoluteChipVelocity":8.0,
-        "maxAbsoluteStraightVelocity":8.0,
-        "maxDribbleSpeed":10000.0,
-        "dribbleSpeedGain":1.0
+        "maxAbsoluteStraightVelocity":8.0
+      },
+      "dribblerSpecs":{
+        "maxBallAcceleration":5.0,
+        "maxRetainingBallAngle":0.75,
+        "defaultSpeed":15000.0,
+        "defaultMaxCurrent":3.0,
+        "highPowerSpeed":22000.0,
+        "highPowerMaxCurrent":5.0
       }
     },
     "ER-Force":{
@@ -179,9 +215,15 @@
       "kickerSpecs":{
         "chipAngle":45.0,
         "maxAbsoluteChipVelocity":6.5,
-        "maxAbsoluteStraightVelocity":8.0,
-        "maxDribbleSpeed":10000.0,
-        "dribbleSpeedGain":1.0
+        "maxAbsoluteStraightVelocity":8.0
+      },
+      "dribblerSpecs":{
+        "maxBallAcceleration":5.0,
+        "maxRetainingBallAngle":0.75,
+        "defaultSpeed":15000.0,
+        "defaultMaxCurrent":3.0,
+        "highPowerSpeed":22000.0,
+        "highPowerMaxCurrent":5.0
       }
     }
   }

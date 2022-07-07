@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.presenter.replay;
@@ -18,11 +18,11 @@ import edu.tigers.sumatra.view.replay.IReplayControlPanelObserver;
 import edu.tigers.sumatra.view.replay.IReplayPositionObserver;
 import edu.tigers.sumatra.views.ASumatraView;
 import edu.tigers.sumatra.views.ESumatraViewType;
-import edu.tigers.sumatra.visualizer.VisualizerPresenter;
+import edu.tigers.sumatra.views.EViewMode;
+import edu.tigers.sumatra.views.ISumatraPresenter;
 import edu.tigers.sumatra.wp.IWorldFrameObserver;
 import edu.tigers.sumatra.wp.data.WorldFrameWrapper;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import lombok.extern.log4j.Log4j2;
 
 import java.io.File;
 import java.text.SimpleDateFormat;
@@ -35,11 +35,10 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
 
+@Log4j2
 public class ReplayPresenter extends AMainPresenter
 		implements IReplayControlPanelObserver, IWorldFrameObserver
 {
-	private static final Logger log = LogManager.getLogger(ReplayPresenter.class.getName());
-
 	private static final String LAST_LAYOUT_FILENAME = "last_replay.ly";
 	private static final String LAYOUT_DEFAULT = "default_replay.ly";
 	private static final String KEY_LAYOUT_PROP = ReplayPresenter.class.getName() + ".layout";
@@ -54,8 +53,6 @@ public class ReplayPresenter extends AMainPresenter
 	private BerkeleyDb db = null;
 	private double speed = 1;
 	private RefreshThread refreshThread;
-
-	private VisualizerPresenter visualizerPresenter;
 
 	private boolean skipStoppedGame = false;
 	private SslGcRefereeMessage.Referee.Command searchCommand = null;
@@ -74,33 +71,27 @@ public class ReplayPresenter extends AMainPresenter
 
 		for (ASumatraView view : getMainFrame().getViews())
 		{
-			view.setMode(ASumatraView.EViewMode.REPLAY);
+			view.setMode(EViewMode.REPLAY);
 			view.ensureInitialized();
 
 			if (view.getType() == ESumatraViewType.REPLAY_CONTROL)
 			{
 				replayControlPresenter = (ReplayControlPresenter) view.getPresenter();
 			}
-			if (view.getType() == ESumatraViewType.VISUALIZER)
-			{
-				visualizerPresenter = (VisualizerPresenter) view.getPresenter();
-				visualizerPresenter.getPanel().removeRobotsPanel();
-				visualizerPresenter.getOptionsPanelPresenter().setSaveOptions(false);
-			}
 		}
 
-		final ReplayWfwController replayWfwController = new ReplayWfwController(getMainFrame().getViews());
-		replayWfwController.addWFrameObserver(this);
-		replayControllers.add(replayWfwController);
+		List<IWorldFrameObserver> wFrameObservers = getMainFrame().getObservers(IWorldFrameObserver.class);
+		replayControllers.add(new ReplayWfwController(wFrameObservers, this::updateWorldframe));
 		replayControllers.add(new ReplayLogController(getMainFrame().getViews()));
-		replayControllers.add(new ReplayCamDetectionController(getMainFrame().getViews()));
-		replayControllers.add(new ReplayShapeMapController(getMainFrame().getViews()));
-		replayControllers.add(new ReplayAutoRefReCalcController(getMainFrame().getViews()));
+		replayControllers.add(new ReplayCamDetectionController(wFrameObservers));
+		replayControllers.add(new ReplayShapeMapController(wFrameObservers));
+		replayControllers.add(new ReplayAutoRefReCalcController(wFrameObservers, getMainFrame().getViews()));
 
 		snapshotController = new SnapshotController(getMainFrame());
+		snapshotController.setSaveMoveDestinations(true);
 
-		replayControlPresenter.getReplayPanel().addObserver(this);
-		addPositionObserver(replayControlPresenter.getReplayPanel());
+		replayControlPresenter.getViewPanel().addObserver(this);
+		addPositionObserver(replayControlPresenter.getViewPanel());
 		getMainFrame().activate();
 	}
 
@@ -111,8 +102,7 @@ public class ReplayPresenter extends AMainPresenter
 	}
 
 
-	@Override
-	public void onNewWorldFrame(final WorldFrameWrapper wFrameWrapper)
+	private void updateWorldframe(WorldFrameWrapper wFrameWrapper)
 	{
 		replayControllers.forEach(c -> c.update(db, wFrameWrapper));
 		snapshotController.updateWorldFrame(wFrameWrapper);
@@ -130,7 +120,7 @@ public class ReplayPresenter extends AMainPresenter
 		this.db = db;
 		getMainFrame().setTitle(new File(db.getDbPath()).getName());
 		refreshThread = new RefreshThread(startTime);
-		visualizerPresenter.start();
+		getMainFrame().getPresenters().forEach(ISumatraPresenter::onStart);
 		executor.execute(refreshThread);
 	}
 
@@ -140,7 +130,7 @@ public class ReplayPresenter extends AMainPresenter
 	 */
 	private void stop()
 	{
-		visualizerPresenter.stop();
+		getMainFrame().getPresenters().forEach(ISumatraPresenter::onStop);
 		refreshThread.active = false;
 		if (executor.isShutdown())
 		{
@@ -284,6 +274,7 @@ public class ReplayPresenter extends AMainPresenter
 		snapshotController.onCopySnapshot();
 	}
 
+
 	/**
 	 * This thread will update the field periodically according to the speed
 	 *
@@ -331,9 +322,13 @@ public class ReplayPresenter extends AMainPresenter
 			if (playing)
 			{
 				replayCurTime += ((System.nanoTime() - replayLastTime) * speed);
-				if ((getCurrentTime() > recEndTime) || (replayCurTime < 0))
+				if (replayCurTime < 0)
 				{
 					replayCurTime = 0;
+				}
+				if (getCurrentTime() > recEndTime)
+				{
+					replayCurTime = recEndTime;
 				}
 			}
 			replayLastTime = System.nanoTime();
@@ -345,8 +340,7 @@ public class ReplayPresenter extends AMainPresenter
 			long newRecEndTime = db.getLastKey();
 			if (newRecEndTime != recEndTime)
 			{
-				replayControlPresenter.getReplayPanel()
-						.setTimeMax(newRecEndTime - refreshThread.recStartTime);
+				replayControlPresenter.getViewPanel().setTimeMax(newRecEndTime - refreshThread.recStartTime);
 			}
 			recEndTime = newRecEndTime;
 		}
@@ -467,6 +461,7 @@ public class ReplayPresenter extends AMainPresenter
 		}
 
 
+		@SuppressWarnings({ "java:S1181", "java:S2142" }) // catch throwable and busy-wait false positives
 		@Override
 		public void run()
 		{
@@ -477,6 +472,7 @@ public class ReplayPresenter extends AMainPresenter
 				{
 					if (recStartTime == null)
 					{
+						//noinspection BusyWait
 						Thread.sleep(1000);
 						recStartTime = db.getFirstKey();
 						continue;
@@ -524,7 +520,7 @@ public class ReplayPresenter extends AMainPresenter
 			SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss,SSS");
 			sdf.setTimeZone(TimeZone.getTimeZone("GMT+0"));
 			String txt = sdf.format(date);
-			replayControlPresenter.getReplayPanel().getTimeStepLabel().setText(txt);
+			replayControlPresenter.getViewPanel().getTimeStepLabel().setText(txt);
 		}
 	}
 }

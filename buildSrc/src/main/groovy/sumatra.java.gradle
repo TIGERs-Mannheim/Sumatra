@@ -1,0 +1,37 @@
+/*
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ */
+
+plugins {
+    id 'java'
+    id 'groovy' // apply to all due to issues when only applying to some projects
+    id 'jacoco'
+    id 'idea'
+    id 'ca.cutterslade.analyze'
+    id 'sumatra.versions'
+}
+
+java.targetCompatibility = JavaVersion.VERSION_17
+java.sourceCompatibility = JavaVersion.VERSION_17
+
+repositories {
+    maven {
+        url = 'https://nexus.tigers-mannheim.de/content/groups/public/'
+    }
+
+    mavenCentral()
+
+    maven {
+        url = 'https://jitpack.io/'
+    }
+}
+
+tasks.withType(JavaCompile) {
+    options.encoding = 'UTF-8'
+}
+
+dependencies {
+    annotationProcessor "org.projectlombok:lombok:1.18.22"
+    compileOnly "org.projectlombok:lombok:1.18.22"
+    permitUnusedDeclared "org.projectlombok:lombok:1.18.22"
+}

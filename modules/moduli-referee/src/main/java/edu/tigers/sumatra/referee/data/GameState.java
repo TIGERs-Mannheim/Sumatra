@@ -273,6 +273,7 @@ public class GameState
 				case INDIRECT_FREE:
 				case DIRECT_FREE:
 				case PREPARE_PENALTY:
+				case KICKOFF:
 					return true;
 				default:
 					break;
@@ -422,6 +423,14 @@ public class GameState
 	/**
 	 * @return true if the current state is KICKOFF or PREPARE_KICKOFF
 	 */
+	public boolean isKickoffForUs()
+	{
+		return state == EGameState.KICKOFF && isGameStateForUs();
+	}
+
+	/**
+	 * @return true if the current state is KICKOFF or PREPARE_KICKOFF
+	 */
 	public boolean isKickoffOrPrepareKickoff()
 	{
 		return (state == EGameState.KICKOFF) || (state == EGameState.PREPARE_KICKOFF);
@@ -470,6 +479,12 @@ public class GameState
 	public boolean isFreeKick()
 	{
 		return state == EGameState.DIRECT_FREE || state == EGameState.INDIRECT_FREE;
+	}
+
+
+	public boolean isFreeKickForUs()
+	{
+		return isFreeKick() && isGameStateForUs();
 	}
 
 

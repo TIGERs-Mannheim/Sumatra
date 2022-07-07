@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.skillsystem.skills;
@@ -107,19 +107,19 @@ public class CommandListSkill extends AMoveSkill
 				skillCommand.setXyVel(AVector2.valueOf(value));
 				break;
 			case "vw":
-				skillCommand.setaVel(Double.parseDouble(value));
+				skillCommand.setAVel(Double.parseDouble(value));
 				break;
 			case "vxyw":
 				IVector vxyw = AVector.valueOf(value);
 				skillCommand.setXyVel(vxyw.getXYVector());
-				skillCommand.setaVel(vxyw.get(2));
+				skillCommand.setAVel(vxyw.get(2));
 				break;
 			case "vxw":
 				IVector2 vxw = AVector2.valueOf(value);
 				if (vxw != null)
 				{
 					skillCommand.setXyVel(Vector2.fromX(vxw.x()));
-					skillCommand.setaVel(vxw.y());
+					skillCommand.setAVel(vxw.y());
 				}
 				break;
 			case "vyw":
@@ -127,7 +127,7 @@ public class CommandListSkill extends AMoveSkill
 				if (vyw != null)
 				{
 					skillCommand.setXyVel(Vector2.fromY(vyw.x()));
-					skillCommand.setaVel(vyw.y());
+					skillCommand.setAVel(vyw.y());
 				}
 				break;
 			case "axy":
@@ -141,6 +141,9 @@ public class CommandListSkill extends AMoveSkill
 				break;
 			case "d":
 				skillCommand.setDribbleSpeed(Integer.parseInt(value));
+				break;
+			case "c":
+				skillCommand.setDribbleCurrent(Double.parseDouble(value));
 				break;
 			case "kd":
 				skillCommand.setKickerDevice(parseKickerDevice(value));
@@ -206,13 +209,13 @@ public class CommandListSkill extends AMoveSkill
 		{
 			skill.setVelXy(command.getXyVel());
 		}
-		if (command.getaVel() != null)
+		if (command.getAVel() != null)
 		{
-			skill.setVelW(command.getaVel());
+			skill.setVelW(command.getAVel());
 		}
-		if (command.getDribbleSpeed() != null)
+		if (command.getDribbleSpeed() != null && command.getDribbleCurrent() != null)
 		{
-			skill.getKickerDribbler().setDribblerSpeed(command.getDribbleSpeed());
+			skill.getKickerDribbler().setDribbler(command.getDribbleSpeed(), command.getDribbleCurrent());
 		}
 		if (command.getKickerDevice() != null)
 		{

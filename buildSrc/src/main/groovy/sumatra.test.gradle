@@ -1,0 +1,47 @@
+plugins {
+    id 'jacoco'
+}
+
+dependencies {
+    // Support old junit4 syntax for now
+    testImplementation 'junit:junit:4.13.2'
+    permitTestUnusedDeclared 'junit:junit:4.13.2'
+    // Support junit 5
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.8.2'
+    permitTestUnusedDeclared 'org.junit.jupiter:junit-jupiter:5.8.2'
+    testRuntimeOnly 'org.junit.vintage:junit-vintage-engine:5.8.2'
+
+    // Add common test tools
+    testImplementation 'org.assertj:assertj-core:3.22.0'
+    permitTestUnusedDeclared 'org.assertj:assertj-core:3.22.0'
+    testImplementation 'org.mockito:mockito-all:1.10.19'
+    permitTestUnusedDeclared 'org.mockito:mockito-all:1.10.19'
+}
+
+test {
+    useJUnitPlatform()
+    reports {
+        junitXml.required = true
+        html.required = true
+    }
+    exclude '**/*IntegrationTest.class'
+}
+
+jacoco {
+    toolVersion = "0.8.7"
+}
+
+jacocoTestReport {
+    reports {
+        xml.required = true
+        csv.required = false
+        html.required = false
+    }
+
+    afterEvaluate {
+        classDirectories.setFrom(files(classDirectories.files.collect {
+            fileTree(dir: it,
+                    exclude: ['**/proto/**/*'])
+        }))
+    }
+}

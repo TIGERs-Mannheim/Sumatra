@@ -26,6 +26,14 @@ public interface ITargetRater
 	Optional<IRatedTarget> rate(IVector2 origin);
 
 	/**
+	 * Rate given point
+	 *
+	 * @param origin the starting point to measure from
+	 * @return the best target, if one exists
+	 */
+	List<IRatedTarget> rateMultiple(IVector2 origin);
+
+	/**
 	 * Generate shapes to visualize the work of the rater
 	 *
 	 * @return

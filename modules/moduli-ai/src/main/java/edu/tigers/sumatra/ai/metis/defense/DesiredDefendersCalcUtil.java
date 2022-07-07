@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.metis.defense;
@@ -7,20 +7,22 @@ package edu.tigers.sumatra.ai.metis.defense;
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
 import edu.tigers.sumatra.ai.BaseAiFrame;
-import edu.tigers.sumatra.ai.metis.defense.data.DefenseThreatAssignment;
 import edu.tigers.sumatra.ai.metis.defense.data.IDefenseThreat;
 import edu.tigers.sumatra.geometry.Geometry;
+import edu.tigers.sumatra.ids.AObjectID;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.line.v2.ILineSegment;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
 
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 
 /**
@@ -40,11 +42,13 @@ class DesiredDefendersCalcUtil
 	}
 
 	private BaseAiFrame aiFrame;
+	private Map<BotID, Set<AObjectID>> lastFrameDefenderMapping;
 
 
 	void update(final BaseAiFrame aiFrame)
 	{
 		this.aiFrame = aiFrame;
+		lastFrameDefenderMapping = buildLastFrameDefenderIdToThreatMapping();
 	}
 
 
@@ -53,6 +57,10 @@ class DesiredDefendersCalcUtil
 			final List<BotID> remainingDefenders,
 			final int numDefenders)
 	{
+		if (numDefenders <= 0)
+		{
+			return Collections.emptySet();
+		}
 		final Set<BotID> desiredDefenders = new HashSet<>();
 		Map<BotID, Double> interceptionRatings = interceptionRatings(threat, remainingDefenders);
 		while (desiredDefenders.size() < numDefenders)
@@ -66,7 +74,29 @@ class DesiredDefendersCalcUtil
 			interceptionRatings.remove(defender);
 			desiredDefenders.add(defender);
 		}
-		return desiredDefenders;
+		return Collections.unmodifiableSet(desiredDefenders);
+	}
+
+
+	private Map<BotID, Set<AObjectID>> buildLastFrameDefenderIdToThreatMapping()
+	{
+		var prev = getAiFrame().getPrevFrame();
+		if (prev == null)
+		{
+			return Collections.emptyMap();
+		}
+		var tacticalField = prev.getTacticalField();
+		Map<BotID, Set<AObjectID>> mapping = new HashMap<>();
+
+		tacticalField.getDefenseOuterThreatAssignments()
+				.forEach(assignment -> assignment.getBotIds()
+						.forEach(botID -> mapping.put(botID, Set.of(assignment.getThreat().getObjectId()))));
+
+		tacticalField.getDefensePenAreaPositionAssignments()
+				.forEach(assignment -> mapping.put(assignment.botID(), assignment.defendedThreats()
+						.stream().map(IDefenseThreat::getObjectId).collect(Collectors.toSet())));
+
+		return Collections.unmodifiableMap(mapping);
 	}
 
 
@@ -96,7 +126,7 @@ class DesiredDefendersCalcUtil
 
 	private ILineSegment getThreatDefendingLineForCenterBack(final ILineSegment threatLine)
 	{
-		return DefenseMath.getThreatDefendingLine(threatLine,
+		return DefenseMath.getProtectionLine(threatLine,
 				Geometry.getBotRadius() * 2,
 				DefenseConstants.getMinGoOutDistance(),
 				DefenseConstants.getMaxGoOutDistance());
@@ -129,15 +159,7 @@ class DesiredDefendersCalcUtil
 
 	private boolean wasAssignedLastFrame(final BotID botID, final IDefenseThreat threat)
 	{
-		for (DefenseThreatAssignment lastAssignment : getAiFrame().getPrevFrame().getTacticalField()
-				.getDefenseThreatAssignments())
-		{
-			if (lastAssignment.getThreat().sameAs(threat))
-			{
-				return lastAssignment.getBotIds().contains(botID);
-			}
-		}
-		return false;
+		return lastFrameDefenderMapping.getOrDefault(botID, Collections.emptySet()).contains(threat.getObjectId());
 	}
 
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.metis.offense.action.moves;
@@ -9,7 +9,7 @@ import edu.tigers.sumatra.ai.metis.offense.action.OffensiveAction;
 import edu.tigers.sumatra.ai.metis.pass.KickOrigin;
 import edu.tigers.sumatra.ai.metis.pass.rating.RatedPass;
 import edu.tigers.sumatra.drawable.IDrawableShape;
-import edu.tigers.sumatra.drawable.IShapeLayer;
+import edu.tigers.sumatra.drawable.IShapeLayerIdentifier;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.SumatraMath;
 import edu.tigers.sumatra.wp.data.ITrackedBall;
@@ -71,8 +71,22 @@ public abstract class AOffensiveActionMove
 	}
 
 
-	protected final List<IDrawableShape> getShapes(IShapeLayer shapeLayer)
+	protected final List<IDrawableShape> getShapes(IShapeLayerIdentifier shapeLayer)
 	{
 		return getAiFrame().getShapeMap().get(shapeLayer);
+	}
+
+	protected double getAntiToggleValue(BotID botId, EOffensiveActionMove currentActionMove, double antiToggleBonus)
+	{
+		var lastAction = getAiFrame()
+				.getPrevFrame()
+				.getTacticalField()
+				.getOffensiveActions()
+				.get(botId);
+		if (lastAction != null && lastAction.getMove() == currentActionMove)
+		{
+			return antiToggleBonus;
+		}
+		return 0;
 	}
 }

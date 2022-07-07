@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.skillsystem.skills;
@@ -7,6 +7,7 @@ package edu.tigers.sumatra.skillsystem.skills;
 import com.github.g3force.configurable.Configurable;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.math.AngleMath;
+import edu.tigers.sumatra.skillsystem.skills.util.EDribblerMode;
 import edu.tigers.sumatra.skillsystem.skills.util.KickParams;
 import edu.tigers.sumatra.time.TimestampTimer;
 import lombok.NoArgsConstructor;
@@ -15,18 +16,18 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class ReceiveBallSkill extends ABallArrivalSkill
 {
-	@Configurable(comment = "Dribble speed during receive", defValue = "3000.0")
-	private static double dribbleSpeed = 3000;
+	@Configurable(defValue = "0.0", comment = "Delay to wait starting from the first barrier interrupted signal")
+	private static double receiveDelay = 0.0;
 
-
-	private final TimestampTimer receiveDelayTimer = new TimestampTimer(0.1);
+	private final TimestampTimer receiveDelayTimer = new TimestampTimer(receiveDelay);
 
 
 	@Override
 	public void doUpdate()
 	{
 		setKickParams(KickParams.disarm()
-				.withDribbleSpeed(getTBot().getBallContact().getContactDuration() > 0.1 ? 0 : dribbleSpeed));
+				.withDribblerMode(
+						getTBot().getBallContact().getContactDuration() > 0.1 ? EDribblerMode.OFF : EDribblerMode.DEFAULT));
 		setDesiredTargetAngle(calcTargetAngle());
 		super.doUpdate();
 		setSkillState(calcSkillState());

@@ -1,7 +1,10 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.trajectory;
+
+import com.sleepycat.persist.model.Persistent;
+import lombok.RequiredArgsConstructor;
 
 import java.util.List;
 
@@ -11,6 +14,8 @@ import java.util.List;
  *
  * @param <R> return type
  */
+@Persistent
+@RequiredArgsConstructor
 public class TrajectoryWrapper<R> implements ITrajectory<R>
 {
 	private final ITrajectory<R> traj;
@@ -18,16 +23,12 @@ public class TrajectoryWrapper<R> implements ITrajectory<R>
 	private final double tEnd;
 
 
-	/**
-	 * @param traj
-	 * @param tStart
-	 * @param tEnd
-	 */
-	public TrajectoryWrapper(final ITrajectory<R> traj, final double tStart, final double tEnd)
+	@SuppressWarnings("unused") // berkeley
+	private TrajectoryWrapper()
 	{
-		this.traj = traj;
-		this.tStart = tStart;
-		this.tEnd = tEnd;
+		traj = new StubTrajectory<>();
+		tStart = 0;
+		tEnd = 0;
 	}
 
 

@@ -31,6 +31,8 @@ public class SimulatedBot implements ISimulatedObject, ISimBot
 	private IVector2 ballPos;
 	@Setter
 	private Boolean barrierInterrupted;
+	@Setter
+	private Long lastUpdate;
 
 	private double center2DribblerDist = 75.0;
 
@@ -53,7 +55,11 @@ public class SimulatedBot implements ISimulatedObject, ISimBot
 
 	private SimBotState updateState(SimBotDynamicsState dynamicsState)
 	{
-		return new SimBotState(dynamicsState, isBarrierInterrupted(), state.getLastFeedback());
+		return new SimBotState(
+				dynamicsState,
+				isBarrierInterrupted(),
+				lastUpdate == null ? state.getLastFeedback() : lastUpdate
+		);
 	}
 
 

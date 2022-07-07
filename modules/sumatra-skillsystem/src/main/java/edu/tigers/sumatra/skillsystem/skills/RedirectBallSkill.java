@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.skillsystem.skills;
@@ -73,9 +73,8 @@ public class RedirectBallSkill extends ABallArrivalSkill
 				target,
 				desiredKickParams.getKickSpeed()
 		);
-		var kickSpeed = adaptKickSpeedToBotVel(target, desiredKickSpeed);
 
-		setKickParams(KickParams.of(desiredKickParams.getDevice(), kickSpeed));
+		setKickParams(KickParams.of(desiredKickParams.getDevice(), desiredKickSpeed));
 		setDesiredTargetAngle(desiredTargetAngle);
 
 		var bot2Target = Line.fromPoints(getTBot().getPos(), target).getAngle().orElse(0.0);
@@ -125,7 +124,7 @@ public class RedirectBallSkill extends ABallArrivalSkill
 	public void setKickerDevice(EKickerDevice kickerDevice)
 	{
 		this.desiredKickParams = KickParams.of(kickerDevice, desiredKickParams.getKickSpeed())
-				.withDribbleSpeed(desiredKickParams.getDribbleSpeed());
+				.withDribblerMode(desiredKickParams.getDribblerMode());
 	}
 
 
@@ -137,6 +136,6 @@ public class RedirectBallSkill extends ABallArrivalSkill
 	public void setKickSpeed(double kickSpeed)
 	{
 		this.desiredKickParams = KickParams.of(desiredKickParams.getDevice(), kickSpeed)
-				.withDribbleSpeed(desiredKickParams.getDribbleSpeed());
+				.withDribblerMode(desiredKickParams.getDribblerMode());
 	}
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.autoref.presenter;
 
@@ -19,15 +19,14 @@ import edu.tigers.sumatra.components.EnumCheckBoxPanel;
 import edu.tigers.sumatra.model.SumatraModel;
 import edu.tigers.sumatra.referee.data.GameEventProposalGroup;
 import edu.tigers.sumatra.referee.gameevent.IGameEvent;
-import edu.tigers.sumatra.views.ISumatraView;
 import edu.tigers.sumatra.views.ISumatraViewPresenter;
 import edu.tigers.sumatra.wp.AWorldPredictor;
 import edu.tigers.sumatra.wp.IWorldFrameObserver;
 import edu.tigers.sumatra.wp.data.WorldFrameWrapper;
+import lombok.Getter;
 import org.apache.commons.lang.StringUtils;
 
 import javax.swing.SwingUtilities;
-import java.awt.Component;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -37,19 +36,21 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 
-public class GameLogPresenter implements ISumatraViewPresenter, IAutoRefObserver,
-		EnumCheckBoxPanel.IEnumPanelObserver<ELogEntryType>, IWorldFrameObserver
+public class GameLogPresenter
+		implements ISumatraViewPresenter, IAutoRefObserver, EnumCheckBoxPanel.IEnumPanelObserver<ELogEntryType>,
+		IWorldFrameObserver
 {
 	private static final String ACTIVE_LOG_TYPES_KEY = GameLogPresenter.class + ".activeLogTypes";
 
-	private GameLogTableModel gameLogTableModel = new GameLogTableModel();
-	private GameLogPanel gameLogPanel = new GameLogPanel(gameLogTableModel);
+	private final GameLogTableModel gameLogTableModel = new GameLogTableModel();
+	@Getter
+	private GameLogPanel viewPanel = new GameLogPanel(gameLogTableModel);
 	private WorldFrameWrapper lastWorldFrameWrapper;
 
 
 	public GameLogPresenter()
 	{
-		EnumCheckBoxPanel<ELogEntryType> logPanel = gameLogPanel.getLogTypePanel();
+		EnumCheckBoxPanel<ELogEntryType> logPanel = viewPanel.getLogTypePanel();
 
 		Set<ELogEntryType> types = new HashSet<>();
 		String activeLogTypes = SumatraModel.getInstance().getUserProperty(ACTIVE_LOG_TYPES_KEY);
@@ -65,23 +66,9 @@ public class GameLogPresenter implements ISumatraViewPresenter, IAutoRefObserver
 					.forEach(types::add);
 		}
 		logPanel.setSelectedBoxes(types);
-		gameLogPanel.setActiveLogTypes(types);
+		viewPanel.setActiveLogTypes(types);
 
 		logPanel.addObserver(this);
-	}
-
-
-	@Override
-	public Component getComponent()
-	{
-		return gameLogPanel;
-	}
-
-
-	@Override
-	public ISumatraView getSumatraView()
-	{
-		return gameLogPanel;
 	}
 
 
@@ -148,7 +135,7 @@ public class GameLogPresenter implements ISumatraViewPresenter, IAutoRefObserver
 		List<IGameEvent> lastProposals = lastWorldFrameWrapper.getRefereeMsg().getGameEventProposalGroups().stream()
 				.map(GameEventProposalGroup::getGameEvents)
 				.flatMap(Collection::stream)
-				.collect(Collectors.toList());
+				.toList();
 		proposals.removeAll(lastProposals);
 		for (IGameEvent gameEvent : proposals)
 		{
@@ -193,8 +180,8 @@ public class GameLogPresenter implements ISumatraViewPresenter, IAutoRefObserver
 	@Override
 	public void onValueTicked(final ELogEntryType type, final boolean value)
 	{
-		Set<ELogEntryType> activeTypes = gameLogPanel.getLogTypePanel().getValues();
-		gameLogPanel.setActiveLogTypes(activeTypes);
+		Set<ELogEntryType> activeTypes = viewPanel.getLogTypePanel().getValues();
+		viewPanel.setActiveLogTypes(activeTypes);
 		String propValue = StringUtils.join(activeTypes, ",");
 		SumatraModel.getInstance().setUserProperty(ACTIVE_LOG_TYPES_KEY, propValue);
 	}

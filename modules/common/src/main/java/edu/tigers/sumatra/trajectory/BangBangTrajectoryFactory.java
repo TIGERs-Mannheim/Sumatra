@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.trajectory;
@@ -9,13 +9,15 @@ import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2f;
 import org.apache.commons.lang.Validate;
 
-import java.util.function.Function;
+import java.util.function.UnaryOperator;
 
 
 public final class BangBangTrajectoryFactory
 {
 	private static final double MAX_VEL_TOLERANCE = 0.2;
-	private static final float SYNC_ACCURACY = 1e-3f;
+	static final float SYNC_ACCURACY = 1e-3f;
+	static final UnaryOperator<Float> ALPHA_FN_ASYNC = alpha -> alpha + (((float) AngleMath.PI_HALF - alpha)
+			* 0.5f);
 
 
 	public BangBangTrajectory2DAsync async(
@@ -34,7 +36,6 @@ public final class BangBangTrajectoryFactory
 		final var startToTarget = s1.subtractNew(s0).turn(-rotation);
 		final var v0Rotated = v0.turnNew(-rotation);
 
-		final Function<Float, Float> alphaFn = alpha -> alpha + (((float) AngleMath.PI_HALF - alpha) * 0.5f);
 		BangBangTrajectory2D child = new BangBangTrajectory2D().generate(
 				Vector2f.ZERO_VECTOR,
 				startToTarget,
@@ -42,7 +43,8 @@ public final class BangBangTrajectoryFactory
 				(float) vmax,
 				(float) acc,
 				SYNC_ACCURACY,
-				alphaFn);
+				ALPHA_FN_ASYNC
+		);
 		return new BangBangTrajectory2DAsync(child, s0, rotation);
 	}
 
@@ -62,7 +64,20 @@ public final class BangBangTrajectoryFactory
 				(float) vmax,
 				(float) acc,
 				SYNC_ACCURACY,
-				Function.identity());
+				f -> f
+		);
+	}
+
+
+	public ITrajectory<Double> single(
+			final double initialPos,
+			final double finalPos,
+			final double initialVel,
+			final double maxVel,
+			final double maxAcc
+	)
+	{
+		return singleDim(initialPos, finalPos, initialVel, maxVel, maxAcc);
 	}
 
 

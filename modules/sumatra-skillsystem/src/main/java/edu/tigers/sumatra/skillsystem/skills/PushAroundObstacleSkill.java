@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.skillsystem.skills;
@@ -19,6 +19,7 @@ import edu.tigers.sumatra.skillsystem.ESkillShapesLayer;
 import edu.tigers.sumatra.skillsystem.skills.util.AroundBallCalc;
 import edu.tigers.sumatra.skillsystem.skills.util.AroundObstacleCalc;
 import edu.tigers.sumatra.skillsystem.skills.util.BallStabilizer;
+import edu.tigers.sumatra.skillsystem.skills.util.EDribblerMode;
 import edu.tigers.sumatra.skillsystem.skills.util.KickParams;
 import edu.tigers.sumatra.time.TimestampTimer;
 import edu.tigers.sumatra.wp.data.DynamicPosition;
@@ -41,8 +42,6 @@ public class PushAroundObstacleSkill extends AMoveSkill
 	private static double pushVel = 2.0;
 	@Configurable(comment = "Max acceleration when pushing", defValue = "1.0")
 	private static double pushAcc = 1.0;
-	@Configurable(comment = "dribbler speed for pushing", defValue = "5000.0")
-	private static double dribblerSpeed = 5000;
 
 	private final BallStabilizer ballStabilizer = new BallStabilizer();
 	private final ExponentialMovingAverageFilter2D targetOrientationFilter = new ExponentialMovingAverageFilter2D(0.95);
@@ -57,7 +56,7 @@ public class PushAroundObstacleSkill extends AMoveSkill
 
 	private double targetOrientation;
 	private IVector2 desiredDestination;
-	private double currentDribbleSpeed;
+	private EDribblerMode currentDribbleMode;
 	private MoveConstraints moveConstraints;
 
 
@@ -71,7 +70,7 @@ public class PushAroundObstacleSkill extends AMoveSkill
 	public void doEntryActions()
 	{
 		desiredDestination = null;
-		currentDribbleSpeed = dribblerSpeed;
+		currentDribbleMode = EDribblerMode.DEFAULT;
 		pushFilter.setState(0);
 
 		targetOrientation = getBall().getPos().subtractNew(getPos()).getAngle();
@@ -137,7 +136,7 @@ public class PushAroundObstacleSkill extends AMoveSkill
 			releaseBallTimer.update(getWorldFrame().getTimestamp());
 			if (releaseBallTimer.isTimeUp(getWorldFrame().getTimestamp()))
 			{
-				currentDribbleSpeed = 0;
+				currentDribbleMode = EDribblerMode.OFF;
 				releasedBallTimer.update(getWorldFrame().getTimestamp());
 			} else
 			{
@@ -145,11 +144,11 @@ public class PushAroundObstacleSkill extends AMoveSkill
 			}
 		} else
 		{
-			currentDribbleSpeed = dribblerSpeed;
+			currentDribbleMode = EDribblerMode.DEFAULT;
 			releaseBallTimer.reset();
 			releasedBallTimer.reset();
 		}
-		setKickParams(KickParams.disarm().withDribbleSpeed(currentDribbleSpeed));
+		setKickParams(KickParams.disarm().withDribblerMode(currentDribbleMode));
 	}
 
 

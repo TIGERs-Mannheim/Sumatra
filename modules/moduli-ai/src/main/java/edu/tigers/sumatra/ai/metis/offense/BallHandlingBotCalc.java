@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.metis.offense;
@@ -8,7 +8,7 @@ import com.github.g3force.configurable.Configurable;
 import edu.tigers.sumatra.ai.metis.ACalculator;
 import edu.tigers.sumatra.ai.metis.ballresponsibility.EBallResponsibility;
 import edu.tigers.sumatra.ai.metis.botdistance.BotDistance;
-import edu.tigers.sumatra.ai.metis.offense.ballinterception.BallInterception;
+import edu.tigers.sumatra.ai.metis.offense.ballinterception.RatedBallInterception;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.pathfinder.TrajectoryGenerator;
 import lombok.Getter;
@@ -17,13 +17,11 @@ import lombok.RequiredArgsConstructor;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 
 /**
@@ -44,10 +42,13 @@ public class BallHandlingBotCalc extends ACalculator
 	@Configurable(defValue = "1", comment = "Number of bots to assign when there are no ball interceptions")
 	private static int numBotsForNonInterceptableBall = 1;
 
+	@Configurable(defValue = "false")
+	private static boolean allowDoubleAttackerForBallInterception = false;
+
 	private final Supplier<EBallResponsibility> ballResponsibility;
 	private final Supplier<Set<BotID>> potentialOffensiveBots;
-	private final Supplier<Map<BotID, BallInterception>> ballInterceptions;
-	private final Supplier<Map<BotID, BallInterception>> ballInterceptionsFallback;
+	private final Supplier<Map<BotID, RatedBallInterception>> ballInterceptions;
+	private final Supplier<Map<BotID, RatedBallInterception>> ballInterceptionsFallback;
 	private final Supplier<List<BotDistance>> tigersToBallDist;
 
 	@Getter
@@ -64,8 +65,7 @@ public class BallHandlingBotCalc extends ACalculator
 	@Override
 	protected boolean isCalculationNecessary()
 	{
-		return ballResponsibility.get() == EBallResponsibility.OFFENSE
-				&& !getAiFrame().getGameState().isPenaltyOrPreparePenalty();
+		return ballResponsibility.get() == EBallResponsibility.OFFENSE;
 	}
 
 
@@ -103,7 +103,7 @@ public class BallHandlingBotCalc extends ACalculator
 
 	private List<BotID> getPrimariesDuringStop()
 	{
-		Map<BotID, BotDistance> closestBots = new IdentityHashMap<>();
+		Map<BotID, BotDistance> closestBots = new HashMap<>();
 		tigersToBallDist.get().forEach(d -> closestBots.put(d.getBotId(), d));
 
 		double distHysteresis = 500;
@@ -128,7 +128,7 @@ public class BallHandlingBotCalc extends ACalculator
 				.sorted(Comparator.comparingDouble(Map.Entry::getValue))
 				.limit(numBotsForNonInterceptableBall)
 				.map(Map.Entry::getKey)
-				.collect(Collectors.toList());
+				.toList();
 	}
 
 
@@ -145,7 +145,7 @@ public class BallHandlingBotCalc extends ACalculator
 	}
 
 
-	private List<BotID> findBestPrimariesByInterception(Map<BotID, BallInterception> ballInterceptions)
+	private List<BotID> findBestPrimariesByInterception(Map<BotID, RatedBallInterception> ballInterceptions)
 	{
 		var interceptions = findFastestInterceptableInterceptions(ballInterceptions);
 
@@ -154,46 +154,51 @@ public class BallHandlingBotCalc extends ACalculator
 			return Collections.emptyList();
 		}
 
-		var firstBot = interceptions.get(0).getBotID();
+		var firstBot = interceptions.get(0).getBallInterception().getBotID();
 		if (!getAiFrame().getGameState().isRunning() || interceptions.size() < 2)
 		{
 			return List.of(firstBot);
 		}
 
-		var secondBot = interceptions.get(1).getBotID();
-		if (isAddingSecondPrimaryReasonable(firstBot, secondBot, ballInterceptions))
+		if (allowDoubleAttackerForBallInterception)
 		{
-			return List.of(firstBot, secondBot);
+			var secondBot = interceptions.get(1).getBallInterception().getBotID();
+			if (isAddingSecondPrimaryReasonable(firstBot, secondBot, ballInterceptions))
+			{
+				return List.of(firstBot, secondBot);
+			}
 		}
+
 		return List.of(firstBot);
 	}
 
 
-	private List<BallInterception> findFastestInterceptableInterceptions(Map<BotID, BallInterception> interceptions)
+	private List<RatedBallInterception> findFastestInterceptableInterceptions(
+			Map<BotID, RatedBallInterception> interceptions)
 	{
 		return interceptions
 				.values()
 				.stream()
-				.sorted(Comparator.comparing(BallInterception::getBallContactTime))
-				.collect(Collectors.toList());
+				.sorted(Comparator.comparing(e -> e.getBallInterception().getBallContactTime()))
+				.toList();
 	}
 
 
 	private boolean isAddingSecondPrimaryReasonable(BotID bestPrimary, BotID secondBestPrimary,
-			Map<BotID, BallInterception> ballInterceptions)
+			Map<BotID, RatedBallInterception> ballInterceptions)
 	{
 		var bestBotBallInterception = ballInterceptions.get(bestPrimary);
 		var secondBestBotBallInterception = ballInterceptions.get(secondBestPrimary);
 
-		var bestBotPos = bestBotBallInterception.getPos();
-		var secondBestBotPos = secondBestBotBallInterception.getPos();
+		var bestBotPos = bestBotBallInterception.getBallInterception().getPos();
+		var secondBestBotPos = secondBestBotBallInterception.getBallInterception().getPos();
 
 		// negative slack time means that robot reaches the intercept pos before the ball
-		var firstPrimarySlackTime = bestBotBallInterception.getBallContactTime();
-		var secondPrimarySlackTime = secondBestBotBallInterception.getBallContactTime();
+		var firstPrimarySlackTime = bestBotBallInterception.getBallInterception().getBallContactTime();
+		var secondPrimarySlackTime = secondBestBotBallInterception.getBallInterception().getBallContactTime();
 
 		return Math.abs(firstPrimarySlackTime - secondPrimarySlackTime) < maxSlackTimeDiffForSecondBot
 				&& bestBotPos.distanceTo(secondBestBotPos) > minDistForSecondBot
-				&& bestBotBallInterception.getBallContactTime() > minBallContactTimeForSecondBot;
+				&& bestBotBallInterception.getBallInterception().getBallContactTime() > minBallContactTimeForSecondBot;
 	}
 }

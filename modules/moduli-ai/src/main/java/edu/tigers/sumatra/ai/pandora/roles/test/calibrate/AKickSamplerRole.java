@@ -83,7 +83,7 @@ public abstract class AKickSamplerRole extends ARole
 				jsonMapping.put("field", Geometry.getField().toJSON());
 			}
 
-			Collection<CamCalibration> cams = Geometry.getLastCamGeometry().getCalibrations().values();
+			Collection<CamCalibration> cams = Geometry.getLastCamGeometry().getCameraCalibrations().values();
 			JSONArray camList = new JSONArray();
 			for (CamCalibration c : cams)
 			{

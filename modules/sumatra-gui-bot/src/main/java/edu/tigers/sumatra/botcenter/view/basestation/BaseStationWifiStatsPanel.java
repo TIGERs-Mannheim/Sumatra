@@ -1,13 +1,12 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.botcenter.view.basestation;
 
-import java.awt.EventQueue;
-import java.util.ArrayList;
-import java.util.Locale;
-import java.util.Map;
-import java.util.TreeMap;
+import edu.tigers.sumatra.botmanager.commands.basestation.BaseStationWifiStats;
+import edu.tigers.sumatra.botmanager.commands.basestation.BaseStationWifiStats.BotStats;
+import edu.tigers.sumatra.ids.BotID;
+import net.miginfocom.swing.MigLayout;
 
 import javax.swing.BorderFactory;
 import javax.swing.Box;
@@ -17,11 +16,11 @@ import javax.swing.JProgressBar;
 import javax.swing.JTextField;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
-
-import edu.tigers.sumatra.botmanager.commands.basestation.BaseStationWifiStats;
-import edu.tigers.sumatra.botmanager.commands.basestation.BaseStationWifiStats.BotStats;
-import edu.tigers.sumatra.ids.BotID;
-import net.miginfocom.swing.MigLayout;
+import java.awt.EventQueue;
+import java.util.ArrayList;
+import java.util.Locale;
+import java.util.Map;
+import java.util.TreeMap;
 
 
 /**
@@ -101,7 +100,7 @@ public class BaseStationWifiStatsPanel extends JPanel
 	{
 		boolean panelsModified = false;
 
-		EventQueue.invokeLater(() -> updateRate.setText(Integer.toString(stats.getUpdateRate()) + "Hz"));
+		EventQueue.invokeLater(() -> updateRate.setText(stats.getUpdateRate() + "Hz"));
 
 		for (BotID id : new ArrayList<>(wifiPanels.keySet()))
 		{
@@ -183,9 +182,15 @@ public class BaseStationWifiStatsPanel extends JPanel
 
 			for (int i = 0; i < 4; i++)
 			{
-				nrfStats[i] = new JProgressBar(0, 1000);
-				nrfStats[i].setStringPainted(true);
-				add(nrfStats[i]);
+				if (i == 1)
+				{
+					add(new JLabel("N/A", SwingConstants.CENTER));
+				} else
+				{
+					nrfStats[i] = new JProgressBar(0, 1000);
+					nrfStats[i].setStringPainted(true);
+					add(nrfStats[i]);
+				}
 			}
 
 			for (int i = 0; i < 2; i++)
@@ -221,15 +226,13 @@ public class BaseStationWifiStatsPanel extends JPanel
 		@SuppressWarnings("squid:S1192")
 		private void doSetStats(final BotStats stats, final int rate)
 		{
-			nrfStats[0].setValue((int) (stats.nrf.getTxSaturation(rate) * 1000));
-			nrfStats[1].setValue((int) (stats.nrf.getTxLoss() * 1000));
-			nrfStats[2].setValue((int) (stats.nrf.getRxSaturation(rate) * 1000));
-			nrfStats[3].setValue((int) (stats.nrf.getRxLoss() * 1000));
+			nrfStats[0].setValue((int) (stats.rf.getTxSaturation(rate) * 1000));
+			nrfStats[2].setValue((int) (stats.rf.getRxSaturation(rate) * 1000));
+			nrfStats[3].setValue((int) (stats.rf.getRxLoss() * 1000));
 
-			nrfStats[0].setString(String.format("%5d / %5d", stats.nrf.txPackets, stats.nrf.txBytes));
-			nrfStats[1].setString(String.format(Locale.ENGLISH, "%5.2f%%", stats.nrf.getTxLoss() * 100));
-			nrfStats[2].setString(String.format("%5d / %5d", stats.nrf.rxPackets, stats.nrf.rxBytes));
-			nrfStats[3].setString(String.format(Locale.ENGLISH, "%5.2f%%", stats.nrf.getRxLoss() * 100));
+			nrfStats[0].setString(String.format("%5d / %5d", stats.rf.txPackets, stats.rf.txBytes));
+			nrfStats[2].setString(String.format("%5d / %5d", stats.rf.rxPackets, stats.rf.rxBytes));
+			nrfStats[3].setString(String.format(Locale.ENGLISH, "%5.2f%%", stats.rf.getRxLoss() * 100));
 
 			queueStats[0].setValue((int) (stats.queue.getTxLoss() * 1000));
 			queueStats[1].setValue((int) (stats.queue.getRxLoss() * 1000));
@@ -240,8 +243,8 @@ public class BaseStationWifiStatsPanel extends JPanel
 			queueTraffic[0].setText(String.format("%5d / %5d", stats.queue.txPackets, stats.queue.txBytes));
 			queueTraffic[1].setText(String.format("%5d / %5d", stats.queue.rxPackets, stats.queue.rxBytes));
 
-			linkQuality.setValue((int) (stats.nrf.getLinkQuality() * 1000));
-			linkQuality.setString(String.format(Locale.ENGLISH, "%3.0f%%", stats.nrf.getLinkQuality() * 100));
+			linkQuality.setValue((int) (stats.getLinkQuality() * 1000));
+			linkQuality.setString(String.format(Locale.ENGLISH, "%3.0f%%", stats.getLinkQuality() * 100));
 
 			if (stats.getBotId().isBot())
 			{

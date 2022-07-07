@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.metis.ballresponsibility;
@@ -58,8 +58,8 @@ public class BallResponsibilityCalc extends ACalculator
 		double teamOffset = getAiFrame().getTeamColor() == ETeamColor.BLUE ? 13 : 0;
 		getShapes(EAiShapesLayer.AI_BALL_RESPONSIBILITY).add(
 				new DrawableBorderText(Vector2.fromXY(10, 100 + teamOffset),
-						"Ball Responsibility: " + ballResponsibility,
-						getAiFrame().getTeamColor().getColor()));
+						"Ball Responsibility: " + ballResponsibility)
+						.setColor(getAiFrame().getTeamColor().getColor()));
 	}
 
 

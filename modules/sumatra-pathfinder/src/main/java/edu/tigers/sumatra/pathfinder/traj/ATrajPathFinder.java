@@ -196,8 +196,8 @@ public abstract class ATrajPathFinder implements IPathFinder
 		// add collision penalty (mainly for penalty area)
 		penalty += p.getCollisionPenalty();
 
-		// if there is now collision, but the path is longer that the collision lookahead,
-		// than the bot might just drive a little bit backwards to be just far away from the next obstacle
+		// if there is no collision, but the path is longer than the collision lookahead,
+		// than the bot might just drive a bit backwards to be just far away enough from the next obstacle
 		// that it takes less than the lookahead
 		// We need to enforce a path to the destination by also scoring the path based on how close
 		// it will come the the destination.

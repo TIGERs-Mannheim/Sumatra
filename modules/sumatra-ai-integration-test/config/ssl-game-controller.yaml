@@ -1,6 +1,6 @@
 time-acquisition-mode: ci
 network:
-  publish-address: 224.5.23.1:12003
+  publish-address:
   vision-address: 224.5.23.2:12006
   tracker-address: 224.5.23.2:12010
 server:

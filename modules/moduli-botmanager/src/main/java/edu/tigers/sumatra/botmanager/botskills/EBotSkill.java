@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.botmanager.botskills;
 
@@ -38,6 +38,7 @@ public enum EBotSkill implements IInstanceableEnum
 			new InstanceableParameter(Double.TYPE, "jerkMax", "30"),
 			new InstanceableParameter(Double.TYPE, "jerkMaxW", "500"),
 			new InstanceableParameter(Double.TYPE, "dribbleSpeed", "0"),
+			new InstanceableParameter(Double.TYPE, "dribbleCurrent", "3"),
 			new InstanceableParameter(Double.TYPE, "kickSpeed", "0"),
 			new InstanceableParameter(EKickerDevice.class, "kickDevice", "STRAIGHT"),
 			new InstanceableParameter(EKickerMode.class, "kickMode", "DISARM"))),
@@ -50,6 +51,7 @@ public enum EBotSkill implements IInstanceableEnum
 			new InstanceableParameter(Double.TYPE, "jerkMax", "30"),
 			new InstanceableParameter(Double.TYPE, "jerkMaxW", "500"),
 			new InstanceableParameter(Double.TYPE, "dribbleSpeed", "0"),
+			new InstanceableParameter(Double.TYPE, "dribbleCurrent", "3"),
 			new InstanceableParameter(Double.TYPE, "kickSpeed", "0"),
 			new InstanceableParameter(EKickerDevice.class, "kickDevice", "STRAIGHT"),
 			new InstanceableParameter(EKickerMode.class, "kickMode", "DISARM"))),
@@ -95,6 +97,7 @@ public enum EBotSkill implements IInstanceableEnum
 			new InstanceableParameter(Double.TYPE, "jerkMax", "30"),
 			new InstanceableParameter(Double.TYPE, "jerkMaxW", "500"),
 			new InstanceableParameter(Double.TYPE, "dribbleSpeed", "0"),
+			new InstanceableParameter(Double.TYPE, "dribbleCurrent", "3"),
 			new InstanceableParameter(Double.TYPE, "kickSpeed", "0"),
 			new InstanceableParameter(EKickerDevice.class, "kickDevice", "STRAIGHT"),
 			new InstanceableParameter(EKickerMode.class, "kickMode", "DISARM"))),
@@ -116,6 +119,7 @@ public enum EBotSkill implements IInstanceableEnum
 			new InstanceableParameter(IVector2.class, "xy", "0,0"),
 			new InstanceableParameter(Double.TYPE, "w", "0"),
 			new InstanceableParameter(Double.TYPE, "dribbleSpeed", "0"),
+			new InstanceableParameter(Double.TYPE, "dribbleCurrent", "3"),
 			new InstanceableParameter(Double.TYPE, "kickSpeed", "0"),
 			new InstanceableParameter(EKickerDevice.class, "kickDevice", "STRAIGHT"),
 			new InstanceableParameter(EKickerMode.class, "kickMode", "DISARM"))),
@@ -126,10 +130,12 @@ public enum EBotSkill implements IInstanceableEnum
 			new InstanceableParameter(Double.TYPE, "velMax", "1.5"),
 			new InstanceableParameter(Double.TYPE, "velMaxW", "10"),
 			new InstanceableParameter(Double.TYPE, "accMax", "2.0"),
-			new InstanceableParameter(Double.TYPE, "accMaxW", "50"),
-			new InstanceableParameter(Double.TYPE, "dribblerSpeed", "4000"),
+			new InstanceableParameter(Double.TYPE, "accMaxW", "20"),
+			new InstanceableParameter(Double.TYPE, "dribblerSpeed", "18000"),
+			new InstanceableParameter(Double.TYPE, "dribblerCurrent", "3"),
 			new InstanceableParameter(Double.TYPE, "rotationSpeed", "1.0"),
-			new InstanceableParameter(Double.TYPE, "dockingSpeed", "0.2"))),
+			new InstanceableParameter(Double.TYPE, "dockingSpeed", "0.3"),
+			new InstanceableParameter(Double.TYPE, "aimSpeed", "0.6"))),
 
 	INTERCEPT_BALL(12, new InstanceableClass<>(BotSkillInterceptBall.class,
 			new InstanceableParameter(IVector2.class, "interceptPos", "0,0"),

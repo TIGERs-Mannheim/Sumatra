@@ -4,7 +4,8 @@
 
 package edu.tigers.sumatra.support.view;
 
-import edu.tigers.sumatra.ai.pandora.roles.support.ESupportBehavior;
+import edu.tigers.sumatra.ai.metis.support.behaviors.ESupportBehavior;
+import edu.tigers.sumatra.ai.metis.support.behaviors.SupportBehaviorPosition;
 import edu.tigers.sumatra.ids.BotID;
 
 import javax.swing.BorderFactory;
@@ -41,18 +42,19 @@ public class SupportBehaviorBotDetailPanel extends JPanel
 
 		setValues(null);
 	}
-	
-	
-	public synchronized void setValues(Map<ESupportBehavior, Double> values)
+
+
+	public synchronized void setValues(Map<ESupportBehavior, SupportBehaviorPosition> values)
 	{
 		if (values != null)
 		{
 			SupportBehaviorBotDetailPanel.setEnabled(this, true);
-			for (Map.Entry<ESupportBehavior, Double> entry : values.entrySet())
+			for (var entry : values.entrySet())
 			{
 				if (assureBehaviorHasEntry(entry.getKey()))
 				{
-					behaviorBarMap.get(entry.getKey()).getProgressBar().setValue((int) (100 * entry.getValue()));
+					behaviorBarMap.get(entry.getKey()).getProgressBar()
+							.setValue((int) (100 * entry.getValue().getViability()));
 				}
 			}
 			removeIgnored();
@@ -67,12 +69,24 @@ public class SupportBehaviorBotDetailPanel extends JPanel
 
 		this.repaint();
 	}
-	
+
+
+	public void setAssignedBehavior(ESupportBehavior behavior)
+	{
+		behaviorBarMap.values().forEach(bar -> bar.getProgressBar().setBorder(BorderFactory.createEmptyBorder()));
+		if (behavior != null)
+		{
+			behaviorBarMap.get(behavior).getProgressBar().setBorder(BorderFactory.createLineBorder(Color.GREEN));
+		}
+	}
+
+
 	protected class BehaviorBar extends JPanel
 	{
 		protected JProgressBar progressBar;
 		protected String labelText;
 		protected JLabel label;
+
 
 		public BehaviorBar(ESupportBehavior behavior)
 		{

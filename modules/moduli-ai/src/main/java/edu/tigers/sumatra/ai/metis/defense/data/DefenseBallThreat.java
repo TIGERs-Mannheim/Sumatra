@@ -75,7 +75,7 @@ public class DefenseBallThreat implements IDefenseThreat
 	@Override
 	public EDefenseThreatType getType()
 	{
-		return EDefenseThreatType.BALL_TO_GOAL;
+		return EDefenseThreatType.BALL;
 	}
 
 

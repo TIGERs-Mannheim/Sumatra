@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra;
@@ -8,6 +8,8 @@ import edu.tigers.sumatra.persistence.BerkeleyDb;
 import edu.tigers.sumatra.views.ASumatraView;
 import edu.tigers.sumatra.views.DummyView;
 import edu.tigers.sumatra.views.ESumatraViewType;
+import edu.tigers.sumatra.views.ISumatraPresenter;
+import lombok.extern.log4j.Log4j2;
 import net.infonode.docking.DockingWindow;
 import net.infonode.docking.DockingWindowAdapter;
 import net.infonode.docking.RootWindow;
@@ -19,8 +21,6 @@ import net.infonode.docking.util.DockingUtil;
 import net.infonode.docking.util.MixedViewHandler;
 import net.infonode.docking.util.ViewMap;
 import net.infonode.util.Direction;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import javax.swing.ButtonGroup;
 import javax.swing.ImageIcon;
@@ -43,6 +43,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.Serial;
 import java.net.URL;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -53,15 +54,17 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.stream.Stream;
 
 
 /**
  * abstract base MainFrame
  */
 @SuppressWarnings("squid:MaximumInheritanceDepth")
+@Log4j2
 public abstract class AMainFrame extends JFrame implements IMainFrame
 {
-	private static final Logger log = LogManager.getLogger(AMainFrame.class.getName());
+	@Serial
 	private static final long serialVersionUID = -6858464942004450029L;
 
 	private final RootWindow rootWindow;
@@ -111,12 +114,14 @@ public abstract class AMainFrame extends JFrame implements IMainFrame
 	}
 
 
+	@SuppressWarnings("WeakerAccess") // required by AutoReferee
 	protected ImageIcon getFrameIcon()
 	{
 		return loadIconImage("/kralle-icon.png");
 	}
 
 
+	@SuppressWarnings("WeakerAccess") // required by AutoReferee
 	protected ImageIcon loadIconImage(final String url)
 	{
 		URL iconUrl = AMainFrame.class.getResource(url);
@@ -139,9 +144,8 @@ public abstract class AMainFrame extends JFrame implements IMainFrame
 			{
 				continue;
 			}
-			final List<JMenu> menu = view.getSumatraView().getCustomMenus();
-			addToCustomMenu(menu, view);
-			view.getSumatraView().onShown();
+			addCustomMenus(view);
+			view.getPresenter().onShown();
 		}
 
 		for (int i = 0; i < viewsMenu.getItemCount(); i++)
@@ -191,7 +195,7 @@ public abstract class AMainFrame extends JFrame implements IMainFrame
 			db.compress();
 		} catch (IOException e)
 		{
-			log.error("Could not create ZIP file: " + path, e);
+			log.error("Could not create ZIP file: {}", path, e);
 		}
 	}
 
@@ -218,6 +222,32 @@ public abstract class AMainFrame extends JFrame implements IMainFrame
 	public final List<ASumatraView> getViews()
 	{
 		return new ArrayList<>(views);
+	}
+
+
+	/**
+	 * @return a stream of all presenters (including children)
+	 */
+	public final Stream<ISumatraPresenter> getPresenters()
+	{
+		return views.stream()
+				.flatMap(ASumatraView::getPresenters);
+	}
+
+
+	/**
+	 * Collect all presenters that implement the given type.
+	 *
+	 * @param type the observer type
+	 * @param <T>  the observer type
+	 * @return list of all presenters that implement the type
+	 */
+	public final <T> List<T> getObservers(Class<T> type)
+	{
+		return getPresenters()
+				.filter(p -> type.isAssignableFrom(p.getClass()))
+				.map(type::cast)
+				.toList();
 	}
 
 
@@ -353,20 +383,17 @@ public abstract class AMainFrame extends JFrame implements IMainFrame
 	}
 
 
-	private void addToCustomMenu(final List<JMenu> menus, final ASumatraView view)
+	private void addCustomMenus(ASumatraView view)
 	{
-		if (menus != null && !menus.isEmpty())
+		List<JMenu> menus = view.getPresenter().getCustomMenus();
+		if (!menus.isEmpty())
 		{
-			if (customMenuMap.containsKey(view))
+			List<JMenu> oldMenus = customMenuMap.put(view, menus);
+			if (oldMenus != null)
 			{
-				removeFromCustomMenu(customMenuMap.get(view));
+				removeFromCustomMenu(oldMenus);
 			}
-
-			customMenuMap.put(view, menus);
-			for (final JMenu menu : menus)
-			{
-				jMenuBar.add(menu);
-			}
+			menus.forEach(jMenuBar::add);
 		}
 	}
 
@@ -374,6 +401,7 @@ public abstract class AMainFrame extends JFrame implements IMainFrame
 	/**
 	 * Creates the root window and the views.
 	 */
+	@SuppressWarnings("WeakerAccess") // required by AutoReferee
 	protected RootWindow createRootWindow()
 	{
 		ViewMap viewMap = new ViewMap();
@@ -424,6 +452,7 @@ public abstract class AMainFrame extends JFrame implements IMainFrame
 		layoutMenu.add(saveLayoutItem);
 		layoutMenu.add(deleteLayoutItem);
 	}
+
 
 	private class SaveLayout implements ActionListener
 	{
@@ -531,10 +560,9 @@ public abstract class AMainFrame extends JFrame implements IMainFrame
 				{
 					continue;
 				}
-				final List<JMenu> menu = view.getSumatraView().getCustomMenus();
-				addToCustomMenu(menu, view);
+				addCustomMenus(view);
 
-				view.getSumatraView().onShown();
+				view.getPresenter().onShown();
 			}
 		}
 
@@ -551,7 +579,7 @@ public abstract class AMainFrame extends JFrame implements IMainFrame
 						removeFromCustomMenu(menu);
 					}
 
-					view.getSumatraView().onHidden();
+					view.getPresenter().onHidden();
 				}
 			}
 		}
@@ -577,7 +605,7 @@ public abstract class AMainFrame extends JFrame implements IMainFrame
 				{
 					if (view.getType().getTitle().equals(previous.getTitle()))
 					{
-						view.getSumatraView().onFocusLost();
+						view.getPresenter().onFocusLost();
 					}
 				}
 			}
@@ -588,16 +616,13 @@ public abstract class AMainFrame extends JFrame implements IMainFrame
 				{
 					if (view.getType().getTitle().equals(focused.getTitle()))
 					{
-						view.getSumatraView().onFocused();
+						view.getPresenter().onFocused();
 					}
 				}
 			}
 		}
 	}
 
-	/**
-	 * @author Nicolai Ommer <nicolai.ommer@gmail.com>
-	 */
 	public class Exit extends WindowAdapter implements ActionListener
 	{
 		@Override

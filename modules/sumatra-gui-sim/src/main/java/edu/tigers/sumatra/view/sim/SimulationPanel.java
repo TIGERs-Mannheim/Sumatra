@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.view.sim;
@@ -7,26 +7,20 @@ package edu.tigers.sumatra.view.sim;
 import edu.tigers.sumatra.drawable.EFontSize;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.model.SumatraModel;
-import edu.tigers.sumatra.presenter.sim.SimulationPresenter;
 import edu.tigers.sumatra.sim.SumatraSimulator;
 import edu.tigers.sumatra.util.ImageScaler;
 import edu.tigers.sumatra.util.ScalingUtil;
-import edu.tigers.sumatra.views.ISumatraView;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import lombok.Getter;
+import lombok.extern.log4j.Log4j2;
 
 import javax.swing.AbstractAction;
 import javax.swing.Action;
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
-import javax.swing.JComponent;
-import javax.swing.JFileChooser;
 import javax.swing.JLabel;
-import javax.swing.JMenu;
 import javax.swing.JPanel;
 import javax.swing.JSlider;
 import javax.swing.JToggleButton;
-import javax.swing.KeyStroke;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import java.awt.Color;
@@ -34,11 +28,8 @@ import java.awt.Dimension;
 import java.awt.EventQueue;
 import java.awt.FlowLayout;
 import java.awt.event.ActionEvent;
-import java.awt.event.KeyEvent;
-import java.io.File;
-import java.io.IOException;
+import java.io.Serial;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.TimeZone;
@@ -48,27 +39,23 @@ import java.util.concurrent.CopyOnWriteArrayList;
 /**
  * Main panel for simulation view.
  */
-public class SimulationPanel extends JPanel implements ISumatraView
+@Log4j2
+public class SimulationPanel extends JPanel
 {
+	@Serial
 	private static final long serialVersionUID = 4936408016928626573L;
-	private static final Logger log = LogManager.getLogger(SimulationPanel.class.getName());
 
-	private final JToggleButton btnPauseSim;
+	@Getter
+	private final JToggleButton btnToggleSim;
+	@Getter
 	private final JSlider sliderSpeed;
 	private final JLabel lblSpeed;
-	private final JButton btnLoadSnapshot;
-	private final JFileChooser fcOpenSnapshot;
 	private final JLabel lblTime;
 	private final JLabel lblRelativeTime;
+	@Getter
 	private final JToggleButton btnSlowmotion;
 
 	private final SimulationBotMgrPanel botMgrPanel;
-
-	private boolean paused = false;
-
-	private static final int NO_SLOW_MOTION = Integer.MIN_VALUE;
-	private static final int SLOW_MOTION_SPEED = -6;
-	private int oldSpeed = NO_SLOW_MOTION;
 
 	private final transient List<ISimulationPanelObserver> observers = new CopyOnWriteArrayList<>();
 
@@ -81,16 +68,13 @@ public class SimulationPanel extends JPanel implements ISumatraView
 		setLayout(new FlowLayout(FlowLayout.LEFT));
 
 		Action pauseSimulationAction = new PauseSimulationAction();
-		btnPauseSim = new JToggleButton();
-		btnPauseSim.setIcon(ImageScaler.scaleDefaultButtonImageIcon("/pause.png"));
-		btnPauseSim.setSelectedIcon(ImageScaler.scaleDefaultButtonImageIcon("/play.png"));
-		btnPauseSim.setBorder(BorderFactory.createEmptyBorder());
-		btnPauseSim.setBackground(new Color(0, 0, 0, 0));
-		btnPauseSim.setToolTipText("Pause/Play");
-		btnPauseSim.setActionCommand(PauseSimulationAction.class.getCanonicalName());
-		btnPauseSim.addActionListener(pauseSimulationAction);
-		registerShortcut(btnPauseSim, KeyStroke.getKeyStroke(KeyEvent.VK_P, KeyEvent.CTRL_DOWN_MASK),
-				pauseSimulationAction);
+		btnToggleSim = new JToggleButton();
+		btnToggleSim.setIcon(ImageScaler.scaleDefaultButtonImageIcon("/pause.png"));
+		btnToggleSim.setSelectedIcon(ImageScaler.scaleDefaultButtonImageIcon("/play.png"));
+		btnToggleSim.setBorder(BorderFactory.createEmptyBorder());
+		btnToggleSim.setBackground(new Color(0, 0, 0, 0));
+		btnToggleSim.setToolTipText("Pause/Play");
+		btnToggleSim.addActionListener(pauseSimulationAction);
 
 		final JButton btnStepBwd = new JButton();
 		btnStepBwd.setIcon(ImageScaler.scaleDefaultButtonImageIcon("/skipFrameBackward.png"));
@@ -99,7 +83,6 @@ public class SimulationPanel extends JPanel implements ISumatraView
 		Action stepBackAction = new StepBwdAction();
 		btnStepBwd.addActionListener(stepBackAction);
 		btnStepBwd.setToolTipText("Step backward");
-		registerShortcut(btnStepBwd, KeyStroke.getKeyStroke(KeyEvent.VK_LEFT, KeyEvent.CTRL_DOWN_MASK), stepBackAction);
 
 		final JButton btnStep = new JButton();
 		btnStep.setIcon(ImageScaler.scaleDefaultButtonImageIcon("/skipFrameForward.png"));
@@ -108,7 +91,6 @@ public class SimulationPanel extends JPanel implements ISumatraView
 		Action stepAction = new StepAction();
 		btnStep.addActionListener(stepAction);
 		btnStep.setToolTipText("Step forward");
-		registerShortcut(btnStep, KeyStroke.getKeyStroke(KeyEvent.VK_RIGHT, KeyEvent.CTRL_DOWN_MASK), stepAction);
 
 		final JButton btnReset = new JButton();
 		btnReset.setIcon(ImageScaler.scaleDefaultButtonImageIcon("/refresh.png"));
@@ -122,13 +104,8 @@ public class SimulationPanel extends JPanel implements ISumatraView
 		btnSlowmotion.setIcon(ImageScaler.scaleDefaultButtonImageIcon("/slowMotion.png"));
 		btnSlowmotion.setBorder(BorderFactory.createEmptyBorder());
 		btnSlowmotion.setBackground(new Color(0, 0, 0, 1));
-		btnSlowmotion.setToolTipText("Toggle Slowmotion");
-		btnSlowmotion.setActionCommand(ToggleSlowmotionAction.class.getCanonicalName());
-		Action toggleSlowmotionAction = new ToggleSlowmotionAction();
-		btnSlowmotion.addActionListener(toggleSlowmotionAction);
-		registerShortcut(btnSlowmotion, KeyStroke.getKeyStroke(KeyEvent.VK_F, KeyEvent.CTRL_DOWN_MASK),
-				toggleSlowmotionAction);
-
+		btnSlowmotion.setToolTipText("Toggle slow motion");
+		btnSlowmotion.addActionListener(e -> observers.forEach(ISimulationPanelObserver::onToggleSlowMotion));
 
 		sliderSpeed = new JSlider(-9, 9, 0);
 		sliderSpeed.setMajorTickSpacing(5);
@@ -149,14 +126,13 @@ public class SimulationPanel extends JPanel implements ISumatraView
 		lblTime = new JLabel("-");
 		lblTime.setPreferredSize(new Dimension((int) (ScalingUtil.getFontSize(EFontSize.MEDIUM) * 8.0),
 				lblTime.getMaximumSize().height));
-		btnLoadSnapshot = new JButton();
+		var btnLoadSnapshot = new JButton();
 		btnLoadSnapshot.setIcon(ImageScaler.scaleDefaultButtonImageIcon("/open.png"));
 		btnLoadSnapshot.setBorder(BorderFactory.createEmptyBorder());
 		btnLoadSnapshot.setBackground(new Color(0, 0, 0, 1));
 		btnLoadSnapshot.setToolTipText("Open from file");
 		Action loadAction = new OpenSnapAction();
 		btnLoadSnapshot.addActionListener(loadAction);
-		registerShortcut(btnLoadSnapshot, KeyStroke.getKeyStroke(KeyEvent.VK_L, KeyEvent.CTRL_DOWN_MASK), loadAction);
 
 		final JButton btnSaveSnapshot = new JButton();
 		btnSaveSnapshot.setIcon(ImageScaler.scaleDefaultButtonImageIcon("/save.png"));
@@ -165,7 +141,6 @@ public class SimulationPanel extends JPanel implements ISumatraView
 		btnSaveSnapshot.setToolTipText("Save to file");
 		Action saveAction = new SaveSnapAction();
 		btnSaveSnapshot.addActionListener(saveAction);
-		registerShortcut(btnSaveSnapshot, KeyStroke.getKeyStroke(KeyEvent.VK_S, KeyEvent.CTRL_DOWN_MASK), saveAction);
 
 		final JButton btnCopySnapshot = new JButton();
 		btnCopySnapshot.setIcon(ImageScaler.scaleDefaultButtonImageIcon("/copy.png"));
@@ -174,7 +149,6 @@ public class SimulationPanel extends JPanel implements ISumatraView
 		btnCopySnapshot.setToolTipText("Copy to clipboard");
 		Action copyAction = new CopySnapAction();
 		btnCopySnapshot.addActionListener(copyAction);
-		registerShortcut(btnCopySnapshot, KeyStroke.getKeyStroke(KeyEvent.VK_C, KeyEvent.CTRL_DOWN_MASK), copyAction);
 
 		final JButton btnPasteSnapshot = new JButton();
 		btnPasteSnapshot.setIcon(ImageScaler.scaleDefaultButtonImageIcon("/paste.png"));
@@ -183,11 +157,10 @@ public class SimulationPanel extends JPanel implements ISumatraView
 		btnPasteSnapshot.setToolTipText("Paste from clipboard");
 		Action pasteAction = new PasteSnapAction();
 		btnPasteSnapshot.addActionListener(pasteAction);
-		registerShortcut(btnPasteSnapshot, KeyStroke.getKeyStroke(KeyEvent.VK_V, KeyEvent.CTRL_DOWN_MASK), pasteAction);
 
 		botMgrPanel = new SimulationBotMgrPanel();
 
-		add(btnPauseSim);
+		add(btnToggleSim);
 		add(btnStepBwd);
 		add(btnStep);
 		add(btnReset);
@@ -202,25 +175,6 @@ public class SimulationPanel extends JPanel implements ISumatraView
 		add(lblRelativeTime);
 		add(lblTime);
 		add(botMgrPanel);
-		var lastSnapshotFile = SumatraModel.getInstance()
-				.getUserProperty(SimulationPresenter.class.getCanonicalName() + ".snapshot.last",
-						"data/snapshot/last.snap");
-		var lastSnapshotDir = new File(lastSnapshotFile).getParentFile();
-		if (lastSnapshotDir.mkdirs())
-		{
-			log.info("New directory created: {}", lastSnapshotDir);
-		}
-
-		fcOpenSnapshot = new JFileChooser(lastSnapshotDir);
-		fcOpenSnapshot.setSelectedFile(new File(lastSnapshotFile));
-	}
-
-
-	private void registerShortcut(JComponent component, KeyStroke keyStroke, Action action)
-	{
-		String actionCommand = action.getClass().getCanonicalName();
-		component.getInputMap(WHEN_IN_FOCUSED_WINDOW).put(keyStroke, actionCommand);
-		component.getActionMap().put(actionCommand, action);
 	}
 
 
@@ -258,8 +212,7 @@ public class SimulationPanel extends JPanel implements ISumatraView
 	{
 		EventQueue.invokeLater(() -> {
 			sliderSpeed.setValue(0);
-			btnPauseSim.setSelected(false);
-			paused = false;
+			btnToggleSim.setSelected(false);
 		});
 
 		resetBotMgrPanel();
@@ -309,29 +262,17 @@ public class SimulationPanel extends JPanel implements ISumatraView
 	}
 
 
-	@Override
-	public List<JMenu> getCustomMenus()
-	{
-		return new ArrayList<>();
-	}
-
-
-	/**
-	 * @author Nicolai Ommer <nicolai.ommer@gmail.com>
-	 */
 	public interface ISimulationPanelObserver
 	{
 		/**
-		 * Pause
+		 * Toggle resume/pause simulation
 		 */
-		void onPauseSimulation();
-
+		void onToggleSimulation();
 
 		/**
-		 * Resume
+		 * Toggle slow motion
 		 */
-		void onResumeSimulation();
-
+		void onToggleSlowMotion();
 
 		/**
 		 * @param speed
@@ -340,15 +281,15 @@ public class SimulationPanel extends JPanel implements ISumatraView
 
 
 		/**
-		 * @param i
+		 *
 		 */
-		void onStep(int i);
+		void onStep();
 
 
 		/**
-		 * @param i
+		 *
 		 */
-		void onStepBwd(int i);
+		void onStepBwd();
 
 
 		/**
@@ -358,9 +299,9 @@ public class SimulationPanel extends JPanel implements ISumatraView
 
 
 		/**
-		 * @param path
+		 *
 		 */
-		void onLoadSnapshot(String path);
+		void onLoadSnapshot();
 
 
 		/**
@@ -386,45 +327,10 @@ public class SimulationPanel extends JPanel implements ISumatraView
 		@Override
 		public void actionPerformed(final ActionEvent e)
 		{
-			if (paused)
-			{
-				for (ISimulationPanelObserver o : observers)
-				{
-					o.onResumeSimulation();
-				}
-				btnPauseSim.setSelected(false);
-			} else
-			{
-				for (ISimulationPanelObserver o : observers)
-				{
-					o.onPauseSimulation();
-				}
-				btnPauseSim.setSelected(true);
-			}
-			paused = !paused;
+			observers.forEach(ISimulationPanelObserver::onToggleSimulation);
 		}
 	}
 
-	private class ToggleSlowmotionAction extends AbstractAction
-	{
-		@Override
-		public void actionPerformed(final ActionEvent e)
-		{
-			if (oldSpeed == NO_SLOW_MOTION)
-			{
-				oldSpeed = sliderSpeed.getValue();
-				sliderSpeed.setValue(SLOW_MOTION_SPEED);
-				sliderSpeed.setEnabled(false);
-				btnSlowmotion.setSelected(true);
-			} else
-			{
-				sliderSpeed.setValue(oldSpeed);
-				oldSpeed = NO_SLOW_MOTION;
-				sliderSpeed.setEnabled(true);
-				btnSlowmotion.setSelected(false);
-			}
-		}
-	}
 
 	private class SpeedListener implements ChangeListener
 	{
@@ -447,10 +353,7 @@ public class SimulationPanel extends JPanel implements ISumatraView
 				lblSpeed.setText(String.format("x%d", speed + 1));
 				simSpeed = speed + 1.0;
 			}
-			for (ISimulationPanelObserver o : observers)
-			{
-				o.onChangeSpeed(simSpeed);
-			}
+			observers.forEach(o -> o.onChangeSpeed(simSpeed));
 		}
 	}
 
@@ -459,10 +362,7 @@ public class SimulationPanel extends JPanel implements ISumatraView
 		@Override
 		public void actionPerformed(final ActionEvent e)
 		{
-			for (ISimulationPanelObserver o : observers)
-			{
-				o.onStep(1);
-			}
+			observers.forEach(ISimulationPanelObserver::onStep);
 		}
 	}
 
@@ -471,10 +371,7 @@ public class SimulationPanel extends JPanel implements ISumatraView
 		@Override
 		public void actionPerformed(final ActionEvent e)
 		{
-			for (ISimulationPanelObserver o : observers)
-			{
-				o.onStepBwd(1);
-			}
+			observers.forEach(ISimulationPanelObserver::onStepBwd);
 		}
 	}
 
@@ -483,10 +380,7 @@ public class SimulationPanel extends JPanel implements ISumatraView
 		@Override
 		public void actionPerformed(final ActionEvent e)
 		{
-			for (ISimulationPanelObserver o : observers)
-			{
-				o.onReset();
-			}
+			observers.forEach(ISimulationPanelObserver::onReset);
 		}
 	}
 
@@ -495,10 +389,7 @@ public class SimulationPanel extends JPanel implements ISumatraView
 		@Override
 		public void actionPerformed(final ActionEvent e)
 		{
-			for (ISimulationPanelObserver o : observers)
-			{
-				o.onSaveSnapshot();
-			}
+			observers.forEach(ISimulationPanelObserver::onSaveSnapshot);
 		}
 	}
 
@@ -507,10 +398,7 @@ public class SimulationPanel extends JPanel implements ISumatraView
 		@Override
 		public void actionPerformed(final ActionEvent e)
 		{
-			for (ISimulationPanelObserver o : observers)
-			{
-				o.onCopySnapshot();
-			}
+			observers.forEach(ISimulationPanelObserver::onCopySnapshot);
 		}
 	}
 
@@ -519,10 +407,7 @@ public class SimulationPanel extends JPanel implements ISumatraView
 		@Override
 		public void actionPerformed(final ActionEvent e)
 		{
-			for (ISimulationPanelObserver o : observers)
-			{
-				o.onPasteSnapshot();
-			}
+			observers.forEach(ISimulationPanelObserver::onPasteSnapshot);
 			resetBotMgrPanel();
 		}
 	}
@@ -533,27 +418,8 @@ public class SimulationPanel extends JPanel implements ISumatraView
 		@Override
 		public void actionPerformed(final ActionEvent e)
 		{
-			int returnVal = fcOpenSnapshot.showOpenDialog(btnLoadSnapshot);
-
-			if (returnVal == JFileChooser.APPROVE_OPTION)
-			{
-				File file = fcOpenSnapshot.getSelectedFile();
-				SumatraModel.getInstance()
-						.setUserProperty(SimulationPresenter.class.getCanonicalName() + ".snapshot.last",
-								file.getAbsolutePath());
-
-				for (ISimulationPanelObserver o : observers)
-				{
-					try
-					{
-						o.onLoadSnapshot(file.getCanonicalPath());
-					} catch (IOException e1)
-					{
-						log.error("", e1);
-					}
-				}
-				resetBotMgrPanel();
-			}
+			observers.forEach(ISimulationPanelObserver::onLoadSnapshot);
+			resetBotMgrPanel();
 		}
 	}
 }

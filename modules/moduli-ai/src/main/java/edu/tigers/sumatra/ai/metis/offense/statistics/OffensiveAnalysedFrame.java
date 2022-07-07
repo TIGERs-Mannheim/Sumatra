@@ -15,7 +15,7 @@ import edu.tigers.sumatra.ids.BotID;
 /**
  * @author MarkG
  */
-@Persistent(version = 1)
+@Persistent(version = 2)
 public class OffensiveAnalysedFrame
 {
 	private double avgDesiredRoles = 0;

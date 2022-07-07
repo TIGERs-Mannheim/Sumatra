@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.trajectory;
 
+import com.sleepycat.persist.model.Persistent;
 import edu.tigers.sumatra.math.AngleMath;
 import lombok.RequiredArgsConstructor;
 
@@ -12,10 +13,18 @@ import java.util.List;
 /**
  * Bang Bang Trajectory for one dimension for orientation.
  */
+@Persistent
 @RequiredArgsConstructor
 class BangBangTrajectory1DOrient implements ITrajectory<Double>
 {
 	final BangBangTrajectory1D child;
+
+
+	@SuppressWarnings("unused") // berkeley
+	private BangBangTrajectory1DOrient()
+	{
+		child = new BangBangTrajectory1D();
+	}
 
 
 	@Override

@@ -1,10 +1,9 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.offensive;
 
-import edu.tigers.moduli.listenerVariables.ModulesState;
-import edu.tigers.sumatra.ai.Agent;
+import edu.tigers.sumatra.ai.AAgent;
 import edu.tigers.sumatra.ai.IVisualizationFrameObserver;
 import edu.tigers.sumatra.ai.VisualizationFrame;
 import edu.tigers.sumatra.ai.metis.offense.ballinterception.BallInterceptionInformation;
@@ -13,50 +12,34 @@ import edu.tigers.sumatra.ids.ETeamColor;
 import edu.tigers.sumatra.model.SumatraModel;
 import edu.tigers.sumatra.offensive.view.OffensiveInterceptionsPanel;
 import edu.tigers.sumatra.offensive.view.TeamOffensiveInterceptionsPanel;
-import edu.tigers.sumatra.views.ASumatraViewPresenter;
-import edu.tigers.sumatra.views.ISumatraView;
+import edu.tigers.sumatra.views.ISumatraViewPresenter;
+import lombok.Getter;
 
-import java.awt.Component;
 import java.util.Map;
 
 
 /**
  * OffensiveInterceptions Presenter
- *
- * @author Mark Geiger <Mark.Geiger@dlr.de>
  */
-public class OffensiveInterceptionsPresenter extends ASumatraViewPresenter implements IVisualizationFrameObserver
+public class OffensiveInterceptionsPresenter implements ISumatraViewPresenter, IVisualizationFrameObserver
 {
-
-	private final OffensiveInterceptionsPanel offensiveInterceptionsPanel = new OffensiveInterceptionsPanel();
+	@Getter
+	private final OffensiveInterceptionsPanel viewPanel = new OffensiveInterceptionsPanel();
 
 
 	@Override
-	public void onModuliStateChanged(final ModulesState state)
+	public void onStartModuli()
 	{
-		if (state == ModulesState.ACTIVE)
-		{
-			Agent agent = SumatraModel.getInstance().getModule(Agent.class);
-			agent.addVisObserver(this);
-		} else if (state == ModulesState.RESOLVED)
-		{
-			Agent agent = SumatraModel.getInstance().getModule(Agent.class);
-			agent.removeVisObserver(this);
-		}
+		ISumatraViewPresenter.super.onStartModuli();
+		SumatraModel.getInstance().getModuleOpt(AAgent.class).ifPresent(agent -> agent.addVisObserver(this));
 	}
 
 
 	@Override
-	public Component getComponent()
+	public void onStopModuli()
 	{
-		return offensiveInterceptionsPanel;
-	}
-
-
-	@Override
-	public ISumatraView getSumatraView()
-	{
-		return offensiveInterceptionsPanel;
+		ISumatraViewPresenter.super.onStopModuli();
+		SumatraModel.getInstance().getModuleOpt(AAgent.class).ifPresent(agent -> agent.removeVisObserver(this));
 	}
 
 
@@ -66,10 +49,10 @@ public class OffensiveInterceptionsPresenter extends ASumatraViewPresenter imple
 		TeamOffensiveInterceptionsPanel interceptionsPanel;
 		if (frame.getTeamColor() == ETeamColor.BLUE)
 		{
-			interceptionsPanel = offensiveInterceptionsPanel.getBlueStrategyPanel();
+			interceptionsPanel = viewPanel.getBluePanel();
 		} else
 		{
-			interceptionsPanel = offensiveInterceptionsPanel.getYellowStrategyPanel();
+			interceptionsPanel = viewPanel.getYellowPanel();
 		}
 
 		// fill interceptionsPanel here with data

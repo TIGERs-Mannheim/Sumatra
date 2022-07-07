@@ -1,13 +1,11 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.pandora.plays.match;
 
-import edu.tigers.sumatra.ai.metis.defense.DefenseConstants;
 import edu.tigers.sumatra.ai.metis.defense.data.DefenseThreatAssignment;
 import edu.tigers.sumatra.ai.metis.defense.data.EDefenseThreatType;
-import edu.tigers.sumatra.ai.metis.defense.data.IDefenseThreat;
 import edu.tigers.sumatra.ai.pandora.plays.APlay;
 import edu.tigers.sumatra.ai.pandora.plays.EPlay;
 import edu.tigers.sumatra.ai.pandora.plays.match.defense.ADefenseGroup;
@@ -17,13 +15,12 @@ import edu.tigers.sumatra.ai.pandora.plays.match.defense.PenAreaGroup;
 import edu.tigers.sumatra.ai.pandora.plays.match.defense.SwitchableDefenderRole;
 import edu.tigers.sumatra.ai.pandora.roles.ARole;
 import edu.tigers.sumatra.ai.pandora.roles.defense.DefenderPlaceholderRole;
-import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.BotID;
-import edu.tigers.sumatra.math.line.v2.ILineSegment;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -33,19 +30,9 @@ import java.util.stream.Collectors;
  */
 public class DefensePlay extends APlay
 {
-	private GroupSet currentGroupSet = new GroupSet();
-
-
 	public DefensePlay()
 	{
 		super(EPlay.DEFENSIVE);
-	}
-
-
-	@Override
-	protected ARole onRemoveRole()
-	{
-		return getLastRole();
 	}
 
 
@@ -60,7 +47,7 @@ public class DefensePlay extends APlay
 	protected void doUpdateBeforeRoles()
 	{
 		super.doUpdateBeforeRoles();
-		GroupSet newGroupSet = createGroupSet();
+		var newGroupSet = createGroupSet();
 		updateRoleAssignment(newGroupSet.allGroups);
 		newGroupSet.allGroups.forEach(group -> group.updateRoles(getAiFrame()));
 	}
@@ -68,95 +55,50 @@ public class DefensePlay extends APlay
 
 	private GroupSet createGroupSet()
 	{
-		GroupSet newGroupSet = new GroupSet();
-		Map<BotID, ARole> roleMap = getRoles().stream().collect(Collectors.toMap(ARole::getBotID, Function.identity()));
-		List<DefenseThreatAssignment> threatAssignments = getAiFrame().getTacticalField().getDefenseThreatAssignments();
-		assignOuterGroups(threatAssignments, newGroupSet, roleMap);
-		for (ARole role : roleMap.values())
-		{
-			newGroupSet.penAreaGroup.addRole(role);
-		}
+		var newGroupSet = new GroupSet();
+		var roleMap = getRoles().stream().collect(Collectors.toMap(ARole::getBotID, Function.identity()));
+		assignOuterGroups(newGroupSet, roleMap);
+		assignPenAreaGroup(newGroupSet, roleMap);
 		return newGroupSet;
 	}
 
 
-	private void assignOuterGroups(final List<DefenseThreatAssignment> threatAssignments,
-			final GroupSet newGroupSet,
-			final Map<BotID, ARole> roleMap)
+	private void assignOuterGroups(GroupSet newGroupSet, Map<BotID, ARole> roleMap)
 	{
-		for (DefenseThreatAssignment assignment : threatAssignments)
+		for (var assignment : getTacticalField().getDefenseOuterThreatAssignments())
 		{
-			if (stayOnPenArea(assignment.getThreat()))
+			var roles = assignment.getBotIds().stream()
+					.map(roleMap::get)
+					.filter(Objects::nonNull)
+					.toList();
+
+			if (roles.isEmpty())
 			{
 				continue;
 			}
+
 			ADefenseGroup group = getDefendingGroup(assignment, newGroupSet);
-			for (BotID botID : assignment.getBotIds())
+
+			for (var role : roles)
 			{
-				ARole role = roleMap.get(botID);
-				if (role != null && canMoveToProtectionLine(assignment, role))
-				{
-					group.addRole(role);
-					roleMap.remove(botID);
-				}
+				group.addRole(role);
+				roleMap.remove(role.getBotID());
 			}
 		}
 	}
 
 
-	private boolean stayOnPenArea(final IDefenseThreat threat)
+	private void assignPenAreaGroup(GroupSet newGroupSet, Map<BotID, ARole> roleMap)
 	{
-		if (threat.getProtectionLine().isEmpty())
+		for (var assignment : getTacticalField().getDefensePenAreaPositionAssignments())
 		{
-			// protection not possible -> penalty area is only the fallback here
-			return true;
+			var role = roleMap.get(assignment.botID());
+			if (role != null)
+			{
+				newGroupSet.penAreaGroup.addRole(role);
+				roleMap.remove(assignment.botID());
+			}
 		}
-
-		if (threat.getType() == EDefenseThreatType.BALL_TO_GOAL)
-		{
-			// only stay on penArea during ball placement
-			return getAiFrame().getGameState().isBallPlacement();
-		}
-
-		if (threat.getType() == EDefenseThreatType.BOT_TO_GOAL)
-		{
-			return getAiFrame().getGameState().isStoppedGame()
-					|| getAiFrame().getGameState().isStandardSituationForThem();
-		}
-
-		if (threat.getType() == EDefenseThreatType.BALL_TO_BOT)
-		{
-			return false;
-		}
-
-		throw new IllegalArgumentException("Unknown threat type: " + threat.getType());
-	}
-
-
-	private boolean canMoveToProtectionLine(final DefenseThreatAssignment assignment, final ARole role)
-	{
-		if (assignment.getThreat().getType() == EDefenseThreatType.BALL_TO_BOT)
-		{
-			return true;
-		}
-
-		final ILineSegment protectionLine = assignment.getThreat().getProtectionLine()
-				.orElseThrow(IllegalStateException::new);
-		final double distToProtectionLine = protectionLine.distanceTo(role.getPos());
-
-		boolean roleIsInPenAreaGroup = currentGroupSet.penAreaGroup.getRoles().stream()
-				.anyMatch(sdr -> sdr.getOriginalRole().getBotID() == role.getBotID());
-		double goOutOffset = DefenseConstants.getMinGoOutDistance()
-				+ (Geometry.getBotRadius() * 2)
-				+ (roleIsInPenAreaGroup ? -50.0 : 50.0);
-
-		double onPenaltyAreaOffset = Geometry.getPenaltyAreaMargin() + Geometry.getBotRadius() * 3
-				+ (roleIsInPenAreaGroup ? 50.0 : -50.0);
-
-		final boolean outsideOfPenArea = !Geometry.getPenaltyAreaOur()
-				.withMargin(onPenaltyAreaOffset)
-				.isPointInShape(role.getPos());
-		return distToProtectionLine < goOutOffset || outsideOfPenArea;
 	}
 
 
@@ -164,7 +106,7 @@ public class DefensePlay extends APlay
 			final GroupSet groupSet)
 	{
 		ADefenseGroup group;
-		if (assignment.getThreat().getType() == EDefenseThreatType.BALL_TO_BOT)
+		if (assignment.getThreat().getType() == EDefenseThreatType.BOT_M2M)
 		{
 			group = new Man2ManMarkerGroup(assignment.getThreat());
 		} else
@@ -190,6 +132,7 @@ public class DefensePlay extends APlay
 			}
 		}
 	}
+
 
 	private static class GroupSet
 	{

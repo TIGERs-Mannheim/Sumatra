@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.metis.pass.rating;
@@ -7,7 +7,6 @@ package edu.tigers.sumatra.ai.metis.pass.rating;
 import edu.tigers.sumatra.ai.metis.kicking.Pass;
 import edu.tigers.sumatra.drawable.IDrawableShape;
 
-import java.util.Collections;
 import java.util.List;
 
 
@@ -24,13 +23,8 @@ public interface IPassRater
 	 */
 	double rate(Pass pass);
 
-	/**
-	 * Generate shapes to visualize the work of the rater
-	 *
-	 * @return
-	 */
-	default List<IDrawableShape> createDebugShapes()
+
+	default void setShapes(List<IDrawableShape> shapes)
 	{
-		return Collections.emptyList();
 	}
 }

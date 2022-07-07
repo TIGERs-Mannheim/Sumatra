@@ -1,17 +1,10 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.autoreferee.engine.detector;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-
 import com.github.g3force.configurable.Configurable;
-
 import edu.tigers.autoreferee.AutoRefUtil;
 import edu.tigers.autoreferee.generic.BotPosition;
 import edu.tigers.sumatra.geometry.Geometry;
@@ -24,6 +17,10 @@ import edu.tigers.sumatra.referee.data.EGameState;
 import edu.tigers.sumatra.referee.gameevent.AttackerTouchedBallInDefenseArea;
 import edu.tigers.sumatra.referee.gameevent.DefenderInDefenseArea;
 import edu.tigers.sumatra.referee.gameevent.IGameEvent;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
 
 
 /**
@@ -120,14 +117,6 @@ public class BotInDefenseAreaDetector extends AGameEventDetector
 			}
 		}
 
-		Set<BotID> keepers = new HashSet<>();
-		keepers.add(frame.getRefereeMsg().getKeeperBotID(ETeamColor.BLUE));
-		keepers.add(frame.getRefereeMsg().getKeeperBotID(ETeamColor.YELLOW));
-		if (keepers.contains(curKicker.getBotID()))
-		{
-			return Optional.empty();
-		}
-
 		return checkPenaltyAreas(curKicker);
 	}
 
@@ -151,10 +140,10 @@ public class BotInDefenseAreaDetector extends AGameEventDetector
 					.distanceToNearestPointOutside(curKicker.getPos());
 
 			return Optional.of(new AttackerTouchedBallInDefenseArea(curKickerId, curKicker.getPos(), distance));
-		} else if (defenderIsPushed(curKickerId, curKicker.getPos()))
-		{
-			return Optional.empty();
-		} else if (ownPenArea.isPointInShape(curKicker.getPos(), -Geometry.getBotRadius()))
+		}
+		if (curKickerId != frame.getRefereeMsg().getKeeperBotID(curKickerColor)
+				&& !defenderIsPushed(curKickerId, curKicker.getPos())
+				&& ownPenArea.isPointInShape(curKicker.getPos(), -Geometry.getBotRadius()))
 		{
 			/*
 			 * Multiple Defender:

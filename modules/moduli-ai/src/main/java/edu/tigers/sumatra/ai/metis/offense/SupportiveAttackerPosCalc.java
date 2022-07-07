@@ -4,13 +4,13 @@
 
 package edu.tigers.sumatra.ai.metis.offense;
 
+import com.github.g3force.configurable.Configurable;
 import edu.tigers.sumatra.ai.metis.ACalculator;
 import edu.tigers.sumatra.ai.metis.botdistance.BotDistance;
 import edu.tigers.sumatra.ai.metis.general.ESkirmishStrategy;
 import edu.tigers.sumatra.ai.metis.general.SkirmishInformation;
 import edu.tigers.sumatra.ai.metis.redirector.RedirectorDetectionInformation;
 import edu.tigers.sumatra.geometry.Geometry;
-import edu.tigers.sumatra.geometry.RuleConstraints;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2f;
 import lombok.Getter;
@@ -28,6 +28,9 @@ public class SupportiveAttackerPosCalc extends ACalculator
 	private final Supplier<SkirmishInformation> skirmishInformation;
 	private final Supplier<RedirectorDetectionInformation> redirectorDetectionInformation;
 	private final Supplier<BotDistance> opponentClosestToBall;
+
+	@Configurable(defValue = "1400.0")
+	private static double defaultDistToBall = 1400.0;
 
 	@Getter
 	private IVector2 supportiveAttackerMovePos;
@@ -56,7 +59,7 @@ public class SupportiveAttackerPosCalc extends ACalculator
 
 	private boolean bothTeamsAreReceiving()
 	{
-		RedirectorDetectionInformation rInfo = redirectorDetectionInformation.get();
+		var rInfo = redirectorDetectionInformation.get();
 		return rInfo.isFriendlyBotReceiving() && rInfo.isOpponentReceiving();
 	}
 
@@ -90,7 +93,7 @@ public class SupportiveAttackerPosCalc extends ACalculator
 			IVector2 goal = Geometry.getGoalOur().bisection(ballPos);
 			dir = goal.subtractNew(ballPos).normalizeNew();
 		}
-		double distanceToBall = RuleConstraints.getStopRadius() + (Geometry.getBotRadius() * 2);
-		return ballPos.addNew(dir.multiplyNew(distanceToBall));
+
+		return ballPos.addNew(dir.multiplyNew(defaultDistToBall));
 	}
 }

@@ -1,19 +1,18 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.wp;
 
-import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
-
 import com.github.g3force.configurable.IConfigObserver;
-
 import edu.tigers.moduli.AModule;
 import edu.tigers.sumatra.cam.ICamFrameObserver;
 import edu.tigers.sumatra.drawable.ShapeMap;
 import edu.tigers.sumatra.drawable.ShapeMapSource;
 import edu.tigers.sumatra.wp.util.IRobotInfoProvider;
+
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 
 /**
@@ -82,8 +81,8 @@ public abstract class AWorldPredictor extends AModule implements ICamFrameObserv
 	 * Notify observers about a new shape map
 	 *
 	 * @param timestamp
-	 * @param shapeMap the shape map
-	 * @param source an identifier for the source
+	 * @param shapeMap  the shape map
+	 * @param source    an identifier for the source
 	 */
 	public final void notifyNewShapeMap(final long timestamp, ShapeMap shapeMap, ShapeMapSource source)
 	{
@@ -95,20 +94,11 @@ public abstract class AWorldPredictor extends AModule implements ICamFrameObserv
 	}
 
 
-	public final void notifyRemoveSourceFromShapeMap(String sourceName)
+	public final void notifyRemoveSourceFromShapeMap(ShapeMapSource source)
 	{
 		for (IWorldFrameObserver o : observers)
 		{
-			o.onRemoveSourceFromShapeMap(sourceName);
-		}
-	}
-
-
-	public final void notifyRemoveCategoryFromShapeMap(String category)
-	{
-		for (IWorldFrameObserver o : observers)
-		{
-			o.onRemoveCategoryFromShapeMap(category);
+			o.onRemoveSourceFromShapeMap(source);
 		}
 	}
 

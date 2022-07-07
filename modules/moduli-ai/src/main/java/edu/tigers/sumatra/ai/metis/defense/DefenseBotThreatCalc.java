@@ -1,139 +1,173 @@
 /*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.metis.defense;
 
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
-import edu.tigers.sumatra.ai.metis.botdistance.BotDistance;
-import edu.tigers.sumatra.ai.metis.defense.data.DefenseBallThreat;
 import edu.tigers.sumatra.ai.metis.defense.data.DefenseBotThreat;
+import edu.tigers.sumatra.ai.metis.defense.data.DefenseBotThreatDefData;
+import edu.tigers.sumatra.ai.metis.defense.data.EDefenseBotThreatDefStrategy;
 import edu.tigers.sumatra.drawable.DrawableAnnotation;
+import edu.tigers.sumatra.drawable.DrawableCircle;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.BotID;
-import edu.tigers.sumatra.math.Hysteresis;
-import edu.tigers.sumatra.math.line.v2.ILineSegment;
-import edu.tigers.sumatra.math.line.v2.Lines;
-import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.math.circle.Circle;
 import edu.tigers.sumatra.math.vector.Vector2;
-import edu.tigers.sumatra.wp.data.ITrackedBot;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
+import java.awt.Color;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 
-/**
- * Rate opponent bot threats based on shooting angle to goal.
- */
 @RequiredArgsConstructor
 public class DefenseBotThreatCalc extends ADefenseThreatCalc
 {
-	private final DefenseThreatRater defenseThreatRater = new DefenseThreatRater();
-	private final Map<BotID, Hysteresis> opponentDangerZoneHysteresis = new HashMap<>();
-
-
-	private final Supplier<DefenseBallThreat> defenseBallThreat;
-	private final Supplier<List<BotDistance>> opponentsToBallDist;
-
+	private final Supplier<List<DefenseBotThreatDefData>> defenseBotThreatsDefData;
+	private final DefenseThreatReductionRater defenseThreatReductionRater = new DefenseThreatReductionRater();
 
 	@Getter
 	private List<DefenseBotThreat> defenseBotThreats;
+	@Getter
+	private Map<Integer, Double> defenseThreatRatingForNumDefender;
 
 
 	@Override
 	public void doCalc()
 	{
-		updateOpponentDangerZoneHystereses();
-
-		defenseBotThreats = getWFrame().getOpponentBots().values().stream()
-				.filter(this::movingInDangerZone)
-				.filter(this::noPassReceiver)
-				.filter(this::notCloseToBall)
-				.map(this::defenseBotThreat)
-				.sorted(Comparator.comparingDouble(DefenseBotThreat::getThreatRating).reversed())
-				.collect(Collectors.toUnmodifiableList());
-
-		drawBotThreads(defenseBotThreats);
-	}
-
-
-	private void updateOpponentDangerZoneHystereses()
-	{
-		for (ITrackedBot bot : getWFrame().getOpponentBots().values())
+		var defendedBotThreatsWithRating = buildDefendedBotThreatsWithRating();
+		defenseBotThreats = defendedBotThreatsWithRating.stream().map(ThreatWithRating::threat).toList();
+		defenseThreatRatingForNumDefender = new HashMap<>();
+		defenseThreatRatingForNumDefender.put(0, defenseThreatReductionRater.combineThreatRatings(
+				defenseBotThreatsDefData.get().stream().map(DefenseBotThreatDefData::threatRating)));
+		for (var threatWithRating : defendedBotThreatsWithRating)
 		{
-			final Hysteresis hysteresis = opponentDangerZoneHysteresis.computeIfAbsent(bot.getBotId(),
-					botID -> new Hysteresis(0, 1));
-			hysteresis.setLowerThreshold(DefenseThreatRater.getDangerZoneX() - 100);
-			hysteresis.setUpperThreshold(DefenseThreatRater.getDangerZoneX() + 100);
-			hysteresis.update(predictedOpponentPos(bot).x());
+			defenseThreatRatingForNumDefender.put(defenseThreatRatingForNumDefender.size(), threatWithRating.rating);
 		}
+		defenseThreatRatingForNumDefender = Collections.unmodifiableMap(defenseThreatRatingForNumDefender);
+		drawBotThreats();
 	}
 
 
-	private IVector2 predictedOpponentPos(final ITrackedBot bot)
+	private List<ThreatWithRating> buildDefendedBotThreatsWithRating()
 	{
-		return bot.getPosByTime(DefenseConstants.getLookaheadBotThreats(bot.getVel().getLength()));
-	}
+		List<ThreatWithRating> defendedBotThreatsWithRating = new ArrayList<>();
 
-
-	private boolean movingInDangerZone(final ITrackedBot bot)
-	{
-		return opponentDangerZoneHysteresis.get(bot.getBotId()).isLower();
-	}
-
-
-	private boolean noPassReceiver(final ITrackedBot bot)
-	{
-		final DefenseBallThreat ballThreat = defenseBallThreat.get();
-
-		return ballThreat.getPassReceiver().isEmpty() ||
-				(ballThreat.getPassReceiver().get().getBotId() != bot.getBotId());
-	}
-
-
-	private boolean notCloseToBall(final ITrackedBot bot)
-	{
-		return opponentsToBallDist.get().stream()
-				.filter(d -> d.getDist() < 350)
-				.noneMatch(d -> d.getBotId() == bot.getBotId());
-	}
-
-
-	private DefenseBotThreat defenseBotThreat(ITrackedBot bot)
-	{
-		final ILineSegment threatLine = threatLine(bot);
-		final ILineSegment protectionLine = centerBackProtectionLine(threatLine, Geometry.getBotRadius() * 2);
-		double threatRating = defenseThreatRater
-				.getThreatRating(getBall().getPos(), predictedOpponentPos(bot));
-		return new DefenseBotThreat(bot, threatLine, protectionLine, threatRating);
-	}
-
-
-	private ILineSegment threatLine(final ITrackedBot bot)
-	{
-		IVector2 pointInGoal = Geometry.getGoalOur().bisection(predictedOpponentPos(bot));
-
-		return Lines.segmentFromPoints(bot.getPos(), pointInGoal);
-	}
-
-
-	private void drawBotThreads(final List<DefenseBotThreat> timeComparedThreats)
-	{
-		int threatId = 0;
-		for (DefenseBotThreat threat : timeComparedThreats)
+		while (defendedBotThreatsWithRating.size() < 100)
 		{
-			DrawableAnnotation angle = new DrawableAnnotation(threat.getPos(),
-					String.format("-> %d <-%nAngle: %.2f", threatId++, threat.getThreatRating()),
-					Vector2.fromY(200));
-			angle.withCenterHorizontally(true);
-			getShapes(EAiShapesLayer.DEFENSE_BOT_THREATS).add(angle);
-			drawThreat(threat);
+			var defendedBotThreat = chooseBestDefensiveStrategy(defendedBotThreatsWithRating);
+			if (defendedBotThreat.isEmpty())
+			{
+				break;
+			} else
+			{
+				defendedBotThreatsWithRating.add(defendedBotThreat.get());
+			}
 		}
+		return Collections.unmodifiableList(defendedBotThreatsWithRating);
+	}
+
+
+	private Optional<ThreatWithRating> chooseBestDefensiveStrategy(List<ThreatWithRating> defendedBotThreatsWithRating)
+	{
+		List<ThreatWithRating> defensiveCandidates = new ArrayList<>();
+		defensiveCandidates.addAll(defenseBotThreatsDefData.get().stream()
+				.filter(data -> isStillUndefended(data, defendedBotThreatsWithRating,
+						EDefenseBotThreatDefStrategy.CENTER_BACK))
+				.map(data -> buildDefenseBotThreat(data, EDefenseBotThreatDefStrategy.CENTER_BACK))
+				.map(t -> new ThreatWithRating(t, rateDefensiveCandidate(t, defendedBotThreatsWithRating)))
+				.toList()
+		);
+		defensiveCandidates.addAll(defenseBotThreatsDefData.get().stream()
+				.filter(data -> isStillUndefended(data, defendedBotThreatsWithRating,
+						EDefenseBotThreatDefStrategy.MAN_2_MAN_MARKER))
+				.filter(data -> data.canBeOuterDefendedWithStrategy(EDefenseBotThreatDefStrategy.MAN_2_MAN_MARKER))
+				.map(data -> buildDefenseBotThreat(data, EDefenseBotThreatDefStrategy.MAN_2_MAN_MARKER))
+				.map(t -> new ThreatWithRating(t, rateDefensiveCandidate(t, defendedBotThreatsWithRating)))
+				.toList()
+		);
+
+		return defensiveCandidates.stream().min(Comparator.comparingDouble(ThreatWithRating::rating));
+	}
+
+
+	private boolean isStillUndefended(DefenseBotThreatDefData defData,
+			List<ThreatWithRating> defendedBotThreatsWithRating, EDefenseBotThreatDefStrategy defStrategy)
+	{
+		return defendedBotThreatsWithRating.stream()
+				.noneMatch(t -> defData.getBotId().equals(t.threat.getBotID())
+						&& t.threat.getDefendStrategy() == defStrategy);
+	}
+
+
+	private DefenseBotThreat buildDefenseBotThreat(DefenseBotThreatDefData defData,
+			EDefenseBotThreatDefStrategy defStrategy)
+	{
+
+		var strategyData = switch (defStrategy)
+				{
+					case CENTER_BACK -> defData.centerBackDefStrategyData();
+					case MAN_2_MAN_MARKER -> defData.man2manDefStrategyData();
+				};
+
+		return new DefenseBotThreat(strategyData, defData.bot(), defData.threatRating());
+	}
+
+
+	private double rateDefensiveCandidate(DefenseBotThreat candidate,
+			List<ThreatWithRating> defendedBotThreatsWithRating)
+	{
+		var newDefendedBotThreats = defendedBotThreatsWithRating.stream().map(ThreatWithRating::threat)
+				.collect(Collectors.toList());
+		newDefendedBotThreats.add(candidate);
+		return defenseThreatReductionRater.calcThreatRatingWanted(defenseBotThreatsDefData.get(), newDefendedBotThreats,
+				getWFrame().getBall().getPos());
+	}
+
+
+	private void drawBotThreats()
+	{
+		int defenderCount = 1;
+		var shapes = getShapes(EAiShapesLayer.DEFENSE_BOT_THREATS);
+		Map<BotID, StringBuilder> texts = new HashMap<>();
+		defenseBotThreatsDefData.get().forEach(t -> {
+			if (!texts.containsKey(t.getBotId()))
+			{
+				texts.put(t.getBotId(), new StringBuilder(String.format("Rating: %.2f", t.threatRating())));
+			}
+		});
+		for (var withRating : defenseBotThreats)
+		{
+			final var finalDefenderCount = defenderCount;
+			withRating.getProtectionPosition().ifPresent(pos -> {
+				shapes.add(new DrawableCircle(Circle.createCircle(pos, 1.25 * Geometry.getBotRadius()), Color.BLACK));
+				shapes.add(new DrawableAnnotation(pos, String.format("%d", finalDefenderCount),
+						getWFrame().getTeamColor().getColor()).withCenterHorizontally(true));
+			});
+			texts.get(withRating.getBotID()).append(
+					String.format("%n%d  |  %.2f->%.2f with %s", defenderCount,
+							defenseThreatRatingForNumDefender.get(defenderCount - 1),
+							defenseThreatRatingForNumDefender.get(defenderCount),
+							withRating.getDefendStrategy().toString()));
+			++defenderCount;
+			drawThreat(withRating);
+		}
+		texts.forEach((botID, text) -> shapes.add(
+				new DrawableAnnotation(getWFrame().getBot(botID).getPos().addNew(Vector2.fromY(200)), text.toString(),
+						Color.BLACK).withCenterHorizontally(true)));
+	}
+
+
+	private record ThreatWithRating(DefenseBotThreat threat, double rating)
+	{
 	}
 }

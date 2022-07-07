@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.drawable;
@@ -11,7 +11,6 @@ import java.awt.Graphics2D;
 /**
  * This interface makes a shape drawable
  */
-@FunctionalInterface
 public interface IDrawableShape
 {
 	/**
@@ -21,8 +20,20 @@ public interface IDrawableShape
 	 * @param tool   helper tool for drawing
 	 * @param invert needs inversion?
 	 */
-	void paintShape(Graphics2D g, IDrawableTool tool, boolean invert);
+	default void paintShape(Graphics2D g, IDrawableTool tool, boolean invert)
+	{
+	}
 
+	/**
+	 * Paint in absolute coordinates, independent of the field.
+	 *
+	 * @param g      handle to graphics object
+	 * @param width  currently visible width of the field panel
+	 * @param height currently visible height of the field panel
+	 */
+	default void paintBorder(Graphics2D g, int width, int height)
+	{
+	}
 
 	/**
 	 * @param color
@@ -50,13 +61,5 @@ public interface IDrawableShape
 	default IDrawableShape setFill(boolean fill)
 	{
 		return this;
-	}
-
-	/**
-	 * @return is this shape a border text
-	 */
-	default boolean isBorderText()
-	{
-		return false;
 	}
 }

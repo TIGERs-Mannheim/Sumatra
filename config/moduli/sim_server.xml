@@ -45,6 +45,12 @@
         <dependency>edu.tigers.sumatra.wp.AWorldPredictor</dependency>
     </module>
 
+
+    <module id="edu.tigers.sumatra.persistence.RecordManager">
+        <implementation>edu.tigers.autoreferee.AutoRefRecordManager</implementation>
+    </module>
+
+    
     <module id="edu.tigers.sumatra.wp.exporter.SSLVisionSender">
         <properties>
             <port>11006</port>

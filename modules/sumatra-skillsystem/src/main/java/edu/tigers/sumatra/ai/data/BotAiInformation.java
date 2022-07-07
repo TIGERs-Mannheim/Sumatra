@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.data;
@@ -201,14 +201,12 @@ public class BotAiInformation
 	}
 
 
-	public void setNrfStats(final BaseStationWifiStats.BotStats.NRF24IOStats stats)
+	public void setBotStats(final BaseStationWifiStats.BotStats stats)
 	{
-		map.put(EBotInformation.NRF_TX_LOSS, String.valueOf(Math.round(stats.getTxLoss() * 1000)));
-		map.put(EBotInformation.NRF_TX_PACKETS, String.valueOf(stats.txPackets));
-		map.put(EBotInformation.NRF_RX_LOSS, String.valueOf(Math.round(stats.getRxLoss() * 1000)));
-		map.put(EBotInformation.NRF_RX_PACKETS, String.valueOf(stats.rxPackets));
-		map.put(EBotInformation.NRF_LINK_QUALITY, String.valueOf(stats.getLinkQuality()));
-		map.put(EBotInformation.NRF_PACKETS_MAX_RT, String.valueOf(stats.txPacketsMaxRT));
-		map.put(EBotInformation.NRF_PACKETS_ACKED, String.valueOf(stats.txPacketsAcked));
+		map.put(EBotInformation.RF_TX_PACKETS, String.valueOf(stats.rf.txPackets));
+		map.put(EBotInformation.RF_RX_PACKETS, String.valueOf(stats.rf.rxPackets));
+		map.put(EBotInformation.RF_BOT_RSSI, String.valueOf(stats.getBotRssi()));
+		map.put(EBotInformation.RF_BS_RSSI, String.valueOf(stats.getBsRssi()));
+		map.put(EBotInformation.RF_LINK_QUALITY, vel2Str(stats.getLinkQuality() * 100.0));
 	}
 }

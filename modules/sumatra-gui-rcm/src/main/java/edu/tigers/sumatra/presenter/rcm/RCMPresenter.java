@@ -1,11 +1,10 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.presenter.rcm;
 
 import com.github.g3force.configurable.ConfigRegistration;
-import edu.tigers.moduli.listenerVariables.ModulesState;
 import edu.tigers.sumatra.botmanager.ABotManager;
 import edu.tigers.sumatra.botmanager.bots.ABot;
 import edu.tigers.sumatra.ids.AObjectID;
@@ -18,14 +17,12 @@ import edu.tigers.sumatra.rcm.ICommandInterpreter;
 import edu.tigers.sumatra.rcm.IRCMObserver;
 import edu.tigers.sumatra.rcm.RcmActionMap.ERcmControllerConfig;
 import edu.tigers.sumatra.view.rcm.RCMPanel;
-import edu.tigers.sumatra.views.ASumatraViewPresenter;
-import edu.tigers.sumatra.views.ISumatraView;
+import edu.tigers.sumatra.views.ISumatraViewPresenter;
+import lombok.Getter;
+import lombok.extern.log4j.Log4j2;
 import net.java.games.input.Controller;
 import net.java.games.input.ControllerEnvironment;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
-import java.awt.Component;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -37,17 +34,17 @@ import java.util.Map;
 /**
  * This class enables clients to send commands directly to the bots
  */
-public class RCMPresenter extends ASumatraViewPresenter implements IRCMObserver
+@Log4j2
+public class RCMPresenter implements ISumatraViewPresenter, IRCMObserver
 {
-	private static final Logger log = LogManager.getLogger(RCMPresenter.class.getName());
-
 	private ABotManager botManager = null;
 
 	private final Map<BotID, CommandInterpreter> botInterpreters = new HashMap<>();
 	private final List<ActionSender> actionSenders = new LinkedList<>();
 
 	private final List<AControllerPresenter> controllerPresenterS = new ArrayList<>();
-	private final RCMPanel rcmPanel;
+	@Getter
+	private final RCMPanel viewPanel = new RCMPanel();
 
 
 	static
@@ -61,8 +58,7 @@ public class RCMPresenter extends ASumatraViewPresenter implements IRCMObserver
 
 	public RCMPresenter()
 	{
-		rcmPanel = new RCMPanel();
-		rcmPanel.addObserver(this);
+		viewPanel.addObserver(this);
 		setUpController(false);
 	}
 
@@ -76,7 +72,7 @@ public class RCMPresenter extends ASumatraViewPresenter implements IRCMObserver
 		for (final Controller controller : cs)
 		{
 			controllers.add(controller);
-			log.info("Controller found: " + controller.getName());
+			log.info("Controller found: {}", controller.getName());
 		}
 
 		List<ABot> bots = new ArrayList<>(controllerPresenterS.size());
@@ -90,7 +86,7 @@ public class RCMPresenter extends ASumatraViewPresenter implements IRCMObserver
 
 		onStartStopButtonPressed(false);
 		controllerPresenterS.clear();
-		rcmPanel.clearControllerPanels();
+		viewPanel.clearControllerPanels();
 		for (Controller controller : controllers)
 		{
 			addController(controller);
@@ -129,7 +125,7 @@ public class RCMPresenter extends ASumatraViewPresenter implements IRCMObserver
 		{
 			return;
 		}
-		rcmPanel.addControllerPanel(controller.getName(), presenter.getPanel());
+		viewPanel.addControllerPanel(controller.getName(), presenter.getPanel());
 		controllerPresenterS.add(presenter);
 	}
 
@@ -147,7 +143,7 @@ public class RCMPresenter extends ASumatraViewPresenter implements IRCMObserver
 				actionSender.addObserver(this);
 				cP.startPolling(actionSender);
 			}
-			rcmPanel.startRcm();
+			viewPanel.startRcm();
 		}
 		// --- Stop polling when stop-button pressed ---
 		else
@@ -164,7 +160,7 @@ public class RCMPresenter extends ASumatraViewPresenter implements IRCMObserver
 			{
 				refreshBotControllers(botManager.getBots().values());
 			}
-			rcmPanel.stopRcm();
+			viewPanel.stopRcm();
 		}
 	}
 
@@ -241,7 +237,7 @@ public class RCMPresenter extends ASumatraViewPresenter implements IRCMObserver
 	 * returned
 	 *
 	 * @param actionSender
-	 * @param inc -1 or 1 (endless loop else...)
+	 * @param inc          -1 or 1 (endless loop else...)
 	 */
 	private void switchBot(final ActionSender actionSender, final int inc)
 	{
@@ -264,8 +260,7 @@ public class RCMPresenter extends ASumatraViewPresenter implements IRCMObserver
 			int id = (initId + (inc * i) + idMax) % idMax;
 			BotID botId = BotID.createBotIdFromIdWithColorOffsetBS(id);
 			ABot bot = botManager.getBots().get(botId);
-			if (bot != null && ((bot != oldBot) && !bot.isBlocked()
-					&& !bot.isHideFromRcm()))
+			if (bot != null && ((bot != oldBot) && !bot.isBlocked()))
 			{
 				updateBotOwnership(oldBot);
 				changeBotAssignment(actionSender, bot);
@@ -320,35 +315,20 @@ public class RCMPresenter extends ASumatraViewPresenter implements IRCMObserver
 
 
 	@Override
-	public void onModuliStateChanged(final ModulesState state)
+	public void onStartModuli()
 	{
-		super.onModuliStateChanged(state);
-		switch (state)
-		{
-			case ACTIVE:
-				handleModuliActivation();
-				break;
-			case RESOLVED:
-				handleModuliResolution();
-				break;
-			case NOT_LOADED:
-			default:
-				break;
-		}
-	}
-
-
-	private void handleModuliActivation()
-	{
+		ISumatraViewPresenter.super.onStartModuli();
 		botManager = SumatraModel.getInstance().getModule(ABotManager.class);
-		rcmPanel.start();
+		viewPanel.start();
 	}
 
 
-	private void handleModuliResolution()
+	@Override
+	public void onStopModuli()
 	{
+		ISumatraViewPresenter.super.onStopModuli();
 		onStartStopButtonPressed(false);
-		rcmPanel.stop();
+		viewPanel.stop();
 	}
 
 
@@ -361,19 +341,5 @@ public class RCMPresenter extends ASumatraViewPresenter implements IRCMObserver
 			botInterpreters.put(bot.getBotId(), interpreter);
 		}
 		return interpreter;
-	}
-
-
-	@Override
-	public Component getComponent()
-	{
-		return rcmPanel;
-	}
-
-
-	@Override
-	public ISumatraView getSumatraView()
-	{
-		return rcmPanel;
 	}
 }

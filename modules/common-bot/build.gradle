@@ -3,7 +3,8 @@
  */
 
 plugins {
-    id 'sumatra.java-conventions'
+    id 'sumatra.java'
+    id 'sumatra.test'
     id 'java-library'
 }
 
@@ -13,7 +14,4 @@ dependencies {
 
     implementation 'commons-lang:commons-lang:2.6'
     implementation 'com.sleepycat:je:18.3.12'
-
-    testImplementation 'junit:junit:4.13.2'
-    testImplementation 'org.assertj:assertj-core:3.19.0'
 }

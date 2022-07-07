@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
+ */
+
 package edu.tigers.sumatra.ai.metis.offense;
 
 import edu.tigers.sumatra.ai.metis.ACalculator;
@@ -38,8 +42,8 @@ public class PotentialOffensiveBotsCalc extends ACalculator
 		}
 
 		Set<BotID> bots = new HashSet<>(getAiFrame().getWorldFrame().getTigerBotsAvailable().keySet());
-		bots.removeAll(crucialDefenders.get());
-		bots.removeAll(botsToInterchange.get());
+		crucialDefenders.get().forEach(bots::remove);
+		botsToInterchange.get().forEach(bots::remove);
 		bots.remove(getAiFrame().getKeeperId());
 
 		return bots;

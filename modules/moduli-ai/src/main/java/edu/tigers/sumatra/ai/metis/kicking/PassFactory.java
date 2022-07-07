@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.metis.kicking;
@@ -29,13 +29,19 @@ public class PassFactory
 	private WorldFrame worldFrame;
 
 	@Setter
-	private double maxReceivingBallSpeed = defaultMaxReceivingBallSpeed;
+	private Double maxReceivingBallSpeed;
 
 
 	public void update(WorldFrame worldFrame)
 	{
 		this.worldFrame = worldFrame;
 		kickFactory.update(worldFrame);
+	}
+
+
+	private double getMaxReceivingBallSpeed()
+	{
+		return maxReceivingBallSpeed == null ? defaultMaxReceivingBallSpeed : maxReceivingBallSpeed;
 	}
 
 
@@ -93,7 +99,7 @@ public class PassFactory
 		var distance = source.distanceTo(target);
 		var shooterBot = worldFrame.getBot(shooter);
 		var maxSpeed = kickSpeedFactory.maxChip(shooterBot);
-		var speed = kickSpeedFactory.chip(distance, maxReceivingBallSpeed, maxSpeed, minPassDuration);
+		var speed = kickSpeedFactory.chip(distance, getMaxReceivingBallSpeed(), maxSpeed, minPassDuration);
 		var consultant = worldFrame.getBall().getChipConsultant();
 		var duration = consultant.getTimeForKick(distance, speed);
 		var receivingSpeed = consultant.getVelForKickByTime(speed, duration);
@@ -139,7 +145,7 @@ public class PassFactory
 		var distance = source.distanceTo(target);
 		var shooterBot = worldFrame.getBot(shooter);
 		var maxSpeed = kickSpeedFactory.maxStraight(shooterBot);
-		var speed = kickSpeedFactory.straight(distance, maxReceivingBallSpeed, maxSpeed, minPassDuration);
+		var speed = kickSpeedFactory.straight(distance, getMaxReceivingBallSpeed(), maxSpeed, minPassDuration);
 		var duration = worldFrame.getBall().getStraightConsultant().getTimeForKick(distance, speed);
 		var receivingSpeed = worldFrame.getBall().getStraightConsultant().getVelForKickByTime(speed, duration);
 

@@ -4,10 +4,13 @@
 
 package edu.tigers.sumatra.pathfinder.obstacles;
 
+import edu.tigers.sumatra.drawable.IDrawableShape;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.Setter;
+
 import java.util.ArrayList;
 import java.util.List;
-
-import edu.tigers.sumatra.drawable.IDrawableShape;
 
 
 /**
@@ -15,8 +18,18 @@ import edu.tigers.sumatra.drawable.IDrawableShape;
  */
 public abstract class AObstacle implements IObstacle
 {
+	@Getter
+	@Setter(AccessLevel.PROTECTED)
 	private boolean emergencyBrakeFor = false;
+	@Getter
+	@Setter(AccessLevel.PROTECTED)
+	private boolean brakeInside = false;
+	@Getter
+	@Setter(AccessLevel.PROTECTED)
 	private boolean activelyEvade = false;
+	@Getter
+	@Setter(AccessLevel.PROTECTED)
+	private int priority;
 	private List<IDrawableShape> shapes;
 
 
@@ -32,31 +45,5 @@ public abstract class AObstacle implements IObstacle
 			initializeShapes(shapes);
 		}
 		return shapes;
-	}
-
-
-	@Override
-	public final boolean isEmergencyBrakeFor()
-	{
-		return emergencyBrakeFor;
-	}
-
-
-	public void setEmergencyBrakeFor(final boolean emergencyBrakeFor)
-	{
-		this.emergencyBrakeFor = emergencyBrakeFor;
-	}
-
-
-	@Override
-	public boolean isActivelyEvade()
-	{
-		return activelyEvade;
-	}
-
-
-	public void setActivelyEvade(final boolean activelyEvade)
-	{
-		this.activelyEvade = activelyEvade;
 	}
 }

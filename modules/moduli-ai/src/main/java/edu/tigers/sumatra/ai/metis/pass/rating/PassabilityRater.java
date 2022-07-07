@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.metis.pass.rating;
@@ -10,6 +10,9 @@ import edu.tigers.sumatra.ai.metis.kicking.Pass;
 import edu.tigers.sumatra.math.SumatraMath;
 
 
+/**
+ * Rate the passibility based on the initial kick speed and the receiving speed.
+ */
 public class PassabilityRater implements IPassRater
 {
 	@Configurable(defValue = "1.0", comment = "If the kick speed is lower than this, the score is 0")

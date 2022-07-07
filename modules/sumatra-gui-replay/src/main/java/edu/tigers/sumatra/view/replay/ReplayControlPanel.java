@@ -1,13 +1,13 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.view.replay;
 
 import edu.tigers.sumatra.referee.gameevent.EGameEvent;
 import edu.tigers.sumatra.referee.proto.SslGcRefereeMessage;
+import edu.tigers.sumatra.util.GlobalShortcuts;
 import edu.tigers.sumatra.util.ImageScaler;
-import edu.tigers.sumatra.views.ISumatraView;
 
 import javax.swing.AbstractAction;
 import javax.swing.Action;
@@ -15,7 +15,6 @@ import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JCheckBoxMenuItem;
-import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
@@ -30,9 +29,11 @@ import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.event.ActionEvent;
+import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
+import java.io.Serial;
 import java.text.DecimalFormat;
 import java.util.Arrays;
 import java.util.Dictionary;
@@ -41,16 +42,13 @@ import java.util.Hashtable;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import static javax.swing.KeyStroke.getKeyStroke;
-
 
 /**
  * This panel holds the control elements for the replay window
- *
- * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  */
-public class ReplayControlPanel extends JPanel implements IReplayPositionObserver, ISumatraView
+public class ReplayControlPanel extends JPanel implements IReplayPositionObserver
 {
+	@Serial
 	private static final long serialVersionUID = 1L;
 
 	private static final long SKIP_TIME = 500;
@@ -66,7 +64,7 @@ public class ReplayControlPanel extends JPanel implements IReplayPositionObserve
 	private final JLabel timeStepLabel = new JLabel();
 	private boolean settingSliderByHand = false;
 
-	private final JButton btnPlay = new JButton();
+	private final JButton btnPlay;
 
 	private boolean playing = true;
 
@@ -88,88 +86,77 @@ public class ReplayControlPanel extends JPanel implements IReplayPositionObserve
 
 		JSlider speedSlider = createSpeedSlider();
 
-		Action playAction = new PlayAction();
-		btnPlay.addActionListener(playAction);
-		btnPlay.setIcon(ImageScaler.scaleDefaultButtonImageIcon("/pause.png"));
-		btnPlay.setToolTipText("Play/Pause");
-		btnPlay.setBorder(BorderFactory.createEmptyBorder());
-		btnPlay.setBackground(new Color(0, 0, 0, 1));
-		registerShortcut(btnPlay, getKeyStroke(KeyEvent.VK_P, KeyEvent.CTRL_DOWN_MASK), playAction);
+		btnPlay = createActionButton(
+				"Play / Pause",
+				"/pause.png",
+				this::togglePlayPause,
+				KeyEvent.VK_P,
+				InputEvent.CTRL_DOWN_MASK
+		);
 
-		JButton btnSkipFrameFwd = new JButton();
-		Action skipOneFrameFwdAction = new SkipOneFrameFwdAction();
-		btnSkipFrameFwd.addActionListener(skipOneFrameFwdAction);
-		btnSkipFrameFwd.setIcon(ImageScaler.scaleDefaultButtonImageIcon("/skipFrameForward.png"));
-		btnSkipFrameFwd.setToolTipText("Skip one frame forward");
-		btnSkipFrameFwd.setBorder(BorderFactory.createEmptyBorder());
-		btnSkipFrameFwd.setBackground(new Color(0, 0, 0, 1));
-		registerShortcut(btnSkipFrameFwd, getKeyStroke(KeyEvent.VK_RIGHT, KeyEvent.CTRL_DOWN_MASK),
-				skipOneFrameFwdAction);
+		JButton btnSkipFrameFwd = createActionButton(
+				"Skip one frame forward",
+				"/skipFrameForward.png",
+				() -> observers.forEach(IReplayControlPanelObserver::onNextFrame),
+				KeyEvent.VK_RIGHT,
+				InputEvent.CTRL_DOWN_MASK
+		);
 
-		JButton btnSkipFrameBwd = new JButton();
-		final Action skipOneFrameBwdAction = new SkipOneFrameBwdAction();
-		btnSkipFrameBwd.addActionListener(skipOneFrameBwdAction);
-		btnSkipFrameBwd.setIcon(ImageScaler.scaleDefaultButtonImageIcon("/skipFrameBackward.png"));
-		btnSkipFrameBwd.setToolTipText("Skip one frame backward");
-		btnSkipFrameBwd.setBorder(BorderFactory.createEmptyBorder());
-		btnSkipFrameBwd.setBackground(new Color(0, 0, 0, 1));
-		registerShortcut(btnSkipFrameBwd, getKeyStroke(KeyEvent.VK_LEFT, KeyEvent.CTRL_DOWN_MASK), skipOneFrameBwdAction);
+		JButton btnSkipFrameBwd = createActionButton(
+				"Skip one frame backward",
+				"/skipFrameBackward.png",
+				() -> observers.forEach(IReplayControlPanelObserver::onPreviousFrame),
+				KeyEvent.VK_LEFT,
+				InputEvent.CTRL_DOWN_MASK
+		);
 
-		JButton btnSkipFwd = new JButton();
-		final Action skipFwdAction = new SkipFwdAction();
-		btnSkipFwd.addActionListener(skipFwdAction);
-		btnSkipFwd.setIcon(ImageScaler.scaleDefaultButtonImageIcon("/skipForward.png"));
-		btnSkipFwd.setToolTipText("Skip forward (" + SKIP_TIME + "ms)");
-		btnSkipFwd.setBorder(BorderFactory.createEmptyBorder());
-		btnSkipFwd.setBackground(new Color(0, 0, 0, 1));
-		registerShortcut(btnSkipFwd, getKeyStroke(KeyEvent.VK_RIGHT, KeyEvent.SHIFT_DOWN_MASK), skipFwdAction);
+		JButton btnSkipFwd = createActionButton(
+				"Skip forward (" + SKIP_TIME + "ms)",
+				"/skipForward.png",
+				() -> observers.forEach(o -> o.onChangeRelativeTime(SKIP_TIME * 1_000_000)),
+				KeyEvent.VK_RIGHT,
+				InputEvent.SHIFT_DOWN_MASK
+		);
 
-		JButton btnSkipBwd = new JButton();
-		final SkipBwdAction skipBwdAction = new SkipBwdAction();
-		btnSkipBwd.addActionListener(skipBwdAction);
-		btnSkipBwd.setIcon(ImageScaler.scaleDefaultButtonImageIcon("/skipBackward.png"));
-		btnSkipBwd.setToolTipText("Skip backward (" + SKIP_TIME + "ms)");
-		btnSkipBwd.setBorder(BorderFactory.createEmptyBorder());
-		btnSkipBwd.setBackground(new Color(0, 0, 0, 1));
-		registerShortcut(btnSkipBwd, getKeyStroke(KeyEvent.VK_LEFT, KeyEvent.SHIFT_DOWN_MASK), skipBwdAction);
+		JButton btnSkipBwd = createActionButton(
+				"Skip backward (" + SKIP_TIME + "ms)",
+				"/skipBackward.png",
+				() -> observers.forEach(o -> o.onChangeRelativeTime(-SKIP_TIME * 1_000_000)),
+				KeyEvent.VK_LEFT,
+				InputEvent.SHIFT_DOWN_MASK
+		);
 
-		JButton btnFastFwd = new JButton();
-		final FastFwdAction fastFwdAction = new FastFwdAction();
-		btnFastFwd.addActionListener(fastFwdAction);
-		btnFastFwd.setIcon(ImageScaler.scaleDefaultButtonImageIcon("/fastForward.png"));
-		btnFastFwd.setToolTipText("Fast forward (" + FAST_TIME + "ms)");
-		btnFastFwd.setBorder(BorderFactory.createEmptyBorder());
-		btnFastFwd.setBackground(new Color(0, 0, 0, 1));
-		registerShortcut(btnFastFwd, getKeyStroke(KeyEvent.VK_RIGHT, KeyEvent.CTRL_DOWN_MASK | KeyEvent.SHIFT_DOWN_MASK),
-				fastFwdAction);
+		JButton btnFastFwd = createActionButton(
+				"Fast forward (" + FAST_TIME + "ms)",
+				"/fastForward.png",
+				() -> observers.forEach(o -> o.onChangeRelativeTime(FAST_TIME * 1_000_000)),
+				KeyEvent.VK_RIGHT,
+				InputEvent.CTRL_DOWN_MASK | InputEvent.SHIFT_DOWN_MASK
+		);
 
-		JButton btnFastBwd = new JButton();
-		final Action fastBwdAction = new FastBwdAction();
-		btnFastBwd.addActionListener(fastBwdAction);
-		btnFastBwd.setIcon(ImageScaler.scaleDefaultButtonImageIcon("/fastBackward.png"));
-		btnFastBwd.setToolTipText("Fast backward (" + FAST_TIME + "ms)");
-		btnFastBwd.setBorder(BorderFactory.createEmptyBorder());
-		btnFastBwd.setBackground(new Color(0, 0, 0, 1));
-		registerShortcut(btnFastBwd, getKeyStroke(KeyEvent.VK_LEFT, KeyEvent.CTRL_DOWN_MASK | KeyEvent.SHIFT_DOWN_MASK),
-				fastBwdAction);
+		JButton btnFastBwd = createActionButton(
+				"Fast backward (" + FAST_TIME + "ms)",
+				"/fastBackward.png",
+				() -> observers.forEach(o -> o.onChangeRelativeTime(-FAST_TIME * 1_000_000)),
+				KeyEvent.VK_LEFT,
+				InputEvent.CTRL_DOWN_MASK | InputEvent.SHIFT_DOWN_MASK
+		);
 
-		JButton btnSnap = new JButton();
-		final SnapshotAction snapshotAction = new SnapshotAction();
-		btnSnap.addActionListener(snapshotAction);
-		btnSnap.setIcon(ImageScaler.scaleDefaultButtonImageIcon("/save.png"));
-		btnSnap.setToolTipText("Take and store snapshot");
-		btnSnap.setBorder(BorderFactory.createEmptyBorder());
-		btnSnap.setBackground(new Color(0, 0, 0, 1));
-		registerShortcut(btnSnap, getKeyStroke(KeyEvent.VK_S, KeyEvent.CTRL_DOWN_MASK), snapshotAction);
+		JButton btnSnap = createActionButton(
+				"Take and store snapshot",
+				"/save.png",
+				() -> observers.forEach(IReplayControlPanelObserver::onSnapshot),
+				KeyEvent.VK_S,
+				InputEvent.CTRL_DOWN_MASK
+		);
 
-		JButton btnSnapCopy = new JButton();
-		final Action snapshotCopyAction = new SnapshotCopyAction();
-		btnSnapCopy.addActionListener(snapshotCopyAction);
-		btnSnapCopy.setIcon(ImageScaler.scaleDefaultButtonImageIcon("/copy.png"));
-		btnSnapCopy.setToolTipText("Copy snapshot to clipboard");
-		btnSnapCopy.setBorder(BorderFactory.createEmptyBorder());
-		btnSnapCopy.setBackground(new Color(0, 0, 0, 1));
-		registerShortcut(btnSnapCopy, getKeyStroke(KeyEvent.VK_C, KeyEvent.CTRL_DOWN_MASK), snapshotCopyAction);
+		JButton btnSnapCopy = createActionButton(
+				"Copy snapshot to clipboard",
+				"/copy.png",
+				() -> observers.forEach(IReplayControlPanelObserver::onCopySnapshot),
+				KeyEvent.VK_C,
+				InputEvent.CTRL_DOWN_MASK | InputEvent.SHIFT_DOWN_MASK
+		);
 
 		JMenuBar menuBar = new JMenuBar();
 		menuBar.add(replayMenu);
@@ -213,20 +200,31 @@ public class ReplayControlPanel extends JPanel implements IReplayPositionObserve
 	}
 
 
+	private JButton createActionButton(
+			String description, String iconPath, Runnable action, int keyCode, int keyModifiers)
+	{
+		JButton button = new JButton();
+		button.addActionListener(e -> action.run());
+		button.setIcon(ImageScaler.scaleDefaultButtonImageIcon(iconPath));
+		button.setToolTipText(description);
+		button.setBorder(BorderFactory.createEmptyBorder());
+		button.setBackground(new Color(0, 0, 0, 1));
+		GlobalShortcuts.add(
+				description,
+				this,
+				action,
+				KeyStroke.getKeyStroke(keyCode, keyModifiers)
+		);
+		return button;
+	}
+
+
 	/**
 	 * @param action
 	 */
 	public void addMenuCheckbox(Action action)
 	{
 		replayMenu.add(new JCheckBoxMenuItem(action));
-	}
-
-
-	private void registerShortcut(JComponent component, KeyStroke keyStroke, Action action)
-	{
-		String actionCommand = action.getClass().getCanonicalName();
-		component.getInputMap(WHEN_IN_FOCUSED_WINDOW).put(keyStroke, actionCommand);
-		component.getActionMap().put(actionCommand, action);
 	}
 
 
@@ -291,25 +289,21 @@ public class ReplayControlPanel extends JPanel implements IReplayPositionObserve
 	}
 
 
-	private class PlayAction extends AbstractAction
+	private void togglePlayPause()
 	{
-		@Override
-		public void actionPerformed(final ActionEvent e)
+		playing = !playing;
+		for (IReplayControlPanelObserver o : observers)
 		{
-			playing = !playing;
-			for (IReplayControlPanelObserver o : observers)
-			{
-				o.onPlayPause(playing);
-			}
-			if (playing)
-			{
-				btnPlay.setIcon(ImageScaler.scaleDefaultButtonImageIcon("/pause.png"));
-			} else
-			{
-				btnPlay.setIcon(ImageScaler.scaleDefaultButtonImageIcon("/play.png"));
-			}
-			repaint();
+			o.onPlayPause(playing);
 		}
+		if (playing)
+		{
+			btnPlay.setIcon(ImageScaler.scaleDefaultButtonImageIcon("/pause.png"));
+		} else
+		{
+			btnPlay.setIcon(ImageScaler.scaleDefaultButtonImageIcon("/play.png"));
+		}
+		repaint();
 	}
 
 
@@ -394,107 +388,6 @@ public class ReplayControlPanel extends JPanel implements IReplayPositionObserve
 		public void mouseExited(final MouseEvent e)
 		{
 			// ignored
-		}
-	}
-
-
-	private class SkipOneFrameFwdAction extends AbstractAction
-	{
-		@Override
-		public void actionPerformed(final ActionEvent e)
-		{
-			for (IReplayControlPanelObserver o : observers)
-			{
-				o.onNextFrame();
-			}
-		}
-	}
-
-	private class SkipOneFrameBwdAction extends AbstractAction
-	{
-		@Override
-		public void actionPerformed(final ActionEvent e)
-		{
-			for (IReplayControlPanelObserver o : observers)
-			{
-				o.onPreviousFrame();
-			}
-		}
-	}
-
-
-	private class SkipFwdAction extends AbstractAction
-	{
-		@Override
-		public void actionPerformed(final ActionEvent e)
-		{
-			for (IReplayControlPanelObserver o : observers)
-			{
-				o.onChangeRelativeTime(SKIP_TIME * 1_000_000);
-			}
-		}
-	}
-
-	private class SkipBwdAction extends AbstractAction
-	{
-		@Override
-		public void actionPerformed(final ActionEvent e)
-		{
-			for (IReplayControlPanelObserver o : observers)
-			{
-				o.onChangeRelativeTime(-SKIP_TIME * 1_000_000);
-			}
-		}
-	}
-
-	private class FastFwdAction extends AbstractAction
-	{
-		@Override
-		public void actionPerformed(final ActionEvent e)
-		{
-			for (IReplayControlPanelObserver o : observers)
-			{
-				o.onChangeRelativeTime(FAST_TIME * 1_000_000);
-			}
-		}
-	}
-
-	private class FastBwdAction extends AbstractAction
-	{
-
-		@Override
-		public void actionPerformed(final ActionEvent e)
-		{
-			for (IReplayControlPanelObserver o : observers)
-			{
-				o.onChangeRelativeTime(-FAST_TIME * 1_000_000);
-			}
-		}
-	}
-
-	private class SnapshotAction extends AbstractAction
-	{
-
-		@Override
-		public void actionPerformed(final ActionEvent e)
-		{
-			for (IReplayControlPanelObserver o : observers)
-			{
-				o.onSnapshot();
-			}
-		}
-	}
-
-	private class SnapshotCopyAction extends AbstractAction
-	{
-
-		@Override
-		public void actionPerformed(final ActionEvent e)
-		{
-			for (IReplayControlPanelObserver o : observers)
-			{
-				o.onCopySnapshot();
-			}
 		}
 	}
 

@@ -98,8 +98,6 @@
         <properties>
             <operation-mode>OFF</operation-mode>
             <operation-mode-fallback>OFF</operation-mode-fallback>
-            <influxdb-url>https://influxdb.tigers-mannheim.de</influxdb-url>
-            <influxdb-name>matchStats</influxdb-name>
         </properties>
     </module>
 
@@ -112,8 +110,5 @@
     <module id="edu.tigers.sumatra.persistence.RecordManager">
         <implementation>edu.tigers.sumatra.ai.AiRecordManager</implementation>
     </module>
-
-
-    <module id="edu.tigers.sumatra.guinotifications.GuiNotificationsController"/>
 
 </centralSoftware>

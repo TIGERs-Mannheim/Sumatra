@@ -5,7 +5,6 @@
 package edu.tigers.sumatra;
 
 import edu.tigers.moduli.IModuliStateObserver;
-import edu.tigers.moduli.exceptions.ModuleNotFoundException;
 import edu.tigers.moduli.listenerVariables.ModulesState;
 import edu.tigers.sumatra.ai.AAgent;
 import edu.tigers.sumatra.ai.IVisualizationFrameObserver;
@@ -18,8 +17,8 @@ import edu.tigers.sumatra.model.SumatraModel;
 import edu.tigers.sumatra.persistence.IRecordObserver;
 import edu.tigers.sumatra.persistence.RecordManager;
 import edu.tigers.sumatra.referee.IRefereeObserver;
+import edu.tigers.sumatra.skillsystem.ASkillSystem;
 import edu.tigers.sumatra.util.GlobalShortcuts;
-import edu.tigers.sumatra.util.GlobalShortcuts.EShortcut;
 import edu.tigers.sumatra.view.FpsPanel.EFpsType;
 import edu.tigers.sumatra.view.toolbar.IToolbarObserver;
 import edu.tigers.sumatra.view.toolbar.ToolBar;
@@ -29,9 +28,11 @@ import edu.tigers.sumatra.wp.data.ExtendedCamDetectionFrame;
 import edu.tigers.sumatra.wp.data.WorldFrameWrapper;
 import lombok.extern.log4j.Log4j2;
 
+import javax.swing.KeyStroke;
 import javax.swing.Timer;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.KeyEvent;
 
 
 /**
@@ -59,8 +60,7 @@ public class ToolbarPresenter implements IModuliStateObserver, IToolbarObserver,
 
 		ModuliStateAdapter.getInstance().addObserver(this);
 
-		Timer heapUpdater = new Timer(1000, new HeapUpdater());
-		heapUpdater.start();
+		new Timer(1000, new HeapUpdater()).start();
 	}
 
 
@@ -89,7 +89,7 @@ public class ToolbarPresenter implements IModuliStateObserver, IToolbarObserver,
 		SumatraModel.getInstance().getModuleOpt(AAgent.class).ifPresent(m -> m.removeVisObserver(this));
 		SumatraModel.getInstance().getModuleOpt(AWorldPredictor.class).ifPresent(m -> m.removeObserver(this));
 
-		GlobalShortcuts.unregisterAll(EShortcut.MATCH_MODE);
+		GlobalShortcuts.removeAllForComponent(toolbar.getJToolBar());
 	}
 
 
@@ -97,31 +97,36 @@ public class ToolbarPresenter implements IModuliStateObserver, IToolbarObserver,
 	{
 		SumatraModel.getInstance().getModuleOpt(RecordManager.class).ifPresent(m -> m.addObserver(this));
 		SumatraModel.getInstance().getModuleOpt(AAgent.class).ifPresent(m -> m.addVisObserver(this));
-		SumatraModel.getInstance().getModuleOpt(AAgent.class).ifPresent(
-				m -> GlobalShortcuts.register(EShortcut.MATCH_MODE, () -> m.changeMode(EAIControlState.MATCH_MODE)));
 		SumatraModel.getInstance().getModuleOpt(AWorldPredictor.class).ifPresent(m -> m.addObserver(this));
+
+		SumatraModel.getInstance().getModuleOpt(AAgent.class).ifPresent(this::addShortcuts);
 	}
 
 
-	@Override
-	public void onEmergencyStop()
+	private void addShortcuts(AAgent agent)
 	{
-		// nothing to do
+		GlobalShortcuts.add(
+				"Emergency Mode",
+				toolbar.getJToolBar(),
+				() -> {
+					agent.changeMode(EAIControlState.EMERGENCY_MODE);
+					SumatraModel.getInstance().getModuleOpt(ASkillSystem.class).ifPresent(ASkillSystem::emergencyStop);
+				},
+				KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0)
+		);
+		GlobalShortcuts.add(
+				"Match Mode",
+				toolbar.getJToolBar(),
+				() -> agent.changeMode(EAIControlState.MATCH_MODE),
+				KeyStroke.getKeyStroke(KeyEvent.VK_F1, 0)
+		);
 	}
 
 
 	@Override
 	public void onToggleRecord()
 	{
-		try
-		{
-			RecordManager rm = SumatraModel.getInstance().getModule(
-					RecordManager.class);
-			rm.toggleRecording();
-		} catch (ModuleNotFoundException err)
-		{
-			log.error("Can not toggle record", err);
-		}
+		SumatraModel.getInstance().getModuleOpt(RecordManager.class).ifPresent(RecordManager::toggleRecording);
 	}
 
 

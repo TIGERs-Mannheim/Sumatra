@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.ai.athena;
 
@@ -104,7 +104,7 @@ public class MatchModeAthenaAdapter implements IAthenaAdapter
 
 	private void checkRoleCount(final MetisAiFrame frame)
 	{
-		if (!SumatraModel.getInstance().isProductive()
+		if (!SumatraModel.getInstance().isTournamentMode()
 				&& !frame.getGameState().isIdleGame())
 		{
 			int numBots = frame.getWorldFrame().getTigerBotsAvailable().size();

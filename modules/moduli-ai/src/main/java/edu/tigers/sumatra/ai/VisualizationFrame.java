@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai;
@@ -14,9 +14,8 @@ import edu.tigers.sumatra.ai.metis.offense.statistics.OffensiveAnalysedFrame;
 import edu.tigers.sumatra.ai.metis.offense.statistics.OffensiveStatisticsFrame;
 import edu.tigers.sumatra.ai.metis.offense.strategy.OffensiveStrategy;
 import edu.tigers.sumatra.ai.metis.statistics.stats.MatchStats;
-import edu.tigers.sumatra.ai.pandora.plays.EPlay;
-import edu.tigers.sumatra.ai.pandora.plays.match.SupportPlay;
-import edu.tigers.sumatra.ai.pandora.roles.support.ESupportBehavior;
+import edu.tigers.sumatra.ai.metis.support.behaviors.ESupportBehavior;
+import edu.tigers.sumatra.ai.metis.support.behaviors.SupportBehaviorPosition;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.ids.EAiTeam;
 import edu.tigers.sumatra.ids.ETeamColor;
@@ -27,17 +26,14 @@ import lombok.Value;
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.HashMap;
-import java.util.IdentityHashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 
 /**
  * Data container that is send to the UI and that is stored in the Berkeley DB.
  */
-@Persistent(version = 6)
+@Persistent(version = 7)
 @Value
 public class VisualizationFrame
 {
@@ -54,9 +50,11 @@ public class VisualizationFrame
 	Map<EOffensiveSituation, OffensiveActionTree> actionTrees;
 	OffensiveActionTreePath currentPath;
 	transient IPlayStrategy playStrategy;
-	Map<BotID, EnumMap<ESupportBehavior, Double>> supportViabilityMap;
-	List<ESupportBehavior> inactiveSupportBehaviors;
 	Map<BotID, BallInterceptionInformation> ballInterceptionInformationMap;
+
+	Map<BotID, ESupportBehavior> supportBehaviorAssignment;
+	Map<BotID, EnumMap<ESupportBehavior, SupportBehaviorPosition>> supportBehaviorViabilities;
+	Map<ESupportBehavior, Boolean> activeSupportBehaviors;
 
 
 	@SuppressWarnings("unused")
@@ -71,9 +69,10 @@ public class VisualizationFrame
 		actionTrees = null;
 		currentPath = null;
 		playStrategy = null;
-		supportViabilityMap = null;
-		inactiveSupportBehaviors = null;
 		ballInterceptionInformationMap = null;
+		supportBehaviorAssignment = null;
+		supportBehaviorViabilities = null;
+		activeSupportBehaviors = null;
 	}
 
 
@@ -93,15 +92,13 @@ public class VisualizationFrame
 		actionTrees = aiFrame.getTacticalField().getActionTrees().getActionTrees();
 		currentPath = aiFrame.getTacticalField().getCurrentPath();
 		playStrategy = aiFrame.getAthenaAiFrame().getPlayStrategy();
-
-		Optional<SupportPlay> play = playStrategy.getActivePlays().stream()
-				.filter(p -> p.getType() == EPlay.SUPPORT)
-				.map(SupportPlay.class::cast)
-				.findAny();
-		supportViabilityMap = play.map(SupportPlay::getViabilityMap).orElse(null);
-		inactiveSupportBehaviors = play.map(SupportPlay::getInactiveBehaviors).orElse(null);
 		ballInterceptionInformationMap = aiFrame.getTacticalField().getBallInterceptionInformationMap().entrySet()
 				.stream().collect(Collectors.toMap(Map.Entry::getKey, e -> berkeleyFriendly(e.getValue())));
+		supportBehaviorAssignment = new HashMap<>(aiFrame.getTacticalField().getSupportBehaviorAssignment());
+		supportBehaviorViabilities = new HashMap<>(aiFrame.getTacticalField().getSupportViabilities());
+		activeSupportBehaviors = aiFrame.getTacticalField().getActiveSupportBehaviors().isEmpty()
+				? new HashMap<>()
+				: new EnumMap<>(aiFrame.getTacticalField().getActiveSupportBehaviors());
 	}
 
 
@@ -121,9 +118,10 @@ public class VisualizationFrame
 		actionTrees = aiFrame.getActionTrees();
 		currentPath = aiFrame.getCurrentPath();
 		playStrategy = aiFrame.getPlayStrategy();
-		supportViabilityMap = aiFrame.supportViabilityMap;
-		inactiveSupportBehaviors = aiFrame.inactiveSupportBehaviors;
 		ballInterceptionInformationMap = aiFrame.getBallInterceptionInformationMap();
+		supportBehaviorAssignment = aiFrame.getSupportBehaviorAssignment();
+		supportBehaviorViabilities = aiFrame.getSupportBehaviorViabilities();
+		activeSupportBehaviors = aiFrame.activeSupportBehaviors;
 	}
 
 
@@ -139,7 +137,7 @@ public class VisualizationFrame
 	private OffensiveStrategy berkeleyFriendly(OffensiveStrategy offensiveStrategy)
 	{
 		return new OffensiveStrategy(offensiveStrategy.getAttackerBot().orElse(null),
-				new IdentityHashMap<>(offensiveStrategy.getCurrentOffensivePlayConfiguration()));
+				new HashMap<>(offensiveStrategy.getCurrentOffensivePlayConfiguration()));
 	}
 
 

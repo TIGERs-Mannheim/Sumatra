@@ -35,9 +35,8 @@ import java.util.stream.Collectors;
  */
 public class BallDribbleToPosGenerator
 {
-
-	@Configurable(comment = "[mm] Any dribbling distance above this value is considered a violation", defValue = "1000.0")
-	private static double maxDribblingLength = 1000.0;
+	@Configurable(comment = "[mm] With any dribbling distance above this value the dribbling bot has to be extra careful to not commit a dribbling violation", defValue = "700.0")
+	private static double dangerDist = 700.0;
 
 	static
 	{
@@ -59,9 +58,11 @@ public class BallDribbleToPosGenerator
 		EDribblingCondition condition = EDribblingCondition.DEFAULT;
 		if (dribblingInformation.isDribblingInProgress())
 		{
-			shapes.add(new DrawableCircle(dribblingInformation.getStartPos(), maxDribblingLength, Color.darkGray));
+			shapes.add(new DrawableCircle(dribblingInformation.getStartPos(),
+					dribblingInformation.getDribblingCircle().radius(), Color.darkGray));
 
-			ICircle dribbleCircle = Circle.createCircle(dribblingInformation.getStartPos(), maxDribblingLength);
+			ICircle dribbleCircle = Circle.createCircle(dribblingInformation.getStartPos(),
+					dribblingInformation.getDribblingCircle().radius());
 			var opponents = wFrame.getOpponentBots().values().stream()
 					.filter(e -> dribbleCircle.isPointInShape(e.getPos()))
 					.collect(Collectors.toList());
@@ -69,10 +70,10 @@ public class BallDribbleToPosGenerator
 			List<IQuadrilateral> blockingQuads = new ArrayList<>();
 			for (var opponent : opponents)
 			{
-				getBlockingQuad(tigerBot, maxDribblingLength, dribbleCircle, opponent)
+				getBlockingQuad(tigerBot, dribblingInformation.getDribblingCircle().radius(), dribbleCircle, opponent)
 						.ifPresent(e -> {
 							blockingQuads.add(e);
-							shapes.add(new DrawableQuadrilateral(e, new Color(255, 0, 0, 136)).setFill(true));
+							shapes.add(new DrawableQuadrilateral(e, new Color(255, 0, 0, 25)).setFill(true));
 						});
 			}
 
@@ -86,14 +87,15 @@ public class BallDribbleToPosGenerator
 				dribbleToDestination = dribblingInformation.getStartPos();
 			}
 
-			if (tigerBot.getPos().distanceTo(dribblingInformation.getStartPos()) > 800)
+			if (tigerBot.getPos().distanceTo(dribblingInformation.getStartPos()) > dangerDist)
 			{
 				condition = EDribblingCondition.REPOSITION;
 			}
-
 		}
 
 		IVector2 protectTarget = getProtectTarget(wFrame, closestEnemyBotId);
+
+		shapes.add(new DrawableCircle(Circle.createCircle(protectTarget, 50), Color.ORANGE));
 		return new DribbleToPos(protectTarget, dribbleToDestination, condition);
 	}
 
@@ -141,7 +143,11 @@ public class BallDribbleToPosGenerator
 		IVector2 protectTarget = Geometry.getGoalTheir().getCenter();
 		if (!closestEnemyBotId.isUninitializedID())
 		{
-			return wFrame.getOpponentBot(closestEnemyBotId).getPos();
+			var closestBot = wFrame.getOpponentBot(closestEnemyBotId);
+			if (closestBot != null)
+			{
+				return closestBot.getPos();
+			}
 		}
 		return protectTarget;
 	}

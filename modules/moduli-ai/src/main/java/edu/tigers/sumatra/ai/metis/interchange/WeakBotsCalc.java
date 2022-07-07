@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.metis.interchange;
@@ -15,7 +15,6 @@ import lombok.Getter;
 
 import java.awt.Color;
 import java.util.List;
-import java.util.stream.Collectors;
 
 
 /**
@@ -39,9 +38,10 @@ public class WeakBotsCalc extends ACalculator
 	{
 		return getWFrame().getTigerBotsAvailable().values().stream()
 				.filter(bot -> !bot.getRobotInfo().isOk())
-				.sorted((bot1, bot2) -> Float.compare(bot1.getRobotInfo().getBattery(), bot2.getRobotInfo().getBattery()))
+				.sorted((bot1, bot2) -> Float.compare(bot1.getRobotInfo().getBatteryRelative(),
+						bot2.getRobotInfo().getBatteryRelative()))
 				.map(ITrackedBot::getBotId)
-				.collect(Collectors.toList());
+				.toList();
 	}
 
 

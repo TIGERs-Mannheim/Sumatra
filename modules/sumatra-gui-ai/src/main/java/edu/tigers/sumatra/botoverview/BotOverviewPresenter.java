@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.botoverview;
 
@@ -10,10 +10,9 @@ import edu.tigers.sumatra.botoverview.view.BotOverviewPanel;
 import edu.tigers.sumatra.ids.EAiTeam;
 import edu.tigers.sumatra.model.SumatraModel;
 import edu.tigers.sumatra.util.UiThrottler;
-import edu.tigers.sumatra.views.ASumatraViewPresenter;
-import edu.tigers.sumatra.views.ISumatraView;
+import edu.tigers.sumatra.views.ISumatraViewPresenter;
+import lombok.Getter;
 
-import java.awt.Component;
 import java.util.EnumMap;
 import java.util.Map;
 
@@ -21,9 +20,10 @@ import java.util.Map;
 /**
  * Bot Overview Presenter
  */
-public class BotOverviewPresenter extends ASumatraViewPresenter implements IVisualizationFrameObserver
+public class BotOverviewPresenter implements ISumatraViewPresenter, IVisualizationFrameObserver
 {
-	private final BotOverviewPanel botOverviewPanel = new BotOverviewPanel();
+	@Getter
+	private final BotOverviewPanel viewPanel = new BotOverviewPanel();
 	private final Map<EAiTeam, UiThrottler> visFrameThrottler = new EnumMap<>(EAiTeam.class);
 
 
@@ -36,36 +36,22 @@ public class BotOverviewPresenter extends ASumatraViewPresenter implements IVisu
 
 
 	@Override
-	public void onStart()
+	public void onStartModuli()
 	{
 		SumatraModel.getInstance().getModule(Agent.class).addVisObserver(this);
 	}
 
 
 	@Override
-	public void onStop()
+	public void onStopModuli()
 	{
 		SumatraModel.getInstance().getModule(Agent.class).removeVisObserver(this);
 	}
 
 
 	@Override
-	public Component getComponent()
-	{
-		return botOverviewPanel;
-	}
-
-
-	@Override
-	public ISumatraView getSumatraView()
-	{
-		return botOverviewPanel;
-	}
-
-
-	@Override
 	public void onNewVisualizationFrame(final VisualizationFrame frame)
 	{
-		visFrameThrottler.get(frame.getAiTeam()).execute(() -> botOverviewPanel.update(frame));
+		visFrameThrottler.get(frame.getAiTeam()).execute(() -> viewPanel.update(frame));
 	}
 }

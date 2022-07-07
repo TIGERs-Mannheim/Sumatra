@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.sim.net;
@@ -13,6 +13,7 @@ import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.ids.ETeamColor;
 import edu.tigers.sumatra.math.pose.Pose;
 import edu.tigers.sumatra.math.vector.IVector3;
+import edu.tigers.sumatra.math.vector.Vector3f;
 import edu.tigers.sumatra.referee.proto.SslGcRefereeMessage;
 import edu.tigers.sumatra.sim.ISimulatorActionCallback;
 import edu.tigers.sumatra.sim.SimKickEvent;
@@ -35,7 +36,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 
 /**
@@ -167,10 +167,11 @@ public class SimNetClient
 				final BotID botID = ProtoToLocalMapper.mapBotId(simState.getBotId());
 				if (teamColors.contains(botID.getTeamColor()))
 				{
+					var vel = ProtoToLocalMapper.mapVector3(simState.getVel());
 					botStates.put(botID,
 							new SimBotState(
 									ProtoToLocalMapper.mapPose(simState.getPose()),
-									ProtoToLocalMapper.mapVector3(simState.getVel()),
+									Vector3f.from2d(vel.getXYVector().multiplyNew(1000), vel.z()),
 									simState.getBarrierInterrupted(),
 									0));
 				}
@@ -182,7 +183,7 @@ public class SimNetClient
 			actions.forEach(actionMap::putAll);
 
 			final List<SimBotActionOuterClass.SimBotAction> simBotActions = actionMap.entrySet().stream()
-					.map(this::mapBotSimAction).collect(Collectors.toList());
+					.map(this::mapBotSimAction).toList();
 
 			final SimResponseOuterClass.SimResponse simResponse = SimResponseOuterClass.SimResponse.newBuilder()
 					.addAllAction(simBotActions)
@@ -198,7 +199,13 @@ public class SimNetClient
 			return new SimServerResponse(createFilteredFrame(simRequest), refereeMessage);
 		} catch (IOException e)
 		{
-			log.warn("Could not read from simulation server", e);
+			if ("Broken pipe".equals(e.getMessage()))
+			{
+				log.debug("Disconnected from server");
+			} else
+			{
+				log.warn("Could not read from simulation server", e);
+			}
 			stop();
 		}
 		return null;
@@ -248,7 +255,7 @@ public class SimNetClient
 		simulatorActionCallbacks.forEach(cb -> cb.updateConnectedBotList(botStates.keySet()));
 		return simulatorActionCallbacks.stream()
 				.map(cb -> cb.nextSimBotActions(botStates, timestamp))
-				.collect(Collectors.toList());
+				.toList();
 	}
 
 
@@ -316,29 +323,10 @@ public class SimNetClient
 	}
 
 
-	static class SimServerResponse
+	record SimServerResponse(
+			FilteredVisionFrame frame,
+			SslGcRefereeMessage.Referee refereeMessage)
 	{
-		private final FilteredVisionFrame frame;
-		private final SslGcRefereeMessage.Referee refereeMessage;
-
-
-		public SimServerResponse(final FilteredVisionFrame frame, final SslGcRefereeMessage.Referee refereeMessage)
-		{
-			this.frame = frame;
-			this.refereeMessage = refereeMessage;
-		}
-
-
-		public FilteredVisionFrame getFrame()
-		{
-			return frame;
-		}
-
-
-		public SslGcRefereeMessage.Referee getRefereeMessage()
-		{
-			return refereeMessage;
-		}
 	}
 
 

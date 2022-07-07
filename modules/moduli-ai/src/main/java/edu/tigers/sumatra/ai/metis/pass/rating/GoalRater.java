@@ -1,14 +1,16 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.metis.pass.rating;
 
+import com.github.g3force.configurable.ConfigRegistration;
+import com.github.g3force.configurable.Configurable;
 import edu.tigers.sumatra.ai.metis.kicking.Pass;
 import edu.tigers.sumatra.ai.metis.targetrater.AngleRangeRater;
-import edu.tigers.sumatra.ai.metis.targetrater.IRatedTarget;
 import edu.tigers.sumatra.ai.metis.targetrater.RatedTarget;
 import edu.tigers.sumatra.geometry.Geometry;
+import edu.tigers.sumatra.math.SumatraMath;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
 
 import java.util.Collection;
@@ -16,10 +18,18 @@ import java.util.Collection;
 
 /**
  * A rater that rates how well a goal could be scored from the pass target.
- * It does not respect the pass in contrast to {@link ReflectorRater}.
+ * It does not respect redirect goal kicks in contrast to {@link ReflectorRater}.
  */
 public class GoalRater implements IPassRater
 {
+	@Configurable(defValue = "0.5")
+	private static double bestImprovement = 0.5;
+
+	static
+	{
+		ConfigRegistration.registerClass("metis", GoalRater.class);
+	}
+
 	private final AngleRangeRater rater = AngleRangeRater.forGoal(Geometry.getGoalTheir());
 	private final Collection<ITrackedBot> obstacles;
 
@@ -34,16 +44,13 @@ public class GoalRater implements IPassRater
 	@Override
 	public double rate(Pass pass)
 	{
-		return rateGoalKick(pass).getScore();
-	}
-
-
-	private IRatedTarget rateGoalKick(Pass pass)
-	{
 		rater.setObstacles(obstacles);
-		// For this rater, we assume that the ball is already at the target
-		rater.setTimeToKick(0);
-		return rater.rate(pass.getKick().getTarget())
+		var ratedSource = rater.rate(pass.getKick().getSource())
 				.orElseGet(() -> RatedTarget.ratedPoint(Geometry.getGoalTheir().getCenter(), 0));
+		var ratedTarget = rater.rate(pass.getKick().getTarget())
+				.orElseGet(() -> RatedTarget.ratedPoint(Geometry.getGoalTheir().getCenter(), 0));
+
+		var improvement = ratedTarget.getScore() - ratedSource.getScore();
+		return SumatraMath.relative(improvement, 0, bestImprovement);
 	}
 }

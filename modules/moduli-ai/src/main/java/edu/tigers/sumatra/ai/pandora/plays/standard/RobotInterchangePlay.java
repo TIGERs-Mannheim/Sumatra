@@ -35,7 +35,6 @@ public class RobotInterchangePlay extends AMaintenancePlay
 	private IVector2 lineupDirectionVector = Vector2.fromXY(1, 0)
 			.scaleTo(distanceBetweenBotsInInterchangePosition);
 
-
 	/**
 	 * Create a new interchange play
 	 */
@@ -58,6 +57,7 @@ public class RobotInterchangePlay extends AMaintenancePlay
 		double y = Geometry.getField().maxY() + distanceToFieldLine;
 		double x = ((offsetFactorToCenterline * Geometry.getFieldLength()) / 2)
 				+ ((nBots * distanceBetweenBotsInInterchangePosition) / 2);
+
 		return Vector2.fromXY(-x, positionRelativeToGoal.factor * y);
 	}
 

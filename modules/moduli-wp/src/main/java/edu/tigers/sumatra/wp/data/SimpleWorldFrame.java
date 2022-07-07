@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.wp.data;
@@ -13,7 +13,7 @@ import lombok.RequiredArgsConstructor;
 
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.IdentityHashMap;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
@@ -71,7 +71,7 @@ public class SimpleWorldFrame implements IMirrorable<SimpleWorldFrame>
 	@Override
 	public SimpleWorldFrame mirrored()
 	{
-		Map<BotID, ITrackedBot> newBots = new IdentityHashMap<>();
+		Map<BotID, ITrackedBot> newBots = new HashMap<>();
 		for (ITrackedBot bot : bots.values())
 		{
 			ITrackedBot mBot = bot.mirrored();
@@ -128,8 +128,8 @@ public class SimpleWorldFrame implements IMirrorable<SimpleWorldFrame>
 	 */
 	public Map<BotID, ITrackedBot> getAllBotsBut(BotID... botID)
 	{
-		var allBots = new IdentityHashMap<>(bots);
-		allBots.keySet().removeAll(Arrays.asList(botID));
+		var allBots = new HashMap<>(bots);
+		Arrays.asList(botID).forEach(allBots.keySet()::remove);
 		return allBots;
 	}
 }

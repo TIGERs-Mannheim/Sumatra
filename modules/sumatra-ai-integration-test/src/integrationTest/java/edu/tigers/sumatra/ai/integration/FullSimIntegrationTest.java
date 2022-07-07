@@ -242,8 +242,9 @@ public class FullSimIntegrationTest extends AFullSimIntegrationTest
 				.addStopCondition(this::gameBallPlacement)
 				.await();
 
-		// game should continue with ball placement
-		assertGameState(EGameState.BALL_PLACEMENT);
+		// game should be either halted (goal) or in ball_placement (failed penalty)
+		assertThat(List.of(EGameState.HALT, EGameState.BALL_PLACEMENT))
+				.contains(lastWorldFrameWrapper.getGameState().getState());
 
 		assertNoWarningsOrErrors();
 		assertNoAvoidableViolations();

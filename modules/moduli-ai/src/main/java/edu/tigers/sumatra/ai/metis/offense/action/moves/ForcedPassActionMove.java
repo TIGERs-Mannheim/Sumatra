@@ -1,11 +1,10 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.metis.offense.action.moves;
 
 import edu.tigers.sumatra.ai.metis.offense.action.EActionViability;
-import edu.tigers.sumatra.ai.metis.offense.action.EOffensiveAction;
 import edu.tigers.sumatra.ai.metis.offense.action.OffensiveAction;
 import edu.tigers.sumatra.ai.metis.offense.action.OffensiveActionViability;
 import edu.tigers.sumatra.ai.metis.pass.KickOrigin;
@@ -28,7 +27,7 @@ public class ForcedPassActionMove extends AOffensiveActionMove
 
 	private OffensiveActionViability calcViability(RatedPass pass)
 	{
-		if (getAiFrame().getGameState().isIndirectFreeForUs() && pass != null)
+		if (getAiFrame().getGameState().isFreeKickForUs() && pass != null)
 		{
 			return new OffensiveActionViability(EActionViability.TRUE, applyMultiplier(1.0));
 		}
@@ -43,7 +42,6 @@ public class ForcedPassActionMove extends AOffensiveActionMove
 		RatedPass ratedPass = findPassForMe(selectedPasses.get(), botId).orElse(null);
 		return OffensiveAction.builder()
 				.move(EOffensiveActionMove.FORCED_PASS)
-				.action(EOffensiveAction.PASS)
 				.viability(calcViability(ratedPass))
 				.pass(ratedPass == null ? null : ratedPass.getPass())
 				.build();

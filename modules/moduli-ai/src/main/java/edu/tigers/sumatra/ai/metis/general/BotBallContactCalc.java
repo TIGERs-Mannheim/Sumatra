@@ -14,6 +14,7 @@ import lombok.Getter;
 
 import java.awt.Color;
 import java.util.Collections;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -37,10 +38,15 @@ public class BotBallContactCalc extends ACalculator
 	@Override
 	public void doCalc()
 	{
-		currentlyTouchingBots = botLastTouchedBallCalculator.currentlyTouchingBots(getWFrame()).stream()
+		var touchingBots = botLastTouchedBallCalculator.currentlyTouchingBots(getWFrame()).stream()
 				.map(b -> getWFrame().getBot(b))
 				.map(ITrackedBot::getBotId)
-				.collect(Collectors.toUnmodifiableSet());
+				.collect(Collectors.toSet());
+		getWFrame().getTigerBotsAvailable().entrySet()
+				.stream().filter(e -> e.getValue().getBallContact().hasContact())
+				.map(Map.Entry::getKey)
+				.forEach(touchingBots::add);
+		currentlyTouchingBots = touchingBots.stream().collect(Collectors.toUnmodifiableSet());
 
 		if (!currentlyTouchingBots.isEmpty())
 		{

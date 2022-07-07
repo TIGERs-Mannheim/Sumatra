@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.metis.pass.rating;
@@ -9,6 +9,7 @@ import com.github.g3force.configurable.Configurable;
 import edu.tigers.sumatra.ai.metis.kicking.Pass;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.math.SumatraMath;
+import edu.tigers.sumatra.math.vector.IVector2;
 
 
 /**
@@ -17,8 +18,8 @@ import edu.tigers.sumatra.math.SumatraMath;
  */
 public class PassPressureRater implements IPassRater
 {
-	@Configurable(defValue = "-3000.0")
-	private static double minXRatingPos = -3000.0;
+	@Configurable(defValue = "-0.5")
+	private static double minXRatingPosRel = -0.5;
 
 	static
 	{
@@ -28,8 +29,14 @@ public class PassPressureRater implements IPassRater
 	@Override
 	public double rate(Pass pass)
 	{
-		var target = pass.getKick().getTarget();
+		return pressure(pass.getKick().getTarget());
+	}
+
+
+	private double pressure(IVector2 target)
+	{
 		double maxXRatingPos = Geometry.getFieldLength() / 2.0;
+		double minXRatingPos = maxXRatingPos * minXRatingPosRel;
 		double xRating = SumatraMath.relative(target.x(), minXRatingPos, maxXRatingPos);
 
 		double yGoalCornerMid = Geometry.getFieldWidth() / 4.0;

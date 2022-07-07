@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.skillsystem.skills;
@@ -8,6 +8,7 @@ import com.github.g3force.configurable.Configurable;
 import edu.tigers.sumatra.drawable.DrawableArrow;
 import edu.tigers.sumatra.drawable.DrawableCircle;
 import edu.tigers.sumatra.math.AngleMath;
+import edu.tigers.sumatra.math.SumatraMath;
 import edu.tigers.sumatra.math.circle.Circle;
 import edu.tigers.sumatra.math.circle.CircleMath;
 import edu.tigers.sumatra.math.circle.ICircle;
@@ -16,6 +17,7 @@ import edu.tigers.sumatra.math.vector.IVector3;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.math.vector.Vector3;
 import edu.tigers.sumatra.skillsystem.ESkillShapesLayer;
+import edu.tigers.sumatra.skillsystem.skills.util.EDribblerMode;
 import edu.tigers.sumatra.skillsystem.skills.util.KickParams;
 import edu.tigers.sumatra.time.TimestampTimer;
 import lombok.Setter;
@@ -28,8 +30,17 @@ import java.awt.Color;
  */
 public class ProtectAndMoveWithBallSkill extends AMoveToSkill
 {
-	@Configurable(comment = "Dribbler speed while protecting", defValue = "5000.0")
-	private static double protectDribbleSpeed = 5000;
+	@Configurable(comment = "Carrot movement distance multiplier", defValue = "1.8")
+	private static double carrotMovementMultiplier = 1.8;
+
+	@Configurable(comment = "Carrot movement base distance [mm]", defValue = "5.0")
+	private static double carrotMovementBaseValue = 5.0;
+
+	@Configurable(comment = "Speed bonus attack Angle multiplier", defValue = "180.0")
+	private static double speedBonusAttackAngleMultiplier = 180.0;
+
+	@Configurable(comment = "Speed bonus opponentDist upper distance", defValue = "2000.0")
+	private static double speedBonusOpponentDistUpperLimit = 2000.0;
 
 	@Setter
 	IVector2 protectionTarget;
@@ -44,6 +55,7 @@ public class ProtectAndMoveWithBallSkill extends AMoveToSkill
 	{
 		super.doEntryActions();
 		getMoveCon().setBallObstacle(false);
+		getMoveCon().setBotsObstacle(false);
 	}
 
 
@@ -61,7 +73,8 @@ public class ProtectAndMoveWithBallSkill extends AMoveToSkill
 
 		double distEnemyToBall = enemyToBall.getLength();
 		double turnRadius = 500 * (1 / (Math.abs(attackAngle) + 1e-5));
-		double dist = 5 + (150 * (Math.abs(attackAngle) / Math.PI)) * (1 - (Math.min(2000, distEnemyToBall) / 2000));
+		double dist = calculateCarrotMovementDistance(attackAngle, distEnemyToBall);
+
 		double angle = AngleMath.deg2rad((dist * 180) / (Math.PI * turnRadius)) * (Math.abs(attackAngle) / Math.PI);
 
 		ICircle circle;
@@ -111,7 +124,15 @@ public class ProtectAndMoveWithBallSkill extends AMoveToSkill
 			changeStateTimer.reset();
 		}
 
-		setKickParams(KickParams.disarm().withDribbleSpeed(protectDribbleSpeed));
+		setKickParams(KickParams.disarm().withDribblerMode(EDribblerMode.DEFAULT));
 		super.doUpdate();
+	}
+
+
+	private double calculateCarrotMovementDistance(double attackAngle, double distEnemyToBall)
+	{
+		double speedBonusAttackAngle = (speedBonusAttackAngleMultiplier * (Math.abs(attackAngle) / AngleMath.PI));
+		double speedBonusOpponentDist = SumatraMath.relative(distEnemyToBall, speedBonusOpponentDistUpperLimit, 0);
+		return carrotMovementBaseValue + speedBonusAttackAngle * speedBonusOpponentDist * carrotMovementMultiplier;
 	}
 }

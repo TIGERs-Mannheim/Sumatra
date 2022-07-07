@@ -1,21 +1,20 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.drawable;
+
+import com.sleepycat.persist.model.Persistent;
+import edu.tigers.sumatra.math.AngleMath;
+import edu.tigers.sumatra.math.SumatraMath;
+import edu.tigers.sumatra.math.botshape.BotShape;
+import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.math.vector.Vector2f;
 
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.Graphics2D;
 import java.awt.Shape;
 import java.awt.geom.Arc2D;
-
-import com.sleepycat.persist.model.Persistent;
-
-import edu.tigers.sumatra.math.AngleMath;
-import edu.tigers.sumatra.math.SumatraMath;
-import edu.tigers.sumatra.math.botshape.BotShape;
-import edu.tigers.sumatra.math.vector.IVector2;
-import edu.tigers.sumatra.math.vector.Vector2f;
 
 
 /**
@@ -55,7 +54,7 @@ public class DrawableBotShape implements IDrawableShape
 	@Override
 	public void paintShape(final Graphics2D g, final IDrawableTool tool, final boolean invert)
 	{
-		final int robotRadius = tool.scaleXLength(radius);
+		final int robotRadius = tool.scaleGlobalToGui(radius);
 
 		// --- from SSLVision-mm to java2d-coordinates ---
 		final IVector2 transBotPos = tool.transformToGuiCoordinates(pos, invert);
@@ -65,13 +64,12 @@ public class DrawableBotShape implements IDrawableShape
 
 		double r = radius;
 		double alpha = SumatraMath.acos(center2DribblerDist / r);
-		double startAngleRad = (angle - AngleMath.PI_HALF) + tool.getFieldTurn().getAngle() + alpha
-				+ (invert ? AngleMath.PI : 0);
+		double startAngleRad = tool.transformToGuiAngle(angle, invert) + alpha;
 		double startAngle = AngleMath.rad2deg(startAngleRad);
-		double endAngle = 360 - AngleMath.rad2deg(2 * alpha);
+		double angleExtent = 360 - AngleMath.rad2deg(2 * alpha);
 
 		Shape botShape = new Arc2D.Double(drawingX, drawingY, robotRadius * 2.0, robotRadius * 2.0, startAngle,
-				endAngle, Arc2D.CHORD);
+				angleExtent, Arc2D.CHORD);
 
 		if (fillColor != null)
 		{

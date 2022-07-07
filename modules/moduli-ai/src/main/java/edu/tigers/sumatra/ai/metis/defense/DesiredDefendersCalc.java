@@ -1,12 +1,11 @@
 /*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.metis.defense;
 
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
 import edu.tigers.sumatra.ai.metis.defense.data.DefenseBallThreat;
-import edu.tigers.sumatra.ai.metis.defense.data.DefenseBallToBotThreat;
 import edu.tigers.sumatra.ai.metis.defense.data.DefenseBotThreat;
 import edu.tigers.sumatra.ai.metis.defense.data.DefenseThreatAssignment;
 import edu.tigers.sumatra.ai.metis.defense.data.IDefenseThreat;
@@ -22,6 +21,7 @@ import lombok.Getter;
 
 import java.awt.Color;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -36,19 +36,16 @@ import java.util.stream.Collectors;
  */
 public class DesiredDefendersCalc extends ADesiredBotCalc
 {
-	private static final int NUM_BOTS_PER_BALL_TO_BOT_THREAT = 1;
-	private static final int NUM_BOTS_PER_BOT_THREAT = 1;
 	private final DesiredDefendersCalcUtil util = new DesiredDefendersCalcUtil();
 
 	private final Supplier<Map<EPlay, Integer>> playNumbers;
 	private final Supplier<DefenseBallThreat> defenseBallThreat;
 	private final Supplier<List<DefenseBotThreat>> defenseBotThreats;
-	private final Supplier<List<DefenseBallToBotThreat>> defenseBallToBotThreats;
 	private final Supplier<Set<BotID>> crucialDefender;
 	private final Supplier<Integer> numDefenderForBall;
 
 	@Getter
-	private List<DefenseThreatAssignment> defenseThreatAssignments;
+	private List<DefenseThreatAssignment> defenseRawThreatAssignments;
 
 
 	public DesiredDefendersCalc(
@@ -56,14 +53,13 @@ public class DesiredDefendersCalc extends ADesiredBotCalc
 			Supplier<Map<EPlay, Integer>> playNumbers,
 			Supplier<DefenseBallThreat> defenseBallThreat,
 			Supplier<List<DefenseBotThreat>> defenseBotThreats,
-			Supplier<List<DefenseBallToBotThreat>> defenseBallToBotThreats,
-			Supplier<Set<BotID>> crucialDefender, Supplier<Integer> numDefenderForBall)
+			Supplier<Set<BotID>> crucialDefender,
+			Supplier<Integer> numDefenderForBall)
 	{
 		super(desiredBotMap);
 		this.playNumbers = playNumbers;
 		this.defenseBallThreat = defenseBallThreat;
 		this.defenseBotThreats = defenseBotThreats;
-		this.defenseBallToBotThreats = defenseBallToBotThreats;
 		this.crucialDefender = crucialDefender;
 		this.numDefenderForBall = numDefenderForBall;
 	}
@@ -74,33 +70,14 @@ public class DesiredDefendersCalc extends ADesiredBotCalc
 	{
 		util.update(getAiFrame());
 
-		// Exclude already assigned offensive and crucial defender bots
-		List<BotID> remainingDefenders = new ArrayList<>(getUnassignedBots());
-
-		final Set<BotID> desiredBallDefenders = getDesiredBallDefenders(remainingDefenders);
-		remainingDefenders.removeAll(desiredBallDefenders);
-
+		// Exclude already assigned offensive and other crucial bots (Keeper, BallPlacement, etc.)
+		var remainingDefenders = new ArrayList<>(getUnassignedBots());
 		// a LinkedHashSet is required here as we need the insertion order further down
-		final Set<BotID> desiredDefenders = new LinkedHashSet<>(desiredBallDefenders);
+		var desiredDefenders = new LinkedHashSet<BotID>();
 
-		defenseThreatAssignments = new ArrayList<>();
-		defenseThreatAssignments.add(new DefenseThreatAssignment(
-				defenseBallThreat.get(),
-				desiredBallDefenders));
 
-		for (IDefenseThreat botThreat : defenseBotThreats.get())
-		{
-			IDefenseThreat threat = defenseBallToBotThreats.get().stream()
-					.filter(ballToBotThreat -> ballToBotThreat.getObjectId() == botThreat.getObjectId())
-					.map(IDefenseThreat.class::cast)
-					.findAny().orElse(botThreat);
-			int numBotsPerThreat = (threat == botThreat) ? NUM_BOTS_PER_BOT_THREAT : NUM_BOTS_PER_BALL_TO_BOT_THREAT;
-
-			final Set<BotID> bestDefenders = util.nextBestDefenders(threat, remainingDefenders, numBotsPerThreat);
-			remainingDefenders.removeAll(bestDefenders);
-			desiredDefenders.addAll(bestDefenders);
-			defenseThreatAssignments.add(new DefenseThreatAssignment(threat, bestDefenders));
-		}
+		defenseRawThreatAssignments = createAllThreatAssignments(remainingDefenders, desiredDefenders);
+		defenseRawThreatAssignments.forEach(this::drawThreatAssignment);
 
 		remainingDefenders.sort(Comparator.comparingDouble(
 				o -> getWFrame().getBot(o).getPos().distanceTo(Geometry.getGoalOur().getCenter())));
@@ -112,21 +89,58 @@ public class DesiredDefendersCalc extends ADesiredBotCalc
 				.collect(Collectors.toSet());
 
 		addDesiredBots(EPlay.DEFENSIVE, finalDesiredDefenders);
-
-		defenseThreatAssignments.forEach(this::drawThreatAssignment);
 	}
 
 
-	private Set<BotID> getDesiredBallDefenders(final List<BotID> remainingDefenders)
+	private List<DefenseThreatAssignment> createAllThreatAssignments(List<BotID> remainingDefenders,
+			Set<BotID> desiredDefenders)
 	{
-		if (crucialDefender.get().isEmpty())
-		{
-			return util.nextBestDefenders(
-					defenseBallThreat.get(),
-					remainingDefenders,
-					numDefenderForBall.get());
-		}
-		return crucialDefender.get().stream().filter(remainingDefenders::contains).collect(Collectors.toSet());
+		var threatAssignments = new ArrayList<DefenseThreatAssignment>();
+
+		threatAssignments.add(createBallThreatAssignment(remainingDefenders, desiredDefenders));
+		defenseBotThreats.get().stream()
+				.map(t -> createBotThreatAssignment(t, remainingDefenders, desiredDefenders))
+				.forEach(threatAssignments::add);
+
+		return Collections.unmodifiableList(threatAssignments);
+	}
+
+
+	private DefenseThreatAssignment createBallThreatAssignment(
+			List<BotID> remainingDefenders,
+			Set<BotID> desiredDefenders)
+	{
+		var bestDefenders = crucialDefender.get().stream()
+				.filter(remainingDefenders::contains)
+				.collect(Collectors.toSet());
+
+		var numMissingDefender = numDefenderForBall.get() - crucialDefender.get().size();
+		bestDefenders.addAll(util.nextBestDefenders(defenseBallThreat.get(), remainingDefenders, numMissingDefender));
+
+		return createSingleThreatAssignment(defenseBallThreat.get(), remainingDefenders, desiredDefenders, bestDefenders);
+	}
+
+
+	private DefenseThreatAssignment createBotThreatAssignment(
+			IDefenseThreat threat,
+			List<BotID> remainingDefenders,
+			Set<BotID> desiredDefenders)
+	{
+		var bestDefenders = util.nextBestDefenders(threat, remainingDefenders, 1);
+
+		return createSingleThreatAssignment(threat, remainingDefenders, desiredDefenders, bestDefenders);
+	}
+
+
+	private DefenseThreatAssignment createSingleThreatAssignment(
+			IDefenseThreat threat,
+			List<BotID> remainingDefenders,
+			Set<BotID> desiredDefenders,
+			Set<BotID> bestDefenders)
+	{
+		remainingDefenders.removeAll(bestDefenders);
+		desiredDefenders.addAll(bestDefenders);
+		return new DefenseThreatAssignment(threat, bestDefenders);
 	}
 
 
@@ -142,4 +156,6 @@ public class DesiredDefendersCalc extends ADesiredBotCalc
 			shapes.add(new DrawableLine(assignmentLine, Color.MAGENTA));
 		}
 	}
+
+
 }

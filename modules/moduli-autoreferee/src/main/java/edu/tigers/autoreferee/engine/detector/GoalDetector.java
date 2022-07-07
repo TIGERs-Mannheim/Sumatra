@@ -1,15 +1,8 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.autoreferee.engine.detector;
-
-import java.util.EnumMap;
-import java.util.Map;
-import java.util.Optional;
-
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.AObjectID;
@@ -22,6 +15,13 @@ import edu.tigers.sumatra.referee.gameevent.PossibleGoal;
 import edu.tigers.sumatra.vision.data.IKickEvent;
 import edu.tigers.sumatra.wp.data.BallLeftFieldPosition;
 import edu.tigers.sumatra.wp.data.TimedPosition;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import java.util.EnumMap;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 
 
 /**
@@ -37,7 +37,7 @@ public class GoalDetector extends AGameEventDetector
 
 	public GoalDetector()
 	{
-		super(EGameEventDetectorType.GOAL, EGameState.RUNNING);
+		super(EGameEventDetectorType.GOAL, Set.of(EGameState.RUNNING, EGameState.PENALTY));
 		lastTouchedMap.put(ETeamColor.BLUE, 0L);
 		lastTouchedMap.put(ETeamColor.YELLOW, 0L);
 		maxBallHeightMap.put(ETeamColor.BLUE, 0.0);
@@ -94,7 +94,7 @@ public class GoalDetector extends AGameEventDetector
 
 	private void warnIfNoKickEventPresent()
 	{
-		if (!frame.getWorldFrame().getKickEvent().isPresent())
+		if (frame.getWorldFrame().getKickEvent().isEmpty())
 		{
 			log.warn("Goal detected, but no kick event found.");
 		}

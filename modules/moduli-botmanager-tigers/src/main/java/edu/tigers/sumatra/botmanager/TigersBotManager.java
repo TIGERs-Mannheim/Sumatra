@@ -1,19 +1,8 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.botmanager;
-
-import static edu.tigers.sumatra.botmanager.commands.ECommand.CMD_SYSTEM_MATCH_FEEDBACK;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import edu.tigers.sumatra.bot.IBot;
 import edu.tigers.sumatra.botmanager.basestation.ITigersBaseStationObserver;
@@ -27,12 +16,26 @@ import edu.tigers.sumatra.botmanager.commands.basestation.BaseStationCameraViewp
 import edu.tigers.sumatra.botmanager.commands.basestation.BaseStationWifiStats;
 import edu.tigers.sumatra.botmanager.commands.tigerv2.TigerSystemConsoleCommand;
 import edu.tigers.sumatra.botmanager.commands.tigerv2.TigerSystemConsoleCommand.ConsoleCommandTarget;
+import edu.tigers.sumatra.botmanager.commands.tigerv3.TigerConfigWrite;
+import edu.tigers.sumatra.botmanager.configs.ConfigFileDatabaseManager;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.ids.ETeamColor;
 import edu.tigers.sumatra.math.rectangle.IRectangle;
 import edu.tigers.sumatra.model.SumatraModel;
 import edu.tigers.sumatra.vision.AVisionFilter;
 import edu.tigers.sumatra.vision.IVisionFilterObserver;
+import lombok.Getter;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
+import static edu.tigers.sumatra.botmanager.commands.ECommand.CMD_SYSTEM_MATCH_FEEDBACK;
 
 
 /**
@@ -42,7 +45,8 @@ public class TigersBotManager extends ABotManager implements IVisionFilterObserv
 {
 	private static final String PROP_AUTO_CHARGE = TigersBotManager.class.getName() + ".autoCharge";
 	private boolean autoCharge = true;
-
+	@Getter
+	private final ConfigFileDatabaseManager configDatabase = new ConfigFileDatabaseManager();
 	private final List<ITigerBotObserver> botObservers = new CopyOnWriteArrayList<>();
 
 
@@ -115,6 +119,17 @@ public class TigersBotManager extends ABotManager implements IVisionFilterObserv
 	}
 
 
+	public void broadcastWithVersionCheck(TigerConfigWrite cmd, final int version)
+	{
+		getTigerBots().values().forEach(b -> {
+			if (b.isSameConfigVersion(cmd.getConfigId(), version))
+			{
+				b.execute(cmd);
+			}
+		});
+	}
+
+
 	private void setAutoCharge(final boolean autoCharge)
 	{
 		this.autoCharge = autoCharge;
@@ -174,7 +189,7 @@ public class TigersBotManager extends ABotManager implements IVisionFilterObserv
 
 	private void updateColorOfAllRobotsToMajority(final TigerBot bot)
 	{
-		if (SumatraModel.getInstance().isProductive())
+		if (SumatraModel.getInstance().isTournamentMode())
 		{
 			long numY = getBots().values().stream().map(b -> b.getBotId().getTeamColor())
 					.filter(tc -> tc.equals(ETeamColor.YELLOW)).count();

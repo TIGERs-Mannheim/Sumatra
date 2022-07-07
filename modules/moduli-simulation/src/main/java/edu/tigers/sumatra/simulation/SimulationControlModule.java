@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.simulation;
@@ -47,7 +47,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.EnumMap;
-import java.util.IdentityHashMap;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentSkipListMap;
@@ -87,6 +87,9 @@ public class SimulationControlModule extends AModule
 	private static double delay = 0.05;
 	@Configurable(comment = "Max allowed bot speed in stop phases", defValue = "1.3")
 	private static double stopSpeedLimit = 1.3;
+
+	@Configurable(defValue = "150.0", comment = "Max allowed divergence from actual position, before resetting the state")
+	private static double maxDivergence = 150;
 
 	static
 	{
@@ -129,7 +132,6 @@ public class SimulationControlModule extends AModule
 	@Override
 	public void startModule()
 	{
-		lastTimeReportedNoFeedback = System.nanoTime();
 		ConfigRegistration.registerConfigurableCallback("user", configObserver);
 		SumatraModel.getInstance().getModule(WorldInfoCollector.class).addObserver(visionObserver);
 		SumatraModel.getInstance().getModule(AVisionFilter.class).setBallPlacer(new BallPlacer());
@@ -153,6 +155,12 @@ public class SimulationControlModule extends AModule
 
 	private void reconnect()
 	{
+		lastTimeReportedNoFeedback = System.nanoTime();
+		simulatedBots.clear();
+		robotFeedbackMap.clear();
+		lastRobotFeedbackMap.clear();
+		stateSyncBuffers.clear();
+
 		if (Strings.isBlank(hostname))
 		{
 			log.debug("No hostname set. Will not connect to simulator.");
@@ -251,7 +259,7 @@ public class SimulationControlModule extends AModule
 		var otherBotStates = botFilterStates.entrySet().stream()
 				.filter(b -> b.getKey() != botID)
 				.map(Map.Entry::getValue)
-				.collect(Collectors.toList());
+				.toList();
 		var botState = botFilterStates.get(botID);
 		double margin = Geometry.getBotRadius() * 2 + 10;
 		return otherBotStates.stream()
@@ -291,8 +299,15 @@ public class SimulationControlModule extends AModule
 
 		var actPos = botFilterState.getPose().getPos();
 		var actOri = botFilterState.getPose().getOrientation();
+		var errPos = refPos.subtractNew(actPos);
 
-		var errVel = BotMath.convertGlobalBotVector2Local(refPos.subtractNew(actPos),
+		if (errPos.getLength2() > maxDivergence)
+		{
+			simulatedBot.setState(botFilterState);
+			return Vector3.from2d(refVel, refOri);
+		}
+
+		var errVel = BotMath.convertGlobalBotVector2Local(errPos,
 				simulatedBot.getState().getPose().getOrientation());
 		var errRot = AngleMath.difference(refOri, actOri);
 
@@ -350,7 +365,7 @@ public class SimulationControlModule extends AModule
 			updateHostname();
 			cleanupRobotFeedback();
 
-			Map<BotID, SimBotState> botFilterStates = new IdentityHashMap<>();
+			Map<BotID, SimBotState> botFilterStates = new HashMap<>();
 			for (var bot : wfw.getSimpleWorldFrame().getBots().values())
 			{
 				State filteredState = bot.getFilteredState().orElse(null);
@@ -359,24 +374,26 @@ public class SimulationControlModule extends AModule
 					continue;
 				}
 				var feedback = robotFeedbackMap.get(bot.getBotId());
-				Boolean barrierInterrupted = Optional.ofNullable(feedback)
+				boolean barrierInterrupted = Optional.ofNullable(feedback)
 						.map(RobotFeedback::getDribblerBallContact)
-						.orElse(null);
+						.orElse(false);
 
+				Long lastUpdate = lastRobotFeedbackMap.getOrDefault(bot.getBotId(), 0L);
 				SimBotState simBotState = new SimBotState(
 						Pose.from(filteredState.getPos(), filteredState.getOrientation()),
 						Vector3.from2d(filteredState.getVel2().multiplyNew(1000), filteredState.getAngularVel()),
 						barrierInterrupted,
-						lastRobotFeedbackMap.getOrDefault(bot.getBotId(), 0L)
+						lastUpdate
 				);
 				botFilterStates.put(bot.getBotId(), simBotState);
 				var simBot = simulatedBots.computeIfAbsent(bot.getBotId(), botId -> new SimulatedBot(botId, simBotState));
 				simBot.setBarrierInterrupted(barrierInterrupted);
+				simBot.setLastUpdate(lastUpdate);
 			}
 
 			simulatedBots.keySet().removeIf(id -> !botFilterStates.containsKey(id));
 
-			Map<BotID, SimBotState> botStates = new IdentityHashMap<>();
+			Map<BotID, SimBotState> botStates = new HashMap<>();
 			simulatedBots.forEach((botId, bot) -> botStates.put(botId, bot.getState()));
 
 			simulatorActionCallbacks.forEach(cb -> cb.updateConnectedBotList(simulatedBots.keySet()));
@@ -404,8 +421,21 @@ public class SimulationControlModule extends AModule
 		private void cleanupRobotFeedback()
 		{
 			double timeout = 0.5;
+
+			for (var entry : lastRobotFeedbackMap.entrySet())
+			{
+				double diff = (System.nanoTime() - entry.getValue()) / 1e9;
+				if (diff > timeout)
+				{
+					log.warn("Lost robot feedback from {} after {}", entry.getKey(), diff);
+					lastRobotFeedbackMap.remove(entry.getKey());
+				} else if (diff < 0)
+				{
+					log.warn("last robot feedback is in the future: {} < 0", diff);
+				}
+			}
+
 			long now = System.nanoTime();
-			lastRobotFeedbackMap.values().removeIf(t -> (now - t) / 1e9 > timeout);
 			if (lastRobotFeedbackMap.isEmpty() && (now - lastTimeReportedNoFeedback) / 1e9 > 5)
 			{
 				log.warn("No robot feedback for {}s", timeout);

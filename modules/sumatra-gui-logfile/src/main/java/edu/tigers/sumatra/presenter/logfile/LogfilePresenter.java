@@ -1,12 +1,9 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.presenter.logfile;
 
-import edu.tigers.moduli.exceptions.ModuleNotFoundException;
-import edu.tigers.moduli.listenerVariables.ModulesState;
-import edu.tigers.sumatra.cam.ACam;
 import edu.tigers.sumatra.cam.LogfileVisionCam;
 import edu.tigers.sumatra.cam.LogfileVisionCam.ILogfileVisionCamObserver;
 import edu.tigers.sumatra.gamelog.MergeTool;
@@ -17,154 +14,81 @@ import edu.tigers.sumatra.referee.proto.SslGcGameEvent;
 import edu.tigers.sumatra.referee.proto.SslGcRefereeMessage.Referee.Command;
 import edu.tigers.sumatra.view.logfile.LogfilePanel;
 import edu.tigers.sumatra.view.logfile.LogfilePanel.ILogfilePanelObserver;
-import edu.tigers.sumatra.views.ASumatraViewPresenter;
-import edu.tigers.sumatra.views.ISumatraView;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import edu.tigers.sumatra.views.ISumatraViewPresenter;
+import lombok.Getter;
 
 import javax.swing.Timer;
-import java.awt.Component;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.Serial;
 import java.util.List;
 
 
 /**
- * @author AndreR
+ * Presenter for log file view.
  */
-public class LogfilePresenter extends ASumatraViewPresenter implements ILogfilePanelObserver
+public class LogfilePresenter implements ISumatraViewPresenter, ILogfilePanelObserver
 {
-	@SuppressWarnings("unused")
-	private static final Logger log = LogManager.getLogger(LogfilePresenter.class.getName());
-	private final LogfilePanel logfilePanel = new LogfilePanel();
+	@Getter
+	private final LogfilePanel viewPanel = new LogfilePanel();
+	private final DataRefresher dataRefresher = new DataRefresher();
 
 	private SSLGameLogReader logfile;
 
-	private final DataRefresher dataRefresher = new DataRefresher();
-
 
 	@Override
-	public void onModuliStateChanged(final ModulesState state)
+	public void onStartModuli()
 	{
-		super.onModuliStateChanged(state);
+		ISumatraViewPresenter.super.onStartModuli();
+		viewPanel.addObserver(this);
 
-		switch (state)
-		{
-			case ACTIVE:
-				activateModule();
-				break;
-			case RESOLVED:
-				deactivateModule();
-				break;
-			default:
-				break;
-
-		}
-	}
-
-
-	private void deactivateModule()
-	{
-		LogfileVisionCam cam;
-		logfilePanel.removeObserver(this);
-
-		cam = getLogfileCam();
-		if (cam != null)
-		{
-			dataRefresher.stop();
-			cam.removeObserver(dataRefresher);
-		}
-	}
-
-
-	private void activateModule()
-	{
-		LogfileVisionCam cam;
-		logfilePanel.addObserver(this);
-
-		cam = getLogfileCam();
-		if (cam != null)
-		{
-			cam.addObserver(dataRefresher);
-			dataRefresher.start();
-		}
+		SumatraModel.getInstance().getModuleOpt(LogfileVisionCam.class).ifPresent(cam -> {
+					cam.addObserver(dataRefresher);
+					dataRefresher.start();
+				}
+		);
 	}
 
 
 	@Override
-	public Component getComponent()
+	public void onStopModuli()
 	{
-		return logfilePanel;
-	}
+		ISumatraViewPresenter.super.onStopModuli();
+		viewPanel.removeObserver(this);
 
-
-	@Override
-	public ISumatraView getSumatraView()
-	{
-		return logfilePanel;
-	}
-
-
-	private LogfileVisionCam getLogfileCam()
-	{
-		try
-		{
-			ACam cam = SumatraModel.getInstance().getModule(ACam.class);
-			if (cam instanceof LogfileVisionCam)
-			{
-				return (LogfileVisionCam) cam;
-			}
-		} catch (ModuleNotFoundException e)
-		{
-			log.debug("Cam module is not of type LogfileVisionCam", e);
-		}
-		return null;
+		SumatraModel.getInstance().getModuleOpt(LogfileVisionCam.class).ifPresent(cam -> {
+					dataRefresher.stop();
+					cam.removeObserver(dataRefresher);
+				}
+		);
 	}
 
 
 	@Override
 	public void onPause()
 	{
-		LogfileVisionCam cam = getLogfileCam();
-		if (cam != null)
-		{
-			cam.setPause(true);
-		}
+		SumatraModel.getInstance().getModuleOpt(LogfileVisionCam.class).ifPresent(cam -> cam.setPause(true));
 	}
 
 
 	@Override
 	public void onResume()
 	{
-		LogfileVisionCam cam = getLogfileCam();
-		if (cam != null)
-		{
-			cam.setPause(false);
-		}
+		SumatraModel.getInstance().getModuleOpt(LogfileVisionCam.class).ifPresent(cam -> cam.setPause(false));
 	}
 
 
 	@Override
 	public void onChangeSpeed(final double speed)
 	{
-		LogfileVisionCam cam = getLogfileCam();
-
-		if (cam != null)
-		{
-			cam.setSpeed(speed);
-		}
+		SumatraModel.getInstance().getModuleOpt(LogfileVisionCam.class).ifPresent(cam -> cam.setSpeed(speed));
 	}
 
 
 	@Override
 	public void onStep(final int numSteps)
 	{
-		LogfileVisionCam cam = getLogfileCam();
-
-		if (cam != null)
-		{
-			cam.doSteps(numSteps);
-		}
+		SumatraModel.getInstance().getModuleOpt(LogfileVisionCam.class).ifPresent(cam -> cam.doSteps(numSteps));
 	}
 
 
@@ -173,50 +97,31 @@ public class LogfilePresenter extends ASumatraViewPresenter implements ILogfileP
 	{
 		logfile = new SSLGameLogReader();
 
-		logfile.loadFile(path, success -> {
-			LogfileVisionCam cam = getLogfileCam();
-
-			if (cam != null)
-			{
-				cam.setLogfile(logfile);
-			}
-		});
+		logfile.loadFile(path, success -> SumatraModel.getInstance().getModuleOpt(LogfileVisionCam.class)
+				.ifPresent(cam -> cam.setLogfile(logfile)));
 	}
 
 
 	@Override
 	public void onChangePosition(final int pos)
 	{
-		LogfileVisionCam cam = getLogfileCam();
-
-		if (cam != null)
-		{
-			cam.setPosition(pos);
-		}
+		SumatraModel.getInstance().getModuleOpt(LogfileVisionCam.class).ifPresent(cam -> cam.setPosition(pos));
 	}
 
 
 	@Override
 	public void onSeekToRefCmd(final List<Command> commands)
 	{
-		LogfileVisionCam cam = getLogfileCam();
-
-		if (cam != null)
-		{
-			cam.seekForwardToRefCommand(commands);
-		}
+		SumatraModel.getInstance().getModuleOpt(LogfileVisionCam.class)
+				.ifPresent(cam -> cam.seekForwardToRefCommand(commands));
 	}
 
 
 	@Override
 	public void onSeekToGameEvent(final List<SslGcGameEvent.GameEvent.Type> gameEventTypes)
 	{
-		LogfileVisionCam cam = getLogfileCam();
-
-		if (cam != null)
-		{
-			cam.seekForwardToGameEvent(gameEventTypes);
-		}
+		SumatraModel.getInstance().getModuleOpt(LogfileVisionCam.class)
+				.ifPresent(cam -> cam.seekForwardToGameEvent(gameEventTypes));
 	}
 
 
@@ -233,10 +138,11 @@ public class LogfilePresenter extends ASumatraViewPresenter implements ILogfileP
 
 	private class DataRefresher extends Timer implements ActionListener, ILogfileVisionCamObserver
 	{
+		@Serial
 		private static final long serialVersionUID = 8597026135355238868L;
 
-		private SSLGameLogfileEntry lastEntry = null;
-		private int lastIndex = 0;
+		private transient SSLGameLogfileEntry lastEntry;
+		private int lastIndex;
 
 
 		public DataRefresher()
@@ -254,15 +160,15 @@ public class LogfilePresenter extends ASumatraViewPresenter implements ILogfileP
 				return;
 			}
 
-			logfilePanel.setNumPackets(logfile.getPackets().size());
-			logfilePanel.setPosition(lastIndex);
+			viewPanel.setNumPackets(logfile.getPackets().size());
+			viewPanel.setPosition(lastIndex);
 
 			if (lastEntry == null)
 			{
 				return;
 			}
 
-			logfilePanel.updateTime(lastEntry.getTimestamp());
+			viewPanel.updateTime(lastEntry.getTimestamp());
 		}
 
 

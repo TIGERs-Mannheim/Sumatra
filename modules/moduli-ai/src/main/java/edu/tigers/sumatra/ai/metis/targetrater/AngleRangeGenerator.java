@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.metis.targetrater;
@@ -67,6 +67,11 @@ public class AngleRangeGenerator
 		IVector2 endCenter = TriangleMath.bisector(origin, lineSegment.getStart(), lineSegment.getEnd());
 		IVector2 originToEndCenter = endCenter.subtractNew(origin);
 
+		if (obstacles.stream().anyMatch(c -> c.isPointInShape(origin)))
+		{
+			return List.of(AngleRange.width(AngleMath.PI_TWO));
+		}
+		
 		return obstacles.stream()
 				.map(circle -> circle.tangentialIntersections(origin))
 				.map(intersections -> createRange(origin, originToEndCenter, intersections))
@@ -112,12 +117,14 @@ public class AngleRangeGenerator
 	 */
 	public List<AngleRange> findUncoveredAngleRanges(final List<AngleRange> coveredAngles, final AngleRange fullRange)
 	{
-		coveredAngles.sort(Comparator.comparingDouble(AngleRange::getRight));
+		var sortedCoveredAngles = coveredAngles.stream()
+				.sorted(Comparator.comparingDouble(AngleRange::getRight))
+				.collect(Collectors.toUnmodifiableList());
 
 		List<AngleRange> uncoveredAngles = new ArrayList<>();
 		uncoveredAngles.add(fullRange);
 
-		for (AngleRange r : coveredAngles)
+		for (AngleRange r : sortedCoveredAngles)
 		{
 			List<AngleRange> newUncoveredAngles = new ArrayList<>();
 			for (AngleRange c : uncoveredAngles)

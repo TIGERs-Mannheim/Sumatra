@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.metis.pass;
@@ -19,7 +19,7 @@ import edu.tigers.sumatra.drawable.DrawableArc;
 import edu.tigers.sumatra.drawable.DrawableCircle;
 import edu.tigers.sumatra.drawable.DrawablePoint;
 import edu.tigers.sumatra.drawable.IDrawableShape;
-import edu.tigers.sumatra.drawable.IShapeLayer;
+import edu.tigers.sumatra.drawable.IShapeLayerIdentifier;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.geometry.RuleConstraints;
 import edu.tigers.sumatra.ids.BotID;
@@ -33,6 +33,7 @@ import edu.tigers.sumatra.math.circle.ICircular;
 import edu.tigers.sumatra.math.line.LineMath;
 import edu.tigers.sumatra.math.line.v2.IHalfLine;
 import edu.tigers.sumatra.math.line.v2.Lines;
+import edu.tigers.sumatra.math.pose.Pose;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.math.vector.Vector2f;
@@ -46,13 +47,12 @@ import lombok.Value;
 import java.awt.Color;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.IdentityHashMap;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 
 @RequiredArgsConstructor
@@ -94,6 +94,9 @@ public class PassGenerator
 	@Configurable(defValue = "2.0", comment = "Upper impact time at which passes in all directions are generated")
 	private static double impactTimeUpper = 2.0;
 
+	@Configurable(defValue = "0.15", comment = "Min angle tolerance for filtering passes during free kick")
+	private static double minAngleTolerance = 0.15;
+
 	static
 	{
 		ConfigRegistration.registerClass("metis", PassGenerator.class);
@@ -104,6 +107,7 @@ public class PassGenerator
 			.checkInsideField()
 			.checkNotInPenaltyAreas()
 			.checkConfirmWithKickOffRules()
+			.checkCustom("keepDirectionDuringFreeKick", this::keepDirectionDuringFreeKick)
 			.checkCustom("keepMinDistanceToBall", this::keepMinDistanceToBall)
 			.checkCustom("canBeReceivedOutsidePenArea", this::canBeReceivedOutsidePenArea)
 			.checkCustom("isRedirectAngleDoable", this::isRedirectAngleDoable)
@@ -116,7 +120,7 @@ public class PassGenerator
 
 	private Set<BotID> consideredBots;
 	private KickOrigin kickOrigin;
-	private double botOrientation;
+	private double passDir;
 	private double maxAngleRange;
 
 
@@ -132,10 +136,15 @@ public class PassGenerator
 	{
 		this.consideredBots = consideredBots;
 		this.kickOrigin = kickOrigin;
-		botOrientation = getWFrame().getBot(kickOrigin.getShooter()).getOrientation();
+		this.passDir = getAiFrame().getPrevFrame().getTacticalField().getSelectedPasses().entrySet().stream()
+				.filter(k -> k.getKey().getPos().distanceTo(kickOrigin.getPos()) < 100)
+				.findAny()
+				.map(Map.Entry::getValue)
+				.map(rp -> rp.getPass().getKick().getKickVel().getXYVector().getAngle())
+				.orElseGet(() -> getWFrame().getBot(kickOrigin.getShooter()).getOrientation());
 		maxAngleRange = findMaxAngleRange();
 
-		Map<BotID, ICircle> dynamicGenerationCircles = new IdentityHashMap<>();
+		Map<BotID, ICircle> dynamicGenerationCircles = new HashMap<>();
 		consideredBots.forEach(botId -> dynamicGenerationCircles.put(botId, createDynamicGenerationCircle(botId)));
 
 		List<PassTargetCandidate> candidates = new ArrayList<>(candidatesFromPreviousFrame(dynamicGenerationCircles));
@@ -157,16 +166,18 @@ public class PassGenerator
 	{
 		if (maxAngleRange < AngleMath.DEG_180_IN_RAD)
 		{
-			IArc arc = Arc.createArc(kickOrigin.getPos(), 5000, botOrientation - maxAngleRange, maxAngleRange * 2);
+			IArc arc = Arc.createArc(kickOrigin.getPos(), 5000, passDir - maxAngleRange, maxAngleRange * 2);
 			getShapes(EAiShapesLayer.PASS_GENERATION_PASS_DIR).add(
 					new DrawableArc(arc).setFill(true).setColor(new Color(79, 123, 0, 168)));
 		}
 	}
 
+
 	private boolean distanceToOtherCandidatesIsValid(PassTargetCandidate candidate, List<PassTargetCandidate> candidates)
 	{
 		return candidates.stream().noneMatch(c -> c.getPos().distanceTo(candidate.pos) < minDistanceBetweenTargets);
 	}
+
 
 	private double findMaxAngleRange()
 	{
@@ -182,7 +193,7 @@ public class PassGenerator
 	private boolean isDoablePassDirection(IVector2 pos)
 	{
 		var targetAngle = pos.subtractNew(kickOrigin.getPos()).getAngle();
-		return AngleMath.diffAbs(targetAngle, botOrientation) < maxAngleRange;
+		return AngleMath.diffAbs(targetAngle, passDir) < maxAngleRange;
 	}
 
 
@@ -228,6 +239,41 @@ public class PassGenerator
 	}
 
 
+	private boolean keepDirectionDuringFreeKick(final IVector2 point)
+	{
+		if (!getAiFrame().getGameState().isFreeKickForUs() &&
+				!getAiFrame().getGameState().isKickoffForUs())
+		{
+			return true;
+		}
+
+		RatedPass ratedPass = getAiFrame().getPrevFrame().getTacticalField().getSelectedPasses().entrySet().stream()
+				.filter(k -> k.getKey().getPos().distanceTo(kickOrigin.getPos()) < 100)
+				.findAny()
+				.map(Map.Entry::getValue)
+				.orElse(null);
+		if (ratedPass == null)
+		{
+			return true;
+		}
+
+		ITrackedBot shooter = getWFrame().getBot(kickOrigin.getShooter());
+		IVector2 shooterPos = shooter.getDestinationPose()
+				.map(Pose::getPos)
+				.orElseGet(shooter::getPos);
+		double shooterToPosDist = shooterPos.distanceTo(kickOrigin.getPos());
+		double relDist = SumatraMath.relative(
+				shooterToPosDist,
+				2.0 * Geometry.getBotRadius(),
+				3.0 * Geometry.getBotRadius()
+		);
+		double angleTolerance = minAngleTolerance + relDist * (AngleMath.DEG_180_IN_RAD - minAngleTolerance);
+		double dir = point.subtractNew(kickOrigin.getPos()).getAngle();
+		double curDir = ratedPass.getPass().getKick().getKickVel().getXYVector().getAngle();
+		return AngleMath.diffAbs(dir, curDir) < angleTolerance;
+	}
+
+
 	private boolean canBeReceivedOutsidePenArea(final IVector2 point)
 	{
 		IVector2 receivePos = LineMath.stepAlongLine(point, kickOrigin.getPos(), -Geometry.getBotRadius());
@@ -269,7 +315,7 @@ public class PassGenerator
 	{
 		if (getAiFrame().getGameState().isStandardSituation())
 		{
-			return RuleConstraints.getBotToPenaltyAreaMarginStandard() + Geometry.getBotRadius();
+			return RuleConstraints.getPenAreaMarginStandard() + Geometry.getBotRadius() + Geometry.getBallRadius();
 		}
 		return Geometry.getBallRadius();
 	}
@@ -283,7 +329,7 @@ public class PassGenerator
 				.filter(p -> isPassSourceInGenerationCircle(dynamicGenerationCircles, p))
 				.map(RatedPass::getPass)
 				.map(p -> createPassTargetCandidate(p.getKick().getTarget(), p.getReceiver()))
-				.collect(Collectors.toList());
+				.toList();
 	}
 
 
@@ -299,7 +345,7 @@ public class PassGenerator
 		return consideredBots.stream()
 				.map(botID -> passTargetsForBot(botID, dynamicGenerationCircles.get(botID)))
 				.flatMap(Collection::stream)
-				.collect(Collectors.toList());
+				.toList();
 	}
 
 
@@ -310,7 +356,7 @@ public class PassGenerator
 				.map(this::createPasses)
 				.flatMap(Collection::stream)
 				.filter(this::passIsNotReachingOurPenaltyAreaSoon)
-				.collect(Collectors.toList());
+				.toList();
 	}
 
 
@@ -495,7 +541,7 @@ public class PassGenerator
 	}
 
 
-	private List<IDrawableShape> getShapes(IShapeLayer shapeLayer)
+	private List<IDrawableShape> getShapes(IShapeLayerIdentifier shapeLayer)
 	{
 		return getAiFrame().getShapeMap().get(shapeLayer);
 	}

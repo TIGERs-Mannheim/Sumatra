@@ -11,6 +11,7 @@ import javax.swing.JPanel;
 import javax.swing.JTabbedPane;
 
 import edu.tigers.sumatra.ai.athena.EAIControlState;
+import edu.tigers.sumatra.components.BetterScrollPane;
 import edu.tigers.sumatra.ids.EAiTeam;
 
 
@@ -28,12 +29,18 @@ public class AICenterPanel extends JPanel
 	{
 		setLayout(new BorderLayout());
 
+		JPanel componentPanel = new JPanel();
+		componentPanel.setLayout(new BorderLayout());
+
 		for (EAiTeam team : EAiTeam.values())
 		{
 			teamTabbedPane.addTab(team.name(), new TeamPanel());
 		}
 
-		add(teamTabbedPane, BorderLayout.CENTER);
+		componentPanel.add(teamTabbedPane, BorderLayout.CENTER);
+
+		BetterScrollPane scrollPane = new BetterScrollPane(componentPanel);
+		add(scrollPane, BorderLayout.CENTER);
 
 		setActive(false);
 	}

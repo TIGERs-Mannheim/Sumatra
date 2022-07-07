@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.skillsystem.skills;
@@ -22,6 +22,7 @@ import edu.tigers.sumatra.skillsystem.ESkillShapesLayer;
 import edu.tigers.sumatra.skillsystem.skills.util.AroundBallCalc;
 import edu.tigers.sumatra.skillsystem.skills.util.BallStabilizer;
 import edu.tigers.sumatra.skillsystem.skills.util.DoubleChargingValue;
+import edu.tigers.sumatra.skillsystem.skills.util.EDribblerMode;
 import edu.tigers.sumatra.skillsystem.skills.util.KickParams;
 import edu.tigers.sumatra.skillsystem.skills.util.MinMarginChargeValue;
 import edu.tigers.sumatra.skillsystem.skills.util.PositionValidator;
@@ -75,9 +76,6 @@ public class DribbleSkill extends AMoveToSkill
 	private static double timeToQuickAvoidDribbleFoul = 0.2;
 	@Configurable(defValue = "0.7", comment = "[s] Max lookahead for Push and Kick States")
 	private static double maxLookahead = 0.7;
-
-	@Configurable(defValue = "10000", comment = "[rpm] Speed to spin the dribbler during ball contact")
-	private static double dribbleSpeed = 10_000.0;
 
 	private final PositionValidator positionValidator = new PositionValidator();
 	private final BallStabilizer ballStabilizer = new BallStabilizer();
@@ -380,7 +378,7 @@ public class DribbleSkill extends AMoveToSkill
 				tryToArmKick(kickSpeedDecelerate);
 			} else
 			{
-				setKickParams(KickParams.disarm().withDribbleSpeed(dribbleSpeed));
+				setKickParams(KickParams.disarm().withDribblerMode(EDribblerMode.DEFAULT));
 			}
 		}
 
@@ -428,7 +426,7 @@ public class DribbleSkill extends AMoveToSkill
 		{
 			if (isFocused())
 			{
-				setKickParams(KickParams.chip(kickSpeed).withDribbleSpeed(dribbleSpeed));
+				setKickParams(KickParams.chip(kickSpeed).withDribblerMode(EDribblerMode.DEFAULT));
 			}
 		}
 	}
@@ -455,7 +453,7 @@ public class DribbleSkill extends AMoveToSkill
 					.withUpperThreshold(250)
 					.build();
 
-			setKickParams(KickParams.disarm().withDribbleSpeed(dribbleSpeed));
+			setKickParams(KickParams.disarm().withDribblerMode(EDribblerMode.DEFAULT));
 		}
 
 
@@ -502,7 +500,7 @@ public class DribbleSkill extends AMoveToSkill
 			super.doEntryActions();
 			getMoveCon().setBallObstacle(true);
 
-			setKickParams(KickParams.disarm().withDribbleSpeed(0));
+			setKickParams(KickParams.disarm().withDribblerMode(EDribblerMode.OFF));
 		}
 
 

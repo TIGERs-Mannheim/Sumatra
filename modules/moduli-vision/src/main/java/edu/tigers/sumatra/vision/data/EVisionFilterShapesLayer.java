@@ -1,102 +1,36 @@
 /*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.vision.data;
 
-import edu.tigers.sumatra.drawable.IShapeLayer;
+import edu.tigers.sumatra.drawable.IShapeLayerIdentifier;
+import edu.tigers.sumatra.drawable.ShapeLayerFactory;
 import edu.tigers.sumatra.drawable.ShapeMap.EShapeLayerPersistenceType;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 
 
-/**
- * @author Nicolai Ommer <nicolai.ommer@gmail.com>
- */
-public enum EVisionFilterShapesLayer implements IShapeLayer
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
+public final class EVisionFilterShapesLayer
 {
-	QUALITY_SHAPES("Quality Inspector"),
-	CAM_INFO_SHAPES("Cam Info"),
-	VIEWPORT_SHAPES("Viewports"),
-	ROBOT_TRACKER_SHAPES("Robot Trackers", false, EShapeLayerPersistenceType.ALWAYS_PERSIST),
-	ROBOT_QUALITY_INSPECTOR("Robot Quality Inspector"),
-	BALL_TRACKER_SHAPES_IMPORTANT("Ball Trackers"),
-	BALL_TRACKER_SHAPES("Ball Trackers Debug", false, EShapeLayerPersistenceType.NEVER_PERSIST),
+	private static final ShapeLayerFactory F = new ShapeLayerFactory(EVisionFilterShapesLayer.class, 10);
+	private static final String CATEGORY = "Vision Filter";
 
-	;
-
-	private final String id;
-	private final String name;
-	private final boolean visible;
-	private final int orderId;
-	private final EShapeLayerPersistenceType persistenceType;
-
-
-	/**
-	 *
-	 */
-	EVisionFilterShapesLayer(final String name)
-	{
-		this(name, false, EShapeLayerPersistenceType.ALWAYS_PERSIST);
-	}
-
-
-	/**
-	 *
-	 */
-	EVisionFilterShapesLayer(final String name, final boolean visible,
-			final EShapeLayerPersistenceType persistenceType)
-	{
-		this.name = name;
-		this.visible = visible;
-		orderId = 10 + ordinal();
-		id = EVisionFilterShapesLayer.class.getCanonicalName() + name();
-		this.persistenceType = persistenceType;
-	}
-
-
-	/**
-	 * @return
-	 */
-	@Override
-	public String getLayerName()
-	{
-		return name;
-	}
-
-
-	/**
-	 * @return the category
-	 */
-	@Override
-	public final String getCategory()
-	{
-		return "Vision Filter";
-	}
-
-
-	@Override
-	public int getOrderId()
-	{
-		return orderId;
-	}
-
-
-	@Override
-	public String getId()
-	{
-		return id;
-	}
-
-
-	@Override
-	public EShapeLayerPersistenceType getPersistenceType()
-	{
-		return persistenceType;
-	}
-
-
-	@Override
-	public boolean isVisibleByDefault()
-	{
-		return visible;
-	}
+	public static final IShapeLayerIdentifier QUALITY_SHAPES = F.create(
+			F.layer("Quality Inspector").category(CATEGORY));
+	public static final IShapeLayerIdentifier CAM_INFO_SHAPES = F.create(
+			F.layer("Cam Info").category(CATEGORY));
+	public static final IShapeLayerIdentifier VIEWPORT_SHAPES = F.create(
+			F.layer("Viewports").category(CATEGORY));
+	public static final IShapeLayerIdentifier ROBOT_TRACKER_SHAPES = F.create(
+			F.layer("Robot Trackers").category(CATEGORY)
+					.persistenceType(EShapeLayerPersistenceType.ALWAYS_PERSIST));
+	public static final IShapeLayerIdentifier ROBOT_QUALITY_INSPECTOR = F.create(
+			F.layer("Robot Quality Inspector").category(CATEGORY));
+	public static final IShapeLayerIdentifier BALL_TRACKER_SHAPES_IMPORTANT = F.create(
+			F.layer("Ball Trackers").category(CATEGORY));
+	public static final IShapeLayerIdentifier BALL_TRACKER_SHAPES = F.create(
+			F.layer("Ball Trackers Debug").category(CATEGORY)
+					.persistenceType(EShapeLayerPersistenceType.NEVER_PERSIST));
 }

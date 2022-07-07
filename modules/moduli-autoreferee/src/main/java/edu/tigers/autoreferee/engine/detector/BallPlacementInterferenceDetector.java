@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.autoreferee.engine.detector;
@@ -23,6 +23,7 @@ import edu.tigers.sumatra.wp.data.ITrackedBot;
 import java.awt.Color;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -77,7 +78,7 @@ public class BallPlacementInterferenceDetector extends AGameEventDetector
 
 	private boolean isNewViolator(BotID id)
 	{
-		return violators.stream().noneMatch(e -> e.getBotId() == id);
+		return violators.stream().noneMatch(e -> Objects.equals(e.getBotId(), id));
 	}
 
 

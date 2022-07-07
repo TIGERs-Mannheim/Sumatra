@@ -35,7 +35,7 @@ public class PathPlanningFullSimIntegrationTest extends AFullSimIntegrationTest
 	public void complicatedPathPlanning()
 	{
 		double x = Geometry.getFieldLength() / 2 - 300;
-		double y = Geometry.getPenaltyAreaFrontLineLength() / 2 + 400;
+		double y = Geometry.getPenaltyAreaWidth() / 2 + 400;
 		var params = loadSimParamsFromSnapshot("snapshots/pathplanningSituationPenArea.snap")
 				.toBuilder()
 				.command(SslGcRefereeMessage.Referee.Command.FORCE_START)

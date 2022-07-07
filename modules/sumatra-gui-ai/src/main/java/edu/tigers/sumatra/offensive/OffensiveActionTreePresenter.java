@@ -1,99 +1,45 @@
 /*
- * Copyright (c) 2009 - 2019, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.offensive;
 
-import java.awt.Component;
-import java.util.Map;
-
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import edu.tigers.moduli.exceptions.ModuleNotFoundException;
-import edu.tigers.moduli.listenerVariables.ModulesState;
 import edu.tigers.sumatra.ai.AAgent;
-import edu.tigers.sumatra.ai.Agent;
 import edu.tigers.sumatra.ai.IVisualizationFrameObserver;
 import edu.tigers.sumatra.ai.VisualizationFrame;
 import edu.tigers.sumatra.model.SumatraModel;
 import edu.tigers.sumatra.offensive.view.OffensiveActionTreePanel;
 import edu.tigers.sumatra.trees.EOffensiveSituation;
 import edu.tigers.sumatra.trees.OffensiveActionTree;
-import edu.tigers.sumatra.views.ASumatraViewPresenter;
-import edu.tigers.sumatra.views.ISumatraView;
+import edu.tigers.sumatra.views.ISumatraViewPresenter;
+import lombok.Getter;
+import lombok.extern.log4j.Log4j2;
+
+import java.util.Map;
 
 
 /**
- * edu.tigers.sumatra.trees.OffensiveActionTree Presenter
- *
- * @author Marius Messerschmidt <marius.messserschmidt@dlr.de>
+ * Presenter for offensive actions tree.
  */
-public class OffensiveActionTreePresenter extends ASumatraViewPresenter implements IVisualizationFrameObserver
+@Log4j2
+public class OffensiveActionTreePresenter implements ISumatraViewPresenter, IVisualizationFrameObserver
 {
-	@SuppressWarnings("unused")
-	private static final Logger log = LogManager.getLogger(OffensiveStrategyPresenter.class.getName());
-	private final OffensiveActionTreePanel offensiveActionTreePanel;
+	@Getter
+	private final OffensiveActionTreePanel viewPanel = new OffensiveActionTreePanel();
 
 
-	/**
-	 * Default
-	 */
-	public OffensiveActionTreePresenter()
+	@Override
+	public void onStartModuli()
 	{
-		offensiveActionTreePanel = new OffensiveActionTreePanel();
+		ISumatraViewPresenter.super.onStartModuli();
+		SumatraModel.getInstance().getModuleOpt(AAgent.class).ifPresent(agent -> agent.addVisObserver(this));
 	}
 
 
 	@Override
-	public void onModuliStateChanged(final ModulesState state)
+	public void onStopModuli()
 	{
-		switch (state)
-		{
-			case ACTIVE:
-                handleActive();
-                break;
-			case NOT_LOADED:
-				break;
-			case RESOLVED:
-                handleResolved();
-                break;
-		}
-	}
-
-    private void handleActive() {
-        try
-        {
-            Agent agent = (Agent) SumatraModel.getInstance().getModule(AAgent.class);
-            agent.addVisObserver(this);
-        } catch (ModuleNotFoundException err)
-        {
-            log.error("Could not get agent module", err);
-        }
-    }
-
-    private void handleResolved() {
-        try
-        {
-            Agent agent = (Agent) SumatraModel.getInstance().getModule(AAgent.class);
-            agent.removeVisObserver(this);
-        } catch (ModuleNotFoundException err)
-        {
-            log.error("Could not get agent module", err);
-        }
-    }
-
-
-    @Override
-	public Component getComponent()
-	{
-		return offensiveActionTreePanel;
-	}
-
-
-	@Override
-	public ISumatraView getSumatraView()
-	{
-		return offensiveActionTreePanel;
+		ISumatraViewPresenter.super.onStopModuli();
+		SumatraModel.getInstance().getModuleOpt(AAgent.class).ifPresent(agent -> agent.removeVisObserver(this));
 	}
 
 
@@ -101,7 +47,7 @@ public class OffensiveActionTreePresenter extends ASumatraViewPresenter implemen
 	public void onNewVisualizationFrame(final VisualizationFrame frame)
 	{
 		Map<EOffensiveSituation, OffensiveActionTree> map = frame.getActionTrees();
-		offensiveActionTreePanel.setActionTree(frame.getTeamColor(), map);
-		offensiveActionTreePanel.setCurrentPath(frame.getTeamColor(), frame.getCurrentPath());
+		viewPanel.setActionTree(frame.getTeamColor(), map);
+		viewPanel.setCurrentPath(frame.getTeamColor(), frame.getCurrentPath());
 	}
 }

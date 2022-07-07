@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.metis.defense;
@@ -7,9 +7,10 @@ package edu.tigers.sumatra.ai.metis.defense;
 import com.github.g3force.configurable.Configurable;
 import edu.tigers.sumatra.ai.metis.ACalculator;
 import edu.tigers.sumatra.ai.metis.ballresponsibility.EBallResponsibility;
-import edu.tigers.sumatra.ai.metis.defense.data.DefenseBotThreat;
+import edu.tigers.sumatra.ai.metis.defense.data.DefenseBotThreatDefData;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.BotID;
+import edu.tigers.sumatra.math.SumatraMath;
 import edu.tigers.sumatra.math.vector.IVector2;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -29,8 +30,11 @@ import java.util.function.Supplier;
 @RequiredArgsConstructor
 public class NumDefenderCalc extends ACalculator
 {
-	@Configurable(comment = "Amount of minimum defenders to keep at all times", defValue = "1")
+	@Configurable(comment = "Minimum number of defenders to keep at all times", defValue = "1")
 	private static int minDefendersAtAllTimes = 1;
+
+	@Configurable(comment = "Minimum number of free bots available if ball responsibility is offense", defValue = "2")
+	private static int minFreeBotsAtBallResponsibilityOffense = 2;
 
 	@Configurable(defValue = "1.5")
 	private static double threatsToNumDefenderDivider = 1.5;
@@ -38,7 +42,7 @@ public class NumDefenderCalc extends ACalculator
 	private final Supplier<EBallResponsibility> ballResponsibility;
 	private final Supplier<Integer> numDefenderForBall;
 	private final Supplier<List<BotID>> botsToInterchange;
-	private final Supplier<List<DefenseBotThreat>> defenseBotThreats;
+	private final Supplier<List<DefenseBotThreatDefData>> defenseBotThreats;
 
 	@Getter
 	private int availableAttackers;
@@ -56,12 +60,10 @@ public class NumDefenderCalc extends ACalculator
 		numDefender = Math.max(minDefendersAtAllTimes, numDefender);
 		numDefender = Math.min(nAvailableBots, numDefender);
 
-		// if offense has ball responsibility but we used all defenders we release one here
-		if (numDefender == nAvailableBots
-				&& nAvailableBots > 0
-				&& ballResponsibility.get() == EBallResponsibility.OFFENSE)
+		// if offense has ball responsibility, but we used all defenders we release one here
+		if (ballResponsibility.get() == EBallResponsibility.OFFENSE)
 		{
-			numDefender = nAvailableBots - 1;
+			numDefender = SumatraMath.cap(numDefender, 0, nAvailableBots - minFreeBotsAtBallResponsibilityOffense);
 		}
 
 		availableAttackers = Math.max(0, nAvailableBots - numDefender);
@@ -72,7 +74,7 @@ public class NumDefenderCalc extends ACalculator
 	{
 		// number of available TIGER bots minus the keeper and interchange bots
 		int nKeeper = getWFrame().getTigerBotsAvailable().containsKey(getAiFrame().getKeeperId()) ? 1 : 0;
-		return getWFrame().getTigerBotsVisible().size()
+		return getWFrame().getTigerBotsAvailable().size()
 				- nKeeper
 				- botsToInterchange.get().size();
 	}

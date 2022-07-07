@@ -1,40 +1,29 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2011, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 23.11.2011
- * Author(s): Gero
- * *********************************************************
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.config;
 
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.IConfigClientsObserver;
-import edu.tigers.sumatra.views.ISumatraView;
 import edu.tigers.sumatra.views.ISumatraViewPresenter;
+import lombok.Getter;
 
 import javax.swing.SwingUtilities;
-import java.awt.Component;
 
 
 /**
  * This is the presenter part of the ConfigEditor-module. The module provides common access to XML configurations which
  * are registered and allows the user to change them at runtime.
- *
- * @author Gero
  */
-public class ConfigEditorPresenter implements ISumatraViewPresenter, IConfigClientsObserver,
-		IConfigEditorViewObserver
+public class ConfigEditorPresenter
+		implements ISumatraViewPresenter, IConfigClientsObserver, IConfigEditorViewObserver
 {
-	private final ConfigEditorPanel view;
+	@Getter
+	private final ConfigEditorPanel viewPanel = new ConfigEditorPanel();
 
 
-	/**
-	 */
 	public ConfigEditorPresenter()
 	{
-		view = new ConfigEditorPanel();
-
 		ConfigRegistration.addObserver(this);
 
 		SwingUtilities.invokeLater(() -> ConfigRegistration.getConfigClients().forEach(this::onNewConfigClient));
@@ -44,7 +33,7 @@ public class ConfigEditorPresenter implements ISumatraViewPresenter, IConfigClie
 	@Override
 	public void onNewConfigClient(final String newClient)
 	{
-		view.addConfigModel(newClient, this);
+		SwingUtilities.invokeLater(() -> viewPanel.addConfigModel(newClient, this));
 	}
 
 
@@ -65,20 +54,6 @@ public class ConfigEditorPresenter implements ISumatraViewPresenter, IConfigClie
 	@Override
 	public void onReloadPressed(final String configKey)
 	{
-		view.refreshConfigModel(configKey, ConfigRegistration.loadConfig(configKey));
-	}
-
-
-	@Override
-	public Component getComponent()
-	{
-		return view;
-	}
-
-
-	@Override
-	public ISumatraView getSumatraView()
-	{
-		return view;
+		viewPanel.refreshConfigModel(configKey, ConfigRegistration.loadConfig(configKey));
 	}
 }

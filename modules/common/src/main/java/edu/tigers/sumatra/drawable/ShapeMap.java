@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.drawable;
@@ -15,7 +15,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 
 /**
@@ -80,7 +79,7 @@ public class ShapeMap
 	 * @param identifier
 	 * @return
 	 */
-	public List<IDrawableShape> get(final IShapeLayer identifier)
+	public List<IDrawableShape> get(final IShapeLayerIdentifier identifier)
 	{
 		return categories.computeIfAbsent(identifier.getId(), k -> new ShapeLayer(identifier)).shapes;
 	}
@@ -95,7 +94,7 @@ public class ShapeMap
 	}
 
 
-	private boolean persist(IShapeLayer identifier)
+	private boolean persist(IShapeLayerIdentifier identifier)
 	{
 		return identifier.getPersistenceType() == EShapeLayerPersistenceType.ALWAYS_PERSIST ||
 				(persistDebugShapes && identifier.getPersistenceType() == EShapeLayerPersistenceType.DEBUG_PERSIST);
@@ -105,10 +104,9 @@ public class ShapeMap
 	/**
 	 * @return
 	 */
-	public List<IShapeLayer> getAllShapeLayersIdentifiers()
+	public List<IShapeLayerIdentifier> getAllShapeLayersIdentifiers()
 	{
-		return categories.values().stream().sorted().map(sl -> sl.identifier)
-				.collect(Collectors.toList());
+		return categories.values().stream().sorted().map(sl -> sl.identifier).toList();
 	}
 
 
@@ -117,8 +115,7 @@ public class ShapeMap
 	 */
 	public List<ShapeLayer> getAllShapeLayers()
 	{
-		return categories.values().stream().sorted()
-				.collect(Collectors.toList());
+		return categories.values().stream().sorted().toList();
 	}
 
 
@@ -153,7 +150,7 @@ public class ShapeMap
 	@Persistent
 	public static class ShapeLayer implements Comparable<ShapeLayer>
 	{
-		final IShapeLayer identifier;
+		final IShapeLayerIdentifier identifier;
 		final List<IDrawableShape> shapes;
 		boolean inverted = false;
 
@@ -161,7 +158,7 @@ public class ShapeMap
 		@SuppressWarnings("unused")
 		private ShapeLayer()
 		{
-			identifier = null;
+			identifier = ShapeLayerIdentifier.builder().build();
 			shapes = Collections.emptyList();
 		}
 
@@ -169,14 +166,15 @@ public class ShapeMap
 		/**
 		 * @param identifier
 		 */
-		public ShapeLayer(final IShapeLayer identifier)
+		public ShapeLayer(final IShapeLayerIdentifier identifier)
 		{
 			this.identifier = identifier;
 			shapes = new ArrayList<>();
 		}
 
 
-		public ShapeLayer(final IShapeLayer identifier, final List<IDrawableShape> shapes, final boolean inverted)
+		public ShapeLayer(final IShapeLayerIdentifier identifier, final List<IDrawableShape> shapes,
+				final boolean inverted)
 		{
 			this.identifier = identifier;
 			this.shapes = shapes;
@@ -195,7 +193,7 @@ public class ShapeMap
 		}
 
 
-		public IShapeLayer getIdentifier()
+		public IShapeLayerIdentifier getIdentifier()
 		{
 			return identifier;
 		}

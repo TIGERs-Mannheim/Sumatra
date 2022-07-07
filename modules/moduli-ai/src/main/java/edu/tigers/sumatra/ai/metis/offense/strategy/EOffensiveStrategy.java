@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.metis.offense.strategy;
@@ -12,6 +12,7 @@ import edu.tigers.sumatra.statemachine.IEvent;
  */
 public enum EOffensiveStrategy implements IEvent
 {
+	PENALTY_KICK,
 	KICK,
 	STOP,
 	INTERCEPT,

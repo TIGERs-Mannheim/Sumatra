@@ -34,8 +34,6 @@ public class OffensiveAction
 	@NonNull
 	EOffensiveActionMove move;
 	@NonNull
-	EOffensiveAction action;
-	@NonNull
 	OffensiveActionViability viability;
 
 	Pass pass;
@@ -47,7 +45,6 @@ public class OffensiveAction
 	private OffensiveAction()
 	{
 		move = EOffensiveActionMove.PROTECT_MOVE;
-		action = EOffensiveAction.PASS;
 		pass = null;
 		kick = null;
 		dribbleToPos = null;

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.pandora.plays.test;
@@ -54,7 +54,7 @@ public class BallPlacementTestPlay extends ABallPlacementPlay
 	protected boolean useAssistant()
 	{
 		return getRoles().size() > 1
-				&& getBall().getTrajectory().getTravelLineSegment().distanceTo(getBallTargetPos()) > 1000;
+				&& getBall().getTrajectory().distanceTo(getBallTargetPos()) > 1000;
 	}
 
 

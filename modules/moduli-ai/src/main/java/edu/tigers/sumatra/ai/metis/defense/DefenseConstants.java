@@ -1,12 +1,14 @@
 /*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.metis.defense;
 
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
+import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.math.SumatraMath;
+import edu.tigers.sumatra.math.rectangle.IRectangle;
 
 
 /**
@@ -17,19 +19,19 @@ public final class DefenseConstants
 {
 	@Configurable(comment = "Minimum lookahead used for bots [s]", defValue = "0.1")
 	private static double minLookaheadBotThreats = 0.1;
-	
+
 	@Configurable(comment = "Maximum lookahead used for bots [s]", defValue = "0.2")
 	private static double maxLookaheadBotThreats = 0.2;
-	
+
 	@Configurable(comment = "Velocity [m/s] which uses the maximum lookahead for the opposing teams bots", defValue = "4.0")
 	private static double maxLookaheadBotThreatsVelocity = 4.0;
-	
-	@Configurable(comment = "Max distance from goal center to go out", defValue = "2800.0")
-	private static double maxGoOutDistance = 2800;
-	
+
+	@Configurable(comment = "DistToPenAreaCorner + this = max distance from goal center to go out", defValue = "500.0")
+	private static double maxGoOutDistance = 500;
+
 	@Configurable(comment = "Min distance from penArea to go out", defValue = "400.0")
 	private static double minGoOutDistance = 400;
-	
+
 	static
 	{
 		ConfigRegistration.registerClass("metis", DefenseConstants.class);
@@ -57,7 +59,10 @@ public final class DefenseConstants
 	
 	public static double getMaxGoOutDistance()
 	{
-		return maxGoOutDistance;
+		var distToFarthestPenArea = Geometry.getGoalOur().getCenter()
+				.distanceTo(Geometry.getPenaltyAreaOur().getRectangle().getCorner(
+						IRectangle.ECorner.TOP_RIGHT));
+		return distToFarthestPenArea + maxGoOutDistance;
 	}
 	
 	

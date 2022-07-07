@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.drawable;
@@ -98,7 +98,7 @@ public class DrawableAnnotation implements IDrawableShape
 	@Override
 	public void paintShape(final Graphics2D g, final IDrawableTool tool, final boolean invert)
 	{
-		Font font = new Font("", bold ? Font.BOLD : Font.PLAIN, tool.scaleYLength(fontHeight));
+		Font font = new Font("", bold ? Font.BOLD : Font.PLAIN, tool.scaleGlobalToGui(fontHeight));
 
 		g.setFont(font);
 		g.setColor(color);
@@ -116,8 +116,8 @@ public class DrawableAnnotation implements IDrawableShape
 		double lineHeight = g.getFontMetrics(font).getHeight();
 		double textHeight = lineHeight * numLines;
 
-		double drawingX = transPoint.x() + tool.scaleXLength(offset.x());
-		double drawingY = transPoint.y() + tool.scaleYLength(offset.y());
+		double drawingX = transPoint.x() + tool.scaleGlobalToGui(offset.x());
+		double drawingY = transPoint.y() + tool.scaleGlobalToGui(offset.y());
 
 		drawingY += (textHeight / 2) - g.getFontMetrics(font).getDescent();
 

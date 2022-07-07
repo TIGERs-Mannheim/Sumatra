@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.view.logfile;
 
@@ -7,10 +7,8 @@ import edu.tigers.sumatra.model.SumatraModel;
 import edu.tigers.sumatra.referee.proto.SslGcGameEvent;
 import edu.tigers.sumatra.referee.proto.SslGcRefereeMessage.Referee;
 import edu.tigers.sumatra.referee.proto.SslGcRefereeMessage.Referee.Command;
-import edu.tigers.sumatra.views.ISumatraView;
+import lombok.extern.log4j.Log4j2;
 import net.miginfocom.swing.MigLayout;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import javax.swing.AbstractAction;
 import javax.swing.Box;
@@ -19,7 +17,6 @@ import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JFileChooser;
 import javax.swing.JLabel;
-import javax.swing.JMenu;
 import javax.swing.JPanel;
 import javax.swing.JProgressBar;
 import javax.swing.JSlider;
@@ -35,6 +32,7 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.File;
 import java.io.IOException;
+import java.io.Serial;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -45,12 +43,13 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 
 /**
- * @author AndreR
+ * Panel for log file viewing
  */
-public class LogfilePanel extends JPanel implements ISumatraView
+@Log4j2
+public class LogfilePanel extends JPanel
 {
+	@Serial
 	private static final long serialVersionUID = 7096879604458197996L;
-	private static final Logger log = LogManager.getLogger(LogfilePanel.class.getName());
 	private static final String SSL_LOG_FOLDER = ".sslLogFolder";
 
 	private final JToggleButton btnPause;
@@ -218,13 +217,6 @@ public class LogfilePanel extends JPanel implements ISumatraView
 	public void removeObserver(final ILogfilePanelObserver observer)
 	{
 		observers.remove(observer);
-	}
-
-
-	@Override
-	public List<JMenu> getCustomMenus()
-	{
-		return new ArrayList<>();
 	}
 
 
@@ -484,7 +476,7 @@ public class LogfilePanel extends JPanel implements ISumatraView
 
 	private class SeekGameEventAction extends AbstractAction
 	{
-		/**  */
+		@Serial
 		private static final long serialVersionUID = -961064147040314494L;
 		private final JComboBox<SslGcGameEvent.GameEvent.Type> gameEventCombo;
 
@@ -509,7 +501,7 @@ public class LogfilePanel extends JPanel implements ISumatraView
 
 	private static class MergeToolAuxPanel extends JPanel
 	{
-		/**  */
+		@Serial
 		private static final long serialVersionUID = -4340436333055730063L;
 
 		private final JCheckBox removeIdle;

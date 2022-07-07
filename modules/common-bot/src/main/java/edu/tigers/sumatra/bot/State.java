@@ -56,6 +56,16 @@ public class State implements IMirrorable<State>, IExportable, IInterpolatable<S
 	}
 
 
+	/**
+	 * @param pose the pose
+	 * @return
+	 */
+	public static State of(final Pose pose)
+	{
+		return new State(pose, Vector3.zero());
+	}
+
+
 	public static State zero()
 	{
 		return State.of(Pose.zero(), Vector3f.zero());

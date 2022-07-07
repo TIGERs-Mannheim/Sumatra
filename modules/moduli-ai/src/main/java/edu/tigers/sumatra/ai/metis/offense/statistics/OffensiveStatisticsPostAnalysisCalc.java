@@ -7,7 +7,6 @@ package edu.tigers.sumatra.ai.metis.offense.statistics;
 import edu.tigers.sumatra.ai.metis.ACalculator;
 import edu.tigers.sumatra.ai.metis.offense.OffensiveConstants;
 import edu.tigers.sumatra.ai.metis.offense.action.EActionViability;
-import edu.tigers.sumatra.ai.metis.offense.action.EOffensiveAction;
 import edu.tigers.sumatra.ai.metis.offense.action.moves.EOffensiveActionMove;
 import edu.tigers.sumatra.ai.metis.offense.strategy.EOffensiveStrategy;
 import edu.tigers.sumatra.ids.BotID;
@@ -84,11 +83,6 @@ public class OffensiveStatisticsPostAnalysisCalc extends ACalculator
 			OffensiveBotFrame bFrame = entry.getValue();
 			StatisticsData currentData = botData.get(entry.getKey());
 
-			if (bFrame == null || bFrame.getActiveAction() == null || currentData.activeActionMoveSums == null ||
-					!currentData.activeActionMoveSums.containsKey(bFrame.getActiveAction()))
-			{
-				continue;
-			}
 			storeData(bFrame, currentData);
 		}
 	}
@@ -109,9 +103,6 @@ public class OffensiveStatisticsPostAnalysisCalc extends ACalculator
 
 	private void storeData(final OffensiveBotFrame bFrame, final StatisticsData currentData)
 	{
-		currentData.activeActionMoveSums.put(bFrame.getActiveAction(),
-				currentData.activeActionMoveSums.get(bFrame.getActiveAction()) + 1);
-
 		if (bFrame.getActiveStrategy() != null)
 		{
 			final Long activeFeatureSum = currentData.activeFeatureSums
@@ -176,7 +167,6 @@ public class OffensiveStatisticsPostAnalysisCalc extends ACalculator
 	{
 		Map<EOffensiveActionMove, Map<EActionViability, Long>> moveViabilitiesSums;
 		Map<EOffensiveActionMove, Double> moveViabilitiyScoreSums;
-		Map<EOffensiveAction, Long> activeActionMoveSums;
 		Map<EOffensiveStrategy, Long> activeFeatureSums;
 		long n = 0;
 
@@ -197,11 +187,6 @@ public class OffensiveStatisticsPostAnalysisCalc extends ACalculator
 				moveViabilitiyScoreSums.put(key, 0.0);
 			}
 			moveViabilitiesSums = tmp2;
-			activeActionMoveSums = new EnumMap<>(EOffensiveAction.class);
-			for (EOffensiveAction key : EOffensiveAction.values())
-			{
-				activeActionMoveSums.put(key, 0L);
-			}
 			activeFeatureSums = new EnumMap<>(EOffensiveStrategy.class);
 			for (EOffensiveStrategy strategy : EOffensiveStrategy.values())
 			{

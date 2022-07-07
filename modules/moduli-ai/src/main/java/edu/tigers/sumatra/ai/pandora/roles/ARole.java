@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.pandora.roles;
@@ -7,14 +7,18 @@ package edu.tigers.sumatra.ai.pandora.roles;
 import edu.tigers.sumatra.ai.athena.AthenaAiFrame;
 import edu.tigers.sumatra.ai.metis.TacticalField;
 import edu.tigers.sumatra.drawable.IDrawableShape;
-import edu.tigers.sumatra.drawable.IShapeLayer;
+import edu.tigers.sumatra.drawable.IShapeLayerIdentifier;
+import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.BotID;
+import edu.tigers.sumatra.math.line.LineMath;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.model.SumatraModel;
 import edu.tigers.sumatra.skillsystem.skills.ASkill;
 import edu.tigers.sumatra.skillsystem.skills.ESkillState;
 import edu.tigers.sumatra.skillsystem.skills.ISkill;
 import edu.tigers.sumatra.skillsystem.skills.IdleSkill;
+import edu.tigers.sumatra.skillsystem.skills.MoveToSkill;
+import edu.tigers.sumatra.skillsystem.skills.util.SkillUtil;
 import edu.tigers.sumatra.statemachine.AState;
 import edu.tigers.sumatra.statemachine.IEvent;
 import edu.tigers.sumatra.statemachine.IState;
@@ -56,7 +60,7 @@ public abstract class ARole
 	{
 		this.type = type;
 		stateMachine = new StateMachine<>();
-		stateMachine.setExtendedLogging(!SumatraModel.getInstance().isProductive());
+		stateMachine.setExtendedLogging(!SumatraModel.getInstance().isTournamentMode());
 	}
 
 
@@ -370,7 +374,7 @@ public abstract class ARole
 	 * @param identifier shape layer identifier
 	 * @return the respective list from the tactical field
 	 */
-	public final List<IDrawableShape> getShapes(final IShapeLayer identifier)
+	public final List<IDrawableShape> getShapes(final IShapeLayerIdentifier identifier)
 	{
 		return getAiFrame().getShapeMap().get(identifier);
 	}
@@ -490,6 +494,67 @@ public abstract class ARole
 				return super.getIdentifier() + "<" + skill.getClass().getSimpleName() + ">";
 			}
 			return super.getIdentifier();
+		}
+	}
+
+	/**
+	 * A role state with a simple {@link MoveToSkill}.
+	 */
+	protected class MoveState extends RoleState<MoveToSkill>
+	{
+		public MoveState()
+		{
+			super(MoveToSkill::new);
+		}
+
+
+		/**
+		 * Adjusts destination when near friendly bot.
+		 *
+		 * @param dest the desired destination
+		 * @return a valid destination
+		 */
+		private IVector2 adjustPositionWhenNearBot(IVector2 dest)
+		{
+			double speedTolerance = 0.3;
+			IVector2 tmpDest = dest;
+			for (ITrackedBot bot : getWFrame().getBots().values())
+			{
+				if (bot.getBotId().getTeamColor() != getBotID().getTeamColor()
+						|| bot.getBotId().equals(getBotID())
+						|| bot.getVel().getLength2() > speedTolerance)
+				{
+					// only consider our own bots
+					// and ignore myself
+					// and ignore moving bots
+					continue;
+				}
+				double tolerance = (Geometry.getBotRadius() * 2) - 20;
+				if (bot.getPos().isCloseTo(dest, tolerance))
+				{
+					// position is inside other bot, move outside
+					tmpDest = LineMath.stepAlongLine(bot.getPos(), dest, tolerance + 20);
+				}
+			}
+			return tmpDest;
+		}
+
+
+		/**
+		 * This method adjusts a MoveDestination when its invalid:
+		 * - Position is too close to ball.
+		 * - Position is in PenArea.
+		 * - Position is Near friendly Bot.
+		 *
+		 * @param dest
+		 * @return
+		 */
+		protected IVector2 adjustMovePositionWhenItsInvalid(IVector2 dest)
+		{
+			IVector2 dest1 = adjustPositionWhenNearBot(dest);
+			return SkillUtil.movePosOutOfPenAreaWrtBall(dest1, getBall(),
+					Geometry.getPenaltyAreaTheir().withMargin(Geometry.getBotRadius()),
+					Geometry.getPenaltyAreaOur().withMargin(Geometry.getBotRadius()));
 		}
 	}
 

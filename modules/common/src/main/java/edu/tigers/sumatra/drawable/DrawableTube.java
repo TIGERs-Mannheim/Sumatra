@@ -1,17 +1,10 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.drawable;
 
-import java.awt.Color;
-import java.awt.Graphics2D;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-
 import com.sleepycat.persist.model.Persistent;
-
 import edu.tigers.sumatra.math.AngleMath;
 import edu.tigers.sumatra.math.line.v2.ILineSegment;
 import edu.tigers.sumatra.math.line.v2.Lines;
@@ -20,6 +13,12 @@ import edu.tigers.sumatra.math.tube.Tube;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.math.vector.Vector2f;
+
+import java.awt.Color;
+import java.awt.Graphics2D;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 
 
 /**
@@ -66,7 +65,7 @@ public class DrawableTube extends ADrawableWithStroke
 	public void paintShape(final Graphics2D g, final IDrawableTool tool, final boolean invert)
 	{
 		super.paintShape(g, tool, invert);
-		double radius = tool.scaleXLength(tube.radius());
+		double radius = tool.scaleGlobalToGui(tube.radius());
 		final IVector2 startCenter = tool.transformToGuiCoordinates(tube.startCenter(), invert);
 		final IVector2 endCenter = tool.transformToGuiCoordinates(tube.endCenter(), invert);
 		ILineSegment segment = Lines.segmentFromPoints(startCenter, endCenter);

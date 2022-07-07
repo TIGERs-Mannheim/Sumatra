@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.vision;
@@ -10,7 +10,7 @@ import edu.tigers.sumatra.cam.data.CamRobot;
 import edu.tigers.sumatra.ids.BotID;
 
 import java.util.ArrayList;
-import java.util.IdentityHashMap;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -31,7 +31,7 @@ public class RobotQualityInspector
 		ConfigRegistration.registerClass("vision", RobotQualityInspector.class);
 	}
 
-	private final Map<BotID, List<Long>> measurements = new IdentityHashMap<>();
+	private final Map<BotID, List<Long>> measurements = new HashMap<>();
 
 	private long initialTimestamp;
 	private double maxPossibleDetectionsPerCam;

@@ -1,14 +1,12 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.pandora.roles.offense;
 
-import edu.tigers.sumatra.ai.math.AiMath;
 import edu.tigers.sumatra.ai.pandora.roles.ARole;
 import edu.tigers.sumatra.ai.pandora.roles.ERole;
 import edu.tigers.sumatra.math.vector.IVector2;
-import edu.tigers.sumatra.skillsystem.skills.MoveToSkill;
 
 
 /**
@@ -24,19 +22,13 @@ public class SupportiveAttackerRole extends ARole
 	}
 
 
-	private class DefaultState extends RoleState<MoveToSkill>
+	private class DefaultState extends MoveState
 	{
-		DefaultState()
-		{
-			super(MoveToSkill::new);
-		}
-
-
 		@Override
 		protected void onUpdate()
 		{
 			IVector2 movePos = getAiFrame().getTacticalField().getSupportiveAttackerMovePos();
-			var dest = AiMath.adjustMovePositionWhenItsInvalid(getWFrame(), getBotID(), movePos);
+			var dest = adjustMovePositionWhenItsInvalid(movePos);
 			skill.updateLookAtTarget(getWFrame().getBall());
 			skill.updateDestination(dest);
 		}

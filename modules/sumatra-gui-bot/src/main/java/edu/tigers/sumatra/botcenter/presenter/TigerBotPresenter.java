@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.botcenter.presenter;
@@ -19,6 +19,7 @@ import edu.tigers.sumatra.botmanager.commands.tigerv2.TigerSystemConsoleCommand;
 import edu.tigers.sumatra.botmanager.commands.tigerv2.TigerSystemConsoleCommand.ConsoleCommandTarget;
 import edu.tigers.sumatra.botmanager.commands.tigerv2.TigerSystemConsolePrint;
 import edu.tigers.sumatra.botmanager.commands.tigerv2.TigerSystemMatchFeedback;
+import edu.tigers.sumatra.botmanager.configs.ConfigFileDatabaseManager;
 import edu.tigers.sumatra.botmanager.ping.PingStats;
 import edu.tigers.sumatra.botmanager.ping.PingThread;
 import edu.tigers.sumatra.botmanager.ping.PingThread.IPingThreadObserver;
@@ -45,18 +46,18 @@ public class TigerBotPresenter implements ITigersBaseStationObserver
 	private TigerBot bot;
 	private final BotConfigOverviewPanel botConfigOverviewPanel;
 	private final ConfigPresenter configPresenter;
-
 	private PingThread pingThread = null;
 
 	private final BcBotPingPanelObserver botPingPanelObserver = new BcBotPingPanelObserver();
 	private final ConsolePanelObserver consolePanelObserver = new ConsolePanelObserver();
 	private final SystemMatchFeedbackObserver systemMatchFeedbackObserver = new SystemMatchFeedbackObserver();
 
-	public TigerBotPresenter(final BotConfigOverviewPanel botConfigOverviewPanel)
+
+	public TigerBotPresenter(final BotConfigOverviewPanel botConfigOverviewPanel, ConfigFileDatabaseManager database)
 	{
 		this.botConfigOverviewPanel = botConfigOverviewPanel;
 
-		configPresenter = new ConfigPresenter(botConfigOverviewPanel.getConfigPanel());
+		configPresenter = new ConfigPresenter(botConfigOverviewPanel.getConfigPanel(), database);
 
 		this.botConfigOverviewPanel.getManualControlPanel().getPingPanel().addObserver(botPingPanelObserver);
 		this.botConfigOverviewPanel.getConsolePanel().addObserver(consolePanelObserver);
@@ -101,23 +102,14 @@ public class TigerBotPresenter implements ITigersBaseStationObserver
 	{
 		switch (cmd.getType())
 		{
-			case CMD_SYSTEM_CONSOLE_PRINT:
+			case CMD_SYSTEM_CONSOLE_PRINT ->
+			{
 				TigerSystemConsolePrint print = (TigerSystemConsolePrint) cmd;
 				botConfigOverviewPanel.getConsolePanel().addConsolePrint(print);
-				break;
-			case CMD_SYSTEM_PONG:
-				processPong((TigerSystemPong) cmd);
-				break;
-			case CMD_SYSTEM_MATCH_FEEDBACK:
-				SwingUtilities.invokeLater(() -> procCmdSystemMatchFeedback(cmd));
-				break;
-			case CMD_CONFIG_FILE_STRUCTURE:
-			case CMD_CONFIG_ITEM_DESC:
-			case CMD_CONFIG_READ:
-				configPresenter.onNewCommand(cmd);
-				break;
-			default:
-				break;
+			}
+			case CMD_SYSTEM_PONG -> processPong((TigerSystemPong) cmd);
+			case CMD_SYSTEM_MATCH_FEEDBACK -> SwingUtilities.invokeLater(() -> procCmdSystemMatchFeedback(cmd));
+			case CMD_CONFIG_FILE_STRUCTURE, CMD_CONFIG_ITEM_DESC, CMD_CONFIG_READ -> configPresenter.onNewCommand(cmd);
 		}
 	}
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.skillsystem.skills;
@@ -23,6 +23,7 @@ import edu.tigers.sumatra.math.vector.Vector2f;
 import edu.tigers.sumatra.skillsystem.ESkillShapesLayer;
 import edu.tigers.sumatra.skillsystem.skills.util.BallStabilizer;
 import edu.tigers.sumatra.skillsystem.skills.util.PositionValidator;
+import edu.tigers.sumatra.wp.data.BallKickFitState;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
@@ -42,8 +43,8 @@ public abstract class ABallArrivalSkill extends AMoveToSkill
 	@Configurable(defValue = "1000.0", comment = "If the receiving pos is further than this away from the rolling travel line, the ball can not reach the receiving pos")
 	private static double maxDistanceToReceivingPosition = 1000.0;
 
-	@Configurable(defValue = "100.0", comment = "Margin between penaltyarea and bot destination [mm]")
-	private static double marginBetweenDestAndPenArea = 100.0;
+	@Configurable(defValue = "110.0", comment = "Margin between penalty area and bot destination [mm] (should be larger than botRadius + Geometry#getPenaltyAreaMargin()")
+	private static double marginBetweenDestAndPenArea = 110.0;
 
 	private final Hysteresis ballSpeedHysteresis = new Hysteresis(0.3, 0.6).initiallyInUpperState();
 	private final PositionValidator positionValidator = new PositionValidator();
@@ -64,13 +65,15 @@ public abstract class ABallArrivalSkill extends AMoveToSkill
 
 	protected final boolean receivingPositionIsReachableByBall(IVector2 pos)
 	{
-		return getBall().getTrajectory().getTravelLineRolling().distanceTo(pos) < maxDistanceToReceivingPosition;
+		return getBall().getTrajectory().closestPointTo(pos).distanceTo(pos) < maxDistanceToReceivingPosition;
 	}
 
 
 	protected final boolean ballIsMoving()
 	{
-		return ballSpeedHysteresis.isUpper() && !getTBot().getBallContact().hadContact(0.2);
+		return ballSpeedHysteresis.isUpper()
+				&& (getTBot().getBallContact().getContactDuration() < 0.1
+				|| !getTBot().getBallContact().hadContact(0.2));
 	}
 
 
@@ -133,12 +136,16 @@ public abstract class ABallArrivalSkill extends AMoveToSkill
 				center2Dribbler
 		);
 		var idealBallReceivingPosition = Optional.ofNullable(ballReceivingPosition).orElse(kickPos);
-		var closestPointToIdealPos = getBall().getTrajectory().getTravelLineSegment()
-				.closestPointOnLine(idealBallReceivingPosition);
+		var closestPointToIdealPos = getBall().getTrajectory().closestPointTo(idealBallReceivingPosition);
+		var kickAge = getWorldFrame().getKickFitState()
+				.map(BallKickFitState::getKickTimestamp)
+				.map(ts -> (getWorldFrame().getTimestamp() - ts) / 1e9)
+				.orElse(Double.POSITIVE_INFINITY);
 
 		if (ballIsMoving() &&
 				receivingPositionIsReachableByBall(closestPointToIdealPos) &&
-				ballIsMovingTowardsBot())
+				ballIsMovingTowardsBot() &&
+				kickAge > 0.1)
 		{
 			return closestPointToIdealPos;
 		} else if (!ballNearKicker(1500))
@@ -153,6 +160,7 @@ public abstract class ABallArrivalSkill extends AMoveToSkill
 	{
 		IVector2 dest = receivingPosition;
 		dest = positionValidator.movePosInFrontOfOpponent(dest);
+		dest = positionValidator.movePosOutOfPenAreaWrtBall(dest, Geometry.getBallRadius(), consideredPenAreas);
 		dest = positionValidator.movePosInsideFieldWrtBallPos(dest);
 		currentBallReceivingPosition = dest;
 	}

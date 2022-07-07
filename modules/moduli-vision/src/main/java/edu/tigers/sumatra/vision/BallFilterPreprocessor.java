@@ -255,7 +255,7 @@ public class BallFilterPreprocessor
 				log.debug("Speed: {}", kickRobotInfo.getKickSpeed() * 1000.0);
 
 				// always spawn a new chip estimator if there is a kicking robot nearby
-				chipEstimator = new ChipKickEstimator(Geometry.getLastCamGeometry().getCalibrations(),
+				chipEstimator = new ChipKickEstimator(Geometry.getLastCamGeometry().getCameraCalibrations(),
 						kickEvent, kickRobotInfo.getKickSpeed() * 1000.0,
 						kickRobotInfo.getBotParams().getKickerSpecs().getChipAngle());
 
@@ -265,7 +265,7 @@ public class BallFilterPreprocessor
 			if ((chipEstimator == null) && !kickEvent.isEarlyDetection())
 			{
 				// spawn a new chip estimator if this is a slow kick detection event and no estimator exists yet
-				chipEstimator = new ChipKickEstimator(Geometry.getLastCamGeometry().getCalibrations(), kickEvent);
+				chipEstimator = new ChipKickEstimator(Geometry.getLastCamGeometry().getCameraCalibrations(), kickEvent);
 
 				log.debug("Spawned chip estimator");
 			}
@@ -467,11 +467,11 @@ public class BallFilterPreprocessor
 
 			lastSearchPositions.clear();
 			List<BallTracker> primaryTrackers;
-			if (lastFilteredBall.getBallState().isChipped() && !Geometry.getLastCamGeometry().getCalibrations().isEmpty())
+			if (lastFilteredBall.getBallState().isChipped() && !Geometry.getLastCamGeometry().getCameraCalibrations().isEmpty())
 			{
 				// if the ball is airborne we project its position to the ground from all cameras and use these locations as
 				// search point
-				List<IVector2> projectedPos = Geometry.getLastCamGeometry().getCalibrations().values().stream()
+				List<IVector2> projectedPos = Geometry.getLastCamGeometry().getCameraCalibrations().values().stream()
 						.map(c -> lastFilteredBall.getPos().projectToGroundNew(c.getCameraPosition()))
 						.collect(Collectors.toList());
 

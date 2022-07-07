@@ -1,11 +1,11 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.ai.metis;
 
 import edu.tigers.sumatra.ai.BaseAiFrame;
 import edu.tigers.sumatra.drawable.IDrawableShape;
-import edu.tigers.sumatra.drawable.IShapeLayer;
+import edu.tigers.sumatra.drawable.IShapeLayerIdentifier;
 import edu.tigers.sumatra.wp.data.ITrackedBall;
 import edu.tigers.sumatra.wp.data.WorldFrame;
 import lombok.Getter;
@@ -150,7 +150,7 @@ public abstract class ACalculator
 	}
 
 
-	protected final List<IDrawableShape> getShapes(IShapeLayer shapeLayer)
+	protected final List<IDrawableShape> getShapes(IShapeLayerIdentifier shapeLayer)
 	{
 		return getAiFrame().getShapeMap().get(shapeLayer);
 	}

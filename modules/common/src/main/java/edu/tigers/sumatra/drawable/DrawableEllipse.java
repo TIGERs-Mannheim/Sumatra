@@ -1,19 +1,18 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.drawable;
 
-import java.awt.Color;
-import java.awt.Graphics2D;
-import java.awt.Rectangle;
-
 import com.sleepycat.persist.model.Persistent;
-
 import edu.tigers.sumatra.math.ellipse.Ellipse;
 import edu.tigers.sumatra.math.ellipse.IEllipse;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2f;
+
+import java.awt.Color;
+import java.awt.Graphics2D;
+import java.awt.Rectangle;
 
 
 /**
@@ -59,10 +58,9 @@ public class DrawableEllipse extends ADrawableWithStroke
 		super.paintShape(g, tool, invert);
 
 		Rectangle r = getBounds(tool, invert);
+		double rot = tool.transformToGuiAngle(ellipse.getTurnAngle(), invert);
 
-		double rot = tool.getFieldTurn().getAngle() + ellipse.getTurnAngle();
-
-		g.rotate(-rot, r.x + (r.width / 2.0), r.y + (r.height / 2.0));
+		g.rotate(-rot, r.getCenterX(), r.getCenterY());
 		if (fill)
 		{
 			g.fillOval(r.x, r.y, r.width, r.height);
@@ -70,17 +68,19 @@ public class DrawableEllipse extends ADrawableWithStroke
 		{
 			g.drawOval(r.x, r.y, r.width, r.height);
 		}
-		g.rotate(rot, r.x + (r.width / 2.0), r.y + (r.height / 2.0));
+		g.rotate(rot, r.getCenterX(), r.getCenterY());
 	}
 
 
 	private Rectangle getBounds(final IDrawableTool fieldPanel, final boolean invert)
 	{
 		IVector2 center = fieldPanel.transformToGuiCoordinates(ellipse.center(), invert);
-		int x = (int) (center.x() - fieldPanel.scaleXLength(ellipse.getRadiusY()));
-		int y = (int) (center.y() - fieldPanel.scaleYLength(ellipse.getRadiusX()));
-		int width = fieldPanel.scaleXLength(ellipse.getRadiusY()) * 2;
-		int height = fieldPanel.scaleYLength(ellipse.getRadiusX()) * 2;
+		int radiusX = fieldPanel.scaleGlobalToGui(ellipse.getRadiusX());
+		int radiusY = fieldPanel.scaleGlobalToGui(ellipse.getRadiusY());
+		int x = (int) (center.x() - radiusX);
+		int y = (int) (center.y() - radiusY);
+		int width = radiusX * 2;
+		int height = radiusY * 2;
 		return new Rectangle(x, y, width, height);
 	}
 

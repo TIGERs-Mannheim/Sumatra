@@ -42,7 +42,7 @@ public class ApproachBallLineSkill extends AMoveToSkill
 	{
 		getMoveCon().setBallObstacle(false);
 		// do not respect other bots, when on ball line
-		getMoveCon().setBotsObstacle(getBall().getTrajectory().getTravelLineRolling().distanceTo(getPos()) > 100);
+		getMoveCon().setBotsObstacle(getBall().getTrajectory().distanceTo(getPos()) > 100);
 
 		positionValidator.update(getWorldFrame(), getMoveCon());
 		positionValidator.getMarginToPenArea().put(ETeam.OPPONENTS, marginToTheirPenArea);
@@ -139,6 +139,6 @@ public class ApproachBallLineSkill extends AMoveToSkill
 			return desiredBallCatchPos;
 		}
 		IVector2 catchPos = getTBot().getBotKickerPos(Geometry.getBallRadius());
-		return getBall().getTrajectory().getTravelLineRolling().closestPointOnLine(catchPos);
+		return getBall().getTrajectory().closestPointTo(catchPos);
 	}
 }

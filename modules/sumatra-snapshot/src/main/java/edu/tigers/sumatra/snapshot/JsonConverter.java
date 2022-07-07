@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.snapshot;
@@ -98,6 +98,21 @@ public final class JsonConverter
 	}
 
 
+	@SuppressWarnings("unchecked")
+	static JSONArray encodeVector3Map(final Map<BotID, IVector3> vectors)
+	{
+		JSONArray array = new JSONArray();
+		for (Map.Entry<BotID, IVector3> entry : vectors.entrySet())
+		{
+			JSONObject botObj = new JSONObject();
+			botObj.put("id", encode(entry.getKey()));
+			botObj.put("dest", JsonConverter.encode(entry.getValue()));
+			array.add(botObj);
+		}
+		return array;
+	}
+
+
 	/**
 	 * @param array
 	 * @return
@@ -109,6 +124,27 @@ public final class JsonConverter
 		{
 			JSONObject jsonObj = (JSONObject) obj;
 			bots.put(decodeBotId((JSONObject) jsonObj.get("id")), SnapObject.fromJSON((JSONObject) jsonObj.get("obj")));
+		}
+		return bots;
+	}
+
+
+	/**
+	 * @param array
+	 * @return
+	 */
+	static Map<BotID, IVector3> decodeVector3Map(final JSONArray array)
+	{
+		if (array == null)
+		{
+			return Map.of();
+		}
+		Map<BotID, IVector3> bots = new LinkedHashMap<>();
+		for (Object obj : array)
+		{
+			JSONObject jsonObj = (JSONObject) obj;
+			bots.put(decodeBotId((JSONObject) jsonObj.get("id")),
+					JsonConverter.decodeVector3((JSONArray) jsonObj.get("dest")));
 		}
 		return bots;
 	}

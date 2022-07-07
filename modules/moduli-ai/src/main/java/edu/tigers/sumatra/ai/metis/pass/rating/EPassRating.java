@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.metis.pass.rating;
@@ -17,7 +17,7 @@ public enum EPassRating
 	/**
 	 * Rating of how well the pass can be performed in terms of kick speed and receiving speed
 	 */
-	PASSABILITY("p"),
+	PASSABILITY("pa"),
 
 	/**
 	 * Rating of how well opponents can intercept the pass
@@ -35,14 +35,9 @@ public enum EPassRating
 	GOAL_KICK("g"),
 
 	/**
-	 * Rating of the ball traveling time
-	 */
-	PASS_DURATION("d"),
-
-	/**
 	 * Rating of the pressure made on the opponents
 	 */
-	PRESSURE("p"),
+	PRESSURE("pr"),
 
 	;
 

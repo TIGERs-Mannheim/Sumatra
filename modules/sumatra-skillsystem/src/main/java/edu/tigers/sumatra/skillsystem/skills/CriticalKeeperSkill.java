@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.skillsystem.skills;
@@ -8,25 +8,30 @@ import com.github.g3force.configurable.Configurable;
 import edu.tigers.sumatra.drawable.DrawableCircle;
 import edu.tigers.sumatra.drawable.DrawableLine;
 import edu.tigers.sumatra.geometry.Geometry;
-import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.AngleMath;
+import edu.tigers.sumatra.math.ERotationDirection;
 import edu.tigers.sumatra.math.SumatraMath;
+import edu.tigers.sumatra.math.circle.Circle;
 import edu.tigers.sumatra.math.line.ILine;
 import edu.tigers.sumatra.math.line.Line;
 import edu.tigers.sumatra.math.line.LineMath;
+import edu.tigers.sumatra.math.line.v2.Lines;
 import edu.tigers.sumatra.math.triangle.TriangleMath;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
+import edu.tigers.sumatra.math.vector.Vector2f;
 import edu.tigers.sumatra.math.vector.VectorDistanceComparator;
 import edu.tigers.sumatra.math.vector.VectorMath;
+import edu.tigers.sumatra.pathfinder.TrajectoryGenerator;
 import edu.tigers.sumatra.skillsystem.ESkillShapesLayer;
 import edu.tigers.sumatra.skillsystem.skills.DefendingKeeper.ECriticalKeeperStates;
 import edu.tigers.sumatra.statemachine.AState;
-import edu.tigers.sumatra.trajectory.BangBangTrajectoryMath;
+import edu.tigers.sumatra.trajectory.ITrajectory;
 import edu.tigers.sumatra.wp.data.ITrackedBall;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
 
 import java.awt.Color;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 
@@ -42,29 +47,39 @@ public class CriticalKeeperSkill extends AMoveToSkill
 	@Configurable(comment = "Max. Acceleration in Catch Skill", defValue = "2.5")
 	private static double maxAcc = 2.5;
 
-	@Configurable(comment = "Over Acceleration", defValue = "false")
-	private static boolean isOverAccelerationActive = false;
-
 	@Configurable(comment = "Max acceleration of Keeper", defValue = "2.5")
 	private static double keeperAcc = 2.5;
 
-	@Configurable(comment = "Dist [mm] to GoalCenter in NormalBlockState", defValue = "500.0")
-	private static double distToGoalCenter = 500.0;
+	@Configurable(comment = "Scaling Factor for Dist to GoalCenter in NormalBlockState", defValue = "1.0")
+	private static double distanceToGoalCenterScalingFactor = 1.0;
 
-	@Configurable(comment = "Keeper goes out if redirecting bot is behind this margin added to the penaulty area", defValue = "-2022.5")
+	@Configurable(comment = "Keeper goes out if redirecting bot is behind this margin added to the penalty area", defValue = "-2022.5")
 	private static double goOutWhileRedirectMargin = Geometry.getGoalOur().getCenter().x() / 2.0;
 
 	@Configurable(comment = "Keeper's normal movement is circular", defValue = "true")
 	private static boolean isKeepersNormalMovementCircular = true;
 
+	@Configurable(comment = "Use MoveConstraints PrimaryDirection during intercept", defValue = "true")
+	private static boolean usePrimaryDirectionsIntercept = true;
+	@Configurable(comment = "Use MoveConstraints PrimaryDirection while going out or catching redirects", defValue = "true")
+	private static boolean usePrimaryDirectionOuterBlockingStates = true;
+	@Configurable(comment = "[mm] distance between samples to find optimal intercept destination", defValue = "10")
+	private static int samplesInterceptDestinationGranularity = 10;
 
 	private ECriticalKeeperStates currentState = ECriticalKeeperStates.NORMAL;
 	private DefendingKeeper defendingKeeper = new DefendingKeeper(this);
 
 
+	private double getDistanceToGoalCenter()
+	{
+		return Math.min(Geometry.getGoalOur().getWidth() / 2.0 - Geometry.getBotRadius(),
+				Geometry.getPenaltyAreaDepth() - Geometry.getBotRadius() * 2.0) * distanceToGoalCenterScalingFactor;
+	}
+
+
 	public CriticalKeeperSkill()
 	{
-		NormalBlock blockState = new NormalBlock();
+		var blockState = new NormalBlock();
 		setInitialState(blockState);
 
 		addTransition(ECriticalKeeperStates.INTERCEPT_BALL, new InterceptBall());
@@ -86,6 +101,8 @@ public class CriticalKeeperSkill extends AMoveToSkill
 			currentState = nextState;
 			triggerEvent(nextState);
 		}
+
+		calcBestBisectorDefensivePositionDeflectionAdapted(getBall().getPos(), getDistanceToGoalCenter());
 	}
 
 
@@ -95,6 +112,12 @@ public class CriticalKeeperSkill extends AMoveToSkill
 		getMoveCon().setBotsObstacle(false);
 		getMoveCon().setBallObstacle(false);
 		getMoveCon().setGoalPostsObstacle(false);
+	}
+
+
+	private void prepareMovementConstraints()
+	{
+		getMoveConstraints().setPrimaryDirection(Vector2f.ZERO_VECTOR);
 	}
 
 
@@ -108,6 +131,7 @@ public class CriticalKeeperSkill extends AMoveToSkill
 		{
 			targetAngle = getAngle();
 			prepareMoveCon();
+			prepareMovementConstraints();
 			getMoveConstraints().setAccMax(maxAcc);
 			super.doEntryActions();
 		}
@@ -121,9 +145,15 @@ public class CriticalKeeperSkill extends AMoveToSkill
 				// skill is not designed for lying balls
 				return;
 			}
+			if (usePrimaryDirectionsIntercept)
+			{
+				getMoveConstraints().setPrimaryDirection(getBall().getVel());
+			} else
+			{
+				getMoveConstraints().setPrimaryDirection(Vector2f.ZERO_VECTOR);
+			}
 
-			final IVector2 destination = calcDestination();
-
+			var destination = calcDestination();
 			targetAngle = calcTargetAngle(destination);
 
 			updateDestination(destination);
@@ -136,12 +166,10 @@ public class CriticalKeeperSkill extends AMoveToSkill
 
 		private void draw()
 		{
-			if (getBot().getCurrentTrajectory().isPresent())
-			{
-				getShapes().get(ESkillShapesLayer.PATH_DEBUG).add(new DrawableLine(Line.fromDirection(getPos(),
-						getBot().getCurrentTrajectory().get().getAcceleration(0).getXYVector().multiplyNew(1000)),
-						Color.BLACK));
-			}
+			getBot().getCurrentTrajectory().ifPresent(botTraj -> getShapes().get(ESkillShapesLayer.PATH_DEBUG)
+					.add(new DrawableLine(
+							Line.fromDirection(getPos(), botTraj.getAcceleration(0).getXYVector().multiplyNew(1000)),
+							Color.BLACK)));
 		}
 
 
@@ -155,31 +183,113 @@ public class CriticalKeeperSkill extends AMoveToSkill
 		}
 
 
+		private IVector2 findBestDestinationWithinPenArea(IVector2 fallbackPoint)
+		{
+			var penAreaWithMargin = Geometry.getPenaltyAreaOur().withMargin(-100);
+			var ballPos = getBall().getPos();
+			var ballInsidePenArea = penAreaWithMargin.isPointInShape(ballPos);
+			var ballLine = Lines.lineFromDirection(ballPos, getBall().getVel());
+			var pointACandidates = penAreaWithMargin.lineIntersections(ballLine);
+			var pointBCandidate = Geometry.getGoalOur().getLine().intersectLine(ballLine);
+			if (pointACandidates.size() != 1 || pointBCandidate.isEmpty())
+			{
+				return fallbackPoint;
+			}
+
+			final IVector2 pointA = pointACandidates.get(0);
+			final IVector2 pointB = pointBCandidate.get();
+
+			var searchDist = pointA.distanceTo(pointB);
+			var numSamples = (int) (searchDist / samplesInterceptDestinationGranularity);
+			var distBallToA = ((ballInsidePenArea) ? -1 : 1) * ballPos.distanceTo(pointA);
+
+			var bestPoint = SumatraMath.evenDistribution1D(0, searchDist, numSamples).stream()
+					.map(dist -> buildDestWithTrajectory(getBall().getVel().scaleToNew(dist), pointA, distBallToA))
+					.max(DestWithTrajectory::compareTo)
+					.map(DestWithTrajectory::dest)
+					.orElse(fallbackPoint);
+
+			getShapes().get(ESkillShapesLayer.KEEPER)
+					.add(new DrawableLine(Lines.segmentFromPoints(pointA, pointB), Color.WHITE));
+			getShapes().get(ESkillShapesLayer.KEEPER)
+					.add(new DrawableCircle(Circle.createCircle(bestPoint, 35), Color.GREEN));
+			return bestPoint;
+		}
+
+
+		private DestWithTrajectory buildDestWithTrajectory(IVector2 offset, IVector2 pointA, double distBallToA)
+		{
+			var dest = pointA.addNew(offset);
+			var ballDist = distBallToA + offset.getLength();
+			var tt = ballDist > 0 ? getBall().getTrajectory().getTimeByDist(ballDist) : 0.0;
+			var virtualDest = TrajectoryGenerator.generateVirtualPositionToReachPointInTime(getTBot(),
+					getMoveConstraints(), dest, tt);
+			var trajectory = TrajectoryGenerator.generatePositionTrajectory(getTBot(), virtualDest,
+					getMoveConstraints());
+			var posAtTt = trajectory.getPositionMM(tt);
+			var distAtTt = posAtTt.distanceTo(dest);
+			var velAtTt = trajectory.getVelocity(tt).getLength();
+			var timeLeftAtTt = tt - trajectory.getTotalTime();
+			var canReach = distAtTt < Geometry.getBotRadius();
+			var canReachCompletely = velAtTt < 1e-3;
+			var isCloseToGoalLine = Geometry.getGoalOur().getLine().distanceTo(dest) < Geometry.getBotRadius() * 3;
+			return new DestWithTrajectory(
+					dest,
+					trajectory,
+					distAtTt,
+					velAtTt,
+					timeLeftAtTt,
+					canReach,
+					canReachCompletely,
+					isCloseToGoalLine
+			);
+		}
+
+
 		private IVector2 calcDestination()
 		{
-			IVector2 leadPoint = findPointOnBallTraj();
+			var fallBackPoint = findPointOnBallTraj();
+			var bestPoint = findBestDestinationWithinPenArea(fallBackPoint);
+			bestPoint = adaptDestinationToChipKick(bestPoint);
+			bestPoint = moveInterceptDestinationInsideField(bestPoint);
+			return calcOverAcceleration(bestPoint);
+		}
 
-			IVector2 destination = leadPoint;
 
-			if (!Geometry.getField().isPointInShape(destination))
+		private IVector2 adaptDestinationToChipKick(final IVector2 destination)
+		{
+			final var goalLine = Geometry.getGoalOur().getLine();
+			return getWorldFrame().getBall().getTrajectory().getTouchdownLocations().stream()
+					.filter(td -> td.x() > Geometry.getGoalOur().getCenter().x())
+					.filter(td -> td.distanceTo(getPos()) < maxChipInterceptDist)
+					.min(Comparator.comparingDouble(goalLine::distanceToSqr))
+					.orElse(destination);
+		}
+
+
+		private IVector2 moveInterceptDestinationInsideField(IVector2 destination)
+		{
+			return Geometry.getField().withMargin(Geometry.getBotRadius())
+					.nearestPointInside(destination, getBall().getPos());
+		}
+
+
+		private IVector2 calcOverAcceleration(final IVector2 destination)
+		{
+			final double targetTime;
+			if (Math.abs(destination.subtractNew(getBall().getPos()).getAngle()) > AngleMath.PI_HALF)
 			{
-				List<IVector2> intersections = Geometry.getField()
-						.lineIntersections(Line.fromPoints(getBall().getPos(), leadPoint));
-				for (IVector2 intersection : intersections)
-				{
-					IVector2 vec = intersection.subtractNew(getBall().getPos());
-					if (Math.abs(vec.getAngle() - getBall().getVel().getAngle()) < 0.1)
-					{
-						destination = intersection;
-						break;
-					}
-				}
-			}
-			if (isOverAccelerationActive)
+				targetTime = getBall().getTrajectory().getTimeByPos(destination);
+			} else
 			{
-				destination = calcAcceleration(destination);
+				targetTime = 0.0;
 			}
-			return destination;
+			return TrajectoryGenerator.generateVirtualPositionToReachPointInTime(
+					getTBot(),
+					getMoveConstraints(),
+					destination,
+					targetTime
+			);
 		}
 
 
@@ -226,19 +336,154 @@ public class CriticalKeeperSkill extends AMoveToSkill
 		}
 
 
-		private IVector2 calcAcceleration(final IVector2 destination)
+		record DestWithTrajectory(
+				IVector2 dest,
+				ITrajectory<IVector2> trajectory,
+				double distAtTt,
+				double velAtTt,
+				double timeLeftAtTt,
+				boolean canReach,
+				boolean canReachCompletely,
+				boolean isCloseToGoalLine
+		) implements Comparable<DestWithTrajectory>
 		{
-			double acc = getMoveConstraints().getAccMax();
-			double vel = getMoveConstraints().getVelMax();
-			return BangBangTrajectoryMath.getVirtualDestinationToReachPositionInTime(getPos(), getVel(),
-					destination, acc, vel,
-					getWorldFrame().getBall().getTrajectory().getTimeByPos(
-							LineMath.stepAlongLine(destination, getWorldFrame().getBall().getPos(),
-									Geometry.getBotRadius() / 2)),
-					Geometry.getBotRadius());
-		}
+			/**
+			 * Compare such that the "highest" object is the best object
+			 *
+			 * @param other
+			 * @return -1 if other is better, 1 if this is better
+			 */
+			@Override
+			public int compareTo(DestWithTrajectory other)
+			{
+				if (!canReach)
+				{
+					if (other.canReach)
+					{
+						// We can't reach, but other can -> other wins
+						return -1;
+					} else
+					{
+						// Smaller distance wins
+						return -Double.compare(distAtTt, other.distAtTt);
+					}
+				}
 
+				// canReach == true
+				if (!canReachCompletely)
+				{
+					if (other.canReachCompletely)
+					{
+						// We can't reach completely, but other can -> other wins
+						return -1;
+					} else if (!other.canReach)
+					{
+						// We can reach, but other can't -> we win
+						return 1;
+					} else
+					{
+						// Smaller velocity wins
+						return -Double.compare(velAtTt, other.velAtTt);
+					}
+				}
+
+				// canReachCompletely == true
+				if (!other.canReachCompletely)
+				{
+					// We can reach completely, but other can't -> we win
+					return 1;
+				}
+				if (isCloseToGoalLine != other.isCloseToGoalLine)
+				{
+					// Position not close to goal line wins
+					return -Boolean.compare(isCloseToGoalLine, other.isCloseToGoalLine);
+				}
+				// Higher timeLeft wins
+				return Double.compare(timeLeftAtTt, other.timeLeftAtTt);
+			}
+		}
 	}
+
+
+	private IVector2 getPrimaryDirectionOuterBlockingStates(final IVector2 threatPosition,
+			final IVector2 defensePosition)
+	{
+		IVector2 finalPrimaryDirection = Vector2f.ZERO_VECTOR;
+		if (usePrimaryDirectionOuterBlockingStates)
+		{
+			final IVector2 primaryDirection = Vector2.fromPoints(threatPosition, defensePosition);
+			final var keeperPrimaryDirectionIntersection = Lines.halfLineFromDirection(getPos(), getVel())
+					.intersectLine(Lines.lineFromDirection(threatPosition, primaryDirection));
+			final Color primaryDirectionColor;
+			if (keeperPrimaryDirectionIntersection.isPresent() && Geometry.getField()
+					.isPointInShape(keeperPrimaryDirectionIntersection.get()))
+			{
+				finalPrimaryDirection = primaryDirection;
+				primaryDirectionColor = Color.BLACK;
+			} else
+			{
+				primaryDirectionColor = Color.GRAY;
+			}
+			getShapes().get(ESkillShapesLayer.KEEPER)
+					.add(new DrawableLine(Line.fromDirection(getPos(), primaryDirection.scaleToNew(-1000)),
+							primaryDirectionColor));
+		}
+		return finalPrimaryDirection;
+	}
+
+
+	private IVector2 calcBestBisectorDefensivePositionDeflectionAdapted(final IVector2 posToCover,
+			final double distanceToGoalLine)
+	{
+		var shapes = getShapes().get(ESkillShapesLayer.KEEPER_DEFLECTION_ADAPTION);
+		final IVector2 goalLineBisector = TriangleMath.bisector(posToCover, Geometry.getGoalOur().getLeftPost(), Geometry
+				.getGoalOur().getRightPost());
+
+		final IVector2 unadaptedPos = LineMath.stepAlongLine(goalLineBisector, posToCover, distanceToGoalLine);
+
+		final IVector2 leftPostBisector = TriangleMath
+				.bisector(unadaptedPos, Geometry.getGoalOur().getLeftPost(), posToCover);
+		final IVector2 rightPosBisector = TriangleMath
+				.bisector(unadaptedPos, posToCover, Geometry.getGoalOur().getRightPost());
+
+
+		shapes.add(new DrawableLine(
+				Line.fromDirection(unadaptedPos, Vector2.fromPoints(unadaptedPos, rightPosBisector).scaleToNew(250)),
+				Color.RED).setStrokeWidth(5));
+		shapes.add(new DrawableLine(
+				Line.fromDirection(unadaptedPos, Vector2.fromPoints(unadaptedPos, leftPostBisector).scaleToNew(250)),
+				Color.RED).setStrokeWidth(5));
+		shapes.add(new DrawableLine(
+				Line.fromDirection(unadaptedPos, Vector2.fromPoints(unadaptedPos, posToCover).scaleToNew(250)), Color.BLUE)
+				.setStrokeWidth(5));
+		shapes.add(new DrawableLine(Line.fromDirection(unadaptedPos,
+				Vector2.fromPoints(unadaptedPos, Geometry.getGoalOur().getLeftPost()).scaleToNew(250)), Color.BLUE)
+				.setStrokeWidth(5));
+		shapes.add(new DrawableLine(Line.fromDirection(unadaptedPos,
+				Vector2.fromPoints(unadaptedPos, Geometry.getGoalOur().getRightPost()).scaleToNew(250)), Color.BLUE)
+				.setStrokeWidth(5));
+
+		final double keeperLockingDirection = Vector2.fromPoints(unadaptedPos, posToCover).getAngle();
+		final double leftBlockingRatio = Vector2.fromPoints(unadaptedPos, leftPostBisector).getAngle();
+		final double rightBlockingRatio = Vector2.fromPoints(unadaptedPos, rightPosBisector).getAngle();
+
+		final double leftBlockingDist =
+				AngleMath.sin(AngleMath.diffAbs(keeperLockingDirection, leftBlockingRatio)) * Geometry.getBotRadius();
+		final double rightBlockingDist =
+				AngleMath.sin(AngleMath.diffAbs(keeperLockingDirection, rightBlockingRatio)) * Geometry.getBotRadius();
+
+		final IVector2 leftToRightVector = Vector2.fromAngle(
+				AngleMath.rotateAngle(keeperLockingDirection, AngleMath.PI_HALF, ERotationDirection.CLOCKWISE));
+
+
+		final IVector2 offset = leftToRightVector.scaleToNew(leftBlockingDist - rightBlockingDist);
+
+
+		shapes.add(new DrawableLine(Line.fromDirection(unadaptedPos, offset), Color.PINK));
+
+		return unadaptedPos.addNew(offset);
+	}
+
 
 	private class CatchRedirect extends AState
 	{
@@ -249,6 +494,7 @@ public class CriticalKeeperSkill extends AMoveToSkill
 		public void doEntryActions()
 		{
 			prepareMoveCon();
+			prepareMovementConstraints();
 			getMoveCon().setFieldBorderObstacle(false);
 			getMoveConstraints().setAccMax(keeperAcc);
 			stayInGoOut = false;
@@ -261,13 +507,14 @@ public class CriticalKeeperSkill extends AMoveToSkill
 		public void doUpdate()
 		{
 			IVector2 redirectBot = getRedirectBotPosition();
-			IVector2 destination = LineMath.stepAlongLine(Geometry.getGoalOur().getCenter(), redirectBot,
-					distToGoalCenter);
+			IVector2 destination = calcBestBisectorDefensivePositionDeflectionAdapted(redirectBot,
+					getDistanceToGoalCenter());
 
 			if (VectorMath.distancePP(getPos(), destination) < (Geometry.getBotRadius() / 2))
 			{
 				updateLookAtTarget(redirectBot);
 			}
+			getMoveConstraints().setPrimaryDirection(getPrimaryDirectionOuterBlockingStates(redirectBot, destination));
 			if ((isKeeperBetweenRedirectAndGoalCenter(redirectBot) || stayInGoOut) && isGoOutUseful(redirectBot))
 			{
 				stayInGoOut = true;
@@ -282,7 +529,7 @@ public class CriticalKeeperSkill extends AMoveToSkill
 		private IVector2 getRedirectBotPosition()
 		{
 			IVector2 redirectBot;
-			BotID redirectBotId = defendingKeeper.getBestRedirector(getWorldFrame().getOpponentBots());
+			var redirectBotId = defendingKeeper.getBestRedirector(getWorldFrame().getOpponentBots());
 			if (redirectBotId.isBot())
 			{
 				redirectBot = getWorldFrame().getOpponentBot(redirectBotId).getBotKickerPos();
@@ -317,6 +564,7 @@ public class CriticalKeeperSkill extends AMoveToSkill
 		public void doEntryActions()
 		{
 			prepareMoveCon();
+			prepareMovementConstraints();
 			getMoveConstraints().setAccMax(keeperAcc);
 			super.doEntryActions();
 		}
@@ -326,13 +574,16 @@ public class CriticalKeeperSkill extends AMoveToSkill
 		public void doUpdate()
 		{
 			IVector2 targetPosition;
+			final IVector2 positionBehindBall = calcPositionBehindBall();
 			if (isBallInsidePenaltyArea())
 			{
-				targetPosition = calcPositionBehindBall();
+				targetPosition = positionBehindBall;
 			} else
 			{
 				targetPosition = calcBestDefensivePositionInPE(getWorldFrame().getBall().getPos());
 			}
+			getMoveConstraints()
+					.setPrimaryDirection(getPrimaryDirectionOuterBlockingStates(getBall().getPos(), positionBehindBall));
 			updateDestination(targetPosition);
 			updateTargetAngle(getPos().subtractNew(Geometry.getGoalOur().getCenter()).getAngle());
 
@@ -352,9 +603,9 @@ public class CriticalKeeperSkill extends AMoveToSkill
 		private IVector2 calcPositionBehindBall()
 		{
 			IVector2 ballPos = getWorldFrame().getBall().getPos();
-			IVector2 goalCenter = Geometry.getGoalOur().getCenter();
-			double distanceToBall = goalCenter.distanceTo(ballPos);
-			return LineMath.stepAlongLine(goalCenter, ballPos, distanceToBall - Geometry.getBotRadius());
+			final double distanceToBall = TriangleMath.bisector(ballPos, Geometry.getGoalOur().getLeftPost(), Geometry
+					.getGoalOur().getRightPost()).distanceTo(ballPos);
+			return calcBestBisectorDefensivePositionDeflectionAdapted(ballPos, distanceToBall - Geometry.getBotRadius());
 		}
 
 
@@ -373,13 +624,14 @@ public class CriticalKeeperSkill extends AMoveToSkill
 
 	}
 
+
 	private class NormalBlock extends AState
 	{
 		@Override
 		public void doEntryActions()
 		{
 			prepareMoveCon();
-			getMoveConstraints().setAccMax(keeperAcc);
+			prepareMovementConstraints();
 			super.doEntryActions();
 		}
 
@@ -407,10 +659,10 @@ public class CriticalKeeperSkill extends AMoveToSkill
 			IVector2 newLeftPost = Geometry.getGoalOur().getLeftPost().addNew(Vector2.fromX(Geometry.getBotRadius()));
 			IVector2 newRightPost = Geometry.getGoalOur().getRightPost().addNew(Vector2.fromX(Geometry.getBotRadius()));
 			ILine newGoalLine = Line.fromPoints(newLeftPost, newRightPost);
-			ILine ballGoalcenterLine = Line.fromPoints(getWorldFrame().getBall().getPos(),
+			ILine ballGoalCenterLine = Line.fromPoints(getWorldFrame().getBall().getPos(),
 					Geometry.getGoalOur().getCenter());
 
-			Optional<IVector2> intersection = newGoalLine.intersectionWith(ballGoalcenterLine);
+			Optional<IVector2> intersection = newGoalLine.intersectionWith(ballGoalCenterLine);
 
 			IVector2 destination = Geometry.getGoalOur().getCenter();
 
@@ -427,15 +679,15 @@ public class CriticalKeeperSkill extends AMoveToSkill
 		private IVector2 checkPosts(IVector2 destination)
 		{
 			IVector2 finalDestination = destination;
-			boolean isBallBehindGoalline = getWorldFrame().getBall().getPos().x() < Geometry.getGoalOur().getCenter().x();
+			boolean isBallBehindGoalLine = getWorldFrame().getBall().getPos().x() < Geometry.getGoalOur().getCenter().x();
 			boolean isDestinationLeftFromLeftPost = destination.y() > Geometry.getGoalOur().getLeftPost().y();
 			boolean isDestinationRightFromRightPost = destination.y() < Geometry.getGoalOur().getRightPost().y();
 			boolean isBallLeftFromGoal = getWorldFrame().getBall().getPos().y() > 0;
 
-			if ((isDestinationLeftFromLeftPost && !isBallBehindGoalline) || (isBallBehindGoalline && isBallLeftFromGoal))
+			if ((isDestinationLeftFromLeftPost && !isBallBehindGoalLine) || (isBallBehindGoalLine && isBallLeftFromGoal))
 			{
 				finalDestination = Vector2.fromXY(destination.x(), Geometry.getGoalOur().getLeftPost().y());
-			} else if (isDestinationRightFromRightPost || isBallBehindGoalline)
+			} else if (isDestinationRightFromRightPost || isBallBehindGoalLine)
 			{
 				finalDestination = Vector2.fromXY(destination.x(), Geometry.getGoalOur().getRightPost().y());
 			}
@@ -446,15 +698,10 @@ public class CriticalKeeperSkill extends AMoveToSkill
 		private void blockCircular()
 		{
 			IVector2 ballPos = getWorldFrame().getBall().getTrajectory().getPosByTime(0.1).getXYVector();
-
-			IVector2 bisector = TriangleMath.bisector(ballPos, Geometry.getGoalOur().getLeftPost(), Geometry
-					.getGoalOur().getRightPost());
-
-			IVector2 destination = bisector
-					.addNew(ballPos.subtractNew(bisector).scaleToNew(distToGoalCenter));
-
+			IVector2 destination = calcBestBisectorDefensivePositionDeflectionAdapted(ballPos, getDistanceToGoalCenter());
+			destination = Geometry.getPenaltyAreaOur().withMargin(-Geometry.getBotRadius() - Geometry.getBallRadius())
+					.nearestPointInside(destination);
 			destination = setDestinationOutsideGoalPosts(destination);
-
 
 			updateDestination(destination);
 			updateLookAtTarget(getBall());
@@ -512,9 +759,9 @@ public class CriticalKeeperSkill extends AMoveToSkill
 
 		private IVector2 moveDestinationInsideField(IVector2 destination)
 		{
-			return Vector2.fromXY(
-					Geometry.getGoalOur().getCenter().x() + Geometry.getBotRadius() + Geometry.getBallRadius() / 2,
-					destination.y());
+			double x = Math.max(Geometry.getGoalOur().getCenter().x() + Geometry.getBotRadius()
+					+ Geometry.getBallRadius() / 2, destination.x());
+			return Vector2.fromXY(x, destination.y());
 		}
 
 
@@ -630,7 +877,7 @@ public class CriticalKeeperSkill extends AMoveToSkill
 				goalCenter, relativeRadius * SumatraMath.tan(alpha));
 
 		IVector2 optimalDistanceToBallPosDirectedToRightPose = LineMath.intersectionPoint(ballRightPose,
-				Line.fromDirection(optimalDistanceToBallPosDirectedToGoal, ballGoalOrthoDirection))
+						Line.fromDirection(optimalDistanceToBallPosDirectedToGoal, ballGoalOrthoDirection))
 				.orElseThrow(IllegalStateException::new);
 
 		return LineMath.stepAlongLine(optimalDistanceToBallPosDirectedToRightPose, optimalDistanceToBallPosDirectedToGoal,

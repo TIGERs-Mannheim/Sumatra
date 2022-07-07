@@ -1,23 +1,21 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.bot;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
-
-import org.apache.commons.lang.Validate;
-
 import com.sleepycat.persist.model.Persistent;
-
 import edu.tigers.sumatra.bot.params.BotParams;
 import edu.tigers.sumatra.bot.params.IBotParams;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.IMirrorable;
 import edu.tigers.sumatra.math.vector.IVector3;
 import edu.tigers.sumatra.trajectory.ITrajectory;
+import org.apache.commons.lang.Validate;
+
+import java.util.EnumMap;
+import java.util.Map;
+import java.util.Optional;
 
 
 /**
@@ -30,28 +28,29 @@ public class RobotInfo implements IMirrorable<RobotInfo>
 	private final long timestamp;
 	private final EBotType type;
 	private final ERobotMode robotMode;
-	private final transient ITrajectory<IVector3> trajectory;
+	private final ITrajectory<IVector3> trajectory;
 	private final Map<EFeature, EFeatureState> botFeatures;
 	private final float kickSpeed;
 	private final boolean chip;
 	private final boolean armed;
-	private final float battery;
-	private final float kickerVoltage;
+	private final float batteryRelative;
+	private final float kickerLevelRelative;
 	private final float dribbleRpm;
 	private final int hardwareId;
 	private final BotState internalState;
 	private final boolean isBarrierInterrupted;
 	private final IBotParams botParams;
 	private final boolean isOk;
-	
-	
+	private final boolean isAvailableToAi;
+
+
 	@SuppressWarnings("unused")
 	private RobotInfo()
 	{
 		this(stubBuilder(BotID.noBot(), 0));
 	}
-	
-	
+
+
 	private RobotInfo(final Builder builder)
 	{
 		botId = builder.botId;
@@ -63,17 +62,18 @@ public class RobotInfo implements IMirrorable<RobotInfo>
 		kickSpeed = builder.kickSpeed;
 		chip = builder.chip;
 		armed = builder.armed;
-		battery = builder.battery;
-		kickerVoltage = builder.kickerVoltage;
+		batteryRelative = builder.batteryRelative;
+		kickerLevelRelative = builder.kickerLevelRelative;
 		dribbleRpm = builder.dribbleRpm;
 		hardwareId = builder.hardwareId;
 		internalState = builder.internalState;
 		isBarrierInterrupted = builder.barrierInterrupted;
 		botParams = builder.botParams;
 		isOk = builder.isOk;
+		isAvailableToAi = builder.isAvailableToAi;
 	}
-	
-	
+
+
 	/**
 	 * @return a new builder
 	 */
@@ -81,12 +81,12 @@ public class RobotInfo implements IMirrorable<RobotInfo>
 	{
 		return new Builder();
 	}
-	
-	
+
+
 	/**
 	 * Create a stub with default data
-	 * 
-	 * @param botId the botId is still required
+	 *
+	 * @param botId     the botId is still required
 	 * @param timestamp the timestamp of this information
 	 * @return new bot info
 	 */
@@ -94,12 +94,12 @@ public class RobotInfo implements IMirrorable<RobotInfo>
 	{
 		return stubBuilder(botId, timestamp).build();
 	}
-	
-	
+
+
 	/**
 	 * Create a stub with default data
 	 *
-	 * @param botId the botId is still required
+	 * @param botId     the botId is still required
 	 * @param timestamp the timestamp of this information
 	 * @return new stub builder
 	 */
@@ -111,21 +111,22 @@ public class RobotInfo implements IMirrorable<RobotInfo>
 				.withType(EBotType.UNKNOWN)
 				.withRobotMode(ERobotMode.IDLE)
 				.withTrajectory(null)
-				.withBotFeatures(new HashMap<>())
+				.withBotFeatures(new EnumMap<>(EFeature.class))
 				.withKickSpeed(0)
 				.withChip(false)
 				.withArmed(false)
-				.withBattery(0)
-				.withKickerVoltage(0)
+				.withBatteryRelative(0)
+				.withKickerLevelRelative(0)
 				.withDribbleRpm(0)
 				.withHardwareId(255)
 				.withInternalState(null)
 				.withBarrierInterrupted(false)
 				.withBotParams(new BotParams())
-				.withOk(true);
+				.withOk(true)
+				.withAvailableToAi(true);
 	}
-	
-	
+
+
 	/**
 	 * @param copy for inital values
 	 * @return new builder
@@ -142,18 +143,19 @@ public class RobotInfo implements IMirrorable<RobotInfo>
 		builder.kickSpeed = copy.kickSpeed;
 		builder.chip = copy.chip;
 		builder.armed = copy.armed;
-		builder.battery = copy.battery;
-		builder.kickerVoltage = copy.kickerVoltage;
+		builder.batteryRelative = copy.batteryRelative;
+		builder.kickerLevelRelative = copy.kickerLevelRelative;
 		builder.dribbleRpm = copy.dribbleRpm;
 		builder.hardwareId = copy.hardwareId;
 		builder.internalState = copy.internalState;
 		builder.barrierInterrupted = copy.isBarrierInterrupted;
 		builder.botParams = copy.botParams;
 		builder.isOk = copy.isOk;
+		builder.isAvailableToAi = copy.isAvailableToAi;
 		return builder;
 	}
-	
-	
+
+
 	/**
 	 * @return new deep copy
 	 */
@@ -161,8 +163,8 @@ public class RobotInfo implements IMirrorable<RobotInfo>
 	{
 		return RobotInfo.copyBuilder(this).build();
 	}
-	
-	
+
+
 	@Override
 	public RobotInfo mirrored()
 	{
@@ -177,115 +179,128 @@ public class RobotInfo implements IMirrorable<RobotInfo>
 		}
 		return builder.build();
 	}
-	
-	
+
+
+	public boolean isConnected()
+	{
+		return type != EBotType.UNKNOWN;
+	}
+
+
 	public BotID getBotId()
 	{
 		return botId;
 	}
-	
-	
+
+
 	public long getTimestamp()
 	{
 		return timestamp;
 	}
-	
-	
+
+
 	public EBotType getType()
 	{
 		return type;
 	}
-	
-	
+
+
 	public ERobotMode getRobotMode()
 	{
 		return robotMode;
 	}
-	
-	
+
+
 	public double getCenter2DribblerDist()
 	{
 		return botParams.getDimensions().getCenter2DribblerDist();
 	}
-	
-	
+
+
 	public IBotParams getBotParams()
 	{
 		return botParams;
 	}
-	
-	
+
+
 	public Optional<ITrajectory<IVector3>> getTrajectory()
 	{
 		return Optional.ofNullable(trajectory);
 	}
-	
-	
+
+
 	public Map<EFeature, EFeatureState> getBotFeatures()
 	{
 		return botFeatures;
 	}
-	
-	
+
+
 	public float getKickSpeed()
 	{
 		return kickSpeed;
 	}
-	
-	
+
+
 	public boolean isChip()
 	{
 		return chip;
 	}
-	
-	
+
+
 	public boolean isArmed()
 	{
 		return armed;
 	}
-	
-	
-	public float getBattery()
+
+
+	public float getBatteryRelative()
 	{
-		return battery;
+		return batteryRelative;
 	}
-	
-	
-	public float getKickerVoltage()
+
+
+	public float getKickerLevelRelative()
 	{
-		return kickerVoltage;
+		return kickerLevelRelative;
 	}
-	
-	
+
+
 	public float getDribbleRpm()
 	{
 		return dribbleRpm;
 	}
-	
-	
+
+
 	public int getHardwareId()
 	{
 		return hardwareId;
 	}
-	
-	
+
+
 	public boolean isOk()
 	{
 		return isOk;
 	}
-	
-	
+
+
+	public boolean isAvailableToAi()
+	{
+		return isAvailableToAi;
+	}
+
+
 	public boolean isBarrierInterrupted()
 	{
 		return isBarrierInterrupted;
 	}
-	
-	
+
+
 	public Optional<BotState> getInternalState()
 	{
 		return Optional.ofNullable(internalState);
 	}
-	
+
+
 	/**
 	 * {@code RobotInfo} builder static inner class.
 	 */
@@ -300,21 +315,22 @@ public class RobotInfo implements IMirrorable<RobotInfo>
 		private Float kickSpeed;
 		private Boolean chip;
 		private Boolean armed;
-		private Float battery;
-		private Float kickerVoltage;
+		private Float batteryRelative;
+		private Float kickerLevelRelative;
 		private Float dribbleRpm;
 		private int hardwareId;
 		private BotState internalState;
 		private boolean barrierInterrupted;
 		private IBotParams botParams;
 		private boolean isOk = true;
-		
-		
+		private boolean isAvailableToAi;
+
+
 		private Builder()
 		{
 		}
-		
-		
+
+
 		/**
 		 * Sets the {@code botId} and returns a reference to this Builder so that the methods can be chained together.
 		 *
@@ -326,11 +342,11 @@ public class RobotInfo implements IMirrorable<RobotInfo>
 			botId = val;
 			return this;
 		}
-		
-		
+
+
 		/**
 		 * Sets if the robot is ok (thus usable for the AI)
-		 * 
+		 *
 		 * @param ok
 		 * @return
 		 */
@@ -339,8 +355,15 @@ public class RobotInfo implements IMirrorable<RobotInfo>
 			isOk = ok;
 			return this;
 		}
-		
-		
+
+
+		public Builder withAvailableToAi(final boolean val)
+		{
+			this.isAvailableToAi = val;
+			return this;
+		}
+
+
 		/**
 		 * Sets the {@code timestamp} and returns a reference to this Builder so that the methods can be chained together.
 		 *
@@ -352,8 +375,8 @@ public class RobotInfo implements IMirrorable<RobotInfo>
 			timestamp = val;
 			return this;
 		}
-		
-		
+
+
 		/**
 		 * Sets the {@code type} and returns a reference to this Builder so that the methods can be chained together.
 		 *
@@ -365,8 +388,8 @@ public class RobotInfo implements IMirrorable<RobotInfo>
 			type = val;
 			return this;
 		}
-		
-		
+
+
 		/**
 		 * Sets the {@code robotMode} and returns a reference to this Builder so that
 		 * the methods can be chained together.
@@ -379,8 +402,8 @@ public class RobotInfo implements IMirrorable<RobotInfo>
 			robotMode = val;
 			return this;
 		}
-		
-		
+
+
 		/**
 		 * Sets the {@code botParams} and returns a reference to this Builder so that the methods can be chained
 		 * together.
@@ -393,8 +416,8 @@ public class RobotInfo implements IMirrorable<RobotInfo>
 			botParams = val;
 			return this;
 		}
-		
-		
+
+
 		/**
 		 * Sets the {@code trajectory} and returns a reference to this Builder so that the methods can be chained
 		 * together.
@@ -407,8 +430,8 @@ public class RobotInfo implements IMirrorable<RobotInfo>
 			trajectory = val;
 			return this;
 		}
-		
-		
+
+
 		/**
 		 * Sets the {@code botFeatures} and returns a reference to this Builder so that the methods can be chained
 		 * together.
@@ -421,8 +444,8 @@ public class RobotInfo implements IMirrorable<RobotInfo>
 			botFeatures = val;
 			return this;
 		}
-		
-		
+
+
 		/**
 		 * Sets the {@code kickSpeed} and returns a reference to this Builder so that the methods can be chained together.
 		 *
@@ -434,8 +457,8 @@ public class RobotInfo implements IMirrorable<RobotInfo>
 			kickSpeed = (float) val;
 			return this;
 		}
-		
-		
+
+
 		/**
 		 * Sets the {@code chip} and returns a reference to this Builder so that the methods can be chained together.
 		 *
@@ -447,8 +470,8 @@ public class RobotInfo implements IMirrorable<RobotInfo>
 			chip = val;
 			return this;
 		}
-		
-		
+
+
 		/**
 		 * Sets the {@code arm} and returns a reference to this Builder so that the methods can be chained together.
 		 *
@@ -460,35 +483,35 @@ public class RobotInfo implements IMirrorable<RobotInfo>
 			armed = val;
 			return this;
 		}
-		
-		
+
+
 		/**
-		 * Sets the {@code battery} and returns a reference to this Builder so that the methods can be chained together.
+		 * Sets the {@code batteryRelative} and returns a reference to this Builder so that the methods can be chained together.
 		 *
-		 * @param val the {@code battery} to set
+		 * @param val the {@code batteryRelative} to set
 		 * @return a reference to this Builder
 		 */
-		public Builder withBattery(final double val)
+		public Builder withBatteryRelative(final double val)
 		{
-			battery = (float) val;
+			batteryRelative = (float) val;
 			return this;
 		}
-		
-		
+
+
 		/**
-		 * Sets the {@code kickerVoltage} and returns a reference to this Builder so that the methods can be chained
+		 * Sets the {@code kickerLevelRelative} and returns a reference to this Builder so that the methods can be chained
 		 * together.
 		 *
-		 * @param val the {@code kickerVoltage} to set
+		 * @param val the {@code kickerLevelRelative} to set
 		 * @return a reference to this Builder
 		 */
-		public Builder withKickerVoltage(final double val)
+		public Builder withKickerLevelRelative(final double val)
 		{
-			kickerVoltage = (float) val;
+			kickerLevelRelative = (float) val;
 			return this;
 		}
-		
-		
+
+
 		/**
 		 * Sets the {@code dribbleRpm} and returns a reference to this Builder so that the methods can be chained
 		 * together.
@@ -501,8 +524,8 @@ public class RobotInfo implements IMirrorable<RobotInfo>
 			dribbleRpm = (float) val;
 			return this;
 		}
-		
-		
+
+
 		/**
 		 * Sets the {@code hardwareId} and returns a reference to this Builder so that the methods can be chained
 		 * together.
@@ -515,8 +538,8 @@ public class RobotInfo implements IMirrorable<RobotInfo>
 			hardwareId = val;
 			return this;
 		}
-		
-		
+
+
 		/**
 		 * Sets the {@code internalState} and returns a reference to this Builder so that the methods can be chained
 		 * together.
@@ -529,8 +552,8 @@ public class RobotInfo implements IMirrorable<RobotInfo>
 			this.internalState = internalState;
 			return this;
 		}
-		
-		
+
+
 		/**
 		 * Sets the {@code barrierInterrupted} and returns a reference to this Builder so that the methods can be
 		 * chained
@@ -544,8 +567,8 @@ public class RobotInfo implements IMirrorable<RobotInfo>
 			barrierInterrupted = isBarrierInterrupted;
 			return this;
 		}
-		
-		
+
+
 		/**
 		 * Returns a {@code RobotInfo} built from the parameters previously set.
 		 *
@@ -561,8 +584,8 @@ public class RobotInfo implements IMirrorable<RobotInfo>
 			Validate.notNull(kickSpeed);
 			Validate.notNull(chip);
 			Validate.notNull(armed);
-			Validate.notNull(battery);
-			Validate.notNull(kickerVoltage);
+			Validate.notNull(batteryRelative);
+			Validate.notNull(kickerLevelRelative);
 			Validate.notNull(dribbleRpm);
 			return new RobotInfo(this);
 		}

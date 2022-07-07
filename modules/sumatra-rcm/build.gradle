@@ -3,9 +3,9 @@
  */
 
 plugins {
-    id 'sumatra.java-conventions'
+    id 'sumatra.java'
     id 'java-library'
-    id 'sumatra.protobuf-conventions'
+    id 'sumatra.protobuf'
 }
 
 configurations {
@@ -27,10 +27,10 @@ dependencies {
     implementation 'com.github.g3force:configurable:3.0'
     implementation 'com.github.g3force:instanceables:5.2'
 
-    implementation 'org.apache.logging.log4j:log4j-api:2.14.1'
+    implementation 'org.apache.logging.log4j:log4j-api:2.17.1'
 
     implementation 'com.googlecode.json-simple:json-simple:1.1.1'
-    implementation 'com.google.protobuf:protobuf-java:3.17.0'
+    implementation 'com.google.protobuf:protobuf-java:3.19.4'
 }
 
 task copyNatives(type: Copy) {

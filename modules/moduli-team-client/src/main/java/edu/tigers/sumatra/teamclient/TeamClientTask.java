@@ -18,10 +18,9 @@ import edu.tigers.sumatra.referee.proto.SslGcRcon;
 import edu.tigers.sumatra.referee.proto.SslGcRconTeam;
 import edu.tigers.sumatra.referee.proto.SslGcRconTeam.TeamToController;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
+import lombok.extern.log4j.Log4j2;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -32,10 +31,9 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
 
+@Log4j2
 public class TeamClientTask implements Runnable, GameControllerProtocol.IConnectedHandler
 {
-
-	private static final Logger log = LogManager.getLogger(TeamClientTask.class);
 	private static final String DEFAULT_HOSTNAME = "localhost";
 	private static final int DEFAULT_PORT = 10008;
 	private static final long PING_INTERVAL = 1_000_000_000;
@@ -55,6 +53,7 @@ public class TeamClientTask implements Runnable, GameControllerProtocol.IConnect
 
 	private long nextPing = 0;
 
+
 	public TeamClientTask(ETeamColor teamColor)
 	{
 		this.teamColor = teamColor;
@@ -71,7 +70,7 @@ public class TeamClientTask implements Runnable, GameControllerProtocol.IConnect
 	}
 
 
-	public void setBotSubstitutionDesired(boolean desired)
+	private void setBotSubstitutionDesired(boolean desired)
 	{
 		botSubstitutionDesired = desired;
 	}
@@ -177,8 +176,8 @@ public class TeamClientTask implements Runnable, GameControllerProtocol.IConnect
 		reply = gameController.receiveMessage(SslGcRconTeam.ControllerToTeam.parser());
 		if (reply.getControllerReply().getStatusCode() != SslGcRcon.ControllerReply.StatusCode.OK)
 		{
-			log.error("GameController rejected team registration for team '" + teamName + "': "
-					+ reply.getControllerReply().getReason());
+			log.error("GameController rejected team registration for team '{}': {}", teamName,
+					reply.getControllerReply().getReason());
 		}
 		nextToken = reply.getControllerReply().getNextToken();
 		nextPing = 0;
@@ -196,7 +195,7 @@ public class TeamClientTask implements Runnable, GameControllerProtocol.IConnect
 							StandardCharsets.UTF_8));
 		} catch (IOException e)
 		{
-			log.warn("Could not find Certificates for Team " + teamName, e);
+			log.warn("Could not find Certificates for Team {}", teamName, e);
 			return new MessageSigner();
 		}
 	}
@@ -232,8 +231,7 @@ public class TeamClientTask implements Runnable, GameControllerProtocol.IConnect
 			signer = loadKeys();
 		} else if (!teamName.equals(aiFrame.getRefereeMsg().getTeamInfo(teamColor).getName()))
 		{
-			log.info("Team " + teamName + " is no longer connected to GameController as " + teamColor
-					+ ": shutting down");
+			log.info("Team {} is no longer connected to GameController as {}: shutting down", teamName, teamColor);
 			setActive(false);
 		} else
 		{
@@ -307,7 +305,7 @@ public class TeamClientTask implements Runnable, GameControllerProtocol.IConnect
 				.receiveMessage(SslGcRconTeam.ControllerToTeam.parser());
 		if (reply.getControllerReply().getStatusCode() != SslGcRcon.ControllerReply.StatusCode.OK)
 		{
-			log.warn("GameController did not allow bot substitution: " + reply.getControllerReply());
+			log.warn("GameController did not allow bot substitution: {}", reply.getControllerReply());
 		} else
 		{
 			log.info("Substituting bots at next possible situation");
@@ -332,12 +330,12 @@ public class TeamClientTask implements Runnable, GameControllerProtocol.IConnect
 				.receiveMessage(SslGcRconTeam.ControllerToTeam.parser());
 		if (reply.getControllerReply().getStatusCode() != SslGcRcon.ControllerReply.StatusCode.OK)
 		{
-			log.warn("GameController rejected changing keeper to " + id + ": " + reply.getControllerReply().getReason());
+			log.warn("GameController rejected changing keeper to {}: {}", id, reply.getControllerReply().getReason());
 			// rejected -> we want to request this bot as keeper again
 			lastRequestedKeeperId = null;
 		} else
 		{
-			log.info("Keeper was changed to " + id);
+			log.info("Keeper was changed to {}", id);
 		}
 		nextToken = reply.getControllerReply().getNextToken();
 	}

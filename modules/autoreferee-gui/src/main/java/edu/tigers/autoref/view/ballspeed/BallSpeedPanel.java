@@ -1,17 +1,9 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2016, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Jun 15, 2016
- * Author(s): "Lukas Magel"
- * *********************************************************
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.autoref.view.ballspeed;
 
-import java.awt.BorderLayout;
-import java.awt.Color;
-import java.awt.FlowLayout;
-import java.util.concurrent.TimeUnit;
+import edu.tigers.autoref.view.generic.FixedTimeRangeChartPanel;
 
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
@@ -19,45 +11,50 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JSlider;
 import javax.swing.SwingConstants;
-
-import edu.tigers.autoref.view.generic.FixedTimeRangeChartPanel;
-import edu.tigers.sumatra.components.BasePanel;
-import edu.tigers.sumatra.views.ISumatraView;
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.FlowLayout;
+import java.io.Serial;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
 
 /**
  * @author "Lukas Magel"
  */
-public class BallSpeedPanel extends BasePanel<IBallSpeedPanelListener> implements ISumatraView
+public class BallSpeedPanel extends JPanel
 {
-	/**  */
-	private static final long			serialVersionUID	= -5641196573487059661L;
-	
-	/** in ns */
-	private final long					updatePeriod;
-	
-	private FixedTimeRangeChartPanel	chartPanel;
-	private JSlider						timeRangeSlider;
-	private JCheckBox						stopChartCheckbox;
-	private JButton						pauseButton			= new JButton("Pause");
-	private JButton						resumeButton		= new JButton("Resume");
+	@Serial
+	private static final long serialVersionUID = -5641196573487059661L;
+
+	/**
+	 * in ns
+	 */
+	private final long updatePeriod;
+
+	private final List<IBallSpeedPanelListener> observers = new CopyOnWriteArrayList<>();
+	private FixedTimeRangeChartPanel chartPanel;
+	private JButton pauseButton = new JButton("Pause");
+	private JButton resumeButton = new JButton("Resume");
 	private JLabel lineInitialDescription = new JLabel("initial ball speed");
 	private JLabel lineSpeedDescription = new JLabel("ball speed");
 	private JLabel lineMaxDescription = new JLabel("maximum ball speed");
-	
-	
+
+
 	/**
-	 * @param timeRange Displayed range in ns
+	 * @param timeRange    Displayed range in ns
 	 * @param updatePeriod update period of the chart in ns
 	 */
 	public BallSpeedPanel(final long timeRange, final long updatePeriod)
 	{
 		this.updatePeriod = updatePeriod;
-		
+
 		setupUI(timeRange);
 	}
-	
-	
+
+
 	private void setupUI(final long timeRange)
 	{
 		chartPanel = new FixedTimeRangeChartPanel(timeRange, true);
@@ -66,8 +63,9 @@ public class BallSpeedPanel extends BasePanel<IBallSpeedPanelListener> implement
 		chartPanel.setXTitle("Time [s]");
 		chartPanel.setYTitle("Ball Speed [m/s]");
 		setTimeRange(timeRange);
-		
-		timeRangeSlider = new JSlider(SwingConstants.VERTICAL, 0, 120, (int) TimeUnit.NANOSECONDS.toSeconds(timeRange));
+
+		JSlider timeRangeSlider = new JSlider(SwingConstants.VERTICAL, 0, 120,
+				(int) TimeUnit.NANOSECONDS.toSeconds(timeRange));
 		timeRangeSlider.setPaintTicks(true);
 		timeRangeSlider.setPaintLabels(true);
 		timeRangeSlider.setMajorTickSpacing(30);
@@ -81,21 +79,21 @@ public class BallSpeedPanel extends BasePanel<IBallSpeedPanelListener> implement
 				informObserver(observer -> observer.timeRangeSliderValueChanged(newSliderValue));
 			}
 		});
-		
-		stopChartCheckbox = new JCheckBox("Pause when not RUNNING");
+
+		JCheckBox stopChartCheckbox = new JCheckBox("Pause when not RUNNING");
 		stopChartCheckbox.setBackground(Color.WHITE);
 		stopChartCheckbox.addActionListener(e -> {
 			boolean newValue = stopChartCheckbox.isSelected();
 			informObserver(observer -> observer.stopChartValueChanged(newValue));
 		});
-		
+
 		pauseButton.addActionListener(e -> informObserver(IBallSpeedPanelListener::pauseButtonPressed));
 		resumeButton.addActionListener(e -> informObserver(IBallSpeedPanelListener::resumeButtonPressed));
-		
+
 		lineMaxDescription.setForeground(Color.RED);
 		lineInitialDescription.setForeground(Color.GREEN);
 		lineSpeedDescription.setForeground(Color.BLUE);
-		
+
 		JPanel southPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
 		southPanel.add(lineMaxDescription);
 		southPanel.add(lineInitialDescription);
@@ -104,14 +102,32 @@ public class BallSpeedPanel extends BasePanel<IBallSpeedPanelListener> implement
 		southPanel.add(pauseButton);
 		southPanel.add(resumeButton);
 		southPanel.add(stopChartCheckbox);
-		
+
 		setLayout(new BorderLayout());
 		add(chartPanel, BorderLayout.CENTER);
 		add(southPanel, BorderLayout.SOUTH);
 		add(timeRangeSlider, BorderLayout.EAST);
 	}
-	
-	
+
+
+	public void addObserver(final IBallSpeedPanelListener observer)
+	{
+		this.observers.add(observer);
+	}
+
+
+	public void removeObserver(final IBallSpeedPanelListener observer)
+	{
+		this.observers.remove(observer);
+	}
+
+
+	private void informObserver(final Consumer<IBallSpeedPanelListener> consumer)
+	{
+		observers.forEach(consumer);
+	}
+
+
 	/**
 	 * @param timeRange
 	 */
@@ -121,8 +137,8 @@ public class BallSpeedPanel extends BasePanel<IBallSpeedPanelListener> implement
 		chartPanel.setPointBufferSizeWithPeriod(updatePeriod);
 		chartPanel.clear();
 	}
-	
-	
+
+
 	/**
 	 * @param velocity
 	 */
@@ -130,8 +146,8 @@ public class BallSpeedPanel extends BasePanel<IBallSpeedPanelListener> implement
 	{
 		chartPanel.setHorizontalLine("Max", Color.RED, velocity);
 	}
-	
-	
+
+
 	/**
 	 * @param time
 	 * @param velocity
@@ -140,8 +156,8 @@ public class BallSpeedPanel extends BasePanel<IBallSpeedPanelListener> implement
 	{
 		chartPanel.addPoint(time, velocity);
 	}
-	
-	
+
+
 	/**
 	 * @param time
 	 * @param velocity

@@ -1,65 +1,27 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.loganalysis;
 
 
-import edu.tigers.sumatra.drawable.IShapeLayer;
+import edu.tigers.sumatra.drawable.IShapeLayerIdentifier;
+import edu.tigers.sumatra.drawable.ShapeLayerFactory;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 
 
-/**
- * @author "Stefan Schneyer"
- */
-@SuppressWarnings("squid:S1192") // duplicated strings not avoidable here
-public enum ELogAnalysisShapesLayer implements IShapeLayer
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
+public final class ELogAnalysisShapesLayer
 {
-	LOG_ANALYSIS("Log_Analysis", "LogAnalysis", true),
-	BALL_POSSESSION("Ball_Possession", "LogAnalysis", true),
-	DRIBBLING("DribblingDetection", "LogAnalysis", true),
-	GOAL_SHOT("Goal_Shot", "LogAnalysis", true),
-	PASSING("PassingDetection", "LogAnalysis", true),
-	GAME_MEMORY("Game_Memory", "LogAnalysis", true);
-	
-	private final String id;
-	private final String name;
-	private final String category;
-	private final boolean visible;
-	
-	
-	ELogAnalysisShapesLayer(final String name, final String category, final boolean visible)
-	{
-		this.name = name;
-		this.category = category;
-		this.visible = visible;
-		id = ELogAnalysisShapesLayer.class.getCanonicalName() + name();
-	}
-	
-	
-	@Override
-	public String getCategory()
-	{
-		return category;
-	}
-	
-	
-	@Override
-	public String getLayerName()
-	{
-		return name;
-	}
-	
-	
-	@Override
-	public String getId()
-	{
-		return id;
-	}
-	
-	
-	@Override
-	public boolean isVisibleByDefault()
-	{
-		return visible;
-	}
-	
+	private static final ShapeLayerFactory F = new ShapeLayerFactory(ELogAnalysisShapesLayer.class, 50);
+	private static final String CATEGORY = "LogAnalysis";
+
+	public static final IShapeLayerIdentifier LOG_ANALYSIS = F.create(
+			F.layer("Log_Analysis").category(CATEGORY).visibleByDefault(true));
+	public static final IShapeLayerIdentifier BALL_POSSESSION = F.create(
+			F.layer("Ball_Possession").category(CATEGORY).visibleByDefault(true));
+	public static final IShapeLayerIdentifier DRIBBLING = F.create(
+			F.layer("DribblingDetection").category(CATEGORY).visibleByDefault(true));
+	public static final IShapeLayerIdentifier PASSING = F.create(
+			F.layer("PassingDetection").category(CATEGORY).visibleByDefault(true));
 }

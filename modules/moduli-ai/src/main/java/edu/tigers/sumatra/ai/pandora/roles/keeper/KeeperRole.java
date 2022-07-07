@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.pandora.roles.keeper;
@@ -38,10 +38,10 @@ public class KeeperRole extends ARole
 {
 
 	@Configurable(comment = "Lower margin [mm] applied to penalty area. If the ball is inside, no placement necessary", defValue = "-200")
-	private static double ballPlacementPAMarginLower = -300;
+	private static double ballPlacementPAMarginLower = -200;
 
 	@Configurable(comment = "Upper negative margin [mm] applied to penalty area. The ball is placed to a position inside", defValue = "-300")
-	private static double ballPlacementPAMarginUpper = -400;
+	private static double ballPlacementPAMarginUpper = -300;
 
 	@Configurable(comment = "Opponent ball dist to chill", defValue = "1000.0")
 	private static double minOpponentBotDistToChill = 1000;
@@ -75,6 +75,7 @@ public class KeeperRole extends ARole
 		passState.addTransition(this::ballPlacementRequired, moveInFrontOfBallState);
 
 		moveInFrontOfBallState.addTransition(this::isBallMoving, defendState);
+		moveInFrontOfBallState.addTransition(this::ballPlaced, defendState);
 		moveInFrontOfBallState.addTransition(ESkillState.SUCCESS, getBallContactState);
 		getBallContactState.addTransition(ESkillState.SUCCESS, moveWithBallState);
 		getBallContactState.addTransition(ESkillState.FAILURE, moveInFrontOfBallState);
@@ -123,6 +124,12 @@ public class KeeperRole extends ARole
 	{
 		return isOtherBotCloseToBall()
 				|| !(isBallInPenaltyArea(ballPlacementPAMarginLower) || isBallDangerous());
+	}
+
+
+	private boolean ballPlaced()
+	{
+		return getPlacementPos().distanceTo(getBall().getPos()) < 1;
 	}
 
 

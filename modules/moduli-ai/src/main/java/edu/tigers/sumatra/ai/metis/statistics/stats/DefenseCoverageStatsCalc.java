@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.metis.statistics.stats;
@@ -16,6 +16,7 @@ import edu.tigers.sumatra.drawable.DrawableAnnotation;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.math.AngleMath;
 import edu.tigers.sumatra.math.vector.Vector2;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 import java.util.function.Supplier;
@@ -42,6 +43,7 @@ public class DefenseCoverageStatsCalc extends AStatsCalc
 	private MovingAverage overallAverage = new MovingAverage();
 	private MovingAverage attackerNearBallAverage = new MovingAverage();
 
+	@Getter
 	private double uncoveredRangeDeg;
 
 

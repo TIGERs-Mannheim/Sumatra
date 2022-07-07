@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.loganalysis;
 
@@ -28,10 +28,8 @@ import edu.tigers.sumatra.wp.AWorldPredictor;
 import edu.tigers.sumatra.wp.IWorldFrameObserver;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
 import edu.tigers.sumatra.wp.data.WorldFrameWrapper;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import lombok.extern.log4j.Log4j2;
 
-import java.awt.Color;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.EnumMap;
@@ -39,20 +37,19 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 import static edu.tigers.sumatra.loganalysis.GameMemory.GameLogObject.BALL;
 import static edu.tigers.sumatra.loganalysis.GameMemory.GameLogObject.CLOSEST_BOT;
 
 
+@Log4j2
 public class LogAnalysis extends AModule implements IWorldFrameObserver
 {
-	private static final Logger log = LogManager.getLogger(LogAnalysis.class.getName());
-
 	private static final String LOG_ANALYSIS_SHAPE = "LOG_ANALYSIS";
+	private static final ShapeMapSource SHAPE_MAP_SOURCE = ShapeMapSource.of(LOG_ANALYSIS_SHAPE);
 	private static final double TOLERANCE_NEXT_FRAME_TIME_JUMP = 0.5;
 
-	private EnumMap<EEventType, IEventTypeDetection> eventTypeDetections = new EnumMap<>(EEventType.class);
+	private EnumMap<EEventType, IEventTypeDetection<?>> eventTypeDetections = new EnumMap<>(EEventType.class);
 	private EnumMap<EEventType, List<IEventType>> eventTypes = new EnumMap<>(EEventType.class);
 
 	private GameMemory memory = new GameMemory(11);
@@ -67,7 +64,8 @@ public class LogAnalysis extends AModule implements IWorldFrameObserver
 		{
 			try
 			{
-				IEventTypeDetection eventType = (IEventTypeDetection) type.getInstanceableClass().newDefaultInstance();
+				IEventTypeDetection<?> eventType = (IEventTypeDetection<?>) type.getInstanceableClass()
+						.newDefaultInstance();
 				eventTypeDetections.put(type, eventType);
 			} catch (InstanceableClass.NotCreateableException err)
 			{
@@ -89,7 +87,7 @@ public class LogAnalysis extends AModule implements IWorldFrameObserver
 	public void stopModule()
 	{
 		SumatraModel.getInstance().getModule(AWorldPredictor.class).removeObserver(this);
-		SumatraModel.getInstance().getModule(AWorldPredictor.class).notifyRemoveSourceFromShapeMap(LOG_ANALYSIS_SHAPE);
+		SumatraModel.getInstance().getModule(AWorldPredictor.class).notifyRemoveSourceFromShapeMap(SHAPE_MAP_SOURCE);
 	}
 
 
@@ -114,7 +112,7 @@ public class LogAnalysis extends AModule implements IWorldFrameObserver
 		List<ITrackedBot> closestBotsToBall = wFrameWrapper.getSimpleWorldFrame().getBots().values().stream()
 				.sorted(Comparator.comparingDouble(b -> b.getBotKickerPos().distanceToSqr(ballPos)))
 				.limit(2)
-				.collect(Collectors.toList());
+				.toList();
 
 		long currentTimestamp = wFrameWrapper.getSimpleWorldFrame().getTimestamp();
 		boolean timeJump = false;
@@ -162,7 +160,7 @@ public class LogAnalysis extends AModule implements IWorldFrameObserver
 		paintOverviewDetections(shapes);
 
 		SumatraModel.getInstance().getModule(AWorldPredictor.class)
-				.notifyNewShapeMap(wFrameWrapper.getTimestamp(), shapes, ShapeMapSource.of(LOG_ANALYSIS_SHAPE));
+				.notifyNewShapeMap(wFrameWrapper.getTimestamp(), shapes, SHAPE_MAP_SOURCE);
 
 		lastTimestamp = wFrameWrapper.getSimpleWorldFrame().getTimestamp();
 	}
@@ -170,9 +168,9 @@ public class LogAnalysis extends AModule implements IWorldFrameObserver
 
 	private void storeDetectedEventTypes()
 	{
-		for (Map.Entry<EEventType, IEventTypeDetection> eventTypeEntry : eventTypeDetections.entrySet())
+		for (Map.Entry<EEventType, IEventTypeDetection<?>> eventTypeEntry : eventTypeDetections.entrySet())
 		{
-			IEventTypeDetection typeDetection = eventTypeEntry.getValue();
+			IEventTypeDetection<?> typeDetection = eventTypeEntry.getValue();
 			IEventType event = typeDetection.getDetectedEventType();
 
 			if (!eventTypes.containsKey(eventTypeEntry.getKey()))
@@ -205,7 +203,7 @@ public class LogAnalysis extends AModule implements IWorldFrameObserver
 	}
 
 
-	private void paintInstantaneousTypes(Map<EEventType, IEventTypeDetection> typeDetections, final ShapeMap shapes)
+	private void paintInstantaneousTypes(Map<EEventType, IEventTypeDetection<?>> typeDetections, final ShapeMap shapes)
 	{
 
 		if (typeDetections.containsKey(EEventType.DRIBBLING))
@@ -215,8 +213,8 @@ public class LogAnalysis extends AModule implements IWorldFrameObserver
 			if (dribbling.isDribbling() && dribbling.getRobot().isPresent())
 			{
 				shapes.get(ELogAnalysisShapesLayer.LOG_ANALYSIS)
-						.add(new DrawableArrow(dribbling.getRobot().get().getBotKickerPos(),
-								Vector2.fromAngle(dribbling.getRobot().get().getOrientation())
+						.add(new DrawableArrow(dribbling.getRobot().orElseThrow().getBotKickerPos(),
+								Vector2.fromAngle(dribbling.getRobot().orElseThrow().getOrientation())
 										.scaleTo(Geometry.getBallRadius()),
 								dribbling.getRobotTeam().getColor()));
 			}
@@ -233,7 +231,7 @@ public class LogAnalysis extends AModule implements IWorldFrameObserver
 
 			if (ballPossession.getRobot().isPresent() && blueOrYellow)
 			{
-				ITrackedBot bot = ballPossession.getRobot().get();
+				ITrackedBot bot = ballPossession.getRobot().orElseThrow();
 				IVector2 ballCenter = bot.getBotKickerPos()
 						.addNew(Vector2.fromAngle(bot.getOrientation()).scaleTo(Geometry.getBallRadius()));
 				shapes.get(ELogAnalysisShapesLayer.LOG_ANALYSIS)
@@ -246,29 +244,26 @@ public class LogAnalysis extends AModule implements IWorldFrameObserver
 
 	private void paintOverviewDetections(final ShapeMap shapes)
 	{
-		Iterator keyIterator = eventTypeDetections.keySet().iterator();
+		Iterator<EEventType> keyIterator = eventTypeDetections.keySet().iterator();
 
 		int i;
 		for (i = 0; keyIterator.hasNext(); i++)
 		{
-			EEventType eventType = (EEventType) keyIterator.next();
+			EEventType eventType = keyIterator.next();
 
 			String info = eventType.toString() + " (size): " + eventTypes.get(eventType).size();
-			DrawableBorderText labelHistoryDetection = new DrawableBorderText(Vector2.fromXY(10d, 150d + i * 10d), info,
-					Color.BLACK);
+			var labelHistoryDetection = new DrawableBorderText(Vector2.fromXY(10d, 150d + i * 10d), info);
 			shapes.get(ELogAnalysisShapesLayer.LOG_ANALYSIS).add(labelHistoryDetection);
 		}
 
 		String infoPassing = " PASSING (size): " + eventTypes.get(EEventType.SHOT).stream()
-				.filter(shot -> shot instanceof Passing).count();
-		DrawableBorderText passing = new DrawableBorderText(Vector2.fromXY(10d, 150d + i * 10d), infoPassing,
-				Color.BLACK);
+				.filter(Passing.class::isInstance).count();
+		var passing = new DrawableBorderText(Vector2.fromXY(10d, 150d + i * 10d), infoPassing);
 		i++;
 
 		String infoGoalShot = " GOAL_SHOT (size): " + eventTypes.get(EEventType.SHOT).stream()
-				.filter(shot -> shot instanceof GoalShot).count();
-		DrawableBorderText goalShot = new DrawableBorderText(Vector2.fromXY(10d, 150d + i * 10d), infoGoalShot,
-				Color.BLACK);
+				.filter(GoalShot.class::isInstance).count();
+		var goalShot = new DrawableBorderText(Vector2.fromXY(10d, 150d + i * 10d), infoGoalShot);
 
 		shapes.get(ELogAnalysisShapesLayer.LOG_ANALYSIS).add(passing);
 		shapes.get(ELogAnalysisShapesLayer.LOG_ANALYSIS).add(goalShot);

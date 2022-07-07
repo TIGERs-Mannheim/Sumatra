@@ -1,20 +1,25 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.metis.defense;
 
 import com.github.g3force.configurable.Configurable;
 import edu.tigers.sumatra.ai.metis.ACalculator;
+import edu.tigers.sumatra.ai.metis.ballresponsibility.EBallResponsibility;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.math.Hysteresis;
 import edu.tigers.sumatra.math.vector.IVector2;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+
+import java.util.function.Supplier;
 
 
 /**
  * Calculate the desired number of defenders for the ball threat.
  */
+@RequiredArgsConstructor
 public class NumDefendersForBallCalc extends ACalculator
 {
 	@Configurable(comment = "Lower x value for a hysteresis to determine if the ball is in our half [mm]", defValue = "-250")
@@ -39,6 +44,8 @@ public class NumDefendersForBallCalc extends ACalculator
 	@Configurable(comment = "Max number of defenders for covering the ball", defValue = "2")
 	private static int maxDefendersForBallThreat = 2;
 
+	@Configurable(comment = "Minimum number of defenders if the ball responsibility is at the defense", defValue = "1")
+	private static int minDefendersForBallThreatWhenBallResponsibilityDefense = 1;
 
 	private final Hysteresis angleOneCrucialDefenderHysteresis = new Hysteresis(
 			angleThresholdOneCrucialDefenderLower,
@@ -52,6 +59,8 @@ public class NumDefendersForBallCalc extends ACalculator
 			minXValueForBallLower,
 			minXValueForBallUpper);
 
+
+	private final Supplier<EBallResponsibility> ballResponsibility;
 
 	/**
 	 * The number of defenders that should be assigned to the ball.
@@ -102,6 +111,11 @@ public class NumDefendersForBallCalc extends ACalculator
 		if (onlyOneCrucialDuringIndirect && getAiFrame().getGameState().isIndirectFreeForThem())
 		{
 			numBotsForBall = Math.min(1, numBotsForBall);
+		}
+
+		if (ballResponsibility.get() == EBallResponsibility.DEFENSE)
+		{
+			numBotsForBall = Math.max(minDefendersForBallThreatWhenBallResponsibilityDefense, numBotsForBall);
 		}
 
 		return numBotsForBall;

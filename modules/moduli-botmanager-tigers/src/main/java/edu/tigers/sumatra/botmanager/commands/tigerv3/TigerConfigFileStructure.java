@@ -1,20 +1,15 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2015, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 17.05.2015
- * Author(s): AndreR
- * *********************************************************
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.botmanager.commands.tigerv3;
-
-import java.util.ArrayList;
-import java.util.List;
 
 import edu.tigers.sumatra.botmanager.commands.ACommand;
 import edu.tigers.sumatra.botmanager.commands.ECommand;
 import edu.tigers.sumatra.botmanager.serial.SerialData;
 import edu.tigers.sumatra.botmanager.serial.SerialData.ESerialDataType;
+
+import java.util.ArrayList;
+import java.util.List;
 
 
 /**
@@ -122,18 +117,36 @@ public class TigerConfigFileStructure extends ACommand
 	
 	@SerialData(type = ESerialDataType.UINT16)
 	private int		version;
-	
+
 	@SerialData(type = ESerialDataType.TAIL)
-	private byte[]	structure;
-	
-	
-	/** Constructor. */
+	private byte[] structure;
+
+
+	/**
+	 * Constructor.
+	 */
 	public TigerConfigFileStructure()
 	{
 		super(ECommand.CMD_CONFIG_FILE_STRUCTURE, true);
 	}
-	
-	
+
+
+	/**
+	 * Constructor
+	 *
+	 * @param configId
+	 * @param version
+	 * @param structure
+	 */
+	public TigerConfigFileStructure(int configId, int version, byte[] structure)
+	{
+		super(ECommand.CMD_CONFIG_FILE_STRUCTURE, true);
+		this.configId = configId;
+		this.version = version;
+		this.structure = structure;
+	}
+
+
 	/**
 	 * @return the configId
 	 */
@@ -141,8 +154,8 @@ public class TigerConfigFileStructure extends ACommand
 	{
 		return configId;
 	}
-	
-	
+
+
 	/**
 	 * @return the version
 	 */
@@ -150,11 +163,11 @@ public class TigerConfigFileStructure extends ACommand
 	{
 		return version;
 	}
-	
-	
+
+
 	/**
 	 * Get a list of describing elements.
-	 * 
+	 *
 	 * @return
 	 */
 	public List<EElementType> getElements()

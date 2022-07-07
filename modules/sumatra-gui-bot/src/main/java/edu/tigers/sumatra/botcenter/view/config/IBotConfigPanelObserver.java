@@ -1,10 +1,10 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.botcenter.view.config;
 
-import edu.tigers.sumatra.botcenter.presenter.config.ConfigFile;
+import edu.tigers.sumatra.botmanager.configs.ConfigFile;
 
 
 /**

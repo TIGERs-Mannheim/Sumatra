@@ -9,7 +9,6 @@ import edu.tigers.sumatra.math.SumatraMath;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.math.vector.Vector2f;
-import edu.tigers.sumatra.stream.StreamUtil;
 import org.apache.commons.math3.linear.Array2DRowRealMatrix;
 import org.apache.commons.math3.linear.ArrayRealVector;
 import org.apache.commons.math3.linear.DecompositionSolver;
@@ -18,11 +17,11 @@ import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.linear.RealVector;
 import org.apache.commons.math3.linear.SingularMatrixException;
 
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Comparator;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Stream;
 
 
 /**
@@ -150,20 +149,54 @@ public class Circle extends ACircle
 
 	/**
 	 * Create a circle that encloses all points in the list.
-	 * This method is not the most effective one and should not be used in match mode.
 	 *
 	 * @param points
 	 * @return Smallest circle enclosing all points.
 	 */
 	public static Optional<ICircle> hullCircle(final List<IVector2> points)
 	{
-		return Stream
-				.concat(StreamUtil.nonRepeatingPermutation2Fold(points), StreamUtil.nonRepeatingPermutation3Fold(points))
-				.map(Circle::fromNPoints)
-				.filter(Optional::isPresent)
-				.map(Optional::get)
-				.filter(c -> points.stream().allMatch(p -> c.isPointInShape(p, 1e-10)))
-				.min(Comparator.comparing(ICircle::radius));
+		return hullCircleWelzl(points, Collections.emptyList());
+	}
+
+
+	/**
+	 * Calculating the smallest circle problem using the Welzl's algorithm:
+	 * https://en.wikipedia.org/wiki/Smallest-circle_problem#Welzl's_algorithm
+	 * Which uses a randomized approach but has O(n) as an expected runtime
+	 *
+	 * @param points
+	 * @param hullPoints
+	 * @return
+	 */
+	private static Optional<ICircle> hullCircleWelzl(final List<IVector2> points, final List<IVector2> hullPoints)
+	{
+		if (points.isEmpty() || hullPoints.size() == 3)
+		{
+			switch (hullPoints.size())
+			{
+				case 1:
+					return Optional.of(Circle.createCircle(hullPoints.get(0), 0.0));
+				case 2:
+					return Optional.of(Circle.from2Points(hullPoints.get(0), hullPoints.get(1)));
+				case 3:
+					return Circle.from3Points(hullPoints.get(0), hullPoints.get(1), hullPoints.get(2));
+				default:
+					return Optional.empty();
+			}
+		} else
+		{
+			var shuffled = new ArrayList<>(points);
+			Collections.shuffle(shuffled);
+			final var p = shuffled.get(shuffled.size() - 1);
+			var circle = hullCircleWelzl(shuffled.subList(0, shuffled.size() - 1), hullPoints);
+			if (circle.isEmpty() || !circle.get().isPointInShape(p, 1e-10))
+			{
+				var hullPointsPlusP = new ArrayList<>(hullPoints);
+				hullPointsPlusP.add(p);
+				return hullCircleWelzl(shuffled.subList(0, shuffled.size() - 1), hullPointsPlusP);
+			}
+			return circle;
+		}
 	}
 
 

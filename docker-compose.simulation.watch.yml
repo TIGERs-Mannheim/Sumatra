@@ -1,0 +1,36 @@
+version: '3.5'
+# Note: Use scripts/runDockerSimulation.sh to make sure all environment variables are set
+
+services:
+  ssl-vision-client:
+    image: robocupssl/ssl-vision-client:latest
+    command: -visionAddress 224.5.23.2:11006 -visualizationAddress 224.5.23.2:11011
+    ports:
+      - "8082:8082"
+    networks:
+      - simulation
+
+  ssl-status-board:
+    image: robocupssl/ssl-status-board:latest
+    command: -refereeAddress 224.5.23.1:11003
+    ports:
+      - "8084:8082"
+    networks:
+      - simulation
+
+  ssl-game-controller:
+    image: bobrik/socat:latest
+    command: 'TCP4-LISTEN:8083,fork TCP4:simulator:50543'
+    ports:
+      - "8083:8083"
+    networks:
+      - simulation
+
+volumes:
+  grafana_data:
+  influxdb_data:
+
+networks:
+  simulation:
+    name: "${PROJECT_NAME-sumatra}_simulation_default"
+    external: true

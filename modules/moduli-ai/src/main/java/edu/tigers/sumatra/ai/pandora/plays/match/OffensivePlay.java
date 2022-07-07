@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.ai.pandora.plays.match;
 
+import edu.tigers.sumatra.ai.metis.kicking.KickFactory;
 import edu.tigers.sumatra.ai.metis.kicking.Pass;
 import edu.tigers.sumatra.ai.metis.offense.action.OffensiveAction;
 import edu.tigers.sumatra.ai.metis.redirector.ERecommendedReceiverAction;
@@ -15,9 +16,11 @@ import edu.tigers.sumatra.ai.pandora.roles.offense.DelayedAttackRole;
 import edu.tigers.sumatra.ai.pandora.roles.offense.DisruptOpponentRole;
 import edu.tigers.sumatra.ai.pandora.roles.offense.FreeSkirmishRole;
 import edu.tigers.sumatra.ai.pandora.roles.offense.KeepDistToBallRole;
+import edu.tigers.sumatra.ai.pandora.roles.offense.OneOnOneShooterRole;
 import edu.tigers.sumatra.ai.pandora.roles.offense.OpponentInterceptionRole;
 import edu.tigers.sumatra.ai.pandora.roles.offense.PassReceiverRole;
 import edu.tigers.sumatra.ai.pandora.roles.offense.SupportiveAttackerRole;
+import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.BotID;
 import lombok.extern.log4j.Log4j2;
 
@@ -32,6 +35,8 @@ import java.util.Optional;
 @Log4j2
 public class OffensivePlay extends APlay
 {
+	private final KickFactory kickFactory = new KickFactory();
+
 	public OffensivePlay()
 	{
 		super(EPlay.OFFENSIVE);
@@ -41,7 +46,6 @@ public class OffensivePlay extends APlay
 	@Override
 	protected void doUpdateBeforeRoles()
 	{
-		super.doUpdateBeforeRoles();
 		new ArrayList<>(getRoles()).forEach(this::assignRoleForStrategy);
 	}
 
@@ -52,6 +56,9 @@ public class OffensivePlay extends APlay
 		var strategy = playConfig.get(role.getBotID());
 		switch (strategy)
 		{
+			case PENALTY_KICK:
+				reassignRole(role, OneOnOneShooterRole.class, OneOnOneShooterRole::new);
+				break;
 			case KICK:
 				handleKickStrategy(role);
 				break;
@@ -64,6 +71,9 @@ public class OffensivePlay extends APlay
 			case RECEIVE_PASS:
 				var passReceiverRole = reassignRole(role, PassReceiverRole.class, PassReceiverRole::new);
 				findPassForReceiver(role.getBotID()).ifPresent(passReceiverRole::setIncomingPass);
+				kickFactory.update(getWorldFrame());
+				passReceiverRole.setOutgoingKick(
+						kickFactory.goalKick(passReceiverRole.getPos(), Geometry.getGoalTheir().getCenter()));
 				break;
 			case DELAY:
 				reassignRole(role, DelayedAttackRole.class, DelayedAttackRole::new);

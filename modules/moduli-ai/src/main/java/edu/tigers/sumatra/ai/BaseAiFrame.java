@@ -1,11 +1,11 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.ai;
 
 import edu.tigers.sumatra.botmanager.botskills.data.MultimediaControl;
 import edu.tigers.sumatra.drawable.IDrawableShape;
-import edu.tigers.sumatra.drawable.IShapeLayer;
+import edu.tigers.sumatra.drawable.IShapeLayerIdentifier;
 import edu.tigers.sumatra.drawable.ShapeMap;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.ids.EAiTeam;
@@ -18,7 +18,7 @@ import edu.tigers.sumatra.wp.data.WorldFrameWrapper;
 import lombok.Value;
 import lombok.experimental.NonFinal;
 
-import java.util.IdentityHashMap;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -39,7 +39,7 @@ public class BaseAiFrame
 
 	// mutable fields
 	ShapeMap shapeMap = new ShapeMap();
-	Map<BotID, MultimediaControl> multimediaControl = new IdentityHashMap<>();
+	Map<BotID, MultimediaControl> multimediaControl = new HashMap<>();
 
 	/**
 	 * previous frame
@@ -139,7 +139,7 @@ public class BaseAiFrame
 	 * @param shapeLayer the shape layer
 	 * @return the shape list for the given layer
 	 */
-	public final List<IDrawableShape> getShapes(IShapeLayer shapeLayer)
+	public final List<IDrawableShape> getShapes(IShapeLayerIdentifier shapeLayer)
 	{
 		return shapeMap.get(shapeLayer);
 	}

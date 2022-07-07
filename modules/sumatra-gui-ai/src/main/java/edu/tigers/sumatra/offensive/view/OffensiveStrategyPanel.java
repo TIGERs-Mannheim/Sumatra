@@ -1,39 +1,37 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.offensive.view;
 
-import edu.tigers.sumatra.views.ISumatraView;
+import lombok.Getter;
 import net.miginfocom.swing.MigLayout;
 
 import javax.swing.JPanel;
 import javax.swing.JRadioButton;
+import java.io.Serial;
 
 
 /**
  * Main Panel for OffensiveStrategy from tactical Field.
  */
-public class OffensiveStrategyPanel extends JPanel implements ISumatraView
+public class OffensiveStrategyPanel extends JPanel
 {
+	@Serial
 	private static final long serialVersionUID = -314343167523031597L;
 
-	private JRadioButton yellowRadioButton;
-	private JRadioButton blueRadioButton;
+	private final JRadioButton yellowRadioButton = new JRadioButton("Yellow Team");
+	private final JRadioButton blueRadioButton = new JRadioButton("Blue Team");
 
-	private TeamOffensiveStrategyPanel yellowPanel;
-	private TeamOffensiveStrategyPanel bluePanel;
+	@Getter
+	private final TeamOffensiveStrategyPanel yellowPanel = new TeamOffensiveStrategyPanel();
+	@Getter
+	private final TeamOffensiveStrategyPanel bluePanel = new TeamOffensiveStrategyPanel();
 
 
 	public OffensiveStrategyPanel()
 	{
 		setLayout(new MigLayout("fill"));
-
-		yellowRadioButton = new JRadioButton("Yellow Team");
-		blueRadioButton = new JRadioButton("Blue Team");
-
-		yellowPanel = new TeamOffensiveStrategyPanel();
-		bluePanel = new TeamOffensiveStrategyPanel();
 
 		yellowRadioButton.setSelected(true);
 		yellowRadioButton.addActionListener(e -> {
@@ -62,23 +60,5 @@ public class OffensiveStrategyPanel extends JPanel implements ISumatraView
 		teamSelectionPanel.add(blueRadioButton);
 		add(teamSelectionPanel, "wrap");
 		add(yellowPanel);
-	}
-
-
-	/**
-	 * @return TeamOffensiveStrategyPanel of the yellow team
-	 */
-	public TeamOffensiveStrategyPanel getYellowStrategyPanel()
-	{
-		return yellowPanel;
-	}
-
-
-	/**
-	 * @return TeamOffensiveStrategyPanel of the blue tem
-	 */
-	public TeamOffensiveStrategyPanel getBlueStrategyPanel()
-	{
-		return bluePanel;
 	}
 }

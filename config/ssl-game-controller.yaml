@@ -1,8 +1,11 @@
 time-acquisition-mode: ci
 network:
-  publish-address: 224.5.23.1:11003
+  publish-address:
+  # set a network IP to only publish to that network - else messages will be published to all network interfaces
+  publish-nif:
   vision-address: 224.5.23.2:11006
   tracker-address: 224.5.23.2:11010
+  skip-interfaces: [ ]
 server:
   auto-ref:
     address: :11007
@@ -68,6 +71,7 @@ game:
       defense-area-width: 3.6
       penalty-kick-dist-to-goal: 8.0
       goal-width: 1.8
+      center-circle-radius: 0.5
       placement-offset-touch-line: 0.2
       placement-offset-goal-line: 0.2
       placement-offset-goal-line-goal-kick: 1.0
@@ -79,6 +83,7 @@ game:
       defense-area-width: 2.0
       penalty-kick-dist-to-goal: 6.0
       goal-width: 1.0
+      center-circle-radius: 0.5
       placement-offset-touch-line: 0.2
       placement-offset-goal-line: 0.2
       placement-offset-goal-line-goal-kick: 1.0

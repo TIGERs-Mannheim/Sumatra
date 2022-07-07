@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.util;
@@ -18,12 +18,14 @@ public class ScalingUtil
 {
 	private static final Map<EFontSize, Integer> FONT_SIZES = new EnumMap<>(EFontSize.class);
 	private static int imageButtonSize;
+	private static int imageButtonSmallSize;
 	private static int tableRowHeight;
 	private static double baselineSize = 10;
 
 	// Size of various GUI elements relative to the default text size set by the selected LookAndFeel
 	private static final double TABLE_ROW_FACTOR = 1.5;
 	private static final double IMAGE_BUTTON_FACTOR = 2.25;
+	private static final double IMAGE_BUTTON_SMALL_FACTOR = 1.2;
 
 	static
 	{
@@ -55,6 +57,12 @@ public class ScalingUtil
 	}
 
 
+	public static int getImageButtonSmallSize()
+	{
+		return imageButtonSmallSize;
+	}
+
+
 	public static int getTableRowHeight()
 	{
 		return tableRowHeight;
@@ -80,6 +88,7 @@ public class ScalingUtil
 		}
 
 		imageButtonSize = scale(IMAGE_BUTTON_FACTOR);
+		imageButtonSmallSize = scale(IMAGE_BUTTON_SMALL_FACTOR);
 		tableRowHeight = scale(TABLE_ROW_FACTOR);
 	}
 }

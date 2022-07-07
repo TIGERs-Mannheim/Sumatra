@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.skillsystem.skills.util;
@@ -22,7 +22,7 @@ public class KickParams
 {
 	EKickerDevice device;
 	double kickSpeed;
-	double dribbleSpeed;
+	EDribblerMode dribblerMode;
 
 
 	@SuppressWarnings("unused") // berkeley
@@ -34,7 +34,7 @@ public class KickParams
 
 	private KickParams(final EKickerDevice device, final double kickSpeed)
 	{
-		this(device, kickSpeed, 0);
+		this(device, kickSpeed, EDribblerMode.OFF);
 	}
 
 
@@ -74,9 +74,9 @@ public class KickParams
 	}
 
 
-	public KickParams withDribbleSpeed(double dribbleSpeed)
+	public KickParams withDribblerMode(EDribblerMode dribblerMode)
 	{
-		return new KickParams(device, kickSpeed, dribbleSpeed);
+		return new KickParams(device, kickSpeed, dribblerMode);
 	}
 }
 

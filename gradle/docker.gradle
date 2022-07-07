@@ -12,8 +12,8 @@ jib {
         tags = [rootProject.version]
     }
     from {
-        // gcr.io/distroless/java:11
-        image = "gcr.io/distroless/java@sha256:9d4092ba5e1c9dc4d1490fdead1dd7ea5c64e635b729fee11a6af55f51b337f8"
+//        image = "ghcr.io/graalvm/jdk:latest"
+        image = "ghcr.io/graalvm/jdk@sha256:baa525245fe29647d396c6a2e14caca6305b7800513da0aae47b2d4965894d62"
     }
     container {
         workingDirectory = "/Sumatra"
@@ -29,6 +29,9 @@ jib {
                 into = '/Sumatra/'
             }
         }
+        permissions = [
+                '/Sumatra/**': '777'
+        ]
     }
 }
 

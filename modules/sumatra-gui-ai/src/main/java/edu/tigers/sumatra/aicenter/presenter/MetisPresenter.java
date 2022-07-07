@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
+ */
+
 package edu.tigers.sumatra.aicenter.presenter;
 
 import edu.tigers.sumatra.ai.AIInfoFrame;
@@ -8,7 +12,7 @@ import edu.tigers.sumatra.util.UiThrottler;
 import lombok.Setter;
 
 import javax.swing.JTable;
-import java.util.IdentityHashMap;
+import java.util.HashMap;
 import java.util.Map;
 
 import static edu.tigers.sumatra.aicenter.view.MetisPanel.COL_CALCULATOR;
@@ -19,7 +23,7 @@ import static edu.tigers.sumatra.aicenter.view.MetisPanel.COL_TIME_REL;
 
 public class MetisPresenter
 {
-	private final Map<Class<? extends ACalculator>, ExponentialMovingAverageFilter> averageValueMap = new IdentityHashMap<>();
+	private final Map<Class<? extends ACalculator>, ExponentialMovingAverageFilter> averageValueMap = new HashMap<>();
 	private final MetisPanel metisPanel;
 	private final UiThrottler aiFrameThrottler = new UiThrottler(1000);
 

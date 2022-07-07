@@ -59,7 +59,7 @@ public class LogfileAnalyzerVisionCam extends ACam
 
 				if (sslPacket.hasGeometry())
 				{
-					final CamGeometry geometry = geometryTranslator.translate(sslPacket.getGeometry());
+					final CamGeometry geometry = geometryTranslator.fromProtobuf(sslPacket.getGeometry());
 
 					notifyNewCameraCalibration(geometry);
 				}

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.wp.util;
@@ -89,6 +89,7 @@ public class GameStateCalculator
 		builder.withBallPlacementPosition(refereeMsg.getBallPlacementPosNeutral());
 		processStage(refereeMsg.getStage(), builder);
 		processBallMovement(ballPos, builder, timestamp);
+		processActionTimeRemaining(builder, refereeMsg.getCurrentActionTimeRemaining());
 
 		if ((refereeMsg.getCommand() == Command.BALL_PLACEMENT_BLUE
 				|| refereeMsg.getCommand() == Command.BALL_PLACEMENT_YELLOW)
@@ -108,21 +109,14 @@ public class GameStateCalculator
 		builder.withPenaltyShootout(false);
 		switch (stage)
 		{
-			case NORMAL_HALF_TIME:
-			case EXTRA_TIME_BREAK:
-			case EXTRA_HALF_TIME:
-			case PENALTY_SHOOTOUT_BREAK:
-				builder.withState(EGameState.BREAK).withForTeam(ETeamColor.NEUTRAL);
-				break;
-			case POST_GAME:
-				builder.withState(EGameState.POST_GAME).withForTeam(ETeamColor.NEUTRAL);
-				break;
-			case PENALTY_SHOOTOUT:
-				builder.withPenaltyShootout(true);
-				break;
-			default:
+			case NORMAL_HALF_TIME, EXTRA_TIME_BREAK, EXTRA_HALF_TIME, PENALTY_SHOOTOUT_BREAK ->
+					builder.withState(EGameState.BREAK).withForTeam(ETeamColor.NEUTRAL);
+			case POST_GAME -> builder.withState(EGameState.POST_GAME).withForTeam(ETeamColor.NEUTRAL);
+			case PENALTY_SHOOTOUT -> builder.withPenaltyShootout(true);
+			default ->
+			{
 				// ignore stage
-				break;
+			}
 		}
 	}
 
@@ -162,106 +156,58 @@ public class GameStateCalculator
 
 
 	// Splitting this in multiple methods is not reasonable
-	@SuppressWarnings("squid:MethodCyclomaticComplexity")
 	private EGameState commandToState(final Command command)
 	{
-		switch (command)
-		{
-			case HALT:
-				return EGameState.HALT;
-			case STOP:
-				return EGameState.STOP;
-			case NORMAL_START:
-			case FORCE_START:
-				return EGameState.RUNNING;
-			case PREPARE_KICKOFF_YELLOW:
-			case PREPARE_KICKOFF_BLUE:
-				return EGameState.PREPARE_KICKOFF;
-			case PREPARE_PENALTY_YELLOW:
-			case PREPARE_PENALTY_BLUE:
-				return EGameState.PREPARE_PENALTY;
-			case DIRECT_FREE_YELLOW:
-			case DIRECT_FREE_BLUE:
-				return EGameState.DIRECT_FREE;
-			case INDIRECT_FREE_YELLOW:
-			case INDIRECT_FREE_BLUE:
-				return EGameState.INDIRECT_FREE;
-			case TIMEOUT_YELLOW:
-			case TIMEOUT_BLUE:
-				return EGameState.TIMEOUT;
-			case BALL_PLACEMENT_YELLOW:
-			case BALL_PLACEMENT_BLUE:
-				return EGameState.BALL_PLACEMENT;
-			default:
-				return null;
-		}
+		return switch (command)
+				{
+					case HALT -> EGameState.HALT;
+					case STOP -> EGameState.STOP;
+					case NORMAL_START, FORCE_START -> EGameState.RUNNING;
+					case PREPARE_KICKOFF_YELLOW, PREPARE_KICKOFF_BLUE -> EGameState.PREPARE_KICKOFF;
+					case PREPARE_PENALTY_YELLOW, PREPARE_PENALTY_BLUE -> EGameState.PREPARE_PENALTY;
+					case DIRECT_FREE_YELLOW, DIRECT_FREE_BLUE -> EGameState.DIRECT_FREE;
+					case INDIRECT_FREE_YELLOW, INDIRECT_FREE_BLUE -> EGameState.INDIRECT_FREE;
+					case TIMEOUT_YELLOW, TIMEOUT_BLUE -> EGameState.TIMEOUT;
+					case BALL_PLACEMENT_YELLOW, BALL_PLACEMENT_BLUE -> EGameState.BALL_PLACEMENT;
+					default -> null;
+				};
 	}
 
 
 	// Splitting this in multiple methods is not reasonable
-	@SuppressWarnings("squid:MethodCyclomaticComplexity")
 	private ETeamColor commandToTeam(final Command command)
 	{
-		switch (command)
-		{
-			case PREPARE_KICKOFF_YELLOW:
-			case PREPARE_PENALTY_YELLOW:
-			case DIRECT_FREE_YELLOW:
-			case INDIRECT_FREE_YELLOW:
-			case TIMEOUT_YELLOW:
-			case BALL_PLACEMENT_YELLOW:
-				return ETeamColor.YELLOW;
-
-			case PREPARE_KICKOFF_BLUE:
-			case PREPARE_PENALTY_BLUE:
-			case DIRECT_FREE_BLUE:
-			case INDIRECT_FREE_BLUE:
-			case TIMEOUT_BLUE:
-			case BALL_PLACEMENT_BLUE:
-				return ETeamColor.BLUE;
-
-			case HALT:
-			case STOP:
-			case NORMAL_START:
-			case FORCE_START:
-				return ETeamColor.NEUTRAL;
-			default:
-				return null;
-		}
+		return switch (command)
+				{
+					case PREPARE_KICKOFF_YELLOW, PREPARE_PENALTY_YELLOW, DIRECT_FREE_YELLOW, INDIRECT_FREE_YELLOW, TIMEOUT_YELLOW, BALL_PLACEMENT_YELLOW ->
+							ETeamColor.YELLOW;
+					case PREPARE_KICKOFF_BLUE, PREPARE_PENALTY_BLUE, DIRECT_FREE_BLUE, INDIRECT_FREE_BLUE, TIMEOUT_BLUE, BALL_PLACEMENT_BLUE ->
+							ETeamColor.BLUE;
+					case HALT, STOP, NORMAL_START, FORCE_START -> ETeamColor.NEUTRAL;
+					default -> null;
+				};
 	}
 
 
 	private EGameState normalStartToState(final Command lastCommand)
 	{
-		switch (lastCommand)
-		{
-			case PREPARE_KICKOFF_BLUE:
-			case PREPARE_KICKOFF_YELLOW:
-				return EGameState.KICKOFF;
-			case PREPARE_PENALTY_BLUE:
-			case PREPARE_PENALTY_YELLOW:
-				return EGameState.PENALTY;
-			default:
-				return EGameState.RUNNING;
-		}
+		return switch (lastCommand)
+				{
+					case PREPARE_KICKOFF_BLUE, PREPARE_KICKOFF_YELLOW -> EGameState.KICKOFF;
+					case PREPARE_PENALTY_BLUE, PREPARE_PENALTY_YELLOW -> EGameState.PENALTY;
+					default -> EGameState.RUNNING;
+				};
 	}
 
 
 	private void storeBallPosition(final Command command, final IVector2 ballPos)
 	{
-		switch (command)
-		{
-			case DIRECT_FREE_BLUE:
-			case DIRECT_FREE_YELLOW:
-			case INDIRECT_FREE_BLUE:
-			case INDIRECT_FREE_YELLOW:
-			case NORMAL_START:
-				ballPosOnPrepare = ballPos;
-				break;
-			default:
-				ballPosOnPrepare = null;
-				break;
-		}
+		ballPosOnPrepare = switch (command)
+				{
+					case DIRECT_FREE_BLUE, DIRECT_FREE_YELLOW, INDIRECT_FREE_BLUE, INDIRECT_FREE_YELLOW, NORMAL_START ->
+							ballPos;
+					default -> null;
+				};
 	}
 
 
@@ -283,6 +229,15 @@ public class GameStateCalculator
 		} else
 		{
 			ballMovedTimer.reset();
+		}
+	}
+
+
+	private void processActionTimeRemaining(GameState.GameStateBuilder builder, double currentActionTimeRemaining)
+	{
+		if ((lastGameState.isFreeKick() || lastGameState.isKickoff()) && currentActionTimeRemaining < 0)
+		{
+			builder.withState(EGameState.RUNNING).withForTeam(ETeamColor.NEUTRAL);
 		}
 	}
 }

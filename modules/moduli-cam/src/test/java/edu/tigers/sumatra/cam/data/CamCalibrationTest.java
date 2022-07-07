@@ -31,8 +31,7 @@ public class CamCalibrationTest
 	private CamCalibration getCamera()
 	{
 		return new CamCalibration(0, 603.4305419921875,
-				Vector2.fromXY(384.8830871582031, 324.7497863769531),
-				0.28,
+				0.28, Vector2.fromXY(384.8830871582031, 324.7497863769531),
 				new Quaternion(0.0443589985370636, 0.01445200014859438, -0.9989029765129089, -0.00419999985024333),
 				Vector3.fromXYZ(1529.866943359375, -1090.3587646484375, 2506.0));
 	}

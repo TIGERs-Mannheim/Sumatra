@@ -5,7 +5,7 @@
 package edu.tigers.sumatra.ai.integration;
 
 import edu.tigers.sumatra.ai.metis.kicking.ChipKickFactory;
-import edu.tigers.sumatra.ai.metis.offense.action.EOffensiveAction;
+import edu.tigers.sumatra.ai.metis.offense.action.moves.EOffensiveActionMove;
 import edu.tigers.sumatra.ai.metis.pass.target.IPassTarget;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.BotID;
@@ -66,7 +66,7 @@ public class OffensiveRedirectorMathIntegrationTest extends AAiIntegrationTest
 		assertThat(attacker.get()).isEqualTo(expectedAttacker);
 
 		var attackerAction = getMetisAiFrame().getTacticalField().getOffensiveActions().get(expectedAttacker);
-		assertThat(attackerAction.getAction()).isEqualTo(EOffensiveAction.PASS);
+		assertThat(attackerAction.getMove()).isEqualTo(EOffensiveActionMove.STANDARD_PASS);
 
 		var receiverPassTarget = attackerAction.getPassTarget();
 		assertThat(receiverPassTarget).isPresent();

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.skillsystem.skills;
@@ -7,6 +7,7 @@ package edu.tigers.sumatra.skillsystem.skills;
 import com.github.g3force.configurable.Configurable;
 import edu.tigers.sumatra.math.AngleMath;
 import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.skillsystem.skills.util.EDribblerMode;
 import edu.tigers.sumatra.skillsystem.skills.util.KickParams;
 import edu.tigers.sumatra.time.TimestampTimer;
 import lombok.Setter;
@@ -17,22 +18,22 @@ import lombok.Setter;
  */
 public class RotateWithBallSkill extends AMoveToSkill
 {
-	@Configurable(comment = "Dribbler speed while protecting", defValue = "5000.0")
-	private static double protectDribbleSpeed = 5000;
+	@Configurable(defValue = "4.0")
+	private static double accMax = 4.0;
 
-	@Configurable(defValue = "3.0")
-	private static double accMax = 3.0;
+	@Configurable(defValue = "2.5")
+	private static double velMax = 2.5;
 
-	@Configurable(defValue = "1.5")
-	private static double velMax = 1.5;
-
-	@Configurable(defValue = "2.0")
-	private static double velMaxW = 2.0;
+	@Configurable(defValue = "10.0")
+	private static double velMaxW = 10.0;
 
 	@Setter
 	IVector2 protectionTarget;
 
 	private TimestampTimer changeStateTimer = new TimestampTimer(0.1);
+
+	private IVector2 startPos;
+
 
 
 	@Override
@@ -40,6 +41,8 @@ public class RotateWithBallSkill extends AMoveToSkill
 	{
 		super.doEntryActions();
 		getMoveCon().setBallObstacle(false);
+		getMoveCon().setBotsObstacle(false);
+		startPos = getPos();
 	}
 
 
@@ -52,18 +55,16 @@ public class RotateWithBallSkill extends AMoveToSkill
 
 		double targetOrientation = protectionTarget.subtractNew(getPos()).multiplyNew(-1).getAngle();
 		updateTargetAngle(targetOrientation);
+		updateDestination(startPos);
 
 		if (AngleMath.diffAbs(targetOrientation, getAngle()) < 0.1)
 		{
 			setSkillState(ESkillState.SUCCESS);
 		}
 
-		if (!getTBot().hasBallContact())
+		if (!getTBot().getBallContact().hasContactFromVisionOrBarrier())
 		{
-			if (!changeStateTimer.isRunning())
-			{
-				changeStateTimer.start(getWorldFrame().getTimestamp());
-			}
+			changeStateTimer.update(getWorldFrame().getTimestamp());
 			if (changeStateTimer.isTimeUp(getWorldFrame().getTimestamp()))
 			{
 				setSkillState(ESkillState.FAILURE);
@@ -73,7 +74,7 @@ public class RotateWithBallSkill extends AMoveToSkill
 			changeStateTimer.reset();
 		}
 
-		setKickParams(KickParams.disarm().withDribbleSpeed(protectDribbleSpeed));
+		setKickParams(KickParams.disarm().withDribblerMode(EDribblerMode.DEFAULT));
 		super.doUpdate();
 	}
 }

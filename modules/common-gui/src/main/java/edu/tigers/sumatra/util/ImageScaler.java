@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.util;
 
@@ -54,5 +54,18 @@ public final class ImageScaler
 	{
 		ImageIcon imageIcon = new ImageIcon(ImageScaler.class.getResource(path));
 		return scaleImageIcon(imageIcon, ScalingUtil.getImageButtonSize(), ScalingUtil.getImageButtonSize());
+	}
+
+
+	/**
+	 * Scale an image from resources to small button size
+	 *
+	 * @param path
+	 * @return
+	 */
+	public static ImageIcon scaleSmallButtonImageIcon(final String path)
+	{
+		ImageIcon imageIcon = new ImageIcon(ImageScaler.class.getResource(path));
+		return scaleImageIcon(imageIcon, ScalingUtil.getImageButtonSmallSize(), ScalingUtil.getImageButtonSmallSize());
 	}
 }

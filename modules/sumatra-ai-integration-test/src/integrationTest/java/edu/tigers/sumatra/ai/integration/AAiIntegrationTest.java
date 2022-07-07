@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.integration;
@@ -13,7 +13,10 @@ import edu.tigers.sumatra.ai.athena.AthenaAiFrame;
 import edu.tigers.sumatra.ai.metis.Metis;
 import edu.tigers.sumatra.ai.metis.MetisAiFrame;
 import edu.tigers.sumatra.ball.trajectory.IBallTrajectory;
+import edu.tigers.sumatra.bot.EBotType;
 import edu.tigers.sumatra.bot.RobotInfo;
+import edu.tigers.sumatra.botparams.BotParamsManager;
+import edu.tigers.sumatra.botparams.EBotParamLabel;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.ids.EAiTeam;
@@ -37,7 +40,7 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 
 import java.io.IOException;
-import java.util.IdentityHashMap;
+import java.util.HashMap;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -202,7 +205,7 @@ public abstract class AAiIntegrationTest
 
 		long timestamp = wfw.getSimpleWorldFrame().getTimestamp() + 16_000_000;
 		long frameId = wfw.getSimpleWorldFrame().getFrameNumber() + 1;
-		Map<BotID, ITrackedBot> bots = new IdentityHashMap<>();
+		Map<BotID, ITrackedBot> bots = new HashMap<>();
 		wfw.getSimpleWorldFrame().getBots().values().stream()
 				.map(tBot -> TrackedBot.newCopyBuilder(tBot).withTimestamp(timestamp).build())
 				.forEach(tBot -> bots.put(tBot.getBotId(), tBot));
@@ -222,8 +225,11 @@ public abstract class AAiIntegrationTest
 	{
 		Snapshot snapshot = Snapshot.loadFromResources(snapshotFile);
 
+		BotParamsManager botParamsManager = new BotParamsManager();
+		botParamsManager.initModule();
+
 		long timestamp = 0;
-		Map<BotID, ITrackedBot> bots = new IdentityHashMap<>();
+		Map<BotID, ITrackedBot> bots = new HashMap<>();
 		snapshot.getBots().entrySet().stream()
 				.map(entry -> TrackedBot.newBuilder()
 						.withBotId(entry.getKey())
@@ -233,7 +239,10 @@ public abstract class AAiIntegrationTest
 						.withOrientation(entry.getValue().getPos().z())
 						.withAngularVel(entry.getValue().getVel().z())
 						.withLastBallContact(BallContact.def(timestamp))
-						.withBotInfo(RobotInfo.stubBuilder(entry.getKey(), timestamp).build())
+						.withBotInfo(RobotInfo.stubBuilder(entry.getKey(), timestamp)
+								.withBotParams(botParamsManager.get(EBotParamLabel.SIMULATION_BLUE))
+								.withType(EBotType.SUMATRA)
+								.build())
 						.build())
 				.forEach(so -> bots.put(so.getBotId(), so));
 

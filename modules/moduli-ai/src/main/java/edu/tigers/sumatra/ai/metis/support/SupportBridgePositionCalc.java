@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.metis.support;
@@ -8,7 +8,7 @@ import com.github.g3force.configurable.Configurable;
 import edu.tigers.sumatra.ai.common.PointChecker;
 import edu.tigers.sumatra.ai.metis.ACalculator;
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
-import edu.tigers.sumatra.ai.metis.offense.strategy.OffensiveStrategy;
+import edu.tigers.sumatra.ai.metis.pass.KickOrigin;
 import edu.tigers.sumatra.ai.metis.targetrater.AngleRange;
 import edu.tigers.sumatra.ai.pandora.plays.EPlay;
 import edu.tigers.sumatra.ai.pandora.roles.ARole;
@@ -45,28 +45,28 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class SupportBridgePositionCalc extends ACalculator
 {
-	@Configurable(comment = "Max moving bot Horizon", defValue = "1.")
-	private static double maxHorizon = 1;
+	@Configurable(comment = "Max moving bot Horizon", defValue = "0.8")
+	private static double maxHorizon = 0.8;
 
-	@Configurable(comment = "[mm]", defValue = "6000.")
-	private static double maxPassDistance = 6000;
+	@Configurable(comment = "[mm]", defValue = "9000.")
+	private static double maxPassDistance = 9000;
 
-	@Configurable(comment = "[mm]", defValue = "4000.")
-	private static double maxShootDistance = 4000;
+	@Configurable(comment = "[mm]", defValue = "5000.")
+	private static double maxShootDistance = 5000;
 
-	@Configurable(comment = "[deg]", defValue = "10.")
-	private static double minArcWidth = 10;
+	@Configurable(comment = "[deg]", defValue = "3.")
+	private static double minArcWidth = 3;
 
 	@Configurable(comment = "[deg]", defValue = "15.")
 	private static double minAngleToSightLine = 15;
 
-	@Configurable(comment = "[mm]", defValue = "500.")
-	private static double minDistToOffensive = 500;
+	@Configurable(comment = "[mm]", defValue = "1000.")
+	private static double minDistToOffensive = 1000;
 
-	@Configurable(comment = "[deg", defValue = "40.")
-	private static double maxArcWidth = 40;
+	@Configurable(comment = "[deg]", defValue = "12.")
+	private static double maxArcWidth = 12;
 
-	private final Supplier<OffensiveStrategy> offensiveStrategy;
+	private final Supplier<Map<BotID, KickOrigin>> kickOrigins;
 
 	@Getter
 	private List<IArc> offensiveShadows;
@@ -99,8 +99,8 @@ public class SupportBridgePositionCalc extends ACalculator
 	{
 		IVector2 goal = Geometry.getGoalTheir().getCenter();
 		List<IArc> goalArcs = generateUncoveredArc(goal, maxShootDistance).stream()
-				.filter(a -> Math.abs(AngleMath.difference(a.getStartAngle() + a.getRotation() / 2.,
-						passSender.subtractNew(a.center()).getAngle())) > AngleMath.deg2rad(minAngleToSightLine))
+				.filter(a -> AngleMath.diffAbs(a.getStartAngle() + a.getRotation() / 2.,
+						passSender.subtractNew(a.center()).getAngle()) > AngleMath.deg2rad(minAngleToSightLine))
 				.collect(Collectors.toList());
 
 		drawArcs(goalArcs);
@@ -196,8 +196,9 @@ public class SupportBridgePositionCalc extends ACalculator
 
 	private Optional<IVector2> findPassSender()
 	{
-		Optional<BotID> attackerID = offensiveStrategy.get().getAttackerBot();
-		return attackerID.map(botID -> getWFrame().getBot(botID).getPos());
+		return kickOrigins.get().values().stream()
+				.min(Comparator.comparingDouble(e -> e.getPos().distanceTo(getWFrame().getBall().getPos())))
+				.map(KickOrigin::getPos);
 	}
 
 
@@ -207,7 +208,7 @@ public class SupportBridgePositionCalc extends ACalculator
 		Map<BotID, MovingRobot> movingRobots = getAiFrame().getWorldFrame().getOpponentBots().values().stream()
 				.filter(b -> b.getPos().distanceTo(center) < radius)
 				.collect(Collectors.toMap(ITrackedBot::getBotId,
-						bot -> new MovingRobot(bot, maxHorizon, Geometry.getBotRadius() + Geometry.getBallRadius())));
+						bot -> MovingRobot.fromTrackedBot(bot, maxHorizon, Geometry.getBotRadius() + Geometry.getBallRadius())));
 
 		FullAngleRangeGenerator generator = new FullAngleRangeGenerator(
 				new ArrayList<>(movingRobots.values()), center, getWFrame().getBall().getStraightConsultant());
@@ -215,8 +216,8 @@ public class SupportBridgePositionCalc extends ACalculator
 		List<AngleRange> uncoveredAngleRanges = generator.getUncoveredAngleRanges();
 
 		return uncoveredAngleRanges.stream().map(
-				ar -> Arc.createArc(center, radius, ar.getRight(),
-						ar.getLeft() - ar.getRight()))
+						ar -> Arc.createArc(center, radius, ar.getRight(),
+								ar.getLeft() - ar.getRight()))
 				.map(this::splitArc)
 				.flatMap(Collection::stream)
 				.filter(a -> a.getRotation() > AngleMath.deg2rad(minArcWidth))

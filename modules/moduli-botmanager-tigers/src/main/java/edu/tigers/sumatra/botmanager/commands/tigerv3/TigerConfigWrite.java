@@ -1,14 +1,7 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2015, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 17.05.2015
- * Author(s): AndreR
- * *********************************************************
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.botmanager.commands.tigerv3;
-
-import java.util.List;
 
 import edu.tigers.sumatra.botmanager.commands.ACommand;
 import edu.tigers.sumatra.botmanager.commands.ECommand;
@@ -16,6 +9,9 @@ import edu.tigers.sumatra.botmanager.commands.tigerv3.TigerConfigFileStructure.E
 import edu.tigers.sumatra.botmanager.serial.SerialByteConverter;
 import edu.tigers.sumatra.botmanager.serial.SerialData;
 import edu.tigers.sumatra.botmanager.serial.SerialData.ESerialDataType;
+import lombok.Getter;
+
+import java.util.List;
 
 
 /**
@@ -25,6 +21,7 @@ import edu.tigers.sumatra.botmanager.serial.SerialData.ESerialDataType;
  */
 public class TigerConfigWrite extends ACommand
 {
+	@Getter
 	@SerialData(type = ESerialDataType.UINT16)
 	private int configId;
 	

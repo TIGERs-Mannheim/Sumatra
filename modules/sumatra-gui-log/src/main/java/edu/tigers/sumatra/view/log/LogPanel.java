@@ -1,25 +1,28 @@
 /*
- * Copyright (c) 2009 - 2019, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.view.log;
 
-import javax.swing.JPanel;
-
+import edu.tigers.sumatra.view.TextPane;
+import lombok.Getter;
+import net.miginfocom.swing.MigLayout;
 import org.apache.logging.log4j.Level;
 
-import edu.tigers.sumatra.view.TextPane;
-import edu.tigers.sumatra.views.ISumatraView;
-import net.miginfocom.swing.MigLayout;
+import javax.swing.JPanel;
+import java.io.Serial;
 
 
 /**
  * Panel for logs
  */
-public class LogPanel extends JPanel implements ISumatraView
+public class LogPanel extends JPanel
 {
+	@Serial
 	private static final long serialVersionUID = 1L;
 
+	@Getter
 	private final TextPane textPane;
+	@Getter
 	private final FilterPanel filterPanel;
 
 
@@ -36,23 +39,5 @@ public class LogPanel extends JPanel implements ISumatraView
 
 
 		add(display, "grow");
-	}
-
-
-	public TextPane getTextPane()
-	{
-		return textPane;
-	}
-
-
-	public FilterPanel getFilterPanel()
-	{
-		return filterPanel;
-	}
-
-
-	public SlidePanel getSlidePanel()
-	{
-		return filterPanel.getSlidePanel();
 	}
 }

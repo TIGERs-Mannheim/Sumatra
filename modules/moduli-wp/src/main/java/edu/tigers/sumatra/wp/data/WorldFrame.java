@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.wp.data;
@@ -16,7 +16,6 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 
 /**
@@ -40,7 +39,7 @@ public class WorldFrame extends SimpleWorldFrame
 		this.inverted = inverted;
 
 		opponentBots = computeOpponentBots(simpleWorldFrame, team);
-		tigerBotsAvailable = computeAvailableTigers(simpleWorldFrame, team);
+		tigerBotsAvailable = computeTigersAvailable(simpleWorldFrame, team);
 		tigerBotsVisible = computeTigersVisible(simpleWorldFrame, team);
 	}
 
@@ -62,30 +61,15 @@ public class WorldFrame extends SimpleWorldFrame
 	}
 
 
-	private Stream<ITrackedBot> createStreamOfAiTeam(final SimpleWorldFrame swf, EAiTeam aiTeam)
-	{
-		return swf.getBots().values().stream()
-				.filter(bot -> aiTeam.getTeamColor() == bot.getBotId().getTeamColor());
-	}
-
-
-	private Map<BotID, ITrackedBot> computeAvailableTigers(final SimpleWorldFrame simpleWorldFrame,
-			final EAiTeam aiTeam)
-	{
-		Map<BotID, ITrackedBot> availableTigers = createStreamOfAiTeam(simpleWorldFrame, aiTeam)
-				.collect(Collectors.toMap(ITrackedBot::getBotId, Function.identity()));
-		return Collections.unmodifiableMap(availableTigers);
-	}
-
-
 	private Map<BotID, ITrackedBot> computeOpponentBots(final SimpleWorldFrame simpleWorldFrame, final EAiTeam aiTeam)
 	{
-
 		Map<BotID, ITrackedBot> opponents = simpleWorldFrame.getBots().values().stream()
-				.filter(bot -> bot.getBotId().getTeamColor() == aiTeam.getTeamColor().opposite())
+				.filter(bot -> aiTeam.matchesColor(bot.getBotId().getTeamColor().opposite()))
 				.filter(bot -> Geometry.getFieldWBorders().isPointInShape(bot.getPos()))
 				.map(bot -> {
-					RobotInfo info = RobotInfo.stub(bot.getBotId(), bot.getTimestamp());
+					RobotInfo info = RobotInfo.stubBuilder(bot.getBotId(), bot.getTimestamp())
+							.withBotParams(bot.getRobotInfo().getBotParams())
+							.build();
 					return TrackedBot.newCopyBuilder(bot)
 							.withBotInfo(info)
 							.withState(bot.getFilteredState().orElse(bot.getBotState()))
@@ -100,6 +84,17 @@ public class WorldFrame extends SimpleWorldFrame
 	{
 		Map<BotID, ITrackedBot> visible = simpleWorldFrame.getBots().values().stream()
 				.filter(bot -> aiTeam.matchesColor(bot.getTeamColor()))
+				.collect(Collectors.toMap(ITrackedBot::getBotId, Function.identity()));
+		return Collections.unmodifiableMap(visible);
+	}
+
+
+	private Map<BotID, ITrackedBot> computeTigersAvailable(final SimpleWorldFrame simpleWorldFrame, final EAiTeam aiTeam)
+	{
+		Map<BotID, ITrackedBot> visible = simpleWorldFrame.getBots().values().stream()
+				.filter(bot -> aiTeam.matchesColor(bot.getTeamColor()))
+				.filter(bot -> bot.getRobotInfo().isConnected())
+				.filter(bot -> bot.getRobotInfo().isAvailableToAi())
 				.collect(Collectors.toMap(ITrackedBot::getBotId, Function.identity()));
 		return Collections.unmodifiableMap(visible);
 	}

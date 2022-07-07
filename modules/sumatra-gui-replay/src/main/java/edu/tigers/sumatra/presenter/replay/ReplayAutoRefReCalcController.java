@@ -1,16 +1,8 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.presenter.replay;
-
-import java.awt.event.ActionEvent;
-import java.util.ArrayList;
-import java.util.EnumSet;
-import java.util.List;
-
-import javax.swing.AbstractAction;
-import javax.swing.JCheckBoxMenuItem;
 
 import edu.tigers.autoreferee.AutoRefFramePreprocessor;
 import edu.tigers.autoreferee.IAutoRefFrame;
@@ -23,36 +15,36 @@ import edu.tigers.sumatra.views.ESumatraViewType;
 import edu.tigers.sumatra.wp.IWorldFrameObserver;
 import edu.tigers.sumatra.wp.data.WorldFrameWrapper;
 
+import javax.swing.AbstractAction;
+import javax.swing.JCheckBoxMenuItem;
+import java.awt.event.ActionEvent;
+import java.util.EnumSet;
+import java.util.List;
+
 
 public class ReplayAutoRefReCalcController implements IReplayController
 {
+	private static final ShapeMapSource SHAPE_MAP_SOURCE = ShapeMapSource.of("AutoRef",
+			ShapeMapSource.of("Recalculated"));
 	private final AutoRefFramePreprocessor refPreprocessor = new AutoRefFramePreprocessor();
 	private final PassiveAutoRefEngine autoRefEngine = new PassiveAutoRefEngine(
 			EnumSet.allOf(EGameEventDetectorType.class));
 
-	private final List<IWorldFrameObserver> wFrameObservers = new ArrayList<>();
+	private final List<IWorldFrameObserver> wFrameObservers;
 	private IAutoRefFrame lastAutoRefFrame = null;
 
 	private boolean active = false;
 
 
-	/**
-	 * Default
-	 */
-	public ReplayAutoRefReCalcController(final List<ASumatraView> sumatraViews)
+	public ReplayAutoRefReCalcController(List<IWorldFrameObserver> wFrameObservers, List<ASumatraView> sumatraViews)
 	{
-		super();
-
+		this.wFrameObservers = wFrameObservers;
 		for (ASumatraView view : sumatraViews)
 		{
 			if (view.getType() == ESumatraViewType.REPLAY_CONTROL)
 			{
 				ReplayControlPresenter replayControlPresenter = (ReplayControlPresenter) view.getPresenter();
-				replayControlPresenter.getReplayPanel().addMenuCheckbox(new RunAutoRefAction());
-			}
-			if (view.getPresenter() instanceof IWorldFrameObserver)
-			{
-				wFrameObservers.add((IWorldFrameObserver) view.getPresenter());
+				replayControlPresenter.getViewPanel().addMenuCheckbox(new RunAutoRefAction());
 			}
 		}
 	}
@@ -87,8 +79,7 @@ public class ReplayAutoRefReCalcController implements IReplayController
 
 		for (IWorldFrameObserver o : wFrameObservers)
 		{
-			o.onNewShapeMap(refFrame.getTimestamp(), refFrame.getShapes(),
-					ShapeMapSource.of("Recalculated AutoRef", "Recalculated"));
+			o.onNewShapeMap(refFrame.getTimestamp(), refFrame.getShapes(), SHAPE_MAP_SOURCE);
 		}
 		lastAutoRefFrame = refFrame;
 	}
@@ -110,10 +101,7 @@ public class ReplayAutoRefReCalcController implements IReplayController
 
 			if (!active)
 			{
-				for (IWorldFrameObserver o : wFrameObservers)
-				{
-					o.onRemoveSourceFromShapeMap("Recalculated AutoRef");
-				}
+				wFrameObservers.forEach(o -> o.onRemoveSourceFromShapeMap(SHAPE_MAP_SOURCE));
 			}
 		}
 	}

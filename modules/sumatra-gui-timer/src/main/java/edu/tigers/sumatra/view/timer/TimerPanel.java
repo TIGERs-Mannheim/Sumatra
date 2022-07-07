@@ -1,54 +1,33 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.view.timer;
 
-import edu.tigers.sumatra.views.ISumatraView;
+import lombok.Getter;
 import net.miginfocom.swing.MigLayout;
 
 import javax.swing.JPanel;
+import java.io.Serial;
 
 
 /**
  * Timer main panel
  */
-public class TimerPanel extends JPanel implements ISumatraView
+public class TimerPanel extends JPanel
 {
-	private static final long		serialVersionUID	= -4840668605222003132L;
+	@Serial
+	private static final long serialVersionUID = -4840668605222003132L;
 
-	private final TimerChartPanel	chartPanel;
+	@Getter
+	private final TimerChartPanel chartPanel = new TimerChartPanel();
 
 
 	public TimerPanel()
 	{
 		setLayout(new MigLayout("fill, inset 0", "", ""));
 
-		chartPanel = new TimerChartPanel();
 		chartPanel.setVisible(false);
 
 		add(chartPanel, "grow");
-	}
-
-
-	@Override
-	public void onShown()
-	{
-		chartPanel.setVisible(true);
-	}
-
-
-	@Override
-	public void onFocused()
-	{
-		chartPanel.setVisible(true);
-	}
-
-
-	/**
-	 * @return
-	 */
-	public TimerChartPanel getChartPanel()
-	{
-		return chartPanel;
 	}
 }

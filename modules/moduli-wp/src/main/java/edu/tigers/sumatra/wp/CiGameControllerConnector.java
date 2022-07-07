@@ -4,7 +4,10 @@
 
 package edu.tigers.sumatra.wp;
 
+import edu.tigers.sumatra.cam.SSLVisionCamGeometryTranslator;
+import edu.tigers.sumatra.cam.data.CamGeometry;
 import edu.tigers.sumatra.clock.ThreadUtil;
+import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.referee.proto.SslGcApi;
 import edu.tigers.sumatra.referee.proto.SslGcRefereeMessage;
 import edu.tigers.sumatra.thread.Watchdog;
@@ -36,14 +39,15 @@ public class CiGameControllerConnector
 	private Socket socket;
 	private Watchdog watchdog;
 	private SslGcCi.CiInput lastInput;
+	private CamGeometry lastGeometry;
 
-	private TrackerPacketGenerator trackerPacketGenerator;
+	private final SSLVisionCamGeometryTranslator translator = new SSLVisionCamGeometryTranslator();
+	private final TrackerPacketGenerator trackerPacketGenerator = new TrackerPacketGenerator("TIGERs");
 
 
 	public synchronized void start() throws IOException
 	{
 		log.trace("Starting");
-		trackerPacketGenerator = new TrackerPacketGenerator("TIGERs");
 		watchdog = new Watchdog(5000, this.getClass().getSimpleName(), this::onTimeout);
 		watchdog.start();
 		connect();
@@ -106,8 +110,10 @@ public class CiGameControllerConnector
 
 	private void send(final long timestamp)
 	{
+		lastGeometry = Geometry.getLastCamGeometry();
 		send(SslGcCi.CiInput.newBuilder()
 				.setTimestamp(timestamp)
+				.setGeometry(translator.toProtobuf(lastGeometry))
 				.build());
 	}
 
@@ -115,11 +121,16 @@ public class CiGameControllerConnector
 	private void send(final SimpleWorldFrame swf,
 			final List<SslGcApi.Input> inputs)
 	{
-		send(SslGcCi.CiInput.newBuilder()
+		SslGcCi.CiInput.Builder builder = SslGcCi.CiInput.newBuilder()
 				.setTimestamp(swf.getTimestamp())
 				.setTrackerPacket(trackerPacketGenerator.generate(swf))
-				.addAllApiInputs(inputs)
-				.build());
+				.addAllApiInputs(inputs);
+		if (!Geometry.getLastCamGeometry().equals(lastGeometry))
+		{
+			lastGeometry = Geometry.getLastCamGeometry();
+			builder.setGeometry(translator.toProtobuf(lastGeometry));
+		}
+		send(builder.build());
 	}
 
 

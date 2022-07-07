@@ -1,11 +1,12 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.skillsystem.skills;
 
 import com.github.g3force.configurable.Configurable;
 import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.skillsystem.skills.util.EDribblerMode;
 import edu.tigers.sumatra.skillsystem.skills.util.KickParams;
 import edu.tigers.sumatra.time.TimestampTimer;
 import lombok.Setter;
@@ -16,9 +17,6 @@ import lombok.Setter;
  */
 public class DragBallSkill extends AMoveToSkill
 {
-	@Configurable(comment = "Dribbler speed while protecting", defValue = "5000.0")
-	private static double protectDribbleSpeed = 5000;
-
 	@Configurable(defValue = "3.0")
 	private static double accMax = 3.0;
 
@@ -71,7 +69,7 @@ public class DragBallSkill extends AMoveToSkill
 			changeStateTimer.reset();
 		}
 
-		setKickParams(KickParams.disarm().withDribbleSpeed(protectDribbleSpeed));
+		setKickParams(KickParams.disarm().withDribblerMode(EDribblerMode.DEFAULT));
 		super.doUpdate();
 	}
 }

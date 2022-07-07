@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.wp;
@@ -17,7 +17,7 @@ import edu.tigers.sumatra.wp.data.TrackedBall;
 import edu.tigers.sumatra.wp.data.TrackedBot;
 import edu.tigers.sumatra.wp.data.WorldFrame;
 
-import java.util.IdentityHashMap;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 
@@ -70,7 +70,7 @@ public class WorldFrameFactory
 	 */
 	public static SimpleWorldFrame createSimpleWorldFrame(final long frameNumber, final long timestamp)
 	{
-		final Map<BotID, ITrackedBot> bots = new IdentityHashMap<>();
+		final Map<BotID, ITrackedBot> bots = new HashMap<>();
 
 		for (int i = 0; i < 6; i++)
 		{

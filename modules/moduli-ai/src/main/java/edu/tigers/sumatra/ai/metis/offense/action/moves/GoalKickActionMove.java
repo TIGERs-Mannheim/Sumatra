@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.metis.offense.action.moves;
@@ -8,7 +8,6 @@ import com.github.g3force.configurable.Configurable;
 import edu.tigers.sumatra.ai.metis.kicking.Kick;
 import edu.tigers.sumatra.ai.metis.offense.OffensiveConstants;
 import edu.tigers.sumatra.ai.metis.offense.action.EActionViability;
-import edu.tigers.sumatra.ai.metis.offense.action.EOffensiveAction;
 import edu.tigers.sumatra.ai.metis.offense.action.OffensiveAction;
 import edu.tigers.sumatra.ai.metis.offense.action.OffensiveActionViability;
 import edu.tigers.sumatra.ai.metis.targetrater.GoalKick;
@@ -28,33 +27,35 @@ import java.util.function.Supplier;
 @RequiredArgsConstructor
 public class GoalKickActionMove extends AOffensiveActionMove
 {
-	@Configurable(comment = "This is the area around their penalty area where the ball is shot directly", defValue = "100")
-	private static float defaultMarginAroundPenaltyAreaForDirectShot = 100;
+	@Configurable(comment = "This is the area around their penalty area where the ball is shot directly", defValue = "50.0")
+	private static double defaultMarginAroundPenaltyAreaForDirectShot = 50.0;
 
 	@Configurable(defValue = "0.1")
 	private static double minGoalChanceForPartiallyViability = 0.1;
 
-	private final Supplier<Map<BotID, GoalKick>> bestGoalKickTargets;
+	private final Supplier<Map<BotID, GoalKick>> bestGoalKickPerBot;
 
 
-	private OffensiveActionViability calcViability(GoalKick goalKick)
+	private OffensiveActionViability calcViability(GoalKick goalKick, BotID botId)
 	{
 		if (goalKick == null)
 		{
 			return new OffensiveActionViability(EActionViability.FALSE, 0.0);
 		}
 
-		var ratedTargetScore = goalKick.getRatedTarget().getScore();
+		var ratedTargetScore = Math.min(1,
+				goalKick.getRatedTarget().getScore() + getAntiToggleValue(botId, EOffensiveActionMove.GOAL_KICK, 0.1));
 		var clearGoalShotChance = ratedTargetScore > OffensiveConstants.getMinBotShouldDoGoalShotScore();
 
-		if (clearGoalShotChance || isBallVeryCloseToPenaltyArea())
+		if (clearGoalShotChance || (isBallVeryCloseToPenaltyArea() && getBall().getVel().getLength2() < 0.5))
 		{
 			return new OffensiveActionViability(EActionViability.TRUE, applyMultiplier(ratedTargetScore));
 		}
 
 		if (ratedTargetScore > minGoalChanceForPartiallyViability)
 		{
-			return new OffensiveActionViability(EActionViability.PARTIALLY, applyMultiplier(ratedTargetScore));
+			return new OffensiveActionViability(EActionViability.PARTIALLY,
+					Math.max(0, applyMultiplier(ratedTargetScore) - 1e-3));
 		}
 		return new OffensiveActionViability(EActionViability.FALSE, 0.0);
 	}
@@ -64,7 +65,6 @@ public class GoalKickActionMove extends AOffensiveActionMove
 	{
 		IPenaltyArea penaltyAreaWithMargin = Geometry.getPenaltyAreaTheir()
 				.withMargin(defaultMarginAroundPenaltyAreaForDirectShot);
-
 		return penaltyAreaWithMargin.isPointInShape(getBall().getPos());
 	}
 
@@ -72,7 +72,7 @@ public class GoalKickActionMove extends AOffensiveActionMove
 	@Override
 	public OffensiveAction calcAction(BotID botId)
 	{
-		var goalKick = bestGoalKickTargets.get().get(botId);
+		var goalKick = bestGoalKickPerBot.get().get(botId);
 		IVector2 ballContactPos = null;
 		Kick kick = null;
 		if (goalKick != null)
@@ -83,8 +83,7 @@ public class GoalKickActionMove extends AOffensiveActionMove
 
 		return OffensiveAction.builder()
 				.move(EOffensiveActionMove.GOAL_KICK)
-				.action(EOffensiveAction.GOAL_SHOT)
-				.viability(calcViability(goalKick))
+				.viability(calcViability(goalKick, botId))
 				.ballContactPos(ballContactPos)
 				.kick(kick)
 				.build();

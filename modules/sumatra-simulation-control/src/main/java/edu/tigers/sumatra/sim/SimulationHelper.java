@@ -1,20 +1,23 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.sim;
 
 import edu.tigers.moduli.exceptions.ModuleNotFoundException;
 import edu.tigers.sumatra.ai.AAgent;
+import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.BotID;
+import edu.tigers.sumatra.math.AngleMath;
 import edu.tigers.sumatra.math.pose.Pose;
 import edu.tigers.sumatra.math.vector.IVector3;
 import edu.tigers.sumatra.math.vector.Vector3;
 import edu.tigers.sumatra.model.SumatraModel;
 import edu.tigers.sumatra.referee.AReferee;
 import edu.tigers.sumatra.referee.control.GcEventFactory;
+import edu.tigers.sumatra.skillsystem.ASkillSystem;
+import edu.tigers.sumatra.skillsystem.skills.MoveToSkill;
 import edu.tigers.sumatra.snapshot.Snapshot;
-import edu.tigers.sumatra.vision.AVisionFilter;
 import edu.tigers.sumatra.wp.AWorldPredictor;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
@@ -48,6 +51,21 @@ public final class SimulationHelper
 		initSimulation(snapshot);
 
 		sim.stepBlocking();
+		snapshot.getMoveDestinations().forEach((botId, dest) -> {
+					MoveToSkill moveToSkill = MoveToSkill.createMoveToSkill();
+					if (Geometry.getNegativeHalfTeam() != botId.getTeamColor())
+					{
+						moveToSkill.updateDestination(dest.getXYVector().multiplyNew(-1));
+						moveToSkill.updateTargetAngle(AngleMath.mirror(dest.z()));
+					} else
+					{
+						moveToSkill.updateDestination(dest.getXYVector());
+						moveToSkill.updateTargetAngle(dest.z());
+					}
+					SumatraModel.getInstance().getModule(ASkillSystem.class).execute(botId, moveToSkill);
+				}
+		);
+
 		if (wasRunning)
 		{
 			sim.resume();
@@ -160,12 +178,7 @@ public final class SimulationHelper
 
 	private static SumatraSimulator getSumatraSimulator()
 	{
-		AVisionFilter vf = SumatraModel.getInstance().getModule(AVisionFilter.class);
-		if (vf instanceof SumatraSimulator)
-		{
-			return (SumatraSimulator) vf;
-		}
-		throw new ModuleNotFoundException("ACam is not a SumatraCam instance!");
+		return SumatraModel.getInstance().getModule(SumatraSimulator.class);
 	}
 
 

@@ -1,9 +1,16 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.view.rcm;
 
 
+import edu.tigers.sumatra.rcm.IRCMObserver;
+
+import javax.swing.JMenu;
+import javax.swing.JMenuBar;
+import javax.swing.JMenuItem;
+import javax.swing.JPanel;
+import javax.swing.JTabbedPane;
 import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
@@ -13,20 +20,11 @@ import java.awt.event.ComponentListener;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import javax.swing.JMenu;
-import javax.swing.JMenuBar;
-import javax.swing.JMenuItem;
-import javax.swing.JPanel;
-import javax.swing.JTabbedPane;
-
-import edu.tigers.sumatra.rcm.IRCMObserver;
-import edu.tigers.sumatra.views.ISumatraView;
-
 
 /**
  * Main layout of RCM is displayed here.
  */
-public final class RCMPanel extends JPanel implements ISumatraView
+public final class RCMPanel extends JPanel
 {
 	private final JMenuBar menuBar;
 	private final JMenuItem iStartStop;
@@ -126,7 +124,7 @@ public final class RCMPanel extends JPanel implements ISumatraView
 	}
 
 
-	public final void start()
+	public void start()
 	{
 		for (int i = 0; i < menuBar.getMenuCount(); i++)
 		{
@@ -135,7 +133,7 @@ public final class RCMPanel extends JPanel implements ISumatraView
 	}
 
 
-	public final void stop()
+	public void stop()
 	{
 		for (int i = 0; i < menuBar.getMenuCount(); i++)
 		{

@@ -1,25 +1,38 @@
 /*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.pathfinder.traj;
 
+import com.sleepycat.persist.model.Persistent;
 import edu.tigers.sumatra.bot.IMoveConstraints;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.pathfinder.TrajectoryGenerator;
 import edu.tigers.sumatra.trajectory.ITrajectory;
+import edu.tigers.sumatra.trajectory.StubTrajectory;
 
 import java.text.DecimalFormat;
+import java.util.List;
 
 
 /**
  * A path of connected segments, based on trajectories.
  */
+@Persistent
 public class TrajPath implements ITrajectory<IVector2>
 {
 	private final ITrajectory<IVector2> trajectory;
 	private final double tEnd;
 	private final TrajPath child;
+
+
+	@SuppressWarnings("unused") // berkeley
+	private TrajPath()
+	{
+		trajectory = new StubTrajectory<>();
+		tEnd = 0;
+		child = null;
+	}
 
 
 	private TrajPath(final ITrajectory<IVector2> trajectory, final double tEnd, final TrajPath child)
@@ -290,5 +303,11 @@ public class TrajPath implements ITrajectory<IVector2>
 	public TrajPath mirrored()
 	{
 		return new TrajPath(trajectory.mirrored(), tEnd, child == null ? null : child.mirrored());
+	}
+
+	@Override
+	public List<Double> getTimeSections()
+	{
+		return trajectory.getTimeSections();
 	}
 }

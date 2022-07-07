@@ -101,7 +101,8 @@ public class SSLGameLogReader
 			}
 
 
-			switch (getLogFileTypeFromHeader(fileStream))
+			LogFileType logFileTypeFromHeader = getLogFileTypeFromHeader(fileStream);
+			switch (logFileTypeFromHeader)
 			{
 				case LOG_FILE:
 					readLogFile(fileStream);
@@ -111,7 +112,7 @@ public class SSLGameLogReader
 					break;
 				default:
 				case UNKNOWN:
-					throw new IOException("Logfile Type Unknown");
+					throw new IOException("Unhandled log file type: " + logFileTypeFromHeader);
 			}
 
 			fileStream.close();
@@ -136,6 +137,7 @@ public class SSLGameLogReader
 
 		if (!"SSL_".equals(startHeader))
 		{
+			log.warn("Unknown header: {}", startHeader);
 			return LogFileType.UNKNOWN;
 		}
 
@@ -159,7 +161,7 @@ public class SSLGameLogReader
 
 
 		versionNumber = fileStream.readInt();
-		log.info("Logfile header: " + headerString + ", Version: " + versionNumber);
+		log.info("Logfile header: {}, Version: {}", headerString, versionNumber);
 
 		return optionalLogFileType.orElse(LogFileType.UNKNOWN);
 	}
@@ -317,6 +319,7 @@ public class SSLGameLogReader
 	{
 		return versionNumber;
 	}
+
 
 	/**
 	 * Get notified when a file is loaded.

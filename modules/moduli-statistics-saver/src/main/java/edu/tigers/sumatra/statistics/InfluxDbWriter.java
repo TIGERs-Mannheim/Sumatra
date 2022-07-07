@@ -15,6 +15,7 @@ import org.influxdb.BatchOptions;
 import org.influxdb.InfluxDB;
 import org.influxdb.InfluxDBFactory;
 import org.influxdb.dto.Point;
+import org.influxdb.dto.Query;
 
 
 /**
@@ -47,10 +48,19 @@ public class InfluxDbWriter implements ITimeSeriesWriter
 	@Override
 	public void start()
 	{
-		influxDB = InfluxDBFactory.connect(
-				connectionParameters.getUrl(),
-				connectionParameters.getUsername(),
-				connectionParameters.getPassword());
+		if (connectionParameters.hasAuth())
+		{
+			influxDB = InfluxDBFactory.connect(
+					connectionParameters.getUrl(),
+					connectionParameters.getUsername(),
+					connectionParameters.getPassword()
+			);
+		} else {
+			influxDB = InfluxDBFactory.connect(
+					connectionParameters.getUrl()
+			);
+		}
+		influxDB.query(new Query("CREATE DATABASE " + connectionParameters.getDbName()));
 		influxDB.setDatabase(connectionParameters.getDbName());
 		influxDB.enableGzip();
 		influxDB.enableBatch(BatchOptions.DEFAULTS.exceptionHandler(

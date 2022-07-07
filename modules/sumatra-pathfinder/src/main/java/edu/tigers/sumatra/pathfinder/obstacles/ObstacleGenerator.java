@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.pathfinder.obstacles;
@@ -23,6 +23,7 @@ import edu.tigers.sumatra.wp.data.ITrackedBot;
 import edu.tigers.sumatra.wp.data.WorldFrame;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 
@@ -47,8 +48,17 @@ public class ObstacleGenerator
 	@Configurable(defValue = "10.0", comment = "Extra margin on the opponent obstacle (note: there is also a dynamic margin applied by path planning)")
 	private static double opponentExtraMargin = 10;
 
-	@Configurable(defValue = "1.0", comment = "Ignore opponent robots based on crash velocity (0.0: disabled, 1.5: sharp to the rules)")
-	private static double aggressiveObstacleFilterVelocity = 1.0;
+	@Configurable(defValue = "30.0", comment = "Extra margin on the opponent penArea during free kick")
+	private static double opponentPenAreaStandardExtraMargin = 30;
+
+	@Configurable(defValue = "0.7", comment = "Ignore opponent robots based on crash velocity (0.0: disabled, 1.5: sharp to the rules)")
+	private static double aggressiveObstacleFilterVelocity = 0.7;
+
+	@Configurable(defValue = "0.8", comment = "Ignore opponents based if their velocity is this amount higher")
+	private static double aggressiveObstacleFilterVelocityDiff = 0.8;
+
+	@Configurable(defValue = "false", comment = "Ignore opponent robots in some cases")
+	private static boolean enableIgnoreOpponentBots = false;
 
 
 	private IMovementCon moveCon;
@@ -124,7 +134,7 @@ public class ObstacleGenerator
 		var trajectory = bot.getRobotInfo().getTrajectory();
 		if (trajectory.isEmpty() || moveCon.getPrioMap().isEqual(botId, bot.getBotId()))
 		{
-			Tube tube = Tube.create(bot.getPos(), bot.getPosByTime(opponentBotTimeHorizon), radius);
+			var tube = Tube.create(bot.getPos(), bot.getPosByTime(opponentBotTimeHorizon), radius);
 			return new TubeObstacle(tube);
 		}
 
@@ -156,7 +166,7 @@ public class ObstacleGenerator
 		{
 			IVector2 pos = opponentBot.getPos();
 			if (moveCon.getIgnoredBots().contains(opponentBot.getBotId()) || // explicitly ignored robot
-					canOpponentBeIgnored(tBot, opponentBot) ||
+					(canOpponentBeIgnored(tBot, opponentBot) && enableIgnoreOpponentBots) ||
 					!self.isPointInRobot(pos, tHorizon) // Optimization: Opponent bot is not close
 			)
 			{
@@ -184,7 +194,7 @@ public class ObstacleGenerator
 			final GameState gameState)
 	{
 		ITrackedBot tBot = wFrame.getBot(forBotId);
-		MovingRobot self = new MovingRobot(tBot, tHorizon, Geometry.getBotRadius());
+		var self = MovingRobot.fromTrackedBot(tBot, tHorizon, Geometry.getBotRadius());
 
 		List<IObstacle> obstacles = generateStaticObstacles(self, gameState);
 
@@ -210,6 +220,7 @@ public class ObstacleGenerator
 
 		obstacles.addAll(moveCon.getCustomObstacles());
 
+		obstacles.sort(Comparator.comparingInt(IObstacle::getPriority).reversed());
 		return obstacles;
 	}
 
@@ -227,8 +238,13 @@ public class ObstacleGenerator
 	 */
 	private boolean canOpponentBeIgnored(final ITrackedBot ownBot, final ITrackedBot opponentBot)
 	{
+		if (opponentBot.getVel().getLength2() < 0.5)
+		{
+			return false;
+		}
 		boolean safeCrashVel = calcCrashVelocity(opponentBot, ownBot) < aggressiveObstacleFilterVelocity;
-		boolean ownBotSignificantlySlower = opponentBot.getVel().getLength2() > ownBot.getVel().getLength2() + 0.5;
+		double velDiff = opponentBot.getVel().getLength2() - ownBot.getVel().getLength2();
+		boolean ownBotSignificantlySlower = velDiff > aggressiveObstacleFilterVelocityDiff;
 		return safeCrashVel || ownBotSignificantlySlower;
 	}
 
@@ -287,17 +303,12 @@ public class ObstacleGenerator
 				obstacle.setEmergencyBrakeFor(true);
 				obstacle.setActivelyEvade(true);
 				obs.add(obstacle);
-			} else if (gameState.isBallPlacementForThem())
+			} else
 			{
 				obs.add(new TubeObstacle(Tube.create(ballPos, placementPos, getEffectiveBotToBallDistanceOnStop())));
 			}
 		}
 
-		if (gameState.isStop() || gameState.isFreeKick())
-		{
-			double margin = RuleConstraints.getBotToPenaltyAreaMarginStandard() + Geometry.getBotRadius();
-			obs.add(new PenaltyAreaObstacle(Geometry.getPenaltyAreaTheir().withMargin(margin)));
-		}
 		return obs;
 	}
 
@@ -324,15 +335,14 @@ public class ObstacleGenerator
 		}
 		if (moveCon.isPenaltyAreaOurObstacle())
 		{
-			double margin = Geometry.getBotRadius() + Geometry.getPenaltyAreaMargin();
-			obstacles.add(new PenaltyAreaObstacle(Geometry.getPenaltyAreaOur().withMargin(margin)));
+			obstacles.add(new PenaltyAreaObstacle(Geometry.getPenaltyAreaOur().withMargin(Geometry.getBotRadius())));
 		}
 		if (moveCon.isPenaltyAreaTheirObstacle())
 		{
 			double margin;
 			if (gameState.isStandardSituation() || gameState.isStoppedGame())
 			{
-				margin = RuleConstraints.getBotToPenaltyAreaMarginStandard() + Geometry.getBotRadius();
+				margin = RuleConstraints.getPenAreaMarginStandard() + Geometry.getBotRadius() + opponentPenAreaStandardExtraMargin;
 			} else
 			{
 				margin = 0.0;

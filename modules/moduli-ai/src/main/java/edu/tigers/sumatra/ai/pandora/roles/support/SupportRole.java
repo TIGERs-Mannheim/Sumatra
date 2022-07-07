@@ -1,173 +1,74 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.pandora.roles.support;
 
-import com.github.g3force.configurable.Configurable;
-import com.github.g3force.instanceables.InstanceableClass;
-import edu.tigers.sumatra.ai.pandora.plays.EPlay;
-import edu.tigers.sumatra.ai.pandora.plays.match.SupportPlay;
+import edu.tigers.sumatra.ai.metis.support.behaviors.ESupportBehavior;
+import edu.tigers.sumatra.ai.metis.support.behaviors.SupportBehaviorPosition;
 import edu.tigers.sumatra.ai.pandora.roles.ARole;
 import edu.tigers.sumatra.ai.pandora.roles.ERole;
-import edu.tigers.sumatra.ai.pandora.roles.support.behaviors.repulsive.RepulsivePassReceiver;
-import edu.tigers.sumatra.ids.BotID;
+import edu.tigers.sumatra.geometry.Geometry;
+import edu.tigers.sumatra.geometry.RuleConstraints;
+import edu.tigers.sumatra.math.circle.Circle;
+import edu.tigers.sumatra.pathfinder.obstacles.GenericCircleObstacle;
 import edu.tigers.sumatra.skillsystem.skills.MoveToSkill;
-import edu.tigers.sumatra.wp.data.ITrackedBot;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import lombok.Setter;
+import lombok.extern.log4j.Log4j2;
 
-import java.util.ArrayList;
-import java.util.EnumMap;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 
 /**
  * Highly "coachable" supporter role, trigger different support behavior with different states.
- * The assignment of the behaviors happens in {@link SupportPlay}.
  */
+@Log4j2
 public class SupportRole extends ARole
 {
-	private static Logger logger = LogManager.getLogger(SupportRole.class);
-
-	@Configurable(comment = "[m/s]", defValue = "2.0")
-	private static double maxVelInReceiverArc = 2.;
-
-	private final EnumMap<ESupportBehavior, ASupportBehavior> behaviors = new EnumMap<>(ESupportBehavior.class);
-	private ESupportBehavior currentBehavior;
-
-	private Map<BotID, RepulsivePassReceiver.CalcViabilityInfo> botViabilityForRepulsiveBehavior;
+	@Setter
+	private SupportBehaviorPosition target;
+	@Setter
+	private ESupportBehavior behavior;
 
 
-	/**
-	 * Constructor. What else?
-	 */
-	public SupportRole(Map<BotID, RepulsivePassReceiver.CalcViabilityInfo> botViabilityForRepulsiveBehavior)
+	public SupportRole()
 	{
 		super(ERole.SUPPORT);
-		initBehaviors();
-		initStateMachine();
-		this.botViabilityForRepulsiveBehavior = botViabilityForRepulsiveBehavior;
+		setInitialState(new MoveToTargetState());
 	}
 
 
-	private void initBehaviors()
+	private class MoveToTargetState extends RoleState<MoveToSkill>
 	{
-		for (ESupportBehavior b : ESupportBehavior.values())
+		public MoveToTargetState()
 		{
-			try
+			super(MoveToSkill::new);
+		}
+
+
+		@Override
+		protected void onUpdate()
+		{
+			double distanceToBall = RuleConstraints.getStopRadius() + Geometry.getBotRadius();
+			var customBallObstacle = new GenericCircleObstacle(Circle.createCircle(getBall().getPos(), distanceToBall));
+			skill.getMoveCon().setCustomObstacles(List.of(customBallObstacle));
+
+			if (target != null)
 			{
-				behaviors.put(b, (ASupportBehavior) b.getInstanceableClass().newInstance(this));
-			} catch (InstanceableClass.NotCreateableException e)
-			{
-				logger.error("Could not create behavior", e);
-			}
-		}
-	}
-
-
-	private void initStateMachine()
-	{
-		setInitialState(behaviors.get(ESupportBehavior.MOVE_VORONOI));
-		for (ESupportBehavior b : ESupportBehavior.values())
-		{
-			addTransition(b, behaviors.get(b));
-		}
-	}
-
-
-	private MoveToSkill getSkill()
-	{
-		// we assume that all support behaviors use the MoveToSkill.
-		return (MoveToSkill) getCurrentSkill();
-	}
-
-
-	@Override
-	public void beforeUpdate()
-	{
-		checkRedirect();
-	}
-
-
-	public void selectBehavior(ESupportBehavior selectedBehavior)
-	{
-		if (currentBehavior == null || currentBehavior != selectedBehavior)
-		{
-			currentBehavior = selectedBehavior;
-			triggerEvent(selectedBehavior);
-		}
-	}
-
-
-	private void checkRedirect()
-	{
-		boolean isPassable = getAiFrame().getTacticalField().getOffensiveShadows().stream()
-				.anyMatch(a -> a.isPointInShape(getPos()));
-
-		double defVel = getBot().getMoveConstraints().getVelMax();
-		if (isPassable)
-		{
-			getSkill().setVelMax(Math.min(maxVelInReceiverArc, defVel));
-		} else
-		{
-			getSkill().setVelMax(defVel);
-		}
-	}
-
-
-	/**
-	 * Calculates the viability of all behaviours. Called by the Play
-	 *
-	 * @return A map containing the calculated viabilities for the role
-	 */
-	public Map<ESupportBehavior, Double> calculateViabilities()
-	{
-		EnumMap<ESupportBehavior, Double> viabilities = new EnumMap<>(ESupportBehavior.class);
-		behaviors.forEach((e, b) -> viabilities.put(e, b.getViability()));
-		return viabilities;
-	}
-
-
-	public List<ITrackedBot> getCurrentSupportBots()
-	{
-		return getAiFrame().getPlayStrategy().getActiveRoles(EPlay.SUPPORT).stream()
-				.map(ARole::getBot)
-				.collect(Collectors.toList());
-	}
-
-
-	public Map<BotID, RepulsivePassReceiver.CalcViabilityInfo> getBotViabilityForRepulsiveBehavior()
-	{
-		return botViabilityForRepulsiveBehavior;
-	}
-
-
-	/**
-	 * This should return the same results on any instance of a SupportRole
-	 *
-	 * @return A list of all inactive Behaviors
-	 */
-	public List<ESupportBehavior> getInactiveBehaviors()
-	{
-		List<ESupportBehavior> ret = new ArrayList<>();
-
-		for (Map.Entry<ESupportBehavior, ASupportBehavior> behavior : this.behaviors.entrySet())
-		{
-			if (!behavior.getValue().getIsActive())
-			{
-				ret.add(behavior.getKey());
+				skill.updateDestination(target.getPosition());
+				target.getLookAt().ifPresent(skill::updateLookAtTarget);
 			}
 		}
 
-		return ret;
-	}
 
-
-	public ESupportBehavior getCurrentBehavior()
-	{
-		return currentBehavior;
+		@Override
+		public String getIdentifier()
+		{
+			if (behavior != null)
+			{
+				return behavior.toString();
+			}
+			return super.getIdentifier();
+		}
 	}
 }

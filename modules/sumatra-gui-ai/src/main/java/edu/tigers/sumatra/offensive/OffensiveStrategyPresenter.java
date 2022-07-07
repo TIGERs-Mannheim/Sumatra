@@ -1,11 +1,9 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.offensive;
 
-import edu.tigers.moduli.listenerVariables.ModulesState;
 import edu.tigers.sumatra.ai.AAgent;
-import edu.tigers.sumatra.ai.Agent;
 import edu.tigers.sumatra.ai.IVisualizationFrameObserver;
 import edu.tigers.sumatra.ai.VisualizationFrame;
 import edu.tigers.sumatra.ai.metis.offense.strategy.OffensiveStrategy;
@@ -13,54 +11,32 @@ import edu.tigers.sumatra.ids.ETeamColor;
 import edu.tigers.sumatra.model.SumatraModel;
 import edu.tigers.sumatra.offensive.view.OffensiveStrategyPanel;
 import edu.tigers.sumatra.offensive.view.TeamOffensiveStrategyPanel;
-import edu.tigers.sumatra.views.ASumatraViewPresenter;
-import edu.tigers.sumatra.views.ISumatraView;
-
-import java.awt.Component;
+import edu.tigers.sumatra.views.ISumatraViewPresenter;
+import lombok.Getter;
 
 
 /**
  * OffensiveStrategy Presenter
- *
- * @author Mark Geiger <Mark.Geiger@dlr.de>
  */
-public class OffensiveStrategyPresenter extends ASumatraViewPresenter implements IVisualizationFrameObserver
+public class OffensiveStrategyPresenter implements ISumatraViewPresenter, IVisualizationFrameObserver
 {
-	private final OffensiveStrategyPanel offensiveStrategyPanel;
+	@Getter
+	private final OffensiveStrategyPanel viewPanel = new OffensiveStrategyPanel();
 
 
-	public OffensiveStrategyPresenter()
+	@Override
+	public void onStartModuli()
 	{
-		offensiveStrategyPanel = new OffensiveStrategyPanel();
+		ISumatraViewPresenter.super.onStartModuli();
+		SumatraModel.getInstance().getModuleOpt(AAgent.class).ifPresent(agent -> agent.addVisObserver(this));
 	}
 
 
 	@Override
-	public void onModuliStateChanged(final ModulesState state)
+	public void onStopModuli()
 	{
-		if (state == ModulesState.ACTIVE)
-		{
-			Agent agent = (Agent) SumatraModel.getInstance().getModule(AAgent.class);
-			agent.addVisObserver(this);
-		} else if (state == ModulesState.RESOLVED)
-		{
-			Agent agent = (Agent) SumatraModel.getInstance().getModule(AAgent.class);
-			agent.removeVisObserver(this);
-		}
-	}
-
-
-	@Override
-	public Component getComponent()
-	{
-		return offensiveStrategyPanel;
-	}
-
-
-	@Override
-	public ISumatraView getSumatraView()
-	{
-		return offensiveStrategyPanel;
+		ISumatraViewPresenter.super.onStopModuli();
+		SumatraModel.getInstance().getModuleOpt(AAgent.class).ifPresent(agent -> agent.removeVisObserver(this));
 	}
 
 
@@ -68,16 +44,15 @@ public class OffensiveStrategyPresenter extends ASumatraViewPresenter implements
 	public void onNewVisualizationFrame(final VisualizationFrame frame)
 	{
 		OffensiveStrategy offensiveStrategy = frame.getOffensiveStrategy();
-		if ((offensiveStrategy != null)
-				&& (frame.getOffensiveActions() != null))
+		if (offensiveStrategy != null && frame.getOffensiveActions() != null)
 		{
 			TeamOffensiveStrategyPanel strategyPanel;
 			if (frame.getTeamColor() == ETeamColor.BLUE)
 			{
-				strategyPanel = offensiveStrategyPanel.getBlueStrategyPanel();
+				strategyPanel = viewPanel.getBluePanel();
 			} else
 			{
-				strategyPanel = offensiveStrategyPanel.getYellowStrategyPanel();
+				strategyPanel = viewPanel.getYellowPanel();
 			}
 
 			strategyPanel.setPlayConfiguration(offensiveStrategy.getCurrentOffensivePlayConfiguration());

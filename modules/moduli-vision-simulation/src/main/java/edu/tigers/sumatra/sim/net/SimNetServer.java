@@ -9,6 +9,7 @@ import com.github.g3force.configurable.Configurable;
 import com.google.protobuf.InvalidProtocolBufferException;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.ids.ETeamColor;
+import edu.tigers.sumatra.math.vector.Vector3f;
 import edu.tigers.sumatra.sim.SimulatedBall;
 import edu.tigers.sumatra.sim.SimulatedBot;
 import edu.tigers.sumatra.sim.dynamics.bot.EDriveMode;
@@ -126,10 +127,11 @@ public class SimNetServer
 
 		for (SimulatedBot bot : simState.getSimulatedBots().values())
 		{
+			var vel = Vector3f.from2d(bot.getState().getVel().getXYVector().multiplyNew(1e-3), bot.getState().getVel().z());
 			stateBuilder.addBotState(SimState.SimBotState.newBuilder()
 					.setBotId(LocalToProtoMapper.mapBotId(bot.getBotId()))
 					.setPose(LocalToProtoMapper.mapPose(bot.getState().getPose()))
-					.setVel(LocalToProtoMapper.mapVector3(bot.getState().getVel().multiplyNew(1e-3)))
+					.setVel(LocalToProtoMapper.mapVector3(vel))
 					.setBarrierInterrupted(bot.getState().isBarrierInterrupted()));
 		}
 

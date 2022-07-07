@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai;
@@ -37,6 +37,7 @@ public class AiManager
 	private final AAgent agent;
 	private final Ai ai;
 	private final String aiName;
+	private final ShapeMapSource shapeMapSource;
 
 	private ExecutorService executor;
 	private AWorldPredictor wp;
@@ -53,6 +54,7 @@ public class AiManager
 		this.agent = agent;
 		ai = new Ai(aiTeam, skillSystem);
 		aiName = "AI_" + ai.getAiTeam();
+		shapeMapSource = ShapeMapSource.of(aiTeam.getTeamColor().name(), ShapeMapSource.of("AI"));
 	}
 
 
@@ -125,6 +127,7 @@ public class AiManager
 		return ai;
 	}
 
+
 	private class AiProcessor implements Runnable
 	{
 		private static final int RUN_EVERY_N_TH_FRAME = 1;
@@ -153,7 +156,7 @@ public class AiManager
 			}
 			ai.stop();
 			agent.notifyAIStopped(ai.getAiTeam());
-			wp.notifyRemoveSourceFromShapeMap(getShapeMapSource(ai.getAiTeam().getTeamColor()));
+			wp.notifyRemoveSourceFromShapeMap(shapeMapSource);
 		}
 
 
@@ -189,8 +192,7 @@ public class AiManager
 					VisualizationFrame visFrame = new VisualizationFrame(frame);
 					agent.notifyNewAIInfoFrameVisualize(visFrame);
 					frame.getShapeMap().setInverted(wfw.getWorldFrame(ai.getAiTeam()).isInverted());
-					wp.notifyNewShapeMap(tNow, frame.getShapeMap(),
-							ShapeMapSource.of(getShapeMapSource(frame.getTeamColor())));
+					wp.notifyNewShapeMap(tNow, frame.getShapeMap(), shapeMapSource);
 				} catch (Throwable err)
 				{
 					log.error("Error during AI frame publishing", err);
@@ -207,6 +209,6 @@ public class AiManager
 
 	public static String getShapeMapSource(ETeamColor teamColor)
 	{
-		return teamColor == ETeamColor.YELLOW ? "AI Yellow" : "AI Blue";
+		return teamColor == ETeamColor.YELLOW ? "Yellow" : "Blue";
 	}
 }

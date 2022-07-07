@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.persistence;
 
@@ -182,9 +182,8 @@ public class BerkeleyEnv
 		zipParams.setCompressionLevel(CompressionLevel.FAST);
 		log.info("Compressing database...");
 		long tStart = System.nanoTime();
-		try
+		try (ZipFile zipFile = new ZipFile(zipFileHandle))
 		{
-			ZipFile zipFile = new ZipFile(zipFileHandle);
 			zipFile.addFolder(envHome, zipParams);
 		} catch (ZipException e)
 		{

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.metis.offense.strategy;
@@ -36,11 +36,16 @@ public class BallHandlingRobotsStrategyCalc extends ACalculator
 		{
 			return EOffensiveStrategy.STOP;
 		}
+		if (getAiFrame().getGameState().isPenaltyOrPreparePenaltyForUs())
+		{
+			return EOffensiveStrategy.PENALTY_KICK;
+		}
 		if (freeKickDelay.get() == EFreeKickDelay.IN_PROGRESS)
 		{
 			return EOffensiveStrategy.DELAY;
 		}
-		if (getAiFrame().getGameState().isStandardSituationForThem())
+		if (getAiFrame().getGameState().isStandardSituationForThem() ||
+				getAiFrame().getGameState().isKickoffOrPrepareKickoffForThem())
 		{
 			return EOffensiveStrategy.INTERCEPT;
 		}

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.pandora.roles.defense;
@@ -7,17 +7,17 @@ package edu.tigers.sumatra.ai.pandora.roles.defense;
 import edu.tigers.sumatra.ai.pandora.roles.ERole;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.math.vector.IVector2;
-import edu.tigers.sumatra.skillsystem.skills.MoveToSkill;
-import edu.tigers.sumatra.statemachine.AState;
+import lombok.Getter;
+import lombok.Setter;
 
 
 /**
  * A placeholder role for new defenders
- *
- * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  */
 public class DefenderPlaceholderRole extends ADefenseRole
 {
+	@Getter
+	@Setter
 	private IVector2 target = null;
 
 
@@ -27,39 +27,22 @@ public class DefenderPlaceholderRole extends ADefenseRole
 	public DefenderPlaceholderRole()
 	{
 		super(ERole.DEFENDER_PLACEHOLDER);
-		setInitialState(new MoveState());
+		setInitialState(new DefaultState());
 	}
 
 
-	public IVector2 getTarget()
+	private class DefaultState extends MoveState
 	{
-		return target;
-	}
-
-
-	public void setTarget(final IVector2 target)
-	{
-		this.target = target;
-	}
-
-
-	private class MoveState extends AState
-	{
-		private MoveToSkill skill;
-
-
 		@Override
-		public void doEntryActions()
+		protected void onInit()
 		{
-			skill = MoveToSkill.createMoveToSkill();
-			setNewSkill(skill);
 			skill.getMoveCon().setGameStateObstacle(!getAiFrame().getGameState().isStop());
 			skill.getMoveCon().setBallObstacle(false);
 		}
 
 
 		@Override
-		public void doUpdate()
+		protected void onUpdate()
 		{
 			if (target != null)
 			{

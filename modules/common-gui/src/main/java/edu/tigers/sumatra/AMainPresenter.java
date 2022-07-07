@@ -1,13 +1,13 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra;
 
 import edu.tigers.sumatra.model.SumatraModel;
+import edu.tigers.sumatra.util.GlobalShortcuts;
 import edu.tigers.sumatra.util.ScalingUtil;
+import lombok.extern.log4j.Log4j2;
 import net.infonode.gui.laf.InfoNodeLookAndFeel;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import javax.swing.JFrame;
 import javax.swing.JOptionPane;
@@ -24,10 +24,9 @@ import java.util.Properties;
 /**
  * Base for MainPresenter
  */
+@Log4j2
 public abstract class AMainPresenter implements IMainFrameObserver
 {
-	private static final Logger log = LogManager.getLogger(AMainPresenter.class.getName());
-
 	private static final String LAYOUT_CONFIG_PATH = "./config/gui/";
 
 	private final AMainFrame mainFrame;
@@ -144,6 +143,8 @@ public abstract class AMainPresenter implements IMainFrameObserver
 	@Override
 	public void onExit()
 	{
+		GlobalShortcuts.removeAllForFrame(getMainFrame());
+		
 		// ### Persist user settings
 		final Properties appProps = SumatraModel.getInstance().getUserSettings();
 

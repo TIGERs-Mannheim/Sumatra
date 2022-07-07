@@ -35,6 +35,9 @@ public class RuleConstraints
 	@Configurable(comment = "Distance between bots and penalty area in standard situations", defValue = "200.0")
 	private static double botToPenaltyAreaMarginStandard = 200;
 	@Getter
+	@Configurable(comment = "Offset to distance between bots and penalty area in standard situations", defValue = "10.0")
+	private static double botToPenaltyAreaMarginStandardOffset = 10;
+	@Getter
 	@Configurable(comment = "Ball placement accuracy tolerance of referee", defValue = "150.0")
 	private static double ballPlacementTolerance = 150;
 	@Getter
@@ -52,5 +55,11 @@ public class RuleConstraints
 
 	private RuleConstraints()
 	{
+	}
+
+
+	public static double getPenAreaMarginStandard()
+	{
+		return botToPenaltyAreaMarginStandard + botToPenaltyAreaMarginStandardOffset;
 	}
 }

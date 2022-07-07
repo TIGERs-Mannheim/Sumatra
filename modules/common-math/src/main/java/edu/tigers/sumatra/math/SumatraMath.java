@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.math;
@@ -191,7 +191,7 @@ public final class SumatraMath
 
 
 	/**
-	 * Cap value if outside of the range, else return value.
+	 * Cap value if outside the range, else return value.
 	 *
 	 * @param value  the value
 	 * @param bound1 the first bound value
@@ -202,6 +202,22 @@ public final class SumatraMath
 	{
 		double min = Math.min(bound1, bound2);
 		double max = Math.max(bound1, bound2);
+		return Math.max(min, Math.min(max, value));
+	}
+
+
+	/**
+	 * Cap value if outside the range, else return value.
+	 *
+	 * @param value  the value
+	 * @param bound1 the first bound value
+	 * @param bound2 the second bound value
+	 * @return value in range [bound1..bound2] or [bound2..bound1]
+	 */
+	public static int cap(final int value, final int bound1, final int bound2)
+	{
+		int min = Math.min(bound1, bound2);
+		int max = Math.max(bound1, bound2);
 		return Math.max(min, Math.min(max, value));
 	}
 

@@ -1,11 +1,12 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.snapshot;
 
 
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.math.vector.IVector3;
 import edu.tigers.sumatra.referee.proto.SslGcRefereeMessage;
 import lombok.Builder;
 import lombok.Singular;
@@ -40,6 +41,8 @@ public class Snapshot
 	SslGcRefereeMessage.Referee.Command command;
 	SslGcRefereeMessage.Referee.Stage stage;
 	IVector2 placementPos;
+	@Singular
+	Map<BotID, IVector3> moveDestinations;
 
 
 	/**
@@ -63,6 +66,10 @@ public class Snapshot
 		{
 			obj.put("placementPos", JsonConverter.encode(placementPos));
 		}
+		if (moveDestinations != null && !moveDestinations.isEmpty())
+		{
+			obj.put("moveDestinations", JsonConverter.encodeVector3Map(moveDestinations));
+		}
 		return obj;
 	}
 
@@ -82,12 +89,14 @@ public class Snapshot
 		IVector2 placementPos = Optional.ofNullable((JSONArray) obj.get("placementPos"))
 				.map(JsonConverter::decodeVector2)
 				.orElse(null);
+		Map<BotID, IVector3> moveDestinations = JsonConverter.decodeVector3Map((JSONArray) obj.get("moveDestinations"));
 		return Snapshot.builder()
 				.bots(bots)
 				.ball(ball)
 				.command(command)
 				.stage(stage)
 				.placementPos(placementPos)
+				.moveDestinations(moveDestinations)
 				.build();
 	}
 

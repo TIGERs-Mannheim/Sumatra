@@ -1,13 +1,13 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.drawable;
 
+import com.sleepycat.persist.model.Persistent;
+
 import java.awt.Color;
 import java.awt.Graphics2D;
-
-import com.sleepycat.persist.model.Persistent;
 
 
 /**
@@ -21,6 +21,13 @@ public abstract class ADrawable implements IDrawableShape
 
 	@Override
 	public void paintShape(final Graphics2D g, final IDrawableTool tool, final boolean invert)
+	{
+		g.setColor(color);
+	}
+
+
+	@Override
+	public void paintBorder(Graphics2D g, int width, int height)
 	{
 		g.setColor(color);
 	}

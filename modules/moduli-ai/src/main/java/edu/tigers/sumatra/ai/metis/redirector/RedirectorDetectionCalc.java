@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.ai.metis.redirector;
 
@@ -23,10 +23,10 @@ import lombok.Getter;
 import java.awt.Color;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 
 /**
@@ -86,9 +86,9 @@ public class RedirectorDetectionCalc extends ACalculator
 
 	private ERecommendedReceiverAction determineAction(RedirectorDetectionInformation information)
 	{
-		double distFromBallToOpponentReceivePos = getBall().getTrajectory().getTravelLine().closestPointOnLine(
+		double distFromBallToOpponentReceivePos = getBall().getTrajectory().closestPointTo(
 				information.getOpponentReceiverPos()).distanceTo(getBall().getPos());
-		double distFromBallToFriendlyReceivePos = getBall().getTrajectory().getTravelLine().closestPointOnLine(
+		double distFromBallToFriendlyReceivePos = getBall().getTrajectory().closestPointTo(
 				information.getFriendlyReceiverPos()).distanceTo(getBall().getPos());
 
 		double timeToImpactOpponent = getBall().getTrajectory().getTimeByDist(distFromBallToOpponentReceivePos);
@@ -251,8 +251,7 @@ public class RedirectorDetectionCalc extends ACalculator
 						redirectorDetectionInformation.setFriendlyReceiver(attacker.get());
 						redirectorDetectionInformation.setFriendlyReceiverPos(e.getFinalDestination().getXYVector());
 						redirectorDetectionInformation.setFriendlyBotReceiving(true);
-						if (getBall().getTrajectory().getTravelLine()
-								.closestPointOnLine(attackerRole.get().getBot().getBotKickerPos())
+						if (getBall().getTrajectory().closestPointTo(attackerRole.get().getBot().getBotKickerPos())
 								.distanceTo(attackerRole.get().getBot().getBotKickerPos()) > Geometry.getBotRadius() * 4)
 						{
 							redirectorDetectionInformation.setFriendlyStillApproaching(true);
@@ -264,17 +263,21 @@ public class RedirectorDetectionCalc extends ACalculator
 
 	private void detectOpponentPassReceiver()
 	{
-		Map<BotID, ITrackedBot> opponents = new IdentityHashMap<>(getWFrame().getOpponentBots());
-		opponents.remove(getAiFrame().getKeeperOpponentId());
+		Map<BotID, ITrackedBot> opponents = getWFrame().getOpponentBots().entrySet().stream()
+				.filter(e -> e.getKey() != getAiFrame().getKeeperOpponentId())
+				.filter(e -> !Geometry.getPenaltyAreaTheir().withMargin(Geometry.getBotRadius() * 3.0)
+						.isPointInShape(e.getValue()
+								.getPos())).collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, Map.Entry::getValue));
+
 		BotID opponentReceiver = getBestRedirector(opponents);
 		ITrackedBot opponentBot = getWFrame().getOpponentBot(opponentReceiver);
 		if (opponentBot != null)
 		{
 			IVector2 opponentPos = opponentBot.getBotKickerPos();
-			IVector2 opponentReceivePos = getBall().getTrajectory().getTravelLine().closestPointOnLine(opponentPos);
+			IVector2 opponentReceivePos = getBall().getTrajectory().closestPointTo(opponentPos);
 
 			IVector2 velOffset = opponentReceivePos.addNew(opponentBot.getVel().multiplyNew(1000.0));
-			IVector2 helper = getBall().getTrajectory().getTravelLine().closestPointOnLine(velOffset);
+			IVector2 helper = getBall().getTrajectory().closestPointTo(velOffset);
 			double relativeBotSpeed = helper.distanceTo(velOffset) / 1000.0;
 
 			if (opponentPos.distanceTo(opponentReceivePos) < Geometry.getBotRadius() * 2.0

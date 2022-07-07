@@ -29,7 +29,9 @@
         "maxAbsoluteChipVelocity":5.0,
         "maxAbsoluteStraightVelocity":8.0,
         "maxDribbleSpeed":10000.0,
-        "dribbleSpeedGain":1.0
+        "dribbleSpeedGain":1.0,
+        "maxDribbleBallAcceleration":5.0,
+        "maxRetainingBallAngle":0.75
       }
     }
   }

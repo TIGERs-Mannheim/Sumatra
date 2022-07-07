@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.skillsystem.skills;
@@ -64,6 +64,12 @@ public abstract class AMoveSkill extends ASkill
 			defValue = "1.0"
 	)
 	private static double maxStopSpeed = 1.0;
+
+	@Configurable(
+			comment = "Min dribble speed when kicker is armed",
+			defValue = "5000"
+	)
+	private static double minDribbleSpeedOnKick = 5000;
 
 	@Getter(AccessLevel.PROTECTED)
 	private WorldFrame worldFrame;
@@ -274,9 +280,31 @@ public abstract class AMoveSkill extends ASkill
 		kickerDribblerOutput.setKick(kickSpeed, kickParams.getDevice(),
 				kickSpeed > 0 ? EKickerMode.ARM : EKickerMode.DISARM);
 
-		double maxDribbleSpeed = getBot().getBotParams().getKickerSpecs().getMaxDribbleSpeed();
-		double dribbleSpeedGain = getBot().getBotParams().getKickerSpecs().getDribbleSpeedGain();
-		kickerDribblerOutput.setDribblerSpeed(Math.min(maxDribbleSpeed, dribbleSpeedGain * kickParams.getDribbleSpeed()));
+		var dribblerSpecs = getBot().getBotParams().getDribblerSpecs();
+
+		double dribbleSpeed;
+		double maxDribbleCurrent;
+
+		switch (kickParams.getDribblerMode())
+		{
+			case OFF ->
+			{
+				dribbleSpeed = 0;
+				maxDribbleCurrent = 0;
+			}
+			case HIGH_POWER ->
+			{
+				dribbleSpeed = dribblerSpecs.getHighPowerSpeed();
+				maxDribbleCurrent = dribblerSpecs.getHighPowerMaxCurrent();
+			}
+			default ->
+			{
+				dribbleSpeed = dribblerSpecs.getDefaultSpeed();
+				maxDribbleCurrent = dribblerSpecs.getDefaultMaxCurrent();
+			}
+		}
+
+		kickerDribblerOutput.setDribbler(dribbleSpeed, maxDribbleCurrent);
 	}
 
 

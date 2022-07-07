@@ -6,7 +6,6 @@ package edu.tigers.sumatra.ai.metis.offense.action.moves;
 
 import com.github.g3force.configurable.Configurable;
 import edu.tigers.sumatra.ai.metis.offense.action.EActionViability;
-import edu.tigers.sumatra.ai.metis.offense.action.EOffensiveAction;
 import edu.tigers.sumatra.ai.metis.offense.action.OffensiveAction;
 import edu.tigers.sumatra.ai.metis.offense.action.OffensiveActionViability;
 import edu.tigers.sumatra.ai.metis.targetrater.GoalKick;
@@ -46,7 +45,7 @@ public class RedirectGoalKickActionMove extends AOffensiveActionMove
 		{
 			var ratedTarget = goalKick.getRatedTarget();
 			var score = ratedTarget.getScore();
-			var antiToggleScore = getAntiToggleScore(botId);
+			var antiToggleScore = getAntiToggleValue(botId, EOffensiveActionMove.REDIRECT_GOAL_KICK, 0.2);
 			if (score + antiToggleScore > minGoalShotChanceForTrueViability)
 			{
 				return new OffensiveActionViability(EActionViability.TRUE, calcViabilityScoreWithBonus(score));
@@ -59,17 +58,6 @@ public class RedirectGoalKickActionMove extends AOffensiveActionMove
 	}
 
 
-	private double getAntiToggleScore(BotID botId)
-	{
-		var offensiveAction = getAiFrame().getPrevFrame().getTacticalField().getOffensiveActions().get(botId);
-		if (offensiveAction != null && offensiveAction.getMove() == EOffensiveActionMove.REDIRECT_GOAL_KICK)
-		{
-			return 0.2;
-		}
-		return 0;
-	}
-
-
 	@Override
 	public OffensiveAction calcAction(BotID botId)
 	{
@@ -78,7 +66,6 @@ public class RedirectGoalKickActionMove extends AOffensiveActionMove
 		return OffensiveAction.builder()
 				.move(EOffensiveActionMove.REDIRECT_GOAL_KICK)
 				.viability(calcViability(botId, goalKick))
-				.action(EOffensiveAction.REDIRECT)
 				.kick(goalKick == null ? null : goalKick.getKick())
 				.build();
 	}

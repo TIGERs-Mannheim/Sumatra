@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.autoreferee.engine.detector;
 
@@ -14,7 +14,7 @@ import edu.tigers.sumatra.wp.data.ITrackedBot;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 
-import java.util.IdentityHashMap;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -32,11 +32,11 @@ public class BotStopSpeedDetector extends AGameEventDetector
 	@Configurable(comment = "[s] The number of milliseconds that a bot needs violate the stop speed limit to be reported (to compensate known bad vision filter detections)", defValue = "0.3")
 	private static double minViolationDuration = 0.3;
 
-	private final Map<BotID, Violator> violatorMap = new IdentityHashMap<>();
+	private final Map<BotID, Violator> violatorMap = new HashMap<>();
 	/**
 	 * Rules state: A violation of this rule is only counted once per robot and stoppage.
 	 */
-	private final Map<BotID, Boolean> infringementRecordedThisStopPhase = new IdentityHashMap<>();
+	private final Map<BotID, Boolean> infringementRecordedThisStopPhase = new HashMap<>();
 	private long entryTime;
 	private long lastGameEventRaised;
 

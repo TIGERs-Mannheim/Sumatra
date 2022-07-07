@@ -17,8 +17,8 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class OffensiveConstants
 {
-	@Configurable(defValue = "0.6")
-	private static double minBotShouldDoGoalShotScore = 0.6;
+	@Configurable(defValue = "0.3")
+	private static double minBotShouldDoGoalShotScore = 0.3;
 
 	@Configurable(comment = "The maximum reasonable angle [rad] for redirects", defValue = "1.2")
 	private static double maximumReasonableRedirectAngle = 1.2;

@@ -1,15 +1,8 @@
 /*
- * Copyright (c) 2009 - 2019, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.botparams.presenter;
 
-import java.awt.Component;
-
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import edu.tigers.moduli.exceptions.ModuleNotFoundException;
-import edu.tigers.moduli.listenerVariables.ModulesState;
 import edu.tigers.sumatra.bot.params.BotParams;
 import edu.tigers.sumatra.botparams.BotParamsDatabase.IBotParamsDatabaseObserver;
 import edu.tigers.sumatra.botparams.BotParamsManager;
@@ -17,74 +10,42 @@ import edu.tigers.sumatra.botparams.EBotParamLabel;
 import edu.tigers.sumatra.botparams.view.TeamEditor;
 import edu.tigers.sumatra.botparams.view.TeamEditor.ITeamEditorObserver;
 import edu.tigers.sumatra.model.SumatraModel;
-import edu.tigers.sumatra.views.ASumatraViewPresenter;
-import edu.tigers.sumatra.views.ISumatraView;
+import edu.tigers.sumatra.views.ISumatraViewPresenter;
+import lombok.Getter;
+import lombok.extern.log4j.Log4j2;
 
 
 /**
  * Presenter for bot parameter view.
  */
-public class BotParamsPresenter extends ASumatraViewPresenter
-		implements ISumatraView, ITeamEditorObserver, IBotParamsDatabaseObserver
+@Log4j2
+public class BotParamsPresenter
+		implements ISumatraViewPresenter, ITeamEditorObserver, IBotParamsDatabaseObserver
 {
-	private static final Logger log = LogManager.getLogger(BotParamsPresenter.class.getName());
-
+	@Getter
+	private final TeamEditor viewPanel = new TeamEditor();
 	private BotParamsManager paramsManager;
-	private TeamEditor editor = new TeamEditor();
 
 
 	@Override
-	public Component getComponent()
+	public void onStartModuli()
 	{
-		return editor;
-	}
-
-
-	@Override
-	public ISumatraView getSumatraView()
-	{
-		return this;
-	}
-
-
-	@Override
-	public void onModuliStateChanged(final ModulesState state)
-	{
-		super.onModuliStateChanged(state);
-		switch (state)
-		{
-			case ACTIVE:
-				moduliStateChangedActive();
-				break;
-			case RESOLVED:
-				moduliStateChangedResolved();
-				break;
-			case NOT_LOADED:
-			default:
-				break;
-		}
-	}
-
-
-	private void moduliStateChangedResolved()
-	{
-		editor.removeObserver(this);
-		editor.clear();
-	}
-
-
-	private void moduliStateChangedActive()
-	{
-		try
-		{
-			paramsManager = SumatraModel.getInstance().getModule(BotParamsManager.class);
-			editor.setDatabase(paramsManager.getDatabase());
-			editor.addObserver(this);
+		ISumatraViewPresenter.super.onStartModuli();
+		SumatraModel.getInstance().getModuleOpt(BotParamsManager.class).ifPresent(pm -> {
+			paramsManager = pm;
+			viewPanel.setDatabase(paramsManager.getDatabase());
+			viewPanel.addObserver(this);
 			paramsManager.getDatabase().addObserver(this);
-		} catch (ModuleNotFoundException err)
-		{
-			log.error("Could not find bot params manager", err);
-		}
+		});
+	}
+
+
+	@Override
+	public void onStopModuli()
+	{
+		ISumatraViewPresenter.super.onStopModuli();
+		viewPanel.removeObserver(this);
+		viewPanel.clear();
 	}
 
 
@@ -119,7 +80,7 @@ public class BotParamsPresenter extends ASumatraViewPresenter
 	@Override
 	public void onEntryAdded(final String entry, final BotParams newParams)
 	{
-		editor.setDatabase(paramsManager.getDatabase());
+		viewPanel.setDatabase(paramsManager.getDatabase());
 	}
 
 
@@ -129,7 +90,7 @@ public class BotParamsPresenter extends ASumatraViewPresenter
 		if (newParams == null)
 		{
 			// team deleted => update whole table
-			editor.setDatabase(paramsManager.getDatabase());
+			viewPanel.setDatabase(paramsManager.getDatabase());
 		}
 	}
 
@@ -137,6 +98,6 @@ public class BotParamsPresenter extends ASumatraViewPresenter
 	@Override
 	public void onBotParamLabelUpdated(final EBotParamLabel label, final String newEntry)
 	{
-		editor.setSelectedTeamForLabel(label, newEntry);
+		viewPanel.setSelectedTeamForLabel(label, newEntry);
 	}
 }

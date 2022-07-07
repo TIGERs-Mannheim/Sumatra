@@ -1,19 +1,19 @@
 /*
- * Copyright (c) 2009 - 2019, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.persistence;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import com.sleepycat.je.CursorConfig;
 import com.sleepycat.persist.EntityCursor;
 import com.sleepycat.persist.EntityStore;
 import com.sleepycat.persist.PrimaryIndex;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.function.Consumer;
 
 
 /**
@@ -67,7 +67,7 @@ public class BerkeleyAccessor<T> implements IBerkeleyAccessor<T>
 			frameByTimestamp.put(element);
 		} catch (Exception err)
 		{
-			log.error("Could not write element: " + element, err);
+			log.error("Could not write element: {}", element, err);
 		}
 	}
 
@@ -81,6 +81,16 @@ public class BerkeleyAccessor<T> implements IBerkeleyAccessor<T>
 			return null;
 		}
 		return frameByTimestamp.get(key);
+	}
+
+
+	@Override
+	public synchronized void forEach(Consumer<T> consumer)
+	{
+		try (EntityCursor<T> entities = frameByTimestamp.entities(null, CursorConfig.READ_UNCOMMITTED))
+		{
+			entities.forEach(consumer);
+		}
 	}
 
 

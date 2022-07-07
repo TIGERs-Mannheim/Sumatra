@@ -1,11 +1,10 @@
 /*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.presenter.sim;
 
 import edu.tigers.moduli.exceptions.ModuleNotFoundException;
-import edu.tigers.moduli.listenerVariables.ModulesState;
 import edu.tigers.sumatra.clock.FpsCounter;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.BotID;
@@ -23,23 +22,28 @@ import edu.tigers.sumatra.sim.SumatraSimulator;
 import edu.tigers.sumatra.snapshot.Snapshot;
 import edu.tigers.sumatra.snapshot.SnapshotController;
 import edu.tigers.sumatra.util.GUIUtilities;
+import edu.tigers.sumatra.util.GlobalShortcuts;
 import edu.tigers.sumatra.view.sim.SimulationBotMgrPanel;
 import edu.tigers.sumatra.view.sim.SimulationPanel;
 import edu.tigers.sumatra.view.sim.SimulationPanel.ISimulationPanelObserver;
-import edu.tigers.sumatra.views.ASumatraViewPresenter;
-import edu.tigers.sumatra.views.ISumatraView;
+import edu.tigers.sumatra.views.ISumatraViewPresenter;
 import edu.tigers.sumatra.wp.AWorldPredictor;
 import edu.tigers.sumatra.wp.IWorldFrameObserver;
 import edu.tigers.sumatra.wp.data.WorldFrameWrapper;
+import lombok.Getter;
 import lombok.extern.log4j.Log4j2;
 import org.json.simple.parser.ParseException;
 
-import java.awt.Component;
+import javax.swing.JFileChooser;
+import javax.swing.KeyStroke;
 import java.awt.Toolkit;
 import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.Transferable;
 import java.awt.datatransfer.UnsupportedFlavorException;
+import java.awt.event.InputEvent;
+import java.awt.event.KeyEvent;
+import java.io.File;
 import java.io.IOException;
 import java.util.Optional;
 
@@ -48,72 +52,81 @@ import java.util.Optional;
  * Presenter for the simulator view.
  */
 @Log4j2
-public class SimulationPresenter extends ASumatraViewPresenter
-		implements ISimulationPanelObserver, IWorldFrameObserver, SimulationBotMgrPanel.ISimulationBotMgrObserver,
+public class SimulationPresenter
+		implements ISumatraViewPresenter, ISimulationPanelObserver, IWorldFrameObserver,
+		SimulationBotMgrPanel.ISimulationBotMgrObserver,
 		ISimulatorObserver
 {
-	private final SimulationPanel simPanel = new SimulationPanel();
-	private final SnapshotController snapshotController = new SnapshotController(simPanel);
+	@Getter
+	private final SimulationPanel viewPanel = new SimulationPanel();
+	private final SnapshotController snapshotController = new SnapshotController(viewPanel);
 	private final FpsCounter realTimeFpsCounter = new FpsCounter();
 	private final FpsCounter frameTimeFpsCounter = new FpsCounter();
+
+	private static final int NO_SLOW_MOTION = Integer.MIN_VALUE;
+	private static final int SLOW_MOTION_SPEED = -6;
+	private int oldSpeed = NO_SLOW_MOTION;
 
 
 	public SimulationPresenter()
 	{
-		GUIUtilities.setEnabledRecursive(simPanel, false);
-	}
-
-
-	private void activate()
-	{
-		simPanel.reset();
-
-		SumatraModel.getInstance().getModuleOpt(AWorldPredictor.class).ifPresent(o -> o.addObserver(this));
-		SumatraModel.getInstance().getModuleOpt(SumatraSimulator.class).ifPresent(s -> s.addSimulatorObserver(this));
-
-		simPanel.addObserver(this);
-		GUIUtilities.setEnabledRecursive(simPanel, true);
-		simPanel.getBotMgrPanel().addObserver(this);
-
-		SumatraModel.getInstance().getModuleOpt(SumatraSimulator.class).ifPresent(
-				simulator -> simPanel.getBotMgrPanel().getAutoBotCount().setSelected(simulator.getManageBotCount()));
-
-		BotID.getAll().forEach(id -> {
-			String key = SimulationPresenter.class.getCanonicalName() + ".bots." + id;
-			boolean checked = Boolean.parseBoolean(SumatraModel.getInstance().getUserProperty(key, "false"));
-			if (checked)
-			{
-				onAddBot(id);
-			}
-		});
+		GUIUtilities.setEnabledRecursive(viewPanel, false);
 	}
 
 
 	@Override
-	public void onModuliStateChanged(final ModulesState state)
+	public void onStartModuli()
 	{
-		super.onModuliStateChanged(state);
-		switch (state)
-		{
-			case ACTIVE:
-				activate();
-				break;
-			case RESOLVED:
-				deactivate();
-				break;
-			case NOT_LOADED:
-			default:
-				break;
-		}
+		ISumatraViewPresenter.super.onStartModuli();
+
+		viewPanel.reset();
+
+		SumatraModel.getInstance().getModuleOpt(AWorldPredictor.class).ifPresent(o -> o.addObserver(this));
+		SumatraModel.getInstance().getModuleOpt(SumatraSimulator.class).ifPresent(s -> s.addSimulatorObserver(this));
+
+		viewPanel.addObserver(this);
+		GUIUtilities.setEnabledRecursive(viewPanel, true);
+		viewPanel.getBotMgrPanel().addObserver(this);
+
+		SumatraModel.getInstance().getModuleOpt(SumatraSimulator.class).ifPresent(
+				simulator -> viewPanel.getBotMgrPanel().getAutoBotCount().setSelected(simulator.getManageBotCount()));
+
+		GlobalShortcuts.add(
+				"Play / Pause", viewPanel, this::onToggleSimulation,
+				KeyStroke.getKeyStroke(KeyEvent.VK_P, InputEvent.CTRL_DOWN_MASK));
+		GlobalShortcuts.add(
+				"Slow motion", viewPanel, this::onToggleSlowMotion,
+				KeyStroke.getKeyStroke(KeyEvent.VK_T, InputEvent.CTRL_DOWN_MASK));
+		GlobalShortcuts.add(
+				"Step Back (single Frame)", viewPanel, this::onStepBwd,
+				KeyStroke.getKeyStroke(KeyEvent.VK_LEFT, InputEvent.CTRL_DOWN_MASK));
+		GlobalShortcuts.add(
+				"Step Forward (single Frame)", viewPanel, this::onStep,
+				KeyStroke.getKeyStroke(KeyEvent.VK_RIGHT, InputEvent.CTRL_DOWN_MASK));
+		GlobalShortcuts.add(
+				"Save Snapshot to File", viewPanel, this::onSaveSnapshot,
+				KeyStroke.getKeyStroke(KeyEvent.VK_S, InputEvent.CTRL_DOWN_MASK));
+		GlobalShortcuts.add(
+				"Open Snapshot from File", viewPanel, this::onLoadSnapshot,
+				KeyStroke.getKeyStroke(KeyEvent.VK_O, InputEvent.CTRL_DOWN_MASK));
+		GlobalShortcuts.add(
+				"Copy Snapshot to clipboard", viewPanel, this::onCopySnapshot,
+				KeyStroke.getKeyStroke(KeyEvent.VK_C, InputEvent.CTRL_DOWN_MASK | InputEvent.SHIFT_DOWN_MASK));
+		GlobalShortcuts.add(
+				"Paste Snapshot from Clipboard", viewPanel, this::onPasteSnapshot,
+				KeyStroke.getKeyStroke(KeyEvent.VK_V, InputEvent.CTRL_DOWN_MASK | InputEvent.SHIFT_DOWN_MASK));
 	}
 
 
-	private void deactivate()
+	@Override
+	public void onStopModuli()
 	{
-		simPanel.removeObserver(this);
-		simPanel.getBotMgrPanel().removeObserver(this);
-		GUIUtilities.setEnabledRecursive(simPanel, false);
-		simPanel.reset();
+		ISumatraViewPresenter.super.onStopModuli();
+
+		viewPanel.removeObserver(this);
+		viewPanel.getBotMgrPanel().removeObserver(this);
+		GUIUtilities.setEnabledRecursive(viewPanel, false);
+		viewPanel.reset();
 
 		SumatraModel.getInstance().getModuleOpt(AWorldPredictor.class).ifPresent(o -> o.removeObserver(this));
 		SumatraModel.getInstance().getModuleOpt(SumatraSimulator.class).ifPresent(s -> s.removeSimulatorObserver(this));
@@ -121,30 +134,37 @@ public class SimulationPresenter extends ASumatraViewPresenter
 
 
 	@Override
-	public Component getComponent()
+	public void onToggleSimulation()
 	{
-		return simPanel;
+		SumatraModel.getInstance().getModuleOpt(SumatraSimulator.class).ifPresent(s -> {
+			if (s.isRunning())
+			{
+				s.pause();
+			} else
+			{
+				s.resume();
+			}
+			viewPanel.getBtnToggleSim().setSelected(s.isRunning());
+		});
 	}
 
 
 	@Override
-	public ISumatraView getSumatraView()
+	public void onToggleSlowMotion()
 	{
-		return simPanel;
-	}
-
-
-	@Override
-	public void onPauseSimulation()
-	{
-		SumatraModel.getInstance().getModuleOpt(SumatraSimulator.class).ifPresent(SumatraSimulator::pause);
-	}
-
-
-	@Override
-	public void onResumeSimulation()
-	{
-		SumatraModel.getInstance().getModuleOpt(SumatraSimulator.class).ifPresent(SumatraSimulator::resume);
+		if (oldSpeed == NO_SLOW_MOTION)
+		{
+			oldSpeed = viewPanel.getSliderSpeed().getValue();
+			viewPanel.getSliderSpeed().setValue(SLOW_MOTION_SPEED);
+			viewPanel.getSliderSpeed().setEnabled(false);
+			viewPanel.getBtnSlowmotion().setSelected(true);
+		} else
+		{
+			viewPanel.getSliderSpeed().setValue(oldSpeed);
+			oldSpeed = NO_SLOW_MOTION;
+			viewPanel.getSliderSpeed().setEnabled(true);
+			viewPanel.getBtnSlowmotion().setSelected(false);
+		}
 	}
 
 
@@ -156,14 +176,14 @@ public class SimulationPresenter extends ASumatraViewPresenter
 
 
 	@Override
-	public void onStep(final int i)
+	public void onStep()
 	{
 		SumatraModel.getInstance().getModuleOpt(SumatraSimulator.class).ifPresent(SumatraSimulator::step);
 	}
 
 
 	@Override
-	public void onStepBwd(final int i)
+	public void onStepBwd()
 	{
 		SumatraModel.getInstance().getModuleOpt(SumatraSimulator.class).ifPresent(SumatraSimulator::stepBack);
 	}
@@ -229,18 +249,33 @@ public class SimulationPresenter extends ASumatraViewPresenter
 
 
 	@Override
-	public void onLoadSnapshot(final String path)
+	public void onLoadSnapshot()
 	{
-		try
+		var lastSnapshotFile = SumatraModel.getInstance()
+				.getUserProperty(SimulationPresenter.class.getCanonicalName() + ".snapshot.last",
+						"data/snapshot/last.snap");
+		var lastSnapshotDir = new File(lastSnapshotFile).getParentFile();
+		if (lastSnapshotDir.mkdirs())
 		{
-			Snapshot snapshot = Snapshot.loadFromFile(path);
-			SimulationHelper.loadSimulation(snapshot);
-		} catch (IOException e)
+			log.info("New directory created: {}", lastSnapshotDir);
+		}
+
+		var fcOpenSnapshot = new JFileChooser(lastSnapshotDir);
+		fcOpenSnapshot.setSelectedFile(new File(lastSnapshotFile));
+
+		int returnVal = fcOpenSnapshot.showOpenDialog(viewPanel);
+
+		if (returnVal == JFileChooser.APPROVE_OPTION)
 		{
-			log.error("Could not load snapshot", e);
-		} catch (ModuleNotFoundException e)
-		{
-			log.error("Could not find module.", e);
+			try
+			{
+				String path = fcOpenSnapshot.getSelectedFile().getCanonicalPath();
+				Snapshot snapshot = Snapshot.loadFromFile(path);
+				SimulationHelper.loadSimulation(snapshot);
+			} catch (IOException e)
+			{
+				log.error("Could not load snapshot", e);
+			}
 		}
 	}
 
@@ -259,8 +294,8 @@ public class SimulationPresenter extends ASumatraViewPresenter
 		frameTimeFpsCounter.newFrame(wFrameWrapper.getTimestamp());
 		double relTime = realTimeFpsCounter.getAvgFps() / frameTimeFpsCounter.getAvgFps();
 
-		simPanel.updateRelativeTime(relTime);
-		simPanel.updateTime(wFrameWrapper.getSimpleWorldFrame().getTimestamp());
+		viewPanel.updateRelativeTime(relTime);
+		viewPanel.updateTime(wFrameWrapper.getSimpleWorldFrame().getTimestamp());
 	}
 
 
@@ -270,7 +305,7 @@ public class SimulationPresenter extends ASumatraViewPresenter
 		final Optional<SumatraSimulator> sim = SumatraModel.getInstance().getModuleOpt(SumatraSimulator.class);
 		if (sim.isEmpty())
 		{
-			simPanel.getBotMgrPanel().setBotAvailable(botID, false);
+			viewPanel.getBotMgrPanel().setBotAvailable(botID, false);
 			return;
 		}
 		final int preFactor = (botID.getTeamColor() == ETeamColor.BLUE) ? -1 : 1;
@@ -280,9 +315,6 @@ public class SimulationPresenter extends ASumatraViewPresenter
 
 		sim.ifPresent(
 				s -> s.registerBot(botID, Pose.from(positionOnField, orientation), Vector3.fromXYZ(0, 0, 0)));
-
-		String key = SimulationPresenter.class.getCanonicalName() + ".bots." + botID;
-		SumatraModel.getInstance().setUserProperty(key, "true");
 	}
 
 
@@ -292,13 +324,10 @@ public class SimulationPresenter extends ASumatraViewPresenter
 		final Optional<SumatraSimulator> sim = SumatraModel.getInstance().getModuleOpt(SumatraSimulator.class);
 		if (sim.isEmpty())
 		{
-			simPanel.getBotMgrPanel().setBotAvailable(botID, true);
+			viewPanel.getBotMgrPanel().setBotAvailable(botID, true);
 			return;
 		}
 		sim.ifPresent(s -> s.unregisterBot(botID));
-
-		String key = SimulationPresenter.class.getCanonicalName() + ".bots." + botID;
-		SumatraModel.getInstance().setUserProperty(key, "false");
 	}
 
 
@@ -314,13 +343,13 @@ public class SimulationPresenter extends ASumatraViewPresenter
 	@Override
 	public void onBotAdded(final BotID botID)
 	{
-		simPanel.getBotMgrPanel().setBotAvailable(botID, true);
+		viewPanel.getBotMgrPanel().setBotAvailable(botID, true);
 	}
 
 
 	@Override
 	public void onBotRemove(final BotID botID)
 	{
-		simPanel.getBotMgrPanel().setBotAvailable(botID, false);
+		viewPanel.getBotMgrPanel().setBotAvailable(botID, false);
 	}
 }

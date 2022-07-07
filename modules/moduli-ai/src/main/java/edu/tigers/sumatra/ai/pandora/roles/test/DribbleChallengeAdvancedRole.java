@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.pandora.roles.test;
@@ -24,6 +24,7 @@ import edu.tigers.sumatra.skillsystem.skills.ESkillState;
 import edu.tigers.sumatra.skillsystem.skills.GetBallContactSkill;
 import edu.tigers.sumatra.skillsystem.skills.MoveToSkill;
 import edu.tigers.sumatra.skillsystem.skills.MoveWithBallSkill;
+import edu.tigers.sumatra.skillsystem.skills.util.EDribblerMode;
 import edu.tigers.sumatra.skillsystem.skills.util.KickParams;
 import edu.tigers.sumatra.statemachine.AState;
 import edu.tigers.sumatra.statemachine.IEvent;
@@ -46,8 +47,8 @@ import java.util.stream.IntStream;
  */
 public class DribbleChallengeAdvancedRole extends ARole
 {
-	@Configurable(comment = "Connecting arc radius between straight line segments [m]", defValue = "0.25")
-	private static double arcRadius = 0.25;
+	@Configurable(comment = "Connecting arc radius between straight line segments [m]", defValue = "0.2")
+	private static double arcRadius = 0.2;
 
 	@Configurable(comment = "Maximum velocity [m/s]", defValue = "2.0")
 	private static double velMax = 2.0;
@@ -57,9 +58,6 @@ public class DribbleChallengeAdvancedRole extends ARole
 
 	@Configurable(comment = "Maximum angular velocity [rad/s]", defValue = "2.5")
 	private static double velMaxW = 2.5;
-
-	@Configurable(comment = "Dribble speed [rpm]", defValue = "15000.0")
-	private static double dribbleSpeed = 15000.0;
 
 	private List<ILine> gates = new ArrayList<>();
 	private List<IVector2> obstacles = new ArrayList<>();
@@ -177,7 +175,7 @@ public class DribbleChallengeAdvancedRole extends ARole
 					if (i == gates.size() - 1)
 					{
 						finalWaypoints.add(passpoint.addNew(gate.directionVector().turnNew(-rotation).scaleTo(150.0)));
-						finalWaypoints.add(passpoint.addNew(gate.directionVector().turnNew(rotation).scaleTo(500.0)));
+						finalWaypoints.add(passpoint.addNew(gate.directionVector().turnNew(rotation).scaleTo(250.0)));
 					}
 				}
 			}
@@ -275,7 +273,7 @@ public class DribbleChallengeAdvancedRole extends ARole
 			moveTo = new MoveToSkill();
 			moveTo.updateTargetAngle(targetAngle);
 			moveTo.updateDestination(target);
-			moveTo.setKickParams(KickParams.disarm().withDribbleSpeed(dribbleSpeed));
+			moveTo.setKickParams(KickParams.disarm().withDribblerMode(EDribblerMode.HIGH_POWER));
 			moveTo.getMoveCon().physicalObstaclesOnly();
 			moveTo.getMoveCon().setBotsObstacle(false);
 			moveTo.getMoveCon().setBallObstacle(false);
@@ -330,7 +328,7 @@ public class DribbleChallengeAdvancedRole extends ARole
 			moveTo = new MoveToSkill();
 			moveTo.updateLookAtTarget(nextWp);
 			moveTo.updateDestination(nextWp);
-			moveTo.setKickParams(KickParams.disarm().withDribbleSpeed(dribbleSpeed));
+			moveTo.setKickParams(KickParams.disarm().withDribblerMode(EDribblerMode.HIGH_POWER));
 			moveTo.getMoveCon().physicalObstaclesOnly();
 			moveTo.getMoveCon().setBotsObstacle(false);
 			moveTo.getMoveCon().setBallObstacle(false);

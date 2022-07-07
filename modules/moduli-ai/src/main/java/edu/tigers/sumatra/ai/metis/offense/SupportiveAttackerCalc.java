@@ -83,7 +83,7 @@ public class SupportiveAttackerCalc extends ACalculator
 
 	private boolean redirectDetectionRequiresSupportiveAttacker()
 	{
-		RedirectorDetectionInformation rInfo = redirectorDetectionInformation.get();
+		var rInfo = redirectorDetectionInformation.get();
 		// DISRUPT_OPPONENT: The disrupt is done by the attacker, but an additional supportive attacker is also added
 		// DOUBLE_ATTACKER: Add a supportive attacker that supports the attacker
 		return rInfo.getRecommendedAction() == ERecommendedReceiverAction.DISRUPT_OPPONENT ||

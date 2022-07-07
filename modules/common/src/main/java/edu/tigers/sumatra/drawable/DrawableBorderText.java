@@ -1,29 +1,34 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.drawable;
 
 import com.sleepycat.persist.model.Persistent;
 import edu.tigers.sumatra.math.vector.IVector2;
-import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.math.vector.Vector2f;
 import edu.tigers.sumatra.util.ScalingUtil;
+import lombok.RequiredArgsConstructor;
+import lombok.Setter;
+import lombok.experimental.Accessors;
 
-import java.awt.Color;
 import java.awt.Font;
 import java.awt.Graphics2D;
 
 
 /**
- * @author Nicolai Ommer <nicolai.ommer@gmail.com>
+ * Draw text on the borders (detached from the field).
  */
 @Persistent
-public class DrawableBorderText implements IDrawableShape
+@RequiredArgsConstructor
+public class DrawableBorderText extends ADrawable
 {
+	public static final int BORDER_TEXT_WIDTH = 750;
+
 	private final IVector2 pos;
 	private final String text;
-	private final Color color;
-	private EFontSize fontSizeType = EFontSize.SMALL;
+	@Setter
+	@Accessors(chain = true)
+	private EFontSize fontSize = EFontSize.SMALL;
 
 
 	@SuppressWarnings("unused")
@@ -31,52 +36,21 @@ public class DrawableBorderText implements IDrawableShape
 	{
 		pos = Vector2f.ZERO_VECTOR;
 		text = "";
-		color = Color.red;
-	}
-
-
-	/**
-	 * @param pos
-	 * @param text
-	 * @param color
-	 */
-	public DrawableBorderText(final IVector2 pos, final String text, final Color color)
-	{
-		this.pos = pos;
-		this.text = text;
-		this.color = color;
 	}
 
 
 	@Override
-	public void paintShape(final Graphics2D g, final IDrawableTool tool, final boolean invert)
+	public void paintBorder(Graphics2D g, int width, int height)
 	{
-		final IVector2 transPoint = Vector2.fromXY(ScalingUtil.scale(pos.x()), ScalingUtil.scale(pos.y()));
-		int pointSize = 3;
-		final int drawingX = (int) transPoint.x() - (pointSize / 2);
-		final int drawingY = (int) transPoint.y() - (pointSize / 2);
+		super.paintBorder(g, width, height);
 
-		int fontSize = ScalingUtil.getFontSize(fontSizeType);
-		Font font = new Font("", Font.PLAIN, fontSize);
+		double scale = (double) width / BORDER_TEXT_WIDTH;
+		int x = (int) (ScalingUtil.scale(pos.x()) * scale);
+		int y = (int) (ScalingUtil.scale(pos.y()) * scale);
+		int scaledFontSize = (int) (ScalingUtil.getFontSize(this.fontSize) * scale);
+
+		Font font = new Font("", Font.PLAIN, scaledFontSize);
 		g.setFont(font);
-		g.setColor(color);
-		g.drawString(text, drawingX, drawingY);
-	}
-
-
-	/**
-	 * @param fontSizeType the fontSize to set
-	 */
-	public final DrawableBorderText setFontSize(final EFontSize fontSizeType)
-	{
-		this.fontSizeType = fontSizeType;
-		return this;
-	}
-
-
-	@Override
-	public boolean isBorderText()
-	{
-		return true;
+		g.drawString(text, x, y);
 	}
 }

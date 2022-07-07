@@ -1,8 +1,13 @@
 /*
- * Copyright (c) 2009 - 2019, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.export;
+
+import edu.tigers.sumatra.data.collector.IExportable;
+import org.apache.commons.lang.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.io.Closeable;
 import java.io.File;
@@ -14,12 +19,6 @@ import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.util.Collection;
 import java.util.Date;
-
-import org.apache.commons.lang.StringUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import edu.tigers.sumatra.data.collector.IExportable;
 
 
 /**
@@ -50,13 +49,26 @@ public final class CSVExporter implements Closeable
 
 
 	/**
-	 * @param folder the target folder
+	 * @param folder       the target folder
 	 * @param baseFileName subtract-dir and name of exported file without .csv ending
-	 * @param mode the write mode
+	 * @param mode         the write mode
 	 */
 	public CSVExporter(final String folder, final String baseFileName, final EMode mode)
 	{
 		this.folder = Paths.get(folder);
+		this.mode = mode;
+		this.fileName = getFileName(baseFileName);
+	}
+
+
+	/**
+	 * @param folder       the target folder
+	 * @param baseFileName subtract-dir and name of exported file without .csv ending
+	 * @param mode         the write mode
+	 */
+	public CSVExporter(final Path folder, final String baseFileName, final EMode mode)
+	{
+		this.folder = folder;
 		this.mode = mode;
 		this.fileName = getFileName(baseFileName);
 	}
@@ -94,9 +106,9 @@ public final class CSVExporter implements Closeable
 
 
 	/**
-	 * @param folder the target folder
+	 * @param folder   the target folder
 	 * @param fileName the target file name
-	 * @param list the list of data entries
+	 * @param list     the list of data entries
 	 */
 	public static void exportCollection(
 			final String folder,
@@ -115,7 +127,7 @@ public final class CSVExporter implements Closeable
 	 *
 	 * @param values list of values. note: count of values has to match the header
 	 */
-	public void addValues(final Collection<? extends Number> values)
+	public void addValues(final Collection<?> values)
 	{
 		try
 		{

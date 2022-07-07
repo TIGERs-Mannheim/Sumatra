@@ -7,5 +7,6 @@ package edu.tigers.sumatra.ai.metis.offense.dribble;
 public enum EDribblingCondition
 {
 	DEFAULT,
-	REPOSITION
+	REPOSITION,
+	DRIBBLING_KICK,
 }

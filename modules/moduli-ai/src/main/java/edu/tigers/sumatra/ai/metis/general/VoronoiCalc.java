@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.metis.general;
@@ -179,7 +179,7 @@ public class VoronoiCalc extends ACalculator
 				validAndFreeCircles.add(circle);
 			}
 		}
-		return validAndFreeCircles;
+		return Collections.unmodifiableList(validAndFreeCircles);
 	}
 
 

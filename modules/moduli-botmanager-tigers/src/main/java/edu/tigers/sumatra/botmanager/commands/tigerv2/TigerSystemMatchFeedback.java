@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.botmanager.commands.tigerv2;
 
@@ -55,7 +55,7 @@ public class TigerSystemMatchFeedback extends ACommand implements IExportable
 	 * [rpm/100]
 	 */
 	@SerialData(type = ESerialDataType.UINT8)
-	private int dribblerSpeed;
+	private int dribblerState;
 	/**
 	 * [dV]
 	 */
@@ -115,6 +115,7 @@ public class TigerSystemMatchFeedback extends ACommand implements IExportable
 		nbrs.addAll(getBallPosition().getNumberList());
 		nbrs.add(isBallPositionValid() ? 1 : 0);
 		nbrs.add(getKickerPercentage());
+		nbrs.add(getDribblerCurrent());
 		return nbrs;
 	}
 
@@ -124,7 +125,7 @@ public class TigerSystemMatchFeedback extends ACommand implements IExportable
 	{
 		return Arrays.asList("pos_x", "pos_y", "pos_z", "vel_x", "vel_y", "vel_z", "pos_valid", "vel_valid",
 				"kickerLevel", "dribbleSpeed", "batteryPercentage", "barrierInterrupted", "kickCounter", "dribblerState",
-				"features", "ball_x", "ball_y", "ball_valid", "kickerPercentage");
+				"features", "ball_x", "ball_y", "ball_valid", "kickerPercentage", "dribbleCurrent");
 	}
 
 
@@ -275,7 +276,27 @@ public class TigerSystemMatchFeedback extends ACommand implements IExportable
 	 */
 	public double getDribblerSpeed()
 	{
-		return dribblerSpeed * 100.0;
+		return (dribblerState >> 2) * 500.0;
+	}
+
+
+	/**
+	 * @return dribbler current in [A]
+	 */
+	public double getDribblerCurrent()
+	{
+		return (((flags & 0x0F) << 2) | (dribblerState & 0x03)) * 0.25;
+	}
+
+
+	public void setDribblerCurrent(final double current)
+	{
+		int bits = (int) ((current + 0.125) * 4.0);
+
+		dribblerState &= 0xFC;
+		dribblerState |= bits & 0x03;
+		flags &= 0xF0;
+		flags |= (bits >> 2) & 0x0F;
 	}
 
 
@@ -324,13 +345,13 @@ public class TigerSystemMatchFeedback extends ACommand implements IExportable
 
 
 	/**
-	 * Counter is incremented for every executed kick.
+	 * Counter is flipped for every executed kick.
 	 *
 	 * @return
 	 */
 	public int getKickCounter()
 	{
-		return flags & 0x1F;
+		return flags & 0x10;
 	}
 
 
@@ -436,7 +457,8 @@ public class TigerSystemMatchFeedback extends ACommand implements IExportable
 	 */
 	public void setDribblerSpeed(final double dribblerSpeed)
 	{
-		this.dribblerSpeed = (int) (dribblerSpeed / 100.0);
+		dribblerState &= 0x03;
+		dribblerState |= ((int) ((dribblerSpeed + 250.0) / 500.0)) << 2;
 	}
 
 

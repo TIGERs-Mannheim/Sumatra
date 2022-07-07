@@ -12,17 +12,17 @@ import com.sleepycat.persist.model.Persistent;
 @Persistent
 public class BotMovementLimits implements IBotMovementLimits
 {
-	private double velMax = 2;
-	private double accMax = 3;
-	private double brkMax = 6;
-	private double jerkMax = 20;
+	private double velMax = 0.1;
+	private double accMax = 0.1;
+	private double brkMax = 0.1;
+	private double jerkMax = 0.1;
 
-	private double velMaxW = 20;
-	private double accMaxW = 50;
-	private double jerkMaxW = 1000;
+	private double velMaxW = 0.1;
+	private double accMaxW = 0.1;
+	private double jerkMaxW = 0.1;
 
-	private double velMaxFast = 3;
-	private double accMaxFast = 4;
+	private double velMaxFast = 0.1;
+	private double accMaxFast = 0.1;
 
 
 	/**

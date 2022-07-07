@@ -1,21 +1,19 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.wp;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-
+import com.sleepycat.persist.model.Entity;
+import com.sleepycat.persist.model.PrimaryKey;
+import edu.tigers.sumatra.drawable.ShapeMap;
+import edu.tigers.sumatra.drawable.ShapeMapSource;
 import org.apache.commons.lang.builder.ToStringBuilder;
 import org.apache.commons.lang.builder.ToStringStyle;
 
-import com.sleepycat.persist.model.Entity;
-import com.sleepycat.persist.model.PrimaryKey;
-
-import edu.tigers.sumatra.drawable.ShapeMap;
-import edu.tigers.sumatra.drawable.ShapeMapSource;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 
 @Entity(version = 1)
@@ -24,8 +22,6 @@ public class BerkeleyShapeMapFrame
 	@PrimaryKey
 	private final long timestamp;
 
-	/** Old map for compatibility to older DBs */
-	private Map<String, ShapeMap> shapeMaps = null;
 	private final Map<ShapeMapSource, ShapeMap> shapeMapsBySource = new HashMap<>();
 
 
@@ -56,24 +52,7 @@ public class BerkeleyShapeMapFrame
 
 	public Map<ShapeMapSource, ShapeMap> getShapeMaps()
 	{
-		if (shapeMaps != null)
-		{
-			// conversion
-			shapeMaps.forEach((key, value) -> shapeMapsBySource.put(toSource(key), value));
-			shapeMaps = null;
-		}
 		return Collections.unmodifiableMap(shapeMapsBySource);
-	}
-
-
-	private ShapeMapSource toSource(String name)
-	{
-		if (name.startsWith("Skill"))
-		{
-			return ShapeMapSource.of(name, "Skills");
-		}
-
-		return ShapeMapSource.of(name);
 	}
 
 
@@ -82,7 +61,6 @@ public class BerkeleyShapeMapFrame
 	{
 		return new ToStringBuilder(this, ToStringStyle.SHORT_PREFIX_STYLE)
 				.append("timestamp", timestamp)
-				.append("shapeMaps", shapeMaps)
 				.append("shapeMapsBySource", shapeMapsBySource)
 				.toString();
 	}

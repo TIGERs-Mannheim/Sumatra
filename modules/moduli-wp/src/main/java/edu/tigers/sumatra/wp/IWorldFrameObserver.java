@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.wp;
 
@@ -64,19 +64,9 @@ public interface IWorldFrameObserver
 	/**
 	 * Remove shapes from given shape map source name
 	 *
-	 * @param sourceName
+	 * @param source
 	 */
-	default void onRemoveSourceFromShapeMap(String sourceName)
-	{
-	}
-
-
-	/**
-	 * Remove shapes from given shape map category
-	 *
-	 * @param category
-	 */
-	default void onRemoveCategoryFromShapeMap(String... category)
+	default void onRemoveSourceFromShapeMap(ShapeMapSource source)
 	{
 	}
 }

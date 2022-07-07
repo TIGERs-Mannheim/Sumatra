@@ -315,7 +315,7 @@ public class VisionFilterImpl extends AVisionFilter
 
 	private void processGeometryFrame(final CamGeometry geometry)
 	{
-		for (CamCalibration c : geometry.getCalibrations().values())
+		for (CamCalibration c : geometry.getCameraCalibrations().values())
 		{
 			int camId = c.getCameraId();
 			CamFilter camFilter = cams.get(camId);
@@ -333,7 +333,7 @@ public class VisionFilterImpl extends AVisionFilter
 
 		for (CamFilter c : cams.values())
 		{
-			c.update(geometry.getField());
+			c.update(geometry.getFieldSize());
 		}
 	}
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.loganalysis.eventtypes.ballpossession;
@@ -78,7 +78,7 @@ public class BallPossessionDetection implements IEventTypeDetection<BallPossessi
 				{
 					// exactly one player on ball
 
-					BotID botOnBall = currentlyTouchingBots.stream().findAny().get();
+					BotID botOnBall = currentlyTouchingBots.stream().findAny().orElseThrow();
 
 					ballPossession = new BallPossessionEventType(botOnBall.getTeamColor(),
 							currentSimpleWorldFrame.getBot(botOnBall));
@@ -127,10 +127,9 @@ public class BallPossessionDetection implements IEventTypeDetection<BallPossessi
 
 		shapes.addAll(possessionHistoryDraw);
 
-		DrawableBorderText hud = new DrawableBorderText(Vector2.fromXY(318.0, 35),
-				ballPossession.getPossessionState().toString(), Color.BLACK);
-		hud.setFontSize(EFontSize.MEDIUM);
-		shapes.add(hud);
+		shapes.add(new DrawableBorderText(Vector2.fromXY(318.0, 35),
+				ballPossession.getPossessionState().toString())
+				.setFontSize(EFontSize.MEDIUM));
 	}
 
 

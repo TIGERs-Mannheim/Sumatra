@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.metis.goal;
@@ -32,7 +32,9 @@ public class PossibleGoalCalc extends ACalculator
 	@Override
 	public boolean isCalculationNecessary()
 	{
-		return getAiFrame().getGameState().isRunning() && ballLeftFieldPositionSupplier.get() != null;
+		return (getAiFrame().getGameState().isGameRunning() ||
+				getAiFrame().getGameState().isPenalty()) &&
+				ballLeftFieldPositionSupplier.get() != null;
 	}
 
 

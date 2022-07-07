@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.skillsystem.skills;
@@ -21,8 +21,10 @@ import edu.tigers.sumatra.skillsystem.ESkillShapesLayer;
 import edu.tigers.sumatra.skillsystem.skills.util.AroundBallCalc;
 import edu.tigers.sumatra.skillsystem.skills.util.DoubleChargingValue;
 import edu.tigers.sumatra.skillsystem.skills.util.DoubleChargingValue.ChargeMode;
+import edu.tigers.sumatra.skillsystem.skills.util.EDribblerMode;
 import edu.tigers.sumatra.skillsystem.skills.util.KickParams;
 import edu.tigers.sumatra.skillsystem.skills.util.TargetAngleReachedChecker;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
@@ -38,14 +40,12 @@ public class TouchKickSkill extends ATouchKickSkill
 	@Configurable(comment = "The max margin to the ball for destinations", defValue = "20.0")
 	private static double maxMarginToBall = 20.0;
 
+	@Getter
 	@Configurable(defValue = "0.15", comment = "The approximate tolerance when the angle is considered to be reached")
 	private static double roughAngleTolerance = 0.15;
 
-	@Configurable(defValue = "1.0", comment = "The max time to wait until angle is considered reached while within tolerance")
-	private static double maxTimeTargetAngleReached = 1.0;
-
-	@Configurable(defValue = "3000.0", comment = "Constant dribble speed during kicks")
-	private static double dribbleSpeed = 3000.0;
+	@Configurable(defValue = "0.15", comment = "The max time to wait until angle is considered reached while within tolerance")
+	private static double maxTimeTargetAngleReached = 0.15;
 
 	private final TargetAngleReachedChecker targetAngleReachedChecker = new TargetAngleReachedChecker(
 			roughAngleTolerance, maxTimeTargetAngleReached);
@@ -70,6 +70,12 @@ public class TouchKickSkill extends ATouchKickSkill
 	}
 
 
+	private boolean isRoughlyFocussed()
+	{
+		return isNearBall() && targetAngleReachedChecker.isRoughlyFocussed();
+	}
+
+
 	private double getOrientationFromFilter()
 	{
 		return getTBot().getFilteredState().map(State::getOrientation).orElseGet(this::getAngle);
@@ -84,7 +90,13 @@ public class TouchKickSkill extends ATouchKickSkill
 		ballStabilizer.update(getBall(), getTBot());
 		initBallPos = ballStabilizer.getBallPos();
 		var dist2Ball = isNearBall() ? -10 : 0;
-		chargingValue = new DoubleChargingValue(dist2Ball, 200, -50, -50, 0);
+		chargingValue = new DoubleChargingValue(
+				dist2Ball,
+				200,
+				-2000,
+				-100,
+				0
+		);
 	}
 
 
@@ -112,10 +124,10 @@ public class TouchKickSkill extends ATouchKickSkill
 				getWorldFrame().getTimestamp()
 		);
 
-		chargingValue.setChargeMode(isFocused() ? ChargeMode.DECREASE : ChargeMode.INCREASE);
+		chargingValue.setChargeMode(isRoughlyFocussed() ? ChargeMode.DECREASE : ChargeMode.INCREASE);
 		chargingValue.update(getWorldFrame().getTimestamp());
 		var dist2Ball = chargingValue.getValue();
-
+		
 		IVector2 dest = AroundBallCalc
 				.aroundBall()
 				.withBallPos(getBallPosByTime(0.5))
@@ -141,8 +153,7 @@ public class TouchKickSkill extends ATouchKickSkill
 			setKickParams(KickParams.of(desiredKickParams.getDevice(), getKickSpeed()));
 		} else
 		{
-			double dribbler = desiredKickParams.getDribbleSpeed() > 0 ? desiredKickParams.getDribbleSpeed() : dribbleSpeed;
-			setKickParams(KickParams.disarm().withDribbleSpeed(dribbler));
+			setKickParams(KickParams.disarm().withDribblerMode(EDribblerMode.DEFAULT));
 		}
 
 		if (initBallPos.distanceTo(ballStabilizer.getBallPos()) > 500)
@@ -150,7 +161,7 @@ public class TouchKickSkill extends ATouchKickSkill
 			setSkillState(ESkillState.FAILURE);
 		} else if (getBall().getVel().getLength2() > maxBallSpeed)
 		{
-			if (AngleMath.difference(getBall().getVel().getAngle(), targetOrientation) < AngleMath.DEG_045_IN_RAD)
+			if (AngleMath.diffAbs(getBall().getVel().getAngle(), targetOrientation) < AngleMath.DEG_045_IN_RAD)
 			{
 				setSkillState(ESkillState.SUCCESS);
 			} else
@@ -179,7 +190,8 @@ public class TouchKickSkill extends ATouchKickSkill
 		var orientationOffset = Vector2.fromAngleLength(orientation, targetLine.getLength());
 		var currentOrientationLine = Lines.segmentFromOffset(getPos(), orientationOffset);
 		var teamColor = getBotId().getTeamColor().getColor();
-		var angleDiffTxt = String.format("%.2f -> %s", angleDiff, isFocused() ? "focused" : "unfocused");
+		var focusedTxt = isFocused() ? "focused" : isRoughlyFocussed() ? "roughly focussed" : "unfocused";
+		var angleDiffTxt = String.format("%.2f -> %s", angleDiff, focusedTxt);
 		var txtOffset = Vector2f.fromY(200);
 
 		getShapes().get(ESkillShapesLayer.KICK_SKILL).add(new DrawableAnnotation(getPos(),
@@ -205,9 +217,7 @@ public class TouchKickSkill extends ATouchKickSkill
 	{
 		double currentDirection = getBall().getPos().subtractNew(getPos()).getAngle(0);
 		double diff = AngleMath.difference(finalTargetOrientation, currentDirection);
-		double alteredDiff = Math.signum(diff) * Math.max(0, Math.abs(diff) - 0.4);
-
-		return finalTargetOrientation - alteredDiff;
+		return currentDirection + Math.signum(diff) * Math.min(Math.abs(diff), 0.4);
 	}
 
 

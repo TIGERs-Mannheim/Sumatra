@@ -8,6 +8,7 @@
     <globalConfiguration>
         <environment>SUMATRA</environment>
         <simulation>true</simulation>
+        <geometry>DIV_A</geometry>
     </globalConfiguration>
 
     <!--
@@ -108,8 +109,6 @@
         <properties>
             <operation-mode>OFF</operation-mode>
             <operation-mode-fallback>OFF</operation-mode-fallback>
-            <influxdb-url>https://influxdb.tigers-mannheim.de</influxdb-url>
-            <influxdb-name>matchStats</influxdb-name>
         </properties>
     </module>
 
@@ -123,9 +122,7 @@
         <implementation>edu.tigers.sumatra.ai.AiRecordManager</implementation>
     </module>
 
-    <!--
-        <module id="edu.tigers.sumatra.guinotifications.GuiNotificationsController"/>
-    -->
+
     <!--
         <module id="edu.tigers.sumatra.movementlimits.MovementObserverModule">
             <dependency>edu.tigers.sumatra.wp.AWorldPredictor</dependency>

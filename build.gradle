@@ -1,39 +1,26 @@
+import org.apache.tools.ant.filters.ReplaceTokens
+
 /*
  * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
  */
 
 plugins {
-    id 'sumatra.java-conventions'
+    id 'org.sonarqube' version '3.3'
+    id 'com.palantir.git-version' version '0.13.0'
+    id 'ca.cutterslade.analyze' version '1.8.3'
+    id 'com.google.cloud.tools.jib' version '3.2.0'
+    id 'com.github.ben-manes.versions' version '0.42.0'
+    id 'se.patrikerdes.use-latest-versions' version '0.2.18'
+    id "com.google.protobuf" version "0.8.18" apply(false)
+
+    id 'sumatra.java'
     id 'application'
     id 'idea'
-
-    id 'org.sonarqube' version '3.2.0'
-    id 'com.palantir.git-version' version '0.12.3'
-    id 'ca.cutterslade.analyze' version '1.6.0'
-    id 'com.google.cloud.tools.jib' version '3.0.0'
-    id 'com.github.ben-manes.versions' version '0.38.0'
 }
 
 ext.versionPrefix = 'merge/'
 ext.versionDetails = versionDetails(prefix: versionPrefix)
 version versionDetails.lastTag + '-' + versionDetails.gitHash
-
-tasks.named('wrapper').configure {
-    // Use the 'all' distributable when upgrading the Gradle wrapper
-    distributionType = Wrapper.DistributionType.ALL
-}
-
-def isNonStable = { String version ->
-    def stableKeyword = ['RELEASE', 'FINAL', 'GA', 'JRE'].any { it -> version.toUpperCase().contains(it) }
-    def regex = /^[0-9,.v-]+(-r)?$/
-    return !stableKeyword && !(version ==~ regex)
-}
-
-dependencyUpdates {
-    rejectVersionIf {
-        isNonStable(it.candidate.version)
-    }
-}
 
 // set version here to avoid overriding the project version.
 // version is set to null to skip it completely in the artifact names
@@ -43,6 +30,13 @@ jar.archiveVersion.convention(null)
 
 // disable tar distribution to avoid redundant artifacts
 distTar.enabled = false
+
+processResources {
+    inputs.property("project.version", rootProject.versionDetails.lastTag)
+    filter ReplaceTokens, tokens: [
+            "application.version": rootProject.versionDetails.lastTag,
+    ]
+}
 
 apply from: 'gradle/application.gradle'
 apply from: 'gradle/docker.gradle'

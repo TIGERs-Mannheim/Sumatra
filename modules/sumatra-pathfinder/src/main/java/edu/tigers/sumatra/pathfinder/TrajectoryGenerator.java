@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.pathfinder;
@@ -8,6 +8,7 @@ import edu.tigers.sumatra.bot.IMoveConstraints;
 import edu.tigers.sumatra.bot.MoveConstraints;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.trajectory.BangBangTrajectoryFactory;
+import edu.tigers.sumatra.trajectory.DestinationForTimedPositionCalc;
 import edu.tigers.sumatra.trajectory.ITrajectory;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
 import lombok.AccessLevel;
@@ -21,7 +22,7 @@ import lombok.NoArgsConstructor;
 public final class TrajectoryGenerator
 {
 	private static final BangBangTrajectoryFactory TRAJECTORY_FACTORY = new BangBangTrajectoryFactory();
-
+	private static final DestinationForTimedPositionCalc OFFSET_CALC = new DestinationForTimedPositionCalc();
 
 	public static ITrajectory<IVector2> generatePositionTrajectory(final ITrackedBot bot, final IVector2 dest)
 	{
@@ -99,5 +100,37 @@ public final class TrajectoryGenerator
 		return TRAJECTORY_FACTORY.orientation((float) curOrientation, (float) targetAngle, (float) curAVel,
 				(float) mc.getVelMaxW(),
 				(float) mc.getAccMaxW());
+	}
+
+
+	public static IVector2 generateVirtualPositionToReachPointInTime(
+			final ITrackedBot bot,
+			final MoveConstraints moveConstraints,
+			final IVector2 dest,
+			final double targetTime
+	)
+	{
+		var posInM = bot.getPos().multiplyNew(1e-3);
+		var destInM = dest.multiplyNew(1e-3);
+		if (moveConstraints.getPrimaryDirection().isZeroVector())
+		{
+			return OFFSET_CALC.destinationForBangBang2dSync(
+					posInM,
+					destInM,
+					bot.getVel(),
+					moveConstraints.getVelMax(),
+					moveConstraints.getAccMax(),
+					targetTime
+			).multiplyNew(1e3);
+		}
+		return OFFSET_CALC.destinationForBangBang2dAsync(
+				posInM,
+				destInM,
+				bot.getVel(),
+				moveConstraints.getVelMax(),
+				moveConstraints.getAccMax(),
+				targetTime,
+				moveConstraints.getPrimaryDirection()
+		).multiplyNew(1e3);
 	}
 }

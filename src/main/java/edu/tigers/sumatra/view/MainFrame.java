@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.view;
@@ -27,7 +27,6 @@ import edu.tigers.sumatra.presenter.logfile.LogfileView;
 import edu.tigers.sumatra.presenter.rcm.RcmView;
 import edu.tigers.sumatra.presenter.referee.RefereeView;
 import edu.tigers.sumatra.presenter.sim.SimulationView;
-import edu.tigers.sumatra.presenter.testplays.TestPlaysControlView;
 import edu.tigers.sumatra.presenter.timer.TimerView;
 import edu.tigers.sumatra.replay.AiReplayPresenter;
 import edu.tigers.sumatra.statistics.StatisticsView;
@@ -53,6 +52,7 @@ import java.awt.BorderLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
+import java.io.Serial;
 import java.nio.file.Path;
 import java.util.List;
 
@@ -62,6 +62,7 @@ import java.util.List;
  */
 public class MainFrame extends AMainFrame implements IReplayLoadMenuObserver
 {
+	@Serial
 	private static final long serialVersionUID = -6858464942004450029L;
 
 	private JMenu moduliMenu;
@@ -93,7 +94,6 @@ public class MainFrame extends AMainFrame implements IReplayLoadMenuObserver
 		addView(new GameLogView());
 		addView(new BallSpeedView());
 		addView(new LogfileView());
-		addView(new TestPlaysControlView());
 		addView(new OffensiveStatisticsView());
 		addView(new BotParamsView());
 		addView(new OffensiveActionTreeView());
@@ -123,7 +123,7 @@ public class MainFrame extends AMainFrame implements IReplayLoadMenuObserver
 		lookAndFeelMenu.setMnemonic(KeyEvent.VK_F);
 
 		toolBar = new ToolBar();
-		this.add(toolBar.getToolbar(), BorderLayout.NORTH);
+		this.add(toolBar.getJToolBar(), BorderLayout.NORTH);
 
 		fillMenuBar();
 	}
@@ -241,7 +241,7 @@ public class MainFrame extends AMainFrame implements IReplayLoadMenuObserver
 		exitMenuItem.setMnemonic(KeyEvent.VK_E);
 
 		final JMenuItem shortcutMenuItem = new JMenuItem("Shortcuts");
-		shortcutMenuItem.addActionListener(new ShortcutActionListener());
+		shortcutMenuItem.addActionListener(actionEvent -> new ShortcutsDialog(MainFrame.this));
 
 		JMenuItem aboutMenuItem = new JMenuItem("About");
 		aboutMenuItem.addActionListener(new AboutBox());
@@ -330,15 +330,6 @@ public class MainFrame extends AMainFrame implements IReplayLoadMenuObserver
 			{
 				o.onSelectLookAndFeel(info);
 			}
-		}
-	}
-
-	private static class ShortcutActionListener implements ActionListener
-	{
-		@Override
-		public void actionPerformed(final ActionEvent e)
-		{
-			new ShortcutsDialog().setVisible(true);
 		}
 	}
 

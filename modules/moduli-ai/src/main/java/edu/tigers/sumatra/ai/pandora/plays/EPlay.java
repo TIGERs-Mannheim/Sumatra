@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.ai.pandora.plays;
 
@@ -12,14 +12,11 @@ import edu.tigers.sumatra.ai.pandora.plays.match.OffensivePlay;
 import edu.tigers.sumatra.ai.pandora.plays.match.SupportPlay;
 import edu.tigers.sumatra.ai.pandora.plays.standard.BallPlacementPlay;
 import edu.tigers.sumatra.ai.pandora.plays.standard.CheeringPlay;
-import edu.tigers.sumatra.ai.pandora.plays.standard.KickoffPlay;
 import edu.tigers.sumatra.ai.pandora.plays.standard.MaintenancePlay;
 import edu.tigers.sumatra.ai.pandora.plays.standard.PenaltyThemPlay;
-import edu.tigers.sumatra.ai.pandora.plays.standard.PenaltyWePlay;
 import edu.tigers.sumatra.ai.pandora.plays.standard.RobotInterchangePlay;
 import edu.tigers.sumatra.ai.pandora.plays.test.BallPlacementTestPlay;
 import edu.tigers.sumatra.ai.pandora.plays.test.GuiTestPlay;
-import edu.tigers.sumatra.ai.pandora.plays.test.PositioningPlay;
 import edu.tigers.sumatra.ai.pandora.plays.test.SnapshotPlay;
 import edu.tigers.sumatra.ai.pandora.plays.test.kick.ARedirectPlay.EReceiveMode;
 import edu.tigers.sumatra.ai.pandora.plays.test.kick.PassAroundACirclePlay;
@@ -48,19 +45,18 @@ import static com.github.g3force.instanceables.InstanceableClass.ic;
 @AllArgsConstructor
 public enum EPlay implements IInstanceableEnum
 {
-	KEEPER(new InstanceableClass<>(KeeperPlay.class), 1),
-	PENALTY_THEM(new InstanceableClass<>(PenaltyThemPlay.class), 5),
-	PENALTY_WE(new InstanceableClass<>(PenaltyWePlay.class), 5),
-	BALL_PLACEMENT(new InstanceableClass<>(BallPlacementPlay.class), 10),
-	KICKOFF(new InstanceableClass<>(KickoffPlay.class), 10),
-	OFFENSIVE(new InstanceableClass<>(OffensivePlay.class), 20),
-	DEFENSIVE(new InstanceableClass<>(DefensePlay.class), 30),
-	SUPPORT(new InstanceableClass<>(SupportPlay.class), 40),
+	KEEPER(new InstanceableClass<>(KeeperPlay.class)),
+	PENALTY_THEM(new InstanceableClass<>(PenaltyThemPlay.class)),
+	BALL_PLACEMENT(new InstanceableClass<>(BallPlacementPlay.class)),
+	OFFENSIVE(new InstanceableClass<>(OffensivePlay.class)),
+	DEFENSIVE(new InstanceableClass<>(DefensePlay.class)),
+	SUPPORT(new InstanceableClass<>(SupportPlay.class)),
 	INTERCHANGE(new InstanceableClass<>(RobotInterchangePlay.class)),
 	MAINTENANCE(ic(MaintenancePlay.class)
 			.setterParam(IVector2.class, "startingPos", "0,0", MaintenancePlay::setStartingPos)
 			.setterParam(IVector2.class, "direction", "0,250", MaintenancePlay::setDirection)
-			.setterParam(Double.TYPE, "orientation", "0", MaintenancePlay::setOrientation)),
+			.setterParam(Double.TYPE, "orientation", "0", MaintenancePlay::setOrientation)
+	),
 	CHEERING(new InstanceableClass<>(CheeringPlay.class)),
 
 	GUI_TEST(new InstanceableClass<>(GuiTestPlay.class)),
@@ -69,7 +65,6 @@ public enum EPlay implements IInstanceableEnum
 			new InstanceableParameter(Double.TYPE, "radius", "500")
 	)),
 	INIT(new InstanceableClass<>(InitPlay.class)),
-	POSITIONING_PLAY(new InstanceableClass<>(PositioningPlay.class)),
 	SNAPSHOT(new InstanceableClass<>(SnapshotPlay.class)
 			.setterParam(String.class, "snapshot file", "data/snapshots/hwc1s01.json", SnapshotPlay::setSnapshotFile)
 	),
@@ -147,13 +142,6 @@ public enum EPlay implements IInstanceableEnum
 	;
 
 	private final InstanceableClass<?> instanceableClass;
-	private final int priority;
-
-
-	EPlay(final InstanceableClass<?> instanceableClass)
-	{
-		this(instanceableClass, Integer.MAX_VALUE);
-	}
 
 
 	@Override

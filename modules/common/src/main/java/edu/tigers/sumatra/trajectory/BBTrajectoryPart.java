@@ -1,12 +1,16 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.trajectory;
 
+import com.sleepycat.persist.model.Persistent;
+
+
 /**
  * Part of a trajectory
  */
+@Persistent
 class BBTrajectoryPart
 {
 	float tEnd;

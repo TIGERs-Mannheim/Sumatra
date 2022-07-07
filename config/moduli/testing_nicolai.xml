@@ -47,6 +47,7 @@
             <source>NETWORK</source>
             <port>11003</port>
             <gameController>true</gameController>
+            <publishRefereeMessages>true</publishRefereeMessages>
         </properties>
     </module>
 
@@ -96,8 +97,6 @@
         <properties>
             <operation-mode>OFF</operation-mode>
             <operation-mode-fallback>OFF</operation-mode-fallback>
-            <influxdb-url>https://influxdb.tigers-mannheim.de</influxdb-url>
-            <influxdb-name>matchStats</influxdb-name>
         </properties>
     </module>
 
@@ -112,20 +111,11 @@
     </module>
 
 
-    <module id="edu.tigers.sumatra.guinotifications.GuiNotificationsController"/>
-
 
     <module id="edu.tigers.sumatra.movementlimits.MovementObserverModule">
         <dependency>edu.tigers.sumatra.wp.AWorldPredictor</dependency>
         <dependency>edu.tigers.sumatra.botparams.BotParamsManager</dependency>
     </module>
-
-    <!--
-        <module id="edu.tigers.sumatra.calibration.CalibrationModule">
-            <dependency>edu.tigers.sumatra.wp.AWorldPredictor</dependency>
-            <dependency>edu.tigers.sumatra.skillsystem.ASkillSystem</dependency>
-        </module>
-    -->
 
     <!-- If you want to export the robot and ball coordinates to another application, activate this -->
     <!--

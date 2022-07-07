@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.metis.interchange;
@@ -17,7 +17,6 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 
 /**
@@ -95,15 +94,16 @@ public class BotInterchangeCalc extends ACalculator
 		return weakestBots.stream()
 				.filter(b -> b != getAiFrame().getKeeperId())
 				.limit(numberOfBotsToBeRemoved)
-				.collect(Collectors.toUnmodifiableList());
+				.toList();
 	}
 
 
 	private List<BotID> allBotsSortedByBattery()
 	{
 		return getWFrame().getTigerBotsAvailable().values().stream()
-				.sorted((bot1, bot2) -> Float.compare(bot1.getRobotInfo().getBattery(), bot2.getRobotInfo().getBattery()))
+				.sorted((bot1, bot2) -> Float.compare(bot1.getRobotInfo().getBatteryRelative(),
+						bot2.getRobotInfo().getBatteryRelative()))
 				.map(ITrackedBot::getBotId)
-				.collect(Collectors.toList());
+				.toList();
 	}
 }

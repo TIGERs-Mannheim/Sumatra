@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.skillsystem.skills;
@@ -48,7 +48,7 @@ public abstract class ATouchKickSkill extends AMoveToSkill
 	public void setKickerDevice(EKickerDevice kickerDevice)
 	{
 		this.desiredKickParams = KickParams.of(kickerDevice, desiredKickParams.getKickSpeed())
-				.withDribbleSpeed(desiredKickParams.getDribbleSpeed());
+				.withDribblerMode(desiredKickParams.getDribblerMode());
 	}
 
 
@@ -60,7 +60,7 @@ public abstract class ATouchKickSkill extends AMoveToSkill
 	public void setKickSpeed(double kickSpeed)
 	{
 		this.desiredKickParams = KickParams.of(desiredKickParams.getDevice(), kickSpeed)
-				.withDribbleSpeed(desiredKickParams.getDribbleSpeed());
+				.withDribblerMode(desiredKickParams.getDribblerMode());
 	}
 
 

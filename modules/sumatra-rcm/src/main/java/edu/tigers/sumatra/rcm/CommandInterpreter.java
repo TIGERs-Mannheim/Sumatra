@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.rcm;
@@ -30,8 +30,6 @@ public class CommandInterpreter implements ICommandInterpreter
 	@Configurable(defValue = "FULL")
 	private static EMoveControllerType moveControllerType = EMoveControllerType.FULL;
 
-	@Configurable(comment = "Maximum speed for dribble roll [rotations per minute]", defValue = "5000")
-	private static int maxDribbleSpeed = 5000;
 	@Configurable(comment = "Maximum kickSpeed [m/s]", defValue = "6.5")
 	private static double maxKickSpeed = 6.0;
 	@Configurable(comment = "Maximum kickSpeed [m/s]", defValue = "5.0")
@@ -45,7 +43,6 @@ public class CommandInterpreter implements ICommandInterpreter
 	private final ControllerState controllerState;
 	private final KickerDribblerCommands kdOut = new KickerDribblerCommands();
 
-	private boolean isDribblerOverheated = false;
 	private long lastForceKick = 0;
 	private long lastArmKick = 0;
 	private boolean paused = false;
@@ -89,15 +86,18 @@ public class CommandInterpreter implements ICommandInterpreter
 
 		final AMoveBotSkill skill = moveController.control(command, controllerState);
 
-		isDribblerOverheated = controllerState.getBot().getDribblerState() == EDribblerState.OVERHEATED;
+		boolean isDribblerOverheated = controllerState.getBot().getDribblerState() == EDribblerState.OVERHEATED;
+
+		double maxCurrent = controllerState.getBot().getBotParams().getDribblerSpecs().getDefaultMaxCurrent();
+		double maxDribbleSpeed = controllerState.getBot().getBotParams().getDribblerSpecs().getDefaultSpeed();
 
 		if (command.hasDribble() && (command.getDribble() > 0.25) && !isDribblerOverheated)
 		{
 			final int rpm = (int) (command.getDribble() * maxDribbleSpeed);
-			kdOut.setDribblerSpeed(rpm);
+			kdOut.setDribbler(rpm, maxCurrent);
 		} else
 		{
-			kdOut.setDribblerSpeed(0);
+			kdOut.setDribbler(0, maxCurrent);
 		}
 
 		interpretKick(command);

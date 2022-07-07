@@ -20,6 +20,7 @@ import edu.tigers.sumatra.math.line.ILine;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 
 import java.awt.Color;
 import java.util.ArrayList;
@@ -33,6 +34,8 @@ import java.util.stream.Collectors;
 /**
  * Calculates the possible approaching angles to interact with the ball
  */
+
+@RequiredArgsConstructor
 public class OffensiveBallAccessibilityCalc extends ACalculator
 {
 	@Configurable(defValue = "1 Y")
@@ -46,20 +49,22 @@ public class OffensiveBallAccessibilityCalc extends ACalculator
 	public void doCalc()
 	{
 		List<AngleRange> inaccessibleAngles = new ArrayList<>();
-		inaccessibleAngles.addAll(
-				createInaccessibleRangeForOpponentBots(getBall().getPos()));
+		inaccessibleAngles.addAll(createInaccessibleRangeForOpponentBots(getBall().getPos()));
 		inaccessibleAngles.addAll(
 				createInaccessibleRangeForPenaltyArea(getBall().getPos(), Geometry.getPenaltyAreaTheir()));
+
 		IPenaltyArea penaltyAreaOur = Geometry.getPenaltyAreaOur().withMargin(Geometry.getBotRadius());
-		inaccessibleAngles.addAll(
-				createInaccessibleRangeForPenaltyArea(getBall().getPos(), penaltyAreaOur));
+		inaccessibleAngles.addAll(createInaccessibleRangeForPenaltyArea(getBall().getPos(), penaltyAreaOur));
 
 		inaccessibleBallAngles = new HashMap<>();
 		for (ITrackedBot tigerBot : getWFrame().getTigerBotsVisible().values())
 		{
 			// add generally forbidden angles
 			ArrayList<AngleRange> inaccessibleAnglesForBot = new ArrayList<>(inaccessibleAngles);
-
+			if (tigerBot.getBotKickerPos().distanceTo(getBall().getPos()) > Geometry.getBotRadius())
+			{
+				inaccessibleAnglesForBot.addAll(createInaccessibleRangeForOpponentBots(getBall().getPos()));
+			}
 			// now add bot specific forbidden angles
 			for (ITrackedBot bot : getWFrame().getTigerBotsVisible().values())
 			{
@@ -168,13 +173,13 @@ public class OffensiveBallAccessibilityCalc extends ACalculator
 	private void visualizeApproachAngles(final List<AngleRange> inaccessibleAngles)
 	{
 		IVector2 ballPos = getWFrame().getBall().getPos();
-		DrawableCircle dc = new DrawableCircle(Circle.createCircle(ballPos, 250), new Color(42, 255, 0, 138));
+		var dc = new DrawableCircle(Circle.createCircle(ballPos, 250), new Color(42, 255, 0, 138));
 		dc.setFill(true);
 		getShapes(EAiShapesLayer.OFFENSIVE_ACCESSIBILITY).add(dc);
 
 		for (AngleRange range : inaccessibleAngles)
 		{
-			DrawableArc da = new DrawableArc(DrawableArc.createArc(ballPos, 250, range.getRight(),
+			var da = new DrawableArc(DrawableArc.createArc(ballPos, 250, range.getRight(),
 					range.getWidth()), new Color(255, 0, 0, 100));
 			da.setFill(true);
 			getShapes(EAiShapesLayer.OFFENSIVE_ACCESSIBILITY).add(da);

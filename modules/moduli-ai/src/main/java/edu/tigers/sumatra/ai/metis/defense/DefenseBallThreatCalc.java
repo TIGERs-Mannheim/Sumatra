@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.metis.defense;
@@ -12,11 +12,11 @@ import edu.tigers.sumatra.math.line.v2.IHalfLine;
 import edu.tigers.sumatra.math.line.v2.ILineSegment;
 import edu.tigers.sumatra.math.line.v2.Lines;
 import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.vision.data.IKickEvent;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
-import java.util.Optional;
 import java.util.function.Supplier;
 
 
@@ -37,6 +37,7 @@ public class DefenseBallThreatCalc extends ADefenseThreatCalc
 	@Configurable(comment = "Left/Right extension of goal line to use for shot-at-goal intersection", defValue = "200")
 	private static double goalMargin = 200;
 
+	private final Supplier<IKickEvent> detectedGoalKickOpponents;
 	private final Supplier<ITrackedBot> opponentPassReceiver;
 
 	@Getter
@@ -49,12 +50,12 @@ public class DefenseBallThreatCalc extends ADefenseThreatCalc
 		IVector2 threatSource = threatSource();
 		IVector2 threatTarget = threatTarget(threatSource);
 		ILineSegment threatLine = Lines.segmentFromPoints(threatSource, threatTarget);
-		ILineSegment protectionLine = centerBackProtectionLine(threatLine, minDistanceToThreat());
+		var protectionLine = centerBackProtectionLine(threatLine, minDistanceToThreat());
 
 		defenseBallThreat = new DefenseBallThreat(
 				getBall().getVel(),
 				threatLine,
-				protectionLine,
+				protectionLine.orElse(null),
 				opponentPassReceiver.get());
 		drawThreat(defenseBallThreat);
 	}
@@ -77,10 +78,21 @@ public class DefenseBallThreatCalc extends ADefenseThreatCalc
 	{
 		IVector2 predictedBallPos = getBall().getTrajectory().getPosByTime(ballLookahead).getXYVector();
 		IVector2 threatSource = Geometry.getField().nearestPointInside(predictedBallPos, getBall().getPos());
-		return Optional.ofNullable(opponentPassReceiver.get())
-				.map(passReceiver -> Geometry.getField().nearestPointInside(
-						passReceiver.getBotKickerPosByTime(ballLookahead), passReceiver.getBotKickerPos()))
-				.orElse(threatSource);
+
+		if (detectedGoalKickOpponents.get() != null)
+		{
+			// For DirectShots, always protectBall directly
+			return threatSource;
+		}
+		if (opponentPassReceiver.get() != null)
+		{
+			// Prefer protecting opponentPassReceiver than protecting the ball
+			return Geometry.getField().nearestPointInside(
+					opponentPassReceiver.get().getBotKickerPosByTime(ballLookahead),
+					opponentPassReceiver.get().getBotKickerPos());
+		}
+		// Protect the ball
+		return threatSource;
 	}
 
 

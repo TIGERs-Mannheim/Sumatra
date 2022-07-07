@@ -1,19 +1,10 @@
 /*
- * Copyright (c) 2009 - 2019, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.offensive;
 
-import java.awt.Component;
-import java.util.Map;
-
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import edu.tigers.moduli.exceptions.ModuleNotFoundException;
-import edu.tigers.moduli.listenerVariables.ModulesState;
 import edu.tigers.sumatra.ai.AAgent;
-import edu.tigers.sumatra.ai.Agent;
 import edu.tigers.sumatra.ai.IVisualizationFrameObserver;
 import edu.tigers.sumatra.ai.VisualizationFrame;
 import edu.tigers.sumatra.ai.metis.offense.statistics.OffensiveAnalysedBotFrame;
@@ -25,85 +16,36 @@ import edu.tigers.sumatra.ids.ETeamColor;
 import edu.tigers.sumatra.model.SumatraModel;
 import edu.tigers.sumatra.offensive.view.OffensiveStatisticsPanel;
 import edu.tigers.sumatra.offensive.view.TeamOffensiveStatisticsPanel;
-import edu.tigers.sumatra.views.ASumatraViewPresenter;
-import edu.tigers.sumatra.views.ISumatraView;
+import edu.tigers.sumatra.views.ISumatraViewPresenter;
+import lombok.Getter;
+import lombok.extern.log4j.Log4j2;
+
+import java.util.Map;
 
 
 /**
  * OffensiveStrategy Presenter
- *
- * @author Mark Geiger <Mark.Geiger@dlr.de>
  */
-public class OffensiveStatisticsPresenter extends ASumatraViewPresenter implements IVisualizationFrameObserver
+@Log4j2
+public class OffensiveStatisticsPresenter implements ISumatraViewPresenter, IVisualizationFrameObserver
 {
-	@SuppressWarnings("unused")
-	private static final Logger log = LogManager.getLogger(OffensiveStatisticsPresenter.class.getName());
-	private final OffensiveStatisticsPanel offensiveStrategyPanel;
+	@Getter
+	private final OffensiveStatisticsPanel viewPanel = new OffensiveStatisticsPanel();
 
 
-	/**
-	 * present offensive frames
-	 */
-	public OffensiveStatisticsPresenter()
+	@Override
+	public void onStartModuli()
 	{
-		offensiveStrategyPanel = new OffensiveStatisticsPanel();
+		ISumatraViewPresenter.super.onStartModuli();
+		SumatraModel.getInstance().getModuleOpt(AAgent.class).ifPresent(agent -> agent.addVisObserver(this));
 	}
 
 
 	@Override
-	public void onModuliStateChanged(final ModulesState state)
+	public void onStopModuli()
 	{
-		switch (state)
-		{
-			case ACTIVE:
-				start();
-				break;
-			case NOT_LOADED:
-				break;
-			case RESOLVED:
-				stop();
-				break;
-		}
-	}
-
-
-	private void stop()
-	{
-		try
-		{
-			Agent agent = (Agent) SumatraModel.getInstance().getModule(AAgent.class);
-			agent.removeVisObserver(this);
-		} catch (ModuleNotFoundException err)
-		{
-			log.error("Could not get agent module", err);
-		}
-	}
-
-
-	private void start()
-	{
-		try
-		{
-			Agent agent = (Agent) SumatraModel.getInstance().getModule(AAgent.class);
-			agent.addVisObserver(this);
-		} catch (ModuleNotFoundException err)
-		{
-			log.error("Could not get agent module", err);
-		}
-	}
-
-
-	@Override
-	public Component getComponent()
-	{
-		return offensiveStrategyPanel;
-	}
-
-
-	@Override
-	public ISumatraView getSumatraView()
-	{
-		return offensiveStrategyPanel;
+		ISumatraViewPresenter.super.onStopModuli();
+		SumatraModel.getInstance().getModuleOpt(AAgent.class).ifPresent(agent -> agent.removeVisObserver(this));
 	}
 
 
@@ -117,10 +59,10 @@ public class OffensiveStatisticsPresenter extends ASumatraViewPresenter implemen
 			TeamOffensiveStatisticsPanel strategyPanel;
 			if (frame.getTeamColor() == ETeamColor.BLUE)
 			{
-				strategyPanel = offensiveStrategyPanel.getBlueStrategyPanel();
+				strategyPanel = viewPanel.getBluePanel();
 			} else
 			{
-				strategyPanel = offensiveStrategyPanel.getYellowStrategyPanel();
+				strategyPanel = viewPanel.getYellowPanel();
 			}
 			if (strategyPanel.isCurrentFrameOnly())
 			{
@@ -148,26 +90,27 @@ public class OffensiveStatisticsPresenter extends ASumatraViewPresenter implemen
 	}
 
 
-	private void handleCurrentFrameOnly(final OffensiveStatisticsFrame rawFrame,
-			final TeamOffensiveStatisticsPanel strategyPanel)
+	private void handleCurrentFrameOnly(
+			OffensiveStatisticsFrame rawFrame,
+			TeamOffensiveStatisticsPanel strategyPanel
+	)
 	{
-		if (rawFrame != null)
+		if (rawFrame == null)
 		{
-			strategyPanel.setMaxMinDesired(
-					rawFrame.getDesiredNumBots());
-			for (Map.Entry<BotID, OffensiveBotFrame> e : rawFrame.getBotFrames().entrySet())
+			return;
+		}
+		strategyPanel.setMaxMinDesired(rawFrame.getDesiredNumBots());
+		for (Map.Entry<BotID, OffensiveBotFrame> e : rawFrame.getBotFrames().entrySet())
+		{
+			strategyPanel.setBotSFrame(e.getKey(), e.getValue());
+			BotID primary = rawFrame.getPrimaryOffensiveBot();
+			if (e.getKey().equals(primary))
 			{
-				strategyPanel.setBotSFrame(e.getKey(), e.getValue());
-				BotID primary = rawFrame.getPrimaryOffensiveBot();
-				if (e.getKey().equals(primary))
-				{
-					strategyPanel.setPrimaryPercentage(e.getKey(), 100);
-				} else
-				{
-					strategyPanel.setPrimaryPercentage(e.getKey(), 0);
-				}
+				strategyPanel.setPrimaryPercentage(e.getKey(), 100);
+			} else
+			{
+				strategyPanel.setPrimaryPercentage(e.getKey(), 0);
 			}
-
 		}
 	}
 }

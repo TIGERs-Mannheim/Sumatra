@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.skillsystem;
@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.stream.Collectors;
 
 
 /**
@@ -35,14 +34,13 @@ import java.util.stream.Collectors;
 public class GenericSkillSystem extends ASkillSystem
 		implements IBotManagerObserver, IWorldFrameObserver, ISkillExecutorPostHook
 {
-	private static final String SKILLS_CONFIG_CATEGORY = "skills";
-	public static final String SKILL_CATEGORY = "Skills";
+	private static final ShapeMapSource SKILL_SHAPE_MAP_SOURCE = ShapeMapSource.of("Skills");
 
 	static
 	{
 		for (ESkill ec : ESkill.values())
 		{
-			ConfigRegistration.registerClass(SKILLS_CONFIG_CATEGORY, ec.getInstanceableClass().getImpl());
+			ConfigRegistration.registerClass("skills", ec.getInstanceableClass().getImpl());
 		}
 	}
 
@@ -188,7 +186,7 @@ public class GenericSkillSystem extends ASkillSystem
 				.filter(e -> e.getBotID().getTeamColor() == teamColor)
 				.map(SkillExecutor::getCurrentSkill)
 				.filter(ISkill::isAssigned)
-				.collect(Collectors.toList());
+				.toList();
 	}
 
 
@@ -222,7 +220,7 @@ public class GenericSkillSystem extends ASkillSystem
 		executors.values().forEach(SkillExecutor::onClearWorldFrame);
 		if (wp != null)
 		{
-			wp.notifyRemoveCategoryFromShapeMap(SKILL_CATEGORY);
+			wp.notifyRemoveSourceFromShapeMap(SKILL_SHAPE_MAP_SOURCE);
 		}
 	}
 
@@ -234,7 +232,7 @@ public class GenericSkillSystem extends ASkillSystem
 		if (wp != null)
 		{
 			wp.notifyNewShapeMap(timestamp, shapeMap,
-					ShapeMapSource.of(getShapeLayerName(bot.getBotId()), SKILL_CATEGORY));
+					ShapeMapSource.of(bot.getBotId().toString(), SKILL_SHAPE_MAP_SOURCE));
 		}
 		skillExecutorPostHooks.forEach(hook -> hook.onSkillUpdated(bot, timestamp, shapeMap));
 	}
@@ -247,18 +245,12 @@ public class GenericSkillSystem extends ASkillSystem
 	}
 
 
-	public static String getShapeLayerName(BotID botId)
-	{
-		return "Skills for " + botId.getTeamColor() + " " + botId.getNumber();
-	}
-
-
 	@Override
 	public void onRobotRemoved(final BotID botID)
 	{
 		if (wp != null)
 		{
-			wp.notifyRemoveSourceFromShapeMap(getShapeLayerName(botID));
+			wp.notifyRemoveSourceFromShapeMap(ShapeMapSource.of(botID.toString(), SKILL_SHAPE_MAP_SOURCE));
 		}
 		skillExecutorPostHooks.forEach(hook -> hook.onRobotRemoved(botID));
 	}

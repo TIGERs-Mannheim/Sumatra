@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.ai.pandora.plays;
 
@@ -8,7 +8,7 @@ import edu.tigers.sumatra.ai.metis.TacticalField;
 import edu.tigers.sumatra.ai.pandora.roles.ARole;
 import edu.tigers.sumatra.ai.pandora.roles.move.MoveRole;
 import edu.tigers.sumatra.drawable.IDrawableShape;
-import edu.tigers.sumatra.drawable.IShapeLayer;
+import edu.tigers.sumatra.drawable.IShapeLayerIdentifier;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.wp.data.ITrackedBall;
 import edu.tigers.sumatra.wp.data.WorldFrame;
@@ -321,7 +321,7 @@ public abstract class APlay
 	 * @param identifier shape layer identifier
 	 * @return the respective list from the tactical field
 	 */
-	protected final List<IDrawableShape> getShapes(final IShapeLayer identifier)
+	protected final List<IDrawableShape> getShapes(final IShapeLayerIdentifier identifier)
 	{
 		return getAiFrame().getShapeMap().get(identifier);
 	}

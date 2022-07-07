@@ -1,111 +1,67 @@
 /*
- * Copyright (c) 2009 - 2019, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.statistics;
 
-import java.awt.Component;
-
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import edu.tigers.moduli.exceptions.ModuleNotFoundException;
-import edu.tigers.moduli.listenerVariables.ModulesState;
 import edu.tigers.sumatra.ai.AAgent;
-import edu.tigers.sumatra.ai.Agent;
 import edu.tigers.sumatra.ai.IAIObserver;
 import edu.tigers.sumatra.ai.IVisualizationFrameObserver;
 import edu.tigers.sumatra.ai.VisualizationFrame;
 import edu.tigers.sumatra.ids.EAiTeam;
 import edu.tigers.sumatra.model.SumatraModel;
 import edu.tigers.sumatra.statistics.view.StatisticsPanel;
-import edu.tigers.sumatra.views.ASumatraViewPresenter;
-import edu.tigers.sumatra.views.ISumatraView;
+import edu.tigers.sumatra.views.ISumatraViewPresenter;
+import lombok.Getter;
+import lombok.extern.log4j.Log4j2;
 
 
 /**
  * Game Statistics Presenter
- *
- * @author Daniel Andres <andreslopez.daniel@gmail.com>
  */
-public class StatisticsPresenter extends ASumatraViewPresenter implements IVisualizationFrameObserver, IAIObserver
+@Log4j2
+public class StatisticsPresenter implements ISumatraViewPresenter, IVisualizationFrameObserver, IAIObserver
 {
-	@SuppressWarnings("unused")
-	private static final Logger log = LogManager.getLogger(StatisticsPresenter.class.getName());
-
-	/** Each x-th frame will be passed to Panel, others will be ignored */
+	/**
+	 * Each x-th frame will be passed to Panel, others will be ignored
+	 */
 	private static final int STAT_SHOW_THRESHOLD = 10;
 
-	private final StatisticsPanel statisticsPanel;
+	@Getter
+	private final StatisticsPanel viewPanel = new StatisticsPanel();
 
-	/** Used to limit updates */
+	/**
+	 * Used to limit updates
+	 */
 	private int statShowCounter = 0;
 
 
-	/**
-	 * Default
-	 */
-	public StatisticsPresenter()
+	@Override
+	public void onStartModuli()
 	{
-		statisticsPanel = new StatisticsPanel();
+		ISumatraViewPresenter.super.onStartModuli();
+		SumatraModel.getInstance().getModuleOpt(AAgent.class).ifPresent(agent -> agent.addVisObserver(this));
 	}
 
 
 	@Override
-	public void onModuliStateChanged(final ModulesState state)
+	public void onStopModuli()
 	{
-		switch (state)
-		{
-			case ACTIVE:
-				try
-				{
-					Agent agent = (Agent) SumatraModel.getInstance().getModule(AAgent.class);
-					agent.addVisObserver(this);
-				} catch (ModuleNotFoundException err)
-				{
-					log.error("Could not get agent module", err);
-				}
-				break;
-			case NOT_LOADED:
-				break;
-			case RESOLVED:
-				try
-				{
-					Agent agent = (Agent) SumatraModel.getInstance().getModule(AAgent.class);
-					agent.removeVisObserver(this);
-				} catch (ModuleNotFoundException err)
-				{
-					log.error("Could not get agent module", err);
-				}
-				break;
-		}
-	}
-
-
-	@Override
-	public Component getComponent()
-	{
-		return statisticsPanel;
-	}
-
-
-	@Override
-	public ISumatraView getSumatraView()
-	{
-		return statisticsPanel;
+		ISumatraViewPresenter.super.onStopModuli();
+		SumatraModel.getInstance().getModuleOpt(AAgent.class).ifPresent(agent -> agent.removeVisObserver(this));
 	}
 
 
 	@Override
 	public void onNewVisualizationFrame(final VisualizationFrame frame)
 	{
-		if (frame.getTeamColor() != statisticsPanel.getSelectedTeamColor())
+		if (frame.getTeamColor() != viewPanel.getSelectedTeamColor())
 		{
 			return;
 		}
 		statShowCounter++;
 		if ((statShowCounter % STAT_SHOW_THRESHOLD) == 0)
 		{
-			statisticsPanel.onNewVisualizationFrame(frame);
+			viewPanel.onNewVisualizationFrame(frame);
 			statShowCounter = 0;
 		}
 	}
@@ -114,6 +70,6 @@ public class StatisticsPresenter extends ASumatraViewPresenter implements IVisua
 	@Override
 	public void onClearVisualizationFrame(final EAiTeam teamColor)
 	{
-		statisticsPanel.reset();
+		viewPanel.reset();
 	}
 }

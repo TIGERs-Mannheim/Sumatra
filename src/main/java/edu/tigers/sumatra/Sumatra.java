@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra;
 
@@ -13,6 +13,7 @@ import edu.tigers.sumatra.model.SumatraModel;
 import edu.tigers.sumatra.referee.IRefereeObserver;
 import edu.tigers.sumatra.referee.Referee;
 import edu.tigers.sumatra.referee.control.GcEventFactory;
+import edu.tigers.sumatra.referee.proto.SslGcRefereeMessage;
 import edu.tigers.sumatra.referee.proto.SslGcRefereeMessage.Referee.Command;
 import edu.tigers.sumatra.sim.SimulationHelper;
 import edu.tigers.sumatra.sim.SumatraSimulator;
@@ -56,7 +57,6 @@ import java.util.List;
  *         -`------/`--' /
  *                 \___-'
  * </pre>
- *
  * The starter class of Sumatra.
  * Sumatra uses the MVP-passive view pattern in combination with moduli (a module-system for Java).
  * Make sure that you understand this approach to design an application,
@@ -101,7 +101,7 @@ public final class Sumatra
 		ifHasOption("m", Sumatra::setModule);
 		ifHasOption("w", () -> SumatraSimulator.setWaitForRemoteAis(true));
 		ifHasOption("ho", () -> SimNetClient.setStartupHost(cmd.getOptionValue("ho")));
-		ifHasOption("p", () -> SumatraModel.getInstance().setProductive(true));
+		ifHasOption("p", () -> SumatraModel.getInstance().setTournamentMode(true));
 
 		start(cmd);
 		ifHasOption("to", () -> setTimeout(cmd));
@@ -141,7 +141,7 @@ public final class Sumatra
 		options.addOption("pt", "playingTime", true, "duration [s] of time to play (match time)");
 		options.addOption("ho", "host", true, "the host of the simulator to connect to");
 		options.addOption("to", "timeout", true, "the timeout [s] after which the application will be exited");
-		options.addOption("p", "productive", false, "run in productive mode (for real matches)");
+		options.addOption("p", "productive", false, "run in tournament mode (aka productive mode)");
 		return options;
 	}
 
@@ -166,9 +166,9 @@ public final class Sumatra
 
 	private static void limitMatchDuration(final CommandLine cmd)
 	{
-		double duration = Double.parseDouble(cmd.getOptionValue("pt"));
+		double stageTimeLeft = Double.parseDouble(cmd.getOptionValue("pt"));
 		SumatraModel.getInstance().getModuleOpt(Referee.class)
-				.ifPresent(r -> r.addObserver(new MatchDurationLimiter(duration)));
+				.ifPresent(r -> r.addObserver(new MatchDurationLimiter(stageTimeLeft)));
 	}
 
 
@@ -185,7 +185,7 @@ public final class Sumatra
 		try
 		{
 			Thread.sleep((long) (timeout * 1000));
-			LOG.info(String.format("Timed out after %.1fs.", timeout));
+			LOG.info("Timed out after {} s", () -> String.format("%.1f", timeout));
 			tearDown();
 		} catch (InterruptedException e)
 		{
@@ -211,8 +211,9 @@ public final class Sumatra
 					.ifPresent(r -> r.sendGameControllerEvent(GcEventFactory.command(command)));
 		} catch (IllegalArgumentException err)
 		{
-			LOG.error("Could not parse command: " + cmd.getOptionValue("c") + ". It should be one of: "
-					+ Arrays.toString(Command.values()), err);
+			LOG.error("Could not parse command: {}. It should be one of: {}",
+					cmd.getOptionValue("c"),
+					Arrays.toString(Command.values()), err);
 			System.exit(1);
 		}
 	}
@@ -304,25 +305,20 @@ public final class Sumatra
 		return null;
 	}
 
-	private static class MatchDurationLimiter implements IRefereeObserver
+
+	private record MatchDurationLimiter(double desiredStageTimeLeft) implements IRefereeObserver
 	{
-		final double duration;
-
-
-		public MatchDurationLimiter(final double duration)
-		{
-			this.duration = duration;
-		}
-
-
 		@Override
 		public void onNewRefereeMsg(final edu.tigers.sumatra.referee.proto.SslGcRefereeMessage.Referee refMsg)
 		{
-			double stageDuration = 5.0 * 60;
-			double stageTime = stageDuration - refMsg.getStageTimeLeft() / 1e6;
-			if (stageTime > duration)
+			if (refMsg.getStage() != SslGcRefereeMessage.Referee.Stage.NORMAL_FIRST_HALF)
 			{
-				LOG.info("Match reached the maximum desired duration: " + stageTime);
+				return;
+			}
+			double stageTimeLeft = refMsg.getStageTimeLeft() / 1e6;
+			if (stageTimeLeft < desiredStageTimeLeft)
+			{
+				LOG.info("Match reached the desired stageTime: {}", stageTimeLeft);
 				SumatraModel.getInstance().getModule(Referee.class).removeObserver(this);
 				new Thread(Sumatra::tearDown).start();
 			}

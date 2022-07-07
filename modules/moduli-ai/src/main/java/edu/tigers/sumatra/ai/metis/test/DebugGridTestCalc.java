@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.metis.test;
@@ -10,34 +10,34 @@ import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
 import edu.tigers.sumatra.ai.metis.defense.DefenseThreatRater;
 import edu.tigers.sumatra.ai.metis.kicking.Pass;
 import edu.tigers.sumatra.ai.metis.kicking.PassFactory;
+import edu.tigers.sumatra.ai.metis.pass.KickOrigin;
 import edu.tigers.sumatra.ai.metis.pass.rating.EPassRating;
 import edu.tigers.sumatra.ai.metis.pass.rating.FreeSpaceRater;
 import edu.tigers.sumatra.ai.metis.pass.rating.IPassRater;
-import edu.tigers.sumatra.ai.metis.pass.rating.PassInterceptionRater;
+import edu.tigers.sumatra.ai.metis.pass.rating.PassInterceptionMovingRobotRater;
 import edu.tigers.sumatra.ai.metis.pass.rating.RatedPassFactory;
 import edu.tigers.sumatra.ai.metis.pass.rating.ReflectorRater;
+import edu.tigers.sumatra.ai.metis.targetrater.BestGoalKickRater;
 import edu.tigers.sumatra.ai.metis.targetrater.MaxAngleKickRater;
 import edu.tigers.sumatra.botmanager.botskills.data.EKickerDevice;
 import edu.tigers.sumatra.drawable.ColorPickerFactory;
 import edu.tigers.sumatra.drawable.DrawableAnnotation;
+import edu.tigers.sumatra.drawable.DrawableGrid;
 import edu.tigers.sumatra.drawable.DrawablePoint;
 import edu.tigers.sumatra.drawable.IColorPicker;
-import edu.tigers.sumatra.drawable.ValuedField;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.BallID;
 import edu.tigers.sumatra.ids.BotID;
+import edu.tigers.sumatra.ids.ETeamColor;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.wp.data.DynamicPosition;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
 
 import java.awt.Color;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.List;
 import java.util.function.ToDoubleFunction;
-import java.util.stream.Collectors;
 
 
 public class DebugGridTestCalc extends ACalculator
@@ -50,11 +50,11 @@ public class DebugGridTestCalc extends ACalculator
 	@Configurable(defValue = "75")
 	private static int numY = 75;
 
-	@Configurable(defValue = "PASS_TARGET_RATING")
-	private static EGridType type = EGridType.PASS_TARGET_RATING;
+	@Configurable(defValue = "BEST_GOAL_KICK_RATING")
+	private static EGridType type = EGridType.BEST_GOAL_KICK_RATING;
 
-	@Configurable(defValue = "PASS_DURATION")
-	private static EPassRating passRating = EPassRating.PASS_DURATION;
+	@Configurable(defValue = "INTERCEPTION")
+	private static EPassRating passRating = EPassRating.INTERCEPTION;
 
 	@Configurable(defValue = "-1")
 	private static DynamicPosition poi = new DynamicPosition(BallID.instance());
@@ -72,11 +72,12 @@ public class DebugGridTestCalc extends ACalculator
 	@Configurable(defValue = "STRAIGHT")
 	private static EKickerDevice kickerDevice = EKickerDevice.STRAIGHT;
 
+	@Configurable(defValue = "0.0")
+	private static double minPassDuration = 0.0;
+
 	private final PassFactory passFactory = new PassFactory();
 	private final RatedPassFactory ratingFactory = new RatedPassFactory();
 	private Collection<ITrackedBot> consideredBots;
-	private double minValue;
-	private double maxValue;
 	private IColorPicker colorPicker;
 	private DynamicPosition pointOfInterest;
 
@@ -88,36 +89,22 @@ public class DebugGridTestCalc extends ACalculator
 	}
 
 
-	@SuppressWarnings("squid:MethodCyclomaticComplexity") // long switch-case
 	@Override
 	public void doCalc()
 	{
 		pointOfInterest = poi.update(getWFrame());
 		ratingFactory.update(getWFrame().getOpponentBots().values());
-
-		minValue = 0;
-		maxValue = 1;
+		passFactory.update(getWFrame());
 		colorPicker = ColorPickerFactory.greenRedGradient();
 		switch (type)
 		{
-			case MAX_ANGLE_GOAL_KICK_RATING:
-				maxAngleGoalKickRating();
-				break;
-			case PASS_INTERCEPTION_RATING:
-				passInterceptionRating();
-				break;
-			case PASS_TARGET_RATING:
-				passTargetRating();
-				break;
-			case REFLECTOR_RATING:
-				reflectorRating();
-				break;
-			case FREE_SPACE_RATING:
-				freeSpaceRating();
-				break;
-			case DEFENSE_THREAT_RATING:
-				defenseThreatRating();
-				break;
+			case BEST_GOAL_KICK_RATING -> bestGoalKickRating();
+			case MAX_ANGLE_GOAL_KICK_RATING -> maxAngleGoalKickRating();
+			case PASS_INTERCEPTION_RATING -> passInterceptionRating();
+			case PASS_TARGET_RATING -> passTargetRating();
+			case REFLECTOR_RATING -> reflectorRating();
+			case FREE_SPACE_RATING -> freeSpaceRating();
+			case DEFENSE_THREAT_RATING -> defenseThreatRating();
 		}
 	}
 
@@ -126,29 +113,23 @@ public class DebugGridTestCalc extends ACalculator
 	{
 		consideredBots = getWFrame().getOpponentBots().values().stream()
 				.filter(b -> !Arrays.asList(ignoredBots).contains(b.getBotId()))
-				.collect(Collectors.toList());
+				.toList();
 		IPassRater passRater = new FreeSpaceRater(consideredBots);
-		draw(pos -> {
-			var pass = passFactory.straight(pointOfInterest.getPos(), pos, BotID.noBot(), BotID.noBot());
-			return passRater.rate(pass);
-		});
+		draw(pos -> passRater.rate(passFactory.straight(pointOfInterest.getPos(), pos, BotID.noBot(), BotID.noBot())));
 	}
 
 
 	private void defenseThreatRating()
 	{
-		DefenseThreatRater rater = new DefenseThreatRater();
+		var rater = new DefenseThreatRater();
 		draw(pos -> rater.getThreatRating(pointOfInterest.getPos(), pos));
 	}
 
 
 	private void reflectorRating()
 	{
-		ReflectorRater rater = new ReflectorRater(getWFrame().getOpponentBots().values());
-		draw(pos -> {
-			var pass = passFactory.straight(pointOfInterest.getPos(), pos, BotID.noBot(), BotID.noBot());
-			return rater.rate(pass);
-		});
+		var rater = new ReflectorRater(getWFrame().getOpponentBots().values());
+		draw(pos -> rater.rate(passFactory.straight(pointOfInterest.getPos(), pos, BotID.noBot(), BotID.noBot())));
 	}
 
 
@@ -162,6 +143,17 @@ public class DebugGridTestCalc extends ACalculator
 	}
 
 
+	private void bestGoalKickRating()
+	{
+		BotID bot = BotID.createBotId(3, ETeamColor.YELLOW);
+		var rater = new BestGoalKickRater();
+		rater.update(getWFrame());
+		draw(pos -> rater.rateKickOrigin(new KickOrigin(pos, bot, Double.POSITIVE_INFINITY))
+				.map(e -> e.getRatedTarget().getScore())
+				.orElse(0.0));
+	}
+
+
 	private void maxAngleGoalKickRating()
 	{
 		draw(pos -> MaxAngleKickRater.getDirectShootScoreChance(getWFrame().getBots().values(), pos));
@@ -172,8 +164,8 @@ public class DebugGridTestCalc extends ACalculator
 	{
 		consideredBots = getWFrame().getOpponentBots().values().stream()
 				.filter(b -> !Arrays.asList(ignoredBots).contains(b.getBotId()))
-				.collect(Collectors.toList());
-		IPassRater passRater = new PassInterceptionRater(consideredBots);
+				.toList();
+		IPassRater passRater = new PassInterceptionMovingRobotRater(consideredBots);
 		draw(pos -> getMaxRateOfChipOrStraightPass(passRater, pos));
 	}
 
@@ -186,76 +178,63 @@ public class DebugGridTestCalc extends ACalculator
 
 	private double ratePassTargetRating(final IVector2 pos)
 	{
-		passFactory.update(getWFrame());
 		Pass pass;
 		if (kickerDevice == EKickerDevice.STRAIGHT)
 		{
-			pass = passFactory.straight(pointOfInterest.getPos(), pos, BotID.noBot(), BotID.noBot(), 0.0);
+			pass = passFactory.straight(pointOfInterest.getPos(), pos, BotID.noBot(), BotID.noBot(), minPassDuration);
 		} else
 		{
-			pass = passFactory.chip(pointOfInterest.getPos(), pos, BotID.noBot(), BotID.noBot(), 0.0);
+			pass = passFactory.chip(pointOfInterest.getPos(), pos, BotID.noBot(), BotID.noBot(), minPassDuration);
 		}
-		var score = ratingFactory.rate(pass).getScore(passRating);
 		if (mode == EMode.SINGLE_POINT)
 		{
-			getShapes(EAiShapesLayer.TEST_DEBUG_GRID).addAll(ratingFactory.createShapes());
+			ratingFactory.setShapes(getShapes(EAiShapesLayer.TEST_DEBUG_GRID));
 		}
+		var score = ratingFactory.rate(pass).getScore(passRating);
+		ratingFactory.setShapes(null);
 		return score;
 	}
 
 
 	private void draw(final ToDoubleFunction<IVector2> ratingFunction)
 	{
-		if (mode == EMode.GRID)
+		switch (mode)
 		{
-			drawFullField(ratingFunction);
-		} else
-		{
-			double score = ratingFunction.applyAsDouble(singlePoint);
-			Color color = colorPicker.getColor(score);
-			getShapes(EAiShapesLayer.TEST_DEBUG_GRID).add(new DrawablePoint(singlePoint, color));
-			getShapes(EAiShapesLayer.TEST_DEBUG_GRID)
-					.add(new DrawableAnnotation(singlePoint, String.format("%.2f", score)).withOffset(Vector2.fromX(10)));
+			case GRID -> drawFullField(ratingFunction);
+			case SINGLE_POINT ->
+			{
+				double score = ratingFunction.applyAsDouble(singlePoint);
+				Color color = colorPicker.getColor(score);
+				getShapes(EAiShapesLayer.TEST_DEBUG_GRID).add(new DrawablePoint(singlePoint, color));
+				getShapes(EAiShapesLayer.TEST_DEBUG_GRID)
+						.add(new DrawableAnnotation(singlePoint, String.format("%.2f", score)).withOffset(Vector2.fromX(10)));
+			}
+			default ->
+			{
+				// nothing
+			}
 		}
 	}
 
 
 	private void drawFullField(final ToDoubleFunction<IVector2> ratingFunction)
 	{
-		double width = Geometry.getFieldWidth();
-		double height = Geometry.getFieldLength();
-		List<Double> points = new ArrayList<>();
-		for (int iy = 0; iy < numY; iy++)
-		{
-			for (int ix = 0; ix < numX; ix++)
-			{
-				double x = (-height / 2) + (ix * (height / (numX - 1)));
-				double y = (-width / 2) + (iy * (width / (numY - 1)));
-				points.add(ratingFunction.applyAsDouble(Vector2.fromXY(x, y)));
-			}
-		}
-
-		double[] data = points.stream().mapToDouble(d -> d).toArray();
-		ValuedField field = new ValuedField(data, numX, numY, 0);
-		field.setDrawDebug(drawNumbers);
-		field.setColorPicker(colorPicker);
-		field.setMinValue(minValue);
-		field.setMaxValue(maxValue);
-		getShapes(EAiShapesLayer.TEST_DEBUG_GRID).add(field);
+		getShapes(EAiShapesLayer.TEST_DEBUG_GRID).add(
+				DrawableGrid.generate(numX, numY, Geometry.getFieldWidth(), Geometry.getFieldLength(), ratingFunction)
+						.setColorPicker(colorPicker)
+						.setDrawNumbers(drawNumbers)
+		);
 	}
 
 
 	private enum EGridType
 	{
+		BEST_GOAL_KICK_RATING,
 		MAX_ANGLE_GOAL_KICK_RATING,
-
 		PASS_INTERCEPTION_RATING,
-
 		PASS_TARGET_RATING,
-
 		REFLECTOR_RATING,
 		FREE_SPACE_RATING,
-
 		DEFENSE_THREAT_RATING,
 	}
 

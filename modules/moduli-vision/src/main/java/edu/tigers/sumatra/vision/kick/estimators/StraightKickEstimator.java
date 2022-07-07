@@ -193,7 +193,7 @@ public class StraightKickEstimator implements IKickEstimator
 		results.add(generateFitResult(solverSliding.solve(records)));
 		results.add(generateFitResult(solverFull.solve(records)));
 		results.add(generateFitResult(solverFlatFull.solve(records))
-				.map(k -> k.toBuilder().withAvgDistance(k.getAvgDistance() * 0.25).build()));
+				.map(k -> k.toBuilder().withAvgDistance(k.getAvgDistance() * 0.5).build()));
 
 		activeSolvers = results.stream()
 				.filter(Optional::isPresent)

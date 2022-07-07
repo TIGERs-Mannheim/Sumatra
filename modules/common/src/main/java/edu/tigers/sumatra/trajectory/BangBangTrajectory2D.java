@@ -1,9 +1,10 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.trajectory;
 
+import com.sleepycat.persist.model.Persistent;
 import edu.tigers.sumatra.math.AngleMath;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
@@ -13,13 +14,14 @@ import net.jafama.FastMath;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Function;
+import java.util.function.UnaryOperator;
 
 
 /**
  * Bang Bang Trajectory for two dimensions.
  */
 @ToString
+@Persistent
 class BangBangTrajectory2D implements ITrajectory<IVector2>
 {
 	final BangBangTrajectory1D x = new BangBangTrajectory1D();
@@ -123,7 +125,7 @@ class BangBangTrajectory2D implements ITrajectory<IVector2>
 			final float vmax,
 			final float acc,
 			final float accuracy,
-			final Function<Float, Float> alphaFn
+			final UnaryOperator<Float> alphaFn
 	)
 	{
 		final var s0x = (float) s0.x();

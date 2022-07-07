@@ -19,6 +19,7 @@ import edu.tigers.sumatra.skillsystem.skills.BotSkillWrapperSkill;
 import edu.tigers.sumatra.skillsystem.skills.CommandListSkill;
 import edu.tigers.sumatra.skillsystem.skills.CriticalKeeperSkill;
 import edu.tigers.sumatra.skillsystem.skills.DragBallSkill;
+import edu.tigers.sumatra.skillsystem.skills.DribbleKickSkill;
 import edu.tigers.sumatra.skillsystem.skills.DribbleSkill;
 import edu.tigers.sumatra.skillsystem.skills.GetBallContactSkill;
 import edu.tigers.sumatra.skillsystem.skills.IdleSkill;
@@ -69,6 +70,10 @@ public enum ESkill implements IInstanceableEnum
 			.setterParam(IVector2.class, "target", "4050,0", ATouchKickSkill::setTarget)
 			.setterParam(EKickerDevice.class, "device", "STRAIGHT", ATouchKickSkill::setKickerDevice)
 			.setterParam(Double.TYPE, "kickSpeed", "0", ATouchKickSkill::setKickSpeed)
+	),
+	DRIBBLE_KICK(ic(DribbleKickSkill.class)
+			.setterParam(IVector2.class, "target", "4050,0", DribbleKickSkill::setTarget)
+			.setterParam(IVector2.class, "destination", "0,0", DribbleKickSkill::setDestination)
 	),
 	SINGLE_TOUCH_KICK(ic(SingleTouchKickSkill.class)
 			.setterParam(IVector2.class, "target", "4050,0", ATouchKickSkill::setTarget)

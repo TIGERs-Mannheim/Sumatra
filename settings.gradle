@@ -5,7 +5,7 @@
 pluginManagement {
     repositories {
         maven {
-            url "https://nexus.tigers-mannheim.de/content/groups/public/"
+            url 'https://nexus.tigers-mannheim.de/repository/gradle-plugin-portal/'
         }
         gradlePluginPortal()
     }
@@ -20,6 +20,17 @@ rootProject.name = 'sumatra'
 //    }
 //}
 
+buildCache {
+    remote(HttpBuildCache) {
+        url = 'https://build-cache.tigers-mannheim.de/cache/'
+        credentials {
+            username = System.getenv("GRADLE_BUILD_CACHE_USERNAME") ?: "read"
+            password = System.getenv("GRADLE_BUILD_CACHE_PASSWORD") ?: "I\"\"H=*#X11he9fW-=U\"k*80+lR-'uy7="
+        }
+        push = (System.getenv("GRADLE_BUILD_CACHE_USERNAME") != null)
+    }
+}
+
 include(':common-math')
 include(':common')
 include(':common-bot')
@@ -32,7 +43,6 @@ include(':moduli-botmanager-sim')
 include(':moduli-botmanager-tigers')
 include(':moduli-bot-params')
 include(':moduli-cam')
-include(':moduli-gui-notifications')
 include(':moduli-record')
 include(':moduli-referee')
 include(':moduli-timer')
@@ -48,11 +58,9 @@ include(':moduli-statistics-saver')
 include(':autoreferee-gui')
 include(':sumatra-model')
 include(':sumatra-gamelog')
-include(':sumatra-testplays')
 include(':sumatra-rcm')
 include(':sumatra-simulation-control')
 include(':moduli-movement-limit-observer')
-include(':moduli-calibration')
 include(':moduli-vision-simulation')
 include(':sumatra-skillsystem')
 include(':sumatra-pathfinder')
@@ -67,7 +75,6 @@ include(':sumatra-gui-rcm')
 include(':sumatra-gui-referee')
 include(':sumatra-gui-replay')
 include(':sumatra-gui-sim')
-include(':sumatra-gui-testplays')
 include(':sumatra-gui-timer')
 include(':sumatra-gui-visualizer')
 include(':sumatra-gui-wp')
@@ -89,7 +96,6 @@ project(':moduli-botmanager-sim').projectDir = file('modules/moduli-botmanager-s
 project(':moduli-botmanager-tigers').projectDir = file('modules/moduli-botmanager-tigers')
 project(':moduli-bot-params').projectDir = file('modules/moduli-bot-params')
 project(':moduli-cam').projectDir = file('modules/moduli-cam')
-project(':moduli-gui-notifications').projectDir = file('modules/moduli-gui-notifications')
 project(':moduli-record').projectDir = file('modules/moduli-record')
 project(':moduli-referee').projectDir = file('modules/moduli-referee')
 project(':moduli-timer').projectDir = file('modules/moduli-timer')
@@ -102,11 +108,9 @@ project(':moduli-ai-controller').projectDir = file('modules/moduli-ai-controller
 project(':moduli-offensive-tree').projectDir = file('modules/moduli-offensive-tree')
 project(':moduli-team-client').projectDir = file('modules/moduli-team-client')
 project(':moduli-statistics-saver').projectDir = file('modules/moduli-statistics-saver')
-project(':moduli-calibration').projectDir = file('modules/moduli-calibration')
 project(':autoreferee-gui').projectDir = file('modules/autoreferee-gui')
 project(':sumatra-model').projectDir = file('modules/sumatra-model')
 project(':sumatra-gamelog').projectDir = file('modules/sumatra-gamelog')
-project(':sumatra-testplays').projectDir = file('modules/sumatra-testplays')
 project(':sumatra-rcm').projectDir = file('modules/sumatra-rcm')
 project(':sumatra-simulation-control').projectDir = file('modules/sumatra-simulation-control')
 project(':moduli-movement-limit-observer').projectDir = file('modules/moduli-movement-limit-observer')
@@ -124,7 +128,6 @@ project(':sumatra-gui-rcm').projectDir = file('modules/sumatra-gui-rcm')
 project(':sumatra-gui-referee').projectDir = file('modules/sumatra-gui-referee')
 project(':sumatra-gui-replay').projectDir = file('modules/sumatra-gui-replay')
 project(':sumatra-gui-sim').projectDir = file('modules/sumatra-gui-sim')
-project(':sumatra-gui-testplays').projectDir = file('modules/sumatra-gui-testplays')
 project(':sumatra-gui-timer').projectDir = file('modules/sumatra-gui-timer')
 project(':sumatra-gui-visualizer').projectDir = file('modules/sumatra-gui-visualizer')
 project(':sumatra-gui-wp').projectDir = file('modules/sumatra-gui-wp')

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.skillsystem.skills.util;
@@ -9,6 +9,7 @@ import edu.tigers.sumatra.geometry.IPenaltyArea;
 import edu.tigers.sumatra.ids.ETeam;
 import edu.tigers.sumatra.math.line.Line;
 import edu.tigers.sumatra.math.line.LineMath;
+import edu.tigers.sumatra.math.line.v2.ILine;
 import edu.tigers.sumatra.math.line.v2.ILineSegment;
 import edu.tigers.sumatra.math.line.v2.Lines;
 import edu.tigers.sumatra.math.rectangle.IRectangle;
@@ -120,7 +121,7 @@ public class PositionValidator
 	 * <li>Else: Move to nearest point to given pos</li>
 	 * </ul>
 	 *
-	 * @param pos the target position of the robot
+	 * @param pos          the target position of the robot
 	 * @param penaltyAreas the penalty areas to check
 	 * @return the pos, if outside. An adapted pos else
 	 */
@@ -132,20 +133,36 @@ public class PositionValidator
 		{
 			if (penArea.isPointInShapeOrBehind(pos))
 			{
-				if (wFrame.getBall().getVel().getLength2() > 0.1)
-				{
-					return pos.nearestToOpt(penArea.lineIntersections(Lines.lineFromPoints(pos, wFrame.getBall().getPos())))
-							.orElseGet(() -> penArea.nearestPointOutside(pos));
-				} else if (penArea.isPointInShape(wFrame.getBall().getPos()))
-				{
-					// move as near as possible to the ball inside penArea
-					return penArea.nearestPointOutside(wFrame.getBall().getPos());
-				}
-				// move to nearest pos outside based on current pos
-				return penArea.nearestPointOutside(pos);
+				return movePosOutOfPenAreaWrtBall(pos, penArea);
 			}
 		}
 		return pos;
+	}
+
+
+	private IVector2 movePosOutOfPenAreaWrtBall(IVector2 pos, IPenaltyArea penArea)
+	{
+		if (wFrame.getBall().getVel().getLength2() > 0.1)
+		{
+			return pos.nearestToOpt(penArea.lineIntersections(ballLine(pos)))
+					.orElseGet(() -> penArea.nearestPointOutside(pos));
+		} else if (penArea.isPointInShape(wFrame.getBall().getPos()))
+		{
+			// move as near as possible to the ball inside penArea
+			return penArea.nearestPointOutside(wFrame.getBall().getPos());
+		}
+		// move to nearest pos outside based on current pos
+		return penArea.nearestPointOutside(pos);
+	}
+
+
+	private ILine ballLine(IVector2 pos)
+	{
+		if (pos.distanceTo(wFrame.getBall().getPos()) > 100)
+		{
+			return Lines.lineFromPoints(pos, wFrame.getBall().getPos());
+		}
+		return Lines.lineFromDirection(pos, wFrame.getBall().getVel());
 	}
 
 
@@ -189,8 +206,8 @@ public class PositionValidator
 	/**
 	 * See {@link #movePosOutOfPenAreaWrtBall(IVector2, List)}
 	 *
-	 * @param pos the target position of the robot
-	 * @param margin the margin to add to both pen areas
+	 * @param pos         the target position of the robot
+	 * @param margin      the margin to add to both pen areas
 	 * @param penAreaTeam the teams for which penalty areas should be considered
 	 * @return the pos, if outside. An adapted pos else
 	 */

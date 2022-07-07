@@ -1,0 +1,18 @@
+plugins {
+    id 'groovy'
+    id 'jacoco'
+    id 'sumatra.test'
+}
+
+dependencies {
+    // Specific groovy version
+    testImplementation platform('org.codehaus.groovy:groovy-bom:3.0.9')
+    testImplementation 'org.codehaus.groovy:groovy'
+    testRuntimeOnly 'org.codehaus.groovy:groovy-templates'
+    testRuntimeOnly 'org.codehaus.groovy:groovy-xml'
+    testRuntimeOnly 'org.codehaus.groovy:groovy-json'
+
+    // Spock
+    testImplementation platform('org.spockframework:spock-bom:2.0-groovy-3.0')
+    testImplementation 'org.spockframework:spock-core'
+}

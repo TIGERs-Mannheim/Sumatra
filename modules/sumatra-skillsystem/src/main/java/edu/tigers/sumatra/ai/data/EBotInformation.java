@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.data;
@@ -9,7 +9,7 @@ package edu.tigers.sumatra.ai.data;
  */
 public enum EBotInformation
 {
-	BATTERY("Battery [V]"),
+	BATTERY("Battery [%]"),
 	KICKER_CHARGE("Kicker [V]"),
 	BROKEN_FEATURES("Broken Features"),
 	BALL_CONTACT("Ball Contact"),
@@ -32,13 +32,11 @@ public enum EBotInformation
 	VERSION("SW Version"),
 	HW_ID("HW ID"),
 	LAST_FEEDBACK("Last feedback"),
-	NRF_TX_LOSS("Nrf tx loss"),
-	NRF_TX_PACKETS("Nrf tx packets"),
-	NRF_RX_LOSS("Nrf rx loss"),
-	NRF_RX_PACKETS("Nrf rx packets"),
-	NRF_LINK_QUALITY("Nrf link quality"),
-	NRF_PACKETS_MAX_RT("Nrf packets max rt"),
-	NRF_PACKETS_ACKED("Nrf packets acked"),
+	RF_TX_PACKETS("RF Tx packets"),
+	RF_RX_PACKETS("RF Rx packets"),
+	RF_LINK_QUALITY("RF link quality"),
+	RF_BOT_RSSI("RF bot RSSI"),
+	RF_BS_RSSI("RF BS RSSI"),
 
 	;
 

@@ -171,17 +171,6 @@ public class InterceptionsCanvas extends JPanel
 		g2.drawLine(end.x, start.y, start.x, end.y);
 		g2.drawLine(start2.x, start2.y, end2.x, end2.y);
 		g2.drawLine(end2.x, start2.y, start2.x, end2.y);
-
-		g2.setColor(Color.MAGENTA);
-		double fallBackTravelTime = information.getInterceptionTargetTimeFallback();
-		Point startF = convertDataPointToGUICoordinates(fallBackTravelTime - 0.1, 1 - 0.1);
-		Point endF = convertDataPointToGUICoordinates(fallBackTravelTime + 0.1, 1 + 0.1);
-		Point start2F = convertDataPointToGUICoordinates(fallBackTravelTime - 0.1, 1 + 0.1);
-		Point end2F = convertDataPointToGUICoordinates(fallBackTravelTime + 0.1, 1 - 0.1);
-		g2.drawLine(startF.x, startF.y, endF.x, endF.y);
-		g2.drawLine(endF.x, startF.y, startF.x, endF.y);
-		g2.drawLine(start2F.x, start2F.y, end2F.x, end2F.y);
-		g2.drawLine(end2F.x, start2F.y, start2F.x, end2F.y);
 	}
 
 

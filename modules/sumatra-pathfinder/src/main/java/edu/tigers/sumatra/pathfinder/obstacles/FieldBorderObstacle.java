@@ -4,13 +4,13 @@
 
 package edu.tigers.sumatra.pathfinder.obstacles;
 
-import java.awt.Color;
-import java.util.List;
-
 import edu.tigers.sumatra.drawable.DrawableRectangle;
 import edu.tigers.sumatra.drawable.IDrawableShape;
 import edu.tigers.sumatra.math.rectangle.IRectangle;
 import edu.tigers.sumatra.math.vector.IVector2;
+
+import java.awt.Color;
+import java.util.List;
 
 
 /**
@@ -25,6 +25,7 @@ public class FieldBorderObstacle extends AObstacle
 	{
 		this.field = field;
 		setEmergencyBrakeFor(true);
+		setPriority(90);
 	}
 
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.metis;
@@ -7,14 +7,14 @@ package edu.tigers.sumatra.ai.metis;
 import edu.tigers.sumatra.ai.metis.ballpossession.BallPossession;
 import edu.tigers.sumatra.ai.metis.ballresponsibility.EBallResponsibility;
 import edu.tigers.sumatra.ai.metis.botdistance.BotDistance;
+import edu.tigers.sumatra.ai.metis.defense.data.DefensePenAreaPositionAssignment;
 import edu.tigers.sumatra.ai.metis.defense.data.DefenseThreatAssignment;
 import edu.tigers.sumatra.ai.metis.general.SkirmishInformation;
 import edu.tigers.sumatra.ai.metis.kicking.Pass;
 import edu.tigers.sumatra.ai.metis.offense.action.OffensiveAction;
 import edu.tigers.sumatra.ai.metis.offense.action.situation.OffensiveActionTreePath;
-import edu.tigers.sumatra.ai.metis.offense.ballinterception.BallInterception;
 import edu.tigers.sumatra.ai.metis.offense.ballinterception.BallInterceptionInformation;
-import edu.tigers.sumatra.ai.metis.offense.kickoff.KickoffStrategy;
+import edu.tigers.sumatra.ai.metis.offense.ballinterception.RatedBallInterception;
 import edu.tigers.sumatra.ai.metis.offense.statistics.OffensiveAnalysedFrame;
 import edu.tigers.sumatra.ai.metis.offense.statistics.OffensiveStatisticsFrame;
 import edu.tigers.sumatra.ai.metis.offense.strategy.OffensiveStrategy;
@@ -22,7 +22,8 @@ import edu.tigers.sumatra.ai.metis.pass.KickOrigin;
 import edu.tigers.sumatra.ai.metis.pass.rating.RatedPass;
 import edu.tigers.sumatra.ai.metis.redirector.RedirectorDetectionInformation;
 import edu.tigers.sumatra.ai.metis.statistics.stats.MatchStats;
-import edu.tigers.sumatra.ai.metis.support.SupportPosition;
+import edu.tigers.sumatra.ai.metis.support.behaviors.ESupportBehavior;
+import edu.tigers.sumatra.ai.metis.support.behaviors.SupportBehaviorPosition;
 import edu.tigers.sumatra.ai.metis.targetrater.GoalKick;
 import edu.tigers.sumatra.ai.pandora.plays.EPlay;
 import edu.tigers.sumatra.ids.BotID;
@@ -31,6 +32,7 @@ import edu.tigers.sumatra.math.circle.ICircle;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.pathfinder.PathFinderPrioMap;
+import edu.tigers.sumatra.skillsystem.skills.util.PenAreaBoundary;
 import edu.tigers.sumatra.statemachine.IEvent;
 import edu.tigers.sumatra.statemachine.IState;
 import edu.tigers.sumatra.trees.EOffensiveSituation;
@@ -41,6 +43,7 @@ import lombok.NonNull;
 import lombok.Singular;
 import lombok.Value;
 
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -108,10 +111,8 @@ public class TacticalField
 	Map<BotID, OffensiveAction> offensiveActions;
 	@NonNull
 	SkirmishInformation skirmishInformation;
-	@NonNull
-	KickoffStrategy kickoffStrategy;
 	@Singular
-	Map<BotID, BallInterception> ballInterceptions;
+	Map<BotID, RatedBallInterception> ballInterceptions;
 	@NonNull
 	IVector2 supportiveAttackerMovePos;
 	@NonNull
@@ -135,13 +136,19 @@ public class TacticalField
 	// Support
 	//
 	@Singular
-	List<SupportPosition> selectedSupportPositions;
-	@Singular
 	List<ICircle> freeSpots;
 	@Singular
 	List<IArc> offensiveShadows;
 	@Singular
 	List<IVector2> supporterMidfieldPositions;
+	@Singular
+	List<IVector2> supporterKickoffPositions;
+	@Singular
+	Map<BotID, EnumMap<ESupportBehavior, SupportBehaviorPosition>> supportViabilities;
+	@Singular("supportBehaviorAssignment")
+	Map<BotID, ESupportBehavior> supportBehaviorAssignment;
+	@Singular("activeSupportBehaviors")
+	Map<ESupportBehavior, Boolean> activeSupportBehaviors;
 
 
 	//
@@ -149,7 +156,10 @@ public class TacticalField
 	//
 	ITrackedBot opponentPassReceiver;
 	@Singular
-	List<DefenseThreatAssignment> defenseThreatAssignments;
+	List<DefenseThreatAssignment> defenseOuterThreatAssignments;
+	@Singular
+	List<DefensePenAreaPositionAssignment> defensePenAreaPositionAssignments;
+	PenAreaBoundary defensePenAreaBoundaryForPenAreaGroup;
 
 	//
 	// Keeper
@@ -169,7 +179,6 @@ public class TacticalField
 				.pathFinderPrioMap(new PathFinderPrioMap())
 				.offensiveStrategy(new OffensiveStrategy())
 				.skirmishInformation(new SkirmishInformation())
-				.kickoffStrategy(new KickoffStrategy())
 				.supportiveAttackerMovePos(Vector2.zero())
 				.actionTrees(new OffensiveActionTreeMap())
 				.currentPath(new OffensiveActionTreePath())

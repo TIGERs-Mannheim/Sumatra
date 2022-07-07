@@ -104,14 +104,14 @@ public class TeamOffensiveStrategyPanel extends JPanel
 	 */
 	public void setOffensiveActions(final Map<BotID, OffensiveAction> offensiveActions)
 	{
-		String[][] actions = new String[offensiveActions.size()][7];
-		int i = 0;
+		var actions = new String[offensiveActions.size()][7];
+		var i = 0;
 		for (Map.Entry<BotID, OffensiveAction> entry : offensiveActions.entrySet())
 		{
 			OffensiveAction action = entry.getValue();
-			BotID botID = entry.getKey();
+			var botID = entry.getKey();
 			actions[i][0] = botID.toString();
-			actions[i][1] = action.getAction().toString();
+			actions[i][1] = "invalid";
 			actions[i][2] = action.getMove().toString();
 			actions[i][3] = String.valueOf((int) (action.getViability().getScore() * 100) / 100.0);
 			i++;

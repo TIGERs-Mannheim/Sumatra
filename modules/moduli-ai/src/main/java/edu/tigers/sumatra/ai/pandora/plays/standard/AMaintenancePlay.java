@@ -1,10 +1,10 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.pandora.plays.standard;
 
-import edu.tigers.sumatra.ai.math.AiMath;
+import edu.tigers.sumatra.ai.common.PointChecker;
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
 import edu.tigers.sumatra.ai.pandora.plays.APlay;
 import edu.tigers.sumatra.ai.pandora.plays.EPlay;
@@ -13,16 +13,10 @@ import edu.tigers.sumatra.ai.pandora.roles.move.MoveRole;
 import edu.tigers.sumatra.drawable.DrawableBotShape;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.BotID;
-import edu.tigers.sumatra.math.circle.Circle;
-import edu.tigers.sumatra.math.circle.ICircle;
 import edu.tigers.sumatra.math.vector.IVector2;
-import edu.tigers.sumatra.wp.data.ITrackedBot;
 
-import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.IdentityHashMap;
 import java.util.List;
-import java.util.Map;
 
 
 /**
@@ -32,6 +26,7 @@ public abstract class AMaintenancePlay extends APlay
 {
 	private long tDestReached = 0;
 
+	private final PointChecker pointChecker = new PointChecker().checkBallDistances().checkPointFreeOfBots();
 
 	protected AMaintenancePlay(EPlay play)
 	{
@@ -80,29 +75,21 @@ public abstract class AMaintenancePlay extends APlay
 	{
 		IVector2 dest = startPos.subtractNew(direction);
 
-		Map<BotID, ITrackedBot> otherBots = new IdentityHashMap<>();
-		otherBots.putAll(getWorldFrame().getOpponentBots());
-		otherBots.putAll(getWorldFrame().getTigerBotsVisible());
-
-		List<ARole> roles = new ArrayList<>(getRoles());
+		List<MoveRole> roles = findRoles(MoveRole.class);
 		roles.sort(Comparator.comparing(ARole::getBotID));
 
-		ICircle shape;
 		boolean destsReached = true;
-		for (ARole aRole : roles)
+		for (MoveRole role : roles)
 		{
-			MoveRole moveRole = (MoveRole) aRole;
 			do
 			{
 				dest = dest.addNew(direction);
-				shape = Circle.createCircle(dest, Geometry.getBotRadius() * 2);
+			} while (!pointChecker.allMatch(getAiFrame().getBaseAiFrame(), dest, role.getBotID()));
 
-			} while (AiMath.isShapeOccupiedByBots(shape, AiMath.getNonMovingBots(otherBots, 0.2), aRole.getBotID()));
+			role.updateDestination(dest);
+			role.updateTargetAngle(orientation * Math.PI / 180);
 
-			moveRole.updateDestination(dest);
-			moveRole.updateTargetAngle(orientation * Math.PI / 180);
-
-			destsReached = destsReached && (moveRole.isCompleted() || moveRole.isDestinationReached());
+			destsReached = destsReached && (role.isCompleted() || role.isDestinationReached());
 		}
 		if (destsReached)
 		{
@@ -111,10 +98,7 @@ public abstract class AMaintenancePlay extends APlay
 				tDestReached = getWorldFrame().getTimestamp();
 			} else if ((getWorldFrame().getTimestamp() - tDestReached) > 1e9)
 			{
-				for (ARole aRole : roles)
-				{
-					aRole.setCompleted();
-				}
+				getRoles().forEach(ARole::setCompleted);
 			}
 		} else
 		{

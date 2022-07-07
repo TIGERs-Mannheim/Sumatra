@@ -1,13 +1,1 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<edu.tigers.sumatra.geometry.BallParameters base="edu.tigers.sumatra.geometry.BallParameters">
-    <accRoll:TISCH>-700.0</accRoll:TISCH>
-    <accRoll:ANDRE>-200</accRoll:ANDRE>
-    <accSlide:LAB>-3400</accSlide:LAB>
-    <accSlide:TISCH>-3170.0</accSlide:TISCH>
-    <accSlide:ANDRE>-2200</accSlide:ANDRE>
-    <chipDampingXYFirstHop:LAB>0.58</chipDampingXYFirstHop:LAB>
-    <chipDampingXYFirstHop:NICOLAI>0.69</chipDampingXYFirstHop:NICOLAI>
-    <chipDampingXYOtherHops:NICOLAI>0.96</chipDampingXYOtherHops:NICOLAI>
-    <chipDampingZ:NICOLAI>0.69</chipDampingZ:NICOLAI>
-    <kSwitch:NICOLAI>0.7</kSwitch:NICOLAI>
-</edu.tigers.sumatra.geometry.BallParameters>
+<?xml version="1.0" encoding="UTF-8"?><configuration/>

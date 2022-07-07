@@ -1,92 +1,86 @@
 /*
- * Copyright (c) 2009 - 2019, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.presenter.timer;
 
-import java.awt.Component;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.util.Optional;
-
-import javax.swing.Timer;
-
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import edu.tigers.moduli.listenerVariables.ModulesState;
 import edu.tigers.sumatra.model.SumatraModel;
 import edu.tigers.sumatra.timer.ITimerObserver;
 import edu.tigers.sumatra.timer.SumatraTimer;
 import edu.tigers.sumatra.timer.TimerInfo;
 import edu.tigers.sumatra.view.timer.TimerChartPanel;
 import edu.tigers.sumatra.view.timer.TimerPanel;
-import edu.tigers.sumatra.views.ASumatraViewPresenter;
-import edu.tigers.sumatra.views.ISumatraView;
+import edu.tigers.sumatra.views.ISumatraViewPresenter;
+import lombok.Getter;
+import lombok.extern.log4j.Log4j2;
+
+import javax.swing.Timer;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.util.Optional;
 
 
 /**
  * Presenter for the Timer-GUI
- *
- * @author Gero
- * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  */
-public class TimerPresenter extends ASumatraViewPresenter implements ITimerObserver
+@Log4j2
+public class TimerPresenter implements ISumatraViewPresenter, ITimerObserver
 {
-	// Logger
-	private static final Logger log = LogManager.getLogger(TimerPresenter.class.getName());
-
 	private static final int TIMER_UPDATE_RATE = 100;
 
-	private final TimerPanel timerPanel;
-	private final TimerChartPanel chartPanel;
+	@Getter
+	private final TimerPanel viewPanel = new TimerPanel();
+	private final TimerChartPanel chartPanel = viewPanel.getChartPanel();
+
 	private SumatraTimer timer;
 	private Timer updateTimer;
 
 
-	/**
-	 *
-	 */
-	public TimerPresenter()
+	@Override
+	public void onStartModuli()
 	{
-		timerPanel = new TimerPanel();
-		chartPanel = timerPanel.getChartPanel();
+		ISumatraViewPresenter.super.onStartModuli();
+
+		final Optional<SumatraTimer> timerOpt = SumatraModel.getInstance().getModuleOpt(SumatraTimer.class);
+		if (timerOpt.isPresent())
+		{
+			timer = timerOpt.get();
+			timer.addObserver(this);
+
+			updateTimer = new Timer(TIMER_UPDATE_RATE, new Runner());
+			updateTimer.start();
+		}
 	}
 
 
 	@Override
-	public void onModuliStateChanged(final ModulesState state)
+	public void onStopModuli()
 	{
-		super.onModuliStateChanged(state);
-		switch (state)
+		ISumatraViewPresenter.super.onStopModuli();
+
+		if (updateTimer != null)
 		{
-			case ACTIVE:
-				final Optional<SumatraTimer> timerOpt = SumatraModel.getInstance().getModuleOpt(SumatraTimer.class);
-				if (timerOpt.isPresent())
-				{
-					timer = timerOpt.get();
-					timer.addObserver(this);
-
-					updateTimer = new Timer(TIMER_UPDATE_RATE, new Runner());
-					updateTimer.start();
-				}
-				break;
-
-			case RESOLVED:
-				if (updateTimer != null)
-				{
-					updateTimer.stop();
-				}
-				if (timer != null)
-				{
-					timer.removeObserver(this);
-				}
-
-				chartPanel.clearChart();
-				break;
-
-			default:
+			updateTimer.stop();
+		}
+		if (timer != null)
+		{
+			timer.removeObserver(this);
 		}
 
+		chartPanel.clearChart();
+	}
+
+
+	@Override
+	public void onShown()
+	{
+		chartPanel.setVisible(true);
+	}
+
+
+	@Override
+	public void onFocused()
+	{
+		chartPanel.setVisible(true);
 	}
 
 
@@ -115,19 +109,5 @@ public class TimerPresenter extends ASumatraViewPresenter implements ITimerObser
 				log.error("Error in TimerRunner", err);
 			}
 		}
-	}
-
-
-	@Override
-	public Component getComponent()
-	{
-		return timerPanel;
-	}
-
-
-	@Override
-	public ISumatraView getSumatraView()
-	{
-		return timerPanel;
 	}
 }

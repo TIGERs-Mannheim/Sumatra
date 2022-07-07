@@ -9,6 +9,8 @@ import edu.tigers.sumatra.ball.BallState;
 import edu.tigers.sumatra.ball.trajectory.ABallTrajectory;
 import edu.tigers.sumatra.ball.trajectory.IBallTrajectory;
 import edu.tigers.sumatra.math.SumatraMath;
+import edu.tigers.sumatra.math.line.v2.ILineSegment;
+import edu.tigers.sumatra.math.line.v2.Lines;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.IVector3;
 import edu.tigers.sumatra.math.vector.Vector2f;
@@ -120,9 +122,9 @@ public class FlatBallTrajectory extends ABallTrajectory
 	 * Create from state.
 	 *
 	 * @param parameters
-	 * @param posNow in [mm]
-	 * @param velNow in [mm/s]
-	 * @param spin in [rad/s]
+	 * @param posNow     in [mm]
+	 * @param velNow     in [mm/s]
+	 * @param spin       in [rad/s]
 	 * @return
 	 */
 	public static FlatBallTrajectory fromState(
@@ -308,5 +310,28 @@ public class FlatBallTrajectory extends ABallTrajectory
 		Validate.isTrue(tToVel >= 0);
 
 		return tSwitch + tToVel;
+	}
+
+
+	@Override
+	public List<ILineSegment> getTravelLineSegments()
+	{
+		IVector2 start = initialPos.getXYVector();
+		IVector2 end = getPosByTime(getTimeAtRest()).getXYVector();
+		if (posSwitch.equals(start))
+		{
+			return List.of(Lines.segmentFromPoints(start, end));
+		}
+		return List.of(
+				Lines.segmentFromPoints(start, posSwitch),
+				Lines.segmentFromPoints(posSwitch, end)
+		);
+	}
+
+
+	@Override
+	public List<ILineSegment> getTravelLinesRolling()
+	{
+		return getTravelLineSegments();
 	}
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.metis.defense.data;
@@ -20,18 +20,33 @@ import java.util.Optional;
 @Value
 public class DefenseBotThreat implements IDefenseThreat
 {
+	DefenseBotThreatDefStrategyData defStrategyData;
 	ITrackedBot bot;
-
-	ILineSegment threatLine;
-	ILineSegment protectionLine;
-
 	double threatRating;
+
+
+	public ITrackedBot getBot()
+	{
+		return bot;
+	}
+
+
+	public double getThreatRating()
+	{
+		return threatRating;
+	}
+
+
+	public EDefenseBotThreatDefStrategy getDefendStrategy()
+	{
+		return defStrategyData.type();
+	}
 
 
 	@Override
 	public IVector2 getPos()
 	{
-		return threatLine.getStart();
+		return defStrategyData.threatPos();
 	}
 
 
@@ -44,21 +59,27 @@ public class DefenseBotThreat implements IDefenseThreat
 	@Override
 	public ILineSegment getThreatLine()
 	{
-		return threatLine;
+		return defStrategyData.threatLine();
 	}
 
 
 	@Override
 	public Optional<ILineSegment> getProtectionLine()
 	{
-		return Optional.ofNullable(protectionLine);
+		return Optional.ofNullable(defStrategyData.protectionLine());
+	}
+
+
+	public Optional<IVector2> getProtectionPosition()
+	{
+		return Optional.ofNullable(defStrategyData.protectionPos());
 	}
 
 
 	@Override
 	public IVector2 getVel()
 	{
-		return bot.getVel();
+		return defStrategyData.threatVel();
 	}
 
 
@@ -72,7 +93,11 @@ public class DefenseBotThreat implements IDefenseThreat
 	@Override
 	public EDefenseThreatType getType()
 	{
-		return EDefenseThreatType.BOT_TO_GOAL;
+		return switch (defStrategyData.type())
+				{
+					case CENTER_BACK -> EDefenseThreatType.BOT_CB;
+					case MAN_2_MAN_MARKER -> EDefenseThreatType.BOT_M2M;
+				};
 	}
 
 
@@ -84,7 +109,7 @@ public class DefenseBotThreat implements IDefenseThreat
 			return true;
 		}
 
-		if (o == null || getClass() != o.getClass())
+		if (o == null || getClass() != o.getClass() || getType() != o.getType())
 		{
 			return false;
 		}

@@ -18,7 +18,6 @@ dependencies {
     implementation project(':sumatra-gui-referee')
     implementation project(':sumatra-gui-replay')
     implementation project(':sumatra-gui-sim')
-    implementation project(':sumatra-gui-testplays')
     implementation project(':sumatra-gui-timer')
     implementation project(':sumatra-gui-wp')
     implementation project(':sumatra-gui-logfile')
@@ -40,17 +39,16 @@ dependencies {
     runtimeOnly project(':moduli-team-client')
     runtimeOnly project(':moduli-bot-params')
     runtimeOnly project(':moduli-log-analysis')
-    runtimeOnly project(':moduli-calibration')
 
     implementation 'com.github.TIGERs-Mannheim:moduli:4.1'
 
-    implementation 'org.apache.logging.log4j:log4j-api:2.14.1'
-    runtimeOnly 'org.apache.logging.log4j:log4j-jul:2.14.1'
-    runtimeOnly 'org.apache.logging.log4j:log4j-1.2-api:2.14.1'
-    runtimeOnly 'org.slf4j:slf4j-log4j12:1.7.30'
-    runtimeOnly 'org.apache.logging.log4j:log4j-core:2.14.1'
+    implementation 'org.apache.logging.log4j:log4j-api:2.17.1'
+    runtimeOnly 'org.apache.logging.log4j:log4j-jul:2.17.1'
+    runtimeOnly 'org.apache.logging.log4j:log4j-1.2-api:2.17.1'
+    runtimeOnly 'org.slf4j:slf4j-log4j12:1.7.36'
+    runtimeOnly 'org.apache.logging.log4j:log4j-core:2.17.1'
 
-    implementation 'commons-cli:commons-cli:1.4'
+    implementation 'commons-cli:commons-cli:1.5.0'
 }
 
 application {
@@ -60,14 +58,8 @@ application {
             '-Xnoclassgc',
             '-Dsun.java2d.d3d=false',
             '-Djava.net.preferIPv4Stack=true',
-            '-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005',
             '-Xmx4G'
     ]
-
-    if (project.hasProperty("development")) {
-        // enable assertions
-        applicationDefaultJvmArgs += "-ea"
-    }
 }
 
 tasks.named("run").configure {

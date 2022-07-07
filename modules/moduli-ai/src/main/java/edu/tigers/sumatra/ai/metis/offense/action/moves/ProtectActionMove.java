@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.metis.offense.action.moves;
@@ -7,7 +7,6 @@ package edu.tigers.sumatra.ai.metis.offense.action.moves;
 import com.github.g3force.configurable.Configurable;
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
 import edu.tigers.sumatra.ai.metis.offense.action.EActionViability;
-import edu.tigers.sumatra.ai.metis.offense.action.EOffensiveAction;
 import edu.tigers.sumatra.ai.metis.offense.action.OffensiveAction;
 import edu.tigers.sumatra.ai.metis.offense.action.OffensiveActionViability;
 import edu.tigers.sumatra.ai.metis.offense.dribble.BallDribbleToPosGenerator;
@@ -27,10 +26,10 @@ import java.util.function.Supplier;
 public class ProtectActionMove extends AOffensiveActionMove
 {
 	@Configurable(defValue = "0.21")
-	private static double minProtectScore = 0.21;
+	private static double minScore = 0.21;
 
-	@Configurable(defValue = "0.05")
-	private static double antiToggleBonus = 0.05;
+	@Configurable(defValue = "0.02")
+	private static double antiToggleBonus = 0.02;
 
 	private BallDribbleToPosGenerator dribbleGenerator = new BallDribbleToPosGenerator();
 
@@ -63,7 +62,6 @@ public class ProtectActionMove extends AOffensiveActionMove
 		return OffensiveAction.builder()
 				.move(EOffensiveActionMove.PROTECT_MOVE)
 				.dribbleToPos(pos)
-				.action(EOffensiveAction.PROTECT)
 				.viability(calcViability(botId))
 				.build();
 	}
@@ -71,22 +69,6 @@ public class ProtectActionMove extends AOffensiveActionMove
 
 	private double calcViabilityScore(BotID botId)
 	{
-		return applyMultiplier(minProtectScore + getAntiToggleValue(botId));
-	}
-
-
-	private double getAntiToggleValue(BotID botId)
-	{
-		double antiToggleValue = 0;
-		var offensiveActions = getAiFrame().getPrevFrame().getTacticalField().getOffensiveActions();
-		if (offensiveActions.containsKey(botId))
-		{
-			var action = offensiveActions.get(botId);
-			if (action.getAction() == EOffensiveAction.PROTECT)
-			{
-				antiToggleValue = antiToggleBonus;
-			}
-		}
-		return antiToggleValue;
+		return applyMultiplier(minScore + getAntiToggleValue(botId, EOffensiveActionMove.PROTECT_MOVE, antiToggleBonus));
 	}
 }

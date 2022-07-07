@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.bot.params;
 
@@ -26,4 +26,9 @@ public interface IBotParams
 	 * @return the kickerSpecs
 	 */
 	IBotKickerSpecs getKickerSpecs();
+
+	/**
+	 * @return the dribblerSpecs
+	 */
+	IBotDribblerSpecs getDribblerSpecs();
 }

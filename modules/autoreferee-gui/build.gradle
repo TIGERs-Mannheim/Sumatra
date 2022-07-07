@@ -3,7 +3,7 @@
  */
 
 plugins {
-    id 'sumatra.java-conventions'
+    id 'sumatra.java'
     id 'java-library'
 }
 
@@ -11,7 +11,6 @@ dependencies {
     implementation project(':common-math')
     implementation project(':common-gui')
     implementation project(':sumatra-model')
-    implementation project(':sumatra-gui-visualizer')
     implementation project(':moduli-autoreferee')
     implementation project(':moduli-record')
     implementation project(':moduli-referee')

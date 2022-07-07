@@ -34,7 +34,7 @@ import static org.apache.commons.lang.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 public class TimeSeriesFileWriter implements ITimeSeriesWriter
 {
 	private static final Logger log = LogManager.getLogger(TimeSeriesFileWriter.class.getName());
-	private static final String BASE_DIR = "build/matchStats/";
+	private static final String BASE_DIR = "data/matchStats/";
 	private Path filePath;
 	private FileWriter fileWriter;
 	private boolean firstEntry;

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.kick.presenter;
 
@@ -18,13 +18,12 @@ import edu.tigers.sumatra.kick.data.BallModelSample;
 import edu.tigers.sumatra.kick.data.KickDatabase;
 import edu.tigers.sumatra.kick.data.KickModelSample;
 import edu.tigers.sumatra.kick.data.RedirectModelSample;
-import edu.tigers.sumatra.kick.view.MainPanel;
-import edu.tigers.sumatra.kick.view.MainPanel.IMainPanelObserver;
+import edu.tigers.sumatra.kick.view.BallKickIdentPanel;
+import edu.tigers.sumatra.kick.view.BallKickIdentPanel.IMainPanelObserver;
 import edu.tigers.sumatra.model.SumatraModel;
 import edu.tigers.sumatra.skillsystem.ASkillSystem;
 import edu.tigers.sumatra.skillsystem.ISkillSystemObserver;
-import edu.tigers.sumatra.views.ASumatraViewPresenter;
-import edu.tigers.sumatra.views.ISumatraView;
+import edu.tigers.sumatra.views.ISumatraViewPresenter;
 import edu.tigers.sumatra.vision.AVisionFilter;
 import edu.tigers.sumatra.vision.IVisionFilterObserver;
 import edu.tigers.sumatra.vision.data.FilteredVisionFrame;
@@ -32,10 +31,9 @@ import edu.tigers.sumatra.vision.data.FilteredVisionKick;
 import edu.tigers.sumatra.vision.kick.estimators.EBallModelIdentType;
 import edu.tigers.sumatra.vision.kick.estimators.IBallModelIdentResult;
 import edu.tigers.sumatra.vision.kick.estimators.straight.FlatKickSolverNonLin3Factor;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import lombok.Getter;
+import lombok.extern.log4j.Log4j2;
 
-import java.awt.Component;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Paths;
@@ -51,16 +49,16 @@ import java.util.Optional;
 /**
  * Presenter for ball kick identification UI.
  */
-public class BallKickIdentPresenter extends ASumatraViewPresenter
-		implements ISumatraView, IVisionFilterObserver, ISkillSystemObserver, IMainPanelObserver
+@Log4j2
+public class BallKickIdentPresenter
+		implements ISumatraViewPresenter, IVisionFilterObserver, ISkillSystemObserver, IMainPanelObserver
 {
 	private static final String DATABASE_FILE = "data/kickDatabase.json";
 
-	private static final Logger log = LogManager.getLogger(BallKickIdentPresenter.class.getName());
-
 	private KickDatabase database;
 
-	private MainPanel mainPanel = new MainPanel();
+	@Getter
+	private BallKickIdentPanel viewPanel = new BallKickIdentPanel();
 
 	private List<FilteredVisionKick> kickEvents = new ArrayList<>();
 	private Map<BotID, KickerDribblerCommands> botCmdMapArmTime = new HashMap<>();
@@ -76,42 +74,28 @@ public class BallKickIdentPresenter extends ASumatraViewPresenter
 
 
 	@Override
-	public Component getComponent()
-	{
-		return mainPanel;
-	}
-
-
-	@Override
-	public ISumatraView getSumatraView()
-	{
-		return this;
-	}
-
-
-	@Override
-	public void onStart()
+	public void onStartModuli()
 	{
 		loadDatabase();
 
 		kickPresenter = new KickSamplePresenter(database.getKickSamples());
 		redirectPresenter = new RedirectSamplePresenter(database.getRedirectSamples());
 
-		mainPanel.getTabs().add("Kick Model", kickPresenter.getComponent());
-		mainPanel.getTabs().add("Redirect Model", redirectPresenter.getComponent());
+		viewPanel.getTabs().add("Kick Model", kickPresenter.getComponent());
+		viewPanel.getTabs().add("Redirect Model", redirectPresenter.getComponent());
 
 		for (EBallModelIdentType type : EBallModelIdentType.values())
 		{
 			BallSamplePresenter presenter = new BallSamplePresenter(database.getBallSamples(), type);
 			ballPresenters.put(type, presenter);
-			mainPanel.getTabs().add(type.toString(), presenter.getComponent());
+			viewPanel.getTabs().add(type.toString(), presenter.getComponent());
 		}
 
 		try
 		{
 			visionFilter = SumatraModel.getInstance().getModule(AVisionFilter.class);
 			visionFilter.addObserver(this);
-			visionFilter.setModelIdentification(mainPanel.isModelIdentificationEnabled());
+			visionFilter.setModelIdentification(viewPanel.isModelIdentificationEnabled());
 		} catch (ModuleNotFoundException err)
 		{
 			log.error("Could not find vision filter", err);
@@ -126,17 +110,17 @@ public class BallKickIdentPresenter extends ASumatraViewPresenter
 			log.error("Could not find skill system", err);
 		}
 
-		mainPanel.addObserver(this);
+		viewPanel.addObserver(this);
 	}
 
 
 	@Override
-	public void onStop()
+	public void onStopModuli()
 	{
 		saveDatabase();
 
-		mainPanel.removeObserver(this);
-		mainPanel.getTabs().removeAll();
+		viewPanel.removeObserver(this);
+		viewPanel.getTabs().removeAll();
 
 		kickPresenter = null;
 		redirectPresenter = null;
@@ -159,7 +143,7 @@ public class BallKickIdentPresenter extends ASumatraViewPresenter
 	{
 		if (filteredVisionFrame.getKick().isPresent())
 		{
-			var kick = filteredVisionFrame.getKick().get();
+			var kick = filteredVisionFrame.getKick().orElseThrow();
 
 			if (kick.getKickTimestamp() != lastFilteredVisionKickTimestamp)
 			{

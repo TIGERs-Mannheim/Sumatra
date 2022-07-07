@@ -1,133 +1,69 @@
 /*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.wp.vis;
 
-import edu.tigers.sumatra.drawable.IShapeLayer;
-import edu.tigers.sumatra.drawable.ShapeMap.EShapeLayerPersistenceType;
+import edu.tigers.sumatra.drawable.IShapeLayerIdentifier;
+import edu.tigers.sumatra.drawable.ShapeLayerFactory;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 
-import static edu.tigers.sumatra.drawable.ShapeMap.EShapeLayerPersistenceType.ALWAYS_PERSIST;
 import static edu.tigers.sumatra.drawable.ShapeMap.EShapeLayerPersistenceType.DEBUG_PERSIST;
-import static edu.tigers.sumatra.drawable.ShapeMap.EShapeLayerPersistenceType.NEVER_PERSIST;
 
 
-/**
- * Shape layers for WP
- */
-@SuppressWarnings("squid:S1192") // duplicated strings
-public enum EWpShapesLayer implements IShapeLayer
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
+public final class EWpShapesLayer
 {
-	FIELD_BORDERS("Field Borders", "Field", true, -100, ALWAYS_PERSIST),
-	FIELD_BORDERS_ADDITIONAL("Additional Field Borders", "Field", false, -90, DEBUG_PERSIST),
-	REFEREE("Referee", "Field", true, 1000, ALWAYS_PERSIST),
-	BALL_BUFFER("Ball buffer", "Field", false, NEVER_PERSIST),
-	BOT_BUFFER("Bot buffer", "Field", false, NEVER_PERSIST),
-	BOTS("Bots", "Field", true),
-	BOT_FEEDBACK("Bot Feedback", "Field", false),
-	BOT_FILTER("Bot Filter", "Field", false),
-	BOT_PATTERNS("Bot Patterns", "Field", false, DEBUG_PERSIST),
-	BALL("Ball", "Field", true),
-	BALL_HIGHLIGHTER("Ball highlighter", "Field", true),
-	BALL_PREDICTION("Ball prediction", "Field", false),
-	VELOCITY("Velocities", "Field"),
+	private static final ShapeLayerFactory F = new ShapeLayerFactory(EWpShapesLayer.class, 10);
+	private static final String FIELD = "Field";
+	private static final String BALL_INFO = "Ball Info";
+	private static final String BOT_STATES = "Bot States";
+	private static final String BASIC = "Basic";
 
-	;
-
-
-	private final String name;
-	private final String category;
-	private final boolean visible;
-	private final int orderId;
-	private final String id;
-	private final EShapeLayerPersistenceType persistenceType;
-
-
-	/**
-	 *
-	 */
-	EWpShapesLayer(final String name, final String category)
-	{
-		this(name, category, false);
-	}
-
-
-	EWpShapesLayer(final String name, final String category, final boolean visible)
-	{
-		this.name = name;
-		this.category = category;
-		this.visible = visible;
-		this.persistenceType = ALWAYS_PERSIST;
-		orderId = 10 + ordinal();
-		id = EWpShapesLayer.class.getCanonicalName() + name;
-	}
-
-
-	/**
-	 *
-	 */
-	EWpShapesLayer(final String name, final String category, final boolean visible,
-			final EShapeLayerPersistenceType persistenceType)
-	{
-		this.name = name;
-		this.category = category;
-		this.visible = visible;
-		this.persistenceType = persistenceType;
-		this.orderId = 10 + ordinal();
-		id = EWpShapesLayer.class.getCanonicalName() + name;
-	}
-
-
-	EWpShapesLayer(final String name, final String category, final boolean visible, final int orderId,
-			final EShapeLayerPersistenceType persistenceType)
-	{
-		this.name = name;
-		this.category = category;
-		this.visible = visible;
-		this.orderId = orderId;
-		id = EWpShapesLayer.class.getCanonicalName() + name;
-		this.persistenceType = persistenceType;
-	}
-
-
-	@Override
-	public String getLayerName()
-	{
-		return name;
-	}
-
-
-	@Override
-	public final String getCategory()
-	{
-		return category;
-	}
-
-
-	@Override
-	public int getOrderId()
-	{
-		return orderId;
-	}
-
-
-	@Override
-	public String getId()
-	{
-		return id;
-	}
-
-
-	@Override
-	public EShapeLayerPersistenceType getPersistenceType()
-	{
-		return persistenceType;
-	}
-
-
-	@Override
-	public boolean isVisibleByDefault()
-	{
-		return visible;
-	}
+	public static final IShapeLayerIdentifier FIELD_BORDERS = F.create(F.layer("Borders")
+			.category(FIELD)
+			.category(BASIC)
+			.visibleByDefault(true)
+			.orderId(-100));
+	public static final IShapeLayerIdentifier FIELD_BORDERS_ADDITIONAL = F.create(F.layer("Additional Borders")
+			.category(FIELD)
+			.orderId(-90)
+			.persistenceType(DEBUG_PERSIST));
+	public static final IShapeLayerIdentifier REFEREE = F.create(F.layer("Referee")
+			.category("Annotations")
+			.visibleByDefault(true));
+	public static final IShapeLayerIdentifier BALL_BUFFER = F.create(F.layer("Ball Buffer")
+			.category(FIELD)
+			.category("Buffers"));
+	public static final IShapeLayerIdentifier BOT_BUFFER = F.create(F.layer("Bot Buffers")
+			.category(FIELD)
+			.category("Buffers"));
+	public static final IShapeLayerIdentifier BOTS = F.create(F.layer("Bots")
+			.category(FIELD)
+			.category(BASIC)
+			.visibleByDefault(true));
+	public static final IShapeLayerIdentifier BOT_FEEDBACK = F.create(F.layer("Feedback")
+			.category(FIELD)
+			.category(BOT_STATES));
+	public static final IShapeLayerIdentifier BOT_FILTER = F.create(F.layer("Filtered")
+			.category(FIELD)
+			.category(BOT_STATES));
+	public static final IShapeLayerIdentifier BOT_PATTERNS = F.create(F.layer("Pattern")
+			.category(FIELD)
+			.category(BOT_STATES));
+	public static final IShapeLayerIdentifier BALL = F.create(F.layer("Ball")
+			.category(FIELD)
+			.category(BASIC)
+			.visibleByDefault(true));
+	public static final IShapeLayerIdentifier BALL_HIGHLIGHTER = F.create(F.layer("Ball Highlighter")
+			.category(FIELD)
+			.category(BALL_INFO));
+	public static final IShapeLayerIdentifier BALL_PREDICTION = F.create(F.layer("Prediction")
+			.category(FIELD)
+			.category(BALL_INFO));
+	public static final IShapeLayerIdentifier VELOCITY = F.create(F.layer("Velocities")
+			.category(FIELD));
+	public static final IShapeLayerIdentifier VISION = F.create(F.layer("Vision")
+			.category(FIELD));
 }

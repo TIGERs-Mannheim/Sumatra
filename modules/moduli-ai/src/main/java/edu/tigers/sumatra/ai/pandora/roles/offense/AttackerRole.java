@@ -11,19 +11,22 @@ import edu.tigers.sumatra.ai.metis.kicking.Pass;
 import edu.tigers.sumatra.ai.metis.offense.action.situation.EOffensiveExecutionStatus;
 import edu.tigers.sumatra.ai.metis.offense.dribble.DribbleToPos;
 import edu.tigers.sumatra.ai.metis.offense.dribble.EDribblingCondition;
+import edu.tigers.sumatra.ai.metis.targetrater.AngleRangeRater;
 import edu.tigers.sumatra.ai.pandora.roles.ARole;
 import edu.tigers.sumatra.ai.pandora.roles.ERole;
 import edu.tigers.sumatra.drawable.DrawableAnnotation;
-import edu.tigers.sumatra.drawable.DrawableTriangle;
+import edu.tigers.sumatra.drawable.DrawableCircle;
+import edu.tigers.sumatra.drawable.DrawableLine;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.ETeam;
-import edu.tigers.sumatra.math.line.v2.LineMath;
-import edu.tigers.sumatra.math.triangle.Triangle;
+import edu.tigers.sumatra.math.circle.Circle;
+import edu.tigers.sumatra.math.line.v2.Lines;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.skillsystem.skills.ApproachAndStopBallSkill;
 import edu.tigers.sumatra.skillsystem.skills.ApproachBallLineSkill;
 import edu.tigers.sumatra.skillsystem.skills.DragBallSkill;
+import edu.tigers.sumatra.skillsystem.skills.DribbleKickSkill;
 import edu.tigers.sumatra.skillsystem.skills.ESkillState;
 import edu.tigers.sumatra.skillsystem.skills.ProtectAndMoveWithBallSkill;
 import edu.tigers.sumatra.skillsystem.skills.ProtectiveGetBallSkill;
@@ -32,6 +35,7 @@ import edu.tigers.sumatra.skillsystem.skills.RedirectBallSkill;
 import edu.tigers.sumatra.skillsystem.skills.RotateWithBallSkill;
 import edu.tigers.sumatra.skillsystem.skills.SingleTouchKickSkill;
 import edu.tigers.sumatra.skillsystem.skills.TouchKickSkill;
+import edu.tigers.sumatra.trajectory.ITrajectory;
 import lombok.Setter;
 import lombok.extern.log4j.Log4j2;
 
@@ -48,8 +52,11 @@ public class AttackerRole extends ARole
 	@Configurable(defValue = "2000.0")
 	private static double switchToKickDist = 2000;
 
-	@Configurable(defValue = "0.5")
-	private static double maxBallVel = 0.5;
+	@Configurable(defValue = "0.85")
+	private static double maxBallVel = 0.85;
+
+	@Configurable(defValue = "250.0")
+	private static double blockingCircleRadius = 250.0;
 
 	private Pass pass;
 	private Kick kick;
@@ -80,6 +87,7 @@ public class AttackerRole extends ARole
 		var redirectState = new RedirectState();
 		var dribbleToState = new DribbleToState();
 		var rotateWithBallState = new RotateWithBallState();
+		var dribblingKickState = new DribblingKickState();
 
 		setInitialState(protectState);
 		dribbleState.addTransition(this::switchToDribbleTo, dribbleToState);
@@ -89,9 +97,9 @@ public class AttackerRole extends ARole
 		dribbleToState.addTransition(ESkillState.FAILURE, dribbleState);
 		dribbleToState.addTransition(ESkillState.SUCCESS, dribbleState);
 		protectState.addTransition(this::ballMoves, approachBallLineState);
-		protectState.addTransition(this::switchFromApproachToKick, kickState);
-		dribbleState.addTransition(this::switchFromApproachToKick, kickState);
-		rotateWithBallState.addTransition(this::switchFromApproachToKick, kickState);
+		protectState.addTransition(this::switchToKick, kickState);
+		dribbleState.addTransition(this::switchToKick, kickState);
+		rotateWithBallState.addTransition(this::switchToKick, kickState);
 		protectState.addTransition(ESkillState.SUCCESS, dribbleState);
 		dribbleState.addTransition(ESkillState.FAILURE, protectState);
 		approachBallLineState.addTransition(ESkillState.SUCCESS, receiveState);
@@ -101,7 +109,7 @@ public class AttackerRole extends ARole
 		approachAndStopBallState.addTransition(ESkillState.FAILURE, protectState);
 		kickState.addTransition(ESkillState.SUCCESS, approachBallLineState);
 		kickState.addTransition(ESkillState.FAILURE, protectState);
-		kickState.addTransition(() -> kick == null, protectState);
+		kickState.addTransition(this::kickStateIsInvalid, protectState);
 		kickState.addTransition(() -> waitForKick || useSingleTouch, freeKickState);
 		freeKickState.addTransition(ESkillState.SUCCESS, approachBallLineState);
 		freeKickState.addTransition(ESkillState.FAILURE, protectState);
@@ -111,6 +119,29 @@ public class AttackerRole extends ARole
 		redirectState.addTransition(ESkillState.SUCCESS, approachBallLineState);
 		redirectState.addTransition(ESkillState.FAILURE, protectState);
 		redirectState.addTransition(this::switchToReceive, receiveState);
+		dribblingKickState.addTransition(this::dribblingKickIsBlocked, protectState);
+		dribblingKickState.addTransition(ESkillState.FAILURE, protectState);
+		dribbleState.addTransition(this::switchToDribbleKick, dribblingKickState);
+		rotateWithBallState.addTransition(this::switchToDribbleKick, dribblingKickState);
+	}
+
+
+	private boolean kickStateIsInvalid()
+	{
+		return kick == null || (dribbleToPos != null
+				&& dribbleToPos.getDribblingCondition() == EDribblingCondition.DRIBBLING_KICK);
+	}
+
+
+	private boolean dribblingKickIsBlocked()
+	{
+		return dribbleToPos == null || dribbleToPos.getDribblingCondition() != EDribblingCondition.DRIBBLING_KICK;
+	}
+
+
+	private boolean switchToDribbleKick()
+	{
+		return dribbleToPos != null && (dribbleToPos.getDribblingCondition() == EDribblingCondition.DRIBBLING_KICK);
 	}
 
 
@@ -175,18 +206,35 @@ public class AttackerRole extends ARole
 
 	private boolean isOpponentBlockingBall()
 	{
-		IVector2 dir = getBall().getPos().subtractNew(getPos()).scaleToNew(Geometry.getBotRadius() * 4 + 20);
-		IVector2 p1 = getBall().getPos().addNew(dir)
-				.addNew(dir.getNormalVector().scaleToNew(Geometry.getBotRadius() * 4));
-		IVector2 p2 = getBall().getPos().addNew(dir)
-				.addNew(dir.getNormalVector().scaleToNew(-Geometry.getBotRadius() * 4));
-		var tria = Triangle.fromCorners(getBall().getPos(), p1, p2);
-		getShapes(EAiShapesLayer.OFFENSIVE_DRIBBLE).add(
-				new DrawableTriangle(tria, new Color(186, 0, 0, 128)).setFill(true));
-		var protect = dribbleToPos.getProtectFromPos();
-		if (protect != null && tria.isPointInShape(protect))
+		var closestEnemyBotID = getAiFrame().getTacticalField().getOpponentClosestToBall().getBotId();
+		if (getWFrame().getOpponentBots().containsKey(closestEnemyBotID))
 		{
-			return true;
+			var blockingCircle = Circle.createCircle(getWFrame().getOpponentBot(closestEnemyBotID).getPos(),
+					blockingCircleRadius);
+			getShapes(EAiShapesLayer.OFFENSIVE_DRIBBLE).add(new DrawableCircle(blockingCircle).setColor(Color.white));
+
+			var timeToBall = getBot().getCurrentTrajectory().map(ITrajectory::getTotalTime).orElse(0.1);
+			var lookaheadLine = Lines.segmentFromPoints(getWFrame().getOpponentBot(closestEnemyBotID).getPos(),
+					getWFrame().getOpponentBot(closestEnemyBotID).getPosByTime(timeToBall));
+
+			var ballCircle = Circle.createCircle(getBall().getPos(),
+					Geometry.getBotRadius() * 2.0 + Geometry.getBallRadius());
+
+			if (ballCircle.isIntersectingWithLine(lookaheadLine))
+			{
+				getShapes(EAiShapesLayer.OFFENSIVE_DRIBBLE).add(new DrawableCircle(ballCircle).setColor(Color.RED));
+				return true;
+			} else
+			{
+				getShapes(EAiShapesLayer.OFFENSIVE_DRIBBLE).add(new DrawableCircle(ballCircle).setColor(Color.WHITE));
+			}
+
+			getShapes(EAiShapesLayer.OFFENSIVE_DRIBBLE).add(new DrawableLine(lookaheadLine).setColor(Color.WHITE));
+
+			if (blockingCircle.isPointInShape(getWFrame().getBall().getPos()))
+			{
+				return true;
+			}
 		}
 		return dribbleToPos.getDribblingCondition() == EDribblingCondition.REPOSITION
 				&& dribbleToPos.getDribbleToDestination() == null;
@@ -199,9 +247,13 @@ public class AttackerRole extends ARole
 	}
 
 
-	private boolean switchFromApproachToKick()
+	private boolean switchToKick()
 	{
-		return kick != null && getBall().getPos().distanceTo(getPos()) < switchToKickDist;
+		boolean ballContactOrNoOpponentNearBall = getBot().getBallContact().hasContactFromVisionOrBarrier()
+				|| getAiFrame().getTacticalField().getOpponentClosestToBall().getDist() > Geometry.getBotRadius() * 1.5;
+		boolean validKickAndIsClose =
+				kick != null && getBall().getPos().distanceTo(getPos()) < switchToKickDist && dribbleToPos == null;
+		return validKickAndIsClose && ballContactOrNoOpponentNearBall;
 	}
 
 
@@ -348,6 +400,8 @@ public class AttackerRole extends ARole
 		@Override
 		protected void onUpdate()
 		{
+			// State is only activated when close. Let it hold its position!
+			skill.getMoveCon().setTheirBotsObstacle(false);
 			skill.setBallReceivingPosition(ballContactPos);
 			if (allowPenAreas)
 			{
@@ -370,6 +424,8 @@ public class AttackerRole extends ARole
 		@Override
 		protected void onUpdate()
 		{
+			// State is only activated when close. Let it hold its position!
+			skill.getMoveCon().setTheirBotsObstacle(false);
 			skill.setBallReceivingPosition(ballContactPos);
 			skill.setTarget(kick.getTarget());
 			skill.setDesiredKickParams(kick.getKickParams());
@@ -394,38 +450,47 @@ public class AttackerRole extends ARole
 		@Override
 		protected void onUpdate()
 		{
-			if (dribbleToPos != null)
+			if (dribbleToPos != null && dribbleToPos.getDribblingCondition() != EDribblingCondition.DRIBBLING_KICK)
 			{
 				var protectionPos = dribbleToPos.getProtectFromPos();
-				if (isOpponentThreateningOurGoal())
-				{
-					skill.setProtectionTarget(Geometry.getGoalOur().getCenter());
-				} else if (isOpponentBlockingBall())
+				if (isOpponentBlockingBall())
 				{
 					// mirror protectionPos if opponent is blocking the ball
 					var posToBall = getBall().getPos().subtractNew(protectionPos);
-					skill.setProtectionTarget(protectionPos.addNew(posToBall.multiplyNew(2.0)));
+					var mirroredPos = protectionPos.addNew(posToBall.multiplyNew(2.0));
+					getShapes(EAiShapesLayer.OFFENSIVE_ATTACKER).add(
+							new DrawableCircle(Circle.createCircle(mirroredPos, 50), Color.RED).setFill(true));
+					getShapes(EAiShapesLayer.OFFENSIVE_ATTACKER).add(new DrawableAnnotation(getPos(), "Opponent blocking!"));
+					skill.setProtectionTarget(mirroredPos);
 				} else
 				{
+					getShapes(EAiShapesLayer.OFFENSIVE_ATTACKER).add(new DrawableAnnotation(getPos(), "default!"));
+					getShapes(EAiShapesLayer.OFFENSIVE_ATTACKER).add(
+							new DrawableCircle(Circle.createCircle(dribbleToPos.getProtectFromPos(), 50), Color.RED));
 					skill.setProtectionTarget(dribbleToPos.getProtectFromPos());
 				}
 			} else
 			{
 				// fallback
-				var protectionTarget = getBall().getPos().addNew(
-						Geometry.getGoalOur().getCenter().subtractNew(getBall().getPos())
-								.scaleToNew(-Geometry.getBotRadius() * 4));
-				skill.setProtectionTarget(protectionTarget);
+				getShapes(EAiShapesLayer.OFFENSIVE_ATTACKER).add(new DrawableAnnotation(getPos(), "fallback!"));
+				skill.setProtectionTarget(getFallBackProtectionTarget());
 			}
 		}
 
 
-		private boolean isOpponentThreateningOurGoal()
+		private IVector2 getFallBackProtectionTarget()
 		{
-			var goalCenter = Geometry.getGoalOur().getCenter();
-			IVector2 pGoal = LineMath.stepAlongLine(getBall().getPos(), goalCenter, 100);
-			IVector2 pOpponent = LineMath.stepAlongLine(getBall().getPos(), dribbleToPos.getProtectFromPos(), 100);
-			return pGoal.distanceToSqr(getPos()) < pOpponent.distanceToSqr(getPos());
+			var closestEnemyBotID = getAiFrame().getTacticalField().getOpponentClosestToBall().getBotId();
+			IVector2 opponentPos;
+			if (getWFrame().getOpponentBots().containsKey(closestEnemyBotID))
+			{
+				opponentPos = getWFrame().getOpponentBot(closestEnemyBotID).getPos();
+			} else
+			{
+				opponentPos = Geometry.getGoalOur().getCenter();
+			}
+			var opponentToBall = getBall().getPos().subtractNew(opponentPos);
+			return getBall().getPos().addNew(opponentToBall.scaleToNew(Geometry.getBotRadius() * 4.0));
 		}
 	}
 
@@ -493,6 +558,43 @@ public class AttackerRole extends ARole
 			if (dribbleToPos != null)
 			{
 				skill.setProtectionTarget(dribbleToPos.getProtectFromPos());
+			}
+		}
+	}
+
+
+	private class DribblingKickState extends RoleState<DribbleKickSkill>
+	{
+		DribbleToPos lastValidDribbleToPos = null;
+
+
+		DribblingKickState()
+		{
+			super(DribbleKickSkill::new);
+		}
+
+
+		@Override
+		protected void onUpdate()
+		{
+			var rater = AngleRangeRater.forGoal(Geometry.getGoalTheir());
+			rater.setObstacles(getWFrame().getOpponentBots().values());
+			var bestGoalKick = rater.rate(getBot().getBotKickerPos());
+
+			var canScoreGoalHere = bestGoalKick.isPresent() && bestGoalKick.get().getScore() > 0.5;
+			if (dribbleToPos != null && kick != null)
+			{
+				skill.setTarget(kick.getTarget());
+				skill.setDestination(dribbleToPos.getDribbleToDestination());
+				skill.setTargetBlocked(
+						getPos().distanceTo(dribbleToPos.getDribbleToDestination()) >= Geometry.getBotRadius()
+								&& !canScoreGoalHere);
+				lastValidDribbleToPos = dribbleToPos;
+			} else if (lastValidDribbleToPos != null)
+			{
+				skill.setTargetBlocked(
+						getPos().distanceTo(lastValidDribbleToPos.getDribbleToDestination()) >= Geometry.getBotRadius()
+								&& !canScoreGoalHere);
 			}
 		}
 	}

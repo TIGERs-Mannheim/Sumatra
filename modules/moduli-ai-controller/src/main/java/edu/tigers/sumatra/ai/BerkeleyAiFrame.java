@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.ai;
 
@@ -34,12 +34,12 @@ public class BerkeleyAiFrame
 		timestamp = 0;
 	}
 
+
 	/**
 	 * @param visFrame to be added
 	 */
-	public final synchronized void addVisFrame(final VisualizationFrame visFrame)
+	public synchronized void addVisFrame(final VisualizationFrame visFrame)
 	{
-		assert visFrame != null;
 		visFrames.put(visFrame.getTeamColor(), visFrame);
 	}
 
@@ -48,7 +48,7 @@ public class BerkeleyAiFrame
 	 * @param teamColor for frame
 	 * @return frame for given team
 	 */
-	public final synchronized VisualizationFrame getVisFrame(final ETeamColor teamColor)
+	public synchronized VisualizationFrame getVisFrame(final ETeamColor teamColor)
 	{
 		return visFrames.get(teamColor);
 	}
@@ -57,7 +57,7 @@ public class BerkeleyAiFrame
 	/**
 	 * @return all frames
 	 */
-	public final synchronized Collection<VisualizationFrame> getVisFrames()
+	public synchronized Collection<VisualizationFrame> getVisFrames()
 	{
 		return Collections.unmodifiableCollection(visFrames.values());
 	}

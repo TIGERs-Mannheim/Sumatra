@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.skillsystem;
@@ -34,7 +34,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingDeque;
-import java.util.stream.Collectors;
 
 
 /**
@@ -136,8 +135,7 @@ class SkillExecutor implements Runnable, IWorldFrameObserver
 	{
 		var otherBotStates = wFrame.getBots().values().stream()
 				.filter(b -> b.getBotId() != botID)
-				.map(ITrackedBot::getCurrentState)
-				.collect(Collectors.toList());
+				.map(ITrackedBot::getCurrentState).toList();
 		var tBot = wFrame.getBot(getBotID());
 		double margin = Geometry.getBotRadius() * 2 + 10;
 		return otherBotStates.stream().anyMatch(s -> s.getPos().distanceTo(tBot.getPos()) < margin);

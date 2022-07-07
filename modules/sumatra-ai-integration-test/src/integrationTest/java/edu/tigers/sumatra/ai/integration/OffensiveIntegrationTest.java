@@ -4,8 +4,8 @@
 
 package edu.tigers.sumatra.ai.integration;
 
-import edu.tigers.sumatra.ai.metis.offense.action.EOffensiveAction;
 import edu.tigers.sumatra.ai.metis.offense.action.OffensiveAction;
+import edu.tigers.sumatra.ai.metis.offense.action.moves.EOffensiveActionMove;
 import edu.tigers.sumatra.ai.metis.offense.strategy.EOffensiveStrategy;
 import edu.tigers.sumatra.ai.metis.offense.strategy.OffensiveStrategy;
 import edu.tigers.sumatra.ids.BotID;
@@ -18,6 +18,7 @@ import org.junit.Test;
 import java.io.IOException;
 
 import static org.assertj.core.api.Assertions.assertThat;
+
 
 /**
  * @author Mark Geiger <Mark.Geiger@dlr.de>
@@ -45,7 +46,7 @@ public class OffensiveIntegrationTest extends AAiIntegrationTest
 
 		// in this situation the current strategy should be a direct goal_shot
 		OffensiveAction action = getMetisAiFrame().getTacticalField().getOffensiveActions().get(id);
-		assertThat(action.getAction()).isEqualTo(EOffensiveAction.GOAL_SHOT);
+		assertThat(action.getMove()).isEqualTo(EOffensiveActionMove.GOAL_KICK);
 
 		setGameState(GameState.STOP);
 		nextFrame();
@@ -69,25 +70,25 @@ public class OffensiveIntegrationTest extends AAiIntegrationTest
 		setRefereeMsg(
 				RefereeMsgBuilder.aRefereeMsg().withCommand(SslGcRefereeMessage.Referee.Command.NORMAL_START).build());
 		setGameState(GameState.RUNNING);
-		for (int i = 0; i < 10; i++)
+		for (var i = 0; i < 10; i++)
 		{
 			nextFrame();
 		}
 
-		BotID id = BotID.createBotId(1, ETeamColor.YELLOW);
+		var id = BotID.createBotId(1, ETeamColor.YELLOW);
 		BotID mainOffensive = getMetisAiFrame().getTacticalField().getOffensiveStrategy().getAttackerBot()
 				.orElseThrow(AssertionError::new);
 		assertThat(mainOffensive).isEqualTo(id);
 
 		// also the main offensive bot should be in KickState
 		// in this situation yellow bot id 1 should be the primary offensive bot.
-		OffensiveStrategy strategy = getMetisAiFrame().getTacticalField().getOffensiveStrategy();
+		var strategy = getMetisAiFrame().getTacticalField().getOffensiveStrategy();
 		assertThat(strategy.getCurrentOffensivePlayConfiguration().get(id)).isEqualTo(EOffensiveStrategy.KICK);
 
 		// in this situation the current strategy should be a pass and the pass receiver should be yellow bot 2
 		OffensiveAction action = getMetisAiFrame().getTacticalField().getOffensiveActions().get(id);
-		assertThat(action.getAction()).isEqualTo(EOffensiveAction.PASS);
-		BotID passID = BotID.createBotId(2, ETeamColor.YELLOW);
+		assertThat(action.getMove()).isEqualTo(EOffensiveActionMove.STANDARD_PASS);
+		var passID = BotID.createBotId(2, ETeamColor.YELLOW);
 		assertThat(action.getPassTarget().orElseThrow().getBotId()).isEqualTo(passID);
 
 		// the scoring of the pass target should be greater 0.25, because the goal is free :D

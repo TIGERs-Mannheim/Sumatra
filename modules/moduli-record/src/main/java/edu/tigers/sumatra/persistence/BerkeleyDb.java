@@ -1,16 +1,15 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.persistence;
 
 import edu.tigers.sumatra.model.SumatraModel;
+import lombok.extern.log4j.Log4j2;
 import net.lingala.zip4j.ZipFile;
 import net.lingala.zip4j.exception.ZipException;
 import net.lingala.zip4j.model.FileHeader;
 import org.apache.commons.io.FileUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.io.File;
 import java.io.IOException;
@@ -25,16 +24,17 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.TimeZone;
+import java.util.function.Consumer;
 
 
 /**
  * Berkeley database
  */
+@Log4j2
 public class BerkeleyDb
 {
-	private static final Logger log = LogManager.getLogger(BerkeleyDb.class.getName());
-
 	private final BerkeleyEnv env = new BerkeleyEnv();
 	private final Path dbPath;
 	private final Map<Class<?>, IBerkeleyAccessor<?>> accessors = new HashMap<>();
@@ -65,13 +65,11 @@ public class BerkeleyDb
 
 	private String determineFolderName(final File file)
 	{
-		try
+		try (ZipFile zipFile = new ZipFile(file))
 		{
-			ZipFile zipFile = new ZipFile(file);
 			String topLevel = null;
-			for (Object obj : zipFile.getFileHeaders())
+			for (FileHeader fh : zipFile.getFileHeaders())
 			{
-				FileHeader fh = (FileHeader) obj;
 				String root = fh.getFileName().split("/")[0];
 				if (root.equals(topLevel) || topLevel == null)
 				{
@@ -83,7 +81,7 @@ public class BerkeleyDb
 				}
 			}
 			return topLevel;
-		} catch (ZipException e)
+		} catch (IOException e)
 		{
 			log.error("Error while processing zip recording: ", e);
 		}
@@ -137,6 +135,12 @@ public class BerkeleyDb
 	}
 
 
+	public Set<Class<?>> getAccessorTypes()
+	{
+		return Collections.unmodifiableSet(accessors.keySet());
+	}
+
+
 	public <T> T get(Class<T> clazz, long key)
 	{
 		IBerkeleyAccessor<T> accessor = getAccessor(clazz);
@@ -156,6 +160,17 @@ public class BerkeleyDb
 			return Collections.emptyList();
 		}
 		return accessor.load();
+	}
+
+
+	public <T> void forEach(Class<T> clazz, Consumer<T> consumer)
+	{
+		IBerkeleyAccessor<T> accessor = getAccessor(clazz);
+		if (accessor == null)
+		{
+			return;
+		}
+		accessor.forEach(consumer);
 	}
 
 
@@ -200,9 +215,8 @@ public class BerkeleyDb
 	private void unpackDatabase(final File file, final String folderName)
 	{
 		log.info("Unpacking database: {}", file);
-		try
+		try (ZipFile zipFile = new ZipFile(file))
 		{
-			ZipFile zipFile = new ZipFile(file);
 			zipFile.extractAll(dbPath.toFile().getParent());
 
 			File extracted = Paths.get(dbPath.toFile().getParent(), folderName).toFile();

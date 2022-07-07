@@ -11,6 +11,9 @@ import edu.tigers.sumatra.math.vector.IVector3;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.math.vector.Vector3;
 import edu.tigers.sumatra.math.vector.Vector3f;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Value;
 import org.apache.commons.math3.complex.Quaternion;
 import org.apache.commons.math3.geometry.euclidean.threed.Rotation;
 import org.apache.commons.math3.linear.Array2DRowRealMatrix;
@@ -24,18 +27,19 @@ import java.util.Map;
 
 /**
  * Data holder for calibration data coming from SSL-Vision.
- *
- * @author AndreR
  */
+@Value
+@Builder
+@AllArgsConstructor
 public class CamCalibration implements IJsonString
 {
-	private final int cameraId;
-	private final double focalLength;
-	private final double distortion;
-	private final IVector2 principalPoint;
-	private final Quaternion rotationQuaternion;
-	private final IVector3 translation;
-	private final IVector3 cameraPosition;
+	int cameraId;
+	double focalLength;
+	double distortion;
+	IVector2 principalPoint;
+	Quaternion rotationQuaternion;
+	IVector3 translation;
+	IVector3 cameraPosition;
 
 
 	/**
@@ -43,13 +47,19 @@ public class CamCalibration implements IJsonString
 	 *
 	 * @param cameraId
 	 * @param focalLength
-	 * @param principalPoint
 	 * @param distortion
+	 * @param principalPoint
 	 * @param q
 	 * @param t
 	 */
-	public CamCalibration(final int cameraId, final double focalLength, final IVector2 principalPoint,
-			final double distortion, final Quaternion q, final IVector3 t)
+	public CamCalibration(
+			int cameraId,
+			double focalLength,
+			double distortion,
+			IVector2 principalPoint,
+			Quaternion q,
+			IVector3 t
+	)
 	{
 		this.cameraId = cameraId;
 		this.focalLength = focalLength;
@@ -105,44 +115,6 @@ public class CamCalibration implements IJsonString
 
 
 	@Override
-	public String toString()
-	{
-		final StringBuilder builder = new StringBuilder();
-		builder.append("SSLCameraCalibration [cameraId=");
-		builder.append(cameraId);
-		builder.append(", focalLength=");
-		builder.append(focalLength);
-		builder.append(", principalPointX=");
-		builder.append(principalPoint.x());
-		builder.append(", principalPointY=");
-		builder.append(principalPoint.y());
-		builder.append(", distortion=");
-		builder.append(distortion);
-		builder.append(", q0=");
-		builder.append(rotationQuaternion.getQ1());
-		builder.append(", q1=");
-		builder.append(rotationQuaternion.getQ2());
-		builder.append(", q2=");
-		builder.append(rotationQuaternion.getQ3());
-		builder.append(", q3=");
-		builder.append(rotationQuaternion.getQ0());
-		builder.append(", tx=");
-		builder.append(translation.x());
-		builder.append(", ty=");
-		builder.append(translation.y());
-		builder.append(", tz=");
-		builder.append(translation.z());
-		builder.append(", derivedCameraWorldTx=");
-		builder.append(cameraPosition.x());
-		builder.append(", derivedCameraWorldTy=");
-		builder.append(cameraPosition.y());
-		builder.append(", derivedCameraWorldTz=");
-		builder.append(cameraPosition.z());
-		return builder.toString();
-	}
-
-
-	@Override
 	public JSONObject toJSON()
 	{
 		Map<String, Object> top = new LinkedHashMap<>();
@@ -166,58 +138,29 @@ public class CamCalibration implements IJsonString
 
 
 	/**
-	 * @return the cameraId
-	 */
-	public int getCameraId()
-	{
-		return cameraId;
-	}
-
-
-	/**
-	 * @return the focalLength
-	 */
-	public double getFocalLength()
-	{
-		return focalLength;
-	}
-
-
-	/**
-	 * @return the distortion
-	 */
-	public double getDistortion()
-	{
-		return distortion;
-	}
-
-
-	/**
-	 * @return the principalPoint
-	 */
-	public IVector2 getPrincipalPoint()
-	{
-		return principalPoint;
-	}
-
-
-	/**
-	 * @return the rotationQuaternion
-	 */
-	public Quaternion getRotationQuaternion()
-	{
-		return rotationQuaternion;
-	}
-
-
-	/**
-	 * Translation vector to translate from world coordinate system to camera coordinate system.
+	 * Convert to protobuf.
 	 *
-	 * @return the translation
+	 * @return
 	 */
-	public IVector3 getTranslation()
+	public SSL_GeometryCameraCalibration toProto()
 	{
-		return translation;
+		return SSL_GeometryCameraCalibration.newBuilder()
+				.setCameraId(cameraId)
+				.setFocalLength((float) focalLength)
+				.setPrincipalPointX((float) principalPoint.x())
+				.setPrincipalPointY((float) principalPoint.y())
+				.setDistortion((float) distortion)
+				.setQ0((float) rotationQuaternion.getQ0())
+				.setQ1((float) rotationQuaternion.getQ1())
+				.setQ2((float) rotationQuaternion.getQ2())
+				.setQ3((float) rotationQuaternion.getQ3())
+				.setTx((float) translation.x())
+				.setTy((float) translation.y())
+				.setTz((float) translation.z())
+				.setDerivedCameraWorldTx((float) cameraPosition.x())
+				.setDerivedCameraWorldTy((float) cameraPosition.y())
+				.setDerivedCameraWorldTz((float) cameraPosition.z())
+				.build();
 	}
 
 
@@ -227,7 +170,7 @@ public class CamCalibration implements IJsonString
 	 *
 	 * @return R
 	 */
-	public RealMatrix getRotationMatrix()
+	private RealMatrix getRotationMatrix()
 	{
 		Rotation rotation = new Rotation(rotationQuaternion.getQ0(),
 				rotationQuaternion.getQ1(), rotationQuaternion.getQ2(), rotationQuaternion.getQ3(), false);
@@ -242,7 +185,7 @@ public class CamCalibration implements IJsonString
 	 * @param world input vector
 	 * @return R*world+t
 	 */
-	public IVector3 transformToCamera(final IVector3 world)
+	private IVector3 transformToCamera(final IVector3 world)
 	{
 		RealMatrix rot = getRotationMatrix();
 		RealMatrix t = new Array2DRowRealMatrix(translation.toArray());
@@ -259,7 +202,7 @@ public class CamCalibration implements IJsonString
 	 * @param camera input vector
 	 * @return R'*(camera-t)
 	 */
-	public IVector3 transformToWorld(final IVector3 camera)
+	private IVector3 transformToWorld(final IVector3 camera)
 	{
 		RealMatrix rot = getRotationMatrix();
 		RealMatrix t = new Array2DRowRealMatrix(translation.toArray());
@@ -267,17 +210,6 @@ public class CamCalibration implements IJsonString
 
 		RealMatrix pos = rot.transpose().multiply(in.subtract(t));
 		return Vector3.fromArray(pos.getColumn(0));
-	}
-
-
-	/**
-	 * Get the camera position in world coordinates.
-	 *
-	 * @return camera position
-	 */
-	public IVector3 getCameraPosition()
-	{
-		return cameraPosition;
 	}
 
 
@@ -319,7 +251,7 @@ public class CamCalibration implements IJsonString
 	 * @param in distorted input vector
 	 * @return undistorted vector
 	 */
-	public IVector2 undistort(final IVector2 in)
+	private IVector2 undistort(final IVector2 in)
 	{
 		double rd = in.getLength();
 		if (SumatraMath.isZero(rd))
@@ -335,7 +267,7 @@ public class CamCalibration implements IJsonString
 	/**
 	 * Transform a pixel location to a projected position on the field.
 	 *
-	 * @param im Image pixel coordinates.
+	 * @param im           Image pixel coordinates.
 	 * @param objectHeight Height in [mm] of the detected object.
 	 * @return Projected and undistorted location on the field.
 	 */

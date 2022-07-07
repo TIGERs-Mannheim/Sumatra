@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.ai.metis.offense.action.situation;
 
@@ -20,9 +20,9 @@ import edu.tigers.sumatra.ai.metis.targetrater.IRatedTarget;
 import edu.tigers.sumatra.ai.pandora.roles.ERole;
 import edu.tigers.sumatra.ai.pandora.roles.offense.AttackerRole;
 import edu.tigers.sumatra.drawable.DrawableBorderText;
+import edu.tigers.sumatra.drawable.DrawableGrid;
 import edu.tigers.sumatra.drawable.EFontSize;
 import edu.tigers.sumatra.drawable.IDrawableShape;
-import edu.tigers.sumatra.drawable.ValuedField;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.vector.IVector2;
@@ -34,7 +34,6 @@ import edu.tigers.sumatra.trees.EOffensiveSituation;
 import edu.tigers.sumatra.trees.OffensiveActionTreeMap;
 import edu.tigers.sumatra.trees.OffensiveTreeProvider;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
-import edu.tigers.sumatra.wp.data.WorldFrame;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -47,7 +46,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 
 /**
@@ -123,7 +121,7 @@ public class OffensiveSituationRatingCalc extends ACalculator
 				// back propagate tree here
 				filterCurrentPath(actionTreePath);
 				actionTrees.getActionTrees().get(currentSituation)
-						.updateTree(actionTreePath.getCurrentPath().stream().map(Enum::toString).collect(Collectors.toList()),
+						.updateTree(actionTreePath.getCurrentPath().stream().map(Enum::toString).toList(),
 								actionTreePath.getCurrentScores());
 				actionTreePath.clear();
 			}
@@ -167,27 +165,12 @@ public class OffensiveSituationRatingCalc extends ACalculator
 
 	private void drawValuedField()
 	{
-		double width = Geometry.getFieldWidth();
-		double height = Geometry.getFieldLength();
-
 		int numX = 400;
 		int numY = 200;
-
-		List<Double> ratings = new ArrayList<>();
-
-		for (int iy = 0; iy < numY; iy++)
-		{
-			for (int ix = 0; ix < numX; ix++)
-			{
-				double x = (-height / 2) + (ix * (height / (numX - 1)));
-				double y = (-width / 2) + (iy * (width / (numY - 1)));
-
-				ratings.add(calcScore(getWFrame(), Vector2.fromXY(x, y)));
-			}
-		}
-		double[] ratingsArray = ratings.stream().mapToDouble(Double::doubleValue).toArray();
-		ValuedField field = new ValuedField(ratingsArray, numX, numY, 0);
-		getShapes(EAiShapesLayer.OFFENSIVE_SITUATION).add(field);
+		getShapes(EAiShapesLayer.OFFENSIVE_SITUATION_GRID).add(
+				DrawableGrid.generate(numX, numY, Geometry.getFieldWidth(), Geometry.getFieldLength(),
+						this::calcBestTargetScore)
+		);
 	}
 
 
@@ -220,11 +203,11 @@ public class OffensiveSituationRatingCalc extends ACalculator
 	}
 
 
-	private DrawableBorderText getDrawableText(final String text, final int offset)
+	private IDrawableShape getDrawableText(final String text, final int offset)
 	{
-		DrawableBorderText dt = new DrawableBorderText(Vector2.fromXY(10, 105.0 + offset), text, Color.BLUE);
-		dt.setFontSize(EFontSize.LARGE);
-		return dt;
+		return new DrawableBorderText(Vector2.fromXY(10, 105.0 + offset), text)
+				.setFontSize(EFontSize.LARGE)
+				.setColor(Color.BLUE);
 	}
 
 
@@ -325,10 +308,10 @@ public class OffensiveSituationRatingCalc extends ACalculator
 	}
 
 
-	private double calcScore(final WorldFrame worldFrame, final IVector2 point)
+	private double calcBestTargetScore(final IVector2 point)
 	{
 		double slackScore = getSlackScore(point);
-		List<ITrackedBot> opponentBots = new ArrayList<>(worldFrame.getOpponentBots().values());
+		List<ITrackedBot> opponentBots = new ArrayList<>(getWFrame().getOpponentBots().values());
 		ValuePoint bestTargetFromBot = BestDirectShotBallPossessingBot
 				.getBestShot(Geometry.getGoalTheir(), point, opponentBots)
 				.orElse(new ValuePoint(Geometry.getGoalTheir().getCenter(), 0));

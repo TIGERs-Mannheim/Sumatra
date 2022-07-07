@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.integration;
@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Random;
 
 
@@ -99,7 +100,7 @@ public class SnapshotGenerator
 		List<IVector2> botPositions = new ArrayList<>();
 		for (BotID botID : BotID.getAll())
 		{
-			if (botID == chosenBotId)
+			if (Objects.equals(botID, chosenBotId))
 			{
 				continue;
 			}

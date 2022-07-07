@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.statistics.view;
@@ -10,46 +10,45 @@ import edu.tigers.sumatra.ai.metis.statistics.stats.EMatchStatistics;
 import edu.tigers.sumatra.ai.metis.statistics.stats.MatchStats;
 import edu.tigers.sumatra.ai.metis.statistics.stats.Percentage;
 import edu.tigers.sumatra.ai.metis.statistics.stats.StatisticData;
+import edu.tigers.sumatra.components.BetterScrollPane;
 import edu.tigers.sumatra.ids.ETeamColor;
-import edu.tigers.sumatra.views.ISumatraView;
+import lombok.Getter;
 import net.miginfocom.swing.MigLayout;
 
 import javax.swing.ButtonGroup;
 import javax.swing.JLabel;
-import javax.swing.JMenu;
 import javax.swing.JPanel;
 import javax.swing.JRadioButton;
 import javax.swing.SwingUtilities;
+import java.awt.BorderLayout;
 import java.awt.Font;
-import java.awt.Panel;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.util.Collections;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 
 /**
  * Main Panel for Game statistics from tactical Field
- *
- * @author Daniel Andres <andreslopez.daniel@gmail.com>
  */
-public class StatisticsPanel extends JPanel implements ISumatraView
+public class StatisticsPanel extends JPanel
 {
-	private final JLabel lblBallPossession;
-	private StatisticsTable statTable;
-	private MatchStats stats = null;
+	private final JLabel lblBallPossession = new JLabel();
+	private final StatisticsTable statTable = new StatisticsTable();
+	private final PossessionBar ballPossessionBar = new PossessionBar();
+
+	private transient MatchStats stats = null;
+	@Getter
 	private ETeamColor selectedTeamColor = ETeamColor.YELLOW;
 
-	private PossessionBar ballPossessionBar;
-	/**
-	 * Default
-	 */
+
 	public StatisticsPanel()
 	{
-		setLayout(new MigLayout());
+		setLayout(new BorderLayout());
+
+		JPanel componentPanel = new JPanel();
+		componentPanel.setLayout(new MigLayout());
 
 		JRadioButton rBtnYellow = new JRadioButton(ETeamColor.YELLOW.name());
 		rBtnYellow.setActionCommand(ETeamColor.YELLOW.name());
@@ -65,25 +64,17 @@ public class StatisticsPanel extends JPanel implements ISumatraView
 		JPanel teamPanel = new JPanel();
 		teamPanel.add(rBtnYellow);
 		teamPanel.add(rBtnBlue);
-		add(teamPanel, "wrap, dock north");
+		componentPanel.add(teamPanel, "wrap, dock north");
 
+		componentPanel.add(statTable, "dock center, wrap");
 
-
-		statTable = new StatisticsTable();
-		Panel tPanel = new Panel();
-		tPanel.setLayout(new MigLayout());
-		tPanel.add(statTable.getTableHeader(), "wrap, dock north");
-		tPanel.add(statTable, "dock center, wrap");
-		add(tPanel, "dock center, wrap");
-
-
-		lblBallPossession = new JLabel();
 		lblBallPossession.setFont(lblBallPossession.getFont().deriveFont(Font.BOLD));
-		ballPossessionBar = new PossessionBar();
 
-		add(ballPossessionBar, "dock south, wrap");
-		add(lblBallPossession, "dock south, wrap");
+		componentPanel.add(ballPossessionBar, "dock south, wrap");
+		componentPanel.add(lblBallPossession, "dock south, wrap");
 
+		BetterScrollPane scrollPane = new BetterScrollPane(componentPanel);
+		add(scrollPane, BorderLayout.CENTER);
 	}
 
 
@@ -127,11 +118,12 @@ public class StatisticsPanel extends JPanel implements ISumatraView
 
 		if (selectedTeamColor == ETeamColor.YELLOW)
 		{
-			ballPossessionBar.setTeamShareBoth(bs.get(EBallPossession.WE).getPercent(), bs.get(EBallPossession.THEY).getPercent());
-		}
-		else
+			ballPossessionBar.setTeamShareBoth(bs.get(EBallPossession.WE).getPercent(),
+					bs.get(EBallPossession.THEY).getPercent());
+		} else
 		{
-			ballPossessionBar.setTeamShareBoth(bs.get(EBallPossession.THEY).getPercent(), bs.get(EBallPossession.WE).getPercent());
+			ballPossessionBar.setTeamShareBoth(bs.get(EBallPossession.THEY).getPercent(),
+					bs.get(EBallPossession.WE).getPercent());
 		}
 	}
 
@@ -147,19 +139,6 @@ public class StatisticsPanel extends JPanel implements ISumatraView
 
 		Set<Integer> allBots = stats.getAllBots();
 		statTable.setData(statistics, allBots);
-	}
-
-
-	@Override
-	public List<JMenu> getCustomMenus()
-	{
-		return Collections.emptyList();
-	}
-
-
-	public ETeamColor getSelectedTeamColor()
-	{
-		return selectedTeamColor;
 	}
 
 

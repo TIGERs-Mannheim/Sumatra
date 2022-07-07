@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.botmanager.botskills;
 
@@ -54,13 +54,15 @@ public class BotSkillLocalForce extends AMoveBotSkill
 	 * @param xy
 	 * @param w
 	 * @param dribbleSpeed
+	 * @param dribbleCurrent
 	 * @param kickSpeed
 	 * @param kickDevice
 	 * @param kickMode
 	 */
 	@SuppressWarnings({ "squid:S00107", "unused" })
 	public BotSkillLocalForce(final IVector2 xy, final double w,
-			final double dribbleSpeed, final double kickSpeed, final EKickerDevice kickDevice, final EKickerMode kickMode)
+			final double dribbleSpeed, final double dribbleCurrent, final double kickSpeed, final EKickerDevice kickDevice,
+			final EKickerMode kickMode)
 	{
 		this();
 
@@ -68,7 +70,7 @@ public class BotSkillLocalForce extends AMoveBotSkill
 		force[1] = (int) (xy.y() * 100.0);
 		force[2] = (int) (w * 1000.0);
 
-		kickerDribbler.setDribblerSpeed(dribbleSpeed);
+		kickerDribbler.setDribbler(dribbleSpeed, dribbleCurrent);
 		kickerDribbler.setKick(kickSpeed, kickDevice, kickMode);
 	}
 

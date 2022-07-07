@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.ai.metis.general;
 
@@ -9,20 +9,20 @@ import edu.tigers.sumatra.ai.pandora.plays.EPlay;
 import edu.tigers.sumatra.botmanager.botskills.data.ELedColor;
 import edu.tigers.sumatra.botmanager.botskills.data.ESong;
 import edu.tigers.sumatra.botmanager.botskills.data.MultimediaControl;
+import edu.tigers.sumatra.ids.AObjectID;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.referee.data.EGameState;
 import edu.tigers.sumatra.referee.data.GameState;
 import edu.tigers.sumatra.referee.gameevent.EGameEvent;
 import edu.tigers.sumatra.referee.gameevent.Goal;
 import edu.tigers.sumatra.time.TimestampTimer;
-import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.IdentityHashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
@@ -45,15 +45,11 @@ public class MultimediaCalc extends ACalculator
 	private final Supplier<OffensiveStrategy> offensiveStrategy;
 	private final Supplier<Map<EPlay, Set<BotID>>> desiredBotsMap;
 
-	@Getter
-	private Map<BotID, MultimediaControl> multimediaControls;
-
 
 	@Override
 	public void doCalc()
 	{
 		GameState gameState = getAiFrame().getGameState();
-		multimediaControls = new IdentityHashMap<>();
 
 		if (gameState.getState() == EGameState.TIMEOUT)
 		{
@@ -64,14 +60,12 @@ public class MultimediaCalc extends ACalculator
 		}
 
 		cheerWhenWeShootAGoal();
-
-		multimediaControls = Collections.unmodifiableMap(multimediaControls);
 	}
 
 
 	private MultimediaControl getControl(BotID botID)
 	{
-		return multimediaControls.computeIfAbsent(botID, id -> new MultimediaControl());
+		return getAiFrame().getMultimediaControl().computeIfAbsent(botID, id -> new MultimediaControl());
 	}
 
 
@@ -84,7 +78,6 @@ public class MultimediaCalc extends ACalculator
 		botsByPlay(EPlay.KEEPER).forEach(id -> getControl(id).setLedColor(ELedColor.BLUE));
 		botsByPlay(EPlay.BALL_PLACEMENT).forEach(id -> getControl(id).setLedColor(ELedColor.PURPLE));
 		attacker().ifPresent(id -> getControl(id).setLedColor(ELedColor.PURPLE));
-		botsByPlay(EPlay.KICKOFF).forEach(id -> getControl(id).setLedColor(ELedColor.PURPLE));
 		crucialDefender().forEach(id -> getControl(id).setLedColor(ELedColor.GREEN));
 	}
 
@@ -123,7 +116,7 @@ public class MultimediaCalc extends ACalculator
 
 		for (BotID botID : allAssignedBots())
 		{
-			if (botID == currentTimeoutBot)
+			if (Objects.equals(botID, currentTimeoutBot))
 			{
 				getControl(botID).setLedColor(ELedColor.PURPLE);
 			} else
@@ -151,9 +144,9 @@ public class MultimediaCalc extends ACalculator
 	{
 		final Set<BotID> timeoutBots = allAssignedBots();
 		BotID id = currentTimeoutBot;
-		for (int i = 0; i < BotID.BOT_ID_MAX; i++)
+		for (int i = 0; i < AObjectID.BOT_ID_MAX; i++)
 		{
-			final int number = (id.getNumber() + 1) % (BotID.BOT_ID_MAX + 1);
+			final int number = (id.getNumber() + 1) % (AObjectID.BOT_ID_MAX + 1);
 			id = BotID.createBotId(number, getAiFrame().getTeamColor());
 			if (timeoutBots.contains(id))
 			{

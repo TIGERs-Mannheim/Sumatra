@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.metis.pass;
@@ -25,6 +25,7 @@ import lombok.RequiredArgsConstructor;
 import java.awt.Color;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
@@ -57,10 +58,28 @@ public class PassRatingCalc extends ACalculator
 		passesRated = generatedPasses.get().entrySet().stream()
 				.collect(Collectors.toUnmodifiableMap(
 						Map.Entry::getKey,
-						e -> e.getValue().stream().map(ratingFactory::rate).collect(Collectors.toUnmodifiableList())));
+						e -> ratePasses(e.getValue()))
+				);
 
 		passesRated.values().stream().flatMap(Collection::stream).forEach(this::drawLinesToPassTargets);
 		passesRated.values().stream().flatMap(Collection::stream).forEach(this::drawRatedPass);
+	}
+
+
+	private List<RatedPass> ratePasses(List<Pass> passes)
+	{
+		return passes.stream()
+				.map(ratingFactory::rate)
+				.sorted(Comparator.comparing(this::compareRatedPasses))
+				.collect(Collectors.toUnmodifiableList());
+	}
+
+
+	private double compareRatedPasses(RatedPass p)
+	{
+		return p.getScore(EPassRating.REFLECT_GOAL_KICK) * 100 +
+				p.getScore(EPassRating.GOAL_KICK) * 10 +
+				p.getScore(EPassRating.PRESSURE) * 1;
 	}
 
 

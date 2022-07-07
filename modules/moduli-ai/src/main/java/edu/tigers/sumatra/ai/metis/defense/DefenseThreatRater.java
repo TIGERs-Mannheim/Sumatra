@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.metis.defense;
@@ -18,11 +18,11 @@ import org.apache.commons.math3.distribution.BetaDistribution;
  */
 public class DefenseThreatRater
 {
-	@Configurable(comment = "[mm] A position closer than this is maximal dangerous", defValue = "4500.0")
-	private static double dangerDistanceMax = 4500.0;
+	@Configurable(comment = "[%] Control how much of the danger distance is a DropOff", defValue = "0.15")
+	private static double dangerDropOffPercentage = 0.15;
 
-	@Configurable(comment = "[mm] A position further away than this is not dangerous at all", defValue = "7000.0")
-	private static double dangerDistanceMin = 7000.0;
+	@Configurable(comment = "[mm] A position further away than this + FieldLength / 2 is not dangerous at all", defValue = "1000.0")
+	private static double dangerDistanceMinOffset = 1000.0;
 
 	@Configurable(comment = "ER-Force volley shot threat weight", defValue = "5.0")
 	private static double volleyAngleWeight = 5.0;
@@ -56,33 +56,38 @@ public class DefenseThreatRater
 
 	public static double getDangerZoneX()
 	{
-		return dangerDistanceMin + Geometry.getGoalOur().getCenter().x();
+		return calcDangerDistanceMin() + Geometry.getGoalOur().getCenter().x();
 	}
 
 
-	public double getThreatRating(final IVector2 ballPos, final IVector2 botPos)
+	private static double calcDangerDistanceMin()
 	{
-		switch (calculationMethod)
-		{
-			case LEGACY:
-				return getThreatRatingLegacy(ballPos, botPos);
-			case ALTERNATIVE:
-				return getThreatRatingAlternative(ballPos, botPos);
-			default:
-				return 0.0;
-		}
+		return Geometry.getFieldLength() / 2 + dangerDistanceMinOffset;
 	}
 
 
-	private double getThreatRatingLegacy(final IVector2 ballPos, final IVector2 botPos)
+	public double getThreatRating(final IVector2 ballPos, final IVector2 threatPos)
 	{
+		return switch (calculationMethod)
+				{
+					case LEGACY -> getThreatRatingLegacy(ballPos, threatPos);
+					case ALTERNATIVE -> getThreatRatingAlternative(ballPos, threatPos);
+				};
+	}
+
+
+	private double getThreatRatingLegacy(final IVector2 ballPos, final IVector2 threatPos)
+	{
+		var minDangerDistance = calcDangerDistanceMin();
+
 		IVector2 target = Geometry.getGoalOur().getCenter();
 		BetaDistribution beta = new BetaDistribution(4, 6);
 
-		final double distanceToGoal = 1.0 - (Math.min(botPos.distanceTo(target), dangerDistanceMin) / dangerDistanceMin);
+		final double distanceToGoal =
+				1.0 - (Math.min(threatPos.distanceTo(target), minDangerDistance) / minDangerDistance);
 
-		IVector2 opponentBall = Vector2.fromPoints(botPos, ballPos);
-		IVector2 opponentGoal = Vector2.fromPoints(botPos, target);
+		IVector2 opponentBall = Vector2.fromPoints(threatPos, ballPos);
+		IVector2 opponentGoal = Vector2.fromPoints(threatPos, target);
 		IVector2 ballGoal = Vector2.fromPoints(ballPos, target);
 
 		final double volleyAngle = beta.density(opponentBall.angleToAbs(opponentGoal).orElse(0.0) / Math.PI) / 2.5;
@@ -93,27 +98,34 @@ public class DefenseThreatRater
 	}
 
 
-	private double getThreatRatingAlternative(final IVector2 ballPos, final IVector2 botPos)
+	private double getThreatRatingAlternative(final IVector2 ballPos, final IVector2 threatPos)
 	{
+		var minDangerDistance = calcDangerDistanceMin();
+		var minDangerDistanceBeforePenArea = minDangerDistance - Geometry.getPenaltyAreaDepth();
+		var maxDangerDistance = minDangerDistanceBeforePenArea - minDangerDistanceBeforePenArea * dangerDropOffPercentage;
+
 		final IVector2 target = Geometry.getGoalOur().getCenter();
 
-		final double distToGoal = botPos.distanceTo(target);
+		// Closer positions are more dangerous
+		final double distToGoal = threatPos.distanceTo(target);
 		final double distanceToGoalFactor;
-		if (distToGoal < dangerDistanceMax)
+		if (distToGoal < maxDangerDistance)
 		{
 			distanceToGoalFactor = 1.0;
 		} else
 		{
-			final double distDifference = dangerDistanceMin - dangerDistanceMax;
-			distanceToGoalFactor = 1 - (Math.min(distToGoal - dangerDistanceMax, distDifference) / distDifference);
+			final double distDifference = minDangerDistance - maxDangerDistance;
+			distanceToGoalFactor = 1 - (Math.min(distToGoal - maxDangerDistance, distDifference) / distDifference);
 		}
 
-		final IVector2 opponentBall = Vector2.fromPoints(botPos, ballPos);
-		final IVector2 opponentGoal = Vector2.fromPoints(botPos, target);
+		final IVector2 opponentBall = Vector2.fromPoints(threatPos, ballPos);
+		final IVector2 opponentGoal = Vector2.fromPoints(threatPos, target);
 		IVector2 ballGoal = Vector2.fromPoints(ballPos, target);
 
+		// How far has the keeper to travel to defend the new position
 		final double travelAngle = ballGoal.angleToAbs(opponentGoal).orElse(0.0) / Math.PI;
 
+		// Angle to redirect directly at the goal
 		final double volleyAngle = opponentBall.angleToAbs(opponentGoal).orElse(Math.PI);
 		final double maxAngle = AngleMath.deg2rad(maxGoodRedirectAngle);
 		final double volleyScore;
@@ -125,6 +137,7 @@ public class DefenseThreatRater
 			volleyScore = Math.max(1 - (volleyAngle - maxAngle) / maxAngle, 0.0);
 		}
 
+		// Positions in the center are more dangerous
 		final double centralizedScore = (4.0 / 3.0) * Math.abs(opponentGoal.getAngle()) / Math.PI - (1.0 / 3.0);
 
 		return ((volleyScore * altVolleyAngleWeight) + (travelAngle * altTravelAngleWeight) + (centralizedScore

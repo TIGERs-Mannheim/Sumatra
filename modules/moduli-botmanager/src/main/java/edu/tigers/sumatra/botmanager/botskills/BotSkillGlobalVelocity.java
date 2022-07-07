@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.botmanager.botskills;
 
@@ -85,6 +85,7 @@ public class BotSkillGlobalVelocity extends AMoveBotSkill
 	 * @param jerkMax
 	 * @param jerkMaxW
 	 * @param dribbleSpeed
+	 * @param dribbleCurrent
 	 * @param kickSpeed
 	 * @param kickDevice
 	 * @param kickMode
@@ -92,7 +93,7 @@ public class BotSkillGlobalVelocity extends AMoveBotSkill
 	@SuppressWarnings("squid:S00107")
 	public BotSkillGlobalVelocity(final IVector2 xy, final double orientation,
 			final double accMax, final double accMaxW, final double jerkMax, final double jerkMaxW,
-			final double dribbleSpeed, final double kickSpeed, final EKickerDevice kickDevice, final EKickerMode kickMode)
+			final double dribbleSpeed, final double dribbleCurrent, final double kickSpeed, final EKickerDevice kickDevice, final EKickerMode kickMode)
 	{
 		this();
 
@@ -105,7 +106,7 @@ public class BotSkillGlobalVelocity extends AMoveBotSkill
 		setJerkMaxW(jerkMaxW);
 		setJerkMax(jerkMax);
 
-		kickerDribbler.setDribblerSpeed(dribbleSpeed);
+		kickerDribbler.setDribbler(dribbleSpeed, dribbleCurrent);
 		kickerDribbler.setKick(kickSpeed, kickDevice, kickMode);
 	}
 

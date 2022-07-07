@@ -1,11 +1,12 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.autoreferee.engine.detector;
 
 import edu.tigers.autoreferee.generic.BotPosition;
 import edu.tigers.sumatra.ids.ETeamColor;
+import edu.tigers.sumatra.math.AngleMath;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.referee.data.EGameState;
 import edu.tigers.sumatra.referee.gameevent.IGameEvent;
@@ -17,12 +18,10 @@ import java.util.Optional;
 
 public class PenaltyKickFailedDetector extends AGameEventDetector
 {
-
 	public PenaltyKickFailedDetector()
 	{
-
 		super(EGameEventDetectorType.PENALTY_KICK_FAILED, EGameState.PENALTY);
-
+		setDeactivateOnFirstGameEvent(true);
 	}
 
 
@@ -30,12 +29,10 @@ public class PenaltyKickFailedDetector extends AGameEventDetector
 	public Optional<IGameEvent> doUpdate()
 	{
 		Optional<Double> angle = frame.getWorldFrame().getBall().getVel()
-				.angleTo(frame.getPreviousFrame().getWorldFrame().getBall().getVel());
+				.angleToAbs(frame.getPreviousFrame().getWorldFrame().getBall().getVel());
 
-		if (angle.isPresent() && Math.abs(angle.get()) >= Math.PI * 0.5)
+		if (frame.isBallInsideField() && angle.isPresent() && angle.get() >= AngleMath.DEG_090_IN_RAD)
 		{
-			boolean failed = false;
-
 			List<BotPosition> lastBots = frame.getBotsLastTouchedBall();
 
 			ETeamColor attackingTeam = frame.getGameState().getForTeam();
@@ -45,15 +42,9 @@ public class PenaltyKickFailedDetector extends AGameEventDetector
 			{
 				if (bot.getBotID().getTeamColor() == defendingTeam)
 				{
-					failed = true;
-					break;
+					IVector2 pos = frame.getWorldFrame().getBall().getPos();
+					return Optional.of(new PenaltyKickFailed(attackingTeam, pos));
 				}
-			}
-
-			if (failed && frame.isBallInsideField())
-			{
-				IVector2 pos = frame.getWorldFrame().getBall().getPos();
-				return Optional.of(new PenaltyKickFailed(attackingTeam, pos));
 			}
 		}
 

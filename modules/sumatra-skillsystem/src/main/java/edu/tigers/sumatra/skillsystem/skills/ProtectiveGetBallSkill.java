@@ -1,21 +1,27 @@
 /*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.skillsystem.skills;
 
 import com.github.g3force.configurable.Configurable;
+import edu.tigers.sumatra.drawable.DrawableCircle;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.ETeam;
 import edu.tigers.sumatra.math.AngleMath;
+import edu.tigers.sumatra.math.circle.Circle;
 import edu.tigers.sumatra.math.line.LineMath;
 import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.skillsystem.ESkillShapesLayer;
 import edu.tigers.sumatra.skillsystem.skills.util.AroundBallCalc;
 import edu.tigers.sumatra.skillsystem.skills.util.AroundObstacleCalc;
+import edu.tigers.sumatra.skillsystem.skills.util.EDribblerMode;
 import edu.tigers.sumatra.skillsystem.skills.util.KickParams;
 import edu.tigers.sumatra.skillsystem.skills.util.PositionValidator;
 import edu.tigers.sumatra.time.TimestampTimer;
 import lombok.Setter;
+
+import java.awt.Color;
 
 
 /**
@@ -26,16 +32,14 @@ public class ProtectiveGetBallSkill extends AMoveToSkill
 	@Configurable(comment = "Distance to keep to the ball during protection", defValue = "10.0")
 	private static double approachBallDistDefault = 10;
 
-	@Configurable(comment = "Dribbler speed while protecting", defValue = "5000.0")
-	private static double protectDribbleSpeedDefault = 5000;
+	@Configurable(comment = "angle in deg", defValue = "15.0")
+	private static double finalOrientationThreshold = 15.0;
 
 	private final PositionValidator positionValidator = new PositionValidator();
 	@Setter
 	IVector2 protectionTarget;
 	@Setter
 	private double approachDistToBall = approachBallDistDefault;
-	@Setter
-	private double protectDribbleSpeed = protectDribbleSpeedDefault;
 	private IVector2 contactPos = null;
 	private double contactAngle = 0;
 
@@ -53,26 +57,26 @@ public class ProtectiveGetBallSkill extends AMoveToSkill
 	@Override
 	public void doUpdate()
 	{
-		setKickParams(KickParams.disarm().withDribbleSpeed(calcDribbleSpeed()));
+		setKickParams(KickParams.disarm().withDribblerMode(calcDribbleMode()));
+		getMoveCon().setBotsObstacle(
+				getBall().getPos().distanceTo(getTBot().getBotKickerPos()) - Geometry.getBotRadius() > 50);
 
 		final IVector2 finalDestination = getFinalDestination(protectionTarget);
 		IVector2 dest = finalDestination;
 		double dist2Ball;
 
+		getShapes().get(ESkillShapesLayer.DRIBBLE_SKILL).add(new DrawableCircle(Circle.createCircle(finalDestination, 30),
+				Color.BLACK).setFill(true));
+
+		getShapes().get(ESkillShapesLayer.DRIBBLE_SKILL).add(new DrawableCircle(Circle.createCircle(protectionTarget, 30),
+				Color.RED).setFill(true));
 		double finalPositioningAngle = finalDestination.subtractNew(getBallPos())
 				.angleToAbs(getTBot().getBotKickerPos().subtractNew(getBallPos())).orElse(0.0);
 
 		var aroundObstacleCalc = new AroundObstacleCalc(protectionTarget, getBallPos(), getTBot());
 		if (aroundObstacleCalc.isAroundObstacleNeeded(finalDestination))
 		{
-			dest = aroundObstacleCalc.getAroundObstacleDest().orElse(dest);
-			if (getBallPos().distanceTo(getPos()) < Geometry.getBotRadius() + Geometry.getBallRadius())
-			{
-				dist2Ball = -50.0;
-			} else
-			{
-				dist2Ball = 0.0;
-			}
+			dist2Ball = 150.0;
 		} else
 		{
 			if (finalPositioningAngle < AngleMath.deg2rad(15))
@@ -84,10 +88,11 @@ public class ProtectiveGetBallSkill extends AMoveToSkill
 			}
 		}
 
-		calcSkillState(finalPositioningAngle);
+		calcSkillState();
 
 		double targetOrientation;
-		if (getTBot().getBallContact().hasContact())
+		if (getTBot().getBallContact().hasContact() && finalPositioningAngle < AngleMath.deg2rad(
+				finalOrientationThreshold))
 		{
 			if (contactPos == null)
 			{
@@ -115,18 +120,14 @@ public class ProtectiveGetBallSkill extends AMoveToSkill
 
 		updateDestination(dest);
 		updateTargetAngle(targetOrientation);
-		getMoveCon().setBotsObstacle(
-				getBall().getPos().distanceTo(getTBot().getBotKickerPos()) - Geometry.getBotRadius() > 50);
 
 		super.doUpdate();
 	}
 
 
-	private void calcSkillState(double finalPositioningAngle)
+	private void calcSkillState()
 	{
-		if ((finalPositioningAngle < AngleMath.deg2rad(15) || successTimer.isRunning()) && getTBot().getBallContact()
-				.hasContact()
-		)
+		if (getTBot().hasBallContact())
 		{
 			if (!successTimer.isRunning())
 			{
@@ -135,9 +136,13 @@ public class ProtectiveGetBallSkill extends AMoveToSkill
 			if (successTimer.isTimeUp(getWorldFrame().getTimestamp()))
 			{
 				setSkillState(ESkillState.SUCCESS);
+			} else
+			{
+				setSkillState(ESkillState.IN_PROGRESS);
 			}
 		} else
 		{
+			setSkillState(ESkillState.IN_PROGRESS);
 			successTimer.reset();
 		}
 	}
@@ -175,13 +180,13 @@ public class ProtectiveGetBallSkill extends AMoveToSkill
 	}
 
 
-	private double calcDribbleSpeed()
+	private EDribblerMode calcDribbleMode()
 	{
 		if (getPos().distanceTo(getBall().getPos()) < 300)
 		{
-			return protectDribbleSpeed;
+			return EDribblerMode.HIGH_POWER;
 		}
-		return 0;
+		return EDribblerMode.OFF;
 	}
 
 

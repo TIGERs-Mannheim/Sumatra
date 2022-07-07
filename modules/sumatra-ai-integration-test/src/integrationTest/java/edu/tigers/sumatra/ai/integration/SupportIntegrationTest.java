@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.integration;
@@ -16,13 +16,16 @@ import edu.tigers.sumatra.skillsystem.skills.MoveToSkill;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
 import org.junit.Test;
 
+import java.io.IOException;
+import java.util.Objects;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 
 public class SupportIntegrationTest extends AAiIntegrationTest
 {
 	@Test
-	public void testMoveOutOfGoalSight() throws Exception
+	public void testMoveOutOfGoalSight() throws IOException
 	{
 		loadSnapshot("snapshots/SupportMoveOutOfGoalSight.snap");
 		setGameState(GameState.RUNNING);
@@ -34,7 +37,9 @@ public class SupportIntegrationTest extends AAiIntegrationTest
 		nextFrame();
 		ITrackedBot bot = getAthenaAiFrame().getWorldFrame().getBot(BotID.createBotId(7, ETeamColor.YELLOW));
 		SupportRole role = (SupportRole) getAthenaAiFrame().getPlayStrategy().getActiveRoles(ERole.SUPPORT).stream()
-				.filter(r -> r.getBotID() == bot.getBotId()).findFirst().orElseThrow(IllegalStateException::new);
+				.filter(r -> Objects.equals(r.getBotID(), bot.getBotId()))
+				.findFirst()
+				.orElseThrow(IllegalStateException::new);
 		IVector2 destination = ((MoveToSkill) role.getCurrentSkill()).getDestination();
 
 		assertThat(Geometry.getPenaltyAreaTheir().withMargin(Geometry.getBotRadius()).isPointInShape(destination))

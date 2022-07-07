@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.metis.pass.rating;
@@ -23,7 +23,7 @@ public class FreeSpaceRater implements IPassRater
 
 	static
 	{
-		ConfigRegistration.registerClass("metis", PassInterceptionRater.class);
+		ConfigRegistration.registerClass("metis", FreeSpaceRater.class);
 	}
 
 	private final Collection<ITrackedBot> consideredBots;

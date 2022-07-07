@@ -12,7 +12,6 @@ import edu.tigers.sumatra.ai.metis.kicking.Kick;
 import edu.tigers.sumatra.ai.metis.kicking.Pass;
 import edu.tigers.sumatra.ai.metis.kicking.PassFactory;
 import edu.tigers.sumatra.ai.metis.offense.action.EActionViability;
-import edu.tigers.sumatra.ai.metis.offense.action.EOffensiveAction;
 import edu.tigers.sumatra.ai.metis.offense.action.OffensiveAction;
 import edu.tigers.sumatra.ai.metis.offense.action.OffensiveActionViability;
 import edu.tigers.sumatra.ai.metis.pass.KickOrigin;
@@ -82,7 +81,6 @@ public class ClearingKickActionMove extends AOffensiveActionMove
 			// ball must be intercepted, but this bot cant
 			return OffensiveAction.builder()
 					.move(EOffensiveActionMove.CLEARING_KICK)
-					.action(EOffensiveAction.CLEARING_KICK)
 					.viability(new OffensiveActionViability(EActionViability.FALSE, 0.0))
 					.build();
 		}
@@ -115,7 +113,6 @@ public class ClearingKickActionMove extends AOffensiveActionMove
 
 		return OffensiveAction.builder()
 				.move(EOffensiveActionMove.CLEARING_KICK)
-				.action(EOffensiveAction.CLEARING_KICK)
 				.viability(calcViability(botId))
 				.pass(pass)
 				.build();

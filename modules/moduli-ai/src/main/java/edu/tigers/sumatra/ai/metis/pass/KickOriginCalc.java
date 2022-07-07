@@ -6,7 +6,7 @@ package edu.tigers.sumatra.ai.metis.pass;
 
 import edu.tigers.sumatra.ai.metis.ACalculator;
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
-import edu.tigers.sumatra.ai.metis.offense.ballinterception.BallInterception;
+import edu.tigers.sumatra.ai.metis.offense.ballinterception.RatedBallInterception;
 import edu.tigers.sumatra.drawable.DrawableAnnotation;
 import edu.tigers.sumatra.drawable.DrawableCircle;
 import edu.tigers.sumatra.geometry.Geometry;
@@ -31,7 +31,7 @@ import java.util.stream.Collectors;
 public class KickOriginCalc extends ACalculator
 {
 	private static final DecimalFormat DF = new DecimalFormat("0.00");
-	private final Supplier<Map<BotID, BallInterception>> ballInterceptions;
+	private final Supplier<Map<BotID, RatedBallInterception>> ballInterceptions;
 	private final Supplier<Boolean> ballStopped;
 	private final Supplier<List<BotID>> ballHandlingBots;
 
@@ -76,8 +76,9 @@ public class KickOriginCalc extends ACalculator
 				.map(id -> ballInterceptions.get().get(id))
 				.filter(Objects::nonNull)
 				.collect(Collectors.toUnmodifiableMap(
-						BallInterception::getBotID,
-						bi -> new KickOrigin(bi.getPos(), bi.getBotID(), getImpactTime(bi.getPos()))
+						e -> e.getBallInterception().getBotID(),
+						bi -> new KickOrigin(bi.getBallInterception().getPos(), bi.getBallInterception().getBotID(),
+								getImpactTime(bi.getBallInterception().getPos()))
 				));
 	}
 

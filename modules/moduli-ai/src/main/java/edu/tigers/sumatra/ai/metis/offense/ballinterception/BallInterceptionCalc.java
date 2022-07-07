@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.metis.offense.ballinterception;
@@ -26,6 +26,7 @@ import edu.tigers.sumatra.math.botshape.BotShape;
 import edu.tigers.sumatra.math.circle.Circle;
 import edu.tigers.sumatra.math.line.v2.Lines;
 import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.math.vector.Vector2f;
 import edu.tigers.sumatra.pathfinder.TrajectoryGenerator;
 import edu.tigers.sumatra.trajectory.ITrajectory;
@@ -39,7 +40,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -58,14 +58,14 @@ public class BallInterceptionCalc extends ACalculator
 {
 	private static final DecimalFormat DF = new DecimalFormat("0.00");
 
-	@Configurable(defValue = "400.0")
-	private static double stepSize = 400.0;
+	@Configurable(defValue = "300.0")
+	private static double stepSize = 300.0;
 
 	@Configurable(defValue = "5.0", comment = "Max considered ball speed")
 	private static double maxBallSpeed = 5.0;
 
-	@Configurable(defValue = "-0.5", comment = "Offset for fallback ball interception slack time [s]")
-	private static double fallbackInterceptionsSlackTimeOffset = -0.5;
+	@Configurable(defValue = "0.1", comment = "[s]")
+	private static double oldTargetInterceptionBaseBonus = 0.1;
 
 	private double initBallSpeed = 0;
 	private double oldBallVel = 0;
@@ -75,9 +75,9 @@ public class BallInterceptionCalc extends ACalculator
 	private final Supplier<Optional<OngoingPass>> ongoingPass;
 
 	@Getter
-	private Map<BotID, BallInterception> ballInterceptions;
+	private Map<BotID, RatedBallInterception> ballInterceptions;
 	@Getter
-	private Map<BotID, BallInterception> ballInterceptionsFallback;
+	private Map<BotID, RatedBallInterception> ballInterceptionsFallback;
 
 	@Getter
 	private Map<BotID, BallInterceptionInformation> ballInterceptionInformationMap;
@@ -85,9 +85,9 @@ public class BallInterceptionCalc extends ACalculator
 	@Getter
 	private boolean ballStopped;
 
-	private final Hysteresis ballSpeedHysteresis = new Hysteresis(0.3, 0.4);
+	private final Hysteresis ballSpeedHysteresis = new Hysteresis(0.4, 0.5);
 
-	private Map<BotID, IVector2> previousInterceptionPositions = new IdentityHashMap<>();
+	private Map<BotID, IVector2> previousInterceptionPositions = new HashMap<>();
 	private IPenaltyArea penAreaOur;
 	private IPenaltyArea penAreaTheir;
 	private IBallTrajectory ballTrajectory;
@@ -123,12 +123,14 @@ public class BallInterceptionCalc extends ACalculator
 		Collection<BotID> consideredBots = consideredBots();
 
 		List<IVector2> interceptionPoints = generateInterceptionPoints();
-		Map<BotID, BallInterception> newBallInterceptions = new HashMap<>();
-		Map<BotID, BallInterception> newBallInterceptionsFallback = new HashMap<>();
+
+		Map<BotID, RatedBallInterception> newBallInterceptions = new HashMap<>();
 		for (var botID : consideredBots)
 		{
 			var iterations = iterateOverBallTravelLine(botID, interceptionPoints);
-			InterceptionIteration previousInterception = getPreviousInterceptionIteration(botID);
+
+			previousInterceptionPositions = invalidatePreviousInterceptionPositions();
+			var previousInterception = getPreviousInterceptionIteration(botID);
 			if (previousInterception != null)
 			{
 				// replace bot target iteration with near sampled iteration(s)
@@ -142,30 +144,15 @@ public class BallInterceptionCalc extends ACalculator
 			var zeroCrossings = findZeroCrossings(iterations);
 			var corridors = findCorridors(zeroCrossings);
 			var ballInterception = findTargetInterception(iterations, corridors, botID, previousInterception);
-			var targetTime = ballInterception.map(BallInterception::getBallContactTime).orElse(0.0);
-			ballInterception.ifPresent(e -> newBallInterceptions.put(botID, e));
-
-			List<InterceptionIteration> iterationsSecondRun = new ArrayList<>();
-			for (var iteration : iterations)
-			{
-				iterationsSecondRun
-						.add(new InterceptionIteration(iteration.getBallTravelTime(),
-								iteration.getSlackTime() + fallbackInterceptionsSlackTimeOffset, 0));
-			}
-
-			var zeroCrossingsSecond = findZeroCrossings(iterationsSecondRun);
-			var corridorsSecond = findCorridors(zeroCrossingsSecond);
-			var ballInterceptionSecond = findTargetInterception(iterationsSecondRun, corridorsSecond, botID,
-					previousInterception);
-			var targetTimeSecond = ballInterceptionSecond.map(BallInterception::getBallContactTime).orElse(0.0);
-			ballInterceptionSecond.ifPresent(e -> newBallInterceptionsFallback.put(botID, e));
+			var targetTime = ballInterception.map(e -> e.getBallInterception().getBallContactTime()).orElse(0.0);
+			ballInterception.ifPresentOrElse(e -> newBallInterceptions.put(botID, e),
+					() -> keepPositionUntilPassVanishes(newBallInterceptions, botID, previousInterception));
 
 			var information = BallInterceptionInformation.builder()
 					.initialIterations(iterations)
 					.zeroAxisChanges(zeroCrossings)
 					.interceptionCorridors(corridors)
 					.interceptionTargetTime(targetTime)
-					.interceptionTargetTimeFallback(targetTimeSecond)
 					.oldInterception(previousInterception)
 					.build();
 
@@ -178,10 +165,64 @@ public class BallInterceptionCalc extends ACalculator
 		}
 
 		ballInterceptions = Collections.unmodifiableMap(newBallInterceptions);
-		ballInterceptionsFallback = Collections.unmodifiableMap(newBallInterceptionsFallback);
-
 		previousInterceptionPositions = newBallInterceptions.entrySet().stream()
-				.collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, e -> e.getValue().getPos()));
+				.collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, e -> e.getValue().getBallInterception().getPos()));
+	}
+
+
+	private void keepPositionUntilPassVanishes(Map<BotID, RatedBallInterception> newBallInterceptions, BotID botID,
+			InterceptionIteration previousInterception)
+	{
+		var leadPointOnLine = getBall().getTrajectory().getTravelLineSegment()
+				.closestPointOnLine(getWFrame().getBot(botID).getBotKickerPos());
+		boolean isBotCloseToBallLine =
+				getBall().getTrajectory().getTravelLineSegment().distanceTo(getWFrame().getBot(botID).getBotKickerPos())
+						< Geometry.getBotRadius() * 2.0;
+
+		var ballContactTime = getBall().getTrajectory()
+				.getTimeByDist(leadPointOnLine.distanceTo(getWFrame().getBall().getPos()));
+		boolean ballImpactIsImminent = ballContactTime < 0.3;
+
+		if (isBotCloseToBallLine && ballImpactIsImminent)
+		{
+			var destination = leadPointOnLine;
+			if (previousInterception != null)
+			{
+				destination = getBall().getTrajectory().getPosByTime(previousInterception.getBallTravelTime())
+						.getXYVector();
+			}
+
+			var totalBotTravelTime = generateAsyncTrajectory(botID, destination).getTotalTime();
+
+			getShapes(EAiShapesLayer.OFFENSIVE_BALL_INTERCEPTION).add(
+					new DrawableAnnotation(leadPointOnLine, "bot_time: " + DF.format(totalBotTravelTime),
+							Vector2.fromY(-150)).setColor(Color.WHITE));
+
+			// just a validity check.
+			if (totalBotTravelTime < ballContactTime + 1)
+			{
+				getShapes(EAiShapesLayer.OFFENSIVE_BALL_INTERCEPTION).add(
+						new DrawableAnnotation(leadPointOnLine, "forcing intercept",
+								Vector2.fromY(-100)).setColor(Color.WHITE));
+				newBallInterceptions.put(botID,
+						new RatedBallInterception(new BallInterception(botID, ballContactTime, destination), 0,
+								0));
+			}
+		}
+	}
+
+
+	private Map<BotID, IVector2> invalidatePreviousInterceptionPositions()
+	{
+		var previousAttacker = getAiFrame().getPrevFrame().getTacticalField()
+				.getOffensiveStrategy().getAttackerBot();
+		var ballDir = ballTrajectory.getTravelLine().directionVector();
+		return previousInterceptionPositions.entrySet().stream()
+				.filter(e -> (ballDir.angleToAbs(e.getValue().subtractNew(getBall().getPos())).orElse(0.0)
+						< AngleMath.deg2rad(15)))
+				.filter(e -> previousAttacker.isPresent() && previousAttacker.get() == e.getKey())
+				.collect(Collectors.toUnmodifiableMap(
+						Map.Entry::getKey, Map.Entry::getValue));
 	}
 
 
@@ -216,7 +257,7 @@ public class BallInterceptionCalc extends ACalculator
 				.map(Pass::getKick)
 				.map(Kick::getTarget)
 				.or(() -> Optional.ofNullable(previousInterceptionPositions.get(botID)))
-				.map(point -> ballTrajectory.getTravelLineRolling().closestPointOnLine(point))
+				.map(point -> ballTrajectory.closestPointTo(point))
 				.filter(this::isLegal)
 				.map(point -> createInterceptionIterationFromPreviousTarget(botID, point))
 				.orElse(null);
@@ -234,6 +275,9 @@ public class BallInterceptionCalc extends ACalculator
 
 	private InterceptionIteration createInterceptionIterationFromPreviousTarget(BotID botID, IVector2 target)
 	{
+		getShapes(EAiShapesLayer.OFFENSIVE_BALL_INTERCEPTION)
+				.add(new DrawableCircle(Circle.createCircle(target, 50), Color.RED));
+
 		var ballTravelTime = ballTrajectory.getTimeByPos(target);
 		var trajectory = generateAsyncTrajectory(botID, target);
 		double botTime;
@@ -254,7 +298,7 @@ public class BallInterceptionCalc extends ACalculator
 		var slackTime = botTime - ballTravelTime;
 
 		var timeLeftToTravel = trajectory.getTotalTime();
-		var bonusValue = SumatraMath.relative(timeLeftToTravel, 2, 0) * 2.0;
+		var bonusValue = SumatraMath.relative(timeLeftToTravel, 2, 0) * 2.0 + oldTargetInterceptionBaseBonus;
 		if (!ballMovesTowardsMe(botID) && timeLeftToTravel < 1.5)
 		{
 			bonusValue = 0;
@@ -265,8 +309,10 @@ public class BallInterceptionCalc extends ACalculator
 
 	private boolean ballIsMoving()
 	{
+		var tigerHasBallContact = getWFrame().getTigerBotsAvailable().entrySet()
+				.stream().anyMatch(e -> e.getValue().getBallContact().hasContact());
 		ballSpeedHysteresis.update(getBall().getVel().getLength2());
-		return !ballSpeedHysteresis.isLower();
+		return !ballSpeedHysteresis.isLower() && !(tigerHasBallContact && getBall().getVel().getLength2() < 3.0);
 	}
 
 
@@ -284,7 +330,7 @@ public class BallInterceptionCalc extends ACalculator
 	}
 
 
-	private Optional<BallInterception> findTargetInterception(
+	private Optional<RatedBallInterception> findTargetInterception(
 			List<InterceptionIteration> iterations,
 			List<InterceptionCorridor> corridors,
 			BotID botID, InterceptionIteration previousInterception)
@@ -310,30 +356,40 @@ public class BallInterceptionCalc extends ACalculator
 	}
 
 
-	private BallInterception findBallInterception(BotID botID, InterceptionIteration iteration)
+	private RatedBallInterception findBallInterception(BotID botID, RatedInterceptionIteration iteration)
 	{
-		var interceptTime = iteration.getBallTravelTime();
+		var interceptTime = iteration.getIteration().getBallTravelTime();
 		var interceptionTarget = ballTrajectory.getPosByTime(interceptTime).getXYVector();
-		return new BallInterception(botID, interceptTime, interceptionTarget);
+		return new RatedBallInterception(new BallInterception(botID, interceptTime, interceptionTarget),
+				iteration.getCorridorLength(), iteration.getMinCorridorSlackTime());
 	}
 
 
-	private Optional<InterceptionIteration> findBestInterceptionIteration(
+	private Optional<RatedInterceptionIteration> findBestInterceptionIteration(
 			List<InterceptionIteration> initialIterations,
 			InterceptionCorridor corridor,
 			InterceptionIteration previousInterception)
 	{
 		double startTime = corridor.getStartTime();
 		double endTime = corridor.getEndTime();
+
+		double minSlackTimeInCorridor = initialIterations.stream()
+				.filter(e -> e.getBallTravelTime() >= startTime && e.getBallTravelTime() < endTime)
+				.map(InterceptionIteration::getSlackTime)
+				.min(Comparator.comparingDouble(e -> e)).orElse(0.0);
+
 		if (previousInterception != null && previousInterception.getBallTravelTime() >= startTime
 				&& previousInterception.getBallTravelTime() < endTime && ongoingPass.get().isPresent())
 		{
 			// previousInterception is a pass target and within corridor range
-			return Optional.of(previousInterception);
+			return Optional.of(
+					new RatedInterceptionIteration(previousInterception, endTime - startTime, minSlackTimeInCorridor));
 		}
+
 		return initialIterations.stream()
 				.filter(it -> it.getBallTravelTime() >= startTime && it.getBallTravelTime() < endTime)
 				.filter(it -> isIterationInterceptable(it.getSlackTime(), it.getBallTravelTime()))
+				.map(e -> new RatedInterceptionIteration(e, endTime - startTime, minSlackTimeInCorridor))
 				.findFirst();
 	}
 
@@ -351,7 +407,7 @@ public class BallInterceptionCalc extends ACalculator
 	private List<InterceptionCorridor> findCorridors(List<InterceptionZeroAxisCrossing> crossings)
 	{
 		var corridors = new ArrayList<InterceptionCorridor>();
-		boolean startCorridorFound = false;
+		var startCorridorFound = false;
 		double startCorridorTime = 0;
 		for (var axisCrossing : crossings)
 		{
@@ -441,7 +497,7 @@ public class BallInterceptionCalc extends ACalculator
 	{
 		return ongoingPass.get().map(OngoingPass::getPass)
 				.map(Pass::getReceiver)
-				.filter(BotID::isBot)
+				.filter(id -> getWFrame().getBots().containsKey(id))
 				.map(Set::of)
 				.orElse(potentialOffensiveBots.get());
 	}
@@ -449,14 +505,16 @@ public class BallInterceptionCalc extends ACalculator
 
 	private List<IVector2> generateInterceptionPoints()
 	{
-		List<IVector2> iterations = new ArrayList<>();
-
 		var ballTravelLine = ballTrajectory.getTravelLine();
+		var fieldBorderIntersections = ballTrajectory.getTravelLineSegments().stream()
+				.map(line -> Geometry.getField().withMargin(stepSize * 1.5).lineIntersections(line))
+				.flatMap(Collection::stream)
+				.toList();
 		var borderToBall = ballTravelLine.directionVector().multiplyNew(-1).normalize();
 		var ballPos = ballTrajectory.getInitialPos().getXYVector();
 		var fieldBorderIntersection = ballPos
-				.nearestToOpt(Geometry.getField().lineIntersections(ballTravelLine))
-				.orElse(ballPos);
+				.nearestToOpt(fieldBorderIntersections)
+				.orElse(ballTrajectory.getPosByVel(0).getXYVector());
 		var ballStopTime = ballTrajectory.getTimeByVel(0);
 		var ballStopDist = ballTrajectory.getDistByTime(ballStopTime);
 
@@ -471,21 +529,32 @@ public class BallInterceptionCalc extends ACalculator
 		var distStartToBorder = distBallToBorder - distBallToBorder % adjustedStepSize;
 		var maxStepId = Math.ceil(sampleRange / adjustedStepSize);
 
-		for (int i = 0; i < maxStepId; i++)
+		// add intersections with their penArea.
+		var intersections = penAreaTheir.lineIntersections(ballTrajectory.getTravelLineSegment());
+		intersections.forEach(e ->
+				getShapes(EAiShapesLayer.OFFENSIVE_BALL_INTERCEPTION)
+						.add(new DrawableCircle(Circle.createCircle(e, 50), Color.MAGENTA)));
+		List<IVector2> iterations = new ArrayList<>(intersections);
+		for (var i = 0; i < maxStepId; i++)
 		{
 			var stepDistance = distStartToBorder - i * adjustedStepSize;
 			var point = fieldBorderIntersection.addNew(borderToBall.multiplyNew(stepDistance));
 
-			if (isLegal(point))
+			if (isLegal(point) && intersections.stream().noneMatch(e -> e.distanceTo(point) < stepSize / 4))
 			{
-				getShapes(EAiShapesLayer.OFFENSIVE_BALL_INTERCEPTION)
-						.add(new DrawableCircle(Circle.createCircle(point, 50), Color.MAGENTA));
 				iterations.add(point);
 			}
 		}
 
+		// delete sample that may occupy the balls spot
+		iterations.stream().filter(e -> e.distanceTo(ballPos) < 10).findFirst().ifPresent(iterations::remove);
+
 		// always add ballPos as potential target
 		iterations.add(ballPos);
+
+		iterations.forEach(e ->
+				getShapes(EAiShapesLayer.OFFENSIVE_BALL_INTERCEPTION)
+						.add(new DrawableCircle(Circle.createCircle(e, 50), Color.MAGENTA)));
 		return iterations;
 	}
 

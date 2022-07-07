@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.drawable;
@@ -53,12 +53,11 @@ public class DrawableArc extends Arc implements IDrawableShape
 	public void paintShape(final Graphics2D g, final IDrawableTool tool, final boolean invert)
 	{
 		final IVector2 transBotPos = tool.transformToGuiCoordinates(center(), invert);
-		double radius = tool.scaleXLength(radius());
+		double radius = tool.scaleGlobalToGui(radius());
 		int drawingX = (int) (transBotPos.x() - radius);
 		int drawingY = (int) (transBotPos.y() - radius);
 
-		double startAngle = AngleMath
-				.rad2deg((getStartAngle() + tool.getFieldTurn().getAngle()) - (AngleMath.PI_HALF * (invert ? -1 : 1)));
+		double startAngle = AngleMath.rad2deg(tool.transformToGuiAngle(getStartAngle(), invert));
 		double extendAngle = AngleMath.rad2deg(getRotation());
 		Shape arcShape = new Arc2D.Double(drawingX, drawingY, radius * 2, radius * 2, startAngle,
 				extendAngle, arcType);

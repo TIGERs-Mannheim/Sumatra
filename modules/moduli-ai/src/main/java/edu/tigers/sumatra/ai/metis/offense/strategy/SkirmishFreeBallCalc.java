@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.metis.offense.strategy;
@@ -121,7 +121,9 @@ public class SkirmishFreeBallCalc extends ACalculator
 		}
 
 		getShapes(EAiShapesLayer.AI_SKIRMISH_DETECTOR)
-				.add(new DrawableBorderText(Vector2.fromXY(10, 70), info, Color.red).setFontSize(EFontSize.LARGE));
+				.add(new DrawableBorderText(Vector2.fromXY(10, 70), info)
+						.setFontSize(EFontSize.LARGE)
+						.setColor(Color.red));
 	}
 
 
@@ -160,7 +162,9 @@ public class SkirmishFreeBallCalc extends ACalculator
 
 		// set actual turn command here
 		getShapes(EAiShapesLayer.AI_SKIRMISH_DETECTOR)
-				.add(new DrawableBorderText(Vector2.fromXY(10, 110), "TURN !", Color.red).setFontSize(EFontSize.LARGE));
+				.add(new DrawableBorderText(Vector2.fromXY(10, 110), "TURN !")
+						.setFontSize(EFontSize.LARGE)
+						.setColor(Color.red));
 		return true;
 	}
 

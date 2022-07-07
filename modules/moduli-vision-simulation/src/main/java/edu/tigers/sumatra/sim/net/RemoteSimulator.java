@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2019, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.sim.net;
@@ -94,11 +94,11 @@ public class RemoteSimulator extends ASumatraSimulator
 
 	private void processResponse(final SimNetClient.SimServerResponse response)
 	{
-		FilteredVisionFrame latestFrame = response.getFrame();
+		FilteredVisionFrame latestFrame = response.frame();
 
 		if (referee.getActiveSource().getType() == ERefereeMessageSource.INTERNAL_FORWARDER)
 		{
-			((DirectRefereeMsgForwarder) referee.getActiveSource()).send(response.getRefereeMessage());
+			((DirectRefereeMsgForwarder) referee.getActiveSource()).send(response.refereeMessage());
 		} else
 		{
 			log.warn("Referee source must be set to {} in order to forward referee messages from the simulation server",

@@ -1,104 +1,71 @@
 /*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.skillsystem;
 
-import edu.tigers.sumatra.drawable.IShapeLayer;
-import edu.tigers.sumatra.drawable.ShapeMap.EShapeLayerPersistenceType;
+import edu.tigers.sumatra.drawable.IShapeLayerIdentifier;
+import edu.tigers.sumatra.drawable.ShapeLayerFactory;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 
-import static edu.tigers.sumatra.drawable.ShapeMap.EShapeLayerPersistenceType.ALWAYS_PERSIST;
 import static edu.tigers.sumatra.drawable.ShapeMap.EShapeLayerPersistenceType.DEBUG_PERSIST;
+import static edu.tigers.sumatra.drawable.ShapeMap.EShapeLayerPersistenceType.NEVER_PERSIST;
 
 
-/**
- * Shape layers for Skills
- */
-@SuppressWarnings("squid:S1192") // duplicated strings
-public enum ESkillShapesLayer implements IShapeLayer
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
+public final class ESkillShapesLayer
 {
-	SKILL_NAMES("Skill names", "Skills"),
+	private static final ShapeLayerFactory F = new ShapeLayerFactory(ESkillShapesLayer.class, 50);
+	private static final String SKILLS = "Skills";
+	private static final String MOVEMENT = "Movement";
 
-	KICK_SKILL("Kick", "Skills"),
-	KICK_SKILL_DEBUG("Kick Debug", "Skills", DEBUG_PERSIST),
+	public static final IShapeLayerIdentifier SKILL_NAMES = F.create(
+			F.layer("Skill names").category(SKILLS));
 
-	DRIBBLE_SKILL("Dribble", "Skills"),
-	PROTECT_AND_MOVE_WITH_BALL_SKILL("Protect + Move", "Skills"),
+	public static final IShapeLayerIdentifier KICK_SKILL = F.create(
+			F.layer("Kick").category(SKILLS));
+	public static final IShapeLayerIdentifier KICK_SKILL_DEBUG = F.create(F.layer("Kick Debug")
+			.category(SKILLS).persistenceType(DEBUG_PERSIST));
 
-	BALL_ARRIVAL_SKILL("Ball Arrival", "Skills"),
-	APPROACH_AND_STOP_BALL_SKILL("Approach + Stop", "Skills"),
-	PUSH_AROUND_OBSTACLE_SKILL("Push", "Skills"),
-	APPROACH_BALL_LINE_SKILL("Approach Ball", "Skills"),
-	MOVE_WITH_BALL("Move With Ball", "Skills"),
+	public static final IShapeLayerIdentifier DRIBBLE_SKILL = F.create(
+			F.layer("Dribble").category(SKILLS));
+	public static final IShapeLayerIdentifier PROTECT_AND_MOVE_WITH_BALL_SKILL = F.create(
+			F.layer("Protect + Move").category(SKILLS));
 
-	KEEPER("Keeper", "Skills"),
+	public static final IShapeLayerIdentifier BALL_ARRIVAL_SKILL = F.create(
+			F.layer("Ball Arrival").category(SKILLS));
+	public static final IShapeLayerIdentifier APPROACH_AND_STOP_BALL_SKILL = F.create(
+			F.layer("Approach + Stop").category(SKILLS));
+	public static final IShapeLayerIdentifier PUSH_AROUND_OBSTACLE_SKILL = F.create(
+			F.layer("Push").category(SKILLS));
+	public static final IShapeLayerIdentifier APPROACH_BALL_LINE_SKILL = F.create(
+			F.layer("Approach Ball").category(SKILLS));
+	public static final IShapeLayerIdentifier MOVE_WITH_BALL = F.create(
+			F.layer("Move With Ball").category(SKILLS));
 
-	PATH("Path", "Movement"),
-	PATH_DEBUG("Path Debug", "Movement"),
-	DEBUG("Debug", "Movement"),
-	PATH_FINDER_DEBUG("PathFinder Debug", "Movement", DEBUG_PERSIST),
-	TRAJ_PATH_OBSTACLES("Path Obstacles", "Movement", DEBUG_PERSIST),
-	BUFFERED_TRAJECTORY("Buffered Trajectory", "Movement", DEBUG_PERSIST),
+	public static final IShapeLayerIdentifier KEEPER = F.create(
+			F.layer("Keeper").category(SKILLS));
+	public static final IShapeLayerIdentifier KEEPER_DEFLECTION_ADAPTION = F.create(
+			F.layer("Keeper Deflection Adaption").category(SKILLS).persistenceType(NEVER_PERSIST));
 
-	CALIBRATION("Calibration", "Skills"),
+	public static final IShapeLayerIdentifier PATH = F.create(
+			F.layer("Path").category(MOVEMENT));
+	public static final IShapeLayerIdentifier PATH_DEBUG = F.create(
+			F.layer("Path Debug").category(MOVEMENT));
+	public static final IShapeLayerIdentifier CRITICAL_COLLISION = F.create(
+			F.layer("Critical Collision").category(MOVEMENT));
+	public static final IShapeLayerIdentifier DEBUG = F.create(
+			F.layer("Debug").category(MOVEMENT));
+	public static final IShapeLayerIdentifier PATH_FINDER_DEBUG = F.create(
+			F.layer("PathFinder Debug").category(MOVEMENT).persistenceType(DEBUG_PERSIST));
+	public static final IShapeLayerIdentifier TRAJ_PATH_OBSTACLES = F.create(
+			F.layer("Path Obstacles").category(MOVEMENT).persistenceType(DEBUG_PERSIST));
+	public static final IShapeLayerIdentifier BUFFERED_TRAJECTORY = F.create(
+			F.layer("Buffered Trajectory").category(MOVEMENT).persistenceType(DEBUG_PERSIST));
+	public static final IShapeLayerIdentifier DRIBBLING_DEBUG = F.create(
+			F.layer("Dribbling Debug").category(MOVEMENT).persistenceType(NEVER_PERSIST));
 
-	;
-
-	private final String id;
-	private final String name;
-	private final String category;
-	private final EShapeLayerPersistenceType persistenceType;
-	private final int orderId;
-
-
-	ESkillShapesLayer(final String name, final String category)
-	{
-		this(name, category, ALWAYS_PERSIST);
-	}
-
-
-	ESkillShapesLayer(final String name, final String category,
-			final EShapeLayerPersistenceType persistenceType)
-	{
-		this.name = name;
-		this.category = category;
-		this.persistenceType = persistenceType;
-		orderId = 50 + ordinal();
-		id = ESkillShapesLayer.class.getCanonicalName() + name();
-	}
-
-
-	@Override
-	public String getLayerName()
-	{
-		return name;
-	}
-
-
-	@Override
-	public final String getCategory()
-	{
-		return category;
-	}
-
-
-	@Override
-	public int getOrderId()
-	{
-		return orderId;
-	}
-
-
-	@Override
-	public String getId()
-	{
-		return id;
-	}
-
-
-	@Override
-	public EShapeLayerPersistenceType getPersistenceType()
-	{
-		return persistenceType;
-	}
+	public static final IShapeLayerIdentifier CALIBRATION = F.create(
+			F.layer("Calibration").category(SKILLS));
 }

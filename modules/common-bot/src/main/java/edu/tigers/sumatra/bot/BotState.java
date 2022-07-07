@@ -62,7 +62,7 @@ public class BotState extends State
 	}
 
 
-	public BotID getBotID()
+	public BotID getBotId()
 	{
 		return botID;
 	}

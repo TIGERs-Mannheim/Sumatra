@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.common;
@@ -37,7 +37,7 @@ public class PointChecker
 	private BotID botID;
 
 	@Setter
-	private double theirPenAreaMargin = Geometry.getBotRadius() + RuleConstraints.getBotToPenaltyAreaMarginStandard();
+	private double theirPenAreaMargin = Geometry.getBotRadius() + RuleConstraints.getPenAreaMarginStandard();
 	@Setter
 	private double ourPenAreaMargin = 200;
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.skillsystem.skills;
@@ -11,6 +11,7 @@ import edu.tigers.sumatra.math.line.LineMath;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.skillsystem.skills.util.AroundBallCalc;
 import edu.tigers.sumatra.skillsystem.skills.util.AroundObstacleCalc;
+import edu.tigers.sumatra.skillsystem.skills.util.EDribblerMode;
 import edu.tigers.sumatra.skillsystem.skills.util.KickParams;
 import edu.tigers.sumatra.skillsystem.skills.util.PositionValidator;
 import edu.tigers.sumatra.wp.data.DynamicPosition;
@@ -24,9 +25,6 @@ public class ProtectBallSkill extends AMoveToSkill
 {
 	@Configurable(comment = "Distance to keep to the ball during protection", defValue = "10.0")
 	private static double finalDist2BallDefault = 10;
-
-	@Configurable(comment = "Dribbler speed while protecting", defValue = "0.0")
-	private static double protectDribbleSpeed = 0;
 
 	private final PositionValidator positionValidator = new PositionValidator();
 
@@ -51,7 +49,7 @@ public class ProtectBallSkill extends AMoveToSkill
 	{
 		protectionTarget = protectionTarget.update(getWorldFrame());
 
-		setKickParams(KickParams.disarm().withDribbleSpeed(calcDribbleSpeed()));
+		setKickParams(KickParams.disarm().withDribblerMode(EDribblerMode.OFF));
 
 		final IVector2 finalDestination = getFinalDestination(protectionTarget);
 		IVector2 dest = finalDestination;
@@ -92,12 +90,6 @@ public class ProtectBallSkill extends AMoveToSkill
 				getBall().getPos().distanceTo(getTBot().getBotKickerPos()) - Geometry.getBotRadius() > 50);
 
 		super.doUpdate();
-	}
-
-
-	private double calcDribbleSpeed()
-	{
-		return protectDribbleSpeed;
 	}
 
 

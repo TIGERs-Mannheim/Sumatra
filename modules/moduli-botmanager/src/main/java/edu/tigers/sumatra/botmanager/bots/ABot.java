@@ -1,11 +1,8 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.botmanager.bots;
-
-import java.util.Map;
-import java.util.Optional;
 
 import edu.tigers.sumatra.bot.BotState;
 import edu.tigers.sumatra.bot.EBotType;
@@ -21,6 +18,9 @@ import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.ids.ETeamColor;
 import edu.tigers.sumatra.math.vector.IVector3;
 import edu.tigers.sumatra.trajectory.TrajectoryWithTime;
+
+import java.util.Map;
+import java.util.Optional;
 
 
 /**
@@ -39,11 +39,10 @@ public abstract class ABot implements IBot
 	private IBotParams botParams = new BotParams();
 	private TrajectoryWithTime<IVector3> curTrajectory = null;
 	private String controlledBy = "";
-	private boolean hideFromRcm = false;
 	protected long lastFeedback = 0;
 
 
-	public ABot(final EBotType type, final BotID id, final IBaseStation baseStation)
+	protected ABot(final EBotType type, final BotID id, final IBaseStation baseStation)
 	{
 		botId = id;
 		this.type = type;
@@ -139,22 +138,6 @@ public abstract class ABot implements IBot
 	public final boolean isBlocked()
 	{
 		return !controlledBy.isEmpty();
-	}
-
-
-	@Override
-	public final boolean isHideFromRcm()
-	{
-		return hideFromRcm;
-	}
-
-
-	/**
-	 * @param hideFromRcm the hideFromRcm to set
-	 */
-	public final void setHideFromRcm(final boolean hideFromRcm)
-	{
-		this.hideFromRcm = hideFromRcm;
 	}
 
 

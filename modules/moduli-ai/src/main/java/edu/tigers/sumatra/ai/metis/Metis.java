@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.ai.metis;
 
@@ -16,12 +16,18 @@ import edu.tigers.sumatra.ai.metis.ballresponsibility.BallResponsibilityCalc;
 import edu.tigers.sumatra.ai.metis.botdistance.BotToBallDistanceCalc;
 import edu.tigers.sumatra.ai.metis.defense.CrucialDefenderCalc;
 import edu.tigers.sumatra.ai.metis.defense.DefenseBallThreatCalc;
-import edu.tigers.sumatra.ai.metis.defense.DefenseBallToBotThreatCalc;
 import edu.tigers.sumatra.ai.metis.defense.DefenseBotThreatCalc;
+import edu.tigers.sumatra.ai.metis.defense.DefenseBotThreatDefStrategyCenterBackCalc;
+import edu.tigers.sumatra.ai.metis.defense.DefenseBotThreatDefStrategyDataAccumulatorCalc;
+import edu.tigers.sumatra.ai.metis.defense.DefenseBotThreatDefStrategyMan2ManCalc;
+import edu.tigers.sumatra.ai.metis.defense.DefensePenAreaTargetGroupAssignerCalc;
+import edu.tigers.sumatra.ai.metis.defense.DefensePenAreaTargetGroupFinderCalc;
+import edu.tigers.sumatra.ai.metis.defense.DefenseThreatAssignmentSeparationCalc;
 import edu.tigers.sumatra.ai.metis.defense.DesiredDefendersCalc;
 import edu.tigers.sumatra.ai.metis.defense.NumDefenderCalc;
 import edu.tigers.sumatra.ai.metis.defense.NumDefendersForBallCalc;
 import edu.tigers.sumatra.ai.metis.defense.OpponentPassReceiverCalc;
+import edu.tigers.sumatra.ai.metis.defense.SupporterMan2ManAssignmentCalc;
 import edu.tigers.sumatra.ai.metis.general.BallLeavingFieldCalc;
 import edu.tigers.sumatra.ai.metis.general.BallLeftFieldCalc;
 import edu.tigers.sumatra.ai.metis.general.BotBallContactCalc;
@@ -56,7 +62,6 @@ import edu.tigers.sumatra.ai.metis.offense.action.OffensiveActionsCalc;
 import edu.tigers.sumatra.ai.metis.offense.action.situation.OffensiveSituationRatingCalc;
 import edu.tigers.sumatra.ai.metis.offense.ballinterception.BallInterceptionCalc;
 import edu.tigers.sumatra.ai.metis.offense.dribble.BallDribblingDetectorCalc;
-import edu.tigers.sumatra.ai.metis.offense.kickoff.KickoffActionsCalc;
 import edu.tigers.sumatra.ai.metis.offense.statistics.OffensiveStatisticsCalc;
 import edu.tigers.sumatra.ai.metis.offense.statistics.OffensiveStatisticsPostAnalysisCalc;
 import edu.tigers.sumatra.ai.metis.offense.strategy.BallHandlingRobotsStrategyCalc;
@@ -71,11 +76,11 @@ import edu.tigers.sumatra.ai.metis.pass.PassSelectionCalc;
 import edu.tigers.sumatra.ai.metis.redirector.RedirectorDetectionCalc;
 import edu.tigers.sumatra.ai.metis.statistics.MatchStatisticsCalc;
 import edu.tigers.sumatra.ai.metis.statistics.TimeSeriesStatsCalc;
+import edu.tigers.sumatra.ai.metis.support.SupportBehaviorAssignmentCalc;
+import edu.tigers.sumatra.ai.metis.support.SupportBehaviorCalc;
 import edu.tigers.sumatra.ai.metis.support.SupportBridgePositionCalc;
+import edu.tigers.sumatra.ai.metis.support.SupportKickoffPositionsCalc;
 import edu.tigers.sumatra.ai.metis.support.SupportMidfieldPositionsCalc;
-import edu.tigers.sumatra.ai.metis.support.SupportPositionGenerationCalc;
-import edu.tigers.sumatra.ai.metis.support.SupportPositionRatingCalc;
-import edu.tigers.sumatra.ai.metis.support.SupportPositionSelectionCalc;
 import edu.tigers.sumatra.ai.metis.targetrater.BestGoalKickRaterCalc;
 import edu.tigers.sumatra.ai.metis.test.AngleRangeTestCalc;
 import edu.tigers.sumatra.ai.metis.test.DebugGridTestCalc;
@@ -85,7 +90,7 @@ import edu.tigers.sumatra.wp.data.WorldFrame;
 import lombok.extern.log4j.Log4j2;
 
 import java.util.ArrayList;
-import java.util.IdentityHashMap;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
@@ -101,12 +106,9 @@ import java.util.function.Supplier;
 public class Metis implements IConfigObserver
 {
 	private static final String CONFIG_METIS = "metis";
-
-	private ETeamColor teamColor = ETeamColor.NEUTRAL;
-
 	private final TacticalFieldFiller tacticalFieldFiller = new TacticalFieldFiller();
-
 	private final List<ACalculator> calculators = new ArrayList<>();
+	private ETeamColor teamColor = ETeamColor.NEUTRAL;
 
 
 	/**
@@ -144,22 +146,34 @@ public class Metis implements IConfigObserver
 		));
 		var penaltyGoOutDistanceCalc = register(new PenaltyGoOutDistanceCalc());
 		var defenseBallThreatCalc = register(new DefenseBallThreatCalc(
+				directShotDetectionCalc::getDetectedGoalKickOpponents,
 				opponentPassReceiverCalc::getOpponentPassReceiver
 		));
-		var defenseBotThreatCalc = register(new DefenseBotThreatCalc(
+		var defenseBotThreatDefStrategyCenterBackCalc = register(new DefenseBotThreatDefStrategyCenterBackCalc(
 				defenseBallThreatCalc::getDefenseBallThreat,
 				botToBallDistanceCalc::getOpponentsToBallDist
 		));
-		var defenseBallToBotThreatCalc = register(new DefenseBallToBotThreatCalc(
-				defenseBotThreatCalc::getDefenseBotThreats,
+		var defenseBotThreatDefStrategyMan2ManCalc = register(new DefenseBotThreatDefStrategyMan2ManCalc(
+				defenseBotThreatDefStrategyCenterBackCalc::getCenterBackDefData,
 				botToBallDistanceCalc::getOpponentClosestToBall
 		));
-		var numDefendersForBallCalc = register(new NumDefendersForBallCalc());
+		var defenseBotThreatDefStrategyDataAccumulatorCalc = register(new DefenseBotThreatDefStrategyDataAccumulatorCalc(
+				defenseBotThreatDefStrategyCenterBackCalc::getCenterBackDefData,
+				defenseBotThreatDefStrategyMan2ManCalc::getMan2ManDefData,
+				defenseBallThreatCalc::getDefenseBallThreat
+		));
+
+		var defenseBotThreatCalc = register(new DefenseBotThreatCalc(
+				defenseBotThreatDefStrategyDataAccumulatorCalc::getDefenseBotThreatDefData
+		));
+		var numDefendersForBallCalc = register(new NumDefendersForBallCalc(
+				ballResponsibilityCalc::getBallResponsibility
+		));
 		var numDefenderCalc = register(new NumDefenderCalc(
 				ballResponsibilityCalc::getBallResponsibility,
 				numDefendersForBallCalc::getNumDefenderForBall,
 				numInterchangeBotsCalc::getBotsToInterchange,
-				defenseBotThreatCalc::getDefenseBotThreats
+				defenseBotThreatDefStrategyDataAccumulatorCalc::getDefenseBotThreatDefData
 		));
 
 		var ongoingPassCalc = register(new OngoingPassCalc());
@@ -174,8 +188,7 @@ public class Metis implements IConfigObserver
 				numInterchangeBotsCalc::getBotsToInterchange,
 				crucialOffenderCalc::getCrucialOffender,
 				botToBallDistanceCalc::getTigerClosestToBall,
-				botToBallDistanceCalc::getOpponentClosestToBall,
-				defenseBotThreatCalc::getDefenseBotThreats
+				botToBallDistanceCalc::getOpponentClosestToBall
 		));
 		var potentialOffensiveBotsCalc = register(new PotentialOffensiveBotsCalc(
 				ballLeavingFieldCalc::isBallLeavingFieldGood,
@@ -228,13 +241,12 @@ public class Metis implements IConfigObserver
 		));
 		var delayFreeKickCalc = register(new DelayFreeKickCalc(
 				botToBallDistanceCalc::getTigerClosestToBall,
-				bestGoalShotRaterCalc::getBestGoalKicks
+				bestGoalShotRaterCalc::getBestGoalKickPerBot
 		));
 		var passTargetGenerationCalc = register(new PassGenerationCalc(
 				kickOriginCalc::getKickOrigins,
 				offensiveBallAccessibilityCalc::getInaccessibleBallAngles,
-				ballHandlingBotCalc::getBallHandlingBots,
-				supportiveAttackerCalc::getSupportiveAttackers
+				ballHandlingBotCalc::getBallHandlingBots
 		));
 		var passTargetRatingCalc = register(new PassRatingCalc(
 				passTargetGenerationCalc::getGeneratedPasses
@@ -243,7 +255,7 @@ public class Metis implements IConfigObserver
 				passTargetRatingCalc::getPassesRated
 		));
 		var passTargetSelectionCalc = register(new PassSelectionCalc(
-				passTargetFilteringCalc::getFilteredAndRatedPasses
+				passTargetRatingCalc::getPassesRated
 		));
 		var offensiveStatisticsCalc = register(new OffensiveStatisticsCalc());
 		var ballHandlingRobotsStrategyCalc = register(new BallHandlingRobotsStrategyCalc(
@@ -260,7 +272,7 @@ public class Metis implements IConfigObserver
 				kickOriginCalc::getKickOrigins,
 				botToBallDistanceCalc::getOpponentClosestToBall,
 				offensiveStatisticsCalc::getOffensiveStatistics,
-				bestGoalShotRaterCalc::getBestGoalKicks,
+				bestGoalShotRaterCalc::getBestGoalKickPerBot,
 				kickInsBlaueCalc::getKickInsBlaueSpots,
 				ballDribblingDetectorCalc::getDribblingInformation
 		));
@@ -290,8 +302,9 @@ public class Metis implements IConfigObserver
 				offensiveStrategyCalc::getStrategy,
 				offensiveActionsCalc::getOffensiveActions,
 				skirmishDetectorCalc::getSkirmishInformation,
-				bestGoalShotRaterCalc::getBestGoalKicks
+				bestGoalShotRaterCalc::getBestGoalKickPerBot
 		));
+
 		var numBallPlacementBotsCalc = register(new NumBallPlacementBotsCalc());
 		var playNumberCalc = register(new PlayNumberCalc(
 				numBallPlacementBotsCalc::getNumBallPlacementBots,
@@ -323,7 +336,6 @@ public class Metis implements IConfigObserver
 				playNumberCalc::getPlayNumbers,
 				defenseBallThreatCalc::getDefenseBallThreat,
 				defenseBotThreatCalc::getDefenseBotThreats,
-				defenseBallToBotThreatCalc::getDefenseBallToBotThreats,
 				crucialDefenderCalc::getCrucialDefenders,
 				numDefendersForBallCalc::getNumDefenderForBall
 		));
@@ -331,24 +343,46 @@ public class Metis implements IConfigObserver
 				desiredBotsCalc::getDesiredBots,
 				playNumberCalc::getPlayNumbers
 		));
-		var supportPositionGenerationCalc = register(new SupportPositionGenerationCalc(
-				ballHandlingBotCalc::getBallHandlingBots
-		));
-		// SupportPositionRatingCalc modifies the globalSupportPositions
-		register(new SupportPositionRatingCalc(
-				offensiveStrategyCalc::getStrategy,
-				supportPositionGenerationCalc::getGlobalSupportPositions
-		));
-		var supportPositionSelectionCalc = register(new SupportPositionSelectionCalc(
-				supportPositionGenerationCalc::getGlobalSupportPositions
+		var defenseThreatAssignmentSeparationCalc = register(new DefenseThreatAssignmentSeparationCalc(
+				desiredBotsCalc::getDesiredBots,
+				desiredDefendersCalc::getDefenseRawThreatAssignments));
+		var defensePenAreaTargetGroupFinderCalc = register(new DefensePenAreaTargetGroupFinderCalc(
+				defenseThreatAssignmentSeparationCalc::getDefensePenAreaThreatAssignments,
+				defenseThreatAssignmentSeparationCalc::getPenAreaDefenders));
+		var defensePenAreaTargetGroupAssignerCalc = register(new DefensePenAreaTargetGroupAssignerCalc(
+				defenseThreatAssignmentSeparationCalc::getPenAreaDefenders,
+				defensePenAreaTargetGroupFinderCalc::getDefensePenAreaTargetGroups,
+				defensePenAreaTargetGroupFinderCalc::getPenAreaBoundary
 		));
 		var bridgePositionCalc = register(new SupportBridgePositionCalc(
-				offensiveStrategyCalc::getStrategy
+				kickOriginCalc::getKickOrigins
 		));
 		var midfieldCalc = register(new SupportMidfieldPositionsCalc());
-		var kickoffActionsCalc = register(new KickoffActionsCalc(
-				passTargetSelectionCalc::getSelectedPasses,
-				bestGoalShotRaterCalc::getBestGoalKick
+		var kickoffCalc = register(new SupportKickoffPositionsCalc());
+		var aggressiveManToManCalc = register(new SupporterMan2ManAssignmentCalc(
+				desiredBotsCalc::getDesiredBots,
+				desiredDefendersCalc::getDefenseRawThreatAssignments,
+				defenseBotThreatCalc::getDefenseBotThreats
+		));
+		var supportBehaviorCalc = register(new SupportBehaviorCalc(
+				desiredBotsCalc::getDesiredBots,
+				ballPossessionCalc::getBallPossession,
+				offensiveStrategyCalc::getStrategy,
+				bridgePositionCalc::getSupportiveGoalPositions,
+				midfieldCalc::getMidfieldPositions,
+				kickoffCalc::getKickoffPositions,
+				voronoiCalc::getFreeSpots,
+				offensiveActionsCalc::getOffensiveActions,
+				kickOriginCalc::getKickOrigins,
+				bestGoalShotRaterCalc::getBestGoalKick,
+				skirmishDetectorCalc::getSkirmishInformation,
+				bridgePositionCalc::getOffensiveShadows,
+				ongoingPassCalc::getOngoingPass,
+				aggressiveManToManCalc::getSupporterToBotThreatMapping
+		));
+		var supportBehaviorAssignmentCalc = register(new SupportBehaviorAssignmentCalc(
+				desiredBotsCalc::getDesiredBots,
+				supportBehaviorCalc::getSupportViabilities
 		));
 		var pathFinderPrioMapCalc = register(new PathFinderPrioMapCalc(
 				desiredBotsCalc::getDesiredBots,
@@ -358,11 +392,17 @@ public class Metis implements IConfigObserver
 
 		// statistics
 		var matchStatisticsCalc = register(new MatchStatisticsCalc(
+				desiredBotsCalc::getDesiredBots,
 				ballPossessionCalc::getBallPossession,
 				botBallContactCalc::getBotsLastTouchedBall,
 				possibleGoalCalc::getPossibleGoal,
 				directShotDetectionCalc::getDetectedGoalKickTigers,
-				botToBallDistanceCalc::getOpponentClosestToBall
+				botToBallDistanceCalc::getOpponentClosestToBall,
+				opponentPassReceiverCalc::getOpponentPassReceiver,
+				defenseBotThreatDefStrategyDataAccumulatorCalc::getDefenseBotThreatDefData,
+				defenseBotThreatCalc::getDefenseThreatRatingForNumDefender,
+				desiredDefendersCalc::getDefenseRawThreatAssignments,
+				botBallContactCalc::getCurrentlyTouchingBots
 		));
 		// write time series data to a file
 		register(new TimeSeriesStatsCalc(
@@ -409,7 +449,6 @@ public class Metis implements IConfigObserver
 		connect(TacticalFieldBuilder::offensiveStrategy, offensiveStrategyCalc::getStrategy);
 		connect(TacticalFieldBuilder::offensiveActions, offensiveActionsCalc::getOffensiveActions);
 		connect(TacticalFieldBuilder::skirmishInformation, skirmishDetectorCalc::getSkirmishInformation);
-		connect(TacticalFieldBuilder::kickoffStrategy, kickoffActionsCalc::getKickoffStrategy);
 		connect(TacticalFieldBuilder::ballInterceptions, ballInterceptionCalc::getBallInterceptions);
 		connect(TacticalFieldBuilder::supportiveAttackerMovePos, supportiveAttackerPosCalc::getSupportiveAttackerMovePos);
 		connect(TacticalFieldBuilder::actionTrees, offensiveSituationRatingCalc::getActionTrees);
@@ -420,16 +459,22 @@ public class Metis implements IConfigObserver
 				redirectorDetectionCalc::getRedirectorDetectionInformation);
 		connect(TacticalFieldBuilder::filteredAndRatedPassesMap, passTargetFilteringCalc::getFilteredAndRatedPasses);
 		connect(TacticalFieldBuilder::selectedPasses, passTargetSelectionCalc::getSelectedPasses);
-		connect(TacticalFieldBuilder::selectedSupportPositions,
-				supportPositionSelectionCalc::getSelectedSupportPositions);
 		connect(TacticalFieldBuilder::freeSpots, voronoiCalc::getFreeSpots);
 		connect(TacticalFieldBuilder::offensiveShadows, bridgePositionCalc::getOffensiveShadows);
-		connect(TacticalFieldBuilder::supporterMidfieldPositions,
-				midfieldCalc::getMidfieldPositions);
+		connect(TacticalFieldBuilder::supporterMidfieldPositions, midfieldCalc::getMidfieldPositions);
+		connect(TacticalFieldBuilder::supporterKickoffPositions, kickoffCalc::getKickoffPositions);
 		connect(TacticalFieldBuilder::opponentPassReceiver, opponentPassReceiverCalc::getOpponentPassReceiver);
-		connect(TacticalFieldBuilder::defenseThreatAssignments, desiredDefendersCalc::getDefenseThreatAssignments);
+		connect(TacticalFieldBuilder::defenseOuterThreatAssignments,
+				defenseThreatAssignmentSeparationCalc::getDefenseOuterThreatAssignments);
+		connect(TacticalFieldBuilder::defensePenAreaPositionAssignments,
+				defensePenAreaTargetGroupAssignerCalc::getPenAreaPositionAssignments);
+		connect(TacticalFieldBuilder::defensePenAreaBoundaryForPenAreaGroup,
+				defensePenAreaTargetGroupFinderCalc::getPenAreaBoundary);
 		connect(TacticalFieldBuilder::keeperPass, keeperPassTargetCalc::getKeeperPass);
 		connect(TacticalFieldBuilder::keeperRamboDistance, penaltyGoOutDistanceCalc::getKeeperRamboDistance);
+		connect(TacticalFieldBuilder::supportViabilities, supportBehaviorCalc::getSupportViabilities);
+		connect(TacticalFieldBuilder::activeSupportBehaviors, supportBehaviorCalc::getActiveBehaviors);
+		connect(TacticalFieldBuilder::supportBehaviorAssignment, supportBehaviorAssignmentCalc::getBehaviorAssignment);
 
 		calculators.forEach(c -> ConfigRegistration.registerClass(CONFIG_METIS, c.getClass()));
 	}
@@ -461,7 +506,7 @@ public class Metis implements IConfigObserver
 			teamColor = baseAiFrame.getTeamColor();
 			afterApply(null);
 		}
-		Map<Class<? extends ACalculator>, CalculatorExecution> calculatorExecutions = new IdentityHashMap<>();
+		Map<Class<? extends ACalculator>, CalculatorExecution> calculatorExecutions = new HashMap<>();
 		calculators.forEach(c -> c.calculate(baseAiFrame));
 		calculators.forEach(c -> calculatorExecutions.put(c.getClass(), CalculatorExecution.builder()
 				.executed(c.isExecutionStatusLastFrame())
@@ -499,16 +544,10 @@ public class Metis implements IConfigObserver
 		calculators.forEach(calc -> ConfigRegistration.applySpezis(calc, CONFIG_METIS, ""));
 
 		// apply team spezies if not in match mode
-		if (!SumatraModel.getInstance().isProductive())
+		if (!SumatraModel.getInstance().isTournamentMode())
 		{
 			calculators.forEach(calc -> ConfigRegistration.applySpezis(calc, CONFIG_METIS, teamColor.name()));
 		}
-	}
-
-
-	public List<ACalculator> getCalculators()
-	{
-		return calculators;
 	}
 
 

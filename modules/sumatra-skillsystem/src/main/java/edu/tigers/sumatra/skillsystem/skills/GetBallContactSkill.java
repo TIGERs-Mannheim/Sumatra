@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.skillsystem.skills;
@@ -9,6 +9,7 @@ import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.skillsystem.skills.util.BallStabilizer;
+import edu.tigers.sumatra.skillsystem.skills.util.EDribblerMode;
 import edu.tigers.sumatra.skillsystem.skills.util.KickParams;
 import edu.tigers.sumatra.skillsystem.skills.util.PositionValidator;
 
@@ -20,9 +21,6 @@ public class GetBallContactSkill extends AMoveToSkill
 {
 	@Configurable(defValue = "300", comment = "Max dist [mm] to push towards an invisible ball")
 	private static double maxApproachBallExtraDist = 300;
-
-	@Configurable(comment = "Dribbler speed", defValue = "10000.0")
-	private static double dribblerSpeed = 10000;
 
 	@Configurable(comment = "How fast to accelerate when getting ball contact", defValue = "1.5")
 	private static double getContactAcc = 1.5;
@@ -57,7 +55,7 @@ public class GetBallContactSkill extends AMoveToSkill
 		cachedOrientation = getBall().getPos().subtractNew(getPos()).getAngle();
 		approachBallExtraDist = 0;
 		initBallPos = getBall().getPos();
-		setKickParams(KickParams.disarm().withDribbleSpeed(dribblerSpeed));
+		setKickParams(KickParams.disarm().withDribblerMode(EDribblerMode.DEFAULT));
 
 		getMoveCon().physicalObstaclesOnly();
 		getMoveCon().setBallObstacle(false);

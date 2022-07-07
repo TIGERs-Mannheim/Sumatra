@@ -16,15 +16,12 @@ import edu.tigers.sumatra.math.vector.Vector2f;
 
 
 /**
- * This is a immutable representation of a goal.
- *
- * @author Oliver Steinbrecher <OST1988@aol.com>
+ * This is an immutable representation of a goal.
  */
 public class Goal
 {
 	private final double width;
 	private final double depth;
-	private final double wallThickness;
 	private final Vector2f center;
 	private final Vector2f leftPost;
 	private final Vector2f rightPost;
@@ -34,23 +31,17 @@ public class Goal
 	private final IRectangle rectangle;
 
 
-	/**
-	 * @param width
-	 * @param center
-	 * @param depth
-	 */
-	public Goal(final double width, final IVector2 center, final double depth, final double wallThickness)
+	public Goal(IVector2 center, double width, double depth, double fieldWidth)
 	{
 		this.width = width;
 		this.depth = depth;
-		this.wallThickness = wallThickness;
 		this.center = Vector2f.copy(center);
 
 		leftPost = Vector2f.fromXY(center.x(), center.y() + (width / 2.0));
 		rightPost = Vector2f.fromXY(center.x(), center.y() - (width / 2.0));
 		line = Lines.lineFromPoints(leftPost, rightPost);
-		goalLine = Lines.segmentFromPoints(Vector2.fromXY(center.x(), -Geometry.getFieldWidth() / 2.0),
-				Vector2.fromXY(center.x(), Geometry.getFieldWidth() / 2.0));
+		goalLine = Lines.segmentFromPoints(Vector2.fromXY(center.x(), -fieldWidth / 2.0),
+				Vector2.fromXY(center.x(), fieldWidth / 2.0));
 		lineSegment = Lines.segmentFromPoints(leftPost, rightPost);
 		rectangle = Rectangle.fromPoints(leftPost,
 				rightPost.addNew(Vector2.fromX(Math.signum(center.x()) * depth)));
@@ -72,12 +63,6 @@ public class Goal
 	public double getDepth()
 	{
 		return depth;
-	}
-
-
-	public double getWallThickness()
-	{
-		return wallThickness;
 	}
 
 
@@ -180,7 +165,7 @@ public class Goal
 	 */
 	public Goal withMargin(double xMargin, double yMargin)
 	{
-		return new Goal(width + 2 * yMargin, center, depth + 2 * xMargin, wallThickness);
+		return new Goal(center, width + 2 * yMargin, depth + 2 * xMargin, goalLine.getLength());
 	}
 
 

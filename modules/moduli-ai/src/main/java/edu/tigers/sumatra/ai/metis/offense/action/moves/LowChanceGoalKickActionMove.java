@@ -4,8 +4,8 @@
 
 package edu.tigers.sumatra.ai.metis.offense.action.moves;
 
+import edu.tigers.sumatra.ai.metis.kicking.KickFactory;
 import edu.tigers.sumatra.ai.metis.offense.action.EActionViability;
-import edu.tigers.sumatra.ai.metis.offense.action.EOffensiveAction;
 import edu.tigers.sumatra.ai.metis.offense.action.OffensiveAction;
 import edu.tigers.sumatra.ai.metis.offense.action.OffensiveActionViability;
 import edu.tigers.sumatra.ai.metis.targetrater.GoalKick;
@@ -27,10 +27,12 @@ public class LowChanceGoalKickActionMove extends AOffensiveActionMove
 
 	private final Supplier<Map<BotID, GoalKick>> bestGoalKickTargets;
 
+	private final KickFactory kf = new KickFactory();
+
 
 	private OffensiveActionViability calcViability(GoalKick goalKick)
 	{
-		if (goalKick == null)
+		if (goalKick == null || getBall().getVel().getLength2() > 0.5)
 		{
 			return new OffensiveActionViability(EActionViability.FALSE, 0.0);
 		}
@@ -41,12 +43,13 @@ public class LowChanceGoalKickActionMove extends AOffensiveActionMove
 	@Override
 	public OffensiveAction calcAction(BotID botId)
 	{
+		kf.update(getWFrame());
 		var goalKick = bestGoalKickTargets.get().get(botId);
+		var fallBackGoalKick = kf.goalKick(getWFrame().getBall().getPos(), Geometry.getGoalTheir().getCenter());
 		return OffensiveAction.builder()
 				.move(EOffensiveActionMove.LOW_CHANCE_GOAL_KICK)
-				.action(EOffensiveAction.GOAL_SHOT)
 				.viability(calcViability(goalKick))
-				.kick(goalKick == null ? null : goalKick.getKick())
+				.kick(goalKick == null ? fallBackGoalKick : goalKick.getKick())
 				.build();
 	}
 
@@ -55,7 +58,8 @@ public class LowChanceGoalKickActionMove extends AOffensiveActionMove
 	{
 		double score = goalKick.getRatedTarget().getScore();
 		double margin = Geometry.getBotRadius() * 2 + Geometry.getBallRadius() * 2;
-		if (Geometry.getPenaltyAreaTheir().withMargin(margin).isPointInShape(getBall().getPos()))
+		if (Geometry.getPenaltyAreaTheir().withMargin(margin).isPointInShape(getBall().getPos())
+				&& getBall().getVel().getLength2() < 0.5)
 		{
 			score = Math.max(MIN_LOW_SCORE_CHANCE, score);
 		}

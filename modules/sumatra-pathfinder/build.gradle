@@ -3,7 +3,8 @@
  */
 
 plugins {
-    id 'sumatra.java-conventions'
+    id 'sumatra.java'
+    id 'sumatra.test.spock'
     id 'java-library'
 }
 
@@ -16,4 +17,8 @@ dependencies {
     implementation project(':moduli-geometry')
 
     implementation 'com.github.g3force:configurable:3.0'
+    implementation 'com.sleepycat:je:18.3.12'
+
+    testImplementation project(':common-math')
+    testImplementation 'org.hamcrest:hamcrest:2.2'
 }

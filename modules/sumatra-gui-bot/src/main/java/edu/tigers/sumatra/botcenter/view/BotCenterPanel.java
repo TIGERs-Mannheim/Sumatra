@@ -1,42 +1,42 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.botcenter.view;
 
-import java.awt.BorderLayout;
-import java.awt.Component;
-import java.awt.Dimension;
-import java.util.Collections;
-import java.util.List;
+import edu.tigers.sumatra.botcenter.view.basestation.BaseStationPanel;
+import edu.tigers.sumatra.botcenter.view.config.BotConfigOverviewPanel;
+import edu.tigers.sumatra.botcenter.view.config.SavedConfigsPanel;
+import lombok.Getter;
 
-import javax.swing.JMenu;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTabbedPane;
-
-import edu.tigers.sumatra.botcenter.view.basestation.BaseStationPanel;
-import edu.tigers.sumatra.botcenter.view.config.BotConfigOverviewPanel;
-import edu.tigers.sumatra.views.ISumatraView;
+import java.awt.BorderLayout;
+import java.awt.Component;
+import java.awt.Dimension;
+import java.io.Serial;
 
 
 /**
- * New v2015 botcenter
+ * New bot center.
  */
-public class BotCenterPanel extends JPanel implements ISumatraView
+public class BotCenterPanel extends JPanel
 {
+	@Serial
 	private static final long serialVersionUID = -7749317503520671162L;
 
-	private final BotCenterOverviewPanel botOverview;
-	private final BotConfigOverviewPanel botOverviewPanel;
-	private final JTabbedPane tabbedPane;
+	@Getter
+	private final BotCenterOverviewPanel overviewPanel = new BotCenterOverviewPanel();
+	@Getter
+	private final BotConfigOverviewPanel botOverviewPanel = new BotConfigOverviewPanel();
+	@Getter
+	private final SavedConfigsPanel savedConfigsPanel = new SavedConfigsPanel();
+	private final JTabbedPane tabbedPane = new JTabbedPane();
 
 
 	public BotCenterPanel()
 	{
 		setLayout(new BorderLayout());
-		tabbedPane = new JTabbedPane();
-		botOverview = new BotCenterOverviewPanel();
-		botOverviewPanel = new BotConfigOverviewPanel();
 	}
 
 
@@ -50,18 +50,23 @@ public class BotCenterPanel extends JPanel implements ISumatraView
 	}
 
 
-	/** Do create panel. */
+	/**
+	 * Do create panel.
+	 */
 	public void createPanel()
 	{
-		tabbedPane.addTab("Bot Overview", setupScrollPane(botOverview));
+		tabbedPane.addTab("Bot Overview", setupScrollPane(overviewPanel));
 		tabbedPane.addTab("Bot Details", botOverviewPanel);
+		tabbedPane.addTab("Saved Bot Configs", savedConfigsPanel);
 
 		add(tabbedPane, BorderLayout.CENTER);
 		repaint();
 	}
 
 
-	/** Clear panel. */
+	/**
+	 * Clear panel.
+	 */
 	public void clearPanel()
 	{
 		remove(tabbedPane);
@@ -75,30 +80,5 @@ public class BotCenterPanel extends JPanel implements ISumatraView
 		JScrollPane scrollPane = new JScrollPane(comp);
 		scrollPane.setPreferredSize(new Dimension(0, 0));
 		return scrollPane;
-	}
-
-
-	@Override
-	public List<JMenu> getCustomMenus()
-	{
-		return Collections.emptyList();
-	}
-
-
-	/**
-	 * @return the botOverviewPanel
-	 */
-	public BotConfigOverviewPanel getBotOverviewPanel()
-	{
-		return botOverviewPanel;
-	}
-
-
-	/**
-	 * @return the botSummary
-	 */
-	public final BotCenterOverviewPanel getOverviewPanel()
-	{
-		return botOverview;
 	}
 }

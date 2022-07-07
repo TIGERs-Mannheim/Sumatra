@@ -1,21 +1,20 @@
 /*
- * Copyright (c) 2009 - 2019, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.botparams.view;
 
-import java.awt.Dimension;
-import java.awt.EventQueue;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.util.Comparator;
-import java.util.EnumMap;
-import java.util.LinkedHashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.stream.Collectors;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import edu.tigers.sumatra.bot.params.BotParams;
+import edu.tigers.sumatra.botparams.BotParamsDatabase;
+import edu.tigers.sumatra.botparams.EBotParamLabel;
+import edu.tigers.sumatra.botparams.view.ConfigJSONTreeTableModel.TreeEntry;
+import edu.tigers.sumatra.components.DescLabel;
+import edu.tigers.sumatra.treetable.ITreeTableModel;
+import edu.tigers.sumatra.treetable.TreeTableModelAdapter;
+import lombok.extern.log4j.Log4j2;
+import net.miginfocom.swing.MigLayout;
 
 import javax.swing.Box;
 import javax.swing.JButton;
@@ -27,44 +26,40 @@ import javax.swing.JScrollPane;
 import javax.swing.ScrollPaneConstants;
 import javax.swing.event.TableModelEvent;
 import javax.swing.event.TableModelListener;
-
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-import edu.tigers.sumatra.bot.params.BotParams;
-import edu.tigers.sumatra.botparams.BotParamsDatabase;
-import edu.tigers.sumatra.botparams.EBotParamLabel;
-import edu.tigers.sumatra.botparams.view.ConfigJSONTreeTableModel.TreeEntry;
-import edu.tigers.sumatra.components.DescLabel;
-import edu.tigers.sumatra.treetable.ITreeTableModel;
-import edu.tigers.sumatra.treetable.TreeTableModelAdapter;
-import net.miginfocom.swing.MigLayout;
+import java.awt.Dimension;
+import java.awt.EventQueue;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.io.Serial;
+import java.util.Comparator;
+import java.util.EnumMap;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.stream.Collectors;
 
 
 /**
- * @author AndreR <andre@ryll.cc>
+ * Editor for bot params for different teams.
  */
+@Log4j2
 public class TeamEditor extends JPanel
 {
-	/**  */
-	private static final long									serialVersionUID	= -6385185638076083401L;
-	private static final Logger log = LogManager.getLogger(TeamEditor.class.getName());
+	@Serial
+	private static final long serialVersionUID = -6385185638076083401L;
 
-	private final ObjectMapper									mapper				= new ObjectMapper();
-	private final transient List<ITeamEditorObserver>	observers			= new CopyOnWriteArrayList<>();
-	private JScrollPane											scrollpane;
-	private JTreeTableJson										treetable;
+	private final ObjectMapper mapper = new ObjectMapper();
+	private final transient List<ITeamEditorObserver> observers = new CopyOnWriteArrayList<>();
+	private final JScrollPane scrollPane = new JScrollPane();
 
-	private EnumMap<EBotParamLabel, JComboBox<String>>	selectedLabels		= new EnumMap<>(EBotParamLabel.class);
+	private JTreeTableJson treetable;
+
+	private final EnumMap<EBotParamLabel, JComboBox<String>> selectedLabels = new EnumMap<>(EBotParamLabel.class);
 
 
-	/**
-	 * Constructor.
-	 */
 	public TeamEditor()
 	{
 		setLayout(new MigLayout("wrap 2", "[grow, fill]10[grow, fill]", ""));
@@ -95,11 +90,10 @@ public class TeamEditor extends JPanel
 		add(delBtn);
 
 		// Setup lower part: The actual editor
-		scrollpane = new JScrollPane();
-		scrollpane.setPreferredSize(new Dimension(400, 1000));
-		scrollpane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-		scrollpane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
-		add(scrollpane, "span 2, pushy");
+		scrollPane.setPreferredSize(new Dimension(400, 1000));
+		scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+		scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
+		add(scrollPane, "span 2, pushy");
 
 		add(Box.createGlue(), "push, span 2");
 	}
@@ -129,7 +123,7 @@ public class TeamEditor extends JPanel
 		treetable.getModel().addTableModelListener(new TreeTableListener());
 
 		EventQueue.invokeLater(() -> {
-			scrollpane.setViewportView(treetable);
+			scrollPane.setViewportView(treetable);
 
 			for (Entry<EBotParamLabel, JComboBox<String>> entry : selectedLabels.entrySet())
 			{
@@ -162,7 +156,7 @@ public class TeamEditor extends JPanel
 	{
 		JComboBox<String> box = selectedLabels.get(label);
 
-		if (box.getSelectedItem().equals(newTeam))
+		if (box.getSelectedItem() == null || box.getSelectedItem().equals(newTeam))
 		{
 			return;
 		}
@@ -184,7 +178,7 @@ public class TeamEditor extends JPanel
 	public void clear()
 	{
 		EventQueue.invokeLater(() -> {
-			scrollpane.setViewportView(new JPanel());
+			scrollPane.setViewportView(new JPanel());
 
 			for (JComboBox<String> box : selectedLabels.values())
 			{
@@ -211,8 +205,11 @@ public class TeamEditor extends JPanel
 		observers.remove(observer);
 	}
 
-	/** Observer interface. */
-	public static interface ITeamEditorObserver
+
+	/**
+	 * Observer interface.
+	 */
+	public interface ITeamEditorObserver
 	{
 		/**
 		 * Bot params for a team updated.
@@ -250,8 +247,8 @@ public class TeamEditor extends JPanel
 
 	private class SelectedLabelListener implements ActionListener
 	{
-		private final EBotParamLabel		label;
-		private final JComboBox<String>	box;
+		private final EBotParamLabel label;
+		private final JComboBox<String> box;
 
 
 		/**
@@ -395,7 +392,7 @@ public class TeamEditor extends JPanel
 			{
 				StringBuilder builder = new StringBuilder(
 						"This team is used for the following labels and cannot be deleted:\n");
-				usedAtLabel.forEach(l -> builder.append("- " + l.toString() + "\n"));
+				usedAtLabel.forEach(l -> builder.append("- ").append(l).append("\n"));
 				JOptionPane.showMessageDialog(null, builder.toString(), "Team in use", JOptionPane.WARNING_MESSAGE);
 				return;
 			}

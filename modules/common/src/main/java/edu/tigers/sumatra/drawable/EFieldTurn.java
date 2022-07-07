@@ -1,66 +1,75 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2015, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Nov 4, 2015
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.drawable;
 
 import edu.tigers.sumatra.math.AngleMath;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 
 
 /**
+ *
  */
+@Getter
+@RequiredArgsConstructor
 public enum EFieldTurn
 {
-	/**  */
 	NORMAL(0),
-	/**  */
 	T90(AngleMath.PI_HALF),
-	/**  */
 	T180(AngleMath.PI),
-	/**  */
 	T270(AngleMath.PI + AngleMath.PI_HALF);
-	
-	private final double	angle;
-	
-	
-	private EFieldTurn(final double angle)
-	{
-		this.angle = angle;
-	}
-	
-	
-	/**
-	 * @return the angle
-	 */
-	public final double getAngle()
-	{
-		return angle;
-	}
-	
-	
+
+	private final double angle;
+
+
 	/**
 	 * Returns the angular opposite of the current value
-	 * 
+	 *
 	 * @return
 	 */
 	public EFieldTurn getOpposite()
 	{
-		switch (this)
+		return switch (this)
+				{
+					case NORMAL -> T180;
+					case T180 -> NORMAL;
+					case T270 -> T90;
+					case T90 -> T270;
+				};
+	}
+
+
+	public EFieldTurn turnCounterClockwise()
+	{
+		return switch (this)
+				{
+					case NORMAL -> T90;
+					case T90 -> T180;
+					case T180 -> T270;
+					case T270 -> NORMAL;
+				};
+	}
+
+
+	public EFieldTurn turnClockwise()
+	{
+		return switch (this)
+				{
+					case NORMAL -> T270;
+					case T270 -> T180;
+					case T180 -> T90;
+					case T90 -> NORMAL;
+				};
+	}
+
+
+	public static EFieldTurn bestFor(int width, int height)
+	{
+		if (width > height)
 		{
-			case NORMAL:
-				return T180;
-			case T180:
-				return NORMAL;
-			case T270:
-				return T90;
-			case T90:
-				return T270;
-			default:
-				throw new IllegalArgumentException("Please add the new value to this switch case: " + this);
+			return NORMAL;
 		}
+		return T90;
 	}
 }

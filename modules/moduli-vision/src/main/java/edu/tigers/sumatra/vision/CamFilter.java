@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.vision;
@@ -23,6 +23,7 @@ import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.circle.Circle;
 import edu.tigers.sumatra.math.line.Line;
 import edu.tigers.sumatra.math.rectangle.IRectangle;
+import edu.tigers.sumatra.math.rectangle.Rectangle;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.IVector3;
 import edu.tigers.sumatra.math.vector.Vector2;
@@ -173,8 +174,10 @@ public class CamFilter
 	 */
 	public void update(final CamFieldSize field)
 	{
-		fieldRectWithBoundary = Optional.of(field.getFieldWithBoundary().withMargin(500));
-		fieldRect = Optional.of(field.getField());
+		fieldRect = Optional.of(
+				Rectangle.fromCenter(Vector2f.ZERO_VECTOR, field.getFieldLength(), field.getFieldWidth())
+		);
+		fieldRectWithBoundary = fieldRect.map(r -> r.withMargin(500 + field.getBoundaryWidth()));
 	}
 
 
@@ -376,7 +379,7 @@ public class CamFilter
 
 			if (numCloseTrackers > 0)
 			{
-				log.debug("[" + r.getCameraId() + "] Ignoring new robot " + r.getBotId());
+				log.debug("[{}] Ignoring new robot {}", r.getCameraId(), r.getBotId());
 			} else
 			{
 				if (robots.containsKey(r.getBotId()))
@@ -397,7 +400,7 @@ public class CamFilter
 	{
 		RobotTracker tracker;
 		Optional<FilteredVisionBot> filteredBot = mergedRobots.stream()
-				.filter(m -> m.getBotID() == robot.getBotId())
+				.filter(m -> m.getBotID().equals(robot.getBotId()))
 				.findFirst();
 
 		if (filteredBot.isPresent() && fieldRectWithBoundary.isPresent()

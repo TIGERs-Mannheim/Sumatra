@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.trajectory;
 
+import com.sleepycat.persist.model.Persistent;
 import edu.tigers.sumatra.math.SumatraMath;
 import lombok.ToString;
 
@@ -14,6 +15,7 @@ import java.util.List;
  * Bang Bang Trajectory for one dimension.
  */
 @ToString
+@Persistent
 class BangBangTrajectory1D implements ITrajectory<Double>
 {
 	static final int MAX_PARTS = 3;

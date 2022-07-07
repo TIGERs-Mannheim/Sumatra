@@ -1,70 +1,37 @@
 /*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.autoreferee;
 
 
-import edu.tigers.sumatra.drawable.IShapeLayer;
+import edu.tigers.sumatra.drawable.IShapeLayerIdentifier;
+import edu.tigers.sumatra.drawable.ShapeLayerFactory;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 
 
-/**
- * @author "Lukas Magel"
- */
-@SuppressWarnings("squid:S1192") // duplicated strings not avoidable here
-public enum EAutoRefShapesLayer implements IShapeLayer
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
+public class EAutoRefShapesLayer
 {
-	ENGINE("Engine", "AutoReferee", true),
-	LAST_BALL_CONTACT("Ball Contact", "AutoReferee", true),
-	LAST_BALL_CONTACT_EXT("Ball Contact ext", "AutoReferee", false),
-	BALL_LEFT_FIELD("Ball Left Field", "AutoReferee", true),
-	ALLOWED_DISTANCES("Allowed Distances", "AutoReferee", true),
-	VIOLATED_DISTANCES("Violated Distances", "AutoReferee", true),
-	MODE("AutoRef Mode", "AutoReferee", true),
-	PUSHING("Pushing Detector", "AutoReferee", true),
-	PASS_DETECTION("Pass Detection", "AutoReferee", true),
-	
-	;
+	private static final ShapeLayerFactory F = new ShapeLayerFactory(EAutoRefShapesLayer.class, 50);
+	private static final String AUTO_REFEREE = "AutoReferee";
 
-	private final String id;
-	private final String name;
-	private final String category;
-	private final boolean visible;
-
-
-	EAutoRefShapesLayer(final String name, final String category, final boolean visible)
-	{
-		this.name = name;
-		this.category = category;
-		this.visible = visible;
-		id = EAutoRefShapesLayer.class.getCanonicalName() + name();
-	}
-	
-	
-	@Override
-	public String getCategory()
-	{
-		return category;
-	}
-	
-	
-	@Override
-	public String getLayerName()
-	{
-		return name;
-	}
-	
-	
-	@Override
-	public String getId()
-	{
-		return id;
-	}
-	
-	
-	@Override
-	public boolean isVisibleByDefault()
-	{
-		return visible;
-	}
-	
+	public static final IShapeLayerIdentifier ENGINE = F.create(
+			F.layer("Engine").category(AUTO_REFEREE).visibleByDefault(true));
+	public static final IShapeLayerIdentifier LAST_BALL_CONTACT = F.create(
+			F.layer("Ball Contact").category(AUTO_REFEREE).visibleByDefault(true));
+	public static final IShapeLayerIdentifier BALL_LEFT_FIELD = F.create(
+			F.layer("Ball Left Field").category(AUTO_REFEREE).visibleByDefault(true));
+	public static final IShapeLayerIdentifier ALLOWED_DISTANCES = F.create(
+			F.layer("Allowed Distances").category(AUTO_REFEREE).visibleByDefault(true));
+	public static final IShapeLayerIdentifier ALLOWED_DRIBBLING_DISTANCE = F.create(
+			F.layer("Allowed Dribbling Distances").category(AUTO_REFEREE).visibleByDefault(true));
+	public static final IShapeLayerIdentifier VIOLATED_DISTANCES = F.create(
+			F.layer("Violated Distances").category(AUTO_REFEREE).visibleByDefault(true));
+	public static final IShapeLayerIdentifier MODE = F.create(
+			F.layer("AutoRef Mode").category(AUTO_REFEREE).visibleByDefault(true));
+	public static final IShapeLayerIdentifier PUSHING = F.create(
+			F.layer("Pushing Detector").category(AUTO_REFEREE).visibleByDefault(true));
+	public static final IShapeLayerIdentifier PASS_DETECTION = F.create(
+			F.layer("Pass Detection").category(AUTO_REFEREE).visibleByDefault(true));
 }

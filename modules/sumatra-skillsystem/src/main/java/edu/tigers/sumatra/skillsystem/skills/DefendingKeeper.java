@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.skillsystem.skills;
@@ -12,6 +12,7 @@ import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.line.ILine;
 import edu.tigers.sumatra.math.line.Line;
+import edu.tigers.sumatra.math.line.v2.ILineSegment;
 import edu.tigers.sumatra.math.triangle.Triangle;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
@@ -115,8 +116,12 @@ public class DefendingKeeper
 
 	private boolean isSomeoneShootingAtOurGoal()
 	{
-		Optional<IVector2> intersect = ball.getTrajectory().getTravelLine().intersectSegment(Geometry.getGoalOur()
-				.withMargin(0, Geometry.getGoalOur().getWidth() / 2.0).getLineSegment());
+		ILineSegment goalLine = Geometry.getGoalOur()
+				.withMargin(0, Geometry.getGoalOur().getWidth() / 2.0).getLineSegment();
+		Optional<IVector2> intersect = ball.getTrajectory().getTravelLineSegments().stream()
+				.map(line -> line.intersectSegment(goalLine))
+				.flatMap(Optional::stream)
+				.findAny();
 
 		if (intersect.isPresent() && (ball.getVel().x() < 0))
 		{

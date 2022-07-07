@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.pandora.plays.test.kick;
@@ -23,6 +23,7 @@ import lombok.Setter;
 
 import java.awt.Color;
 import java.util.Comparator;
+import java.util.Objects;
 
 
 public abstract class ABallPreparationPlay extends ABallPlacementPlay
@@ -39,7 +40,7 @@ public abstract class ABallPreparationPlay extends ABallPlacementPlay
 	private BotID ballHandlerBot;
 
 
-	public ABallPreparationPlay(final EPlay type)
+	protected ABallPreparationPlay(final EPlay type)
 	{
 		super(type);
 
@@ -62,7 +63,8 @@ public abstract class ABallPreparationPlay extends ABallPlacementPlay
 
 	protected ARole getClosestToBall()
 	{
-		ARole current = getRoles().stream().filter(a -> a.getBotID() == ballHandlerBot).findFirst().orElse(null);
+		ARole current = getRoles().stream().filter(a -> Objects.equals(a.getBotID(), ballHandlerBot)).findFirst()
+				.orElse(null);
 		if (current == null)
 		{
 			IVector2 curBallPos = getBall().getPos();
@@ -87,7 +89,7 @@ public abstract class ABallPreparationPlay extends ABallPlacementPlay
 	protected boolean useAssistant()
 	{
 		return useAssistant
-				&& getBall().getTrajectory().getTravelLineSegment().distanceTo(ballTargetPos) > 1000;
+				&& getBall().getTrajectory().distanceTo(ballTargetPos) > 1000;
 	}
 
 

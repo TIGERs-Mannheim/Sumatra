@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.botoverview.view;
 
@@ -7,20 +7,21 @@ import edu.tigers.sumatra.ai.VisualizationFrame;
 import edu.tigers.sumatra.ai.data.BotAiInformation;
 import edu.tigers.sumatra.botoverview.BotOverviewTableModel;
 import edu.tigers.sumatra.ids.BotID;
-import edu.tigers.sumatra.views.ISumatraView;
 import org.jdesktop.swingx.JXTable;
 
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import java.awt.BorderLayout;
+import java.io.Serial;
 import java.util.Map;
 
 
 /**
  * Main Panel for Bot Overview
  */
-public class BotOverviewPanel extends JPanel implements ISumatraView
+public class BotOverviewPanel extends JPanel
 {
+	@Serial
 	private static final long serialVersionUID = -8536401073164037476L;
 	private final BotOverviewTableModel model;
 	private final JXTable table;

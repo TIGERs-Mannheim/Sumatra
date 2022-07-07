@@ -1,10 +1,9 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.config;
 
-import edu.tigers.sumatra.views.ISumatraView;
 import net.miginfocom.swing.MigLayout;
 import org.apache.commons.configuration.HierarchicalConfiguration;
 
@@ -12,24 +11,23 @@ import javax.swing.JPanel;
 import javax.swing.JTabbedPane;
 import javax.swing.SwingConstants;
 import java.awt.Component;
+import java.io.Serial;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
 
 /**
- * @author Nicolai Ommer <nicolai.ommer@gmail.com>
+ * Config editor main panel.
  */
-public class ConfigEditorPanel extends JPanel implements ISumatraView
+public class ConfigEditorPanel extends JPanel
 {
+	@Serial
 	private static final long serialVersionUID = -7007103316635397718L;
 
 	private final JTabbedPane tabpane;
 	private final SortedMap<String, EditorView> tabs = new TreeMap<>();
 
 
-	/**
-	 *
-	 */
 	public ConfigEditorPanel()
 	{
 		setLayout(new MigLayout("fill, wrap 1, inset 0"));

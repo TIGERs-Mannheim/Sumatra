@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.presenter.log;
 
@@ -10,8 +10,8 @@ import edu.tigers.sumatra.util.UiThrottler;
 import edu.tigers.sumatra.view.log.IFilterPanelObserver;
 import edu.tigers.sumatra.view.log.ISlidePanelObserver;
 import edu.tigers.sumatra.view.log.LogPanel;
-import edu.tigers.sumatra.views.ISumatraView;
 import edu.tigers.sumatra.views.ISumatraViewPresenter;
+import lombok.Getter;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.core.LogEvent;
@@ -23,7 +23,6 @@ import javax.swing.text.SimpleAttributeSet;
 import javax.swing.text.StyleConstants;
 import javax.swing.text.StyleContext;
 import java.awt.Color;
-import java.awt.Component;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -41,8 +40,8 @@ import java.util.Map;
  * if you drop the log level to a lower value.
  * constant.
  */
-public class LogPresenter implements ISumatraViewPresenter, IFilterPanelObserver,
-		ISlidePanelObserver, ILogEventConsumer
+public class LogPresenter
+		implements ISumatraViewPresenter, IFilterPanelObserver, ISlidePanelObserver, ILogEventConsumer
 {
 	private static final String LOG_VIEW_APPENDER_NAME = "logView";
 	private static final Color DEFAULT_COLOR_ALL = new Color(0, 0, 0);
@@ -60,7 +59,8 @@ public class LogPresenter implements ISumatraViewPresenter, IFilterPanelObserver
 	private final Map<Level, AttributeSet> attributeSets = new HashMap<>();
 	private final SumatraAppender appender;
 
-	private LogPanel logPanel;
+	@Getter
+	private final LogPanel viewPanel;
 	private List<String> allowedStrings = new ArrayList<>();
 	private Level logLevel;
 	private int numFatals = 0;
@@ -76,10 +76,10 @@ public class LogPresenter implements ISumatraViewPresenter, IFilterPanelObserver
 		String strLevel = SumatraModel.getInstance().getUserProperty(LOG_LEVEL_KEY, "INFO");
 		logLevel = Level.toLevel(strLevel);
 
-		logPanel = new LogPanel(DISPLAY_CAPACITY, logLevel);
+		viewPanel = new LogPanel(DISPLAY_CAPACITY, logLevel);
 
-		logPanel.getFilterPanel().addObserver(this);
-		logPanel.getSlidePanel().addObserver(this);
+		viewPanel.getFilterPanel().addObserver(this);
+		viewPanel.getFilterPanel().getSlidePanel().addObserver(this);
 
 		LoggerContext lc = (LoggerContext) LogManager.getContext(false);
 		appender = lc.getConfiguration().getAppender(LOG_VIEW_APPENDER_NAME);
@@ -180,14 +180,14 @@ public class LogPresenter implements ISumatraViewPresenter, IFilterPanelObserver
 	{
 		updateCounters();
 		eventBuffer.reset();
-		logPanel.getTextPane().clear();
+		viewPanel.getTextPane().clear();
 		appendNewEvents();
 	}
 
 
 	private void appendLogEvent(final LogEvent event)
 	{
-		logPanel.getTextPane().append(format(event), attributeSets.get(event.getLevel()));
+		viewPanel.getTextPane().append(format(event), attributeSets.get(event.getLevel()));
 	}
 
 
@@ -199,9 +199,9 @@ public class LogPresenter implements ISumatraViewPresenter, IFilterPanelObserver
 
 	private void updateCounters()
 	{
-		logPanel.getFilterPanel().setNumFatals(numFatals);
-		logPanel.getFilterPanel().setNumErrors(numErrors);
-		logPanel.getFilterPanel().setNumWarnings(numWarnings);
+		viewPanel.getFilterPanel().setNumFatals(numFatals);
+		viewPanel.getFilterPanel().setNumErrors(numErrors);
+		viewPanel.getFilterPanel().setNumWarnings(numWarnings);
 	}
 
 
@@ -243,20 +243,6 @@ public class LogPresenter implements ISumatraViewPresenter, IFilterPanelObserver
 	public boolean checkFilters(final LogEvent event)
 	{
 		return !(!checkStringFilter(event) || !checkForLogLevel(event));
-	}
-
-
-	@Override
-	public Component getComponent()
-	{
-		return logPanel;
-	}
-
-
-	@Override
-	public ISumatraView getSumatraView()
-	{
-		return logPanel;
 	}
 
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.ai.pandora.plays.test.kick;
 
@@ -19,10 +19,10 @@ import edu.tigers.sumatra.drawable.DrawableCircle;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.circle.Circle;
-import edu.tigers.sumatra.math.line.v2.ILineSegment;
 import edu.tigers.sumatra.math.line.v2.LineMath;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.statemachine.AState;
+import edu.tigers.sumatra.wp.data.BallKickFitState;
 import lombok.Setter;
 import org.apache.commons.lang.Validate;
 
@@ -30,7 +30,7 @@ import java.awt.Color;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.IdentityHashMap;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -81,7 +81,15 @@ public abstract class ARedirectPlay extends ABallPreparationPlay
 
 	protected IVector2 getReceiverCatchPoint(IVector2 origin)
 	{
-		return getBall().getTrajectory().getTravelLineSegment().closestPointOnLine(origin);
+		var kickAge = getWorldFrame().getKickFitState()
+				.map(BallKickFitState::getKickTimestamp)
+				.map(ts -> (getWorldFrame().getTimestamp() - ts) / 1e9)
+				.orElse(Double.POSITIVE_INFINITY);
+		if (kickAge > 0.2)
+		{
+			return getBall().getTrajectory().closestPointTo(origin);
+		}
+		return origin;
 	}
 
 
@@ -245,7 +253,7 @@ public abstract class ARedirectPlay extends ABallPreparationPlay
 
 	private Map<BotID, IVector2> mapDestinationsToRoles(final List<IVector2> destinations)
 	{
-		Map<BotID, IVector2> mappedDestinations = new IdentityHashMap<>();
+		Map<BotID, IVector2> mappedDestinations = new HashMap<>();
 		List<ARole> remainingRoles = new ArrayList<>(getRoles());
 
 		for (var dest : destinations)
@@ -254,7 +262,7 @@ public abstract class ARedirectPlay extends ABallPreparationPlay
 					.min(Comparator.comparing(role -> role.getPos().distanceTo(dest)))
 					.map(ARole::getBotID);
 			bestRole.ifPresent(r -> mappedDestinations.put(r, dest));
-			bestRole.ifPresent(id -> remainingRoles.removeIf(role -> role.getBotID() == id));
+			bestRole.ifPresent(id -> remainingRoles.removeIf(role -> Objects.equals(role.getBotID(), id)));
 		}
 		return mappedDestinations;
 	}
@@ -293,7 +301,7 @@ public abstract class ARedirectPlay extends ABallPreparationPlay
 	}
 
 
-	protected IVector2 getBallPlacementPos(BotID botID)
+	private IVector2 getBallPlacementPos(BotID botID)
 	{
 		return botIdToOriginMap.get(botID);
 	}
@@ -301,22 +309,21 @@ public abstract class ARedirectPlay extends ABallPreparationPlay
 
 	private ARole getBestRoleForBall()
 	{
-		ILineSegment travelLine = getBall().getTrajectory().getTravelLineRolling();
 		if (getBall().getVel().getLength2() < 0.5)
 		{
-			return getClosestPoint(travelLine);
+			return getClosestToBallTrajectory();
 		}
 		return getRoles().stream()
 				.filter(role -> getBall().getTrajectory().getTravelLine().isPointInFront(role.getPos()))
-				.min(Comparator.comparing(role -> travelLine.distanceTo(role.getBot().getBotKickerPos())))
-				.orElseGet(() -> getClosestPoint(travelLine));
+				.min(Comparator.comparing(role -> getBall().getTrajectory().distanceTo(role.getBot().getBotKickerPos())))
+				.orElseGet(this::getClosestToBallTrajectory);
 	}
 
 
-	private ARole getClosestPoint(ILineSegment travelLine)
+	private ARole getClosestToBallTrajectory()
 	{
 		return getRoles().stream()
-				.min(Comparator.comparing(role -> travelLine.distanceTo(role.getBot().getBotKickerPos())))
+				.min(Comparator.comparing(role -> getBall().getTrajectory().distanceTo(role.getBot().getBotKickerPos())))
 				.orElse(null);
 	}
 
@@ -340,7 +347,7 @@ public abstract class ARedirectPlay extends ABallPreparationPlay
 			Validate.isTrue(nearest2BallRole.getBotID() != receiver);
 			Objects.requireNonNull(receiver);
 			var passReceiverRole = getRoles().stream()
-					.filter(r -> r.getBotID() == receiver)
+					.filter(r -> Objects.equals(r.getBotID(), receiver))
 					.findFirst()
 					.map(r -> reassignRole(r, PassReceiverRole.class, PassReceiverRole::new))
 					.orElseThrow();

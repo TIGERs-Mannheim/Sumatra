@@ -1,10 +1,12 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.metis.pass;
 
 import edu.tigers.sumatra.ai.metis.ACalculator;
+import edu.tigers.sumatra.ai.metis.defense.data.DefenseThreatAssignment;
+import edu.tigers.sumatra.ai.metis.defense.data.EDefenseThreatType;
 import edu.tigers.sumatra.ai.metis.kicking.Pass;
 import edu.tigers.sumatra.ai.metis.targetrater.AngleRange;
 import edu.tigers.sumatra.ai.pandora.plays.EPlay;
@@ -13,9 +15,11 @@ import edu.tigers.sumatra.wp.data.ITrackedBot;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
 import java.util.function.Supplier;
@@ -31,7 +35,6 @@ public class PassGenerationCalc extends ACalculator
 	private final Supplier<Map<BotID, KickOrigin>> kickOrigins;
 	private final Supplier<Map<BotID, List<AngleRange>>> inaccessibleBallAngles;
 	private final Supplier<List<BotID>> ballHandlingBots;
-	private final Supplier<List<BotID>> supportiveAttackers;
 
 	private PassGenerator passGenerator;
 
@@ -66,16 +69,25 @@ public class PassGenerationCalc extends ACalculator
 		return getWFrame().getTigerBotsAvailable().values().stream()
 				.map(ITrackedBot::getBotId)
 				.filter(this::notTheKeeper)
-				.filter(this::notADefender)
+				.filter(this::notADefenderExceptM2M)
 				.filter(this::notAnInterchangeBot)
 				.filter(this::notAPrimaryAttacker)
 				.collect(Collectors.toSet());
 	}
 
 
-	private boolean notADefender(final BotID id)
+	private boolean notADefenderExceptM2M(final BotID id)
 	{
-		return notInPlay(EPlay.DEFENSIVE, id);
+		if (notInPlay(EPlay.DEFENSIVE, id))
+		{
+			return true;
+		}
+		return getAiFrame().getPrevFrame().getTacticalField().getDefenseOuterThreatAssignments()
+				.stream()
+				.filter(a -> a.getThreat().getType() != EDefenseThreatType.BOT_M2M)
+				.map(DefenseThreatAssignment::getBotIds)
+				.flatMap(Collection::stream)
+				.noneMatch(botId -> Objects.equals(botId, id));
 	}
 
 
@@ -87,7 +99,7 @@ public class PassGenerationCalc extends ACalculator
 
 	private boolean notAPrimaryAttacker(final BotID id)
 	{
-		return !ballHandlingBots.get().contains(id) && !supportiveAttackers.get().contains(id);
+		return !(ballHandlingBots.get().contains(id));
 	}
 
 
@@ -97,6 +109,7 @@ public class PassGenerationCalc extends ACalculator
 				.getOrDefault(play, Collections.emptySet())
 				.contains(id);
 	}
+
 
 	private boolean notTheKeeper(final BotID id)
 	{

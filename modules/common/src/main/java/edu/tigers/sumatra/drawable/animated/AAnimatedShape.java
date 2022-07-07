@@ -1,19 +1,18 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.drawable.animated;
+
+import com.sleepycat.persist.model.Persistent;
+import edu.tigers.sumatra.drawable.IDrawableShape;
+import edu.tigers.sumatra.drawable.IDrawableTool;
+import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.math.vector.Vector2f;
 
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.Stroke;
-
-import com.sleepycat.persist.model.Persistent;
-
-import edu.tigers.sumatra.drawable.IDrawableShape;
-import edu.tigers.sumatra.drawable.IDrawableTool;
-import edu.tigers.sumatra.math.vector.IVector2;
-import edu.tigers.sumatra.math.vector.Vector2f;
 
 
 /**
@@ -59,7 +58,7 @@ public class AAnimatedShape implements IDrawableShape
 	{
 		if (stroke == null)
 		{
-			stroke = new BasicStroke(tool.scaleXLength(strokeWidth));
+			stroke = new BasicStroke(tool.scaleGlobalToGui(strokeWidth));
 		}
 		g.setStroke(stroke);
 
@@ -69,17 +68,6 @@ public class AAnimatedShape implements IDrawableShape
 
 	@Override
 	public AAnimatedShape setStrokeWidth(final double strokeWidth)
-	{
-		this.strokeWidth = (float) strokeWidth;
-		return this;
-	}
-
-
-	/**
-	 * @param strokeWidth
-	 * @return
-	 */
-	public AAnimatedShape withStrokeWidth(final double strokeWidth)
 	{
 		this.strokeWidth = (float) strokeWidth;
 		return this;

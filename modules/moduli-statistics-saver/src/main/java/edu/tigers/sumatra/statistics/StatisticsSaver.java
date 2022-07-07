@@ -4,16 +4,15 @@
 
 package edu.tigers.sumatra.statistics;
 
-import java.text.SimpleDateFormat;
-import java.util.Date;
-
+import edu.tigers.moduli.AModule;
+import edu.tigers.moduli.exceptions.StartModuleException;
+import edu.tigers.sumatra.model.SumatraModel;
 import org.apache.commons.lang.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import edu.tigers.moduli.AModule;
-import edu.tigers.moduli.exceptions.StartModuleException;
-import edu.tigers.sumatra.model.SumatraModel;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 
 /**
@@ -22,6 +21,7 @@ import edu.tigers.sumatra.model.SumatraModel;
 public class StatisticsSaver extends AModule
 {
 	private static final Logger log = LogManager.getLogger(StatisticsSaver.class.getName());
+	private static final String DB_NAME = "matchStats";
 	private ITimeSeriesWriter timeSeriesWriter;
 	private String identifierBase;
 
@@ -45,7 +45,7 @@ public class StatisticsSaver extends AModule
 
 		if (operationMode == EOperationMode.INFLUX_DB && !influxDbConnectionParameters.isComplete())
 		{
-			log.info("Can not connect to InfluxDB. Missing connection parameters: " + influxDbConnectionParameters);
+			log.info("Can not connect to InfluxDB. Missing connection parameters: {}", influxDbConnectionParameters);
 			timeSeriesWriter = createTimeSeriesWriter(operationModeFallback, influxDbConnectionParameters);
 		} else
 		{
@@ -55,7 +55,7 @@ public class StatisticsSaver extends AModule
 		if (this.timeSeriesWriter != null)
 		{
 			this.timeSeriesWriter.start();
-			log.info("Started " + identifierBase + " with " + this.timeSeriesWriter);
+			log.info("Started {} with {}", identifierBase, this.timeSeriesWriter);
 		}
 	}
 
@@ -75,7 +75,7 @@ public class StatisticsSaver extends AModule
 	 * Add a new entry
 	 *
 	 * @param identifierSuffix the suffix to add to the identifier
-	 * @param entry the entry to add
+	 * @param entry            the entry to add
 	 */
 	public void add(final String identifierSuffix, final TimeSeriesStatsEntry entry)
 	{
@@ -99,8 +99,8 @@ public class StatisticsSaver extends AModule
 	private InfluxDbConnectionParameters readInfluxDbConnectionParameters()
 	{
 		InfluxDbConnectionParameters p = new InfluxDbConnectionParameters();
-		p.setUrl(getSubnodeConfiguration().getString("influxdb-url"));
-		p.setDbName(getSubnodeConfiguration().getString("influxdb-name"));
+		p.setUrl(System.getenv("SUMATRA_INFLUX_DB_URL"));
+		p.setDbName(DB_NAME);
 		p.setUsername(System.getenv("SUMATRA_INFLUX_DB_USERNAME"));
 		p.setPassword(System.getenv("SUMATRA_INFLUX_DB_PASSWORD"));
 		return p;

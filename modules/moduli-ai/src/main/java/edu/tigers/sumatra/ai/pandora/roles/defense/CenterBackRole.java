@@ -1,28 +1,29 @@
 /*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.pandora.roles.defense;
 
 import com.github.g3force.configurable.Configurable;
+import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
 import edu.tigers.sumatra.ai.metis.defense.DefenseMath;
-import edu.tigers.sumatra.ai.metis.defense.data.IDefenseThreat;
+import edu.tigers.sumatra.ai.pandora.plays.match.defense.CenterBackGroup;
 import edu.tigers.sumatra.ai.pandora.roles.ERole;
+import edu.tigers.sumatra.drawable.DrawableCircle;
+import edu.tigers.sumatra.drawable.DrawableLine;
 import edu.tigers.sumatra.geometry.Geometry;
-import edu.tigers.sumatra.geometry.Goal;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.AngleMath;
 import edu.tigers.sumatra.math.line.v2.ILineSegment;
+import edu.tigers.sumatra.math.line.v2.Lines;
 import edu.tigers.sumatra.math.vector.IVector2;
-import edu.tigers.sumatra.skillsystem.skills.MoveToSkill;
-import edu.tigers.sumatra.statemachine.AState;
-import edu.tigers.sumatra.statemachine.IEvent;
-import edu.tigers.sumatra.trajectory.ITrajectory;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 
-import java.util.Comparator;
+import java.awt.Color;
 import java.util.HashSet;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -32,74 +33,45 @@ import java.util.stream.Collectors;
  */
 public class CenterBackRole extends AOuterDefenseRole
 {
-	@Configurable(comment = "The space between the bots (actual distance = configured distance + bot diameter)", defValue = "15.0")
-	private static double distanceBetweenBots = 15;
-	@Configurable(comment = "Max distance that a robot may be away from protection line, before switching to intercept", defValue = "500.0")
-	private static double switchToInterceptStateDist = 500.0;
-	@Configurable(comment = "Min distance that a robot must be away from protection line, before switching to protection", defValue = "20.0")
-	private static double switchToProtectStateDist = 20.0;
-
 	@Configurable(comment = "Distance [mm] from bot pos to final dest at which the rush back state switches to normal defend.", defValue = "2000.0")
 	private static double rushBackToDefendSwitchThreshold = 2000.0;
-
-	@Configurable(comment = "After rushing back, use a single defend state instead of combination of intercept and protect.", defValue = "true")
-	private static boolean useSingleDefendState = true;
 
 	@Configurable(comment = "Start with rushing back until close to dest", defValue = "true")
 	private static boolean useRushBackState = true;
 
+	@Setter
+	@Getter
 	private CoverMode coverMode = CoverMode.CENTER;
+	@Setter
 	private Set<BotID> companions = new HashSet<>();
+	@Setter
+	private double distanceToProtectionLine = 0.0;
 
 
 	/**
 	 * Creates a new CenterBackRole to protect the goal from the given threat
-	 *
-	 * @param threat The threat
 	 */
-	public CenterBackRole(final IDefenseThreat threat)
+	public CenterBackRole()
 	{
-		super(ERole.CENTER_BACK, threat);
+		super(ERole.CENTER_BACK);
 
-		addTransition(EEvent.PROTECTION_LINE_LEFT, new CenterInterceptState());
-		addTransition(EEvent.PROTECTION_LINE_REACHED, new ProtectionState());
-
-		if (useSingleDefendState)
-		{
-			addTransition(EEvent.RUSHED_BACK, new DefendState());
-		} else
-		{
-			addTransition(EEvent.RUSHED_BACK, new CenterInterceptState());
-		}
+		var defendState = new DefendState();
 
 		if (useRushBackState)
 		{
-			setInitialState(new RushBackState());
-		} else if (useSingleDefendState)
-		{
-			setInitialState(new DefendState());
+			var rushBackState = new RushBackState();
+			rushBackState.addTransition(rushBackState::isRushedBack, defendState);
+			setInitialState(rushBackState);
 		} else
 		{
-			setInitialState(new CenterInterceptState());
+			setInitialState(defendState);
 		}
-	}
-
-
-	public void setCoverMode(final CoverMode coverMode)
-	{
-		this.coverMode = coverMode;
-	}
-
-
-	public void setCompanions(final Set<BotID> companions)
-	{
-		this.companions = companions;
 	}
 
 
 	private IVector2 idealProtectionPoint()
 	{
-		Goal goal = Geometry.getGoalOur();
+		var goal = Geometry.getGoalOur();
 
 		IVector2 idealProtectionPoint = DefenseMath.calculateLineDefPoint(
 				threat.getPos(),
@@ -138,53 +110,18 @@ public class CenterBackRole extends AOuterDefenseRole
 				.getNormalVector()
 				.normalizeNew();
 
-		double distance = (Geometry.getBotRadius() * 2) + distanceBetweenBots;
-		double positioningDistance = getDistanceToProtectionLine(distance);
 
-		return protectionPoint.addNew(
-				positioningDirection.multiplyNew(positioningDistance));
-	}
+		var idealDest = protectionPoint.addNew(positioningDirection.multiplyNew(distanceToProtectionLine));
 
+		var shapes = getShapes(EAiShapesLayer.DEFENSE_CENTER_BACK);
 
-	private double getDistanceToProtectionLine(final double distance)
-	{
-		if (singleProtector())
-		{
-			return 0.0;
-		}
-		switch (coverMode)
-		{
-			case LEFT:
-				return distance;
-			case RIGHT:
-				return -distance;
-			case CENTER_LEFT:
-				return distance / 2;
-			case CENTER_RIGHT:
-				return -(distance / 2);
-			case CENTER:
-				return 0.0;
-			default:
-				throw new IllegalStateException("Unknown CoverMode!");
-		}
-	}
+		shapes.add(new DrawableLine(threat.getProtectionLine().orElseThrow(), Color.WHITE));
+		shapes.add(new DrawableCircle(threat.getProtectionLine().orElseThrow().getStart(), 10, Color.GREEN));
+		shapes.add(new DrawableCircle(threat.getProtectionLine().orElseThrow().getEnd(), 10, Color.RED));
+		shapes.add(new DrawableLine(Lines.segmentFromPoints(protectionPoint, idealDest),
+				distanceToProtectionLine > 0 ? Color.GREEN : Color.RED));
 
-
-	private boolean singleProtector()
-	{
-		double timeToDest = timeToDest(getBot());
-		double timeDiff = 1;
-		return companions.stream()
-				.filter(id -> id != getBotID())
-				.map(id -> getWFrame().getBot(id))
-				.map(this::timeToDest)
-				.allMatch(t -> (t - timeToDest) > timeDiff); // true, if none need more than `timeDiff` longer
-	}
-
-
-	private double timeToDest(ITrackedBot bot)
-	{
-		return bot.getCurrentTrajectory().map(ITrajectory::getTotalTime).orElse(0.0);
+		return idealDest;
 	}
 
 
@@ -236,20 +173,34 @@ public class CenterBackRole extends AOuterDefenseRole
 
 
 	/**
+	 * Specifies the bots position
+	 * Take care the order of this Enum is used in {@link CenterBackGroup#sortCoverModes(CenterBackRole, CenterBackRole)}
+	 */
+	@RequiredArgsConstructor
+	public enum CoverMode implements Comparable<CoverMode>
+	{
+		RIGHT,
+		CENTER_RIGHT, // Halfway between RIGHT and CENTER
+		CENTER,
+		CENTER_LEFT, // Halfway between LEFT and CENTER
+		LEFT,
+
+	}
+
+	/**
 	 * Rushing back from the front to the back of the field, using fastMove mode.
 	 */
-	private class RushBackState extends AState
+	private class RushBackState extends MoveState
 	{
-		private MoveToSkill skill;
 		private double leftOrRight;
+		@Getter
+		private boolean rushedBack;
 
 
 		@Override
-		public void doEntryActions()
+		protected void onInit()
 		{
-			skill = MoveToSkill.createMoveToSkill();
 			skill.getMoveConstraints().setFastMove(true);
-			setNewSkill(skill);
 
 			ILineSegment protectionLine = protectionLine();
 
@@ -260,19 +211,22 @@ public class CenterBackRole extends AOuterDefenseRole
 
 
 		@Override
-		public void doUpdate()
+		protected void onUpdate()
 		{
-			skill.getMoveCon().setBallObstacle(isBehindBall());
+			skill.getMoveCon().setBallObstacle(isNotBetweenBallAndGoal());
 
 			IVector2 finalDest = findRushBackDest();
 
 			skill.updateDestination(moveToValidDest(finalDest));
 			skill.updateTargetAngle(protectionTargetAngle());
 
-			if (finalDest.distanceTo(getPos()) < rushBackToDefendSwitchThreshold)
-			{
-				triggerEvent(EEvent.RUSHED_BACK);
-			}
+			rushedBack = rushedBack(finalDest);
+		}
+
+
+		private boolean rushedBack(IVector2 finalDest)
+		{
+			return finalDest.distanceTo(getPos()) < rushBackToDefendSwitchThreshold;
 		}
 
 
@@ -289,139 +243,5 @@ public class CenterBackRole extends AOuterDefenseRole
 			return protectionLine.closestPointOnLine(getPos())
 					.addNew(normalDir.scaleToNew(leftOrRight * 300));
 		}
-	}
-
-	/**
-	 * Protect on the protection line
-	 */
-	private class ProtectionState extends AState
-	{
-		private MoveToSkill skill;
-
-
-		@Override
-		public void doEntryActions()
-		{
-			skill = MoveToSkill.createMoveToSkill();
-			setNewSkill(skill);
-		}
-
-
-		@Override
-		public void doUpdate()
-		{
-			final IVector2 destination = moveToValidDest(adaptToThreat(findDest()));
-			skill.updateDestination(destination);
-			skill.updateTargetAngle(protectionTargetAngle());
-
-			skill.getMoveCon().setIgnoredBots(ignoredBots(destination));
-			skill.getMoveCon().setCustomObstacles(closeOpponentBotObstacles(destination));
-			skill.getMoveCon().setBallObstacle(isBehindBall());
-			skill.getMoveConstraints().setPrimaryDirection(threat.getThreatLine().directionVector());
-			skill.setKickParams(calcKickParams());
-
-			if (protectionLine().distanceTo(getPos()) > switchToInterceptStateDist)
-			{
-				triggerEvent(EEvent.PROTECTION_LINE_LEFT);
-			}
-		}
-	}
-
-	/**
-	 * Intercept protection line when not close to it.
-	 */
-	private class CenterInterceptState extends AState
-	{
-		private MoveToSkill skill;
-
-
-		@Override
-		public void doEntryActions()
-		{
-			skill = MoveToSkill.createMoveToSkill();
-			setNewSkill(skill);
-		}
-
-
-		@Override
-		public void doUpdate()
-		{
-			final IVector2 destination = moveToValidDest(adaptToThreat(calcDest()));
-			skill.updateDestination(destination);
-			skill.updateTargetAngle(protectionTargetAngle());
-
-			skill.getMoveCon().setIgnoredBots(ignoredBots(destination));
-			skill.getMoveCon().setCustomObstacles(closeOpponentBotObstacles(destination));
-			skill.getMoveCon().setBallObstacle(isBehindBall());
-			skill.getMoveConstraints().setPrimaryDirection(protectionLine().directionVector());
-
-			if (protectionLine().distanceTo(getPos()) < switchToProtectStateDist)
-			{
-				triggerEvent(EEvent.PROTECTION_LINE_REACHED);
-			}
-		}
-
-
-		private IVector2 calcDest()
-		{
-			final IVector2 protectionPoint = idealProtectionPoint();
-			final IVector2 closestPointToProtectionLine = protectionLine().closestPointOnLine(getPos());
-
-			if (companions.size() == 1)
-			{
-				return closestPointToProtectionLine;
-			} else
-			{
-				final Optional<BotID> closestCompanion = companions.stream()
-						.min(Comparator.comparingDouble(b -> getWFrame().getBot(b).getPos().distanceToSqr(protectionPoint)));
-				if (closestCompanion.isPresent() && closestCompanion.get() == getBotID())
-				{
-					return protectionPoint;
-				} else if (closestPointToProtectionLine.distanceTo(protectionPoint) > Geometry.getBotRadius() * 2)
-				{
-					return closestPointToProtectionLine;
-				} else
-				{
-					return protectionPoint
-							.addNew(protectionLine().directionVector().scaleToNew(Geometry.getBotRadius() * 3));
-				}
-			}
-		}
-	}
-
-
-	/**
-	 * Specifies the bots position
-	 */
-	public enum CoverMode
-	{
-		/**
-		 * On the line
-		 */
-		CENTER,
-		/**
-		 * Left from CENTER
-		 */
-		LEFT,
-		/**
-		 * Right from CENTER
-		 */
-		RIGHT,
-		/**
-		 * Left position if two bots are assigned to center
-		 */
-		CENTER_LEFT,
-		/**
-		 * Right position if two bots are assigned to center
-		 */
-		CENTER_RIGHT
-	}
-
-
-	private enum EEvent implements IEvent
-	{
-		PROTECTION_LINE_LEFT,
-		PROTECTION_LINE_REACHED,
-		RUSHED_BACK,
 	}
 }

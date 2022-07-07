@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.integration;
@@ -8,7 +8,6 @@ import edu.tigers.sumatra.ai.AAgent;
 import edu.tigers.sumatra.ai.AIInfoFrame;
 import edu.tigers.sumatra.ai.IAIObserver;
 import edu.tigers.sumatra.ai.athena.EAIControlState;
-import edu.tigers.sumatra.ai.metis.offense.ballinterception.BallInterception;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.ids.EAiTeam;
@@ -192,9 +191,6 @@ public class BallInterceptionsFullSimIntegrationTest extends AFullSimIntegration
 
 		assertNoWarningsOrErrors();
 
-		assertThat(stats.numOfFrames)
-				.as("There should be some frames")
-				.isGreaterThan(0);
 		double botTargetStability = stats.botTargetDistanceSum / stats.numOfFrames;
 		double orientStability = stats.orientDistanceSum / stats.numOfFrames;
 
@@ -211,9 +207,12 @@ public class BallInterceptionsFullSimIntegrationTest extends AFullSimIntegration
 						testCaseParameters.maxBallReachedTime)
 				.isLessThan(testCaseParameters.maxBallReachedTime);
 
-		assertThat(botTargetStability)
-				.as("Destination should be stable")
-				.isLessThan(20);
+		if (stats.numOfFrames != 0)
+		{
+			assertThat(botTargetStability)
+					.as("Destination should be stable")
+					.isLessThan(20);
+		}
 
 		testCaseSucceeded = true;
 	}
@@ -261,7 +260,7 @@ public class BallInterceptionsFullSimIntegrationTest extends AFullSimIntegration
 	{
 		ITrackedBall ball = frame.getWorldFrame().getBall();
 		return getAttacker(frame)
-				.map(bot -> ball.getTrajectory().getTravelLine().closestPointOnLine(bot.getBotKickerPos())
+				.map(bot -> ball.getTrajectory().closestPointTo(bot.getBotKickerPos())
 						.distanceTo(bot.getBotKickerPos()) < 50)
 				.orElse(false);
 	}
@@ -287,26 +286,22 @@ public class BallInterceptionsFullSimIntegrationTest extends AFullSimIntegration
 		{
 			getAttacker(frame).ifPresent(attacker -> {
 				var botTarget = getBotTarget(frame, attacker);
-				if (previousBotTarget != null)
+				if (previousBotTarget != null && botTarget.isPresent())
 				{
-					botTargetDistanceSum += botTarget.distanceTo(previousBotTarget);
+					botTargetDistanceSum += botTarget.get().distanceTo(previousBotTarget);
 					orientDistanceSum += Math.abs(previousBotOrientation - attacker.getOrientation());
 					numOfFrames++;
 				}
-
-				previousBotTarget = botTarget;
+				botTarget.ifPresent(iVector2 -> previousBotTarget = iVector2);
 				previousBotOrientation = attacker.getOrientation();
 			});
 		}
 
 
-		private IVector2 getBotTarget(AIInfoFrame frame, ITrackedBot attacker)
+		private Optional<IVector2> getBotTarget(AIInfoFrame frame, ITrackedBot attacker)
 		{
 			return Optional.ofNullable(frame.getTacticalField().getBallInterceptions().get(attacker.getBotId()))
-					.map(BallInterception::getPos)
-					.orElseGet(
-							() -> frame.getTacticalField().getOffensiveActions().get(attacker.getBotId()).getPass().getKick()
-									.getSource());
+					.map(e -> e.getBallInterception().getPos());
 		}
 	}
 }

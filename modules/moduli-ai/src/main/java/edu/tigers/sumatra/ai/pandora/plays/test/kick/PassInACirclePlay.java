@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.ai.pandora.plays.test.kick;
 
@@ -14,14 +14,17 @@ import edu.tigers.sumatra.math.AngleMath;
 import edu.tigers.sumatra.math.circle.Circle;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
+import edu.tigers.sumatra.wp.data.BallKickFitState;
 import lombok.Setter;
 import org.apache.commons.lang.Validate;
 
 import java.awt.Color;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 
 /**
@@ -150,10 +153,20 @@ public class PassInACirclePlay extends ARedirectPlay
 	@Override
 	protected IVector2 getReceiverCatchPoint(IVector2 origin)
 	{
-		var circle = Circle.createCircle(center, radius);
-		var travelLineSegment = getBall().getTrajectory().getTravelLineSegment();
-		var intersections = circle.lineIntersections(travelLineSegment);
-		return origin.nearestToOpt(intersections).orElse(origin);
+		var kickAge = getWorldFrame().getKickFitState()
+				.map(BallKickFitState::getKickTimestamp)
+				.map(ts -> (getWorldFrame().getTimestamp() - ts) / 1e9)
+				.orElse(Double.POSITIVE_INFINITY);
+		if (kickAge > 0.2)
+		{
+			var circle = Circle.createCircle(center, radius);
+			var intersections = getBall().getTrajectory().getTravelLinesRolling().stream()
+					.map(circle::lineIntersections)
+					.flatMap(Collection::stream)
+					.collect(Collectors.toUnmodifiableList());
+			return origin.nearestToOpt(intersections).orElse(origin);
+		}
+		return origin;
 	}
 
 

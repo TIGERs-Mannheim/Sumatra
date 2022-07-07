@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.ai.athena;
 
@@ -76,7 +76,7 @@ public class TestModeAthenaAdapter implements IAthenaAdapter
 			// check if bot is assigned to a role already and unassign the role
 			guiTestPlay.getRoles().stream()
 					.filter(r -> r != role)
-					.filter(r -> r.getBotID() == role.getBotID())
+					.filter(r -> r.getBotID().equals(role.getBotID()))
 					.forEach(r -> {
 						guiTestPlay.removeRole(r);
 						roles.remove(r);
@@ -136,7 +136,7 @@ public class TestModeAthenaAdapter implements IAthenaAdapter
 		{
 			for (ARole playRole : play.getRoles())
 			{
-				if (playRole.getBotID() == botID)
+				if (playRole.getBotID().equals(botID))
 				{
 					return true;
 				}

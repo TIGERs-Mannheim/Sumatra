@@ -17,6 +17,7 @@ import lombok.Getter;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 
 /**
@@ -231,7 +232,7 @@ public abstract class ABallTrajectory implements IBallTrajectory
 	@Override
 	public List<ILineSegment> getTravelLinesInterceptable()
 	{
-		return Collections.singletonList(getTravelLineSegment());
+		return getTravelLineSegments();
 	}
 
 
@@ -239,5 +240,22 @@ public abstract class ABallTrajectory implements IBallTrajectory
 	public List<IVector2> getTouchdownLocations()
 	{
 		return Collections.emptyList();
+	}
+
+
+	@Override
+	public IVector2 closestPointTo(IVector2 point)
+	{
+		var closestPointsToIdealPos = getTravelLinesRolling().stream()
+				.map(line -> line.closestPointOnLine(point))
+				.collect(Collectors.toUnmodifiableList());
+		return point.nearestTo(closestPointsToIdealPos);
+	}
+
+
+	@Override
+	public double distanceTo(IVector2 point)
+	{
+		return closestPointTo(point).distanceTo(point);
 	}
 }

@@ -1,14 +1,10 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.botcenter.view.config;
 
-import java.awt.BorderLayout;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.CopyOnWriteArrayList;
+import edu.tigers.sumatra.botmanager.configs.ConfigFile;
+import net.miginfocom.swing.MigLayout;
 
 import javax.swing.JButton;
 import javax.swing.JLabel;
@@ -17,9 +13,13 @@ import javax.swing.JPanel;
 import javax.swing.JTabbedPane;
 import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
-
-import edu.tigers.sumatra.botcenter.presenter.config.ConfigFile;
-import net.miginfocom.swing.MigLayout;
+import java.awt.BorderLayout;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.stream.IntStream;
 
 
 /**
@@ -29,6 +29,7 @@ public class BotConfigPanel extends JPanel
 {
 	private static final long serialVersionUID = 7489653214102700549L;
 	private final List<IBotConfigPanelObserver> observers = new CopyOnWriteArrayList<>();
+	private final List<IBotConfigObserver> configObservers = new CopyOnWriteArrayList<>();
 	private final Map<Integer, ConfigFilePanel> panels = new HashMap<>();
 	private final JTabbedPane tabs;
 
@@ -58,7 +59,7 @@ public class BotConfigPanel extends JPanel
 	/**
 	 * @param file
 	 */
-	public void addConfigFile(final ConfigFile file)
+	public void addConfigFile(final ConfigFile file, ConfigFile savedFile)
 	{
 		ConfigFilePanel panel = panels.get(file.getConfigId());
 		if (panel == null)
@@ -66,10 +67,34 @@ public class BotConfigPanel extends JPanel
 			panel = new ConfigFilePanel(file);
 			panels.put(file.getConfigId(), panel);
 			tabs.add(file.getName(), panel);
+			if (savedFile != null)
+			{
+				updateSavedValues(savedFile);
+			}
 			return;
 		}
+		panel.updateValues(file, savedFile);
+	}
 
-		panel.updateValues(file);
+
+	public void updateSavedValues(final ConfigFile file)
+	{
+		ConfigFilePanel panel = panels.get(file.getConfigId());
+		if (panel != null && panel.file.getVersion() == file.getVersion())
+		{
+			SwingUtilities.invokeLater(() -> IntStream.range(0, file.getValues().size())
+					.forEach(i -> panel.savedFields.get(i).setText(file.getValues().get(i))));
+		}
+	}
+
+
+	public void removeSavedValues(final int configId, final int version)
+	{
+		ConfigFilePanel panel = panels.get(configId);
+		if (panel != null && panel.file.getVersion() == version)
+		{
+			SwingUtilities.invokeLater(() -> panel.savedFields.forEach(f -> f.setText("")));
+		}
 	}
 
 
@@ -105,23 +130,31 @@ public class BotConfigPanel extends JPanel
 	}
 
 
-	/** */
+	public void addConfigObserver(final IBotConfigObserver observer)
+	{
+		configObservers.add(observer);
+	}
+
+
+	public void removeConfigObserver(final IBotConfigObserver observer)
+	{
+		configObservers.remove(observer);
+	}
+
+
+	/**
+	 *
+	 */
 	private void notifyQueryFileList()
 	{
-		for (IBotConfigPanelObserver observer : observers)
-		{
-			observer.onQueryFileList();
-		}
+		observers.forEach(IBotConfigPanelObserver::onQueryFileList);
 	}
 
 
 	/** */
 	private void notifyClearFileList()
 	{
-		for (IBotConfigPanelObserver observer : observers)
-		{
-			observer.onClearFileList();
-		}
+		observers.forEach(IBotConfigPanelObserver::onClearFileList);
 	}
 
 
@@ -129,6 +162,7 @@ public class BotConfigPanel extends JPanel
 	{
 		private static final long serialVersionUID = 3052423100929562898L;
 		private final List<JTextField> fields = new ArrayList<>();
+		private final List<JLabel> savedFields = new ArrayList<>();
 		private final ConfigFile file;
 
 
@@ -136,11 +170,12 @@ public class BotConfigPanel extends JPanel
 		{
 			this.file = file;
 
-			setLayout(new MigLayout("wrap 2", "[150][100,fill]"));
+			setLayout(new MigLayout("wrap 3", "[150][150,fill][100]"));
 
 			JButton save = new JButton("Save");
 			JButton saveToAll = new JButton("Save to All");
 			JButton refresh = new JButton("Refresh");
+			JButton saveToFile = new JButton("Save to File");
 
 			save.addActionListener(ae -> {
 				parseValues();
@@ -159,56 +194,68 @@ public class BotConfigPanel extends JPanel
 
 			refresh.addActionListener(ae -> notifyRefresh(file));
 
-			add(save, "span 2, split 3");
+			saveToFile.addActionListener(ae -> notifySaveToFile(file));
+
+			add(save, "span 3, split 4");
 			add(saveToAll);
 			add(refresh);
+			add(saveToFile);
+
+			add(new JLabel("Version"));
+			add(new JLabel(Integer.toString(file.getVersion())), "wrap");
+
 
 			for (int i = 0; i < file.getNames().size(); i++)
 			{
 				JLabel label = new JLabel(file.getNames().get(i));
 				JTextField field = new JTextField(file.getValues().get(i));
+				JLabel savedVal = new JLabel();
 
 				add(label);
 				add(field);
+				add(savedVal);
 
 				fields.add(field);
+				savedFields.add(savedVal);
 			}
 		}
 
 
 		private void notifySave(final ConfigFile file)
 		{
-			for (IBotConfigPanelObserver observer : observers)
-			{
-				observer.onSave(file);
-			}
+			observers.forEach(o -> o.onSave(file));
 		}
 
 
 		private void notifySaveToAll(final ConfigFile file)
 		{
-			for (IBotConfigPanelObserver observer : observers)
-			{
-				observer.onSaveToAll(file);
-			}
+			observers.forEach(o -> o.onSaveToAll(file));
 		}
 
 
 		private void notifyRefresh(final ConfigFile file)
 		{
-			for (IBotConfigPanelObserver observer : observers)
-			{
-				observer.onRefresh(file);
-			}
+			observers.forEach(o -> o.onRefresh(file));
 		}
 
 
-		private void updateValues(final ConfigFile file)
+		private void notifySaveToFile(final ConfigFile file)
+		{
+			configObservers.forEach(o -> o.onSaveToFile(file));
+			updateValues(file, file);
+		}
+
+
+		private void updateValues(final ConfigFile file, ConfigFile savedFile)
 		{
 			SwingUtilities.invokeLater(() -> {
 				for (int i = 0; i < file.getValues().size(); i++)
 				{
 					fields.get(i).setText(file.getValues().get(i));
+					if (savedFile != null)
+					{
+						savedFields.get(i).setText(savedFile.getValues().get(i));
+					}
 				}
 			});
 		}

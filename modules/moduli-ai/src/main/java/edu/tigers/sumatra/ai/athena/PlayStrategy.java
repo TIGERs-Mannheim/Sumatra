@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.ai.athena;
 
@@ -14,7 +14,7 @@ import lombok.Value;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.IdentityHashMap;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -34,7 +34,7 @@ public class PlayStrategy implements IPlayStrategy
 	@Override
 	public Map<BotID, ARole> getActiveRoles()
 	{
-		Map<BotID, ARole> roles = new IdentityHashMap<>();
+		Map<BotID, ARole> roles = new HashMap<>();
 		for (APlay play : activePlays)
 		{
 			for (ARole role : play.getRoles())

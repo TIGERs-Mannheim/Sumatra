@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.skillsystem.skills;
@@ -57,7 +57,7 @@ public abstract class ASkill implements ISkill
 	protected ASkill()
 	{
 		stateMachine.setInitialState(IDLE_STATE);
-		stateMachine.setExtendedLogging(!SumatraModel.getInstance().isProductive());
+		stateMachine.setExtendedLogging(!SumatraModel.getInstance().isTournamentMode());
 		averageTimeMeasure.setAveragingTime(0.5);
 	}
 
@@ -256,7 +256,7 @@ public abstract class ASkill implements ISkill
 		}
 
 		aiInfo.setBallContact(bot.isBarrierInterrupted() ? "BARRIER" : "NO");
-		aiInfo.setBattery(bot.getBatteryAbsolute());
+		aiInfo.setBattery(bot.getBatteryRelative());
 		aiInfo.setVersion(bot.getVersionString());
 		aiInfo.setHwId(bot.getHardwareId());
 		aiInfo.setLastFeedback(bot.getLastFeedback());
@@ -282,7 +282,7 @@ public abstract class ASkill implements ISkill
 		if (bot.getClass().equals(TigerBot.class))
 		{
 			TigerBot tigerBot = (TigerBot) bot;
-			aiInfo.setNrfStats(tigerBot.getNrfStats());
+			aiInfo.setBotStats(tigerBot.getStats());
 		}
 		return aiInfo;
 	}

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2019, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.offensive.view;
 
@@ -10,10 +10,8 @@ import edu.tigers.sumatra.trees.EOffensiveSituation;
 import edu.tigers.sumatra.trees.OffensiveActionTree;
 import edu.tigers.sumatra.trees.OffensiveActionTreeMap;
 import edu.tigers.sumatra.trees.OffensiveTreeProvider;
-import edu.tigers.sumatra.views.ISumatraView;
+import lombok.extern.log4j.Log4j2;
 import net.miginfocom.swing.MigLayout;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import javax.swing.JButton;
 import javax.swing.JComboBox;
@@ -31,13 +29,10 @@ import java.util.Optional;
 
 /**
  * Main Panel for edu.tigers.sumatra.trees.OffensiveActionTree
- *
- * @author Marius Messerschmidt <marius.messerschmidt@dlr.de>
  */
-public class OffensiveActionTreePanel extends JPanel implements ISumatraView
+@Log4j2
+public class OffensiveActionTreePanel extends JPanel
 {
-	protected static final Logger log = LogManager.getLogger(OffensiveActionTreePanel.class.getName());
-
 	private JRadioButton teamYRadio = new JRadioButton("Yellow");
 	private JRadioButton teamBRadio = new JRadioButton("Blue");
 
@@ -47,8 +42,8 @@ public class OffensiveActionTreePanel extends JPanel implements ISumatraView
 
 	private JLabel outdatedLabel = new JLabel("Outdated Data");
 
-	private OffensiveActionTreePath currentPathYellow = null;
-	private OffensiveActionTreePath currentPathBlue = null;
+	private transient OffensiveActionTreePath currentPathYellow = null;
+	private transient OffensiveActionTreePath currentPathBlue = null;
 
 	private transient Map<EOffensiveSituation, OffensiveActionTree> teamTreesYellow;
 	private transient Map<EOffensiveSituation, OffensiveActionTree> teamTreesBlue;
@@ -123,7 +118,7 @@ public class OffensiveActionTreePanel extends JPanel implements ISumatraView
 		try
 		{
 			OffensiveTreeProvider treeProvider = SumatraModel.getInstance().getModule(OffensiveTreeProvider.class);
-			if (!map.isPresent())
+			if (map.isEmpty())
 			{
 				return;
 			}

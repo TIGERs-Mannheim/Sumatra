@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.math;
@@ -46,6 +46,8 @@ public final class AngleMath
 	/**
 	 * Get the smallest difference between angle1 and angle2.<br>
 	 * <code>norm( angle1 - angle2 )</code>
+	 * A positive difference represents a counter clockwise turn from angle2 to angle1
+	 * A negative difference represents a clockwise turn from angle2 to angle1
 	 *
 	 * @param angle1 first angle
 	 * @param angle2 second angle
@@ -54,6 +56,57 @@ public final class AngleMath
 	public static double difference(final double angle1, final double angle2)
 	{
 		return normalizeAngle(angle1 - angle2);
+	}
+
+
+	/**
+	 * Get the resulting angle after rotating angleStart in rotationDirection for angleAmount.<br>
+	 * Rotating with a negative value of angleAmount is equivalent to rotating the opposite direction with the absolute amount
+	 *
+	 * @param angleStart
+	 * @param angleAmount
+	 * @param rotationDirection
+	 * @return
+	 */
+	public static double rotateAngle(final double angleStart, final double angleAmount,
+			final ERotationDirection rotationDirection)
+	{
+		if (rotationDirection == ERotationDirection.NONE)
+		{
+			return normalizeAngle(angleStart);
+		}
+		return normalizeAngle(rotationDirection == ERotationDirection.COUNTER_CLOCKWISE ?
+				angleStart + angleAmount :
+				angleStart - angleAmount
+		);
+	}
+
+
+	public static ERotationDirection rotationDirection(final double angleStart, final double angleEnd)
+	{
+		final var difference = AngleMath.difference(angleEnd, angleStart);
+		if (Math.abs(difference) < 1e-6)
+		{
+			return ERotationDirection.NONE;
+		} else if (difference < 0)
+		{
+			return ERotationDirection.CLOCKWISE;
+		} else
+		{
+			return ERotationDirection.COUNTER_CLOCKWISE;
+		}
+	}
+
+
+	public static int compareAngle(final double angle1, final double angle2)
+	{
+		final var rotDirection = AngleMath.rotationDirection(angle1, angle2);
+		return switch (rotDirection)
+				{
+					case NONE -> 0;
+					case CLOCKWISE -> 1;
+					case COUNTER_CLOCKWISE -> -1;
+				};
 	}
 
 

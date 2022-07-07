@@ -47,11 +47,8 @@ public class BowlingCheeringPlay implements ICheeringPlay
 
 		positions.add(Geometry.getGoalOur().getCenter().addNew(Vector2.fromXY(Geometry.getFieldLength() * 0.35, 0)));
 
-
-		for (int botId = 1; botId < roles.size(); botId++)
-		{
-			positions.add(getBowlPosition(botId - 1, Vector2.fromXY(Geometry.getFieldLength() * 0.15, 0)));
-		}
+		BowlPositions bowls = new BowlPositions();
+		roles.stream().map(role -> bowls.next()).forEach(positions::add);
 		return positions;
 	}
 
@@ -93,47 +90,6 @@ public class BowlingCheeringPlay implements ICheeringPlay
 	}
 
 
-	private IVector2 getBowlPosition(int id, IVector2 headpos)
-	{
-		double x = headpos.x();
-		double y = headpos.y();
-		switch (id)
-		{
-			case 0:
-				x = headpos.x();
-				y = headpos.y();
-				break;
-			case 1:
-				x = headpos.x() + Geometry.getBotRadius() * 3;
-				y = headpos.y() - Geometry.getBotRadius() * 1.5;
-				break;
-			case 2:
-				x = headpos.x() + Geometry.getBotRadius() * 3;
-				y = headpos.y() + Geometry.getBotRadius() * 1.5;
-				break;
-			case 3:
-				x = headpos.x() + Geometry.getBotRadius() * 6;
-				y = headpos.y();
-				break;
-			case 4:
-				x = headpos.x() + Geometry.getBotRadius() * 6;
-				y = headpos.y() + Geometry.getBotRadius() * 3;
-				break;
-			case 5:
-				x = headpos.x() + Geometry.getBotRadius() * 6;
-				y = headpos.y() - Geometry.getBotRadius() * 3;
-				break;
-			case 6:
-				x = headpos.x() + Geometry.getBotRadius() * 9;
-				y = headpos.y();
-				break;
-			default:
-				break;
-		}
-		return Vector2.fromXY(x, y);
-	}
-
-
 	private void doRoll()
 	{
 		ARole ballbot = play.getRoles().get(0);
@@ -150,16 +106,16 @@ public class BowlingCheeringPlay implements ICheeringPlay
 
 				if (y > 0)
 				{
-					((MoveRole) r).updateDestination(Vector2.fromXY(x, 500));
+					((MoveRole) r).updateDestination(Vector2.fromXY(x, y + 500));
 				} else if (y < 0)
 				{
-					((MoveRole) r).updateDestination(Vector2.fromXY(x, -500));
+					((MoveRole) r).updateDestination(Vector2.fromXY(x, y - 500));
 				} else if (movedFromMid.isEmpty())
 				{
-					((MoveRole) r).updateDestination(Vector2.fromXY(x, 500 - 2 * Geometry.getBotRadius()));
+					((MoveRole) r).updateDestination(Vector2.fromXY(x, y + 500 - 2 * Geometry.getBotRadius()));
 				} else
 				{
-					((MoveRole) r).updateDestination(Vector2.fromXY(x, -500 + 2 * Geometry.getBotRadius()));
+					((MoveRole) r).updateDestination(Vector2.fromXY(x, y - 500 + 2 * Geometry.getBotRadius()));
 				}
 			}
 		}
@@ -186,5 +142,31 @@ public class BowlingCheeringPlay implements ICheeringPlay
 	{
 		PRE,
 		ROLL
+	}
+
+	private static class BowlPositions
+	{
+
+		private int row = 0;
+		private int column = 0;
+
+
+		public IVector2 next()
+		{
+			IVector2 headpos = Vector2.fromXY(Geometry.getFieldLength() * 0.15, 0);
+			IVector2 pos = Vector2.fromXY(
+					headpos.x() + Geometry.getBotRadius() * 3 * row,
+					headpos.y() - Geometry.getBotRadius() * 3 * (column - (row + 1) / 2.0)
+			);
+
+			column++;
+			if (column > row)
+			{
+				row++;
+				column = 0;
+			}
+
+			return pos;
+		}
 	}
 }

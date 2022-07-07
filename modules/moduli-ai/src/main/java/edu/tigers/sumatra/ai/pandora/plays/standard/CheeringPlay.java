@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.ai.pandora.plays.standard;
 
@@ -7,7 +7,6 @@ import edu.tigers.sumatra.ai.pandora.plays.APlay;
 import edu.tigers.sumatra.ai.pandora.plays.EPlay;
 import edu.tigers.sumatra.ai.pandora.plays.standard.cheerings.ECheeringPlays;
 import edu.tigers.sumatra.ai.pandora.plays.standard.cheerings.ICheeringPlay;
-import edu.tigers.sumatra.ai.pandora.plays.standard.cheerings.TigerCheeringPlay;
 import edu.tigers.sumatra.ai.pandora.roles.ARole;
 import edu.tigers.sumatra.ai.pandora.roles.move.MoveRole;
 import edu.tigers.sumatra.botmanager.botskills.data.ESong;
@@ -29,7 +28,6 @@ public class CheeringPlay extends APlay
 	public CheeringPlay()
 	{
 		super(EPlay.CHEERING);
-		plays.add(new TigerCheeringPlay());
 	}
 
 
@@ -47,12 +45,12 @@ public class CheeringPlay extends APlay
 
 	private void resetBots()
 	{
-		for (ARole role : getRoles())
+		for (var role : findRoles(MoveRole.class))
 		{
-			((MoveRole) role).getMoveCon().setBotsObstacle(true);
-			((MoveRole) role).getMoveCon().setBallObstacle(false);
-			((MoveRole) role).getMoveCon().setPenaltyAreaOurObstacle(false);
-			((MoveRole) role).getMoveCon().setPenaltyAreaTheirObstacle(false);
+			role.getMoveCon().setBotsObstacle(true);
+			role.getMoveCon().setBallObstacle(false);
+			role.getMoveCon().setPenaltyAreaOurObstacle(false);
+			role.getMoveCon().setPenaltyAreaTheirObstacle(false);
 			setSong(role.getBotID(), ESong.NONE);
 		}
 	}
@@ -79,9 +77,9 @@ public class CheeringPlay extends APlay
 
 			onPosition = false;
 			activePlay.initialize(this);
-			List<IVector2> destinations = reorderDestinationsToRoles(activePlay.calcPositions());
+			List<IVector2> destinations = activePlay.calcPositions();
 			List<ARole> roles = getRoles();
-			for (int i = 0; i < destinations.size(); i++)
+			for (int i = 0; i < roles.size(); i++)
 			{
 				((MoveRole) roles.get(i)).updateDestination(destinations.get(i));
 			}
@@ -103,19 +101,5 @@ public class CheeringPlay extends APlay
 				}
 			}
 		}
-	}
-
-
-	@Override
-	protected ARole onRemoveRole()
-	{
-		return getLastRole();
-	}
-
-
-	@Override
-	protected ARole onAddRole()
-	{
-		return new MoveRole();
 	}
 }

@@ -7,6 +7,7 @@ import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
 import edu.tigers.sumatra.cam.data.CamCalibration;
 import edu.tigers.sumatra.cam.data.CamDetectionFrame;
+import edu.tigers.sumatra.cam.data.CamFieldSize;
 import edu.tigers.sumatra.cam.data.CamGeometry;
 import edu.tigers.sumatra.cam.data.CamRobot;
 import edu.tigers.sumatra.drawable.DrawableCircle;
@@ -76,7 +77,7 @@ public class ViewportArchitect
 	{
 		// insert calibrations into a map. This is important for multiple vision computers as not all geometry will come
 		// from a single source.
-		for (CamCalibration calib : geometry.getCalibrations().values())
+		for (CamCalibration calib : geometry.getCameraCalibrations().values())
 		{
 			int camId = calib.getCameraId();
 
@@ -90,7 +91,12 @@ public class ViewportArchitect
 					calib.imageToField(calib.getPrincipalPoint(), 0), calib));
 		}
 
-		field = new Viewport(Vector2f.ZERO_VECTOR, geometry.getField().getFieldWithBoundary());
+		CamFieldSize fieldSize = geometry.getFieldSize();
+		this.field = new Viewport(
+				Vector2f.ZERO_VECTOR,
+				Rectangle.fromCenter(Vector2f.ZERO_VECTOR, fieldSize.getFieldLength(), fieldSize.getFieldWidth())
+						.withMargin(fieldSize.getBoundaryWidth())
+		);
 	}
 
 

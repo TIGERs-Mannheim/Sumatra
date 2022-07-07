@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.pandora.plays.standard;
@@ -15,6 +15,7 @@ import edu.tigers.sumatra.math.line.v2.LineMath;
 import edu.tigers.sumatra.math.vector.IVector2;
 
 import java.util.Comparator;
+import java.util.Objects;
 
 
 /**
@@ -42,13 +43,14 @@ public abstract class ABallPlacementPlay extends APlay
 				.findFirst().orElse(BotID.noBot());
 		if (getRoles().size() == 1)
 		{
-			reassignRole(getRoles().get(0), BallPlacementRole.class, BallPlacementRole::new);
+			var placementRole = reassignRole(getRoles().get(0), BallPlacementRole.class, BallPlacementRole::new);
+			placementRole.setPassMode(BallPlacementRole.EPassMode.NONE);
 		} else if (useAssistant())
 		{
 			ARole ballPlacementRole = getRoles()
 					.stream()
-					.min(Comparator.comparing(r -> getBall().getTrajectory().getTravelLineSegment().distanceTo(r.getPos())
-							- ((r.getBotID() == currentBallPlacementBot) ? 500 : 0)))
+					.min(Comparator.comparing(r -> getBall().getTrajectory().distanceTo(r.getPos())
+							- ((Objects.equals(r.getBotID(), currentBallPlacementBot)) ? 500 : 0)))
 					.map(r -> reassignRole(r, BallPlacementRole.class, BallPlacementRole::new))
 					.orElseThrow();
 			ARole receivingRole = allRolesExcept(ballPlacementRole)
@@ -73,12 +75,14 @@ public abstract class ABallPlacementPlay extends APlay
 					.forEach(this::handleNonPlacingRole);
 		} else
 		{
-			ARole ballPlacementRole = getRoles()
+			BallPlacementRole ballPlacementRole = getRoles()
 					.stream()
-					.min(Comparator.comparing(r -> getBall().getTrajectory().getTravelLineSegment().distanceTo(r.getPos())
-							- ((r.getBotID() == currentBallPlacementBot) ? 500 : 0)))
+					.min(Comparator.comparing(r -> getBall().getTrajectory().distanceTo(r.getPos())
+							- ((Objects.equals(r.getBotID(), currentBallPlacementBot)) ? 500 : 0)))
 					.map(r -> reassignRole(r, BallPlacementRole.class, BallPlacementRole::new))
 					.orElseThrow();
+
+			ballPlacementRole.setPassMode(BallPlacementRole.EPassMode.NONE);
 
 			allRolesExcept(ballPlacementRole)
 					.forEach(this::handleNonPlacingRole);

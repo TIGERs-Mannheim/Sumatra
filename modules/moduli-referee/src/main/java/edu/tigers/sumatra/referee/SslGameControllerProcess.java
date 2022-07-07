@@ -28,13 +28,14 @@ import java.util.concurrent.TimeUnit;
 public class SslGameControllerProcess implements Runnable
 {
 	private static final String BINARY_NAME = "ssl-game-controller";
-	private static final Path TEMP_DIR = Paths.get("temp");
-	private static final File BINARY_FILE = TEMP_DIR.resolve(BINARY_NAME).toFile();
+	private static final Path BINARY_DIR = Paths.get("data");
+	private static final File BINARY_FILE = BINARY_DIR.resolve(BINARY_NAME).toFile();
 
 	@Getter
 	private final int gcUiPort;
 	private final String publishAddress;
 	private final String timeAcquisitionMode;
+	private final Thread shutdownHook = new Thread(this::stop);
 
 	private Process process = null;
 
@@ -56,6 +57,8 @@ public class SslGameControllerProcess implements Runnable
 		{
 			return;
 		}
+
+		Runtime.getRuntime().addShutdownHook(shutdownHook);
 
 
 		Path engineConfig = Path.of("config", "engine.yaml");
@@ -111,21 +114,29 @@ public class SslGameControllerProcess implements Runnable
 			log.warn("game-controller has returned a non-zero exit code: {}", p.exitValue());
 		}
 		log.debug("game-controller process thread finished");
+		Runtime.getRuntime().removeShutdownHook(shutdownHook);
 	}
 
 
 	private boolean setupBinary()
 	{
-		if (BINARY_FILE.exists() && !BINARY_FILE.delete())
+		if (BINARY_FILE.exists())
 		{
-			log.warn("Could not delete existing binary file: {}", BINARY_FILE);
-			return false;
+			try
+			{
+				Files.delete(BINARY_FILE.toPath());
+
+			} catch (IOException e)
+			{
+				log.warn("Could not delete existing binary: {}", BINARY_FILE, e);
+				return false;
+			}
 		}
-		File tmpDir = TEMP_DIR.toFile();
-		if (tmpDir.mkdirs())
+		
+		File binaryDir = BINARY_DIR.toFile();
+		if (binaryDir.mkdirs())
 		{
-			log.debug("Temp dir created: {}", tmpDir);
-			tmpDir.deleteOnExit();
+			log.info("Binary dir created: {}", binaryDir);
 		}
 		if (!writeResourceToFile(BINARY_NAME, BINARY_FILE))
 		{
@@ -134,7 +145,7 @@ public class SslGameControllerProcess implements Runnable
 		BINARY_FILE.deleteOnExit();
 		if (!BINARY_FILE.canExecute() && !BINARY_FILE.setExecutable(true))
 		{
-			log.warn("Binary is not executable and could not be made executable.");
+			log.warn("Binary is not executable and could not be made executable: {}", BINARY_FILE);
 			return false;
 		}
 		return true;

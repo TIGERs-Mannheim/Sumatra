@@ -1,46 +1,43 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.view.ball;
 
+import edu.tigers.sumatra.bot.EBotType;
+import edu.tigers.sumatra.filetree.FileTree;
+import edu.tigers.sumatra.filetree.FileTree.IFileTreeObserver;
+import edu.tigers.sumatra.wp.util.TimeSeriesDataCollectorFactory;
+import net.miginfocom.swing.MigLayout;
+
+import javax.swing.JButton;
+import javax.swing.JCheckBox;
+import javax.swing.JComboBox;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTextArea;
+import javax.swing.JToggleButton;
 import java.awt.BorderLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.io.File;
+import java.io.Serial;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import javax.swing.JButton;
-import javax.swing.JCheckBox;
-import javax.swing.JComboBox;
-import javax.swing.JLabel;
-import javax.swing.JMenu;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.JTextArea;
-import javax.swing.JToggleButton;
-
-import edu.tigers.sumatra.bot.EBotType;
-import edu.tigers.sumatra.filetree.FileTree;
-import edu.tigers.sumatra.filetree.FileTree.IFileTreeObserver;
-import edu.tigers.sumatra.views.ISumatraView;
-import edu.tigers.sumatra.wp.util.TimeSeriesDataCollectorFactory;
-import net.miginfocom.swing.MigLayout;
-
 
 /**
- * @author Nicolai Ommer <nicolai.ommer@gmail.com>
+ * Panel for vision analyser.
  */
-public class VisionAnalyserPanel extends JPanel implements ISumatraView
+public class VisionAnalyserPanel extends JPanel
 {
-	
-	/**  */
+	@Serial
 	private static final long serialVersionUID = 2543451767176872886L;
-	
+
 	private FileTree fileTree = null;
 	private final JPanel fileTreePanel = new JPanel();
 	private final JButton btnSave = new JButton("Save");
@@ -53,22 +50,18 @@ public class VisionAnalyserPanel extends JPanel implements ISumatraView
 	private final JLabel lblNumSamples = new JLabel("Num samples: ");
 	private final JCheckBox chkStopAuto = new JCheckBox("Stop");
 	private final JPanel keyValuePanel = new JPanel(new MigLayout("fillx, wrap 1"));
-	private final JComboBox<EBotType> cmbBotType = new JComboBox<>(EBotType.values());
-	
+
 	private List<String> selectedFiles = new ArrayList<>();
-	
+
 	private final List<IBallAnalyserPanelObserver> observers = new CopyOnWriteArrayList<>();
-	
-	
-	/**
-	 * New panel
-	 */
+
+
 	public VisionAnalyserPanel()
 	{
-		super(new BorderLayout());
-		
+		setLayout(new BorderLayout());
+
 		JButton btnRefresh = new JButton("Refresh");
-		
+
 		JPanel rightPanel = new JPanel(new MigLayout("fill, wrap 1"));
 		rightPanel.add(btnRefresh, "growx");
 		rightPanel.add(btnCopy, "growx");
@@ -77,11 +70,13 @@ public class VisionAnalyserPanel extends JPanel implements ISumatraView
 		rightPanel.add(btnPlot, "growx");
 		rightPanel.add(btnCrookedKick, "growx");
 		add(rightPanel, BorderLayout.EAST);
-		
+
 		JPanel recordPanel = new JPanel(new MigLayout("fill"));
 		recordPanel.add(chkStopAuto, "");
 		recordPanel.add(btnRecord, "");
-		
+
+		JComboBox<EBotType> cmbBotType = new JComboBox<>(EBotType.values());
+
 		JPanel centerPanel = new JPanel(new MigLayout("fillx"));
 		centerPanel.add(recordPanel, "growx, wrap");
 		centerPanel.add(cmbBotType, "growx, wrap");
@@ -89,9 +84,9 @@ public class VisionAnalyserPanel extends JPanel implements ISumatraView
 		centerPanel.add(txtDescription, "growx, wrap");
 		centerPanel.add(keyValuePanel, "grow, wrap, push");
 		add(centerPanel, BorderLayout.CENTER);
-		
+
 		add(fileTreePanel, BorderLayout.WEST);
-		
+
 		btnRecord.addActionListener(new RecordAction());
 		btnSave.addActionListener(new SaveAction());
 		btnDelete.addActionListener(new DeleteAction());
@@ -99,15 +94,15 @@ public class VisionAnalyserPanel extends JPanel implements ISumatraView
 		btnCrookedKick.addActionListener(new CrookedKickAction());
 		btnCopy.addActionListener(new CopyAction());
 		btnRefresh.addActionListener(new RefreshAction());
-		
+
 		setValidFileSelected(false);
 		txtDescription.addKeyListener(new DescriptionKeyListener());
 		fileTreePanel.setLayout(new BorderLayout());
-		
+
 		updateFiles();
 	}
-	
-	
+
+
 	/**
 	 * @param observer
 	 */
@@ -115,8 +110,8 @@ public class VisionAnalyserPanel extends JPanel implements ISumatraView
 	{
 		observers.add(observer);
 	}
-	
-	
+
+
 	/**
 	 * @param observer
 	 */
@@ -124,8 +119,8 @@ public class VisionAnalyserPanel extends JPanel implements ISumatraView
 	{
 		observers.remove(observer);
 	}
-	
-	
+
+
 	/**
 	 * Update the file tree
 	 */
@@ -138,8 +133,8 @@ public class VisionAnalyserPanel extends JPanel implements ISumatraView
 		fileTreePanel.repaint();
 		fileTree.repaint();
 	}
-	
-	
+
+
 	/**
 	 * @param desc
 	 */
@@ -147,8 +142,8 @@ public class VisionAnalyserPanel extends JPanel implements ISumatraView
 	{
 		txtDescription.setText(desc);
 	}
-	
-	
+
+
 	/**
 	 * @return
 	 */
@@ -156,8 +151,8 @@ public class VisionAnalyserPanel extends JPanel implements ISumatraView
 	{
 		return txtDescription.getText();
 	}
-	
-	
+
+
 	/**
 	 * @param num
 	 */
@@ -165,8 +160,8 @@ public class VisionAnalyserPanel extends JPanel implements ISumatraView
 	{
 		lblNumSamples.setText("Num samples: " + num);
 	}
-	
-	
+
+
 	/**
 	 * @param recording
 	 */
@@ -181,8 +176,8 @@ public class VisionAnalyserPanel extends JPanel implements ISumatraView
 			btnRecord.setText("Recording...");
 		}
 	}
-	
-	
+
+
 	/**
 	 * @param enabled
 	 */
@@ -195,8 +190,8 @@ public class VisionAnalyserPanel extends JPanel implements ISumatraView
 		txtDescription.setEditable(enabled);
 		markDirty(false);
 	}
-	
-	
+
+
 	/**
 	 * @param dirty
 	 */
@@ -204,8 +199,8 @@ public class VisionAnalyserPanel extends JPanel implements ISumatraView
 	{
 		btnSave.setEnabled(dirty && btnDelete.isEnabled());
 	}
-	
-	
+
+
 	/**
 	 * @param key
 	 * @param value
@@ -214,8 +209,8 @@ public class VisionAnalyserPanel extends JPanel implements ISumatraView
 	{
 		keyValuePanel.add(new JLabel(key + ": " + value), "growx");
 	}
-	
-	
+
+
 	/**
 	 * Clear the key value panel
 	 */
@@ -224,43 +219,8 @@ public class VisionAnalyserPanel extends JPanel implements ISumatraView
 		keyValuePanel.removeAll();
 		keyValuePanel.repaint();
 	}
-	
-	
-	@Override
-	public List<JMenu> getCustomMenus()
-	{
-		return new ArrayList<>(0);
-	}
-	
-	
-	@Override
-	public void onShown()
-	{
-		// nothing to do
-	}
-	
-	
-	@Override
-	public void onHidden()
-	{
-		// nothing to do
-	}
-	
-	
-	@Override
-	public void onFocused()
-	{
-		// nothing to do
-	}
-	
-	
-	@Override
-	public void onFocusLost()
-	{
-		// nothing to do
-	}
-	
-	
+
+
 	private void save()
 	{
 		for (IBallAnalyserPanelObserver o : observers)
@@ -269,7 +229,8 @@ public class VisionAnalyserPanel extends JPanel implements ISumatraView
 		}
 		markDirty(false);
 	}
-	
+
+
 	private class RecordAction implements ActionListener
 	{
 		@Override
@@ -281,7 +242,7 @@ public class VisionAnalyserPanel extends JPanel implements ISumatraView
 			}
 		}
 	}
-	
+
 	private class SaveAction implements ActionListener
 	{
 		@Override
@@ -290,8 +251,8 @@ public class VisionAnalyserPanel extends JPanel implements ISumatraView
 			save();
 		}
 	}
-	
-	
+
+
 	private class DeleteAction implements ActionListener
 	{
 		@Override
@@ -303,7 +264,7 @@ public class VisionAnalyserPanel extends JPanel implements ISumatraView
 			}
 		}
 	}
-	
+
 	private class PlotAction implements ActionListener
 	{
 		@Override
@@ -315,7 +276,7 @@ public class VisionAnalyserPanel extends JPanel implements ISumatraView
 			}
 		}
 	}
-	
+
 	private class CrookedKickAction implements ActionListener
 	{
 		@Override
@@ -327,7 +288,7 @@ public class VisionAnalyserPanel extends JPanel implements ISumatraView
 			}
 		}
 	}
-	
+
 	private class RefreshAction implements ActionListener
 	{
 		@Override
@@ -336,7 +297,7 @@ public class VisionAnalyserPanel extends JPanel implements ISumatraView
 			updateFiles();
 		}
 	}
-	
+
 	private class CopyAction implements ActionListener
 	{
 		@Override
@@ -348,7 +309,7 @@ public class VisionAnalyserPanel extends JPanel implements ISumatraView
 			}
 		}
 	}
-	
+
 	private class FileTreeObserver implements IFileTreeObserver
 	{
 		@Override
@@ -361,7 +322,7 @@ public class VisionAnalyserPanel extends JPanel implements ISumatraView
 			}
 		}
 	}
-	
+
 	private class DescriptionKeyListener implements KeyListener
 	{
 		@Override
@@ -372,8 +333,8 @@ public class VisionAnalyserPanel extends JPanel implements ISumatraView
 				markDirty(true);
 			}
 		}
-		
-		
+
+
 		@Override
 		public void keyPressed(final KeyEvent e)
 		{
@@ -382,8 +343,8 @@ public class VisionAnalyserPanel extends JPanel implements ISumatraView
 				save();
 			}
 		}
-		
-		
+
+
 		@Override
 		public void keyReleased(final KeyEvent e)
 		{

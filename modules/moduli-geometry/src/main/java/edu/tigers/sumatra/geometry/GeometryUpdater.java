@@ -76,7 +76,7 @@ public class GeometryUpdater extends AModule
 			{
 				if (!geometryReceived || !receiveGeometryOnceOnly)
 				{
-					Geometry.setCamDetection(geometry);
+					Geometry.update(geometry);
 				}
 
 				if (!geometryReceived)

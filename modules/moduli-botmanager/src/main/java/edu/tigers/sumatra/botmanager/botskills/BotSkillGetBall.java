@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.botmanager.botskills;
 
@@ -45,6 +45,9 @@ public class BotSkillGetBall extends ABotSkill
 	@SerialData(type = SerialData.ESerialDataType.UINT8)
 	private int dockSpeed;
 
+	@SerialData(type = SerialData.ESerialDataType.UINT8)
+	private int aimSpeed;
+
 
 	public BotSkillGetBall()
 	{
@@ -55,7 +58,8 @@ public class BotSkillGetBall extends ABotSkill
 	@SuppressWarnings("squid:S00107") // required for UI
 	public BotSkillGetBall(final IVector2 searchOrigin, final double searchRadius,
 			final double velMax, final double velMaxW, final double accMax, final double accMaxW,
-			final double dribblerSpeed, final double rotationSpeed, final double dockSpeed)
+			final double dribblerSpeed, final double dribblerCurrent, final double rotationSpeed, final double dockSpeed,
+			final double aimSpeed)
 	{
 		this();
 
@@ -68,10 +72,11 @@ public class BotSkillGetBall extends ABotSkill
 		setAccMax(accMax);
 		setAccMaxW(accMaxW);
 
-		kickerDribbler.setDribblerSpeed(dribblerSpeed);
+		kickerDribbler.setDribbler(dribblerSpeed, dribblerCurrent);
 
 		setRotationSpeed(rotationSpeed);
 		setDockSpeed(dockSpeed);
+		setAimSpeed(aimSpeed);
 	}
 
 
@@ -80,20 +85,20 @@ public class BotSkillGetBall extends ABotSkill
 	 */
 	public BotSkillGetBall(final IVector2 searchOrigin, final double searchRadius,
 			final IMoveConstraints mc,
-			final double dribblerSpeed, final double rotationSpeed, final double dockSpeed)
+			final double dribblerSpeed, final double dribblerCurrent, final double rotationSpeed, final double dockSpeed)
 	{
 		this(searchOrigin, searchRadius, mc.getVelMax(), mc.getVelMaxW(), mc.getAccMax(), mc.getAccMaxW(), dribblerSpeed,
-				rotationSpeed, dockSpeed);
+				dribblerCurrent, rotationSpeed, dockSpeed, 0);
 	}
 
 
 	/**
 	 * Get ball, with move constraints, unlimited search radius.
 	 */
-	public BotSkillGetBall(final IMoveConstraints mc, final double dribblerSpeed,
+	public BotSkillGetBall(final IMoveConstraints mc, final double dribblerSpeed, final double dribblerCurrent,
 			final double rotationSpeed, final double dockSpeed)
 	{
-		this(Vector2f.ZERO_VECTOR, 0, mc, dribblerSpeed, rotationSpeed, dockSpeed);
+		this(Vector2f.ZERO_VECTOR, 0, mc, dribblerSpeed, dribblerCurrent, rotationSpeed, dockSpeed);
 	}
 
 
@@ -106,6 +111,12 @@ public class BotSkillGetBall extends ABotSkill
 	public final void setRotationSpeed(final double val)
 	{
 		rotationSpeed = DriveLimits.toUInt8(val, DriveLimits.MAX_VEL_W);
+	}
+
+
+	public final void setAimSpeed(final double val)
+	{
+		aimSpeed = DriveLimits.toUInt8(val, DriveLimits.MAX_VEL_W);
 	}
 
 

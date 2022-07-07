@@ -1,14 +1,14 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.drawable;
 
+import com.sleepycat.persist.model.Persistent;
+
 import java.awt.BasicStroke;
 import java.awt.Graphics2D;
 import java.awt.Stroke;
-
-import com.sleepycat.persist.model.Persistent;
 
 
 /**
@@ -27,7 +27,7 @@ public abstract class ADrawableWithStroke extends ADrawable
 		super.paintShape(g, tool, invert);
 		if (stroke == null)
 		{
-			stroke = new BasicStroke(tool.scaleXLength(strokeWidth));
+			stroke = new BasicStroke(tool.scaleGlobalToGui(strokeWidth));
 		}
 		g.setStroke(stroke);
 	}

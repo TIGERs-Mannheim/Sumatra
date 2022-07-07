@@ -1,0 +1,2385 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": "-- Grafana --",
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "target": {
+          "limit": 100,
+          "matchAny": false,
+          "tags": [],
+          "type": "dashboard"
+        },
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "iteration": 1649424747239,
+  "links": [],
+  "liveNow": false,
+  "panels": [
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "id": 16,
+      "panels": [],
+      "title": "Overview Per Team Name",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "${DS_MATCHSTATS}"
+      },
+      "description": "",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "displayMode": "auto"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Red Cards (sum)"
+            },
+            "properties": [
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "red",
+                      "value": 1
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "custom.displayMode",
+                "value": "color-background-solid"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Goal Difference"
+            },
+            "properties": [
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "red",
+                      "value": null
+                    },
+                    {
+                      "color": "yellow",
+                      "value": 0
+                    },
+                    {
+                      "color": "green",
+                      "value": 1
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "custom.displayMode",
+                "value": "color-background-solid"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Fouls (sum)"
+            },
+            "properties": [
+              {
+                "id": "custom.displayMode",
+                "value": "color-background-solid"
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "continuous-GrYlRd"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Yellow Cards (sum)"
+            },
+            "properties": [
+              {
+                "id": "custom.displayMode",
+                "value": "color-background-solid"
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "yellow",
+                      "value": 1
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 24,
+        "x": 0,
+        "y": 1
+      },
+      "id": 12,
+      "options": {
+        "footer": {
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true
+      },
+      "pluginVersion": "8.4.3",
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_MATCHSTATS}"
+          },
+          "groupBy": [
+            {
+              "params": [
+                "identifier"
+              ],
+              "type": "tag"
+            },
+            {
+              "params": [
+                "team.name"
+              ],
+              "type": "tag"
+            }
+          ],
+          "measurement": "referee",
+          "orderByTime": "ASC",
+          "policy": "default",
+          "refId": "A",
+          "resultFormat": "table",
+          "select": [
+            [
+              {
+                "params": [
+                  "goals.we"
+                ],
+                "type": "field"
+              },
+              {
+                "params": [],
+                "type": "max"
+              },
+              {
+                "params": [
+                  "Goals We"
+                ],
+                "type": "alias"
+              }
+            ],
+            [
+              {
+                "params": [
+                  "goals.they"
+                ],
+                "type": "field"
+              },
+              {
+                "params": [],
+                "type": "max"
+              },
+              {
+                "params": [
+                  "GoalsThey"
+                ],
+                "type": "alias"
+              }
+            ],
+            [
+              {
+                "params": [
+                  "cards.yellow.we"
+                ],
+                "type": "field"
+              },
+              {
+                "params": [],
+                "type": "max"
+              },
+              {
+                "params": [
+                  "Yellow Cards"
+                ],
+                "type": "alias"
+              }
+            ],
+            [
+              {
+                "params": [
+                  "cards.red.we"
+                ],
+                "type": "field"
+              },
+              {
+                "params": [],
+                "type": "max"
+              },
+              {
+                "params": [
+                  "Red Cards"
+                ],
+                "type": "alias"
+              }
+            ],
+            [
+              {
+                "params": [
+                  "foul.counter.we"
+                ],
+                "type": "field"
+              },
+              {
+                "params": [],
+                "type": "max"
+              },
+              {
+                "params": [
+                  "Fouls"
+                ],
+                "type": "alias"
+              }
+            ]
+          ],
+          "tags": [
+            {
+              "key": "identifier",
+              "operator": "=~",
+              "value": "/^$identifier$/"
+            }
+          ]
+        }
+      ],
+      "title": "Common Stats",
+      "transformations": [
+        {
+          "id": "groupBy",
+          "options": {
+            "fields": {
+              "Fouls": {
+                "aggregations": [
+                  "sum"
+                ],
+                "operation": "aggregate"
+              },
+              "Goals We": {
+                "aggregations": [
+                  "sum"
+                ],
+                "operation": "aggregate"
+              },
+              "GoalsThey": {
+                "aggregations": [
+                  "sum"
+                ],
+                "operation": "aggregate"
+              },
+              "Red Cards": {
+                "aggregations": [
+                  "sum"
+                ],
+                "operation": "aggregate"
+              },
+              "They": {
+                "aggregations": [
+                  "sum"
+                ],
+                "operation": "aggregate"
+              },
+              "We": {
+                "aggregations": [
+                  "sum"
+                ],
+                "operation": "aggregate"
+              },
+              "Yellow Cards": {
+                "aggregations": [
+                  "sum"
+                ],
+                "operation": "aggregate"
+              },
+              "team.name": {
+                "aggregations": [],
+                "operation": "groupby"
+              }
+            }
+          }
+        },
+        {
+          "id": "calculateField",
+          "options": {
+            "alias": "Goal Difference",
+            "binary": {
+              "left": "Goals We (sum)",
+              "operator": "-",
+              "reducer": "sum",
+              "right": "GoalsThey (sum)"
+            },
+            "mode": "binary",
+            "reduce": {
+              "include": [
+                "GoalsThey (sum)",
+                "Goals We (sum)"
+              ],
+              "reducer": "diff"
+            }
+          }
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {},
+            "indexByName": {
+              "Goal Difference": 3,
+              "Goals We (sum)": 1,
+              "GoalsThey (sum)": 2,
+              "Red Cards (sum)": 5,
+              "Yellow Cards (sum)": 4,
+              "team.name": 0
+            },
+            "renameByName": {
+              "GoalsThey (sum)": "",
+              "team.name": "Team Name"
+            }
+          }
+        }
+      ],
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "${DS_MATCHSTATS}"
+      },
+      "description": "",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "displayMode": "auto"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Time"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "identifier"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 500
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Total"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "degree"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Near Ball"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "degree"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "At Receive"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "degree"
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 12,
+        "x": 0,
+        "y": 5
+      },
+      "id": 6,
+      "options": {
+        "footer": {
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "frameIndex": 0,
+        "showHeader": true,
+        "sortBy": []
+      },
+      "pluginVersion": "8.4.3",
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_MATCHSTATS}"
+          },
+          "groupBy": [
+            {
+              "params": [
+                "team.name"
+              ],
+              "type": "tag"
+            }
+          ],
+          "measurement": "statistics",
+          "orderByTime": "ASC",
+          "policy": "default",
+          "refId": "A",
+          "resultFormat": "table",
+          "select": [
+            [
+              {
+                "params": [
+                  "defense_coverage"
+                ],
+                "type": "field"
+              },
+              {
+                "params": [],
+                "type": "mean"
+              },
+              {
+                "params": [
+                  "Total"
+                ],
+                "type": "alias"
+              }
+            ],
+            [
+              {
+                "params": [
+                  "defense_coverage_attacker_near_ball"
+                ],
+                "type": "field"
+              },
+              {
+                "params": [],
+                "type": "mean"
+              },
+              {
+                "params": [
+                  "Near Ball"
+                ],
+                "type": "alias"
+              }
+            ],
+            [
+              {
+                "params": [
+                  "defense_coverage_at_ball_received"
+                ],
+                "type": "field"
+              },
+              {
+                "params": [],
+                "type": "mean"
+              },
+              {
+                "params": [
+                  "At Receive"
+                ],
+                "type": "alias"
+              }
+            ]
+          ],
+          "tags": [
+            {
+              "key": "identifier",
+              "operator": "=~",
+              "value": "/^$identifier$/"
+            }
+          ]
+        }
+      ],
+      "title": "Uncovered Goal Angle",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "${DS_MATCHSTATS}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "displayMode": "auto",
+            "minWidth": 40
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Time"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": ".* Reduction"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percentunit"
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 12,
+        "x": 12,
+        "y": 5
+      },
+      "id": 4,
+      "options": {
+        "footer": {
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "frameIndex": 0,
+        "showHeader": true,
+        "sortBy": []
+      },
+      "pluginVersion": "8.4.3",
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_MATCHSTATS}"
+          },
+          "groupBy": [
+            {
+              "params": [
+                "team.name"
+              ],
+              "type": "tag"
+            }
+          ],
+          "hide": false,
+          "measurement": "statistics",
+          "orderByTime": "ASC",
+          "policy": "default",
+          "query": "SELECT mean(\"defense_bot_threat_rating_actual\") FROM \"statistics\" WHERE (\"identifier\" =~ /^$identifier$/) AND $timeFilter GROUP BY time($__interval) fill(null)",
+          "rawQuery": false,
+          "refId": "B",
+          "resultFormat": "table",
+          "select": [
+            [
+              {
+                "params": [
+                  "defense_bot_threat_rating_actual"
+                ],
+                "type": "field"
+              },
+              {
+                "params": [],
+                "type": "mean"
+              },
+              {
+                "params": [
+                  "Actual"
+                ],
+                "type": "alias"
+              }
+            ],
+            [
+              {
+                "params": [
+                  "defense_bot_threat_rating_wanted"
+                ],
+                "type": "field"
+              },
+              {
+                "params": [],
+                "type": "mean"
+              },
+              {
+                "params": [
+                  "Wanted"
+                ],
+                "type": "alias"
+              }
+            ],
+            [
+              {
+                "params": [
+                  "defense_bot_threat_rating_raw"
+                ],
+                "type": "field"
+              },
+              {
+                "params": [],
+                "type": "mean"
+              },
+              {
+                "params": [
+                  "0 Defender"
+                ],
+                "type": "alias"
+              }
+            ]
+          ],
+          "tags": [
+            {
+              "key": "identifier",
+              "operator": "=~",
+              "value": "/^$identifier$/"
+            }
+          ]
+        }
+      ],
+      "title": "Defense Bot Threat Rating per Team Name",
+      "transformations": [
+        {
+          "id": "calculateField",
+          "options": {
+            "binary": {
+              "left": "Actual",
+              "operator": "-",
+              "reducer": "sum",
+              "right": "0 Defender"
+            },
+            "mode": "binary",
+            "reduce": {
+              "reducer": "sum"
+            }
+          }
+        },
+        {
+          "id": "calculateField",
+          "options": {
+            "binary": {
+              "left": "Wanted",
+              "operator": "-",
+              "reducer": "sum",
+              "right": "0 Defender"
+            },
+            "mode": "binary",
+            "reduce": {
+              "reducer": "sum"
+            }
+          }
+        },
+        {
+          "id": "calculateField",
+          "options": {
+            "alias": "Actual Reduction",
+            "binary": {
+              "left": "Actual - 0 Defender",
+              "operator": "/",
+              "reducer": "sum",
+              "right": "0 Defender"
+            },
+            "mode": "binary",
+            "reduce": {
+              "reducer": "sum"
+            }
+          }
+        },
+        {
+          "id": "calculateField",
+          "options": {
+            "alias": "Wanted Reduction",
+            "binary": {
+              "left": "Wanted - 0 Defender",
+              "operator": "/",
+              "reducer": "sum",
+              "right": "0 Defender"
+            },
+            "mode": "binary",
+            "reduce": {
+              "reducer": "sum"
+            }
+          }
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Actual - 0 Defender": true,
+              "Actual - 0 Defender / 0 Defender": true,
+              "Actual / 0 Defender": true,
+              "Actual / 0 Defender * 100": false,
+              "Wanted - 0 Defender": true,
+              "Wanted - 0 Defender / 0 Defender": true,
+              "Wanted / 0 Defender": true
+            },
+            "indexByName": {
+              "0 Defender": 6,
+              "Actual": 2,
+              "Actual - 0 Defender": 7,
+              "Actual - 0 Defender / 0 Defender": 9,
+              "Actual Reduction": 3,
+              "Time": 0,
+              "Wanted": 4,
+              "Wanted - 0 Defender": 8,
+              "Wanted - 0 Defender / 0 Defender": 10,
+              "Wanted Reduction": 5,
+              "team.name": 1
+            },
+            "renameByName": {
+              "Actual": "",
+              "Actual / 0 Defender": "",
+              "Actual / 0 Defender * 100": "Actual Reduction",
+              "Time": "",
+              "Wanted": "",
+              "Wanted / 0 Defender * 100": "Wanted Reduction"
+            }
+          }
+        }
+      ],
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "${DS_MATCHSTATS}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "displayMode": "auto"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Time"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "identifier"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 500
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "BallDefender distance"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "lengthmm"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Velocity diff"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "velocityms"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Goal coverage"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "degree"
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 24,
+        "x": 0,
+        "y": 9
+      },
+      "id": 8,
+      "options": {
+        "footer": {
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "frameIndex": 1,
+        "showHeader": true
+      },
+      "pluginVersion": "8.4.3",
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_MATCHSTATS}"
+          },
+          "groupBy": [
+            {
+              "params": [
+                "team.name"
+              ],
+              "type": "tag"
+            }
+          ],
+          "measurement": "statistics",
+          "orderByTime": "ASC",
+          "policy": "default",
+          "refId": "A",
+          "resultFormat": "table",
+          "select": [
+            [
+              {
+                "params": [
+                  "defense_dist_at_ball_received"
+                ],
+                "type": "field"
+              },
+              {
+                "params": [],
+                "type": "mean"
+              },
+              {
+                "params": [
+                  "BallDefender distance"
+                ],
+                "type": "alias"
+              }
+            ],
+            [
+              {
+                "params": [
+                  "defense_vel_at_ball_received"
+                ],
+                "type": "field"
+              },
+              {
+                "params": [],
+                "type": "mean"
+              },
+              {
+                "params": [
+                  "BallDefender vel diff"
+                ],
+                "type": "alias"
+              }
+            ],
+            [
+              {
+                "params": [
+                  "defense_coverage_at_ball_received"
+                ],
+                "type": "field"
+              },
+              {
+                "params": [],
+                "type": "mean"
+              },
+              {
+                "params": [
+                  "Goal coverage"
+                ],
+                "type": "alias"
+              }
+            ]
+          ],
+          "tags": [
+            {
+              "key": "identifier",
+              "operator": "=~",
+              "value": "/^$identifier$/"
+            }
+          ]
+        }
+      ],
+      "title": "Defense Stats when Attacker receives Ball",
+      "type": "table"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 13
+      },
+      "id": 20,
+      "panels": [],
+      "title": "Detailed",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "${DS_MATCHSTATS}"
+      },
+      "description": "",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "displayMode": "auto"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "Fouls .*"
+            },
+            "properties": [
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "yellow",
+                      "value": 1
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "custom.displayMode",
+                "value": "color-background-solid"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "Yellow Cards .*"
+            },
+            "properties": [
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "red",
+                      "value": 1
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "custom.displayMode",
+                "value": "color-background-solid"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "Red Cards .*"
+            },
+            "properties": [
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "red",
+                      "value": 1
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "custom.displayMode",
+                "value": "color-background-solid"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": ".* Difference"
+            },
+            "properties": [
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "yellow",
+                      "value": null
+                    },
+                    {
+                      "color": "transparent",
+                      "value": 0
+                    },
+                    {
+                      "color": "blue",
+                      "value": 1
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "custom.displayMode",
+                "value": "color-background-solid"
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 24,
+        "x": 0,
+        "y": 14
+      },
+      "id": 24,
+      "options": {
+        "footer": {
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true,
+        "sortBy": []
+      },
+      "pluginVersion": "8.4.3",
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_MATCHSTATS}"
+          },
+          "groupBy": [
+            {
+              "params": [
+                "identifier"
+              ],
+              "type": "tag"
+            },
+            {
+              "params": [
+                "team.name"
+              ],
+              "type": "tag"
+            }
+          ],
+          "measurement": "referee",
+          "orderByTime": "ASC",
+          "policy": "default",
+          "refId": "A",
+          "resultFormat": "table",
+          "select": [
+            [
+              {
+                "params": [
+                  "goals.we"
+                ],
+                "type": "field"
+              },
+              {
+                "params": [],
+                "type": "max"
+              },
+              {
+                "params": [
+                  "GoalsBlue"
+                ],
+                "type": "alias"
+              }
+            ],
+            [
+              {
+                "params": [
+                  "cards.yellow.we"
+                ],
+                "type": "field"
+              },
+              {
+                "params": [],
+                "type": "max"
+              },
+              {
+                "params": [
+                  "Yellow Cards Blue"
+                ],
+                "type": "alias"
+              }
+            ],
+            [
+              {
+                "params": [
+                  "cards.red.we"
+                ],
+                "type": "field"
+              },
+              {
+                "params": [],
+                "type": "max"
+              },
+              {
+                "params": [
+                  "Red Cards Blue"
+                ],
+                "type": "alias"
+              }
+            ],
+            [
+              {
+                "params": [
+                  "foul.counter.we"
+                ],
+                "type": "field"
+              },
+              {
+                "params": [],
+                "type": "max"
+              },
+              {
+                "params": [
+                  "Fouls Blue"
+                ],
+                "type": "alias"
+              }
+            ],
+            [
+              {
+                "params": [
+                  "goals.they"
+                ],
+                "type": "field"
+              },
+              {
+                "params": [],
+                "type": "max"
+              },
+              {
+                "params": [
+                  "Goals Yellow"
+                ],
+                "type": "alias"
+              }
+            ],
+            [
+              {
+                "params": [
+                  "cards.yellow.their"
+                ],
+                "type": "field"
+              },
+              {
+                "params": [],
+                "type": "max"
+              },
+              {
+                "params": [
+                  "Yellow Cards Yellow"
+                ],
+                "type": "alias"
+              }
+            ],
+            [
+              {
+                "params": [
+                  "cards.red.their"
+                ],
+                "type": "field"
+              },
+              {
+                "params": [],
+                "type": "max"
+              },
+              {
+                "params": [
+                  "Red Cards Yellow"
+                ],
+                "type": "alias"
+              }
+            ],
+            [
+              {
+                "params": [
+                  "foul.counter.their"
+                ],
+                "type": "field"
+              },
+              {
+                "params": [],
+                "type": "max"
+              },
+              {
+                "params": [
+                  "Fouls Yellow"
+                ],
+                "type": "alias"
+              }
+            ]
+          ],
+          "tags": [
+            {
+              "key": "identifier",
+              "operator": "=~",
+              "value": "/^$identifier$/"
+            },
+            {
+              "condition": "AND",
+              "key": "team.color",
+              "operator": "=",
+              "value": "blue"
+            }
+          ]
+        }
+      ],
+      "title": "Common Stats",
+      "transformations": [
+        {
+          "id": "calculateField",
+          "options": {
+            "alias": "Goal Difference",
+            "binary": {
+              "left": "GoalsBlue",
+              "operator": "-",
+              "reducer": "sum",
+              "right": "Goals Yellow"
+            },
+            "mode": "binary",
+            "reduce": {
+              "include": [
+                "GoalsThey (sum)",
+                "Goals We (sum)"
+              ],
+              "reducer": "diff"
+            }
+          }
+        },
+        {
+          "id": "calculateField",
+          "options": {
+            "alias": "Yellow Cards Difference",
+            "binary": {
+              "left": "Yellow Cards Blue",
+              "operator": "-",
+              "reducer": "sum",
+              "right": "Yellow Cards Yellow"
+            },
+            "mode": "binary",
+            "reduce": {
+              "reducer": "sum"
+            }
+          }
+        },
+        {
+          "id": "calculateField",
+          "options": {
+            "alias": "Red Cards Difference",
+            "binary": {
+              "left": "Red Cards Blue",
+              "operator": "-",
+              "reducer": "sum",
+              "right": "Red Cards Yellow"
+            },
+            "mode": "binary",
+            "reduce": {
+              "reducer": "sum"
+            }
+          }
+        },
+        {
+          "id": "calculateField",
+          "options": {
+            "alias": "Fouls Difference",
+            "binary": {
+              "left": "Fouls Blue",
+              "operator": "-",
+              "reducer": "sum",
+              "right": "Fouls Yellow"
+            },
+            "mode": "binary",
+            "reduce": {
+              "reducer": "sum"
+            }
+          }
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true,
+              "identifier": false,
+              "team.name": true
+            },
+            "indexByName": {
+              "Fouls Blue": 13,
+              "Fouls Difference": 8,
+              "Fouls Yellow": 14,
+              "Goal Difference": 5,
+              "Goals Yellow": 4,
+              "GoalsBlue": 3,
+              "Red Cards Blue": 11,
+              "Red Cards Difference": 7,
+              "Red Cards Yellow": 12,
+              "Time": 0,
+              "Yellow Cards Blue": 9,
+              "Yellow Cards Difference": 6,
+              "Yellow Cards Yellow": 10,
+              "identifier": 1,
+              "team.name": 2
+            },
+            "renameByName": {
+              "Goal Difference": "",
+              "Goals We": ""
+            }
+          }
+        }
+      ],
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "${DS_MATCHSTATS}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "displayMode": "auto",
+            "minWidth": 40
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Time"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": ".* Reduction"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percentunit"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "identifier"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 500
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 11,
+        "w": 12,
+        "x": 0,
+        "y": 23
+      },
+      "id": 14,
+      "options": {
+        "footer": {
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "frameIndex": 0,
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": true,
+            "displayName": "team.name"
+          }
+        ]
+      },
+      "pluginVersion": "8.4.3",
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_MATCHSTATS}"
+          },
+          "groupBy": [
+            {
+              "params": [
+                "identifier"
+              ],
+              "type": "tag"
+            }
+          ],
+          "hide": false,
+          "measurement": "statistics",
+          "orderByTime": "ASC",
+          "policy": "default",
+          "query": "SELECT mean(\"defense_bot_threat_rating_actual\") FROM \"statistics\" WHERE (\"identifier\" =~ /^$identifier$/) AND $timeFilter GROUP BY time($__interval) fill(null)",
+          "rawQuery": false,
+          "refId": "B",
+          "resultFormat": "table",
+          "select": [
+            [
+              {
+                "params": [
+                  "defense_bot_threat_rating_actual"
+                ],
+                "type": "field"
+              },
+              {
+                "params": [],
+                "type": "mean"
+              },
+              {
+                "params": [
+                  "Actual"
+                ],
+                "type": "alias"
+              }
+            ],
+            [
+              {
+                "params": [
+                  "defense_bot_threat_rating_wanted"
+                ],
+                "type": "field"
+              },
+              {
+                "params": [],
+                "type": "mean"
+              },
+              {
+                "params": [
+                  "Wanted"
+                ],
+                "type": "alias"
+              }
+            ],
+            [
+              {
+                "params": [
+                  "defense_bot_threat_rating_raw"
+                ],
+                "type": "field"
+              },
+              {
+                "params": [],
+                "type": "mean"
+              },
+              {
+                "params": [
+                  "0 Defender"
+                ],
+                "type": "alias"
+              }
+            ]
+          ],
+          "tags": [
+            {
+              "key": "identifier",
+              "operator": "=~",
+              "value": "/^$identifier$/"
+            }
+          ]
+        }
+      ],
+      "title": "Defense Bot Threat Rating per Identifier",
+      "transformations": [
+        {
+          "id": "calculateField",
+          "options": {
+            "binary": {
+              "left": "Actual",
+              "operator": "-",
+              "reducer": "sum",
+              "right": "0 Defender"
+            },
+            "mode": "binary",
+            "reduce": {
+              "reducer": "sum"
+            }
+          }
+        },
+        {
+          "id": "calculateField",
+          "options": {
+            "binary": {
+              "left": "Wanted",
+              "operator": "-",
+              "reducer": "sum",
+              "right": "0 Defender"
+            },
+            "mode": "binary",
+            "reduce": {
+              "reducer": "sum"
+            }
+          }
+        },
+        {
+          "id": "calculateField",
+          "options": {
+            "alias": "Actual Reduction",
+            "binary": {
+              "left": "Actual - 0 Defender",
+              "operator": "/",
+              "reducer": "sum",
+              "right": "0 Defender"
+            },
+            "mode": "binary",
+            "reduce": {
+              "reducer": "sum"
+            }
+          }
+        },
+        {
+          "id": "calculateField",
+          "options": {
+            "alias": "Wanted Reduction",
+            "binary": {
+              "left": "Wanted - 0 Defender",
+              "operator": "/",
+              "reducer": "sum",
+              "right": "0 Defender"
+            },
+            "mode": "binary",
+            "reduce": {
+              "reducer": "sum"
+            }
+          }
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Actual - 0 Defender": true,
+              "Actual - 0 Defender / 0 Defender": true,
+              "Actual / 0 Defender": true,
+              "Actual / 0 Defender * 100": false,
+              "Wanted - 0 Defender": true,
+              "Wanted - 0 Defender / 0 Defender": true,
+              "Wanted / 0 Defender": true
+            },
+            "indexByName": {
+              "0 Defender": 6,
+              "Actual": 2,
+              "Actual - 0 Defender": 7,
+              "Actual Reduction": 3,
+              "Time": 0,
+              "Wanted": 4,
+              "Wanted - 0 Defender": 8,
+              "Wanted Reduction": 5,
+              "identifier": 1
+            },
+            "renameByName": {
+              "Actual": "",
+              "Actual / 0 Defender": "",
+              "Actual / 0 Defender * 100": "Actual Reduction",
+              "Time": "",
+              "Wanted": "",
+              "Wanted / 0 Defender * 100": "Wanted Reduction"
+            }
+          }
+        }
+      ],
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "${DS_MATCHSTATS}"
+      },
+      "description": "",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "displayMode": "auto"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Time"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "identifier"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 500
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Total"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "degree"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Near Ball"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "degree"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "At Receive"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "degree"
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 11,
+        "w": 12,
+        "x": 12,
+        "y": 23
+      },
+      "id": 25,
+      "options": {
+        "footer": {
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "frameIndex": 0,
+        "showHeader": true,
+        "sortBy": []
+      },
+      "pluginVersion": "8.4.3",
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_MATCHSTATS}"
+          },
+          "groupBy": [
+            {
+              "params": [
+                "identifier"
+              ],
+              "type": "tag"
+            }
+          ],
+          "hide": false,
+          "measurement": "statistics",
+          "orderByTime": "ASC",
+          "policy": "default",
+          "refId": "B",
+          "resultFormat": "table",
+          "select": [
+            [
+              {
+                "params": [
+                  "defense_coverage"
+                ],
+                "type": "field"
+              },
+              {
+                "params": [],
+                "type": "mean"
+              },
+              {
+                "params": [
+                  "Total"
+                ],
+                "type": "alias"
+              }
+            ],
+            [
+              {
+                "params": [
+                  "defense_coverage_attacker_near_ball"
+                ],
+                "type": "field"
+              },
+              {
+                "params": [],
+                "type": "mean"
+              },
+              {
+                "params": [
+                  "Near Ball"
+                ],
+                "type": "alias"
+              }
+            ],
+            [
+              {
+                "params": [
+                  "defense_coverage_at_ball_received"
+                ],
+                "type": "field"
+              },
+              {
+                "params": [],
+                "type": "mean"
+              },
+              {
+                "params": [
+                  "At Receive"
+                ],
+                "type": "alias"
+              }
+            ]
+          ],
+          "tags": [
+            {
+              "key": "identifier",
+              "operator": "=~",
+              "value": "/^$identifier$/"
+            }
+          ]
+        }
+      ],
+      "title": "Uncovered Goal Angle",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "${DS_MATCHSTATS}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "displayMode": "auto"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Time"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "identifier"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 500
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "BallDefender distance"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "lengthmm"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Velocity diff"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "velocityms"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Goal coverage"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "degree"
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 34
+      },
+      "id": 26,
+      "options": {
+        "footer": {
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true
+      },
+      "pluginVersion": "8.4.3",
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_MATCHSTATS}"
+          },
+          "groupBy": [
+            {
+              "params": [
+                "identifier"
+              ],
+              "type": "tag"
+            }
+          ],
+          "hide": false,
+          "measurement": "statistics",
+          "orderByTime": "ASC",
+          "policy": "default",
+          "refId": "B",
+          "resultFormat": "table",
+          "select": [
+            [
+              {
+                "params": [
+                  "defense_dist_at_ball_received"
+                ],
+                "type": "field"
+              },
+              {
+                "params": [],
+                "type": "mean"
+              },
+              {
+                "params": [
+                  "Distance"
+                ],
+                "type": "alias"
+              }
+            ],
+            [
+              {
+                "params": [
+                  "defense_vel_at_ball_received"
+                ],
+                "type": "field"
+              },
+              {
+                "params": [],
+                "type": "mean"
+              },
+              {
+                "params": [
+                  "Velocity diff"
+                ],
+                "type": "alias"
+              }
+            ],
+            [
+              {
+                "params": [
+                  "defense_coverage_at_ball_received"
+                ],
+                "type": "field"
+              },
+              {
+                "params": [],
+                "type": "mean"
+              },
+              {
+                "params": [
+                  "Coverage"
+                ],
+                "type": "alias"
+              }
+            ]
+          ],
+          "tags": [
+            {
+              "key": "identifier",
+              "operator": "=~",
+              "value": "/^$identifier$/"
+            }
+          ]
+        }
+      ],
+      "title": "Defense Stats when Attacker receives Ball per Identifier",
+      "type": "table"
+    }
+  ],
+  "refresh": "5s",
+  "schemaVersion": 35,
+  "style": "dark",
+  "tags": [
+    "Defense"
+  ],
+  "templating": {
+    "list": [
+      {
+        "current": {
+          "selected": false,
+          "text": "matchStats",
+          "value": "matchStats"
+        },
+        "hide": 0,
+        "includeAll": false,
+        "label": "Datasource",
+        "multi": false,
+        "name": "DS_MATCHSTATS",
+        "options": [],
+        "query": "influxdb",
+        "queryValue": "",
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "type": "datasource"
+      },
+      {
+        "current": {
+          "selected": true,
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ]
+        },
+        "datasource": {
+          "type": "influxdb",
+          "uid": "${DS_MATCHSTATS}"
+        },
+        "definition": "show tag values with key = \"sumatra.version\"",
+        "hide": 0,
+        "includeAll": true,
+        "label": "Sumatra Version",
+        "multi": true,
+        "name": "sumatraVersion",
+        "options": [],
+        "query": "show tag values with key = \"sumatra.version\"",
+        "refresh": 2,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 0,
+        "type": "query"
+      },
+      {
+        "current": {
+          "selected": true,
+          "text": [
+            "BLUE_AI",
+            "YELLOW_AI"
+          ],
+          "value": [
+            "BLUE_AI",
+            "YELLOW_AI"
+          ]
+        },
+        "datasource": {
+          "type": "influxdb",
+          "uid": "${DS_MATCHSTATS}"
+        },
+        "definition": "show tag values with key = \"team.name\"",
+        "hide": 0,
+        "includeAll": false,
+        "label": "Team Name",
+        "multi": true,
+        "name": "teamName",
+        "options": [],
+        "query": "show tag values with key = \"team.name\"",
+        "refresh": 2,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "current": {
+          "selected": true,
+          "text": [
+            "blue",
+            "yellow"
+          ],
+          "value": [
+            "blue",
+            "yellow"
+          ]
+        },
+        "datasource": {
+          "type": "influxdb",
+          "uid": "${DS_MATCHSTATS}"
+        },
+        "definition": "show tag values with key = \"team.color\"",
+        "hide": 0,
+        "includeAll": false,
+        "label": "Team Color",
+        "multi": true,
+        "name": "teamColor",
+        "options": [],
+        "query": "show tag values with key = \"team.color\"",
+        "refresh": 2,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "current": {
+          "selected": true,
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ]
+        },
+        "datasource": {
+          "type": "influxdb",
+          "uid": "${DS_MATCHSTATS}"
+        },
+        "definition": "SHOW TAG VALUES WITH KEY = \"identifier\" WHERE \"sumatra.version\" =~ /$sumatraVersion/ AND \"team.name\" =~ /$teamName/  AND \"team.color\" =~ /$teamColor/ ",
+        "hide": 0,
+        "includeAll": true,
+        "label": "Identifier",
+        "multi": true,
+        "name": "identifier",
+        "options": [],
+        "query": "SHOW TAG VALUES WITH KEY = \"identifier\" WHERE \"sumatra.version\" =~ /$sumatraVersion/ AND \"team.name\" =~ /$teamName/  AND \"team.color\" =~ /$teamColor/ ",
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 1,
+        "type": "query"
+      }
+    ]
+  },
+  "time": {
+    "from": "1969-12-31T11:00:00.000Z",
+    "to": "1970-01-02T11:00:00.000Z"
+  },
+  "timepicker": {
+    "hidden": false
+  },
+  "timezone": "",
+  "title": "Defense Stats",
+  "uid": "UB9Igay7z",
+  "version": 10,
+  "weekStart": ""
+}

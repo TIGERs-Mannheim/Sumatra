@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.wp;
@@ -64,8 +64,8 @@ import lombok.extern.log4j.Log4j2;
 
 import java.io.IOException;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
-import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -82,6 +82,10 @@ import java.util.stream.Collectors;
 public class WorldInfoCollector extends AWorldPredictor
 		implements IRefereeObserver, IVisionFilterObserver, ICamFrameObserver
 {
+	private static final ShapeMapSource WP_SHAPE_MAP_SOURCE = ShapeMapSource.of("World Frame");
+	private static final ShapeMapSource VISION_SHAPE_MAP_SOURCE = ShapeMapSource.of("Vision");
+	private static final ShapeMapSource VISION_FILTER_SHAPE_MAP_SOURCE = ShapeMapSource.of("Vision Filter");
+
 	@Configurable(
 			comment = "Add a faked ball. Set pos,vel,acc in code.",
 			defValue = "false"
@@ -164,7 +168,7 @@ public class WorldInfoCollector extends AWorldPredictor
 				.filter(Optional::isPresent)
 				.map(Optional::get)
 				.collect(Collectors.toMap(
-						BotState::getBotID,
+						BotState::getBotId,
 						Function.identity()));
 	}
 
@@ -231,7 +235,7 @@ public class WorldInfoCollector extends AWorldPredictor
 						filteredVisionBotMap.get(r.getBotId())))
 				.filter(Objects::nonNull)
 				.collect(Collectors.toMap(ITrackedBot::getBotId, Function.identity()));
-		return new IdentityHashMap<>(trackedBots);
+		return new HashMap<>(trackedBots);
 	}
 
 
@@ -255,7 +259,7 @@ public class WorldInfoCollector extends AWorldPredictor
 			return null;
 		}
 
-		var kick = filteredVisionFrame.getKick().get();
+		var kick = filteredVisionFrame.getKick().orElseThrow();
 
 		return KickEvent.builder()
 				.kickingBot(kick.getKickingBot())
@@ -271,10 +275,10 @@ public class WorldInfoCollector extends AWorldPredictor
 	{
 		ShapeMap wfShapeMap = new ShapeMap();
 		worldFrameVisualization.process(wfw, wfShapeMap);
-		notifyNewShapeMap(lastWFTimestamp, wfShapeMap, ShapeMapSource.of("World Frame"));
+		notifyNewShapeMap(lastWFTimestamp, wfShapeMap, WP_SHAPE_MAP_SOURCE);
 
 		ShapeMap visionShapeMap = camFrameShapeMapProducer.createShapeMap();
-		notifyNewShapeMap(lastWFTimestamp, visionShapeMap, ShapeMapSource.of("Vision"));
+		notifyNewShapeMap(lastWFTimestamp, visionShapeMap, VISION_SHAPE_MAP_SOURCE);
 	}
 
 
@@ -285,7 +289,7 @@ public class WorldInfoCollector extends AWorldPredictor
 			return null;
 		}
 
-		var kick = filteredVisionFrame.getKick().get();
+		var kick = filteredVisionFrame.getKick().orElseThrow();
 		return new BallKickFitState(kick.getBallTrajectory().getInitialPos().getXYVector(),
 				kick.getBallTrajectory().getInitialVel(), kick.getTrajectoryStartTime());
 	}
@@ -362,7 +366,7 @@ public class WorldInfoCollector extends AWorldPredictor
 		registerToCamModule();
 		registerToRecordManagerModule();
 
-		ShapeMap.setPersistDebugShapes(!SumatraModel.getInstance().isProductive());
+		ShapeMap.setPersistDebugShapes(!SumatraModel.getInstance().isTournamentMode());
 	}
 
 
@@ -503,7 +507,7 @@ public class WorldInfoCollector extends AWorldPredictor
 	public void onNewFilteredVisionFrame(final FilteredVisionFrame filteredVisionFrame)
 	{
 		processFilteredVisionFrame(filteredVisionFrame);
-		notifyNewShapeMap(lastWFTimestamp, filteredVisionFrame.getShapeMap(), ShapeMapSource.of("Vision Filter"));
+		notifyNewShapeMap(lastWFTimestamp, filteredVisionFrame.getShapeMap(), VISION_FILTER_SHAPE_MAP_SOURCE);
 	}
 
 

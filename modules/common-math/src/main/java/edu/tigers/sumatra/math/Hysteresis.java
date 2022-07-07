@@ -7,6 +7,7 @@ package edu.tigers.sumatra.math;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
+import org.apache.commons.lang.Validate;
 
 
 /**
@@ -22,6 +23,9 @@ public class Hysteresis
 
 	private boolean upper = false;
 
+	private Runnable onUpperCallback = () -> {};
+	private Runnable onLowerCallback = () -> {};
+
 
 	/**
 	 * @param lowerThreshold
@@ -31,7 +35,7 @@ public class Hysteresis
 	{
 		this.lowerThreshold = lowerThreshold;
 		this.upperThreshold = upperThreshold;
-		assert lowerThreshold < upperThreshold;
+		Validate.isTrue(lowerThreshold < upperThreshold);
 	}
 
 
@@ -56,10 +60,12 @@ public class Hysteresis
 		if (lower && (value > upperThreshold))
 		{
 			upper = true;
+			onUpperCallback.run();
 		}
 		if (upper && (value < lowerThreshold))
 		{
 			upper = false;
+			onLowerCallback.run();
 		}
 	}
 

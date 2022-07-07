@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.wp;
@@ -10,10 +10,10 @@ import edu.tigers.sumatra.cam.data.CamRobot;
 import edu.tigers.sumatra.drawable.DrawableBotShape;
 import edu.tigers.sumatra.drawable.DrawableCircle;
 import edu.tigers.sumatra.drawable.IDrawableShape;
-import edu.tigers.sumatra.drawable.IShapeLayer;
 import edu.tigers.sumatra.drawable.ShapeMap;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.wp.data.ExtendedCamDetectionFrame;
+import edu.tigers.sumatra.wp.vis.EWpShapesLayer;
 
 import java.awt.Color;
 import java.util.ArrayList;
@@ -21,7 +21,6 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 
 /**
@@ -50,7 +49,7 @@ public class CamFrameShapeMapProducer
 		List<IDrawableShape> shapes = new ArrayList<>();
 		var mergedFrames = camFrames.values().stream()
 				.sorted(Comparator.comparing(CamDetectionFrame::gettCapture))
-				.collect(Collectors.toList());
+				.toList();
 		for (ExtendedCamDetectionFrame mergedCamFrame : mergedFrames)
 		{
 			for (CamRobot bot : mergedCamFrame.getRobotsBlue())
@@ -85,8 +84,7 @@ public class CamFrameShapeMapProducer
 		}
 
 		ShapeMap shapeMap = new ShapeMap();
-		IShapeLayer visionLayer = new VisionLayer();
-		shapeMap.get(visionLayer).addAll(shapes);
+		shapeMap.get(EWpShapesLayer.VISION).addAll(shapes);
 		return shapeMap;
 	}
 

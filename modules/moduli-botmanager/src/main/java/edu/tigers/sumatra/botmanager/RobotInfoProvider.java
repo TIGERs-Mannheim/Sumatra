@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.botmanager;
@@ -79,7 +79,7 @@ public class RobotInfoProvider implements IRobotInfoProvider
 				.withTimestamp(lastWFTimestamp)
 				.withBotId(bot.getBotId())
 				.withBarrierInterrupted(bot.isBarrierInterrupted())
-				.withBattery(bot.getBatteryRelative())
+				.withBatteryRelative(bot.getBatteryRelative())
 				.withBotFeatures(bot.getBotFeatures())
 				.withBotParams(bot.getBotParams())
 				.withChip(bot.getMatchCtrl().getSkill().getDevice().equals(EKickerDevice.CHIP))
@@ -87,11 +87,12 @@ public class RobotInfoProvider implements IRobotInfoProvider
 				.withDribbleRpm(bot.getMatchCtrl().getSkill().getDribbleSpeed())
 				.withHardwareId(bot.getHardwareId())
 				.withInternalState(bot.getSensoryState().orElse(null))
-				.withKickerVoltage(bot.getKickerLevel())
+				.withKickerLevelRelative(bot.getKickerLevel() / bot.getKickerLevelMax())
 				.withKickSpeed(bot.getMatchCtrl().getSkill().getKickSpeed())
 				.withType(bot.getType())
 				.withRobotMode(bot.getRobotMode())
 				.withOk(bot.isOK())
+				.withAvailableToAi(bot.isAvailableToAi())
 				.withTrajectory(trajectoryOfBot(bot))
 				.build();
 	}

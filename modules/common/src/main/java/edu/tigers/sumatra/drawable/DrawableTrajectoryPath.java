@@ -1,8 +1,14 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.drawable;
+
+import com.sleepycat.persist.model.Persistent;
+import edu.tigers.sumatra.math.vector.IVector;
+import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.math.vector.VectorMath;
+import edu.tigers.sumatra.trajectory.ITrajectory;
 
 import java.awt.BasicStroke;
 import java.awt.Color;
@@ -12,13 +18,6 @@ import java.awt.geom.GeneralPath;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.sleepycat.persist.model.Persistent;
-
-import edu.tigers.sumatra.math.vector.IVector;
-import edu.tigers.sumatra.math.vector.IVector2;
-import edu.tigers.sumatra.math.vector.VectorMath;
-import edu.tigers.sumatra.trajectory.ITrajectory;
-
 
 /**
  * Drawable trajectory path. Uses sampled points on a bang bang trajectory.
@@ -27,6 +26,7 @@ import edu.tigers.sumatra.trajectory.ITrajectory;
 public class DrawableTrajectoryPath implements IDrawableShape
 {
 	private static final double PRECISION = 0.1;
+	private static final double STEP_SIZE = 0.2;
 
 	private Color color = Color.black;
 	private final List<IVector2> points = new ArrayList<>();
@@ -58,8 +58,11 @@ public class DrawableTrajectoryPath implements IDrawableShape
 
 		IVector2 vLast = null;
 
-		double stepSize = 0.2;
-		for (double t = 0; t < (trajXY.getTotalTime() - stepSize); t += stepSize)
+		IVector2 first = trajXY.getPositionMM(0).getXYVector();
+		IVector2 last = trajXY.getPositionMM(trajXY.getTotalTime()).getXYVector();
+		points.add(first);
+
+		for (double t = STEP_SIZE; t < (trajXY.getTotalTime() - STEP_SIZE); t += STEP_SIZE)
 		{
 			IVector2 pos = trajXY.getPositionMM(t).getXYVector();
 			IVector2 vel = trajXY.getVelocity(t).getXYVector();
@@ -69,7 +72,10 @@ public class DrawableTrajectoryPath implements IDrawableShape
 				vLast = vel;
 			}
 		}
-		points.add(trajXY.getPositionMM(trajXY.getTotalTime()).getXYVector());
+		if (!first.equals(last))
+		{
+			points.add(last);
+		}
 	}
 
 
@@ -97,7 +103,7 @@ public class DrawableTrajectoryPath implements IDrawableShape
 		g.setColor(color);
 		if (stroke == null)
 		{
-			stroke = new BasicStroke(tool.scaleXLength(10));
+			stroke = new BasicStroke(tool.scaleGlobalToGui(10));
 		}
 		g.setStroke(stroke);
 
@@ -112,7 +118,7 @@ public class DrawableTrajectoryPath implements IDrawableShape
 			posTrans = tool.transformToGuiCoordinates(pos, invert);
 			drawPath.lineTo(posTrans.x(), posTrans.y());
 
-			if (VectorMath.distancePP(pLast, pos) > 0.2)
+			if (VectorMath.distancePP(pLast, pos) > STEP_SIZE)
 			{
 				pLast = pos;
 			}

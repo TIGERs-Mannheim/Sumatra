@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.metis.offense.ballinterception;
@@ -16,7 +16,7 @@ import java.util.List;
 
 @Value
 @Builder(toBuilder = true)
-@Persistent(version = 2)
+@Persistent(version = 3)
 @AllArgsConstructor
 public class BallInterceptionInformation
 {
@@ -27,7 +27,6 @@ public class BallInterceptionInformation
 	@NonNull
 	List<InterceptionCorridor> interceptionCorridors;
 	double interceptionTargetTime;
-	double interceptionTargetTimeFallback;
 	InterceptionIteration oldInterception;
 
 
@@ -38,7 +37,6 @@ public class BallInterceptionInformation
 		zeroAxisChanges = Collections.emptyList();
 		interceptionCorridors = Collections.emptyList();
 		interceptionTargetTime = 0;
-		interceptionTargetTimeFallback = 0;
 		oldInterception = null;
 	}
 }

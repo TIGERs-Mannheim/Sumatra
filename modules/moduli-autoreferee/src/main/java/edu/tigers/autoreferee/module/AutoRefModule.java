@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2019, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.autoreferee.module;
 
@@ -31,7 +31,7 @@ public class AutoRefModule extends AModule implements IWorldFrameObserver
 	{
 		if (!observers.isEmpty())
 		{
-			log.warn("There are observers left: " + observers);
+			log.warn("There are observers left: {}", observers);
 			observers.clear();
 		}
 
@@ -64,7 +64,7 @@ public class AutoRefModule extends AModule implements IWorldFrameObserver
 				changeMode(mode);
 			} catch (IllegalArgumentException e)
 			{
-				log.warn("Could not parse autoRef mode: " + autoRefMode, e);
+				log.warn("Could not parse autoRef mode: {}", autoRefMode, e);
 			}
 		}
 	}

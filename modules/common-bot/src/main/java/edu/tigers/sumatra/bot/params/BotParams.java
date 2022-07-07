@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.bot.params;
 
@@ -16,6 +16,7 @@ public class BotParams implements IBotParams
 	private final BotMovementLimits movementLimits = new BotMovementLimits();
 	private final BotDimensions dimensions = new BotDimensions();
 	private final BotKickerSpecs kickerSpecs = new BotKickerSpecs();
+	private final BotDribblerSpecs dribblerSpecs = new BotDribblerSpecs();
 
 
 	@Override
@@ -36,5 +37,12 @@ public class BotParams implements IBotParams
 	public IBotKickerSpecs getKickerSpecs()
 	{
 		return kickerSpecs;
+	}
+
+
+	@Override
+	public BotDribblerSpecs getDribblerSpecs()
+	{
+		return dribblerSpecs;
 	}
 }

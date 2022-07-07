@@ -8,6 +8,7 @@ import edu.tigers.sumatra.botmanager.commands.ECommand;
 import edu.tigers.sumatra.botmanager.serial.SerialData;
 import edu.tigers.sumatra.botmanager.serial.SerialData.ESerialDataType;
 import edu.tigers.sumatra.ids.BotID;
+import edu.tigers.sumatra.math.SumatraMath;
 
 
 /**
@@ -19,95 +20,57 @@ public class BaseStationWifiStats extends ACommand
 {
 	/** */
 	public static final int NUM_BOTS = 32;
-	
+
 	/**
 	 * Bot network statistics.
 	 */
 	public static class BotStats
 	{
-		/** NRF wifi module IO stats */
-		public static class NRF24IOStats
+		/** Wifi module IO stats */
+		public static class RFIOStats
 		{
 			/** Transmitted packets. */
 			@SerialData(type = ESerialDataType.UINT16)
-			public int	txPackets;
+			public int txPackets;
 			/** Transmitted bytes. */
 			@SerialData(type = ESerialDataType.UINT16)
-			public int	txBytes;
+			public int txBytes;
 			/** Received packets. */
 			@SerialData(type = ESerialDataType.UINT16)
-			public int	rxPackets;
+			public int rxPackets;
 			/** Received bytes. */
 			@SerialData(type = ESerialDataType.UINT16)
-			public int	rxBytes;
+			public int rxBytes;
 			
 			/** Lost packets in reception. */
 			@SerialData(type = ESerialDataType.UINT16)
 			public int	rxPacketsLost;
-			/** Lost packets in transmission. */
-			@SerialData(type = ESerialDataType.UINT16)
-			public int	txPacketsMaxRT;
-			/** Acknowledged transmitted packets. */
-			@SerialData(type = ESerialDataType.UINT16)
-			public int	txPacketsAcked;
-			
-			
+
+
 			/**
 			 * return this-rhs
-			 * 
+			 *
 			 * @param rhs
 			 * @return
 			 */
-			public NRF24IOStats subtractNew(final NRF24IOStats rhs)
+			public RFIOStats subtractNew(final RFIOStats rhs)
 			{
-				NRF24IOStats ret = new NRF24IOStats();
-				
+				RFIOStats ret = new RFIOStats();
+
 				ret.txPackets = txPackets - rhs.txPackets;
 				ret.txBytes = txBytes - rhs.txBytes;
 				ret.rxPackets = rxPackets - rhs.rxPackets;
 				ret.rxBytes = rxBytes - rhs.rxBytes;
-				
+
 				ret.rxPacketsLost = rxPacketsLost - rhs.rxPacketsLost;
-				ret.txPacketsMaxRT = txPacketsMaxRT - rhs.txPacketsMaxRT;
-				ret.txPacketsAcked = txPacketsAcked - rhs.txPacketsAcked;
-				
+
 				ret.txPackets &= 0xFFFF;
 				ret.txBytes &= 0xFFFF;
 				ret.rxPackets &= 0xFFFF;
 				ret.rxBytes &= 0xFFFF;
 				ret.rxPacketsLost &= 0xFFFF;
-				ret.txPacketsMaxRT &= 0xFFFF;
-				ret.txPacketsAcked &= 0xFFFF;
-				
+
 				return ret;
-			}
-			
-			
-			/**
-			 * Compute link quality from RX and TX losses.
-			 * 
-			 * @return Quality from 1.0 (good) to 0.0 (bad)
-			 */
-			public double getLinkQuality()
-			{
-				int allGoodPackets = txPacketsAcked + rxPackets + 1; // +1 to prevent div by zero
-				int allLostPackets = rxPacketsLost + txPacketsMaxRT;
-				
-				return (double) allGoodPackets / (allGoodPackets + allLostPackets);
-			}
-			
-			
-			/**
-			 * Compute TX losses.
-			 * 
-			 * @return
-			 */
-			public double getTxLoss()
-			{
-				int txAll = txPackets + 1;
-				int txBad = txPacketsMaxRT;
-				
-				return (double) txBad / txAll;
 			}
 			
 			
@@ -118,10 +81,10 @@ public class BaseStationWifiStats extends ACommand
 			 */
 			public double getRxLoss()
 			{
-				int rxGood = rxPackets + 1;
-				int rxBad = rxPacketsLost;
-				
-				return (double) rxBad / (rxBad + rxGood);
+				if (rxPackets == 0)
+					return 0.0;
+
+				return (double) rxPackets / (rxPackets + rxPacketsLost);
 			}
 			
 			
@@ -208,59 +171,79 @@ public class BaseStationWifiStats extends ACommand
 			 */
 			public double getTxLoss()
 			{
-				int txGood = txPackets + 1;
-				int txBad = txPacketsLost;
-				
-				return (double) txBad / (txGood + txBad);
+				if (txPacketsLost == 0)
+					return 0.0;
+
+				return (double) txPacketsLost / (txPackets + txPacketsLost);
 			}
 			
 			
 			/**
 			 * Get RX loss ratio (good 0.0 - 1.0 bad)
-			 * 
+			 *
 			 * @return
 			 */
 			public double getRxLoss()
 			{
-				int rxGood = rxPackets + 1;
-				int rxBad = rxPacketsLost;
-				
-				return (double) rxBad / (rxGood + rxBad);
+				if (rxPacketsLost == 0)
+					return 0.0;
+
+				return (double) rxPacketsLost / (rxPackets + rxPacketsLost);
 			}
 		}
-		
-		/** Bot ID. */
+
+		/**
+		 * Bot ID.
+		 */
 		@SerialData(type = ESerialDataType.UINT8)
-		private int				botId	= 0xFF;
-		
-		/** NRF24 stats. */
+		private int botId = 0xFF;
+
+		/**
+		 * RF stats.
+		 */
 		@SerialData(type = ESerialDataType.EMBEDDED)
-		public NRF24IOStats	nrf	= new NRF24IOStats();
-		
-		/** Queue stats. */
+		public RFIOStats rf = new RFIOStats();
+
+		/**
+		 * Queue stats.
+		 */
 		@SerialData(type = ESerialDataType.EMBEDDED)
-		public QueueIOStats	queue	= new QueueIOStats();
-		
-		
+		public QueueIOStats queue = new QueueIOStats();
+
+		/**
+		 * RSSI of robot in dBm*0.1
+		 */
+		@SerialData(type = ESerialDataType.INT16)
+		private int botRssi;
+
+		/**
+		 * RSSI of base station in dBm*0.1
+		 */
+		@SerialData(type = ESerialDataType.INT16)
+		private int bsRssi;
+
+
 		/**
 		 * return this-rhs
 		 * botId stays the same
-		 * 
+		 *
 		 * @param rhs
 		 * @return
 		 */
 		public BotStats subtractNew(final BotStats rhs)
 		{
 			BotStats ret = new BotStats();
-			
+
 			ret.botId = rhs.botId;
-			ret.nrf = nrf.subtractNew(rhs.nrf);
+			ret.rf = rf.subtractNew(rhs.rf);
 			ret.queue = queue.subtractNew(rhs.queue);
-			
+			ret.botRssi = rhs.botRssi;
+			ret.bsRssi = rhs.bsRssi;
+
 			return ret;
 		}
-		
-		
+
+
 		/**
 		 * @return
 		 */
@@ -268,10 +251,33 @@ public class BaseStationWifiStats extends ACommand
 		{
 			return BotID.createBotIdFromIdWithColorOffsetBS(botId);
 		}
+
+
+		public double getBotRssi()
+		{
+			return botRssi * 0.1;
+		}
+
+
+		public double getBsRssi()
+		{
+			return bsRssi * 0.1;
+		}
+
+
+		/**
+		 * Compute link quality from RSSI.
+		 *
+		 * @return Quality from 1.0 (good) to 0.0 (bad)
+		 */
+		public double getLinkQuality()
+		{
+			return SumatraMath.relative((getBotRssi() + getBsRssi()) / 2, -90.0, -12.0);
+		}
 	}
-	
+
 	@SerialData(type = ESerialDataType.EMBEDDED)
-	private final BotStats[]	bots			= new BotStats[NUM_BOTS];
+	private final BotStats[] bots = new BotStats[NUM_BOTS];
 	
 	@SerialData(type = ESerialDataType.UINT16)
 	private int						updateRate	= 1;

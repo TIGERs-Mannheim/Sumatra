@@ -1,31 +1,35 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.offensive.view;
 
-import edu.tigers.sumatra.views.ISumatraView;
+import lombok.Getter;
 import net.miginfocom.swing.MigLayout;
 
 import javax.swing.BorderFactory;
 import javax.swing.JPanel;
 import javax.swing.JRadioButton;
+import java.io.Serial;
 
 
 /**
  * Main Panel for OffensiveStrategy from tactical Field.
  */
-public class OffensiveInterceptionsPanel extends JPanel implements ISumatraView
+public class OffensiveInterceptionsPanel extends JPanel
 {
+	@Serial
 	private static final long serialVersionUID = -314343167523031597L;
 
 	private static final String MIG_LAYOUT_DEFAULT = "dock center, span 4";
 
-	private final JRadioButton yellowRadioButton;
-	private final JRadioButton blueRadioButton;
+	private final JRadioButton yellowRadioButton = new JRadioButton("Yellow Team");
+	private final JRadioButton blueRadioButton = new JRadioButton("Blue Team");
 
-	private final TeamOffensiveInterceptionsPanel yellowPanel;
-	private final TeamOffensiveInterceptionsPanel bluePanel;
+	@Getter
+	private final TeamOffensiveInterceptionsPanel yellowPanel = new TeamOffensiveInterceptionsPanel();
+	@Getter
+	private final TeamOffensiveInterceptionsPanel bluePanel = new TeamOffensiveInterceptionsPanel();
 
 
 	/**
@@ -34,12 +38,6 @@ public class OffensiveInterceptionsPanel extends JPanel implements ISumatraView
 	public OffensiveInterceptionsPanel()
 	{
 		setLayout(new MigLayout());
-
-		yellowRadioButton = new JRadioButton("Yellow Team");
-		blueRadioButton = new JRadioButton("Blue Team");
-
-		yellowPanel = new TeamOffensiveInterceptionsPanel();
-		bluePanel = new TeamOffensiveInterceptionsPanel();
 
 		yellowRadioButton.setSelected(true);
 		yellowRadioButton.addActionListener(e -> {
@@ -69,23 +67,5 @@ public class OffensiveInterceptionsPanel extends JPanel implements ISumatraView
 		add(yellowRadioButton, "wrap");
 		add(blueRadioButton, "wrap");
 		add(yellowPanel, MIG_LAYOUT_DEFAULT);
-	}
-
-
-	/**
-	 * @return TeamOffensiveStrategyPanel of the yellow team
-	 */
-	public TeamOffensiveInterceptionsPanel getYellowStrategyPanel()
-	{
-		return yellowPanel;
-	}
-
-
-	/**
-	 * @return TeamOffensiveStrategyPanel of the blue tem
-	 */
-	public TeamOffensiveInterceptionsPanel getBlueStrategyPanel()
-	{
-		return bluePanel;
 	}
 }

@@ -1,11 +1,10 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.pandora.roles.offense;
 
 import com.github.g3force.configurable.Configurable;
-import edu.tigers.sumatra.ai.math.AiMath;
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
 import edu.tigers.sumatra.ai.metis.botdistance.BotDistance;
 import edu.tigers.sumatra.ai.pandora.roles.ARole;
@@ -13,12 +12,11 @@ import edu.tigers.sumatra.ai.pandora.roles.ERole;
 import edu.tigers.sumatra.drawable.DrawableTriangle;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.geometry.RuleConstraints;
+import edu.tigers.sumatra.math.line.v2.LineMath;
 import edu.tigers.sumatra.math.triangle.Triangle;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.skillsystem.skills.InterceptionSkill;
-import edu.tigers.sumatra.skillsystem.skills.MoveToSkill;
-import edu.tigers.sumatra.statemachine.AState;
 import edu.tigers.sumatra.statemachine.IEvent;
 
 import java.awt.Color;
@@ -50,24 +48,12 @@ public class OpponentInterceptionRole extends ARole
 		FAR_FROM_MOVE_POS
 	}
 
-	private class PrepareState extends AState
+	private class PrepareState extends MoveState
 	{
-		private MoveToSkill skill;
-
-
 		@Override
-		public void doEntryActions()
+		protected void onUpdate()
 		{
-			skill = MoveToSkill.createMoveToSkill();
-			setNewSkill(skill);
-		}
-
-
-		@Override
-		public void doUpdate()
-		{
-			IVector2 movePos = calcMovePosition();
-			movePos = AiMath.adjustMovePositionWhenItsInvalid(getWFrame(), getBotID(), movePos);
+			IVector2 movePos = adjustMovePositionWhenItsInvalid(calcMovePosition());
 			skill.updateDestination(movePos);
 
 			if (movePos.distanceTo(getPos()) < 50)
@@ -87,35 +73,40 @@ public class OpponentInterceptionRole extends ARole
 		}
 	}
 
-	private class InterceptState extends AState
+	private class InterceptState extends RoleState<InterceptionSkill>
 	{
-		private InterceptionSkill intercept = null;
-
-
-		@Override
-		public void doEntryActions()
+		public InterceptState()
 		{
-			intercept = new InterceptionSkill();
-			setNewSkill(intercept);
+			super(InterceptionSkill::new);
 		}
 
 
 		@Override
-		public void doUpdate()
+		protected void onUpdate()
 		{
 			var nearestOpponentBot = getAiFrame().getTacticalField().getOpponentClosestToBall().getBotId();
 			if (nearestOpponentBot.isBot())
 			{
-				intercept.setNearestOpponentBotPos(getWFrame().getBot(nearestOpponentBot).getPos());
+				IVector2 pos = getWFrame().getBot(nearestOpponentBot).getPos();
+				if (getAiFrame().getGameState().isKickoffOrPrepareKickoff() &&
+						pos.x() < Geometry.getBotRadius())
+				{
+					skill.setNearestOpponentBotPos(Vector2.fromXY(Math.max(-pos.x(), Geometry.getBotRadius()), pos.y()));
+				} else
+				{
+					skill.setNearestOpponentBotPos(pos);
+				}
 			} else
 			{
-				intercept.setNearestOpponentBotPos(Vector2.fromXY(0, 0));
+				IVector2 pos = LineMath.stepAlongLine(getWFrame().getBall().getPos(),
+						Geometry.getGoalOur().getCenter(), -2 * Geometry.getBotRadius());
+				skill.setNearestOpponentBotPos(pos);
 			}
 
 			if (smartDistanceCalcAllowedForInterceptor)
 			{
 				double distance = calcDistancToOpponent();
-				intercept.setDistanceToBall(distance);
+				skill.setDistanceToBall(distance);
 			}
 
 			if (getPos().distanceTo(getBall().getPos()) > RuleConstraints.getStopRadius() + Geometry.getBotRadius() + 500)

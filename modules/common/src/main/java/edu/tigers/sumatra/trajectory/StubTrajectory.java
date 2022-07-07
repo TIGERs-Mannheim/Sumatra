@@ -1,9 +1,10 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.trajectory;
 
+import com.sleepycat.persist.model.Persistent;
 import edu.tigers.sumatra.math.AngleMath;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.IVector3;
@@ -19,6 +20,7 @@ import java.util.List;
 /**
  * @param <T> Type of Trajectory
  */
+@Persistent
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class StubTrajectory<T> implements ITrajectory<T>
 {
@@ -26,6 +28,15 @@ public class StubTrajectory<T> implements ITrajectory<T>
 	private final T pos;
 	private final T vel;
 	private final T acc;
+
+
+	public StubTrajectory()
+	{
+		posMM = null;
+		pos = null;
+		vel = null;
+		acc = null;
+	}
 
 
 	/**
@@ -118,10 +129,10 @@ public class StubTrajectory<T> implements ITrajectory<T>
 			return (StubTrajectory<T>) new StubTrajectory<>(((IVector2) posMM).multiplyNew(-1),
 					((IVector2) pos).multiplyNew(-1),
 					((IVector2) vel).multiplyNew(-1), ((IVector2) acc).multiplyNew(-1));
-		} else if (posMM instanceof IVector3)
+		} else if (posMM instanceof IVector3 vector3)
 		{
-			IVector3 newPosMM = Vector3.from2d((((IVector3) posMM).getXYVector()).multiplyNew(-1),
-					AngleMath.normalizeAngle(((IVector3) posMM).z() + AngleMath.PI));
+			IVector3 newPosMM = Vector3.from2d((vector3.getXYVector()).multiplyNew(-1),
+					AngleMath.normalizeAngle(vector3.z() + AngleMath.PI));
 			IVector3 newPos = Vector3.from2d((((IVector3) pos).getXYVector()).multiplyNew(-1),
 					AngleMath.normalizeAngle(((IVector3) pos).z() + AngleMath.PI));
 			IVector3 newVel = Vector3.from2d((((IVector3) vel).getXYVector()).multiplyNew(-1),

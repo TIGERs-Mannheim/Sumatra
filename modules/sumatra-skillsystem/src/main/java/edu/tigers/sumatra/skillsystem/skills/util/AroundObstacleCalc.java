@@ -4,14 +4,14 @@
 
 package edu.tigers.sumatra.skillsystem.skills.util;
 
-import java.util.Optional;
-
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.math.SumatraMath;
 import edu.tigers.sumatra.math.line.ILine;
 import edu.tigers.sumatra.math.line.Line;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
+
+import java.util.Optional;
 
 
 /**
@@ -86,9 +86,12 @@ public class AroundObstacleCalc
 	 */
 	public boolean isAroundObstacleNeeded(final IVector2 desiredDestination)
 	{
+		var botToBall = getBallPos().subtractNew(getPos());
+		var ballToOpponent = obstacle.subtractNew(getBallPos());
+		var angle = botToBall.angleToAbs(ballToOpponent).orElse(0.0);
 		double obstacleToBall = obstacle.distanceTo(ballPos);
-		double botToBall = desiredDestination.distanceTo(ballPos);
-		return obstacleToBall - botToBall < obstacleRadius;
+		double botToBallDist = desiredDestination.distanceTo(ballPos);
+		return obstacleToBall - botToBallDist < obstacleRadius && angle > 30;
 	}
 	
 	

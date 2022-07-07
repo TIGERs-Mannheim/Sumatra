@@ -1,14 +1,17 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.snapshot;
 
 import edu.tigers.sumatra.ids.BotID;
+import edu.tigers.sumatra.math.vector.IVector3;
 import edu.tigers.sumatra.math.vector.Vector3;
+import edu.tigers.sumatra.trajectory.ITrajectory;
 import edu.tigers.sumatra.wp.data.ITrackedBall;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
 import edu.tigers.sumatra.wp.data.WorldFrameWrapper;
+import lombok.Setter;
 import lombok.extern.log4j.Log4j2;
 
 import javax.swing.JFileChooser;
@@ -30,6 +33,8 @@ public class SnapshotController
 {
 	private final Component parentComponent;
 	private WorldFrameWrapper wfw;
+	@Setter
+	private boolean saveMoveDestinations;
 
 
 	public SnapshotController(final Component parentComponent)
@@ -41,12 +46,19 @@ public class SnapshotController
 	private Snapshot createSnapshot()
 	{
 		Map<BotID, SnapObject> snapBots = new HashMap<>();
+		Map<BotID, IVector3> moveDestinations = new HashMap<>();
 		for (Map.Entry<BotID, ITrackedBot> entry : wfw.getSimpleWorldFrame().getBots().entrySet())
 		{
 			ITrackedBot bot = entry.getValue();
 			snapBots.put(entry.getKey(),
 					new SnapObject(Vector3.from2d(bot.getPos(), bot.getOrientation()),
 							Vector3.from2d(bot.getVel(), bot.getAngularVel())));
+			if (saveMoveDestinations)
+			{
+				bot.getCurrentTrajectory().map(ITrajectory::getFinalDestination).ifPresent(
+						dest -> moveDestinations.put(entry.getKey(), dest)
+				);
+			}
 		}
 
 		ITrackedBall ball = wfw.getSimpleWorldFrame().getBall();
@@ -58,6 +70,7 @@ public class SnapshotController
 				.command(wfw.getRefereeMsg().getCommand())
 				.stage(wfw.getRefereeMsg().getStage())
 				.placementPos(wfw.getRefereeMsg().getBallPlacementPos())
+				.moveDestinations(moveDestinations)
 				.build();
 	}
 

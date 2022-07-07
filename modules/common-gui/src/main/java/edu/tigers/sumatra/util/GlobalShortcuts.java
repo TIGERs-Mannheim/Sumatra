@@ -1,20 +1,21 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.util;
 
 import lombok.AccessLevel;
-import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import javax.swing.JFrame;
+import javax.swing.KeyStroke;
+import java.awt.Component;
 import java.awt.KeyEventDispatcher;
 import java.awt.KeyboardFocusManager;
+import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.stream.Collectors;
 
 
 /**
@@ -23,143 +24,79 @@ import java.util.concurrent.ConcurrentHashMap;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class GlobalShortcuts
 {
-	private static final Map<EShortcut, ShortcutWrapper> SHORTCUTS = new ConcurrentHashMap<>();
+	private static final List<UiShortcut> UI_SHORTCUTS = new CopyOnWriteArrayList<>();
 
-	private static class ShortcutWrapper
+
+	public static void add(
+			String name,
+			Component component,
+			Runnable runnable,
+			KeyStroke keyStroke)
 	{
-		private KeyEventDispatcher dispatcher;
-	}
-
-	/**
-	 * Enum which contains the available Key shortcuts
-	 */
-	public enum EKeyModifier
-	{
-		CTRL,
-		ALT,
-		SHIFT,
-
-		;
-
-
-		/**
-		 * Method to evaluate if the correct keys were pressed.
-		 *
-		 * @param e
-		 * @return
-		 */
-		public boolean isKeyPressed(KeyEvent e)
-		{
-			switch (this)
+		KeyEventDispatcher dispatcher = e -> {
+			var eventKeyStroke = KeyStroke.getKeyStrokeForEvent(e);
+			if (eventKeyStroke.equals(keyStroke))
 			{
-				case CTRL:
-					return e.isControlDown();
-				case ALT:
-					return e.isAltDown();
-				case SHIFT:
-					return e.isShiftDown();
-				default:
-					return false;
-			}
-		}
-	}
-
-
-	/**
-	 * Enum with all available global shortcuts
-	 */
-	@Getter
-	public enum EShortcut
-	{
-		EMERGENCY_MODE(KeyEvent.VK_ESCAPE, "esc"),
-		MATCH_MODE(KeyEvent.VK_F1, "F1"),
-
-		REFEREE_START(KeyEvent.VK_F2, "F2"),
-		REFEREE_STOP(KeyEvent.VK_F3, "F3"),
-		REFEREE_HALT(KeyEvent.VK_F4, "F4"),
-
-		CHARGE_ALL_BOTS(KeyEvent.VK_F5, "F5"),
-		DISCHARGE_ALL_BOTS(KeyEvent.VK_F6, "F6"),
-
-		RESET_FIELD(KeyEvent.VK_F7, "F7"),
-
-		REFBOX_HALT(KeyEvent.VK_SEPARATOR, "SEPARATOR", EKeyModifier.CTRL),
-		REFBOX_STOP(KeyEvent.VK_NUMPAD0, "NUMPAD0", EKeyModifier.CTRL),
-		REFBOX_START_NORMAL(KeyEvent.VK_ENTER, "ENTER", EKeyModifier.CTRL),
-		REFBOX_START_FORCE(KeyEvent.VK_NUMPAD5, "NUMPAD5", EKeyModifier.CTRL),
-		REFBOX_KICKOFF_YELLOW(KeyEvent.VK_NUMPAD1, "NUMPAD1", EKeyModifier.CTRL),
-		REFBOX_KICKOFF_BLUE(KeyEvent.VK_NUMPAD3, "NUMPAD3", EKeyModifier.CTRL),
-		REFBOX_INDIRECT_YELLOW(KeyEvent.VK_NUMPAD4, "NUMPAD4", EKeyModifier.CTRL),
-		REFBOX_INDIRECT_BLUE(KeyEvent.VK_NUMPAD6, "NUMPAD6", EKeyModifier.CTRL),
-		REFBOX_DIRECT_YELLOW(KeyEvent.VK_NUMPAD7, "NUMPAD7", EKeyModifier.CTRL),
-		REFBOX_DIRECT_BLUE(KeyEvent.VK_NUMPAD9, "NUMPAD9", EKeyModifier.CTRL),
-
-		AUTOREF_TOGGLE(KeyEvent.VK_F12, "F12"),
-
-		;
-
-		private final int key;
-		private final String desc;
-		private final Set<EKeyModifier> modifiers;
-
-
-		EShortcut(final int key, final String desc, final EKeyModifier... modifiers)
-		{
-			this.key = key;
-			this.desc = desc;
-
-			this.modifiers = new HashSet<>(Arrays.asList(modifiers));
-		}
-	}
-
-
-	/**
-	 * @param shortcut
-	 * @param run
-	 */
-	public static void register(final EShortcut shortcut, final Runnable run)
-	{
-		KeyEventDispatcher ked = e -> {
-			if (e.getID() == KeyEvent.KEY_PRESSED && e.getKeyCode() == shortcut.key)
-			{
-				final boolean optionalKeyPressed = isOptionalKeyPressedForShortcut(e, shortcut);
-
-				if (optionalKeyPressed)
+				var rootComponent = findRootComponent(component);
+				Component eventComponent = e.getComponent();
+				if (eventComponent != null && findRootComponent(eventComponent) == rootComponent)
 				{
-					run.run();
+					runnable.run();
+					return true;
 				}
 			}
 			return false;
 		};
-		ShortcutWrapper w = new ShortcutWrapper();
-		w.dispatcher = ked;
-		SHORTCUTS.put(shortcut, w);
-		KeyboardFocusManager.getCurrentKeyboardFocusManager().addKeyEventDispatcher(ked);
+
+
+		String keys = InputEvent.getModifiersExText(keyStroke.getModifiers())
+				+ "+"
+				+ KeyEvent.getKeyText(keyStroke.getKeyCode());
+		KeyboardFocusManager.getCurrentKeyboardFocusManager().addKeyEventDispatcher(dispatcher);
+		UI_SHORTCUTS.add(UiShortcut.builder()
+				.name(name)
+				.keys(keys)
+				.component(component)
+				.dispatcher(dispatcher)
+				.build()
+		);
 	}
 
 
-	private static boolean isOptionalKeyPressedForShortcut(KeyEvent e, EShortcut shortcut)
+	public static void removeAllForFrame(JFrame frame)
 	{
-		boolean keyIsPressed = true;
-
-		for (EKeyModifier modifier : shortcut.getModifiers())
-		{
-			keyIsPressed &= modifier.isKeyPressed(e);
-		}
-
-		return keyIsPressed;
+		UI_SHORTCUTS.stream().filter(s -> findRootComponent(s.getComponent()) == frame).forEach(s -> {
+			KeyboardFocusManager.getCurrentKeyboardFocusManager().removeKeyEventDispatcher(s.getDispatcher());
+			UI_SHORTCUTS.remove(s);
+		});
 	}
 
 
-	/**
-	 * @param shortcut
-	 */
-	public static void unregisterAll(final EShortcut shortcut)
+	public static void removeAllForComponent(Component component)
 	{
-		ShortcutWrapper shortcutWrapper = SHORTCUTS.remove(shortcut);
-		if (shortcutWrapper != null)
+		UI_SHORTCUTS.stream().filter(s -> s.getComponent() == component).forEach(s -> {
+			KeyboardFocusManager.getCurrentKeyboardFocusManager().removeKeyEventDispatcher(s.getDispatcher());
+			UI_SHORTCUTS.remove(s);
+		});
+	}
+
+
+	public static List<UiShortcut> getShortcuts(Component component)
+	{
+		var rootComponent = findRootComponent(component);
+		return UI_SHORTCUTS.stream()
+				.filter(s -> findRootComponent(s.getComponent()) == rootComponent)
+				.collect(Collectors.toUnmodifiableList());
+	}
+
+
+	private static Component findRootComponent(Component component)
+	{
+		Component parent = component.getParent();
+		if (parent == null)
 		{
-			KeyboardFocusManager.getCurrentKeyboardFocusManager().removeKeyEventDispatcher(shortcutWrapper.dispatcher);
+			return component;
 		}
+		return findRootComponent(parent);
 	}
 }

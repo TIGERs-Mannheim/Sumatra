@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.aicenter.presenter;
@@ -22,11 +22,10 @@ import edu.tigers.sumatra.ids.EAiTeam;
 import edu.tigers.sumatra.lookandfeel.ILookAndFeelStateObserver;
 import edu.tigers.sumatra.lookandfeel.LookAndFeelStateAdapter;
 import edu.tigers.sumatra.model.SumatraModel;
-import edu.tigers.sumatra.views.ASumatraViewPresenter;
-import edu.tigers.sumatra.views.ISumatraView;
+import edu.tigers.sumatra.views.ISumatraViewPresenter;
+import lombok.Getter;
 
 import javax.swing.SwingUtilities;
-import java.awt.Component;
 import java.awt.EventQueue;
 import java.util.EnumMap;
 import java.util.Map;
@@ -37,21 +36,21 @@ import java.util.Optional;
  * This is the presenter for the ai view in sumatra. It's core functionality is realized using a state-machine
  * representing the different modi of influence the AI-developer wants to use.
  */
-public class AICenterPresenter extends ASumatraViewPresenter implements ILookAndFeelStateObserver, ISumatraView
+public class AICenterPresenter implements ISumatraViewPresenter, ILookAndFeelStateObserver
 {
-	private final AICenterPanel aiCenterPanel = new AICenterPanel();
+	@Getter
+	private final AICenterPanel viewPanel = new AICenterPanel();
 	private final AiObserver aiObserver = new AiObserver();
 	private final Map<EAiTeam, TeamPresenter> teamPresenters = new EnumMap<>(EAiTeam.class);
 
 	private Agent agent;
-	private boolean centerPanelShown = true;
 
 
 	public AICenterPresenter()
 	{
 		for (EAiTeam team : EAiTeam.values())
 		{
-			final TeamPanel teamPanel = aiCenterPanel.getTeamPanel(team);
+			final TeamPanel teamPanel = viewPanel.getTeamPanel(team);
 			TeamPresenter teamPresenter = new TeamPresenter(team, teamPanel);
 			teamPresenters.put(team, teamPresenter);
 
@@ -60,11 +59,11 @@ public class AICenterPresenter extends ASumatraViewPresenter implements ILookAnd
 			teamPanel.getModeButtons()
 					.forEach((mode, btn) -> btn.addActionListener(a -> updateAiControlState(team, mode)));
 		}
-		aiCenterPanel.getTeamTabbedPane().addChangeListener(changeEvent -> updateCenterPanelShown());
+		viewPanel.getTeamTabbedPane().addChangeListener(changeEvent -> updateCenterPanelShown(true));
 
 		LookAndFeelStateAdapter.getInstance().addObserver(this);
 
-		aiCenterPanel.setActive(false);
+		viewPanel.setActive(false);
 	}
 
 
@@ -80,7 +79,7 @@ public class AICenterPresenter extends ASumatraViewPresenter implements ILookAnd
 
 
 	@Override
-	public void onStop()
+	public void onStopModuli()
 	{
 		if (SumatraModel.getInstance().isModuleLoaded(AAgent.class))
 		{
@@ -91,15 +90,15 @@ public class AICenterPresenter extends ASumatraViewPresenter implements ILookAnd
 
 		for (EAiTeam team : EAiTeam.values())
 		{
-			aiCenterPanel.getTeamPanel(team).getMetisPanel().setActive(false);
+			viewPanel.getTeamPanel(team).getMetisPanel().setActive(false);
 		}
 
-		EventQueue.invokeLater(() -> aiCenterPanel.setActive(false));
+		EventQueue.invokeLater(() -> viewPanel.setActive(false));
 	}
 
 
 	@Override
-	public void onStart()
+	public void onStartModuli()
 	{
 		if (SumatraModel.getInstance().isModuleLoaded(AAgent.class))
 		{
@@ -108,11 +107,11 @@ public class AICenterPresenter extends ASumatraViewPresenter implements ILookAnd
 			agent.addObserver(aiObserver);
 		}
 
-		EventQueue.invokeLater(() -> aiCenterPanel.setActive(true));
+		EventQueue.invokeLater(() -> viewPanel.setActive(true));
 
 		for (EAiTeam team : EAiTeam.values())
 		{
-			aiCenterPanel.getTeamPanel(team).getMetisPanel().setActive(true);
+			viewPanel.getTeamPanel(team).getMetisPanel().setActive(true);
 			updateAiControlStateForTeam(team);
 		}
 	}
@@ -125,7 +124,7 @@ public class AICenterPresenter extends ASumatraViewPresenter implements ILookAnd
 			EAIControlState controlState = agent.getAi(team)
 					.map(ai -> ai.getAthena().getControlState())
 					.orElse(EAIControlState.OFF);
-			EventQueue.invokeLater(() -> aiCenterPanel.setAiControlStateForAi(controlState, team));
+			EventQueue.invokeLater(() -> viewPanel.setAiControlStateForAi(controlState, team));
 		}
 	}
 
@@ -133,26 +132,24 @@ public class AICenterPresenter extends ASumatraViewPresenter implements ILookAnd
 	@Override
 	public void onShown()
 	{
-		centerPanelShown = true;
-		updateCenterPanelShown();
+		updateCenterPanelShown(true);
 	}
 
 
 	@Override
 	public void onHidden()
 	{
-		centerPanelShown = false;
-		updateCenterPanelShown();
+		updateCenterPanelShown(false);
 	}
 
 
-	private void updateCenterPanelShown()
+	private void updateCenterPanelShown(boolean shown)
 	{
 		for (EAiTeam team : EAiTeam.values())
 		{
 			TeamPanel panel = teamPresenters.get(team).getTeamPanel();
-			final boolean panelActive = panel == aiCenterPanel.getActiveTeamPanel();
-			teamPresenters.get(team).setTeamPanelShown(centerPanelShown && panelActive);
+			final boolean panelActive = panel == viewPanel.getActiveTeamPanel();
+			teamPresenters.get(team).setTeamPanelShown(shown && panelActive);
 		}
 	}
 
@@ -160,21 +157,7 @@ public class AICenterPresenter extends ASumatraViewPresenter implements ILookAnd
 	@Override
 	public void onLookAndFeelChanged()
 	{
-		SwingUtilities.invokeLater(() -> SwingUtilities.updateComponentTreeUI(aiCenterPanel));
-	}
-
-
-	@Override
-	public Component getComponent()
-	{
-		return aiCenterPanel;
-	}
-
-
-	@Override
-	public ISumatraView getSumatraView()
-	{
-		return this;
+		SwingUtilities.invokeLater(() -> SwingUtilities.updateComponentTreeUI(viewPanel));
 	}
 
 
@@ -235,13 +218,13 @@ public class AICenterPresenter extends ASumatraViewPresenter implements ILookAnd
 		@Override
 		public void onAiModeChanged(final EAiTeam aiTeam, final EAIControlState mode)
 		{
-			SwingUtilities.invokeLater(() -> aiCenterPanel.setAiControlStateForAi(mode, aiTeam));
+			SwingUtilities.invokeLater(() -> viewPanel.setAiControlStateForAi(mode, aiTeam));
 		}
 
 
 		private void updatePanels(final AIInfoFrame lastFrame)
 		{
-			final RoleControlPanel rolePanel = aiCenterPanel.getTeamPanel(lastFrame.getAiTeam()).getRolePanel();
+			final RoleControlPanel rolePanel = viewPanel.getTeamPanel(lastFrame.getAiTeam()).getRolePanel();
 			rolePanel.setActiveRoles(lastFrame.getPlayStrategy().getActiveRoles(EPlay.GUI_TEST));
 
 			teamPresenters.get(lastFrame.getAiTeam()).getTeamPanel().getStatemachinePanel().onUpdate(lastFrame);

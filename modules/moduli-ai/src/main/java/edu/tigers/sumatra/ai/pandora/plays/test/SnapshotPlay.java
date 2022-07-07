@@ -58,7 +58,6 @@ public class SnapshotPlay extends ABallPreparationPlay
 		{
 			setBallTargetPos(snapshot.getBall().getPos().getXYVector());
 		}
-		findRoles(MoveRole.class).forEach(m -> m.getMoveCon().physicalObstaclesOnly());
 		super.doUpdateBeforeRoles();
 	}
 
@@ -82,6 +81,14 @@ public class SnapshotPlay extends ABallPreparationPlay
 			{
 				role.updateDestination(snapObject.getPos().getXYVector());
 				role.updateTargetAngle(snapObject.getPos().z());
+				if (role.getPos().distanceTo(snapObject.getPos().getXYVector()) < 300)
+				{
+					role.getMoveCon().setBotsObstacle(false);
+					role.getMoveCon().setBallObstacle(false);
+				} else
+				{
+					role.getMoveCon().physicalObstaclesOnly();
+				}
 			}
 		}
 	}

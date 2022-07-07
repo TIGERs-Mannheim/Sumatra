@@ -9,6 +9,7 @@ import edu.tigers.sumatra.ball.BallState;
 import edu.tigers.sumatra.math.IMirrorable;
 import edu.tigers.sumatra.math.line.v2.IHalfLine;
 import edu.tigers.sumatra.math.line.v2.ILineSegment;
+import edu.tigers.sumatra.math.vector.IEuclideanDistance;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.IVector3;
 import edu.tigers.sumatra.planarcurve.IPlanarCurveProvider;
@@ -19,7 +20,7 @@ import java.util.List;
 /**
  * Interface for ball trajectories.
  */
-public interface IBallTrajectory extends IMirrorable<IBallTrajectory>, IPlanarCurveProvider
+public interface IBallTrajectory extends IMirrorable<IBallTrajectory>, IPlanarCurveProvider, IEuclideanDistance
 {
 	/**
 	 * Get ball parameters for this trajectory.
@@ -206,6 +207,15 @@ public interface IBallTrajectory extends IMirrorable<IBallTrajectory>, IPlanarCu
 	 */
 	ILineSegment getTravelLineSegment();
 
+	/**
+	 * @return all lines from current ball pos to ball end pos;
+	 * the lines are an approximation for curved shots
+	 */
+	default List<ILineSegment> getTravelLineSegments()
+	{
+		return List.of(getTravelLineSegment());
+	}
+
 
 	/**
 	 * Same as getTravelLine() for a flat ball.
@@ -213,6 +223,18 @@ public interface IBallTrajectory extends IMirrorable<IBallTrajectory>, IPlanarCu
 	 * @return a line from the point where the ball is rolling on the ground to end pos
 	 */
 	ILineSegment getTravelLineRolling();
+
+
+	/**
+	 * Same as getTravelLine() for a flat ball.
+	 *
+	 * @return all lines from the point where the ball is rolling on the ground to end pos;
+	 * the lines are an approximation for curved shots
+	 */
+	default List<ILineSegment> getTravelLinesRolling()
+	{
+		return List.of(getTravelLineRolling());
+	}
 
 
 	/**
@@ -227,6 +249,14 @@ public interface IBallTrajectory extends IMirrorable<IBallTrajectory>, IPlanarCu
 	 * @return locations where the ball touches ground
 	 */
 	List<IVector2> getTouchdownLocations();
+
+	/**
+	 * Find the closest point on this ball trajectory for the given point.
+	 *
+	 * @param point some point
+	 * @return the closest point on this trajectory
+	 */
+	IVector2 closestPointTo(IVector2 point);
 
 	/**
 	 * Return a new trajectory where the initialPos is adjusted so that the position after time equals posNow.

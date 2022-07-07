@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.pathfinder.traj;
@@ -30,7 +30,6 @@ import java.util.Random;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 
@@ -152,13 +151,12 @@ public class TrajPathFinder extends ATrajPathFinder
 		{
 			List<TrajPathCollision> pathCollisions = pathCollisionStream
 					.sorted(Comparator.comparing(TrajPathCollision::getPenaltyScore))
-					.collect(Collectors.toList());
+					.toList();
 			drawDebugShapes(subDestinations, pathCollisions);
 			return pathCollisions.get(0);
 		}
 
-		return pathCollisionStream.min(Comparator.comparing(TrajPathCollision::getPenaltyScore))
-				.orElseThrow(IllegalStateException::new);
+		return pathCollisionStream.min(Comparator.comparing(TrajPathCollision::getPenaltyScore)).orElseThrow();
 	}
 
 
@@ -198,7 +196,8 @@ public class TrajPathFinder extends ATrajPathFinder
 		IVector2 dir = getDirection(input);
 		return directions.stream()
 				.map(d -> dir.turnNew(d.angle).scaleTo(d.length).add(input.getPos()))
-				.collect(Collectors.toList());
+				.map(IVector2.class::cast)
+				.toList();
 	}
 
 
@@ -232,7 +231,7 @@ public class TrajPathFinder extends ATrajPathFinder
 		{
 			angles.add(a);
 		}
-		angles.addAll(angles.stream().map(a -> -a).collect(Collectors.toList()));
+		angles.addAll(angles.stream().map(a -> -a).toList());
 		angles.add(0.0);
 
 		List<Direction> dirList = new ArrayList<>();
@@ -311,7 +310,8 @@ public class TrajPathFinder extends ATrajPathFinder
 	private List<TrajPathCollision> getPathCollisions(
 			final PathFinderInput input,
 			final IVector2 subDest,
-			final double stepSize)
+			final double stepSize
+	)
 	{
 		List<TrajPathCollision> pathCollisions = new ArrayList<>();
 		TrajPathCollision subPathCollision = getPath(input, subDest);

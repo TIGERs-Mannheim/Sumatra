@@ -1,12 +1,11 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.autoref.view.main;
 
 import edu.tigers.autoreferee.engine.detector.EGameEventDetectorType;
 import edu.tigers.sumatra.components.BetterScrollPane;
 import edu.tigers.sumatra.components.EnumCheckBoxPanel;
-import edu.tigers.sumatra.views.ISumatraView;
 import net.miginfocom.swing.MigLayout;
 
 import javax.swing.BoxLayout;
@@ -15,7 +14,7 @@ import java.awt.BorderLayout;
 import java.util.Arrays;
 
 
-public class AutoRefMainPanel extends JPanel implements ISumatraView
+public class AutoRefMainPanel extends JPanel
 {
 	private StartStopPanel startStopPanel = new StartStopPanel();
 	private EnumCheckBoxPanel<EGameEventDetectorType> gameEventDetectorPanel;

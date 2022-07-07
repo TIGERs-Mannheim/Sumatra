@@ -5,7 +5,6 @@
 package edu.tigers.sumatra.ai.metis.offense.statistics;
 
 import com.sleepycat.persist.model.Persistent;
-import edu.tigers.sumatra.ai.metis.offense.action.EOffensiveAction;
 import edu.tigers.sumatra.ai.metis.offense.action.OffensiveActionViability;
 import edu.tigers.sumatra.ai.metis.offense.action.moves.EOffensiveActionMove;
 import edu.tigers.sumatra.ai.metis.offense.strategy.EOffensiveStrategy;
@@ -23,7 +22,6 @@ import java.util.Map;
 public class OffensiveBotFrame
 {
 	private EOffensiveStrategy activeStrategy;
-	private EOffensiveAction activeAction;
 	private Map<EOffensiveActionMove, OffensiveActionViability> moveViabilityMap = new EnumMap<>(
 			EOffensiveActionMove.class);
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.presenter.skills;
@@ -20,58 +20,44 @@ import edu.tigers.sumatra.skillsystem.skills.BotSkillWrapperSkill;
 import edu.tigers.sumatra.skillsystem.skills.IdleSkill;
 import edu.tigers.sumatra.view.skills.MotorEnhancedInputPanel;
 import edu.tigers.sumatra.view.skills.SkillsPanel;
-import edu.tigers.sumatra.views.ASumatraViewPresenter;
-import edu.tigers.sumatra.views.ISumatraView;
+import edu.tigers.sumatra.views.ISumatraViewPresenter;
+import lombok.Getter;
 
-import java.awt.Component;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
 
 
-public class SkillsPresenter extends ASumatraViewPresenter
-		implements IInstanceableObserver, MotorEnhancedInputPanel.IMotorInputPanelObserver
+public class SkillsPresenter
+		implements ISumatraViewPresenter, IInstanceableObserver, MotorEnhancedInputPanel.IMotorInputPanelObserver
 {
-	private final SkillsPanel skillsPanel = new SkillsPanel();
+	@Getter
+	private final SkillsPanel viewPanel = new SkillsPanel();
 	private BotID botId;
 
 
 	public SkillsPresenter()
 	{
-		skillsPanel.getCmbBots().addItemListener(new BotIdSelectedActionListener());
-		skillsPanel.getBotSkillPanel().addObserver(this);
-		skillsPanel.getSkillPanel().addObserver(this);
-		skillsPanel.getEnhancedInputPanel().addObserver(this);
-		skillsPanel.getResetButton().addActionListener(new Reset());
+		viewPanel.getCmbBots().addItemListener(new BotIdSelectedActionListener());
+		viewPanel.getBotSkillPanel().addObserver(this);
+		viewPanel.getSkillPanel().addObserver(this);
+		viewPanel.getEnhancedInputPanel().addObserver(this);
+		viewPanel.getResetButton().addActionListener(new Reset());
 	}
 
 
 	@Override
-	public Component getComponent()
+	public void onStartModuli()
 	{
-		return skillsPanel;
+		BotID.getAll().forEach(b -> viewPanel.getCmbBots().addItem(b));
 	}
 
 
 	@Override
-	public ISumatraView getSumatraView()
+	public void onStopModuli()
 	{
-		return skillsPanel;
-	}
-
-
-	@Override
-	public void onStart()
-	{
-		BotID.getAll().forEach(b -> skillsPanel.getCmbBots().addItem(b));
-	}
-
-
-	@Override
-	public void onStop()
-	{
-		skillsPanel.getCmbBots().removeAllItems();
+		viewPanel.getCmbBots().removeAllItems();
 	}
 
 
@@ -87,13 +73,11 @@ public class SkillsPresenter extends ASumatraViewPresenter
 	@Override
 	public void onNewInstance(final Object object)
 	{
-		if (object instanceof ASkill)
+		if (object instanceof ASkill skill)
 		{
-			ASkill skill = (ASkill) object;
 			executeSkill(skill);
-		} else if (object instanceof ABotSkill)
+		} else if (object instanceof ABotSkill skill)
 		{
-			ABotSkill skill = (ABotSkill) object;
 			BotSkillWrapperSkill wrapperSkill = new BotSkillWrapperSkill(skill);
 			executeSkill(wrapperSkill);
 		}

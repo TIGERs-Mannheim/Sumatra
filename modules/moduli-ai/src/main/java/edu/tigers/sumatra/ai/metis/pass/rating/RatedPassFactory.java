@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.metis.pass.rating;
@@ -13,7 +13,6 @@ import java.util.Collection;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 
 /**
@@ -26,7 +25,6 @@ public class RatedPassFactory
 
 	public RatedPassFactory()
 	{
-		passRaters.put(EPassRating.PASS_DURATION, new PassDurationRater());
 		passRaters.put(EPassRating.PRESSURE, new PassPressureRater());
 		passRaters.put(EPassRating.PASSABILITY, new PassabilityRater());
 	}
@@ -34,7 +32,7 @@ public class RatedPassFactory
 
 	public void update(Collection<ITrackedBot> consideredBots)
 	{
-		passRaters.put(EPassRating.INTERCEPTION, new PassInterceptionRater(consideredBots));
+		passRaters.put(EPassRating.INTERCEPTION, new PassInterceptionMovingRobotRater(consideredBots));
 		passRaters.put(EPassRating.REFLECT_GOAL_KICK, new ReflectorRater(consideredBots));
 		passRaters.put(EPassRating.GOAL_KICK, new GoalRater(consideredBots));
 	}
@@ -57,11 +55,8 @@ public class RatedPassFactory
 	}
 
 
-	public List<IDrawableShape> createShapes()
+	public void setShapes(List<IDrawableShape> shapes)
 	{
-		return passRaters.values().stream()
-				.map(IPassRater::createDebugShapes)
-				.flatMap(Collection::stream)
-				.collect(Collectors.toUnmodifiableList());
+		passRaters.values().forEach(r -> r.setShapes(shapes));
 	}
 }

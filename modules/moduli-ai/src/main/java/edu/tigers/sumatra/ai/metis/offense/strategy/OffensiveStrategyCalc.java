@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.metis.offense.strategy;
@@ -17,7 +17,7 @@ import lombok.RequiredArgsConstructor;
 
 import java.awt.Color;
 import java.util.Collections;
-import java.util.IdentityHashMap;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
@@ -46,7 +46,7 @@ public class OffensiveStrategyCalc extends ACalculator
 	@Override
 	public void doCalc()
 	{
-		Map<BotID, EOffensiveStrategy> strategyMap = new IdentityHashMap<>();
+		Map<BotID, EOffensiveStrategy> strategyMap = new HashMap<>();
 		ballHandlingBots.get().forEach(bot -> strategyMap.put(bot, ballHandlingRobotsStrategy.get()));
 		supportiveAttackers.get().forEach(botID -> strategyMap.put(botID, EOffensiveStrategy.SUPPORTIVE_ATTACKER));
 		passReceivers.get().forEach(botID -> strategyMap.put(botID, EOffensiveStrategy.RECEIVE_PASS));

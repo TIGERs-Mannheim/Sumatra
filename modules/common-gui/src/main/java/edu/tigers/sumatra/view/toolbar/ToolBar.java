@@ -1,13 +1,12 @@
 /*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.view.toolbar;
 
 import edu.tigers.sumatra.model.SumatraModel;
-import edu.tigers.sumatra.util.GlobalShortcuts;
-import edu.tigers.sumatra.util.GlobalShortcuts.EShortcut;
 import edu.tigers.sumatra.util.ImageScaler;
 import edu.tigers.sumatra.view.FpsPanel;
+import lombok.Getter;
 import lombok.extern.log4j.Log4j2;
 import net.miginfocom.swing.MigLayout;
 
@@ -18,11 +17,9 @@ import javax.swing.JPanel;
 import javax.swing.JProgressBar;
 import javax.swing.JToggleButton;
 import javax.swing.JToolBar;
-import javax.swing.SwingUtilities;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -34,43 +31,41 @@ import java.util.concurrent.CopyOnWriteArrayList;
 public class ToolBar
 {
 	private final List<IToolbarObserver> observers = new CopyOnWriteArrayList<>();
+	private final JToggleButton btnRecSave = new JToggleButton();
 
-	private final JToolBar jToolBar;
-
-	private final JButton btnRecSave;
-
-
+	@Getter
+	private final JToolBar jToolBar = new JToolBar();
+	@Getter
 	private final FpsPanel fpsPanel = new FpsPanel();
+	@Getter
 	private final JProgressBar heapBar = new JProgressBar();
+	@Getter
 	private final JLabel heapLabel = new JLabel();
 
 
-	/**
-	 * The toolbar
-	 */
 	public ToolBar()
 	{
 		log.trace("Create toolbar");
 
 		var btnEmergency = new JButton();
-		btnEmergency.setForeground(Color.red);
-		btnEmergency.addActionListener(new EmergencyStopListener());
+		btnEmergency.addActionListener(actionEvent -> notifyEmergencyStop());
 		btnEmergency.setIcon(ImageScaler.scaleDefaultButtonImageIcon("/stop-emergency.png"));
 		btnEmergency.setToolTipText("Emergency stop [Esc]");
 		btnEmergency.setBorder(BorderFactory.createEmptyBorder());
 		btnEmergency.setBackground(new Color(0, 0, 0, 1));
 
-		btnRecSave = new JButton();
-		btnRecSave.addActionListener(new RecordSaveButtonListener());
+		btnRecSave.addActionListener(actionEvent -> toggleRecord());
 		btnRecSave.setIcon(ImageScaler.scaleDefaultButtonImageIcon("/record.png"));
+		btnRecSave.setSelectedIcon(ImageScaler.scaleDefaultButtonImageIcon("/recordActive.gif"));
 		btnRecSave.setToolTipText("Start/Stop recording");
 		btnRecSave.setBorder(BorderFactory.createEmptyBorder());
 		btnRecSave.setBackground(new Color(0, 0, 0, 1));
 
 		var btnTournament = new JToggleButton();
-		btnTournament.addActionListener(new TournamentListener());
+		btnTournament.addActionListener(this::toggleTournamentMode);
+		btnTournament.setSelectedIcon(ImageScaler.scaleDefaultButtonImageIcon("/tournament_color.png"));
 		btnTournament.setIcon(ImageScaler.scaleDefaultButtonImageIcon("/tournament_bw.png"));
-		btnTournament.setToolTipText("Tournament mode (off)");
+		btnTournament.setToolTipText("Tournament mode");
 		btnTournament.setBorder(BorderFactory.createEmptyBorder());
 		btnTournament.setBackground(new Color(0, 0, 0, 1));
 		btnTournament.setContentAreaFilled(false);
@@ -84,7 +79,6 @@ public class ToolBar
 		heapBar.setToolTipText("Memory Usage");
 
 		// --- configure toolbar ---
-		jToolBar = new JToolBar();
 		jToolBar.setFloatable(false);
 		jToolBar.setRollover(true);
 
@@ -104,13 +98,6 @@ public class ToolBar
 		{
 			log.trace("Load button icon " + icon.name());
 		}
-
-		GlobalShortcuts.register(EShortcut.EMERGENCY_MODE, () -> {
-			for (final IToolbarObserver o : observers)
-			{
-				o.onEmergencyStop();
-			}
-		});
 	}
 
 
@@ -132,113 +119,34 @@ public class ToolBar
 	}
 
 
-	// --------------------------------------------------------------------------
-	// --- getter/setter --------------------------------------------------------
-	// --------------------------------------------------------------------------
-
-
-	/**
-	 * @return
-	 */
-	public JToolBar getToolbar()
-	{
-		return jToolBar;
-	}
-
-
-	/**
-	 * @return the fpsPanel
-	 */
-	public FpsPanel getFpsPanel()
-	{
-		return fpsPanel;
-	}
-
-
 	/**
 	 * @param recording
 	 */
 	public void setRecordingEnabled(final boolean recording)
 	{
-		if (recording)
-		{
-			btnRecSave.setIcon(ImageScaler.scaleDefaultButtonImageIcon("/recordActive.gif"));
-		} else
-		{
-			btnRecSave.setIcon(ImageScaler.scaleDefaultButtonImageIcon("/record.png"));
-		}
-
-		jToolBar.repaint();
+		btnRecSave.setSelected(recording);
 	}
 
 
-	private class EmergencyStopListener implements ActionListener
+	private void notifyEmergencyStop()
 	{
-		@Override
-		public void actionPerformed(final ActionEvent e)
-		{
-			for (final IToolbarObserver o : observers)
-			{
-				o.onEmergencyStop();
-			}
-			SwingUtilities.invokeLater(jToolBar::repaint);
-		}
-	}
-
-	private class TournamentListener implements ActionListener
-	{
-		@Override
-		public void actionPerformed(final ActionEvent e)
-		{
-			JToggleButton btn = (JToggleButton) e.getSource();
-			SumatraModel.getInstance().setProductive(btn.isSelected());
-			if (btn.isSelected())
-			{
-				btn.setIcon(ImageScaler.scaleDefaultButtonImageIcon("/tournament_color.png"));
-				btn.setToolTipText("Tournament mode (on)");
-			} else
-			{
-				btn.setIcon(ImageScaler.scaleDefaultButtonImageIcon("/tournament_bw.png"));
-				btn.setToolTipText("Tournament mode (off)");
-			}
-			SwingUtilities.invokeLater(jToolBar::repaint);
-		}
+		observers.forEach(IToolbarObserver::onEmergencyStop);
 	}
 
 
-	private class RecordSaveButtonListener implements ActionListener
+	private void toggleTournamentMode(ActionEvent e)
 	{
-		@Override
-		public void actionPerformed(final ActionEvent e)
-		{
-			Thread t = new Thread(() -> {
-				btnRecSave.setEnabled(false);
-				for (IToolbarObserver observer : observers)
-				{
-					observer.onToggleRecord();
-				}
-				btnRecSave.setEnabled(true);
-			}, "RecordSaveButton");
-
-			t.start();
-		}
+		JToggleButton btn = (JToggleButton) e.getSource();
+		SumatraModel.getInstance().setTournamentMode(btn.isSelected());
 	}
 
 
-	/**
-	 * @return the heapBar
-	 */
-	public final JProgressBar getHeapBar()
+	private void toggleRecord()
 	{
-		return heapBar;
-	}
-
-
-	/**
-	 * @return the heapLabel
-	 */
-	public final JLabel getHeapLabel()
-	{
-		return heapLabel;
+		btnRecSave.setEnabled(false);
+		new Thread(() -> {
+			observers.forEach(IToolbarObserver::onToggleRecord);
+			btnRecSave.setEnabled(true);
+		}, "RecordSaveButton").start();
 	}
 }

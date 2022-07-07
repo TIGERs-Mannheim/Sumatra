@@ -1,10 +1,5 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2013, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Jul 21, 2013
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.visualizer;
 
@@ -14,18 +9,16 @@ import edu.tigers.sumatra.views.ISumatraViewPresenter;
 
 
 /**
- * @author Nicolai Ommer <nicolai.ommer@gmail.com>
+ * Visualizer for Sumatra (AI).
  */
 public class VisualizerAiView extends ASumatraView
 {
-	/**
-	 */
 	public VisualizerAiView()
 	{
 		super(ESumatraViewType.VISUALIZER);
 	}
-	
-	
+
+
 	@Override
 	public ISumatraViewPresenter createPresenter()
 	{

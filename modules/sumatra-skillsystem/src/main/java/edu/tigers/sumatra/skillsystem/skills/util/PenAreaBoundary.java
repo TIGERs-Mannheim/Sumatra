@@ -53,7 +53,7 @@ public class PenAreaBoundary implements Comparator<IVector2>
 	public static PenAreaBoundary ownWithMargin(final double margin)
 	{
 		return new PenAreaBoundary(
-				Geometry.getPenaltyAreaFrontLineLength() + margin * 2,
+				Geometry.getPenaltyAreaWidth() + margin * 2,
 				Geometry.getPenaltyAreaDepth() + margin,
 				-1.0);
 	}

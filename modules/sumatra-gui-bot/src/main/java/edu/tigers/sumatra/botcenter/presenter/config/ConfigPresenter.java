@@ -1,14 +1,7 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.botcenter.presenter.config;
-
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
-
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import edu.tigers.sumatra.botcenter.view.config.BotConfigPanel;
 import edu.tigers.sumatra.botcenter.view.config.IBotConfigPanelObserver;
@@ -19,27 +12,36 @@ import edu.tigers.sumatra.botmanager.commands.tigerv3.TigerConfigFileStructure;
 import edu.tigers.sumatra.botmanager.commands.tigerv3.TigerConfigItemDesc;
 import edu.tigers.sumatra.botmanager.commands.tigerv3.TigerConfigQueryFileList;
 import edu.tigers.sumatra.botmanager.commands.tigerv3.TigerConfigRead;
+import edu.tigers.sumatra.botmanager.configs.ConfigFile;
+import edu.tigers.sumatra.botmanager.configs.ConfigFileDatabaseManager;
+import edu.tigers.sumatra.botmanager.configs.IConfigFileDatabaseObserver;
 import edu.tigers.sumatra.model.SumatraModel;
+import lombok.extern.log4j.Log4j2;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
 
 
 /**
  * Presenter for bot config logic.
  */
-public class ConfigPresenter implements IBotConfigPanelObserver
+@Log4j2
+public class ConfigPresenter implements IBotConfigPanelObserver, IConfigFileDatabaseObserver
 {
-	private static final Logger log = LogManager.getLogger(ConfigPresenter.class.getName());
-
 	private final BotConfigPanel configPanel;
 	private final Map<Integer, ConfigFile> files = new HashMap<>();
 
+	private final ConfigFileDatabaseManager database;
 	private TigerBot bot;
 
 
-	public ConfigPresenter(final BotConfigPanel configPanel)
+	public ConfigPresenter(final BotConfigPanel configPanel, ConfigFileDatabaseManager database)
 	{
 		this.configPanel = configPanel;
-
 		this.configPanel.addObserver(this);
+		this.database = database;
+		this.database.addObserver(this);
 	}
 
 
@@ -65,17 +67,9 @@ public class ConfigPresenter implements IBotConfigPanelObserver
 	{
 		switch (cmd.getType())
 		{
-			case CMD_CONFIG_FILE_STRUCTURE:
-				newCommandConfigFileStructure(cmd);
-				break;
-			case CMD_CONFIG_ITEM_DESC:
-				newCommandConfigItemDesc(cmd);
-				break;
-			case CMD_CONFIG_READ:
-				newCommandConfigRead(cmd);
-				break;
-			default:
-				break;
+			case CMD_CONFIG_FILE_STRUCTURE -> newCommandConfigFileStructure(cmd);
+			case CMD_CONFIG_ITEM_DESC -> newCommandConfigItemDesc(cmd);
+			case CMD_CONFIG_READ -> newCommandConfigRead(cmd);
 		}
 	}
 
@@ -94,7 +88,8 @@ public class ConfigPresenter implements IBotConfigPanelObserver
 
 		log.info("Config complete:" + cfgFile.getName());
 
-		configPanel.addConfigFile(cfgFile);
+		configPanel.addConfigFile(cfgFile,
+				database.getSelectedEntry(cfgFile.getConfigId(), cfgFile.getVersion()).orElse(null));
 	}
 
 
@@ -178,5 +173,19 @@ public class ConfigPresenter implements IBotConfigPanelObserver
 	{
 		log.debug("Request configs for {} ({})", file.getName(), file.getConfigId());
 		getBot().ifPresent(b -> b.execute(new TigerConfigRead(file.getConfigId())));
+	}
+
+
+	@Override
+	public void onConfigFileAdded(final ConfigFile file)
+	{
+		configPanel.updateSavedValues(file);
+	}
+
+
+	@Override
+	public void onConfigFileRemoved(final int configId, final int version)
+	{
+		configPanel.removeSavedValues(configId, version);
 	}
 }

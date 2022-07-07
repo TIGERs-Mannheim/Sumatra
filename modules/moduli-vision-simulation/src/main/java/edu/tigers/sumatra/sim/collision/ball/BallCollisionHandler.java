@@ -4,6 +4,7 @@
 
 package edu.tigers.sumatra.sim.collision.ball;
 
+import com.github.g3force.configurable.Configurable;
 import edu.tigers.sumatra.ball.BallState;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.math.AngleMath;
@@ -27,6 +28,9 @@ import java.util.Optional;
  */
 public class BallCollisionHandler
 {
+	@Configurable(defValue = "false")
+	private static boolean enableSpin = false;
+	
 	public ICollisionState process(final BallState preState, final double dt, final Collection<? extends ISimBot> bots)
 	{
 		final List<ICollisionObject> collisionObjects = generateCollisionObjects(bots);
@@ -224,7 +228,7 @@ public class BallCollisionHandler
 		dampFactor = 0.4;
 		relativeVel = colState.getSpin().multiplyNew(1 - dampFactor);
 		outVel = ballCollision(relativeVel, colNormal);
-		colState.setSpin(outVel);
+		colState.setSpin(enableSpin ? outVel : Vector2f.ZERO_VECTOR);
 	}
 
 

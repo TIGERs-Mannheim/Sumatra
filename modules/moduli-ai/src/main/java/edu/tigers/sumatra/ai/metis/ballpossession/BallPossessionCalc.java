@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.metis.ballpossession;
@@ -118,10 +118,12 @@ public class BallPossessionCalc extends ACalculator
 
 		Color hudColor = getWFrame().getTeamColor().getColor();
 		double posX = 318.0 + (hudColor.equals(Color.BLUE) ? 50 : 0);
-		DrawableBorderText hud = new DrawableBorderText(Vector2.fromXY(posX, 35),
-				ballPossession.getEBallPossession().toString(), hudColor);
-		hud.setFontSize(EFontSize.MEDIUM);
-		getShapes(EAiShapesLayer.AI_BALL_POSSESSION).add(hud);
+		getShapes(EAiShapesLayer.AI_BALL_POSSESSION).add(
+				new DrawableBorderText(Vector2.fromXY(posX, 35),
+						ballPossession.getEBallPossession().toString())
+						.setFontSize(EFontSize.MEDIUM)
+						.setColor(hudColor)
+		);
 	}
 
 

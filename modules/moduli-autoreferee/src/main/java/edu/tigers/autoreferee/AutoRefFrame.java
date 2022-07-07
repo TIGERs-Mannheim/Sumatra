@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.autoreferee;
 
@@ -45,8 +45,8 @@ public class AutoRefFrame implements IAutoRefFrame
 		shapes.get(EAutoRefShapesLayer.MODE).add(
 				new DrawableBorderText(
 						Vector2.fromXY(1, 6),
-						"AutoRef: " + SumatraModel.getInstance().getModule(AutoRefModule.class).getMode().toString(),
-						Color.WHITE));
+						"AutoRef: " + SumatraModel.getInstance().getModule(AutoRefModule.class).getMode().toString())
+						.setColor(Color.WHITE));
 	}
 
 

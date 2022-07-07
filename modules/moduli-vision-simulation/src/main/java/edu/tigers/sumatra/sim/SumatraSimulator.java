@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.sim;
@@ -172,6 +172,7 @@ public class SumatraSimulator extends ASumatraSimulator implements IRefereeObser
 	{
 		synchronized (simSync)
 		{
+			log.debug("Registering bot {}", botId);
 			if (isBotRegistered(botId))
 			{
 				log.warn("Can not register a bot id twice: {}", botId);
@@ -189,6 +190,7 @@ public class SumatraSimulator extends ASumatraSimulator implements IRefereeObser
 	{
 		synchronized (simSync)
 		{
+			log.debug("Unregistering bot {}", botId);
 			final SimulatedBot simulatedBot = simState.getSimulatedBots().remove(botId);
 			if (simulatedBot == null)
 			{
@@ -392,10 +394,11 @@ public class SumatraSimulator extends ASumatraSimulator implements IRefereeObser
 		{
 			IVector2 pos = lastCollision.get().getPos();
 			BotID botID = lastCollision.get().getObject().getBotID();
-			if (botID.isBot()
+			SimulatedBot simulatedBot = simState.getSimulatedBots().get(botID);
+			if (botID.isBot() && simulatedBot != null
 					&& (simState.getLastKickEvent() == null || !pos.equals(simState.getLastKickEvent().getPosition())))
 			{
-				Pose botPose = simState.getSimulatedBots().get(botID).getState().getPose();
+				Pose botPose = simulatedBot.getState().getPose();
 				simState.setLastKickEvent(
 						new SimKickEvent(pos, botID, simState.getSimTime(), botPose.getPos(), botPose.getOrientation(),
 								simState.getSimulatedBall().getState()));
@@ -670,28 +673,55 @@ public class SumatraSimulator extends ASumatraSimulator implements IRefereeObser
 		SslGcRefereeMessage.Referee refMsg = simState.getLatestRefereeMessage();
 		if (refMsg != null && manageBotCount)
 		{
-			handleTeam(refMsg.getBlue(), ETeamColor.BLUE);
-			handleTeam(refMsg.getYellow(), ETeamColor.YELLOW);
+			handleTeam(refMsg, refMsg.getBlue(), ETeamColor.BLUE);
+			handleTeam(refMsg, refMsg.getYellow(), ETeamColor.YELLOW);
 		}
 	}
 
 
-	private void handleTeam(SslGcRefereeMessage.Referee.TeamInfo teamInfo, ETeamColor team)
+	private void handleTeam(
+			SslGcRefereeMessage.Referee refMsg,
+			SslGcRefereeMessage.Referee.TeamInfo teamInfo,
+			ETeamColor team
+	)
 	{
 		long numOnField = simState.getSimulatedBots().keySet().stream().filter(b -> b.getTeamColor() == team).count();
 		long numToRemove = numOnField - teamInfo.getMaxAllowedBots();
 		if (numToRemove > 0)
 		{
-			nearestBotsToInterchangePoints(team, numToRemove).forEach(this::unregisterBot);
+			Set<BotID> botsToRemove = nearestBotsToInterchangePoints(refMsg, team, numToRemove);
+			if (!botsToRemove.isEmpty())
+			{
+				log.debug("Team {} has {} too many robots. They will be unregistered.", team, numToRemove);
+				botsToRemove.forEach(this::unregisterBot);
+			}
 		} else if (numToRemove < 0)
 		{
 			IVector2 interchangePos = findFreeInterchangePos(team);
 			final BotID botID = nextUnassignedBotId(team);
 			if (interchangePos != null && botID.isBot())
 			{
+				log.debug("Team {} has {} too few robots. They will be registered.", team, -numToRemove);
 				registerBot(botID, Pose.from(interchangePos, 0), Vector3f.zero());
 			}
 		}
+	}
+
+
+	private boolean canRobotBeRemove(SslGcRefereeMessage.Referee refMsg, SimulatedBot bot)
+	{
+		if (refMsg.getCommand() == SslGcRefereeMessage.Referee.Command.HALT)
+		{
+			return true;
+		}
+		if (Math.abs(simState.getSimulatedBall().getState().getPos().x()) < 2000)
+		{
+			return false;
+		}
+
+		IVector2 pos = bot.getState().getPose().getPos();
+		return Geometry.getField().withMargin(Geometry.getBotRadius()).isPointInShape(pos)
+				&& Math.abs(pos.x()) <= 1000;
 	}
 
 
@@ -724,10 +754,11 @@ public class SumatraSimulator extends ASumatraSimulator implements IRefereeObser
 	}
 
 
-	private Set<BotID> nearestBotsToInterchangePoints(ETeamColor team, long numBots)
+	private Set<BotID> nearestBotsToInterchangePoints(SslGcRefereeMessage.Referee refMsg, ETeamColor team, long numBots)
 	{
 		return simState.getSimulatedBots().entrySet().stream()
 				.filter(e -> e.getKey().getTeamColor() == team)
+				.filter(e -> canRobotBeRemove(refMsg, e.getValue()))
 				.sorted(Comparator.comparingDouble(this::distanceToClosestInterchangePoint))
 				.limit(numBots)
 				.map(Map.Entry::getKey)

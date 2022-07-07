@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.pandora.roles.defense;
@@ -16,9 +16,8 @@ import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2f;
 import edu.tigers.sumatra.pathfinder.obstacles.GenericCircleObstacle;
 import edu.tigers.sumatra.pathfinder.obstacles.IObstacle;
-import edu.tigers.sumatra.skillsystem.skills.MoveToSkill;
-import edu.tigers.sumatra.statemachine.AState;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
+import lombok.Setter;
 
 import java.util.List;
 import java.util.Set;
@@ -32,21 +31,19 @@ public abstract class AOuterDefenseRole extends ADefenseRole
 {
 	@Configurable(comment = "Gain factor for threat velocity in ProtectionState, high gain => high overshoot, low gain => defender lags behind", defValue = "0.75")
 	private static double mimicThreatVelocityGain = 0.75;
+	@Configurable(comment = "[deg] The angle to determine if the CenterBack is between Ball and Goal", defValue = "45.0")
+	private static double betweenBallAndGoalAngle = 45.0;
 
+	@Configurable(defValue = "10.0", comment = "Min distance [mm] to penalty area")
+	private static double minDistToPenaltyArea = 10.0;
 
+	@Setter
 	protected IDefenseThreat threat;
 
 
-	protected AOuterDefenseRole(final ERole type, final IDefenseThreat threat)
+	protected AOuterDefenseRole(final ERole type)
 	{
 		super(type);
-		this.threat = threat;
-	}
-
-
-	public void setThreat(final IDefenseThreat threat)
-	{
-		this.threat = threat;
 	}
 
 
@@ -54,15 +51,6 @@ public abstract class AOuterDefenseRole extends ADefenseRole
 
 
 	protected abstract IVector2 findDest();
-
-
-	protected List<IObstacle> closeOpponentBotObstacles(IVector2 dest)
-	{
-		return closeOpponentBots(dest).stream()
-				.map(b -> new GenericCircleObstacle(
-						Circle.createCircle(getWFrame().getBot(b).getPos(), Geometry.getBotRadius() * 1.5)))
-				.collect(Collectors.toList());
-	}
 
 
 	protected Set<BotID> closeOpponentBots(IVector2 dest)
@@ -100,8 +88,7 @@ public abstract class AOuterDefenseRole extends ADefenseRole
 		double brakeDistance = Math.signum(projectedThreatVelocity) * 0.5 * getBot().getMoveConstraints().getAccMax()
 				* timeToBrake * timeToBrake * 1000.0;
 
-		return currentDest.addNew(
-				positioningDirection.multiplyNew((brakeDistance * mimicThreatVelocityGain)));
+		return currentDest.addNew(positioningDirection.multiplyNew((brakeDistance * mimicThreatVelocityGain)));
 	}
 
 
@@ -109,34 +96,25 @@ public abstract class AOuterDefenseRole extends ADefenseRole
 	{
 		IVector2 insideField = Geometry.getField().withMargin(Geometry.getBotRadius()).nearestPointInside(dest, getPos());
 		return Geometry.getPenaltyAreaOur()
-				.withMargin(Geometry.getBotRadius() + Geometry.getPenaltyAreaMargin())
+				.withMargin(Geometry.getBotRadius() + minDistToPenaltyArea)
 				.nearestPointOutside(insideField);
 	}
 
 
-	protected boolean isBehindBall()
+	protected boolean isNotBetweenBallAndGoal()
 	{
 		IVector2 ball2Bot = getPos().subtractNew(getBall().getPos());
+		// ThreatLine is from ThreatSource to ThreatTarget
 		double angle = threat.getThreatLine().directionVector().angleToAbs(ball2Bot).orElse(0.0);
-		return angle > AngleMath.PI_HALF;
+
+		return angle > AngleMath.PI - AngleMath.deg2rad(betweenBallAndGoalAngle);
 	}
 
 
-	protected class DefendState extends AState
+	protected class DefendState extends MoveState
 	{
-		private MoveToSkill skill;
-
-
 		@Override
-		public void doEntryActions()
-		{
-			skill = MoveToSkill.createMoveToSkill();
-			setNewSkill(skill);
-		}
-
-
-		@Override
-		public void doUpdate()
+		protected void onUpdate()
 		{
 			skill.setKickParams(calcKickParams());
 
@@ -144,7 +122,7 @@ public abstract class AOuterDefenseRole extends ADefenseRole
 			skill.updateDestination(destination);
 			skill.updateTargetAngle(protectionTargetAngle());
 
-			skill.getMoveCon().setBallObstacle(isBehindBall());
+			skill.getMoveCon().setBallObstacle(isNotBetweenBallAndGoal());
 			skill.getMoveCon().setIgnoredBots(ignoredBots(destination));
 			skill.getMoveCon().setCustomObstacles(closeOpponentBotObstacles(destination));
 			skill.getMoveConstraints().setFastMove(useFastMove());
@@ -152,9 +130,19 @@ public abstract class AOuterDefenseRole extends ADefenseRole
 		}
 
 
+		private List<IObstacle> closeOpponentBotObstacles(IVector2 dest)
+		{
+			return closeOpponentBots(dest).stream()
+					.map(b -> new GenericCircleObstacle(
+							Circle.createCircle(getWFrame().getBot(b).getPos(), Geometry.getBotRadius() * 1.5)))
+					.map(IObstacle.class::cast)
+					.toList();
+		}
+
+
 		private IVector2 primaryDirection()
 		{
-			if (!skill.getMoveConstraints().isFastMove() && isBehindBall())
+			if (!skill.getMoveConstraints().isFastMove() && isNotBetweenBallAndGoal())
 			{
 				return threat.getThreatLine().directionVector();
 			}

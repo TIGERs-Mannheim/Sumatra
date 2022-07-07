@@ -1,16 +1,15 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.drawable;
 
-import java.awt.Color;
-import java.awt.Graphics2D;
-
 import com.sleepycat.persist.model.Persistent;
-
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2f;
+
+import java.awt.Color;
+import java.awt.Graphics2D;
 
 
 /**
@@ -20,7 +19,9 @@ import edu.tigers.sumatra.math.vector.Vector2f;
 public class DrawablePoint extends ADrawable
 {
 	private final IVector2 point;
-	/** Size of a point in field unit [mm] */
+	/**
+	 * Size of a point in field unit [mm]
+	 */
 	private double pointSize = 25;
 
 
@@ -58,7 +59,7 @@ public class DrawablePoint extends ADrawable
 
 		// --- from SSLVision-mm to java2d-coordinates ---
 		final IVector2 transPoint = tool.transformToGuiCoordinates(point, invert);
-		int guiPointSize = tool.scaleXLength(pointSize);
+		int guiPointSize = tool.scaleGlobalToGui(pointSize);
 
 		final int drawingX = (int) transPoint.x() - (guiPointSize / 2);
 		final int drawingY = (int) transPoint.y() - (guiPointSize / 2);

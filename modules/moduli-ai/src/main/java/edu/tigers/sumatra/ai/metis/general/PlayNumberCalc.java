@@ -1,9 +1,10 @@
 /*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.metis.general;
 
+import com.github.g3force.configurable.Configurable;
 import edu.tigers.sumatra.ai.metis.ACalculator;
 import edu.tigers.sumatra.ai.pandora.plays.EPlay;
 import edu.tigers.sumatra.model.SumatraModel;
@@ -26,6 +27,10 @@ import java.util.function.Supplier;
 @RequiredArgsConstructor
 public class PlayNumberCalc extends ACalculator
 {
+
+	@Configurable(defValue = "true", comment = "KEEP THIS ALWAYS ACTIVE, unless you're 100% sure. This will deactivate Offense during Running")
+	private static boolean activateOffenseDuringRunning = true;
+
 	private final Supplier<Integer> numBallPlacementBots;
 	private final Supplier<Integer> numDefender;
 	private final Supplier<Integer> numInterchangeBots;
@@ -56,9 +61,6 @@ public class PlayNumberCalc extends ACalculator
 		} else if (gameState.isBallPlacementForUs())
 		{
 			ballPlacement();
-		} else if (gameState.isKickoffOrPrepareKickoff())
-		{
-			kickoff();
 		} else if (gameState.isPausedGame())
 		{
 			pausedGame();
@@ -76,7 +78,7 @@ public class PlayNumberCalc extends ACalculator
 
 	private void sanityCheck()
 	{
-		if (!SumatraModel.getInstance().isProductive())
+		if (!SumatraModel.getInstance().isTournamentMode())
 		{
 			int assignedBots = assignedBots();
 			if (assignedBots != availableBots())
@@ -103,37 +105,6 @@ public class PlayNumberCalc extends ACalculator
 		playNumbers.put(EPlay.INTERCHANGE, numInterchangeBots.get());
 	}
 
-
-	private void kickoff()
-	{
-		if (getAiFrame().getGameState().isGameStateForUs())
-		{
-			kickoffForUs();
-		} else
-		{
-			kickoffForThem();
-		}
-	}
-
-
-	private void kickoffForUs()
-	{
-		keeper();
-		attack();
-
-		int numKickoffBots = 2;
-		playNumbers.put(EPlay.KICKOFF, Math.min(unassignedBots(), numKickoffBots));
-		playNumbers.put(EPlay.DEFENSIVE, unassignedBots());
-	}
-
-
-	private void kickoffForThem()
-	{
-		keeper();
-		playNumbers.put(EPlay.DEFENSIVE, unassignedBots());
-	}
-
-
 	private void penalty()
 	{
 		if (getAiFrame().getGameState().isGameStateForUs())
@@ -148,14 +119,8 @@ public class PlayNumberCalc extends ACalculator
 
 	private void penaltyForUs()
 	{
-		if (availableBots() > 0)
-		{
-			playNumbers.put(EPlay.PENALTY_WE, 1);
-		}
-		if (availableBots() > 1)
-		{
-			keeper();
-		}
+		keeper();
+		attack();
 		playNumbers.put(EPlay.DEFENSIVE, Math.max(0, unassignedBots()));
 	}
 
@@ -183,7 +148,10 @@ public class PlayNumberCalc extends ACalculator
 	{
 		keeper();
 		defense();
-		attack();
+		if (activateOffenseDuringRunning || !getAiFrame().getGameState().isRunning())
+		{
+			attack();
+		}
 		support();
 	}
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.persistence;
@@ -162,7 +162,7 @@ public class RecordManager extends AModule implements IRefereeObserver
 	@Override
 	public void onNewRefereeMsg(final SslGcRefereeMessage.Referee refMsg)
 	{
-		if (autoRecord && SumatraModel.getInstance().isProductive() && (refMsg != null)
+		if (autoRecord && SumatraModel.getInstance().isTournamentMode() && (refMsg != null)
 				&& refMsg.getCommandCounter() != lastCommandCounter)
 		{
 			startStopRecording(refMsg);

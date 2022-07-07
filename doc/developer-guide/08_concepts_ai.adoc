@@ -224,7 +224,7 @@ Furthermore they should disturb the opponents defense as much as possible.
 All supporters use the same *Role* (`SupportRole`).
 The play will assign a support behavior to each role.
 A behavior defines a "strategy" how a supporter should behave.
-For example the `BreakThroughDefense` behavior tries to find a hole in the opponents defense to receive the ball there.
+For example the `BreakThroughDefenseRepulsiveBehavior` behavior tries to find a hole in the opponents defense to receive the ball there.
 To assign the Behaviors, each behavior will calculate it's viability for each role.
 While choosing the behaviors, the play will align each role the behavior with the highest priority (further up in the `ESupportBehavior` enum) that
 
@@ -254,35 +254,24 @@ enum.
 the pass, but move away so that another bot can receive the pass
 | Unlimited
 
-|`PassReceiver`
-| Supporter should receive a pass
-| Unlimited
-
-|`BreakThroughDefense`
-| Tries to position the supporter in a hole in the opponents defense near the
-pen area.
+|`BreakThroughDefenseRepulsiveBehavior`
+| Tries to position the supporter in a hole in the opponents defense near the pen area.
 | 1 (configurable)
 
-|`RepulsivePassReceiver`
-| Receive a pass but move (virtual) forces (emited by various objects on
-the field).
+|`PassReceiverRepulsiveBehavior`
+| Receive a pass but move (virtual) forces (emited by various objects on the field).
 | 2 (configurable)
 
-|`RepulsiveAttacker`
-| Should move the Supporter to a good attacker position. It calculates its
-targets through different (virtual) forces (emited by various objects on
-the field). It serves as the default behavior, if all other are not selected
+|`AttackerRepulsiveBehavior`
+| Should move the Supporter to a good attacker position.
+It calculates its targets through different (virtual) forces (emited by various objects on the field).
+It serves as the default behavior, if all other are not selected
 | Unlimited
 
 |`MoveOnVoroni`
 | The supporter should move to a position where there is much free space.
 To block this space most efficiently, it should move on a voroni diagram.
 | Unlimited, currently disabled
-
-|`TestBehavior`
-| Does nothing, just for test purpose.
-Is is disabled by default.
-| Unlimited (0 desired)
 
 |===
 

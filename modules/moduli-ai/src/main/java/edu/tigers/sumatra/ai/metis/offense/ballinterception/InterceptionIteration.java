@@ -21,7 +21,7 @@ public class InterceptionIteration
 
 
 	@SuppressWarnings("unused") // berkeley
-	private InterceptionIteration()
+	protected InterceptionIteration()
 	{
 		ballTravelTime = 0;
 		slackTime = 0;

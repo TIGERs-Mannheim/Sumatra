@@ -15,19 +15,19 @@ import edu.tigers.sumatra.botmanager.serial.SerialData.ESerialDataType;
 
 
 /**
- * Version number and CRC32 of application code.
- * 
+ * Version number and git ref of application code.
+ *
  * @author AndreR
  */
 public class TigerSystemVersion extends ACommand
 {
 	@SerialData(type = ESerialDataType.UINT32)
 	private long version = 0;
-	
+
 	@SerialData(type = ESerialDataType.UINT32)
-	private long crc = 0;
-	
-	
+	private long gitRef = 0;
+
+
 	/**
 	 * Constructor.
 	 */
@@ -35,55 +35,39 @@ public class TigerSystemVersion extends ACommand
 	{
 		super(ECommand.CMD_SYSTEM_VERSION);
 	}
-	
-	
+
+
 	/**
-	 * @return the version
+	 * @return Version string
 	 */
-	public long getVersion()
+	public String getVersionString()
 	{
-		return version;
+		long major = (version >> 24) & 0xFF;
+		long minor = (version >> 16) & 0xFF;
+		long patch = (version >> 8) & 0xFF;
+		long dirty = version & 0xFF;
+
+		return String.format("v%d.%d.%d%s", major, minor, patch, dirty > 0 ? "-dirty" : "");
 	}
-	
-	
+
+
 	/**
-	 * @param version the version to set
+	 * @return the gitRef (first 4 byte of SHA1)
 	 */
-	public void setVersion(final long version)
+	public long getGitRef()
 	{
-		this.version = version;
+		return gitRef;
 	}
-	
-	
+
+
 	/**
-	 * @return the crc
-	 */
-	public long getCrc()
-	{
-		return crc;
-	}
-	
-	
-	/**
-	 * @param crc the crc to set
-	 */
-	public void setCrc(final long crc)
-	{
-		this.crc = crc;
-	}
-	
-	
-	/**
-	 * Return a full version string with major.minor-crc32.
-	 * 
+	 * Return a full version string with major.minor.patch[-dirty]-ref.
+	 *
 	 * @return
 	 */
 	public String getFullVersionString()
 	{
-		long minor = version & 0xFFFF;
-		long major = version >> 16;
-		
-		return String.format("%d.%d-%08X", major, minor, crc);
+		return getVersionString() + String.format("-g%08x", getGitRef());
 	}
-	
+
 }

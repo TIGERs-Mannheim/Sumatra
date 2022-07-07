@@ -1,10 +1,26 @@
 /*
- * Copyright (c) 2009 - 2019, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.presenter.ball;
 
-import java.awt.Component;
+import edu.tigers.sumatra.data.collector.ITimeSeriesDataCollectorObserver;
+import edu.tigers.sumatra.data.collector.TimeSeriesDataCollector;
+import edu.tigers.sumatra.matlab.MatlabConnection;
+import edu.tigers.sumatra.view.ball.IBallAnalyserPanelObserver;
+import edu.tigers.sumatra.view.ball.VisionAnalyserPanel;
+import edu.tigers.sumatra.views.ISumatraViewPresenter;
+import edu.tigers.sumatra.wp.util.TimeSeriesDataCollectorFactory;
+import lombok.Getter;
+import lombok.extern.log4j.Log4j2;
+import matlabcontrol.MatlabConnectionException;
+import matlabcontrol.MatlabInvocationException;
+import matlabcontrol.MatlabProxy;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
+
+import javax.swing.JOptionPane;
 import java.awt.Toolkit;
 import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.ClipboardOwner;
@@ -20,59 +36,22 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
-import javax.swing.JOptionPane;
-
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.json.simple.JSONObject;
-import org.json.simple.parser.JSONParser;
-import org.json.simple.parser.ParseException;
-
-import edu.tigers.sumatra.data.collector.ITimeSeriesDataCollectorObserver;
-import edu.tigers.sumatra.data.collector.TimeSeriesDataCollector;
-import edu.tigers.sumatra.matlab.MatlabConnection;
-import edu.tigers.sumatra.view.ball.IBallAnalyserPanelObserver;
-import edu.tigers.sumatra.view.ball.VisionAnalyserPanel;
-import edu.tigers.sumatra.views.ASumatraViewPresenter;
-import edu.tigers.sumatra.views.ISumatraView;
-import edu.tigers.sumatra.wp.util.TimeSeriesDataCollectorFactory;
-import matlabcontrol.MatlabConnectionException;
-import matlabcontrol.MatlabInvocationException;
-import matlabcontrol.MatlabProxy;
-
 
 /**
- * @author Nicolai Ommer <nicolai.ommer@gmail.com>
+ * Presenter for vision analyser.
  */
-public class VisionAnalyserPresenter extends ASumatraViewPresenter
+@Log4j2
+public class VisionAnalyserPresenter implements ISumatraViewPresenter
 {
-	@SuppressWarnings("unused")
-	private static final Logger log = LogManager.getLogger(VisionAnalyserPresenter.class.getName());
+	@Getter
+	private final VisionAnalyserPanel viewPanel = new VisionAnalyserPanel();
 
-	private final VisionAnalyserPanel panel = new VisionAnalyserPanel();
-	private TimeSeriesDataCollector dataCollector = null;
+	private TimeSeriesDataCollector dataCollector;
 
 
-	/**
-	 * Default Constructor
-	 */
 	public VisionAnalyserPresenter()
 	{
-		panel.addObserver(new PanelObserver());
-	}
-
-
-	@Override
-	public Component getComponent()
-	{
-		return panel;
-	}
-
-
-	@Override
-	public ISumatraView getSumatraView()
-	{
-		return panel;
+		viewPanel.addObserver(new PanelObserver());
 	}
 
 
@@ -95,7 +74,7 @@ public class VisionAnalyserPresenter extends ASumatraViewPresenter
 				{
 					@SuppressWarnings("unchecked")
 					Map<String, Object> map = (Map<String, Object>) jp.parse(fr);
-					map.put(DESCRIPTION, panel.getDescription());
+					map.put(DESCRIPTION, viewPanel.getDescription());
 					JSONObject jo = new JSONObject(map);
 					Files.write(Paths.get(infoFile.getAbsolutePath()), jo.toJSONString().getBytes());
 				} catch (IOException | ParseException err)
@@ -106,14 +85,14 @@ public class VisionAnalyserPresenter extends ASumatraViewPresenter
 					log.error("Could not cast a type. Wrong format?!", err);
 				}
 			}
-			panel.markDirty(false);
+			viewPanel.markDirty(false);
 		}
 
 
 		@Override
-		public void onRecord(final boolean record, final boolean stopAutomatically)
+		public void onRecord(final boolean doRecord, final boolean stopAutomatically)
 		{
-			if (record)
+			if (doRecord)
 			{
 				if (dataCollector != null)
 				{
@@ -126,7 +105,7 @@ public class VisionAnalyserPresenter extends ASumatraViewPresenter
 				dataCollector.addObserver(new TimeSeriesDataCollectorObserver());
 				dataCollector.setStopAutomatically(stopAutomatically);
 				boolean started = dataCollector.start();
-				panel.setRecording(started);
+				viewPanel.setRecording(started);
 				if (!started)
 				{
 					dataCollector = null;
@@ -148,8 +127,8 @@ public class VisionAnalyserPresenter extends ASumatraViewPresenter
 				sb.append('\n');
 			}
 
-			int answer = JOptionPane.showConfirmDialog(panel,
-					"Do you really want to delete following files? \n" + sb.toString(), "Delete?",
+			int answer = JOptionPane.showConfirmDialog(viewPanel,
+					"Do you really want to delete following files? \n" + sb, "Delete?",
 					JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
 			if (answer == JOptionPane.YES_OPTION)
 			{
@@ -157,7 +136,7 @@ public class VisionAnalyserPresenter extends ASumatraViewPresenter
 				{
 					processYesDeleteAnswerForFile(filename);
 				}
-				panel.updateFiles();
+				viewPanel.updateFiles();
 			}
 		}
 
@@ -247,8 +226,8 @@ public class VisionAnalyserPresenter extends ASumatraViewPresenter
 			File infoFile = new File(getBaseDir(filenames.get(0)) + "/info.json");
 			if (infoFile.exists())
 			{
-				panel.setValidFileSelected(true);
-				panel.clearKeyValue();
+				viewPanel.setValidFileSelected(true);
+				viewPanel.clearKeyValue();
 				JSONParser jp = new JSONParser();
 				try (FileReader fr = new FileReader(infoFile))
 				{
@@ -258,17 +237,17 @@ public class VisionAnalyserPresenter extends ASumatraViewPresenter
 					Long numSamples = (Long) jo.get("numSamples");
 					if (description != null)
 					{
-						panel.setDescription(description);
+						viewPanel.setDescription(description);
 					} else
 					{
-						panel.setDescription("");
+						viewPanel.setDescription("");
 					}
 					if (numSamples != null)
 					{
-						panel.setNumSamples((int) (long) numSamples);
+						viewPanel.setNumSamples((int) (long) numSamples);
 					} else
 					{
-						panel.setNumSamples(-1);
+						viewPanel.setNumSamples(-1);
 					}
 
 					processJsonbjects(jo);
@@ -281,10 +260,10 @@ public class VisionAnalyserPresenter extends ASumatraViewPresenter
 				}
 			} else
 			{
-				panel.setValidFileSelected(false);
-				panel.setDescription("");
-				panel.setNumSamples(0);
-				panel.clearKeyValue();
+				viewPanel.setValidFileSelected(false);
+				viewPanel.setDescription("");
+				viewPanel.setNumSamples(0);
+				viewPanel.clearKeyValue();
 			}
 		}
 
@@ -297,7 +276,7 @@ public class VisionAnalyserPresenter extends ASumatraViewPresenter
 				{
 					continue;
 				}
-				panel.setKeyValue(entry.getKey(), String.valueOf(entry.getValue()));
+				viewPanel.setKeyValue(entry.getKey(), String.valueOf(entry.getValue()));
 			}
 		}
 
@@ -369,8 +348,8 @@ public class VisionAnalyserPresenter extends ASumatraViewPresenter
 		@Override
 		public void postProcessing(final String fileName)
 		{
-			panel.updateFiles();
-			panel.setRecording(false);
+			viewPanel.updateFiles();
+			viewPanel.setRecording(false);
 			dataCollector = null;
 		}
 	}

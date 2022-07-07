@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.drawable;
@@ -83,7 +83,7 @@ public class DrawableCircle extends ADrawableWithStroke
 
 		// --- from SSLVision-mm to java2d-coordinates ---
 		final IVector2 center = tool.transformToGuiCoordinates(circle.center(), invert);
-		final double radius = tool.scaleXLength(circle.radius());
+		final double radius = tool.scaleGlobalToGui(circle.radius());
 
 		if (fill)
 		{

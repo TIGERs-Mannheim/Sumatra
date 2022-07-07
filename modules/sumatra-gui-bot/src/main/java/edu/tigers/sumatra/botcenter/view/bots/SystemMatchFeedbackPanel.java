@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.botcenter.view.bots;
 
@@ -249,7 +249,7 @@ public class SystemMatchFeedbackPanel extends JPanel
 		batteryLevel.setValue((int) (status.getBatteryPercentage() * 1000));
 		kickerLevel.setString(String.format(Locale.ENGLISH, "%d V", (int) status.getKickerLevel()));
 		kickerLevel.setValue((int) (status.getKickerPercentage() * 1000));
-		dribblerSpeed.setText(String.format(Locale.ENGLISH, "%d RPM", (int) status.getDribblerSpeed()));
+		dribblerSpeed.setText(String.format(Locale.ENGLISH, "%d RPM (%.2fA)", (int) status.getDribblerSpeed(), status.getDribblerCurrent()));
 		dribblerTemp.setText(status.getDribblerState().toString());
 		kickCounter.setText(String.format("%d", status.getKickCounter()));
 		hardwareId.setText(String.format("%d", status.getHardwareId()));

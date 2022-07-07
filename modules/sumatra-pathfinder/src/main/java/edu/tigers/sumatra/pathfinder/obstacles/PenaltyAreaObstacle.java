@@ -1,15 +1,16 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.pathfinder.obstacles;
 
-import java.awt.Color;
-import java.util.List;
-
 import edu.tigers.sumatra.drawable.IDrawableShape;
 import edu.tigers.sumatra.geometry.IPenaltyArea;
 import edu.tigers.sumatra.math.vector.IVector2;
+import lombok.Getter;
+
+import java.awt.Color;
+import java.util.List;
 
 
 /**
@@ -17,6 +18,7 @@ import edu.tigers.sumatra.math.vector.IVector2;
  */
 public class PenaltyAreaObstacle extends AObstacle
 {
+	@Getter
 	private final IPenaltyArea penaltyArea;
 
 
@@ -27,6 +29,7 @@ public class PenaltyAreaObstacle extends AObstacle
 	{
 		this.penaltyArea = penaltyArea;
 		setEmergencyBrakeFor(true);
+		setPriority(100);
 	}
 
 

@@ -135,7 +135,7 @@ public class SSLVisionCam extends ACam implements Runnable, IReceiverObserver, I
 
 				if (sslPacket.hasGeometry())
 				{
-					final CamGeometry geometry = geometryTranslator.translate(sslPacket.getGeometry());
+					final CamGeometry geometry = geometryTranslator.fromProtobuf(sslPacket.getGeometry());
 
 					notifyNewCameraCalibration(geometry);
 				}

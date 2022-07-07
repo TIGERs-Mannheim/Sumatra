@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.model;
@@ -8,6 +8,8 @@ import edu.tigers.moduli.Moduli;
 import edu.tigers.moduli.exceptions.DependencyException;
 import edu.tigers.moduli.exceptions.LoadModulesException;
 import edu.tigers.moduli.listenerVariables.ModulesState;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.log4j.Log4j2;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.config.Configurator;
@@ -53,11 +55,14 @@ public final class SumatraModel extends Moduli
 	// Application Properties
 	private static final String CONFIG_SETTINGS_PATH = "./config/";
 
-
-	private boolean productive = false;
+	@Getter
+	@Setter
+	private boolean tournamentMode;
 
 	private boolean simulation = false;
 	private String environment = "";
+	@Getter
+	private String geometry = "";
 
 
 	/**
@@ -80,6 +85,8 @@ public final class SumatraModel extends Moduli
 		return INSTANCE;
 	}
 
+
+	@SuppressWarnings("java:S1181") // catching Throwables intentionally here
 	public void startUp(final String moduliConfig)
 	{
 		try
@@ -91,11 +98,12 @@ public final class SumatraModel extends Moduli
 			SumatraModel.getInstance().setCurrentModuliConfig(moduliConfig);
 			loadModulesOfConfig(getCurrentModuliConfig());
 			startModules();
-		} catch (Throwable e)
+		} catch (Exception e)
 		{
 			log.error("Could not start Sumatra.", e);
 		}
 	}
+
 
 	/**
 	 * Load application properties in two steps
@@ -158,6 +166,7 @@ public final class SumatraModel extends Moduli
 	{
 		simulation = getGlobalConfiguration().getBoolean("simulation", false);
 		environment = getGlobalConfiguration().getString("environment");
+		geometry = getGlobalConfiguration().getString("geometry", "DIV_A");
 	}
 
 
@@ -243,6 +252,12 @@ public final class SumatraModel extends Moduli
 	}
 
 
+	public String setUserProperty(Class<?> type, String key, Object value)
+	{
+		return setUserProperty(type.getCanonicalName() + "." + key, String.valueOf(value));
+	}
+
+
 	/**
 	 * Calls {@link Properties#getProperty(String)}
 	 *
@@ -252,6 +267,19 @@ public final class SumatraModel extends Moduli
 	public String getUserProperty(final String key)
 	{
 		return userSettings.getProperty(key);
+	}
+
+
+	/**
+	 * Calls {@link Properties#getProperty(String)}
+	 *
+	 * @param type
+	 * @param key
+	 * @return The String associated with the given key
+	 */
+	public String getUserProperty(Class<?> type, String key)
+	{
+		return userSettings.getProperty(type.getCanonicalName() + "." + key);
 	}
 
 
@@ -274,6 +302,57 @@ public final class SumatraModel extends Moduli
 
 
 	/**
+	 * Calls {@link Properties#getProperty(String)}
+	 *
+	 * @param type
+	 * @param key
+	 * @param def
+	 * @return The String associated with the given key
+	 */
+	public String getUserProperty(Class<?> type, String key, String def)
+	{
+		return getUserProperty(type.getCanonicalName() + "." + key, def);
+	}
+
+
+	/**
+	 * Calls {@link Properties#getProperty(String)} and parses value to boolean
+	 *
+	 * @param key
+	 * @param def
+	 * @return The boolean associated with the given key
+	 */
+	public boolean getUserProperty(String key, boolean def)
+	{
+		String val = getUserProperty(key);
+		if (val == null)
+		{
+			return def;
+		}
+		return Boolean.parseBoolean(val);
+	}
+
+
+	/**
+	 * Calls {@link Properties#getProperty(String)} and parses value to boolean
+	 *
+	 * @param type
+	 * @param key
+	 * @param def
+	 * @return The boolean associated with the given key
+	 */
+	public boolean getUserProperty(Class<?> type, String key, boolean def)
+	{
+		String val = getUserProperty(type, key);
+		if (val == null)
+		{
+			return def;
+		}
+		return Boolean.parseBoolean(val);
+	}
+
+
+	/**
 	 * Sumatra version
 	 *
 	 * @return
@@ -281,26 +360,6 @@ public final class SumatraModel extends Moduli
 	public static String getVersion()
 	{
 		return VERSION;
-	}
-
-
-	/**
-	 * Set if application should run in productive mode
-	 *
-	 * @param productive
-	 */
-	public void setProductive(final boolean productive)
-	{
-		this.productive = productive;
-	}
-
-
-	/**
-	 * @return if we are in productive (match) mode
-	 */
-	public final boolean isProductive()
-	{
-		return productive;
 	}
 
 

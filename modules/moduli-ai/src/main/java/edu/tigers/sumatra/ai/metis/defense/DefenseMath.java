@@ -1,17 +1,19 @@
 /*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.metis.defense;
 
-import com.github.g3force.configurable.ConfigRegistration;
 import edu.tigers.sumatra.ball.trajectory.IBallTrajectory;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.geometry.IPenaltyArea;
+import edu.tigers.sumatra.math.AngleMath;
 import edu.tigers.sumatra.math.SumatraMath;
+import edu.tigers.sumatra.math.circle.Arc;
 import edu.tigers.sumatra.math.line.LineMath;
 import edu.tigers.sumatra.math.line.v2.ILineSegment;
 import edu.tigers.sumatra.math.line.v2.Lines;
+import edu.tigers.sumatra.math.rectangle.IRectangle;
 import edu.tigers.sumatra.math.triangle.TriangleMath;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.VectorMath;
@@ -25,6 +27,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Stream;
 
 
 /**
@@ -32,12 +35,6 @@ import java.util.List;
  */
 public final class DefenseMath
 {
-	static
-	{
-		ConfigRegistration.registerClass("metis", DefenseMath.class);
-	}
-
-
 	private DefenseMath()
 	{
 		// Hide public constructor
@@ -79,7 +76,7 @@ public final class DefenseMath
 	 * @param maxGoOutDistance max distance to go out from goal center
 	 * @return the line segment
 	 */
-	public static ILineSegment getThreatDefendingLine(
+	public static ILineSegment getProtectionLine(
 			final ILineSegment threatLine,
 			final double marginToThreat,
 			final double marginToPenArea,
@@ -88,17 +85,30 @@ public final class DefenseMath
 		IVector2 base = threatLine.getEnd();
 		IVector2 protectionPos = Geometry.getField().nearestPointInside(threatLine.getStart());
 		IPenaltyArea penArea = Geometry.getPenaltyAreaOur().withMargin(marginToPenArea);
-		IVector2 end = base.nearestToOpt(penArea.lineIntersections(Lines.lineFromPoints(base, protectionPos)))
-				.orElse(penArea.nearestPointOutside(base));
+		var arcPos = Arc.createArc(Geometry.getPenaltyAreaOur().getRectangle().getCorner(IRectangle.ECorner.TOP_RIGHT),
+				marginToPenArea, 0, AngleMath.PI_HALF);
+		var arcNeg = Arc.createArc(Geometry.getPenaltyAreaOur().getRectangle().getCorner(IRectangle.ECorner.BOTTOM_RIGHT),
+				marginToPenArea, 0, -AngleMath.PI_HALF);
+
+		var end = base
+				.nearestToOpt(Stream.concat(
+								arcPos.lineIntersections(Lines.segmentFromPoints(base, protectionPos)).stream(),
+								arcNeg.lineIntersections(Lines.segmentFromPoints(base, protectionPos)).stream())
+						.toList())
+				.orElseGet(() -> base
+						.nearestToOpt(penArea.lineIntersections(Lines.lineFromPoints(base, protectionPos)))
+						.orElseGet(() -> penArea.nearestPointOutside(base))
+				);
 
 		IVector2 start = LineMath.stepAlongLine(protectionPos, base, marginToThreat);
 		double distStart2Goal = start.distanceTo(base);
-		if (distStart2Goal > maxGoOutDistance)
-		{
-			start = LineMath.stepAlongLine(base, start, maxGoOutDistance);
-		} else if (distStart2Goal < end.distanceTo(base))
+		double distEnd2Goal = end.distanceTo(base);
+		if (distEnd2Goal > maxGoOutDistance || distStart2Goal < distEnd2Goal)
 		{
 			start = end;
+		} else if (distStart2Goal > maxGoOutDistance)
+		{
+			start = LineMath.stepAlongLine(base, start, maxGoOutDistance);
 		}
 		return Lines.segmentFromPoints(start, end);
 	}

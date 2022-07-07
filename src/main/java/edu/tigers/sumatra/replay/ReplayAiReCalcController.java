@@ -1,13 +1,11 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.replay;
 
 import edu.tigers.sumatra.ai.AIInfoFrame;
 import edu.tigers.sumatra.ai.Ai;
-import edu.tigers.sumatra.ai.AiManager;
-import edu.tigers.sumatra.ai.VisualizationFrame;
 import edu.tigers.sumatra.drawable.ShapeMap;
 import edu.tigers.sumatra.drawable.ShapeMapSource;
 import edu.tigers.sumatra.ids.BotID;
@@ -27,6 +25,7 @@ import javax.swing.AbstractAction;
 import javax.swing.JCheckBoxMenuItem;
 import java.awt.event.ActionEvent;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.HashSet;
 import java.util.List;
@@ -36,12 +35,14 @@ import java.util.Set;
 
 public class ReplayAiReCalcController implements IReplayController
 {
-	private static final String PREFIX = "Recalculated ";
-	private static final String RECALCULATED_CATEGORY = "Recalculated";
+	private static final String RECALCULATED = "Recalculated";
+	private static final ShapeMapSource SKILL_SHAPE_MAP_SOURCE = ShapeMapSource.of("Skills",
+			ShapeMapSource.of(RECALCULATED));
 
 	private final List<IWorldFrameObserver> wFrameObservers = new ArrayList<>();
 	private final Map<EAiTeam, Ai> ais = new EnumMap<>(EAiTeam.class);
 	private final Set<EAiTeam> aisToBeStopped = new HashSet<>();
+	private final Map<EAiTeam, ShapeMapSource> shapeMapSources = new EnumMap<>(EAiTeam.class);
 	private ASkillSystem skillSystem = GenericSkillSystem.forAnalysis();
 	private long lastTimestamp = 0;
 
@@ -50,16 +51,21 @@ public class ReplayAiReCalcController implements IReplayController
 	{
 		for (ASumatraView view : sumatraViews)
 		{
-			if (view.getPresenter() instanceof IWorldFrameObserver)
+			if (view.getPresenter() instanceof IWorldFrameObserver worldFrameObserver)
 			{
-				wFrameObservers.add((IWorldFrameObserver) view.getPresenter());
+				wFrameObservers.add(worldFrameObserver);
 			}
 			if (view.getType() == ESumatraViewType.REPLAY_CONTROL)
 			{
 				ReplayControlPresenter replayControlPresenter = (ReplayControlPresenter) view.getPresenter();
-				replayControlPresenter.getReplayPanel().addMenuCheckbox(new RunAiAction());
+				replayControlPresenter.getViewPanel().addMenuCheckbox(new RunAiAction());
 			}
 		}
+		Arrays.stream(EAiTeam.values()).forEach(team -> shapeMapSources.put(
+				team,
+				ShapeMapSource.of(team.getTeamColor().name(),
+						ShapeMapSource.of("AI", ShapeMapSource.of(RECALCULATED)))
+		));
 	}
 
 
@@ -84,18 +90,16 @@ public class ReplayAiReCalcController implements IReplayController
 				Map<BotID, ShapeMap> skillShapeMap = skillSystem.process(wfw, ai.getAiTeam().getTeamColor());
 				skillShapeMap.values().forEach(m -> m.setInverted(inverted));
 				aiFrame.getShapeMap().setInverted(inverted);
-				VisualizationFrame visFrame = new VisualizationFrame(aiFrame);
 
 				for (IWorldFrameObserver o : wFrameObservers)
 				{
-					o.onNewShapeMap(lastTimestamp,
-							aiFrame.getShapeMap(),
-							ShapeMapSource.of(PREFIX + AiManager.getShapeMapSource(visFrame.getTeamColor()),
-									RECALCULATED_CATEGORY));
+					o.onNewShapeMap(lastTimestamp, aiFrame.getShapeMap(), shapeMapSources.get(ai.getAiTeam()));
 
-					skillShapeMap.forEach((id, shapeMap) -> o.onNewShapeMap(lastTimestamp, shapeMap,
-							ShapeMapSource.of(PREFIX + GenericSkillSystem.getShapeLayerName(id),
-									RECALCULATED_CATEGORY + " " + GenericSkillSystem.SKILL_CATEGORY, RECALCULATED_CATEGORY)));
+					skillShapeMap.forEach((id, shapeMap) -> o.onNewShapeMap(
+							lastTimestamp,
+							shapeMap,
+							ShapeMapSource.of(id.toString(), SKILL_SHAPE_MAP_SOURCE)
+					));
 				}
 			}
 		}
@@ -118,10 +122,11 @@ public class ReplayAiReCalcController implements IReplayController
 		if (preAi != null)
 		{
 			preAi.stop();
-			for (IWorldFrameObserver o : wFrameObservers)
-			{
-				o.onRemoveCategoryFromShapeMap(RECALCULATED_CATEGORY);
-			}
+			wFrameObservers.forEach(o -> o.onRemoveSourceFromShapeMap(shapeMapSources.get(aiTeam)));
+			BotID.getAll(aiTeam.getTeamColor()).forEach(id ->
+					wFrameObservers.forEach(
+							o -> o.onRemoveSourceFromShapeMap(ShapeMapSource.of(id.toString(), SKILL_SHAPE_MAP_SOURCE)))
+			);
 		}
 	}
 
@@ -134,6 +139,7 @@ public class ReplayAiReCalcController implements IReplayController
 			startAi(eAiTeam);
 		}
 	}
+
 
 	private class RunAiAction extends AbstractAction
 	{

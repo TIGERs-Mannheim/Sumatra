@@ -13,6 +13,7 @@ import edu.tigers.sumatra.ai.metis.offense.OffensiveConstants;
 import edu.tigers.sumatra.ai.metis.offense.action.moves.AOffensiveActionMove;
 import edu.tigers.sumatra.ai.metis.offense.action.moves.ClearingKickActionMove;
 import edu.tigers.sumatra.ai.metis.offense.action.moves.EOffensiveActionMove;
+import edu.tigers.sumatra.ai.metis.offense.action.moves.FinisherActionMove;
 import edu.tigers.sumatra.ai.metis.offense.action.moves.ForcedPassActionMove;
 import edu.tigers.sumatra.ai.metis.offense.action.moves.GoalKickActionMove;
 import edu.tigers.sumatra.ai.metis.offense.action.moves.KickInsBlaueActionMove;
@@ -100,7 +101,7 @@ public class OffensiveActionsCalc extends ACalculator
 	private final Supplier<Map<BotID, KickOrigin>> kickOrigins;
 	private final Supplier<BotDistance> opponentClosestToBall;
 	private final Supplier<OffensiveStatisticsFrame> offensiveStatisticsFrameSupplier;
-	private final Supplier<Map<BotID, GoalKick>> bestGoalKickTargets;
+	private final Supplier<Map<BotID, GoalKick>> bestGoalKickPerBot;
 	private final Supplier<List<ICircle>> kickInsBlaueSpots;
 	private final Supplier<DribblingInformation> dribblingInformation;
 	private final Map<EOffensiveActionMove, AOffensiveActionMove> actionMoves = new EnumMap<>(
@@ -116,21 +117,25 @@ public class OffensiveActionsCalc extends ACalculator
 				selectedPasses
 		));
 		register(EOffensiveActionMove.REDIRECT_GOAL_KICK, new RedirectGoalKickActionMove(
-				bestGoalKickTargets
+				bestGoalKickPerBot
+		));
+		register(EOffensiveActionMove.FINISHER, new FinisherActionMove(
+				opponentClosestToBall,
+				dribblingInformation
 		));
 		register(EOffensiveActionMove.GOAL_KICK, new GoalKickActionMove(
-				bestGoalKickTargets
+				bestGoalKickPerBot
 		));
 		register(EOffensiveActionMove.CLEARING_KICK, new ClearingKickActionMove(
 				opponentClosestToBall,
-				bestGoalKickTargets,
+				bestGoalKickPerBot,
 				kickOrigins
 		));
 		register(EOffensiveActionMove.STANDARD_PASS, new StandardPassActionMove(
 				selectedPasses
 		));
 		register(EOffensiveActionMove.LOW_CHANCE_GOAL_KICK, new LowChanceGoalKickActionMove(
-				bestGoalKickTargets
+				bestGoalKickPerBot
 		));
 		register(EOffensiveActionMove.MOVE_BALL_TO_OPPONENT_HALF, new MoveBallToOpponentHalfActionMove(
 				opponentClosestToBall
@@ -227,7 +232,6 @@ public class OffensiveActionsCalc extends ACalculator
 					var viabilityMap = actions.stream()
 							.collect(Collectors.toMap(OffensiveAction::getMove, OffensiveAction::getViability));
 					var offensiveBotFrame = offensiveStatisticsFrame.getBotFrames().get(botId);
-					offensiveBotFrame.setActiveAction(bestAction.getAction());
 					offensiveBotFrame.setMoveViabilityMap(viabilityMap);
 				}
 
@@ -239,7 +243,11 @@ public class OffensiveActionsCalc extends ACalculator
 		// fallback in case that no action could be found (by intention or by accident)
 		// This will happen if there is no kick origin and thus no known point to intercept the ball,
 		// so we must first get control of the ball again
-		return actionMoves.get(EOffensiveActionMove.PROTECT_MOVE).calcAction(botId);
+		if (getBall().getVel().getLength2() > 0.5)
+		{
+			return actionMoves.get(EOffensiveActionMove.RECEIVE_BALL).calcAction(botId);
+		}
+		return actionMoves.get(EOffensiveActionMove.LOW_CHANCE_GOAL_KICK).calcAction(botId);
 	}
 
 
@@ -267,7 +275,7 @@ public class OffensiveActionsCalc extends ACalculator
 	private DrawableAnnotation getActionUpdateDebugAnnotation(BotID botId, String text)
 	{
 		return new DrawableAnnotation(getWFrame().getBot(botId).getPos(), text)
-				.withOffset(Vector2f.fromXY(250, 300)).setColor(COLOR);
+				.withOffset(Vector2f.fromXY(-100, 350)).setColor(COLOR);
 	}
 
 
@@ -296,6 +304,7 @@ public class OffensiveActionsCalc extends ACalculator
 		// Fixed default multipliers
 		multiplierMap.put(EOffensiveActionMove.CLEARING_KICK, viabilityMultiplierClearingKick);
 		multiplierMap.put(EOffensiveActionMove.GOAL_KICK, viabilityMultiplierDirectKick);
+		multiplierMap.put(EOffensiveActionMove.FINISHER, viabilityMultiplierDirectKick);
 		multiplierMap.put(EOffensiveActionMove.LOW_CHANCE_GOAL_KICK, viabilityMultiplierDirectKick);
 		multiplierMap.put(EOffensiveActionMove.KICK_INS_BLAUE, viabilityMultiplierKickInsBlaue);
 		multiplierMap.put(EOffensiveActionMove.STANDARD_PASS, viabilityMultiplierStandardPass);
@@ -314,7 +323,7 @@ public class OffensiveActionsCalc extends ACalculator
 	private void drawAction(BotID botID, OffensiveAction action)
 	{
 		var bot = getWFrame().getBot(botID);
-		final String actionMetadata = action.getMove() + "\n" + action.getAction();
+		final String actionMetadata = action.getMove() + "\n";
 		getShapes(EAiShapesLayer.OFFENSIVE_ACTION).add(
 				new DrawableAnnotation(bot.getPos(), actionMetadata, COLOR)
 						.withOffset(Vector2f.fromY(150))

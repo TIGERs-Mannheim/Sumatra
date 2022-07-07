@@ -10,7 +10,10 @@ import edu.tigers.sumatra.drawable.DrawableAnnotation;
 import edu.tigers.sumatra.drawable.DrawableCircle;
 import edu.tigers.sumatra.drawable.DrawableTriangle;
 import edu.tigers.sumatra.drawable.IDrawableShape;
+import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.geometry.Goal;
+import edu.tigers.sumatra.math.I2DShape;
+import edu.tigers.sumatra.math.SumatraMath;
 import edu.tigers.sumatra.math.circle.ICircle;
 import edu.tigers.sumatra.math.triangle.Triangle;
 import edu.tigers.sumatra.math.triangle.TriangleMath;
@@ -31,7 +34,9 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -47,11 +52,17 @@ public class AngleRangeRater implements ITargetRater
 	@Configurable(comment = "Max time horizon to consider for moving robots", defValue = "2.0")
 	private static double maxHorizon = 2.0;
 
-	@Configurable(comment = "The time a robot needs to react to the ball movement", defValue = "0.3")
-	private static double timeForBotToReact = 0.3;
+	@Configurable(comment = "The time a robot needs to react to the ball movement", defValue = "0.1")
+	private static double timeForBotToReact = 0.1;
 
-	@Configurable(comment = "The angle that is considered a safe goal. Any higher angle will not improve the score", defValue = "0.3")
+	@Configurable(comment = "[rad] The angle that is considered a safe goal. Any higher angle will not improve the score", defValue = "0.3")
 	private static double probablyAGoalAngle = 0.3;
+
+	@Configurable(comment = "[s] maxVel that considers opponent bots are reacting", defValue = "1.5")
+	private static double maxOpponentReactionVel = 1.5;
+
+	@Configurable(defValue = "CUBIC_REDUCTION")
+	private static EHorizonCalculation horizonCalculatorMode = EHorizonCalculation.CUBIC_REDUCTION;
 
 	static
 	{
@@ -69,9 +80,16 @@ public class AngleRangeRater implements ITargetRater
 	 * Setting timeToKick is usually too pessimistic, because
 	 * 1. The opponent may not detect the redirect, so robots will not react to a goal kick, before the actual kick
 	 * 2. The time may get so high that the kick is never possible
+	 * 3. Only consider timeToKick for bots within the obstacleReactionShape
 	 */
 	@Setter
 	private double timeToKick = 0;
+
+	@Setter
+	private I2DShape obstacleReactionShape = Geometry.getField();
+
+	@Setter
+	private double opponentConsideredReactingVel = maxOpponentReactionVel;
 
 	@Getter
 	private LastContext lastContext = new LastContext();
@@ -92,27 +110,54 @@ public class AngleRangeRater implements ITargetRater
 	@Override
 	public Optional<IRatedTarget> rate(final IVector2 origin)
 	{
+		return rateMultiple(origin).stream().max(Comparator.comparing(IRatedTarget::getScore));
+	}
+
+
+	@Override
+	public List<IRatedTarget> rateMultiple(IVector2 origin)
+	{
 		movingObstacleGen.setMaxHorizon(maxHorizon);
 		movingObstacleGen.setTimeForBotToReact(timeForBotToReact);
+		movingObstacleGen.setHorizonCalculation(horizonCalculatorMode);
+
+		lastContext.botTimeToReact =
+				obstacles.stream().collect(Collectors.toMap(Function.identity(), this::getTimeForBotToReact));
+
+		var reactions = lastContext.botTimeToReact.entrySet().stream().collect(Collectors.toMap(
+				a -> a.getKey().getBotId(), Map.Entry::getValue));
 
 		lastContext.origin = origin;
-		lastContext.circleObstacles = movingObstacleGen.generateCircles(obstacles, origin, timeToKick);
+		lastContext.circleObstacles = movingObstacleGen.generateCircles(obstacles, origin, reactions);
 		lastContext.uncoveredAngleRanges = angleRangeGenerator
 				.findUncoveredAngleRanges(origin, lastContext.circleObstacles);
 
 		return lastContext.uncoveredAngleRanges
 				.stream()
 				.map(r -> new RatedAngleRange(r, getScoreChanceFromAngle(r.getWidth())))
-				.max(Comparator.comparing(RatedAngleRange::getScore))
-				.flatMap(r -> map(origin, r));
+				.map(r -> createTargetFromRatedAngleRange(origin, r))
+				.flatMap(Optional::stream)
+				.toList();
 	}
 
 
-	private Optional<IRatedTarget> map(IVector2 start, RatedAngleRange ratedAngleRange)
+	private double getTimeForBotToReact(ITrackedBot trackedBot)
+	{
+		// only consider bots in obstacleReactionShape
+		if (obstacleReactionShape.withMargin(Geometry.getBotRadius() * 4).isPointInShape(trackedBot.getPos()))
+		{
+			// opponents only react if they are moving, with smooth transition.
+			return timeToKick * SumatraMath.relative(trackedBot.getVel().getLength(), 0, opponentConsideredReactingVel);
+		}
+		return 0;
+	}
+
+
+	private Optional<IRatedTarget> createTargetFromRatedAngleRange(IVector2 start, RatedAngleRange ratedAngleRange)
 	{
 		return angleRangeGenerator.getPoint(start, ratedAngleRange.angleRange.getOffset())
 				.map(target -> RatedTarget
-						.ratedRange(target, ratedAngleRange.angleRange.getWidth(), ratedAngleRange.score));
+						.ratedRange(target, Math.max(ratedAngleRange.angleRange.getWidth(), 0.0), ratedAngleRange.score));
 	}
 
 
@@ -129,11 +174,13 @@ public class AngleRangeRater implements ITargetRater
 		{
 			return Collections.emptyList();
 		}
+
 		var obstacleCircles = lastContext.drawableObstacles();
 		var ranges = lastContext.drawableAngleRanges();
+		var reactions = lastContext.drawableReactionTimes();
 		var time2KickShape = List.of(new DrawableAnnotation(lastContext.origin, DF.format(timeToKick)));
-		return Stream.of(obstacleCircles, ranges, time2KickShape)
-				.flatMap(Collection::stream).collect(Collectors.toUnmodifiableList());
+		return Stream.of(obstacleCircles, ranges, time2KickShape, reactions)
+				.flatMap(Collection::stream).map(IDrawableShape.class::cast).toList();
 	}
 
 
@@ -145,18 +192,29 @@ public class AngleRangeRater implements ITargetRater
 	}
 
 	@Data
-	public class LastContext
+	private class LastContext
 	{
 		private IVector2 origin;
 		private List<ICircle> circleObstacles;
 		private List<AngleRange> uncoveredAngleRanges;
+		private Map<ITrackedBot, Double> botTimeToReact;
+
+
+		public List<IDrawableShape> drawableReactionTimes()
+		{
+			return botTimeToReact.entrySet().stream().map(
+							e -> new DrawableAnnotation(e.getKey().getPos(), String.format("%.2f", e.getValue()),
+									Vector2.zero()).setColor(Color.BLUE))
+					.map(IDrawableShape.class::cast)
+					.toList();
+		}
 
 
 		public List<IDrawableShape> drawableObstacles()
 		{
 			return circleObstacles.stream()
 					.map(c -> new DrawableCircle(c).setColor(new Color(232, 36, 36, 164)).setFill(true))
-					.collect(Collectors.toUnmodifiableList());
+					.toList();
 		}
 
 

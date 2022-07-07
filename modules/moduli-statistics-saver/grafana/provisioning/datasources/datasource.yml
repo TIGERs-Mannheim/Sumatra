@@ -1,0 +1,9 @@
+# grafana/provisioning/datasources/datasource.yml
+apiVersion: 1
+
+datasources:
+  - name: matchStats
+    type: influxdb
+    access: proxy
+    url: 'http://influxdb:8086'
+    database: 'matchStats'

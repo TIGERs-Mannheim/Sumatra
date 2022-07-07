@@ -226,11 +226,10 @@ public class CircleCheeringPlay implements ICheeringPlay
 		List<ARole> roles = play.getRoles();
 		List<IVector2> positions = new ArrayList<>();
 
-		double angleStep = AngleMath.PI_TWO / roles.size();
+		double angleStep = AngleMath.PI_TWO / (roles.size() - roles.size() % 2);
 		if (roles.size() % 2 == 1)
 		{
 			positions.add(Vector2.zero());
-			angleStep = AngleMath.PI_TWO / (roles.size() - 1);
 		}
 
 		IVector2 startOnCircle = Vector2f.fromXY(center.x(), center.y() + radius);
@@ -238,7 +237,7 @@ public class CircleCheeringPlay implements ICheeringPlay
 		for (int i = roles.size() % 2; i < roles.size(); i++)
 		{
 			MoveRole moveRole = (MoveRole) roles.get(i);
-			positions.add(CircleMath.stepAlongCircle(startOnCircle, center, (angleStep * i + param)));
+			positions.add(startOnCircle.turnNew(angleStep * i + param));
 			moveRole.updateLookAtTarget(center);
 		}
 

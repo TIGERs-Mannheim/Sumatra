@@ -296,7 +296,7 @@ public class QualityInspector
 	 */
 	public void inspectCameraGeometry(final CamGeometry geometry)
 	{
-		for (CamCalibration calib : geometry.getCalibrations().values())
+		for (CamCalibration calib : geometry.getCameraCalibrations().values())
 		{
 			calibrations.put(calib.getCameraId(), calib);
 		}

@@ -42,7 +42,7 @@ public class DelayedBotState extends BotState
 
 	public static DelayedBotState fromBotState(BotState botState, double delay)
 	{
-		return new DelayedBotState(botState.getBotID(), botState, delay);
+		return new DelayedBotState(botState.getBotId(), botState, delay);
 	}
 
 

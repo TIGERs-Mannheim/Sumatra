@@ -3,7 +3,7 @@
  */
 
 plugins {
-    id 'sumatra.java-conventions'
+    id 'sumatra.java'
     id 'java-library'
 }
 

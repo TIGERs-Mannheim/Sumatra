@@ -1,35 +1,36 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.view.referee;
-
-import java.awt.BorderLayout;
-import java.util.Collections;
-import java.util.EnumMap;
-import java.util.List;
-import java.util.Map;
-
-import javax.swing.JMenu;
-import javax.swing.JPanel;
 
 import edu.tigers.sumatra.components.BetterScrollPane;
 import edu.tigers.sumatra.ids.ETeamColor;
 import edu.tigers.sumatra.util.MigLayoutResizeListener;
-import edu.tigers.sumatra.views.ISumatraView;
+import lombok.Getter;
 import net.miginfocom.swing.MigLayout;
+
+import javax.swing.JPanel;
+import java.awt.BorderLayout;
+import java.io.Serial;
+import java.util.EnumMap;
+import java.util.Map;
 
 
 /**
  * Referee view.
  */
-public class RefereePanel extends JPanel implements ISumatraView
+public class RefereePanel extends JPanel
 {
+	@Serial
 	private static final long serialVersionUID = 5362158568331526086L;
 
 	private final ControlGameControllerPanel controlGameControllerPanel = new ControlGameControllerPanel();
 	private final ShowRefereeMsgPanel showRefereeMsgPanel = new ShowRefereeMsgPanel();
+	@Getter
 	private final CommonCommandsPanel commonCommandsPanel = new CommonCommandsPanel();
+	@Getter
 	private final ChangeStatePanel changeStatePanel = new ChangeStatePanel();
+	@Getter
 	private final Map<ETeamColor, TeamPanel> teamsPanel = new EnumMap<>(ETeamColor.class);
 
 
@@ -77,67 +78,5 @@ public class RefereePanel extends JPanel implements ISumatraView
 		commonCommandsPanel.setEnable(enable);
 		changeStatePanel.setEnable(enable);
 		teamsPanel.values().forEach(t -> t.setEnable(enable));
-	}
-
-
-	@Override
-	public List<JMenu> getCustomMenus()
-	{
-		return Collections.emptyList();
-	}
-
-
-	@Override
-	public void onShown()
-	{
-		// nothing to do
-	}
-
-
-	@Override
-	public void onHidden()
-	{
-		// nothing to do
-	}
-
-
-	@Override
-	public void onFocused()
-	{
-		// nothing to do
-	}
-
-
-	@Override
-	public void onFocusLost()
-	{
-		// nothing to do
-	}
-
-
-	/**
-	 * @return the commonCommandsPanel
-	 */
-	public CommonCommandsPanel getCommonCommandsPanel()
-	{
-		return commonCommandsPanel;
-	}
-
-
-	/**
-	 * @return the changeStatePanel
-	 */
-	public ChangeStatePanel getChangeStatePanel()
-	{
-		return changeStatePanel;
-	}
-
-
-	/**
-	 * @return the teamsPanel
-	 */
-	public Map<ETeamColor, TeamPanel> getTeamsPanel()
-	{
-		return teamsPanel;
 	}
 }

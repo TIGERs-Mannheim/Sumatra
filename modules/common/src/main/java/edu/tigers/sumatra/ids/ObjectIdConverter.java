@@ -1,13 +1,13 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ids;
 
+import com.github.g3force.s2vconverter.IString2ValueConverter;
+
 import java.util.ArrayList;
 import java.util.List;
-
-import com.github.g3force.s2vconverter.IString2ValueConverter;
 
 
 /**
@@ -23,8 +23,8 @@ public class ObjectIdConverter implements IString2ValueConverter
 				|| impl.equals(BallID.class)
 				|| impl.equals(UninitializedID.class);
 	}
-	
-	
+
+
 	@Override
 	public Object parseString(final Class<?> impl, final String value)
 	{
@@ -38,7 +38,7 @@ public class ObjectIdConverter implements IString2ValueConverter
 			throw new NumberFormatException("Format does not conform to: id[[, ]color]. Values: " + finalValues);
 		}
 		int id = Integer.parseInt(finalValues.get(0));
-		if (id == UninitializedID.UNINITIALIZED_ID)
+		if (id == AObjectID.UNINITIALIZED_ID)
 		{
 			return new UninitializedID();
 		}
@@ -49,8 +49,8 @@ public class ObjectIdConverter implements IString2ValueConverter
 		ETeamColor color = getTeamColor(finalValues.get(1));
 		return BotID.createBotId(id, color);
 	}
-	
-	
+
+
 	private static List<String> parseValues(final String value)
 	{
 		String[] values = value.replaceAll("[,;]", " ").split("[ ]");
@@ -64,8 +64,8 @@ public class ObjectIdConverter implements IString2ValueConverter
 		}
 		return finalValues;
 	}
-	
-	
+
+
 	private static ETeamColor getTeamColor(final String str)
 	{
 		if (str.startsWith("Y"))
@@ -77,13 +77,13 @@ public class ObjectIdConverter implements IString2ValueConverter
 		}
 		throw new NumberFormatException("invalid team color: " + str);
 	}
-	
-	
+
+
 	@Override
 	public String toString(final Class<?> impl, final Object value)
 	{
 		AObjectID vec = (AObjectID) value;
 		return vec.getSaveableString();
 	}
-	
+
 }

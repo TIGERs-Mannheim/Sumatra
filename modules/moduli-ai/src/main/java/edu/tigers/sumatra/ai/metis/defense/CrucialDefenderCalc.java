@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.metis.defense;
@@ -9,8 +9,8 @@ import edu.tigers.sumatra.ai.metis.ACalculator;
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
 import edu.tigers.sumatra.ai.metis.botdistance.BotDistance;
 import edu.tigers.sumatra.ai.metis.defense.data.DefenseBallThreat;
-import edu.tigers.sumatra.ai.metis.defense.data.DefenseBotThreat;
 import edu.tigers.sumatra.ai.pandora.plays.EPlay;
+import edu.tigers.sumatra.drawable.DrawableAnnotation;
 import edu.tigers.sumatra.drawable.DrawableArc;
 import edu.tigers.sumatra.drawable.DrawableCircle;
 import edu.tigers.sumatra.drawable.DrawableLine;
@@ -73,7 +73,6 @@ public class CrucialDefenderCalc extends ACalculator
 	private final Supplier<Set<BotID>> crucialOffenders;
 	private final Supplier<BotDistance> tigerClosestToBall;
 	private final Supplier<BotDistance> opponentClosestToBall;
-	private final Supplier<List<DefenseBotThreat>> defenseBotThreats;
 
 	private boolean opponentCloseToBall = false;
 	@Getter
@@ -99,21 +98,14 @@ public class CrucialDefenderCalc extends ACalculator
 	protected void doCalc()
 	{
 		util.update(getAiFrame());
-		minDistanceToGoalHysteresis.setLowerThreshold(minDistanceToGoalCenterLower);
-		minDistanceToGoalHysteresis.setUpperThreshold(minDistanceToGoalCenterUpper);
-		minDistanceToGoalHysteresis.update(Geometry.getGoalOur().getCenter().distanceTo(getBall().getPos()));
-
-		boolean isOpponentCloseToBall = isOpponentCloseToBall() && !minDistanceToGoalHysteresis.isUpper();
-
-		// Check if no other bots than defense are blocking the opponent's bot
-
 		drawMinDistanceToGoal();
 
-		if (isOpponentStandardSituation()
-				|| isOpponentCloseToBall
-				|| isOnlyDefenderBlocking()
-				|| isOpponentBallReceiverHighThreat())
+		var cause = getCrucialDefenderCause();
+		if (cause != ECrucialDefenderCause.NONE)
 		{
+			getShapes(EAiShapesLayer.DEFENSE_CRUCIAL_DEFENDERS)
+					.add(new DrawableAnnotation(getBall().getPos().addNew(Vector2.fromY(300)),
+							String.format("Crucial Defender cause:%n%s", cause.getCause())));
 			List<BotID> defenderCandidates = crucialDefenderCandidates();
 			crucialDefenders = util.nextBestDefenders(defenseBallThreat.get(), defenderCandidates,
 					Math.min(numDefenderForBall.get(), numDefender.get()));
@@ -123,6 +115,33 @@ public class CrucialDefenderCalc extends ACalculator
 		}
 
 		drawCrucialDefenders(crucialDefenders);
+	}
+
+
+	private ECrucialDefenderCause getCrucialDefenderCause()
+	{
+
+		minDistanceToGoalHysteresis.setLowerThreshold(minDistanceToGoalCenterLower);
+		minDistanceToGoalHysteresis.setUpperThreshold(minDistanceToGoalCenterUpper);
+		minDistanceToGoalHysteresis.update(Geometry.getGoalOur().getCenter().distanceTo(getBall().getPos()));
+		boolean isOpponentCloseToBall = isOpponentCloseToBall() && !minDistanceToGoalHysteresis.isUpper();
+
+		if (isOpponentStandardSituation())
+		{
+			return ECrucialDefenderCause.OPPONENT_STANDARD_SITUATION;
+		} else if (isOpponentCloseToBall)
+		{
+			return ECrucialDefenderCause.OPPONENT_CLOSE_TO_BALL;
+		} else if (isOnlyDefenderBlocking())
+		{
+			return ECrucialDefenderCause.DEFENDER_BLOCKING;
+		} else if (isOpponentBallReceiverHighThreat())
+		{
+			return ECrucialDefenderCause.OPPONENT_BALL_RECEIVER_HIGH_THREAT;
+		} else
+		{
+			return ECrucialDefenderCause.NONE;
+		}
 	}
 
 
@@ -168,10 +187,12 @@ public class CrucialDefenderCalc extends ACalculator
 		var opponentReceiver = defenseBallThreat.get().getPassReceiver();
 		if (opponentReceiver.isPresent())
 		{
-			var opponentReceiverThreat = defenseBotThreats.get().stream()
-					.filter(threat -> threat.getBotID() == opponentReceiver.get().getBotId()).findAny();
-			return opponentReceiverThreat.isPresent()
-					&& opponentReceiverThreat.get().getThreatRating() > opponentBallReceiverDangerousRating;
+			var rater = new DefenseThreatRater();
+			var rating = rater.getThreatRating(getBall().getPos(), opponentReceiver.get().getPos());
+			getShapes(EAiShapesLayer.DEFENSE_BALL_THREAT)
+					.add(new DrawableAnnotation(opponentReceiver.get().getPos(),
+							String.format("-> Ball <-%nRating: %.2f", rating), Vector2.fromY(200)));
+			return rating > opponentBallReceiverDangerousRating;
 		}
 		return false;
 	}
@@ -241,6 +262,30 @@ public class CrucialDefenderCalc extends ACalculator
 			getShapes(EAiShapesLayer.DEFENSE_CRUCIAL_DEFENDERS).add(
 					AnimatedCircle.aFilledCircleWithShrinkingSize(bot.getPos(), 100, 150, 1.0f, new Color(125, 255, 50),
 							new Color(125, 255, 50, 100)));
+		}
+	}
+
+
+	private enum ECrucialDefenderCause
+	{
+		NONE("None"),
+		OPPONENT_CLOSE_TO_BALL("Opponent close to ball"),
+		OPPONENT_STANDARD_SITUATION("Opponent standard situation"),
+		DEFENDER_BLOCKING("Defender blocking"),
+		OPPONENT_BALL_RECEIVER_HIGH_THREAT("Opponent ball receiver high threat"),
+		;
+		private final String cause;
+
+
+		ECrucialDefenderCause(final String cause)
+		{
+			this.cause = cause;
+		}
+
+
+		public String getCause()
+		{
+			return cause;
 		}
 	}
 }

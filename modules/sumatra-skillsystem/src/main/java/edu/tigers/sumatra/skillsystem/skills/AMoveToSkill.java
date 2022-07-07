@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.skillsystem.skills;
@@ -32,6 +32,7 @@ import edu.tigers.sumatra.pathfinder.PathFinderPrioMap;
 import edu.tigers.sumatra.pathfinder.TrajectoryGenerator;
 import edu.tigers.sumatra.pathfinder.obstacles.IObstacle;
 import edu.tigers.sumatra.pathfinder.obstacles.ObstacleGenerator;
+import edu.tigers.sumatra.pathfinder.obstacles.PenaltyAreaObstacle;
 import edu.tigers.sumatra.pathfinder.traj.TrajPathFinder;
 import edu.tigers.sumatra.skillsystem.ESkillShapesLayer;
 import edu.tigers.sumatra.trajectory.TrajectoryWithTime;
@@ -52,7 +53,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.stream.Collectors;
 
 
 @Log4j2
@@ -62,7 +62,10 @@ public abstract class AMoveToSkill extends AMoveSkill
 	private static AObjectID debugForId = new UninitializedID();
 
 	@Configurable(defValue = "0.5", comment = "A bot velocity [m/s] that is considered save for collisions")
-	private static double saveVel = 0.5;
+	private static double safeVelForEmergencyBrake = 0.5;
+
+	@Configurable(defValue = "0.1", comment = "A bot velocity [m/s] that is considered save for collisions")
+	private static double safeVelNormalBrake = 0.1;
 
 	@Configurable(defValue = "false", comment = "Adapt the brake acceleration dynamically to avoid overshooting (does not work well with real robot control)")
 	private static boolean adaptBrakeAcc = false;
@@ -150,8 +153,9 @@ public abstract class AMoveToSkill extends AMoveSkill
 		outstandingResult = null;
 		destinationReachedIn = pathResult.getTrajectory().getTotalTime();
 		getShapes().get(ESkillShapesLayer.PATH_FINDER_DEBUG).addAll(finder.getDebugShapes());
+		drawPath(pathResult);
 
-		if (pathResult.getFirstCollisionTime() <= brakeTime())
+		if (needToBrake(pathResult))
 		{
 			boolean emergencyBrake = pathResult.getCollider().filter(IObstacle::isEmergencyBrakeFor).isPresent();
 			if (emergencyBrake)
@@ -163,9 +167,19 @@ public abstract class AMoveToSkill extends AMoveSkill
 			}
 		} else
 		{
-			drawPath(pathResult);
 			executePath(pathResult, currentMoveConstraints);
 		}
+	}
+
+
+	private boolean needToBrake(IPathFinderResult pathResult)
+	{
+		if (pathResult.getFirstCollisionTime() <= brakeTime())
+		{
+			return true;
+		}
+		boolean brakeInside = pathResult.getCollider().filter(IObstacle::isBrakeInside).isPresent();
+		return brakeInside && pathResult.hasFrontCollision() && getVel().getLength2() > safeVelForEmergencyBrake;
 	}
 
 
@@ -215,11 +229,26 @@ public abstract class AMoveToSkill extends AMoveSkill
 				: PathFinderInput.fromTrajectory(timestamp, currentTrajectory.synchronizeTo(timestamp));
 		finderInput.setMoveConstraints(currentMoveConstraints);
 		finderInput.setObstacles(obstacles);
-		finderInput.setDest(destination);
+
+		IVector2 adaptedDestination = getAdaptedDestination(obstacles);
+
+		finderInput.setDest(adaptedDestination);
 		finderInput.setTargetAngle(targetAngle);
 		finderInput.setDebug(debugForId.equals(getBot().getBotId()));
 
 		return finder.calcPath(finderInput);
+	}
+
+
+	private IVector2 getAdaptedDestination(List<IObstacle> obstacles)
+	{
+		return obstacles.stream()
+				.filter(PenaltyAreaObstacle.class::isInstance)
+				.map(PenaltyAreaObstacle.class::cast)
+				.filter(o -> o.isPointCollidingWithObstacle(getPos(), 0, 0))
+				.findAny()
+				.map(o -> o.getPenaltyArea().withMargin(100).nearestPointOutside(getPos()))
+				.orElse(destination);
 	}
 
 
@@ -258,7 +287,7 @@ public abstract class AMoveToSkill extends AMoveSkill
 		{
 			final List<IDrawableShape> shapes = obstacles.stream()
 					.flatMap(o -> o.getShapes().stream())
-					.collect(Collectors.toList());
+					.toList();
 			getShapes().get(ESkillShapesLayer.TRAJ_PATH_OBSTACLES).addAll(shapes);
 		}
 	}
@@ -328,11 +357,11 @@ public abstract class AMoveToSkill extends AMoveSkill
 	private boolean criticalCollisionAhead()
 	{
 		double currentVel = getTBot().getVel().getLength2();
-		if (currentVel < saveVel)
+		if (currentVel < safeVelForEmergencyBrake)
 		{
 			return false;
 		}
-		double velDiff = currentVel - saveVel;
+		double velDiff = currentVel - safeVelForEmergencyBrake;
 		double brakeTime = velDiff / getTBot().getMoveConstraints().getAccMaxDerived();
 		double brakeDist = currentVel * brakeTime / 2 * 1000;
 
@@ -343,11 +372,11 @@ public abstract class AMoveToSkill extends AMoveSkill
 	private double brakeTime()
 	{
 		double currentVel = getTBot().getVel().getLength2();
-		if (currentVel < saveVel)
+		if (currentVel < safeVelNormalBrake)
 		{
 			return 0;
 		}
-		double velDiff = currentVel - saveVel;
+		double velDiff = currentVel - safeVelNormalBrake;
 		return velDiff / getTBot().getMoveConstraints().getAccMaxDerived();
 	}
 
@@ -355,10 +384,11 @@ public abstract class AMoveToSkill extends AMoveSkill
 	private boolean criticalCollisionAhead(final double brakeTime, final double brakeDist)
 	{
 		ILineSegment ownBrakeLine = Lines.segmentFromOffset(getTBot().getPos(), getTBot().getVel().scaleToNew(brakeDist));
-		getShapes().get(ESkillShapesLayer.PATH_DEBUG)
-				.add(new DrawableLine(
-						ownBrakeLine,
-						Color.gray).setStrokeWidth(20));
+		getShapes().get(ESkillShapesLayer.CRITICAL_COLLISION).add(
+				new DrawableLine(ownBrakeLine)
+						.setColor(Color.gray)
+						.setStrokeWidth(20)
+		);
 
 		var stepSize = brakeActive ? 0.01 : 0.05;
 		var horizon = brakeTime + (brakeActive ? 0.2 : 0.0);
@@ -370,29 +400,37 @@ public abstract class AMoveToSkill extends AMoveSkill
 			{
 				continue;
 			}
+			getShapes().get(ESkillShapesLayer.CRITICAL_COLLISION).add(
+					new DrawableLine(oppBrakeLine)
+							.setColor(Color.red)
+							.setStrokeWidth(20)
+			);
 
 			for (double t = 0; t <= horizon; t += stepSize)
 			{
-				var ownPos = getTBot().getPos().addNew(getTBot().getVel().multiplyNew(t * 1000));
+				var ownPos = getTBot().getPosByTime(t);
 				var tEarly = Math.max(0, t - tUncertainMargin);
 				var tLate = t + (brakeActive ? tUncertainMargin * 2 : tUncertainMargin);
-				var oppPosEarly = opponentBot.getPos().addNew(opponentBot.getVel().multiplyNew(tEarly * 1000));
-				var oppPosLate = opponentBot.getPos().addNew(opponentBot.getVel().multiplyNew(tLate * 1000));
+				var oppPosEarly = opponentBot.getPosByTime(tEarly);
+				var oppPosLate = opponentBot.getPosByTime(tLate);
 				var oppLine = Lines.segmentFromPoints(oppPosEarly, oppPosLate);
 				var colliding = oppLine.distanceTo(ownPos) < Geometry.getBotRadius() * 2;
 				if (colliding)
 				{
-					IVector2 closestPointOnLine = oppLine.closestPointOnLine(ownPos);
-					getShapes().get(ESkillShapesLayer.PATH_DEBUG)
-							.add(new DrawableLine(oppLine).setColor(Color.cyan));
-					getShapes().get(ESkillShapesLayer.PATH_DEBUG)
-							.add(new DrawableLine(Lines.segmentFromPoints(ownPos, closestPointOnLine)).setColor(Color.cyan));
-					getShapes().get(ESkillShapesLayer.PATH_DEBUG)
-							.add(new DrawableCircle(Circle.createCircle(ownPos, Geometry.getBotRadius()))
+					IVector2 closestPointToOwnPos = oppLine.closestPointOnLine(ownPos);
+					ILineSegment ownLine = Lines.segmentFromPoints(ownPos, closestPointToOwnPos);
+					getShapes().get(ESkillShapesLayer.CRITICAL_COLLISION).add(
+							new DrawableLine(oppLine)
 									.setColor(Color.cyan));
-					getShapes().get(ESkillShapesLayer.PATH_DEBUG)
-							.add(new DrawableCircle(Circle.createCircle(closestPointOnLine, Geometry.getBotRadius()))
+					getShapes().get(ESkillShapesLayer.CRITICAL_COLLISION).add(
+							new DrawableLine(ownLine)
+									.setColor(Color.magenta));
+					getShapes().get(ESkillShapesLayer.CRITICAL_COLLISION).add(
+							new DrawableCircle(Circle.createCircle(closestPointToOwnPos, Geometry.getBotRadius()))
 									.setColor(Color.cyan));
+					getShapes().get(ESkillShapesLayer.CRITICAL_COLLISION).add(
+							new DrawableCircle(Circle.createCircle(ownPos, Geometry.getBotRadius()))
+									.setColor(Color.magenta));
 					return true;
 				}
 			}

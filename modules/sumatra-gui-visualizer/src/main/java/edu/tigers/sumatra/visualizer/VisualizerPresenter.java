@@ -1,463 +1,454 @@
 /*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.visualizer;
 
-import edu.tigers.moduli.listenerVariables.ModulesState;
 import edu.tigers.sumatra.clock.ThreadUtil;
-import edu.tigers.sumatra.drawable.IShapeLayer;
+import edu.tigers.sumatra.drawable.IShapeLayerIdentifier;
 import edu.tigers.sumatra.drawable.ShapeMap;
 import edu.tigers.sumatra.drawable.ShapeMapSource;
-import edu.tigers.sumatra.geometry.Geometry;
-import edu.tigers.sumatra.geometry.RuleConstraints;
-import edu.tigers.sumatra.ids.BotID;
-import edu.tigers.sumatra.math.vector.IVector2;
-import edu.tigers.sumatra.math.vector.IVector3;
-import edu.tigers.sumatra.math.vector.Vector3;
-import edu.tigers.sumatra.math.vector.Vector3f;
-import edu.tigers.sumatra.math.vector.VectorMath;
 import edu.tigers.sumatra.model.SumatraModel;
 import edu.tigers.sumatra.thread.NamedThreadFactory;
 import edu.tigers.sumatra.util.GlobalShortcuts;
-import edu.tigers.sumatra.util.GlobalShortcuts.EShortcut;
-import edu.tigers.sumatra.views.ASumatraViewPresenter;
-import edu.tigers.sumatra.views.ISumatraView;
-import edu.tigers.sumatra.vision.AVisionFilter;
+import edu.tigers.sumatra.util.SimpleDocumentListener;
+import edu.tigers.sumatra.views.ISumatraPresenter;
+import edu.tigers.sumatra.views.ISumatraViewPresenter;
+import edu.tigers.sumatra.visualizer.field.VisualizerFieldPresenter;
+import edu.tigers.sumatra.visualizer.field.components.BallInteractor;
+import edu.tigers.sumatra.visualizer.field.recorder.MediaRecorder;
+import edu.tigers.sumatra.visualizer.options.ShapeSelectionModel;
 import edu.tigers.sumatra.wp.AWorldPredictor;
 import edu.tigers.sumatra.wp.IWorldFrameObserver;
-import edu.tigers.sumatra.wp.data.ITrackedBot;
-import edu.tigers.sumatra.wp.data.WorldFrameWrapper;
+import lombok.Getter;
 import lombok.extern.log4j.Log4j2;
-import org.apache.commons.lang.Validate;
+import org.apache.commons.lang.StringUtils;
 
+import javax.swing.AbstractButton;
+import javax.swing.JTextField;
+import javax.swing.JToggleButton;
+import javax.swing.KeyStroke;
 import javax.swing.SwingUtilities;
-import java.awt.Component;
-import java.awt.event.MouseEvent;
-import java.util.Arrays;
+import javax.swing.event.TreeSelectionEvent;
+import javax.swing.tree.DefaultMutableTreeNode;
+import javax.swing.tree.TreePath;
+import java.awt.event.ActionEvent;
+import java.awt.event.InputEvent;
+import java.awt.event.KeyEvent;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.util.Optional;
+import java.util.function.Consumer;
 
 
 /**
  * Presenter for the visualizer.
- * <p>
- * NOTE: The fact that the view stores the actual state is not MVP-conform, but that would need greater refactoring and
- * I don't have time for this now
- * </p>
- *
- * @author Bernhard, (Gero)
  */
 @Log4j2
-public class VisualizerPresenter extends ASumatraViewPresenter implements IRobotsPanelObserver, IFieldPanelObserver,
-		IWorldFrameObserver
+public class VisualizerPresenter implements ISumatraViewPresenter, IWorldFrameObserver
 {
 	private static final int VISUALIZATION_FPS = 24;
 
-	private final VisualizerPanel panel = new VisualizerPanel();
-	private final OptionsPanelPresenter optionsPanelPresenter;
-	private ScheduledExecutorService execService;
-	private WorldFrameWrapper lastWorldFrameWrapper = null;
-	private BotID selectedRobotId = BotID.noBot();
-	private final Map<ShapeMapSource, ShapeMap> shapeMaps = new ConcurrentHashMap<>();
+	private final ShapeSelectionModel shapeSelectionModel = new ShapeSelectionModel();
+
+	@Getter
+	private final VisualizerPanel viewPanel = new VisualizerPanel();
+
+	@Getter
+	private final VisualizerFieldPresenter fieldPresenter = new VisualizerFieldPresenter(
+			viewPanel.getFieldPanel()
+	);
+
+	private final BallInteractor ballInteractor = new BallInteractor();
+	private final MediaRecorder mediaRecorder = new MediaRecorder();
+	private Thread updateThread;
 
 
-	/**
-	 * Default
-	 */
 	public VisualizerPresenter()
 	{
-		optionsPanelPresenter = new OptionsPanelPresenter(panel.getFieldPanel());
-	}
+		fieldPresenter.getOnFieldClicks().add(ballInteractor::onFieldClick);
 
-
-	@Override
-	public void onRobotClick(final BotID botId)
-	{
-		// --- select/deselect item ---
-		if (selectedRobotId.equals(botId))
-		{
-			selectedRobotId = BotID.noBot();
-			panel.getRobotsPanel().deselectRobots();
-		} else
-		{
-			selectedRobotId = botId;
-			panel.getRobotsPanel().selectRobot(botId);
-		}
-	}
-
-
-	private IVector3 doChipKick(final IVector2 posIn, final double dist, final int numTouchdown)
-	{
-		double kickSpeed = lastWorldFrameWrapper.getSimpleWorldFrame().getBall().getChipConsultant()
-				.getInitVelForDistAtTouchdown(dist, numTouchdown);
-		IVector2 ballPos = lastWorldFrameWrapper.getSimpleWorldFrame().getBall().getPos();
-		return Geometry.getBallFactory().createChipConsultant()
-				.speedToVel(posIn.subtractNew(ballPos).getAngle(), kickSpeed);
-	}
-
-
-	private IVector3 doStraightKick(final IVector2 posIn, final double dist, final double passEndVel)
-	{
-		double speed = lastWorldFrameWrapper.getSimpleWorldFrame().getBall().getStraightConsultant().getInitVelForDist(
-				dist,
-				passEndVel);
-		IVector2 ballPos = lastWorldFrameWrapper.getSimpleWorldFrame().getBall().getPos();
-		return Vector3.from2d(posIn.subtractNew(ballPos).scaleTo(speed), 0);
-	}
-
-
-	private void handleBall(final IVector2 posIn, final MouseEvent e, final AVisionFilter referee)
-	{
-		IVector2 ballPos = lastWorldFrameWrapper.getSimpleWorldFrame().getBall().getPos();
-		double dist = VectorMath.distancePP(ballPos, posIn);
-		IVector2 pos = ballPos;
-		final IVector3 vel;
-
-		boolean ctrl = e.isControlDown();
-		boolean shift = e.isShiftDown();
-		boolean alt = e.isAltDown();
-
-		if (ctrl && shift)
-		{
-			if (alt)
-			{
-				vel = doChipKick(posIn, dist, 2);
-			} else
-			{
-				vel = doStraightKick(posIn, dist, 2);
-			}
-		} else if (ctrl)
-		{
-			if (alt)
-			{
-				vel = Geometry.getBallFactory().createChipConsultant()
-						.speedToVel(posIn.subtractNew(ballPos).getAngle(), RuleConstraints.getMaxBallSpeed() - 0.001);
-			} else
-			{
-				vel = Vector3.from2d(posIn.subtractNew(ballPos).scaleTo(RuleConstraints.getMaxBallSpeed() - 0.001), 0);
-			}
-		} else if (shift)
-		{
-			if (alt)
-			{
-				vel = doChipKick(posIn, dist, 0);
-			} else
-			{
-				vel = doStraightKick(posIn, dist, 0);
-			}
-		} else
-		{
-			vel = Vector3f.ZERO_VECTOR;
-			pos = posIn;
-		}
-		referee.placeBall(Vector3.from2d(pos, 0), vel.multiplyNew(1e3));
-	}
-
-
-	@Override
-	public void onFieldClick(final IVector2 posIn, final MouseEvent e)
-	{
-		AVisionFilter visionFilter = SumatraModel.getInstance().getModule(AVisionFilter.class);
-
-		boolean rightClick = SwingUtilities.isRightMouseButton(e);
-		boolean middleClick = SwingUtilities.isMiddleMouseButton(e);
-
-		if (rightClick)
-		{
-			handleBall(posIn, e, visionFilter);
-		} else if (middleClick)
-		{
-			visionFilter.resetBall(Vector3.from2d(posIn, 0), Vector3f.ZERO_VECTOR);
-		} else
-		{
-			onRobotSelected(posIn, e);
-		}
-	}
-
-
-	/**
-	 * @param posIn
-	 * @param e
-	 */
-	public void onRobotSelected(final IVector2 posIn, final MouseEvent e)
-	{
-		// overwritten by sub-class
-	}
-
-
-	/**
-	 * Start view
-	 */
-	public void start()
-	{
-		panel.getFieldPanel().start();
-
-		// --- register on robotspanel as observer ---
-		panel.getRobotsPanel().addObserver(this);
-
-		// --- register on fieldpanel as observer ---
-		panel.getFieldPanel().addObserver(this);
-
-		// --- register on optionspanel as observer ---
-		panel.getOptionsMenu().addObserver(optionsPanelPresenter);
-
-		panel.getRobotsPanel().clearView();
-		panel.getOptionsMenu().setInitialButtonState();
-		panel.getOptionsMenu().setButtonsEnabled(true);
-		panel.getFieldPanel().setPanelVisible(true);
-
-		execService = Executors.newSingleThreadScheduledExecutor(new NamedThreadFactory("VisualizerUpdater"));
-		execService.execute(new UpdaterSelfSchedule());
-	}
-
-
-	/**
-	 * Remove observers, stop updater clear panels
-	 */
-	public void stop()
-	{
-		panel.getFieldPanel().stop();
-
-		// --- register on robotspanel as observer ---
-		panel.getRobotsPanel().removeObserver(this);
-
-		// --- register on fieldpanel as observer ---
-		panel.getFieldPanel().removeObserver(this);
-
-		// --- register on optionspanel as observer ---
-		panel.getOptionsMenu().removeObserver(optionsPanelPresenter);
-
-		if (execService != null)
-		{
-			execService.shutdownNow();
-			try
-			{
-				Validate.isTrue(execService.awaitTermination(100, TimeUnit.MILLISECONDS));
-			} catch (InterruptedException err)
-			{
-				log.error("Interrupted while awaiting termination", err);
-				Thread.currentThread().interrupt();
-			}
-		}
-
-		shapeMaps.clear();
-		panel.getRobotsPanel().clearView();
-		panel.getFieldPanel().setPanelVisible(false);
-		panel.getFieldPanel().clearField();
-	}
-
-
-	@Override
-	public void onModuliStateChanged(final ModulesState state)
-	{
-		super.onModuliStateChanged(state);
-		switch (state)
-		{
-			case ACTIVE:
-				init();
-				start();
-				break;
-			case RESOLVED:
-				deinit();
-				stop();
-				break;
-			case NOT_LOADED:
-			default:
-				break;
-		}
-	}
-
-
-	private void deinit()
-	{
-		AWorldPredictor wp = SumatraModel.getInstance().getModule(AWorldPredictor.class);
-		wp.removeObserver(this);
-
-		GlobalShortcuts.unregisterAll(EShortcut.RESET_FIELD);
-	}
-
-
-	private void init()
-	{
-		AWorldPredictor wp = SumatraModel.getInstance().getModule(AWorldPredictor.class);
-		wp.addObserver(this);
-
-		GlobalShortcuts.register(EShortcut.RESET_FIELD,
-				() -> panel.getFieldPanel().onOptionChanged(EVisualizerOptions.RESET_FIELD, true));
-	}
-
-
-	@Override
-	public Component getComponent()
-	{
-		return panel;
-	}
-
-
-	@Override
-	public ISumatraView getSumatraView()
-	{
-		return panel;
-	}
-
-
-	@Override
-	public void onNewShapeMap(final long timestamp, final ShapeMap shapeMap, final ShapeMapSource source)
-	{
-		shapeMaps.put(source, shapeMap);
-	}
-
-
-	@Override
-	public void onRemoveSourceFromShapeMap(final String source)
-	{
-		shapeMaps.keySet().stream()
-				.filter(k -> k.getName().equals(source))
-				.forEach(k -> shapeMaps.put(k, new ShapeMap()));
-	}
-
-
-	@Override
-	public void onRemoveCategoryFromShapeMap(final String... category)
-	{
-		List<String> categories = Arrays.asList(category);
-		shapeMaps.keySet().stream()
-				.filter(k -> k.getCategories().containsAll(categories))
-				.forEach(k -> shapeMaps.put(k, new ShapeMap()));
-	}
-
-
-	public OptionsPanelPresenter getOptionsPanelPresenter()
-	{
-		return optionsPanelPresenter;
-	}
-
-
-	protected void updateRobotsPanel()
-	{
-		WorldFrameWrapper lastFrame = lastWorldFrameWrapper;
-		if (lastFrame != null)
-		{
-			Map<BotID, ITrackedBot> tBotsMap = lastFrame.getSimpleWorldFrame().getBots();
-			for (ITrackedBot tBot : tBotsMap.values())
-			{
-				BotStatus status = panel.getRobotsPanel().getBotStatus(tBot.getBotId());
-				status.setVisible(tBot.getFilteredState().isPresent());
-			}
-			Map<BotID, BotStatus> botStati = panel.getRobotsPanel().getBotStati();
-			// set all bots invisible that are not tracked any longer
-			for (Map.Entry<BotID, BotStatus> status : botStati.entrySet())
-			{
-				if (!tBotsMap.containsKey(status.getKey()))
-				{
-					status.getValue().setVisible(false);
+		connect(
+				viewPanel.getToolbar().getFancyDrawing(),
+				"fancyPainting",
+				true,
+				fieldPresenter::setFancyPainting
+		);
+		connect(
+				viewPanel.getToolbar().getDarkMode(),
+				"darkMode",
+				false,
+				fieldPresenter::setDarkMode
+		);
+		connect(
+				viewPanel.getToolbar().getBorderOffset(),
+				"borderOffset",
+				false,
+				this::setAddBorderOffset
+		);
+		connect(
+				viewPanel.getToolbar().getCaptureSettingsDialog().getTxtRecordingWidth(),
+				"recording.width",
+				"1920",
+				b -> {
 				}
-			}
-			panel.getRobotsPanel().updateBotStati();
-		}
-	}
-
-
-	@Override
-	public void onNewWorldFrame(final WorldFrameWrapper wfWrapper)
-	{
-		lastWorldFrameWrapper = wfWrapper;
-	}
-
-
-
-	@Override
-	public void onClearWorldFrame()
-	{
-		lastWorldFrameWrapper = null;
-		panel.getRobotsPanel().clearView();
-	}
-
-
-
-
-	/**
-	 * @return the selectedRobotId
-	 */
-	protected final BotID getSelectedRobotId()
-	{
-		return selectedRobotId;
-	}
-
-
-	/**
-	 * @return the panel
-	 */
-	public final VisualizerPanel getPanel()
-	{
-		return panel;
-	}
-
-
-	private class UpdaterSelfSchedule extends Updater
-	{
-		@Override
-		public void run()
-		{
-			while (!Thread.interrupted())
-			{
-				long t0 = System.nanoTime();
-				super.run();
-				long t1 = System.nanoTime();
-				long sleep = (1_000_000_000L / VISUALIZATION_FPS) - (t1 - t0);
-				if (sleep > 0)
-				{
-					ThreadUtil.parkNanosSafe(sleep);
+		);
+		connect(
+				viewPanel.getToolbar().getCaptureSettingsDialog().getTxtRecordingHeight(),
+				"recording.height",
+				"0",
+				b -> {
 				}
+		);
+		connect(
+				viewPanel.getToolbar().getShapeSelection(),
+				"shapeSelection.visible",
+				true,
+				b -> viewPanel.getShapeSelectionPanel().setVisible(b)
+		);
+
+		viewPanel.getShapeSelectionPanel().getTree().setModel(shapeSelectionModel);
+		viewPanel.getShapeSelectionPanel().getTree().setExpandsSelectedPaths(true);
+		viewPanel.getShapeSelectionPanel().getTree().getCheckBoxTreeSelectionModel()
+				.addTreeSelectionListener(this::onSelectionChanged);
+
+		viewPanel.getToolbar().getTurnCounterClockwise().addActionListener(a -> fieldPresenter.turnCounterClockwise());
+		viewPanel.getToolbar().getTurnClockwise().addActionListener(a -> fieldPresenter.turnClockwise());
+		viewPanel.getToolbar().getResetField().addActionListener(a -> fieldPresenter.resetField());
+		viewPanel.getToolbar().getRecordVideoFull().addActionListener(this::recordVideoFullField);
+		viewPanel.getToolbar().getRecordVideoSelection().addActionListener(this::recordVideoCurrentSelection);
+		viewPanel.getToolbar().getTakeScreenshotFull().addActionListener(this::takeScreenshotFull);
+		viewPanel.getToolbar().getTakeScreenshotSelection().addActionListener(this::takeScreenshotSelection);
+	}
+
+
+	private void connect(JTextField textField, String key, String defValue, Consumer<String> consumer)
+	{
+		String value = SumatraModel.getInstance().getUserProperty(VisualizerPresenter.class, key, defValue);
+		textField.setText(value);
+		textField.getDocument().addDocumentListener((SimpleDocumentListener) e -> {
+			SumatraModel.getInstance().setUserProperty(VisualizerPresenter.class, key, textField.getText());
+			consumer.accept(textField.getText());
+		});
+		consumer.accept(textField.getText());
+	}
+
+
+	private void connect(AbstractButton button, String key, boolean defValue, Consumer<Boolean> consumer)
+	{
+		boolean value = SumatraModel.getInstance().getUserProperty(VisualizerPresenter.class, key, defValue);
+		button.setSelected(value);
+		button.addActionListener(e -> consumer.accept(button.isSelected()));
+		button.addActionListener(e -> SumatraModel.getInstance()
+				.setUserProperty(VisualizerPresenter.class, key, String.valueOf(button.isSelected())));
+		consumer.accept(button.isSelected());
+	}
+
+
+	@Override
+	public void onStart()
+	{
+		ISumatraViewPresenter.super.onStart();
+
+		GlobalShortcuts.add(
+				"Reset field",
+				viewPanel,
+				fieldPresenter::resetField,
+				KeyStroke.getKeyStroke(KeyEvent.VK_F7, 0)
+		);
+
+		GlobalShortcuts.add(
+				"Show / hide shape selection", viewPanel, this::toggleShapeSelection,
+				KeyStroke.getKeyStroke(KeyEvent.VK_PERIOD, InputEvent.CTRL_DOWN_MASK));
+
+		NamedThreadFactory factory = new NamedThreadFactory("VisualizerUpdater");
+		updateThread = factory.newThread(this::updateLoop);
+		updateThread.start();
+	}
+
+
+	@Override
+	public void onStop()
+	{
+		if (updateThread != null)
+		{
+			updateThread.interrupt();
+			updateThread = null;
+		}
+
+		ISumatraViewPresenter.super.onStop();
+		GlobalShortcuts.removeAllForComponent(viewPanel);
+	}
+
+
+	@Override
+	public void onStartModuli()
+	{
+		ISumatraViewPresenter.super.onStartModuli();
+
+		SumatraModel.getInstance().getModule(AWorldPredictor.class).addObserver(ballInteractor);
+		SumatraModel.getInstance().getModule(AWorldPredictor.class).addObserver(fieldPresenter);
+	}
+
+
+	@Override
+	public void onStopModuli()
+	{
+		ISumatraViewPresenter.super.onStopModuli();
+
+		SumatraModel.getInstance().getModule(AWorldPredictor.class).removeObserver(ballInteractor);
+		SumatraModel.getInstance().getModule(AWorldPredictor.class).removeObserver(fieldPresenter);
+	}
+
+
+	@Override
+	public List<ISumatraPresenter> getChildPresenters()
+	{
+		return List.of(fieldPresenter);
+	}
+
+
+	private void updateLoop()
+	{
+		while (!Thread.interrupted())
+		{
+			long t0 = System.nanoTime();
+			update();
+			long t1 = System.nanoTime();
+			long sleep = (1_000_000_000L / VISUALIZATION_FPS) - (t1 - t0);
+			if (sleep > 0)
+			{
+				ThreadUtil.parkNanosSafe(sleep);
 			}
 		}
 	}
 
-	/**
-	 * update new worldframes in a fixed interval.
-	 */
-	private class Updater implements Runnable
+
+	private void update()
 	{
-		@Override
-		public void run()
+		try
 		{
-			try
-			{
-				update();
-			} catch (Throwable e)
-			{
-				log.error("Exception in visualizer updater", e);
-			}
-		}
-
-
-		private void update()
+			HashMap<ShapeMapSource, ShapeMap> shapeMaps = new HashMap<>(fieldPresenter.getShapeMaps());
+			update(shapeMaps);
+			fieldPresenter.update();
+		} catch (Exception e)
 		{
-			shapeMaps.forEach(this::newShapeMap);
-			panel.getFieldPanel().paintOffline();
-			updateRobotsPanel();
-		}
-
-
-		private void newShapeMap(final ShapeMapSource source, final ShapeMap shapeMap)
-		{
-			panel.getOptionsMenu().addSourceMenuIfNotPresent(source);
-			for (IShapeLayer sl : shapeMap.getAllShapeLayersIdentifiers())
-			{
-				panel.getOptionsMenu().addMenuEntry(sl);
-			}
-			panel.getFieldPanel().setShapeMap(source, shapeMap);
+			log.error("Exception in visualizer updater", e);
 		}
 	}
 
 
-	public static int getVisualizationFps()
+	private void onSelectionChanged(TreeSelectionEvent treeSelectionEvent)
 	{
-		return VISUALIZATION_FPS;
+		updateVisibility();
+		saveVisibility();
+	}
+
+
+	private void updateVisibility()
+	{
+		shapeSelectionModel.getSources().forEach((source, node) -> {
+			boolean visible = isSelected(node);
+			fieldPresenter.setSourceVisibility(source.getName(), visible);
+		});
+
+		shapeSelectionModel.getLayers().forEach((layer, node) -> {
+			boolean visible = isSelected(node);
+			fieldPresenter.setShapeLayerVisibility(layer.getId(), visible);
+		});
+	}
+
+
+	private void saveVisibility()
+	{
+		shapeSelectionModel.getLayers().forEach((layer, node) -> {
+			boolean visible = isSelected(node);
+			SumatraModel.getInstance().setUserProperty(layer.getId(), String.valueOf(visible));
+		});
+	}
+
+
+	public void update(Map<ShapeMapSource, ShapeMap> shapeMaps)
+	{
+		shapeMaps.forEach(this::newShapeMap);
+	}
+
+
+	private void newShapeMap(final ShapeMapSource source, final ShapeMap shapeMap)
+	{
+		// select shape map sources by default
+		shapeSelectionModel.addShapeMapSource(source).ifPresent(this::selectNode);
+
+		List<DefaultMutableTreeNode> newNodes = shapeMap.getAllShapeLayers().stream()
+				.map(ShapeMap.ShapeLayer::getIdentifier)
+				.map(shapeSelectionModel::addShapeLayer)
+				.filter(Optional::isPresent)
+				.map(Optional::get)
+				.toList();
+		newNodes.forEach(this::setDefaultVisibility);
+	}
+
+
+	private void setDefaultVisibility(DefaultMutableTreeNode node)
+	{
+		if (node.getUserObject() instanceof IShapeLayerIdentifier shapeLayer)
+		{
+			boolean visible = SumatraModel.getInstance().getUserProperty(
+					shapeLayer.getId(),
+					shapeLayer.isVisibleByDefault()
+			);
+			if (visible)
+			{
+				selectNode(node);
+			} else
+			{
+				deselectNode(node);
+			}
+		}
+	}
+
+
+	private void selectNode(DefaultMutableTreeNode node)
+	{
+		var treePath = new TreePath(node.getPath());
+		var checkBoxTreeSelectionModel = viewPanel.getShapeSelectionPanel().getTree().getCheckBoxTreeSelectionModel();
+		SwingUtilities.invokeLater(() -> checkBoxTreeSelectionModel.addSelectionPath(treePath));
+	}
+
+
+	private void deselectNode(DefaultMutableTreeNode node)
+	{
+		var treePath = new TreePath(node.getPath());
+		var checkBoxTreeSelectionModel = viewPanel.getShapeSelectionPanel().getTree().getCheckBoxTreeSelectionModel();
+		SwingUtilities.invokeLater(() -> checkBoxTreeSelectionModel.removeSelectionPath(treePath));
+	}
+
+
+	private boolean isSelected(DefaultMutableTreeNode node)
+	{
+		var treePath = new TreePath(node.getPath());
+		return viewPanel.getShapeSelectionPanel().getTree().getCheckBoxTreeSelectionModel()
+				.isPathSelected(treePath, true);
+	}
+
+
+	private void setAddBorderOffset(boolean state)
+	{
+		fieldPresenter.getFieldPane().setAddBorderOffset(state);
+		fieldPresenter.resetField();
+	}
+
+
+	private void updateMediaRecorder()
+	{
+		int width = parseInt(viewPanel.getToolbar().getCaptureSettingsDialog().getTxtRecordingWidth().getText());
+		int height = parseInt(viewPanel.getToolbar().getCaptureSettingsDialog().getTxtRecordingHeight().getText());
+
+		SumatraModel.getInstance().setUserProperty(VisualizerPresenter.class, "recording.width", width);
+		SumatraModel.getInstance().setUserProperty(VisualizerPresenter.class, "recording.height", height);
+
+		mediaRecorder.getFieldPane().setAddBorderOffset(fieldPresenter.getFieldPane().isAddBorderOffset());
+
+		// Set initial width for border offset calculation
+		mediaRecorder.getFieldPane().setWidth(width);
+
+		double fieldRatio = mediaRecorder.getFieldPane().getTransformation().getFieldTotalRatio();
+		int borderOffset = mediaRecorder.getFieldPane().getBorderOffset();
+		if (width == 0)
+		{
+			width = (int) Math.round((height - borderOffset) * fieldRatio);
+		} else if (height == 0)
+		{
+			height = (int) Math.round(width / fieldRatio) + borderOffset;
+		}
+
+		// numbers have to always be divisible by 2 for media encoding
+		width = width + (width % 2);
+		height = height + (height % 2);
+
+		mediaRecorder.getFieldPane().setWidth(width);
+		mediaRecorder.getFieldPane().setHeight(height);
+	}
+
+
+	private int parseInt(String value)
+	{
+		if (StringUtils.isBlank(value))
+		{
+			return 0;
+		}
+		try
+		{
+			return Integer.parseInt(value);
+		} catch (NumberFormatException e)
+		{
+			log.warn("Could not parse number: {}", value);
+			return 0;
+		}
+	}
+
+
+	private void takeScreenshotFull(ActionEvent e)
+	{
+		updateMediaRecorder();
+		mediaRecorder.takeScreenshotFullField(fieldPresenter.visibleShapeLayers());
+	}
+
+
+	private void takeScreenshotSelection(ActionEvent e)
+	{
+		updateMediaRecorder();
+		mediaRecorder.takeScreenshotCurrentSelection(fieldPresenter.getFieldPane(), fieldPresenter.visibleShapeLayers());
+	}
+
+
+	private void recordVideoFullField(ActionEvent e)
+	{
+		if (e.getSource() instanceof JToggleButton toggleButton)
+		{
+			if (toggleButton.isSelected())
+			{
+				updateMediaRecorder();
+				mediaRecorder.startVideoRecordingFullField(fieldPresenter::visibleShapeLayers);
+			} else
+			{
+				mediaRecorder.stopVideoRecording();
+			}
+		}
+	}
+
+
+	private void recordVideoCurrentSelection(ActionEvent e)
+	{
+		if (e.getSource() instanceof JToggleButton toggleButton)
+		{
+			if (toggleButton.isSelected())
+			{
+				updateMediaRecorder();
+				mediaRecorder.startVideoRecordingCurrentSelection(fieldPresenter.getFieldPane(),
+						fieldPresenter::visibleShapeLayers);
+			} else
+			{
+				mediaRecorder.stopVideoRecording();
+			}
+		}
+	}
+
+
+	private void toggleShapeSelection()
+	{
+		JToggleButton shapeSelection = viewPanel.getToolbar().getShapeSelection();
+		if (!viewPanel.getShapeSelectionPanel().getTree().hasFocus() && shapeSelection.isSelected())
+		{
+			viewPanel.getShapeSelectionPanel().getTree().requestFocus();
+		} else
+		{
+			shapeSelection.doClick();
+			if (shapeSelection.isSelected())
+			{
+				viewPanel.getShapeSelectionPanel().getTree().requestFocus();
+			}
+		}
 	}
 }

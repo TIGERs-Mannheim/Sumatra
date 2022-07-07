@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.athena;
@@ -46,7 +46,7 @@ public class RoleAssigner
 			addNewDesiredBots(play, desiredBots);
 
 			Set<BotID> postAssignedBots = play.getRoles().stream().map(ARole::getBotID).collect(Collectors.toSet());
-			if (!SumatraModel.getInstance().isProductive() && !postAssignedBots.equals(allDesiredBots))
+			if (!SumatraModel.getInstance().isTournamentMode() && !postAssignedBots.equals(allDesiredBots))
 			{
 				log.warn("Assignment does not match desiredBots. desired: " + allDesiredBots + ", assigned: "
 						+ postAssignedBots + ", roleMapping: " + roleMapping);

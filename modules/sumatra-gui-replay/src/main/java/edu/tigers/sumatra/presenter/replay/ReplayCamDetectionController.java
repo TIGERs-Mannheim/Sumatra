@@ -1,33 +1,21 @@
 /*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.presenter.replay;
 
 import edu.tigers.sumatra.persistence.BerkeleyDb;
-import edu.tigers.sumatra.views.ASumatraView;
 import edu.tigers.sumatra.wp.IWorldFrameObserver;
 import edu.tigers.sumatra.wp.data.BerkeleyCamDetectionFrame;
+import lombok.RequiredArgsConstructor;
 
 import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 
+@RequiredArgsConstructor
 public class ReplayCamDetectionController implements IReplayController
 {
-	private final List<IWorldFrameObserver> wFrameObservers = new CopyOnWriteArrayList<>();
-
-
-	public ReplayCamDetectionController(List<ASumatraView> sumatraViews)
-	{
-		for (ASumatraView view : sumatraViews)
-		{
-			if (view.getPresenter() instanceof IWorldFrameObserver)
-			{
-				wFrameObservers.add((IWorldFrameObserver) view.getPresenter());
-			}
-		}
-	}
+	private final List<IWorldFrameObserver> wFrameObservers;
 
 
 	@Override

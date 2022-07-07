@@ -15,7 +15,7 @@ import java.util.Map;
 /**
  * @author MarkG
  */
-@Persistent(version = 1)
+@Persistent(version = 2)
 @Data
 public class OffensiveStatisticsFrame
 {

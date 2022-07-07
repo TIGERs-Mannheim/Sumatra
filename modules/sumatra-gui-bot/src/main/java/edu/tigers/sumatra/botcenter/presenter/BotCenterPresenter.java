@@ -1,19 +1,13 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.botcenter.presenter;
 
-import java.awt.Component;
-import java.util.ArrayList;
-import java.util.List;
-
-import javax.swing.JComboBox;
-import javax.swing.SwingUtilities;
-
 import edu.tigers.moduli.listenerVariables.ModulesState;
 import edu.tigers.sumatra.bot.EBotType;
 import edu.tigers.sumatra.bot.ERobotMode;
+import edu.tigers.sumatra.botcenter.presenter.config.SavedConfigPresenter;
 import edu.tigers.sumatra.botcenter.view.BotCenterPanel;
 import edu.tigers.sumatra.botcenter.view.bots.TigerBotSummaryPanel;
 import edu.tigers.sumatra.botcenter.view.config.BotConfigOverviewPanel.IBotConfigOverviewPanelObserver;
@@ -24,40 +18,34 @@ import edu.tigers.sumatra.botmanager.basestation.TigersBaseStation;
 import edu.tigers.sumatra.botmanager.bots.ABot;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.model.SumatraModel;
-import edu.tigers.sumatra.views.ASumatraViewPresenter;
-import edu.tigers.sumatra.views.ISumatraView;
+import edu.tigers.sumatra.views.ISumatraViewPresenter;
+import lombok.Getter;
+
+import javax.swing.JComboBox;
+import javax.swing.SwingUtilities;
+import java.util.ArrayList;
+import java.util.List;
 
 
 /**
  * The bot center presenter
  */
-public class BotCenterPresenter extends ASumatraViewPresenter implements IBotConfigOverviewPanelObserver
+public class BotCenterPresenter implements ISumatraViewPresenter, IBotConfigOverviewPanelObserver
 {
-	private static final String[] BOT_NAMES = {
-			"Gandalf", "Alice", "Tigger",
-			"Poller", "Q", "Eichbaum",
-			"This Bot", "Black Betty", "Trinity",
-			"Neo", "Bob", "Yoda",
-			"Unnamed 12", "Unnamed 13", "Unnamed 14", "Unnamed 15" };
-
-	private final BotCenterPanel botCenter = new BotCenterPanel();
+	@Getter
+	private final BotCenterPanel viewPanel = new BotCenterPanel();
 	private final BotManagerObserver botManagerObserver = new BotManagerObserver();
 	private final List<BaseStationPresenter> baseStationPresenters = new ArrayList<>();
+	private final BotCenterOverviewPresenter botCenterOverviewPresenter = new BotCenterOverviewPresenter(
+			viewPanel.getOverviewPanel()
+	);
 
+	private SavedConfigPresenter savedConfigPresenter;
 	private TigerBotPresenter tigerBotPresenter;
-	private final BotCenterOverviewPresenter botCenterOverviewPresenter;
-
 	private TigersBotManager tigersBotManager;
 
-
-	public BotCenterPresenter()
-	{
-		botCenterOverviewPresenter = new BotCenterOverviewPresenter(botCenter.getOverviewPanel());
-	}
-
-
 	@Override
-	public void onStop()
+	public void onStopModuli()
 	{
 		if (!SumatraModel.getInstance().isModuleLoaded(TigersBotManager.class))
 		{
@@ -72,8 +60,8 @@ public class BotCenterPresenter extends ASumatraViewPresenter implements IBotCon
 			tigerBotPresenter = null;
 		}
 
-		botCenter.getBotOverviewPanel().removeObserver(this);
-		botCenter.clearPanel();
+		viewPanel.getBotOverviewPanel().removeObserver(this);
+		viewPanel.clearPanel();
 		ABotManager bm = SumatraModel.getInstance().getModule(ABotManager.class);
 		bm.removeObserver(botManagerObserver);
 		for (BaseStationPresenter bsp : baseStationPresenters)
@@ -85,28 +73,30 @@ public class BotCenterPresenter extends ASumatraViewPresenter implements IBotCon
 		{
 			botManagerObserver.onBotRemoved(bot);
 		}
-		botCenter.getOverviewPanel().setActive(false);
-		botCenter.getBotOverviewPanel().getCmbBots().removeAllItems();
-		botCenter.getBotOverviewPanel().getCmbBots().addItem(BotID.noBot());
+		viewPanel.getOverviewPanel().setActive(false);
+		viewPanel.getBotOverviewPanel().getConfigPanel().removeConfigObserver(savedConfigPresenter);
+		viewPanel.getBotOverviewPanel().getCmbBots().removeAllItems();
+		viewPanel.getBotOverviewPanel().getCmbBots().addItem(BotID.noBot());
 	}
 
 
 	@Override
-	public void onStart()
+	public void onStartModuli()
 	{
 		if (!SumatraModel.getInstance().isModuleLoaded(TigersBotManager.class))
 		{
 			return;
 		}
-
-		botCenter.createPanel();
+		viewPanel.createPanel();
 		tigersBotManager = SumatraModel.getInstance().getModule(TigersBotManager.class);
+		savedConfigPresenter = new SavedConfigPresenter(viewPanel.getSavedConfigsPanel(),
+				tigersBotManager.getConfigDatabase());
 
 		TigersBaseStation baseStation = tigersBotManager.getBaseStation();
 		BaseStationPresenter bsp = new BaseStationPresenter(baseStation);
 		bsp.onModuliStateChanged(ModulesState.ACTIVE);
 		baseStationPresenters.add(bsp);
-		botCenter.addBaseStationTab(bsp.getBsPanel());
+		viewPanel.addBaseStationTab(bsp.getBsPanel());
 
 		for (ABot bot : tigersBotManager.getBots().values())
 		{
@@ -114,28 +104,14 @@ public class BotCenterPresenter extends ASumatraViewPresenter implements IBotCon
 		}
 		tigersBotManager.addObserver(botManagerObserver);
 
-		botCenter.getOverviewPanel().setActive(true);
-		botCenter.getBotOverviewPanel().addObserver(this);
+		viewPanel.getOverviewPanel().setActive(true);
+		viewPanel.getBotOverviewPanel().addObserver(this);
+		viewPanel.getBotOverviewPanel().getConfigPanel().addConfigObserver(savedConfigPresenter);
 
 		tigersBotManager.getBaseStation().addTigersBsObserver(botCenterOverviewPresenter);
 
-		tigerBotPresenter = new TigerBotPresenter(botCenter.getBotOverviewPanel());
+		tigerBotPresenter = new TigerBotPresenter(viewPanel.getBotOverviewPanel(), tigersBotManager.getConfigDatabase());
 		tigersBotManager.getBaseStation().addTigersBsObserver(tigerBotPresenter);
-	}
-
-
-	@Override
-	public Component getComponent()
-	{
-		return botCenter;
-	}
-
-
-	@SuppressWarnings("squid:S4144") // same implementation as #getComponent() is intentional
-	@Override
-	public ISumatraView getSumatraView()
-	{
-		return botCenter;
 	}
 
 
@@ -145,29 +121,29 @@ public class BotCenterPresenter extends ASumatraViewPresenter implements IBotCon
 		@Override
 		public void onBotAdded(final ABot bot)
 		{
-			JComboBox<BotID> cmbBots = botCenter.getBotOverviewPanel().getCmbBots();
+			JComboBox<BotID> cmbBots = viewPanel.getBotOverviewPanel().getCmbBots();
 			cmbBots.addItem(bot.getBotId());
 			TigerBotSummaryPanel summ = new TigerBotSummaryPanel();
 			summ.setId(bot.getBotId());
-			summ.setBotName(BOT_NAMES[bot.getBotId().getNumber()]);
+			summ.setBotName(BotNames.get(bot.getBotId().getNumber()));
 			if (bot.getType() != EBotType.TIGERS)
 			{
 				SwingUtilities.invokeLater(() -> summ.setRobotMode(ERobotMode.READY));
 			}
-			botCenter.getOverviewPanel().addBotPanel(bot.getBotId(), summ);
+			viewPanel.getOverviewPanel().addBotPanel(bot.getBotId(), summ);
 		}
 
 
 		@Override
 		public void onBotRemoved(final ABot bot)
 		{
-			JComboBox<BotID> cmbBots = botCenter.getBotOverviewPanel().getCmbBots();
+			JComboBox<BotID> cmbBots = viewPanel.getBotOverviewPanel().getCmbBots();
 			if (bot.getBotId().equals(cmbBots.getSelectedItem()))
 			{
 				cmbBots.setSelectedItem(BotID.noBot());
 			}
 			cmbBots.removeItem(bot.getBotId());
-			botCenter.getOverviewPanel().removeBotPanel(bot.getBotId());
+			viewPanel.getOverviewPanel().removeBotPanel(bot.getBotId());
 		}
 	}
 

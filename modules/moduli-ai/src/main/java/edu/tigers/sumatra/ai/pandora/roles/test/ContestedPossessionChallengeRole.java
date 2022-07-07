@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.pandora.roles.test;
@@ -24,6 +24,7 @@ import edu.tigers.sumatra.skillsystem.skills.IdleSkill;
 import edu.tigers.sumatra.skillsystem.skills.MoveToSkill;
 import edu.tigers.sumatra.skillsystem.skills.ProtectiveGetBallSkill;
 import edu.tigers.sumatra.skillsystem.skills.TouchKickSkill;
+import edu.tigers.sumatra.skillsystem.skills.util.EDribblerMode;
 import edu.tigers.sumatra.skillsystem.skills.util.KickParams;
 import lombok.Getter;
 
@@ -34,6 +35,7 @@ import java.awt.Color;
  * Role for RoboCup 2021 Hardware Challenge 2: Scoring From Contested Possession
  * https://robocup-ssl.github.io/ssl-hardware-challenge-rules/rules.html#_challenge_2_scoring_from_contested_possession
  * Steals the ball from the opponent robot closest to the ball, dodges the opponent, and scores on the goal.
+ * This role tries to pull back the ball and dodge sideways. It will shoot while dodging and hence is not very precise.
  */
 public class ContestedPossessionChallengeRole extends ARole
 {
@@ -54,9 +56,6 @@ public class ContestedPossessionChallengeRole extends ARole
 
 	@Configurable(comment = "Desired kick speed", defValue = "6.0")
 	private static double kickVel = 6.0;
-
-	@Configurable(comment = "Dribble speed during pull back and dodge [rpm]", defValue = "10000.0")
-	private static double dribbleSpeed = 10000.0;
 
 	@Configurable(comment = "Maximum target orientation look ahead from current robot velocity angle [deg]", defValue = "45.0")
 	private static double turnLookAheadAngle = 45.0; // [deg]
@@ -196,7 +195,6 @@ public class ContestedPossessionChallengeRole extends ARole
 			IVector2 preparePos = LineMath.stepAlongLine(getBall().getPos(), defenderPos, -500.0);
 
 			skill.setProtectionTarget(preparePos);
-			skill.setProtectDribbleSpeed(dribbleSpeed);
 		}
 
 
@@ -231,7 +229,7 @@ public class ContestedPossessionChallengeRole extends ARole
 
 			skill.updateDestination(pullbackPos);
 			skill.updateTargetAngle(targetOrient);
-			skill.setKickParams(KickParams.disarm().withDribbleSpeed(dribbleSpeed));
+			skill.setKickParams(KickParams.disarm().withDribblerMode(EDribblerMode.HIGH_POWER));
 		}
 
 
@@ -267,7 +265,7 @@ public class ContestedPossessionChallengeRole extends ARole
 
 			skill.updateDestination(dodgePos);
 			skill.updateTargetAngle(getBot().getOrientation());
-			skill.setKickParams(KickParams.disarm().withDribbleSpeed(dribbleSpeed));
+			skill.setKickParams(KickParams.disarm().withDribblerMode(EDribblerMode.HIGH_POWER));
 		}
 
 
@@ -311,7 +309,7 @@ public class ContestedPossessionChallengeRole extends ARole
 
 			skill.updateDestination(LineMath.stepAlongLine(dodgePos, targetPos, dodgeDistanceForward));
 			skill.getMoveConstraints().setPrimaryDirection(Vector2.fromPoints(dodgePos, targetPos));
-			skill.setKickParams(KickParams.disarm().withDribbleSpeed(dribbleSpeed));
+			skill.setKickParams(KickParams.disarm().withDribblerMode(EDribblerMode.HIGH_POWER));
 		}
 
 
@@ -346,7 +344,7 @@ public class ContestedPossessionChallengeRole extends ARole
 
 			if (angleDiffToTarget * rotationDir > leadAngle)
 			{
-				skill.setKickParams(KickParams.straight(kickVel).withDribbleSpeed(dribbleSpeed));
+				skill.setKickParams(KickParams.straight(kickVel).withDribblerMode(EDribblerMode.HIGH_POWER));
 				armed = true;
 			}
 
