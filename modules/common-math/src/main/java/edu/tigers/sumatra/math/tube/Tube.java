@@ -1,25 +1,26 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.math.tube;
 
 import com.sleepycat.persist.model.Persistent;
+import edu.tigers.sumatra.math.AngleMath;
+import edu.tigers.sumatra.math.IBoundedPath;
 import edu.tigers.sumatra.math.SumatraMath;
+import edu.tigers.sumatra.math.circle.Arc;
 import edu.tigers.sumatra.math.circle.Circle;
-import edu.tigers.sumatra.math.circle.ICircle;
-import edu.tigers.sumatra.math.line.ILine;
+import edu.tigers.sumatra.math.line.ILineSegment;
 import edu.tigers.sumatra.math.line.LineMath;
-import edu.tigers.sumatra.math.line.v2.ILineSegment;
-import edu.tigers.sumatra.math.line.v2.Lines;
+import edu.tigers.sumatra.math.line.Lines;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2f;
 import lombok.EqualsAndHashCode;
 import lombok.RequiredArgsConstructor;
 import lombok.ToString;
 
+import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 
 /**
@@ -47,20 +48,6 @@ public class Tube implements ITube
 
 
 	/**
-	 * tube around LineSegment with given radius [mm]
-	 * adds radius to start and endpoint of lineSegment
-	 *
-	 * @param lineSegment
-	 * @param radius      [mm]
-	 * @return
-	 */
-	public static Tube fromLineSegment(final ILineSegment lineSegment, final double radius)
-	{
-		return create(lineSegment, radius);
-	}
-
-
-	/**
 	 * Tube around LineSegment with given radius [mm].
 	 *
 	 * @param start
@@ -84,21 +71,21 @@ public class Tube implements ITube
 	@Override
 	public IVector2 startCenter()
 	{
-		return lineSegment.getStart();
+		return lineSegment.getPathStart();
 	}
 
 
 	@Override
 	public IVector2 endCenter()
 	{
-		return lineSegment.getEnd();
+		return lineSegment.getPathEnd();
 	}
 
 
 	@Override
 	public IVector2 center()
 	{
-		return lineSegment.getCenter();
+		return lineSegment.getPathCenter();
 	}
 
 
@@ -110,22 +97,15 @@ public class Tube implements ITube
 
 
 	@Override
-	public boolean isPointInShape(final IVector2 point, final double margin)
-	{
-		return lineSegment.distanceToSqr(point) < SumatraMath.square(radius + margin);
-	}
-
-
-	@Override
 	public IVector2 nearestPointOutside(final IVector2 point)
 	{
 		if (lineSegment.getLength() <= 0)
 		{
 			return Circle.createCircle(startCenter(), radius).nearestPointOutside(point);
 		}
-		if (lineSegment.distanceToSqr(point) < SumatraMath.square(radius))
+		if (isPointInShape(point))
 		{
-			var leadPoint = lineSegment.closestPointOnLine(point);
+			var leadPoint = lineSegment.closestPointOnPath(point);
 			if (leadPoint.equals(point))
 			{
 				var dir = lineSegment.directionVector().getNormalVector().scaleTo(radius);
@@ -140,46 +120,52 @@ public class Tube implements ITube
 	@Override
 	public IVector2 nearestPointInside(final IVector2 point)
 	{
-		if (lineSegment.distanceToSqr(point) < SumatraMath.square(radius))
+		if (isPointInShape(point))
 		{
 			return point;
 		}
-		IVector2 leadPoint = lineSegment.closestPointOnLine(point);
-		return LineMath.stepAlongLine(leadPoint, point, radius - 1);
+		IVector2 leadPoint = lineSegment.closestPointOnPath(point);
+		return LineMath.stepAlongLine(leadPoint, point, radius);
 	}
 
 
 	@Override
-	public List<IVector2> lineIntersections(final ILine line)
+	public IVector2 nearestPointOnPerimeterPath(IVector2 point)
 	{
-		if (lineSegment.getLength() <= 0)
+		var closest = lineSegment.closestPointOnPath(point);
+		if (closest.isCloseTo(point))
 		{
-			return Circle.createCircle(startCenter(), radius).lineIntersections(line);
-		}
-		ICircle startCircle = Circle.createCircle(startCenter(), radius);
-		ICircle endCircle = Circle.createCircle(endCenter(), radius);
-
-		List<IVector2> intersections = startCircle.lineIntersections(line).stream()
-				.filter(v -> lineSegment.closestPointOnLine(v).equals(startCenter()))
-				.collect(Collectors.toList());
-
-		List<IVector2> intersectsAtEnd = endCircle.lineIntersections(line);
-		for (IVector2 v : intersectsAtEnd)
-		{
-			if (lineSegment.closestPointOnLine(v).equals(endCenter()))
-			{
-				intersections.add(v);
-			}
+			return lineSegment.directionVector().getNormalVector().scaleToNew(radius).add(closest);
 		}
 
-		IVector2 start1 = startCenter().addNew(lineSegment.directionVector().getNormalVector().scaleTo(radius));
-		IVector2 end1 = endCenter().addNew(lineSegment.directionVector().getNormalVector().scaleTo(radius));
-		Lines.segmentFromPoints(start1, end1).intersectLine(line.v2()).ifPresent(intersections::add);
-		IVector2 start2 = startCenter().addNew(lineSegment.directionVector().getNormalVector().scaleTo(-radius));
-		IVector2 end2 = endCenter().addNew(lineSegment.directionVector().getNormalVector().scaleTo(-radius));
-		Lines.segmentFromPoints(start2, end2).intersectLine(line.v2()).ifPresent(intersections::add);
+		return point.subtractNew(closest).scaleTo(radius).add(closest);
+	}
 
-		return intersections.stream().distinct().collect(Collectors.toList());
+
+	@Override
+	public List<IBoundedPath> getPerimeterPath()
+	{
+		if (SumatraMath.isZero(lineSegment.getLength()))
+		{
+			return List.of(Circle.createCircle(lineSegment.getPathStart(), radius));
+		}
+
+		var offset = lineSegment.directionVector().getNormalVector().scaleTo(radius);
+
+		List<IVector2> corners = new ArrayList<>();
+		corners.add(lineSegment.getPathStart().addNew(offset));
+		corners.add(lineSegment.getPathEnd().addNew(offset));
+		corners.add(lineSegment.getPathStart().subtractNew(offset));
+		corners.add(lineSegment.getPathEnd().subtractNew(offset));
+
+		var angle = AngleMath.normalizeAngle(lineSegment.directionVector().getAngle() + AngleMath.PI_HALF);
+
+		return List.of(
+				Arc.createArc(lineSegment.getPathStart(), radius, angle, AngleMath.PI),
+				Lines.segmentFromPoints(corners.get(0), corners.get(1)),
+				Arc.createArc(lineSegment.getPathEnd(), radius, angle - AngleMath.PI, AngleMath.PI),
+				Lines.segmentFromPoints(corners.get(3), corners.get(2))
+		);
 	}
 
 
@@ -187,5 +173,12 @@ public class Tube implements ITube
 	public ITube withMargin(final double margin)
 	{
 		return new Tube(lineSegment, radius + margin);
+	}
+
+
+	@Override
+	public double distanceTo(IVector2 point)
+	{
+		return lineSegment.distanceTo(point) - radius;
 	}
 }

@@ -5,13 +5,13 @@
 package edu.tigers.sumatra.ai.metis.defense;
 
 import edu.tigers.sumatra.ai.metis.ACalculator;
+import edu.tigers.sumatra.ai.metis.defense.data.DefensePassDisruptionAssignment;
 import edu.tigers.sumatra.ai.metis.defense.data.DefenseThreatAssignment;
 import edu.tigers.sumatra.ai.metis.defense.data.EDefenseThreatType;
-import edu.tigers.sumatra.ai.metis.defense.data.IDefenseThreat;
 import edu.tigers.sumatra.ai.pandora.plays.EPlay;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.BotID;
-import edu.tigers.sumatra.math.line.v2.ILineSegment;
+import edu.tigers.sumatra.math.line.ILineSegment;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -30,6 +30,7 @@ public class DefenseThreatAssignmentSeparationCalc extends ACalculator
 {
 	private final Supplier<Map<EPlay, Set<BotID>>> desiredBotMap;
 	private final Supplier<List<DefenseThreatAssignment>> defenseRawThreatAssignments;
+	private final Supplier<DefensePassDisruptionAssignment> defensePassDisruptionAssignment;
 
 
 	@Getter
@@ -60,8 +61,9 @@ public class DefenseThreatAssignmentSeparationCalc extends ACalculator
 		outerDefenders = defenseOuterThreatAssignments.stream()
 				.flatMap(ta -> ta.getBotIds().stream())
 				.collect(Collectors.toSet());
-		penAreaDefenders = allDefender.stream()
-				.filter(botID -> !outerDefenders.contains(botID))
+		penAreaDefenders = allDefender.stream().filter(botID -> !outerDefenders.contains(botID))
+				.filter(botID -> defensePassDisruptionAssignment.get() == null
+						|| !defensePassDisruptionAssignment.get().getDefenderId().equals(botID))
 				.collect(Collectors.toSet());
 	}
 
@@ -84,9 +86,21 @@ public class DefenseThreatAssignmentSeparationCalc extends ACalculator
 		List<DefenseThreatAssignment> outer = new ArrayList<>();
 		for (var threatAssignment : defenseActualThreatAssignments)
 		{
-			if (isPenAreaThreatAssignment(threatAssignment))
+			Map<BotID, Boolean> penAreaMap = threatAssignment.getBotIds().stream()
+					.collect(Collectors.toMap(id -> id, id -> defenderIsOnPenArea(threatAssignment, id)));
+			if (penAreaMap.values().stream().allMatch(Boolean::booleanValue))
 			{
 				penArea.add(threatAssignment);
+			} else if (penAreaMap.values().stream().anyMatch(Boolean::booleanValue))
+			{
+				var transitionBots = penAreaMap.entrySet().stream()
+						.filter(Map.Entry::getValue).map(Map.Entry::getKey)
+						.collect(Collectors.toUnmodifiableSet());
+				var outerBots = threatAssignment.getBotIds().stream()
+						.filter(botID -> !transitionBots.contains(botID))
+						.collect(Collectors.toUnmodifiableSet());
+				penArea.add(new DefenseThreatAssignment(threatAssignment.getThreat(), transitionBots));
+				outer.add(new DefenseThreatAssignment(threatAssignment.getThreat(), outerBots));
 			} else
 			{
 				outer.add(threatAssignment);
@@ -97,19 +111,9 @@ public class DefenseThreatAssignmentSeparationCalc extends ACalculator
 	}
 
 
-	private boolean isPenAreaThreatAssignment(DefenseThreatAssignment assignment)
+	private boolean defenderIsOnPenArea(DefenseThreatAssignment assignment, BotID defenderID)
 	{
-
-		return stayOnPenAreaInCurrentGameState(assignment.getThreat())
-				|| assignment.getBotIds().stream()
-				.anyMatch(botID -> defenderNeedsTransitionViaPenAreGroup(assignment, botID));
-	}
-
-
-	private boolean stayOnPenAreaInCurrentGameState(final IDefenseThreat threat)
-	{
-
-		if (threat.getProtectionLine().isEmpty())
+		if (assignment.getThreat().getProtectionLine().isEmpty())
 		{
 			// protection not possible -> penalty area is only the fallback here
 			return true;
@@ -118,11 +122,15 @@ public class DefenseThreatAssignmentSeparationCalc extends ACalculator
 		{
 			return true;
 		}
-		return switch (threat.getType())
-				{
-					case BALL, BOT_M2M -> false;
-					case BOT_CB -> getAiFrame().getGameState().isStandardSituationForThem();
-				};
+		if (defenderNeedsTransitionViaPenAreGroup(assignment, defenderID))
+		{
+			return true;
+		}
+		return switch (assignment.getThreat().getType())
+		{
+			case BALL, BOT_M2M -> false;
+			case BOT_CB -> getAiFrame().getGameState().isStandardSituationForThem();
+		};
 	}
 
 
@@ -145,11 +153,9 @@ public class DefenseThreatAssignmentSeparationCalc extends ACalculator
 
 		double onPenaltyAreaOffset = Geometry.getBotRadius() * 3 + hysteresis;
 
-		final boolean outsideOfPenArea = !Geometry.getPenaltyAreaOur()
-				.withMargin(onPenaltyAreaOffset)
+		final boolean outsideOfPenArea = !Geometry.getPenaltyAreaOur().withMargin(onPenaltyAreaOffset)
 				.isPointInShape(botPos);
 
 		return distToProtectionLine >= goOutOffset && !outsideOfPenArea;
 	}
-
 }

@@ -4,6 +4,7 @@
 
 package edu.tigers.sumatra.view.replay;
 
+import edu.tigers.sumatra.referee.data.EGameState;
 import edu.tigers.sumatra.referee.gameevent.EGameEvent;
 import edu.tigers.sumatra.referee.proto.SslGcRefereeMessage;
 
@@ -80,6 +81,13 @@ public interface IReplayControlPanelObserver
 	 */
 	void onSearchGameEvent(final EGameEvent gameEvent);
 
+
+	/**
+	 * Search for the next game state of the type
+	 *
+	 * @param gameState
+	 */
+	void onSearchGameState(final EGameState gameState);
 
 	/**
 	 * save snapshot to file

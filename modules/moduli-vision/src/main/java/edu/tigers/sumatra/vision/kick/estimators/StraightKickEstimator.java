@@ -13,7 +13,8 @@ import edu.tigers.sumatra.drawable.DrawableLine;
 import edu.tigers.sumatra.drawable.IDrawableShape;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.math.AngleMath;
-import edu.tigers.sumatra.math.line.Line;
+import edu.tigers.sumatra.math.line.ILineSegment;
+import edu.tigers.sumatra.math.line.Lines;
 import edu.tigers.sumatra.math.pose.Pose;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.IVector3;
@@ -27,6 +28,7 @@ import edu.tigers.sumatra.vision.kick.estimators.straight.FlatKickSolverNonLin3F
 import edu.tigers.sumatra.vision.kick.estimators.straight.StraightKickSolverLin3;
 import edu.tigers.sumatra.vision.kick.estimators.straight.StraightKickSolverNonLin3Direct;
 import edu.tigers.sumatra.vision.kick.estimators.straight.StraightKickSolverNonLinIdentDirect;
+import edu.tigers.sumatra.vision.tracker.BallTracker;
 import org.apache.commons.math3.linear.Array2DRowRealMatrix;
 import org.apache.commons.math3.linear.ArrayRealVector;
 import org.apache.commons.math3.linear.DecompositionSolver;
@@ -51,27 +53,10 @@ import java.util.stream.Collectors;
 public class StraightKickEstimator implements IKickEstimator
 {
 	private static final Logger log = LogManager.getLogger(StraightKickEstimator.class.getName());
-
-	private final List<CamBall> records = new ArrayList<>();
-	private final List<CamBall> allRecords = new ArrayList<>();
-	private int pruneIndex = 1;
-
-	private final StraightKickSolverLin3 solverSliding;
-	private final StraightKickSolverNonLin3Direct solverFull;
-	private final FlatKickSolverNonLin3Factor solverFlatFull;
-
-	private Optional<Line> fitLastLine = Optional.empty();
-
-	private KickFitResult fitResult = null;
-
-	private List<KickFitResult> activeSolvers = new ArrayList<>();
-
 	@Configurable(comment = "Max fitting error until this estimator is dropped [mm]", defValue = "100.0")
 	private static double maxFittingError = 100.0;
-
 	@Configurable(comment = "Max direction deviation until this estimator is dropped [deg]", defValue = "20.0")
 	private static double maxDirectionError = 20.0;
-
 	@Configurable(comment = "Max number of records to keep over all cameras", defValue = "50")
 	private static int maxNumberOfRecords = 50;
 
@@ -79,6 +64,16 @@ public class StraightKickEstimator implements IKickEstimator
 	{
 		ConfigRegistration.registerClass("vision", StraightKickEstimator.class);
 	}
+
+	private final List<CamBall> records = new ArrayList<>();
+	private final List<CamBall> allRecords = new ArrayList<>();
+	private final StraightKickSolverLin3 solverSliding;
+	private final StraightKickSolverNonLin3Direct solverFull;
+	private final FlatKickSolverNonLin3Factor solverFlatFull;
+	private int pruneIndex = 1;
+	private ILineSegment fitLastLine = null;
+	private KickFitResult fitResult = null;
+	private List<KickFitResult> activeSolvers = new ArrayList<>();
 
 
 	/**
@@ -89,7 +84,9 @@ public class StraightKickEstimator implements IKickEstimator
 	public StraightKickEstimator(final KickEvent event, List<FilteredVisionBall> filteredBalls)
 	{
 		List<CamBall> camBalls = event.getRecordsSinceKick().stream()
-				.map(r -> r.getLatestCamBall().get())
+				.map(BallTracker.MergedBall::getLatestCamBall)
+				.filter(Optional::isPresent)
+				.map(Optional::get)
 				.collect(Collectors.toList());
 
 		if (camBalls.size() > 2 && (camBalls.get(1).getTimestamp() - camBalls.get(0).getTimestamp()) * 1e-9 > 0.1)
@@ -108,8 +105,11 @@ public class StraightKickEstimator implements IKickEstimator
 
 		solverSliding = new StraightKickSolverLin3();
 		solverFull = new StraightKickSolverNonLin3Direct(event.getPosition(), avgKickVel);
-		solverFlatFull = new FlatKickSolverNonLin3Factor(
-				Pose.from(event.getKickingBotPosition(), event.getBotDirection()), ballStateAtKick);
+		solverFlatFull = ballStateAtKick
+				.map(bsk -> new FlatKickSolverNonLin3Factor(
+						Pose.from(event.getKickingBotPosition(), event.getBotDirection()), bsk))
+				.orElseGet(() -> new FlatKickSolverNonLin3Factor(
+						Pose.from(event.getKickingBotPosition(), event.getBotDirection())));
 
 		runSolvers();
 	}
@@ -121,6 +121,49 @@ public class StraightKickEstimator implements IKickEstimator
 	public static void touch()
 	{
 		// Invoke static constructor
+	}
+
+
+	/**
+	 * Get kick speed from a list of internal cam balls.
+	 *
+	 * @param balls
+	 * @param kickPos
+	 * @return
+	 */
+	@SuppressWarnings("squid:S1166") // Exception from solver not logged
+	public static double getKickSpeed(final List<CamBall> balls, final IVector2 kickPos)
+	{
+		int numPoints = balls.size();
+
+		RealMatrix matA = new Array2DRowRealMatrix(numPoints, 2);
+		RealVector b = new ArrayRealVector(numPoints);
+
+		for (int i = 0; i < numPoints; i++)
+		{
+			double time = (balls.get(i).gettCapture() - balls.get(0).gettCapture()) * 1e-9;
+			matA.setEntry(i, 0, time);
+			matA.setEntry(i, 1, 1.0);
+
+			b.setEntry(i, balls.get(i).getPos().getXYVector().distanceTo(kickPos));
+		}
+
+		DecompositionSolver solver = new QRDecomposition(matA).getSolver();
+		RealVector x;
+		try
+		{
+			x = solver.solve(b);
+		} catch (SingularMatrixException e)
+		{
+			return 0;
+		}
+
+		if (x.getEntry(0) < 0)
+		{
+			return 0;
+		}
+
+		return x.getEntry(0);
 	}
 
 
@@ -158,10 +201,10 @@ public class StraightKickEstimator implements IKickEstimator
 
 
 	@Override
-	public void addCamBall(final CamBall record)
+	public void addCamBall(final CamBall newRecord)
 	{
-		records.add(record);
-		allRecords.add(record);
+		records.add(newRecord);
+		allRecords.add(newRecord);
 
 		pruneRecords();
 
@@ -190,15 +233,15 @@ public class StraightKickEstimator implements IKickEstimator
 	{
 		List<Optional<KickFitResult>> results = new ArrayList<>();
 
-		results.add(generateFitResult(solverSliding.solve(records)));
-		results.add(generateFitResult(solverFull.solve(records)));
-		results.add(generateFitResult(solverFlatFull.solve(records))
+		results.add(solverSliding.solve(records).map(this::generateFitResult));
+		results.add(solverFull.solve(records).map(this::generateFitResult));
+		results.add(solverFlatFull.solve(records).map(this::generateFitResult)
 				.map(k -> k.toBuilder().withAvgDistance(k.getAvgDistance() * 0.5).build()));
 
 		activeSolvers = results.stream()
 				.filter(Optional::isPresent)
 				.map(Optional::get)
-				.collect(Collectors.toList());
+				.toList();
 
 		fitResult = results.stream()
 				.filter(Optional::isPresent)
@@ -208,21 +251,16 @@ public class StraightKickEstimator implements IKickEstimator
 	}
 
 
-	private Optional<KickFitResult> generateFitResult(final Optional<KickSolverResult> result)
+	private KickFitResult generateFitResult(KickSolverResult result)
 	{
-		if (result.isEmpty())
-		{
-			return Optional.empty();
-		}
-
 		List<IVector2> ground = new ArrayList<>(records.size());
 
-		IVector2 kickPos = result.get().getKickPosition();
-		IVector3 kickVel = result.get().getKickVelocity();
-		long tZero = result.get().getKickTimestamp();
+		IVector2 kickPos = result.getKickPosition();
+		IVector3 kickVel = result.getKickVelocity();
+		long tZero = result.getKickTimestamp();
 
 		var traj = Geometry.getBallFactory()
-				.createTrajectoryFromKickedBall(kickPos, kickVel, result.get().getKickSpin().orElse(
+				.createTrajectoryFromKickedBall(kickPos, kickVel, result.getKickSpin().orElse(
 						Vector2f.ZERO_VECTOR));
 
 		double error = 0;
@@ -236,7 +274,7 @@ public class StraightKickEstimator implements IKickEstimator
 
 		error /= records.size();
 
-		return Optional.of(new KickFitResult(ground, error, traj, tZero, result.get().getSolverName()));
+		return new KickFitResult(ground, error, traj, tZero, result.getSolverName());
 	}
 
 
@@ -301,7 +339,7 @@ public class StraightKickEstimator implements IKickEstimator
 		List<CamBall> usedRecords = allRecords.stream()
 				.filter(r -> (r.gettCapture() < timeAfterKick)
 						|| Geometry.getField().withMargin(-100).isPointInShape(r.getFlatPos()))
-				.collect(Collectors.toList());
+				.toList();
 
 		// solve to estimate all parameters
 		StraightKickSolverNonLinIdentDirect identSolver = new StraightKickSolverNonLinIdentDirect();
@@ -337,10 +375,10 @@ public class StraightKickEstimator implements IKickEstimator
 	{
 		List<IVector2> lastRecords = group.subList(group.size() - 10, group.size()).stream()
 				.map(CamBall::getFlatPos)
-				.collect(Collectors.toList());
+				.toList();
 
-		Optional<Line> lastLine = Line.fromPointsList(lastRecords);
-		fitLastLine = lastLine;
+		Optional<ILineSegment> lastLine = Lines.regressionLineFromPointsList(lastRecords);
+		fitLastLine = lastLine.orElse(null);
 
 		if (lastLine.isPresent() && (fitResult != null))
 		{
@@ -350,49 +388,6 @@ public class StraightKickEstimator implements IKickEstimator
 		}
 
 		return false;
-	}
-
-
-	/**
-	 * Get kick speed from a list of internal cam balls.
-	 *
-	 * @param balls
-	 * @param kickPos
-	 * @return
-	 */
-	@SuppressWarnings("squid:S1166") // Exception from solver not logged
-	public static double getKickSpeed(final List<CamBall> balls, final IVector2 kickPos)
-	{
-		int numPoints = balls.size();
-
-		RealMatrix matA = new Array2DRowRealMatrix(numPoints, 2);
-		RealVector b = new ArrayRealVector(numPoints);
-
-		for (int i = 0; i < numPoints; i++)
-		{
-			double time = (balls.get(i).gettCapture() - balls.get(0).gettCapture()) * 1e-9;
-			matA.setEntry(i, 0, time);
-			matA.setEntry(i, 1, 1.0);
-
-			b.setEntry(i, balls.get(i).getPos().getXYVector().distanceTo(kickPos));
-		}
-
-		DecompositionSolver solver = new QRDecomposition(matA).getSolver();
-		RealVector x;
-		try
-		{
-			x = solver.solve(b);
-		} catch (SingularMatrixException e)
-		{
-			return 0;
-		}
-
-		if (x.getEntry(0) < 0)
-		{
-			return 0;
-		}
-
-		return x.getEntry(0);
 	}
 
 
@@ -416,14 +411,14 @@ public class StraightKickEstimator implements IKickEstimator
 			DrawableCircle kickPos = new DrawableCircle(fit.getKickPos(), 30, Color.RED);
 			shapes.add(kickPos);
 
-			if (fit.getTrajectory() instanceof FlatBallTrajectory)
+			if (fit.getTrajectory() instanceof FlatBallTrajectory flatBallTrajectory)
 			{
-				DrawableCircle switchPos = new DrawableCircle(
-						((FlatBallTrajectory) fit.getTrajectory()).getPosSwitch().getXYVector(), 30, Color.MAGENTA);
+				DrawableCircle switchPos = new DrawableCircle(flatBallTrajectory.getPosSwitch().getXYVector(), 30,
+						Color.MAGENTA);
 				shapes.add(switchPos);
 			}
 
-			DrawableLine speed = new DrawableLine(Line.fromDirection(
+			DrawableLine speed = new DrawableLine(Lines.segmentFromOffset(
 					fit.getKickPos(), fit.getKickVel().getXYVector().multiplyNew(100)), Color.RED);
 			speed.setStrokeWidth(10);
 			shapes.add(speed);
@@ -449,9 +444,9 @@ public class StraightKickEstimator implements IKickEstimator
 			}
 		}
 
-		if (fitLastLine.isPresent())
+		if (fitLastLine != null)
 		{
-			DrawableLine last = new DrawableLine(fitLastLine.get(), Color.BLUE);
+			DrawableLine last = new DrawableLine(fitLastLine, Color.BLUE);
 			shapes.add(last);
 		}
 

@@ -1,41 +1,56 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.pathfinder.obstacles;
-
-import java.util.List;
 
 import edu.tigers.sumatra.drawable.DrawableTube;
 import edu.tigers.sumatra.drawable.IDrawableShape;
 import edu.tigers.sumatra.math.tube.Tube;
 import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.pathfinder.obstacles.input.CollisionInput;
+import lombok.RequiredArgsConstructor;
+
+import java.util.List;
+import java.util.Optional;
 
 
 /**
  * An obstacle in a tube shape
  */
+@RequiredArgsConstructor
 public class TubeObstacle extends AObstacle
 {
+	private final String qualifier;
 	private final Tube tube;
 
 
-	public TubeObstacle(final Tube tube)
+	@Override
+	public String getIdentifier()
 	{
-		this.tube = tube;
+		return super.getIdentifier() + " " + qualifier;
 	}
 
 
 	@Override
-	public boolean isPointCollidingWithObstacle(final IVector2 point, final double t, final double margin)
+	public double distanceTo(CollisionInput input)
 	{
-		return tube.isPointInShape(point, margin);
+		return tube.nearestPointInside(input.getRobotPos()).distanceTo(input.getRobotPos());
 	}
 
 
 	@Override
-	protected void initializeShapes(final List<IDrawableShape> shapes)
+	protected List<IDrawableShape> initializeShapes()
 	{
-		shapes.add(new DrawableTube(tube));
+		return List.of(
+				new DrawableTube(tube)
+		);
+	}
+
+
+	@Override
+	public Optional<IVector2> adaptDestination(IVector2 robotPos, IVector2 destination)
+	{
+		return adaptDestination(tube, robotPos, destination);
 	}
 }

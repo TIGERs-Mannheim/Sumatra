@@ -1,22 +1,10 @@
 /*
- * Copyright (c) 2009 - 2019, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.loganalysis.eventtypes.shot;
 
-import static edu.tigers.sumatra.loganalysis.GameMemory.GameLogObject.BALL;
-
-import java.awt.Color;
-import java.util.EnumMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import com.github.g3force.instanceables.InstanceableClass;
-
 import edu.tigers.sumatra.drawable.DrawableCircle;
 import edu.tigers.sumatra.drawable.IDrawableShape;
 import edu.tigers.sumatra.drawable.ShapeMap;
@@ -35,6 +23,16 @@ import edu.tigers.sumatra.statemachine.StateMachine;
 import edu.tigers.sumatra.wp.data.ITrackedBall;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
 import edu.tigers.sumatra.wp.data.WorldFrameWrapper;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import java.awt.Color;
+import java.util.EnumMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+
+import static edu.tigers.sumatra.loganalysis.GameMemory.GameLogObject.BALL;
 
 
 public class ShotDetection implements IEventTypeDetection<IShotEventType>
@@ -70,7 +68,7 @@ public class ShotDetection implements IEventTypeDetection<IShotEventType>
 	{
 		try
 		{
-			detectionStateMachine = new StateMachine<>();
+			detectionStateMachine = new StateMachine<>(this.getClass().getSimpleName());
 
 			for (EPassingDetectionState enumState : EPassingDetectionState.values())
 			{
@@ -227,7 +225,8 @@ public class ShotDetection implements IEventTypeDetection<IShotEventType>
 			{
 
 				// decide whether the shot is a goal shot or a pass and create its shot event type
-				detectedShot = shotBuilder.createShotEventType(typeDetectionFrame.getFrameId(), receiver,
+				detectedShot = shotBuilder.createShotEventType(typeDetectionFrame.getWorldFrameWrapper().getTimestamp(),
+						receiver,
 						passEndBall.getPos());
 
 				passingHistoryDraw.addAll(detectedShot.getDrawableShotShape());

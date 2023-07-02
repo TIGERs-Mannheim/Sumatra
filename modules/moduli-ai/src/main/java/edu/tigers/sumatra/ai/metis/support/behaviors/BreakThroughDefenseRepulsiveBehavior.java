@@ -14,13 +14,13 @@ import edu.tigers.sumatra.drawable.DrawableArc;
 import edu.tigers.sumatra.drawable.DrawableCircle;
 import edu.tigers.sumatra.drawable.DrawableLine;
 import edu.tigers.sumatra.geometry.Geometry;
-import edu.tigers.sumatra.geometry.IPenaltyArea;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.circle.Arc;
 import edu.tigers.sumatra.math.circle.Circle;
 import edu.tigers.sumatra.math.circle.ICircle;
-import edu.tigers.sumatra.math.line.v2.ILineSegment;
-import edu.tigers.sumatra.math.line.v2.Lines;
+import edu.tigers.sumatra.math.line.ILineSegment;
+import edu.tigers.sumatra.math.line.Lines;
+import edu.tigers.sumatra.math.penaltyarea.IPenaltyArea;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.math.vector.Vector2f;
@@ -132,7 +132,7 @@ public class BreakThroughDefenseRepulsiveBehavior extends ASupportBehavior
 	{
 		var shapes = getAiFrame().getShapes(EAiShapesLayer.SUPPORT_BREAK_THROUGH_DEFENSE);
 		shapes.add(new DrawableCircle(Circle.createCircle(dest, Geometry.getBotRadius()), c));
-		shapes.add(new DrawableLine(Lines.segmentFromPoints(dest, start), c));
+		shapes.add(new DrawableLine(dest, start, c));
 	}
 
 
@@ -143,7 +143,7 @@ public class BreakThroughDefenseRepulsiveBehavior extends ASupportBehavior
 
 		ICircle surrounding = Circle.createCircle(shiftedCenter, searchCircleRadius);
 		long nOpponents = getWFrame().getBots().values().stream()
-				.filter(bot -> bot.getBotId() != getAiFrame().getKeeperOpponentId())
+				.filter(bot -> !bot.getBotId().equals(getAiFrame().getKeeperOpponentId()))
 				.filter(bot -> surrounding.isPointInShape(bot.getPos()))
 				.count();
 
@@ -178,7 +178,7 @@ public class BreakThroughDefenseRepulsiveBehavior extends ASupportBehavior
 		Vector2f goalCenter = Geometry.getGoalTheir().getCenter();
 		List<IVector2> hedgehogDefenders = calcHedgehogDefenders(opponents).stream()
 				.sorted(Comparator.comparingDouble(b -> goalCenter.subtractNew(b).getAngle()))
-				.collect(Collectors.toList());
+				.toList();
 
 		if (hedgehogDefenders.isEmpty())
 		{
@@ -194,9 +194,9 @@ public class BreakThroughDefenseRepulsiveBehavior extends ASupportBehavior
 	private Set<IVector2> calcHedgehogDefenders(Collection<ITrackedBot> opponents)
 	{
 		List<Double> defenderDistances = opponents.stream()
-				.filter(b -> b.getBotId() != getAiFrame().getKeeperOpponentId())
+				.filter(b -> !b.getBotId().equals(getAiFrame().getKeeperOpponentId()))
 				.mapToDouble(b -> b.getPos().distanceTo(Geometry.getGoalTheir().getCenter()))
-				.sorted().boxed().collect(Collectors.toList());
+				.sorted().boxed().toList();
 
 		if (defenderDistances.isEmpty())
 		{
@@ -212,7 +212,7 @@ public class BreakThroughDefenseRepulsiveBehavior extends ASupportBehavior
 				hedgehogDistance + defensiveCircleWidth, 0.5 * Math.PI, Math.PI), Color.CYAN));
 
 		Set<IVector2> hedgehogDefenders = opponents.stream()
-				.filter(b -> b.getBotId() != getAiFrame().getKeeperOpponentId())
+				.filter(b -> !b.getBotId().equals(getAiFrame().getKeeperOpponentId()))
 				.map(ITrackedObject::getPos)
 				.filter(pos -> isHedgehogDefender(pos, hedgehogDistance))
 				.collect(Collectors.toSet());
@@ -280,8 +280,8 @@ public class BreakThroughDefenseRepulsiveBehavior extends ASupportBehavior
 	{
 		return getWFrame().getTigerBotsVisible().values().stream()
 				.filter(bot -> bot.getPos().x() > 0)
-				.filter(bot -> bot.getBotId() != myself)
-				.filter(bot -> bot.getBotId() != getAiFrame().getKeeperId())
+				.filter(bot -> !bot.getBotId().equals(myself))
+				.filter(bot -> !bot.getBotId().equals(getAiFrame().getKeeperId()))
 				.mapToDouble(bot -> bot.getPos().distanceToSqr(pos))
 				.average().orElse(0);
 	}
@@ -313,14 +313,14 @@ public class BreakThroughDefenseRepulsiveBehavior extends ASupportBehavior
 	{
 		List<IVector2> intersections = Geometry.getPenaltyAreaTheir()
 				.withMargin(Geometry.getBotRadius() + Geometry.getBotRadius() * penAreaSafetyMargin)
-				.lineIntersections(Lines.lineFromPoints(midOfGap, Geometry.getGoalTheir().getCenter()));
+				.intersectPerimeterPath(Lines.lineFromPoints(midOfGap, Geometry.getGoalTheir().getCenter()));
 
 		Optional<IVector2> newDestination = intersections.stream()
 				.min(Comparator.comparingDouble(b -> b.distanceTo(affectedBot.getPos())));
 
 		return newDestination.map(pos -> Geometry.getPenaltyAreaTheir()
 				.withMargin(Geometry.getBotRadius() + Geometry.getBotRadius() * penAreaSafetyMargin)
-				.lineIntersections(Lines.lineFromPoints(pos, affectedBot.getPos()))
+				.intersectPerimeterPath(Lines.lineFromPoints(pos, affectedBot.getPos()))
 				.stream().min(Comparator.comparingDouble(b -> b.distanceTo(affectedBot.getPos()))).orElse(pos));
 
 	}

@@ -4,11 +4,11 @@
 
 package edu.tigers.sumatra.ai.metis.defense.data;
 
-import java.util.Optional;
-
 import edu.tigers.sumatra.ids.AObjectID;
-import edu.tigers.sumatra.math.line.v2.ILineSegment;
+import edu.tigers.sumatra.math.line.ILineSegment;
 import edu.tigers.sumatra.math.vector.IVector2;
+
+import java.util.Optional;
 
 
 /**
@@ -51,6 +51,10 @@ public interface IDefenseThreat
 	 */
 	EDefenseThreatType getType();
 
+	/**
+	 * @return The threat rating. The higher the more dangerous is the threat
+	 */
+	double getThreatRating();
 
 	/**
 	 * @param threat

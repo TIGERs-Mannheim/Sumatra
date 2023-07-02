@@ -5,9 +5,7 @@ package edu.tigers.sumatra.statemachine;
 
 
 /**
- * State of a state machine
- * 
- * @author Nicolai Ommer <nicolai.ommer@gmail.com>
+ * State of a state machine.
  */
 public interface IState
 {
@@ -17,26 +15,29 @@ public interface IState
 	default void doEntryActions()
 	{
 	}
-	
-	
+
+
 	/**
 	 * Called once on state exit
 	 */
 	default void doExitActions()
 	{
 	}
-	
-	
+
+
 	/**
 	 * Called continuously with each new aiFrame
 	 */
 	default void doUpdate()
 	{
 	}
-	
-	
+
+
 	/**
-	 * @return an optional identifier for this state
+	 * @return the name of this state
 	 */
-	String getIdentifier();
+	default String getName()
+	{
+		return this.getClass().getSimpleName();
+	}
 }

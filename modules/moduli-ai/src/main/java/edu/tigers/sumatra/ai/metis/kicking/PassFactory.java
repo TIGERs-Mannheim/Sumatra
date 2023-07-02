@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.metis.kicking;
@@ -16,8 +16,8 @@ import java.util.List;
 
 public class PassFactory
 {
-	@Configurable(defValue = "3.0", comment = "Default maximum ball speed when receiving the ball")
-	private static double defaultMaxReceivingBallSpeed = 3.0;
+	@Configurable(defValue = "2.5", comment = "Default maximum ball speed when receiving the ball")
+	private static double defaultMaxReceivingBallSpeed = 2.5;
 
 	static
 	{
@@ -111,6 +111,7 @@ public class PassFactory
 				.receiver(receiver)
 				.receivingSpeed(receivingSpeed)
 				.duration(duration)
+				.shooter(shooter)
 				.build();
 	}
 
@@ -156,6 +157,7 @@ public class PassFactory
 				.receiver(receiver)
 				.receivingSpeed(receivingSpeed)
 				.duration(duration)
+				.shooter(shooter)
 				.build();
 	}
 }

@@ -3,7 +3,8 @@
  */
 package edu.tigers.sumatra.ai;
 
-import edu.tigers.sumatra.gamelog.SSLGameLogRecorder;
+import edu.tigers.sumatra.gamelog.GameLogRecorder;
+import edu.tigers.sumatra.model.SumatraModel;
 import edu.tigers.sumatra.persistence.BerkeleyAccessor;
 import edu.tigers.sumatra.persistence.BerkeleyAsyncRecorder;
 import edu.tigers.sumatra.persistence.BerkeleyDb;
@@ -14,14 +15,16 @@ import edu.tigers.sumatra.wp.ShapeMapBerkeleyRecorder;
 import edu.tigers.sumatra.wp.WfwBerkeleyRecorder;
 import edu.tigers.sumatra.wp.data.BerkeleyCamDetectionFrame;
 import edu.tigers.sumatra.wp.data.WorldFrameWrapper;
+import lombok.extern.log4j.Log4j2;
 
 
 /**
  * Manager for central control of recordings
  */
+@Log4j2
 public class AiRecordManager extends RecordManager
 {
-	private SSLGameLogRecorder gamelogRecorder = new SSLGameLogRecorder();
+	private GameLogRecorder gameLogRecorder;
 
 
 	@Override
@@ -49,10 +52,18 @@ public class AiRecordManager extends RecordManager
 
 
 	@Override
+	public void startModule()
+	{
+		super.startModule();
+		gameLogRecorder = SumatraModel.getInstance().getModule(GameLogRecorder.class);
+	}
+
+
+	@Override
 	protected void startRecording()
 	{
 		super.startRecording();
-		gamelogRecorder.start();
+		gameLogRecorder.setRecording(true);
 	}
 
 
@@ -60,6 +71,6 @@ public class AiRecordManager extends RecordManager
 	protected void stopRecording()
 	{
 		super.stopRecording();
-		gamelogRecorder.stop();
+		gameLogRecorder.setRecording(false);
 	}
 }

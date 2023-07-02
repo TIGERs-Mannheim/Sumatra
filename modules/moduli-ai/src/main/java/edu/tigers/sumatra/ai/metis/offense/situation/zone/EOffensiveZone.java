@@ -1,0 +1,20 @@
+/*
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
+ */
+
+package edu.tigers.sumatra.ai.metis.offense.situation.zone;
+
+
+public enum EOffensiveZone
+{
+	OPPONENT_CORNER,
+	OPPONENT_CORNER_MIRROR,
+	PEN_AREA_ATTACKER_SIDE,
+	PEN_AREA_ATTACKER_SIDE_MIRROR,
+	PEN_AREA_ATTACKER_CENTER,
+	CLOSE_MIDFIELD_SIDE,
+	CLOSE_MIDFIELD_SIDE_MIRROR,
+	CLOSE_MIDFIELD_CENTER,
+	MIDFIELD,
+	BACKFIELD;
+}

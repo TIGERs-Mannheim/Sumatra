@@ -27,7 +27,7 @@ public class AnimationTimerSine extends AAnimationTimer
 	/**
 	 * @param period Time for a full period in [s]
 	 */
-	public AnimationTimerSine(final float period)
+	public AnimationTimerSine(final double period)
 	{
 		super(period);
 	}
@@ -37,15 +37,15 @@ public class AnimationTimerSine extends AAnimationTimer
 	 * @param period Time for a full period in [s]
 	 * @param offset Offset for the timer in [s]. Can be used to de-synchronize multiple timers.
 	 */
-	public AnimationTimerSine(final float period, final float offset)
+	public AnimationTimerSine(final double period, final float offset)
 	{
 		super(period, offset);
 	}
 	
 	
 	@Override
-	public float getTimerValue()
+	public double getTimerValue()
 	{
-		return (float) ((SumatraMath.sin(getRelativeTimerValue() * AngleMath.PI_TWO) * 0.5f) + 0.5f);
+		return ((SumatraMath.sin(getRelativeTimerValue() * AngleMath.PI_TWO) * 0.5f) + 0.5f);
 	}
 }

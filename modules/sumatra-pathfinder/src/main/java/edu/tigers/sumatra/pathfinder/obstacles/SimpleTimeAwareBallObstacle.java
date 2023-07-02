@@ -1,59 +1,84 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.pathfinder.obstacles;
 
-import edu.tigers.sumatra.drawable.DrawableCircle;
+import edu.tigers.sumatra.ball.trajectory.IBallTrajectory;
+import edu.tigers.sumatra.drawable.DrawableTube;
 import edu.tigers.sumatra.drawable.IDrawableShape;
-import edu.tigers.sumatra.math.SumatraMath;
 import edu.tigers.sumatra.math.circle.Circle;
+import edu.tigers.sumatra.math.circle.ICircle;
+import edu.tigers.sumatra.math.tube.Tube;
 import edu.tigers.sumatra.math.vector.IVector2;
-import edu.tigers.sumatra.wp.data.ITrackedBall;
+import edu.tigers.sumatra.pathfinder.obstacles.input.CollisionInput;
+import lombok.RequiredArgsConstructor;
 
 import java.util.List;
+import java.util.Optional;
 
 
 /**
  * A time-aware obstacle for the ball that is based on a tracked ball and its trajectory
  */
+@RequiredArgsConstructor
 public class SimpleTimeAwareBallObstacle extends AObstacle
 {
-	private final ITrackedBall ball;
+	private final IBallTrajectory ballTrajectory;
 	private final double radius;
+	private final double tEnd;
 
 
-	public SimpleTimeAwareBallObstacle(final ITrackedBall ball, final double radius)
+	public SimpleTimeAwareBallObstacle(IBallTrajectory ballTrajectory, double radius)
 	{
-		this.ball = ball;
-		this.radius = radius;
-		setActivelyEvade(true);
-		setEmergencyBrakeFor(true);
+		this(ballTrajectory, radius, Double.POSITIVE_INFINITY);
 	}
 
 
 	@Override
-	public boolean isPointCollidingWithObstacle(final IVector2 point, final double t, final double margin)
+	protected void configure()
 	{
-		if (!ball.getTrajectory().isInterceptableByTime(t))
-		{
-			return false;
-		}
-		IVector2 pos = ball.getTrajectory().getPosByTime(t).getXYVector();
-		return pos.distanceToSqr(point) <= SumatraMath.square(radius + margin);
+		setMotionLess(false);
 	}
 
 
 	@Override
-	protected void initializeShapes(final List<IDrawableShape> shapes)
+	public boolean canCollide(CollisionInput input)
 	{
-		shapes.add(new DrawableCircle(Circle.createCircle(ball.getPos(), radius)));
+		return ballTrajectory.isInterceptableByTime(input.getTimeOffset());
 	}
 
 
 	@Override
-	public String toString()
+	public double distanceTo(CollisionInput input)
 	{
-		return String.format("SimpleTimeAwareBallObstacle [ball=%s, radius=%s]", ball, radius);
+		IVector2 pos = ballTrajectory.getPosByTime(Math.min(input.getTimeOffset(), tEnd)).getXYVector();
+		return pos.distanceTo(input.getRobotPos()) - radius;
+	}
+
+
+	@Override
+	protected List<IDrawableShape> initializeShapes()
+	{
+		return List.of(new DrawableTube(Tube.create(
+				ballTrajectory.getPosByTime(0).getXYVector(),
+				ballTrajectory.getPosByTime(tEnd).getXYVector(),
+				radius
+		)));
+	}
+
+
+	@Override
+	public double getMaxSpeed()
+	{
+		return ballTrajectory.getVelByTime(0).getLength2();
+	}
+
+
+	@Override
+	public Optional<IVector2> adaptDestination(IVector2 robotPos, IVector2 destination)
+	{
+		ICircle circle = Circle.createCircle(ballTrajectory.getPosByTime(0).getXYVector(), radius);
+		return adaptDestination(circle, robotPos, destination);
 	}
 }

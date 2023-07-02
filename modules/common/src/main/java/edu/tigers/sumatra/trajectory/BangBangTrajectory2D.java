@@ -6,6 +6,7 @@ package edu.tigers.sumatra.trajectory;
 
 import com.sleepycat.persist.model.Persistent;
 import edu.tigers.sumatra.math.AngleMath;
+import edu.tigers.sumatra.math.vector.AVector;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
 import lombok.ToString;
@@ -13,6 +14,7 @@ import net.jafama.DoubleWrapper;
 import net.jafama.FastMath;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.function.UnaryOperator;
 
@@ -100,9 +102,21 @@ class BangBangTrajectory2D implements ITrajectory<IVector2>
 	@Override
 	public List<Double> getTimeSections()
 	{
-		List<Double> list = new ArrayList<>(x.getTimeSections());
-		list.addAll(y.getTimeSections());
-		return list;
+		List<Double> timeSections = new ArrayList<>(BangBangTrajectory1D.MAX_PARTS * 2);
+		timeSections.addAll(x.getTimeSections());
+		timeSections.addAll(y.getTimeSections());
+		return timeSections;
+	}
+
+
+	@Override
+	public double getMaxSpeed()
+	{
+		return getTimeSections().stream()
+				.map(this::getVelocity)
+				.max(Comparator.comparing(AVector::getL1Norm))
+				.orElseThrow()
+				.getLength2();
 	}
 
 

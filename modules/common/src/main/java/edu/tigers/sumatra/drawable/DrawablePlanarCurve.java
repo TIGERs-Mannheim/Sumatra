@@ -5,10 +5,15 @@
 package edu.tigers.sumatra.drawable;
 
 import com.sleepycat.persist.model.Persistent;
+import edu.tigers.sumatra.math.SumatraMath;
+import edu.tigers.sumatra.math.vector.IVector;
 import edu.tigers.sumatra.math.vector.IVector2;
-import edu.tigers.sumatra.math.vector.VectorMath;
+import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.planarcurve.PlanarCurve;
-import edu.tigers.sumatra.planarcurve.PlanarCurveState;
+import edu.tigers.sumatra.trajectory.ITrajectory;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
+import lombok.Value;
 
 import java.awt.Graphics2D;
 import java.awt.geom.GeneralPath;
@@ -22,74 +27,85 @@ import java.util.List;
 @Persistent
 public class DrawablePlanarCurve extends ADrawableWithStroke
 {
-	private final List<IVector2> points = new ArrayList<>();
+	private final List<DrawSegment> segments = new ArrayList<>();
+	private final IVector2 start;
 
 
 	@SuppressWarnings("unused")
 	private DrawablePlanarCurve()
 	{
+		start = Vector2.zero();
 	}
 
 
 	/**
-	 * Draw a planar curve with default stepSize and anglePrecision.
+	 * Draw a planar curve
 	 *
 	 * @param curve
 	 */
-	public DrawablePlanarCurve(final PlanarCurve curve)
+	public DrawablePlanarCurve(PlanarCurve curve)
 	{
-		this(curve, 0.2, 0.1);
+		start = curve.getPos(curve.getTStart());
+
+		for (var segment : curve.getSegments())
+		{
+			switch (segment.getType())
+			{
+				case FIRST_ORDER ->
+				{
+					IVector2 p2 = segment.getPosition(segment.getDuration());
+					segments.add(new DrawSegment(null, p2));
+				}
+				case SECOND_ORDER ->
+				{
+					var timeScale = segment.getDuration();
+					var v0 = segment.getVel().multiplyNew(timeScale);
+					var p0 = segment.getPos();
+					var p1 = v0.multiplyNew(0.5).add(p0);
+					var p2 = segment.getPosition(segment.getDuration());
+					segments.add(new DrawSegment(p1, p2));
+				}
+				case POINT ->
+				{
+					// No segments
+				}
+			}
+		}
 	}
 
 
 	/**
-	 * Draw planar curve sampled at equal intervals of stepSize, skipping points with angle deviation below anglePrecision.
+	 * Draw a trajectory using a planar curve
 	 *
-	 * @param curve
-	 * @param stepSize       in [s]
-	 * @param anglePrecision in [rad]
+	 * @param trajXY
 	 */
-	public DrawablePlanarCurve(final PlanarCurve curve, final double stepSize, final double anglePrecision)
+	public DrawablePlanarCurve(ITrajectory<? extends IVector> trajXY)
 	{
-		IVector2 vLast = null;
-
-		for (double t = 0; t < (curve.getTEnd() - stepSize); t += stepSize)
+		start = trajXY.getPositionMM(0).getXYVector();
+		double tStart = 0;
+		var timeSections = trajXY.getTimeSections().stream().distinct().sorted().toList();
+		for (var t : timeSections)
 		{
-			PlanarCurveState state = curve.getState(t);
-			IVector2 pos = state.getPos();
-			IVector2 vel = state.getVel();
-
-			if (shouldAddPoint(vLast, vel, anglePrecision))
+			var tDuration = t - tStart;
+			if (SumatraMath.isZero(tDuration))
 			{
-				points.add(pos);
-				vLast = vel;
+				tStart = t;
+				continue;
 			}
-
-			if (t > stepSize * 1000)
+			if (trajXY.getAcceleration(tStart + 0.5 * tDuration).getXYVector().isZeroVector())
 			{
-				break;
+				var p2 = trajXY.getPositionMM(tStart + tDuration).getXYVector();
+				segments.add(new DrawSegment(null, p2));
+			} else
+			{
+				var v0 = trajXY.getVelocity(tStart).getXYVector().multiplyNew(tDuration * 1e3);
+				var p0 = trajXY.getPositionMM(tStart).getXYVector();
+				var p1 = v0.multiplyNew(0.5).add(p0);
+				var p2 = trajXY.getPositionMM(tStart + tDuration).getXYVector();
+				segments.add(new DrawSegment(p1, p2));
 			}
+			tStart = t;
 		}
-
-		points.add(curve.getState(curve.getTEnd()).getPos());
-	}
-
-
-	private boolean shouldAddPoint(IVector2 vLast, IVector2 vCur, double anglePrecision)
-	{
-		if (vLast == null)
-		{
-			// first point
-			return true;
-		}
-
-		var vDiff = vCur.angleToAbs(vLast);
-		if (vDiff.isEmpty())
-		{
-			// vCur or vLast is zero, this only happens at the beginning or end of the curve
-			return true;
-		}
-		return vDiff.get() > anglePrecision;
 	}
 
 
@@ -99,21 +115,41 @@ public class DrawablePlanarCurve extends ADrawableWithStroke
 		super.paintShape(g, tool, invert);
 
 		final GeneralPath drawPath = new GeneralPath();
-		IVector2 pLast = points.get(0);
-		IVector2 posTrans = tool.transformToGuiCoordinates(pLast, invert);
-		drawPath.moveTo(posTrans.x(), posTrans.y());
+		IVector2 startTrans = tool.transformToGuiCoordinates(start, invert);
+		drawPath.moveTo(startTrans.x(), startTrans.y());
 
-		for (int i = 1; i < points.size(); i++)
+		for (var segment : segments)
 		{
-			IVector2 pos = points.get(i);
-			posTrans = tool.transformToGuiCoordinates(pos, invert);
-			drawPath.lineTo(posTrans.x(), posTrans.y());
-
-			if (VectorMath.distancePP(pLast, pos) > 0.2)
+			if (segment.p1 != null)
 			{
-				pLast = pos;
+				var p1Trans = tool.transformToGuiCoordinates(segment.p1, invert);
+				var p2Trans = tool.transformToGuiCoordinates(segment.p2, invert);
+				drawPath.quadTo(p1Trans.x(), p1Trans.y(), p2Trans.x(), p2Trans.y());
+			} else
+			{
+				var p2Trans = tool.transformToGuiCoordinates(segment.p2, invert);
+				drawPath.lineTo(p2Trans.x(), p2Trans.y());
 			}
 		}
 		g.draw(drawPath);
+
+	}
+
+
+	@Persistent
+	@Value
+	@RequiredArgsConstructor
+	protected static class DrawSegment
+	{
+		IVector2 p1;
+		@NonNull
+		IVector2 p2;
+
+
+		@SuppressWarnings("unused")
+		private DrawSegment()
+		{
+			this(null, Vector2.zero());
+		}
 	}
 }

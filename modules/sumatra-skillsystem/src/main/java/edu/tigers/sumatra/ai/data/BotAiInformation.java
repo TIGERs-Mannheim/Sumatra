@@ -5,6 +5,7 @@
 package edu.tigers.sumatra.ai.data;
 
 import com.sleepycat.persist.model.Persistent;
+import edu.tigers.sumatra.bot.EDribbleTractionState;
 import edu.tigers.sumatra.bot.EFeature;
 import edu.tigers.sumatra.botmanager.botskills.data.EKickerDevice;
 import edu.tigers.sumatra.botmanager.commands.basestation.BaseStationWifiStats;
@@ -167,13 +168,13 @@ public class BotAiInformation
 
 	public void setSkillState(final IState skillState)
 	{
-		map.put(EBotInformation.SKILL_STATE, skillState == null ? "" : skillState.getIdentifier());
+		map.put(EBotInformation.SKILL_STATE, skillState == null ? "" : skillState.toString());
 	}
 
 
 	public void setRoleState(final IState roleState)
 	{
-		map.put(EBotInformation.ROLE_STATE, roleState == null ? "" : roleState.getIdentifier());
+		map.put(EBotInformation.ROLE_STATE, roleState == null ? "" : roleState.toString());
 	}
 
 
@@ -200,6 +201,21 @@ public class BotAiInformation
 		map.put(EBotInformation.AVG_PROC_TIME, String.valueOf(Math.round(avgProcTime * 1000)));
 	}
 
+
+	public void setDribbleCurrent(final double current)
+	{
+		map.put(EBotInformation.DRIBBLE_CURRENT, DECIMAL_FORMAT.format(current));
+	}
+
+	public void setDribbleCurrentMax(final double current)
+	{
+		map.put(EBotInformation.DRIBBLE_CURRENT_MAX, DECIMAL_FORMAT.format(current));
+	}
+
+	public void setDribbleTraction(final EDribbleTractionState traction)
+	{
+		map.put(EBotInformation.DRIBBLE_TRACTION, traction.name());
+	}
 
 	public void setBotStats(final BaseStationWifiStats.BotStats stats)
 	{

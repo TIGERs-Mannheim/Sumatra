@@ -5,16 +5,16 @@
 package edu.tigers.sumatra.loganalysis.eventtypes.shot;
 
 import edu.tigers.sumatra.geometry.NGeometry;
-import edu.tigers.sumatra.math.line.v2.IHalfLine;
-import edu.tigers.sumatra.math.line.v2.ILineSegment;
-import edu.tigers.sumatra.math.line.v2.Lines;
+import edu.tigers.sumatra.math.line.IHalfLine;
+import edu.tigers.sumatra.math.line.ILineSegment;
+import edu.tigers.sumatra.math.line.Lines;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.Optional;
+import java.util.Objects;
 
 import static edu.tigers.sumatra.loganalysis.eventtypes.shot.ShotBuilder.EndOfPassCause.INTERCEPT_BY_BOT;
 
@@ -23,50 +23,36 @@ public class ShotBuilder
 {
 	private static final Logger log = LogManager.getLogger(ShotBuilder.class.getName());
 
-	/** When did the pass start */
+	/**
+	 * When did the pass start
+	 */
 	private long startFrame;
 
-	/** When did the pass end */
+	/**
+	 * When did the pass end
+	 */
 	private long endFrame;
 
-	/** Did the pass reach a receiver of the same team */
+	/**
+	 * Did the pass reach a receiver of the same team
+	 */
 	private boolean successful;
 
-	/** bot that kicks the ball in this pass */
+	/**
+	 * bot that kicks the ball in this pass
+	 */
 	private ITrackedBot passerBot;
 
-	/** real receiver of the pass */
+	/**
+	 * real receiver of the pass
+	 */
 	private ITrackedBot receiverBot;
-
-	/** stores why the pass ended */
-	public enum EndOfPassCause
-	{
-		INTERCEPT_BY_BOT,
-		BALL_OUT_OF_FIELD,
-		BALL_TOO_SLOW,
-		GAME_STATE_STOP,
-		UNKNOWN
-	}
-
-	private enum ShotType
-	{
-		PASS,
-		GOAL_SHOT
-	}
-
 	private EndOfPassCause endOfPassCause;
-
 	private boolean isChipKick; // chip kick
 	private ITrackedBot receiverBotAtKick; // fake receiver (receiver with is in pass line during the kick)
 	private IVector2 endOfPass; // the end of the pass line (is not always the receiverBot kicker pos)
-
-
 	private IVector2 ballVelBefore;
 	private IVector2 ballAcc;
-
-
-	private double marginGoalForGoalShot = 120d;
-
 	/**
 	 * State of Builder: makes sure the updates, create methods are invoked in the right order
 	 * 0 builder cleared - no data
@@ -94,8 +80,8 @@ public class ShotBuilder
 	{
 		if (builderState < 0)
 		{
-			log.error("wrong shot builder state " + builderState
-					+ " (0 expected)\n methods of shot builder are not called in right order");
+			log.error("wrong shot builder state {} (0 expected)\n methods of shot builder are not called in right order",
+					builderState);
 			return;
 		}
 
@@ -144,18 +130,19 @@ public class ShotBuilder
 
 		// passer bot is of different than receiver bot
 		IHalfLine passLine = Lines.halfLineFromPoints(getStartPassPos(), getEndOfPass());
+		double marginGoalForGoalShot = 120d;
 		ILineSegment goalLineMargin = NGeometry.getGoal(getPasserBot().getTeamColor().opposite())
 				.getLineSegment().withMargin(marginGoalForGoalShot);
 
-		Optional<IVector2> intersectionPassGoalLine = goalLineMargin.intersectHalfLine(passLine);
+		var intersectionPassGoalLine = goalLineMargin.intersect(passLine);
 
-		if (intersectionPassGoalLine.isPresent())
+		if (intersectionPassGoalLine.isEmpty())
+		{
+			return ShotType.PASS;
+		} else
 		{
 			// shot in direction of the opponent goal
 			return ShotType.GOAL_SHOT;
-		} else
-		{
-			return ShotType.PASS;
 		}
 	}
 
@@ -175,21 +162,17 @@ public class ShotBuilder
 
 		ShotType shotType = getShotType();
 
-		switch (shotType)
+		if (Objects.requireNonNull(shotType) == ShotType.GOAL_SHOT)
 		{
-			default:
-			case PASS:
-				successful = receiverBot != null;
-				return new Passing(this);
-			case GOAL_SHOT:
-				ILineSegment passLine = Lines.segmentFromPoints(getStartPassPos(), getEndOfPass());
-				ILineSegment goalLine = NGeometry.getGoal(getPasserBot().getTeamColor().opposite())
-						.getLineSegment();
-
-				Optional<IVector2> intersectionPassGoalLine = goalLine.intersectSegment(passLine);
-				successful = intersectionPassGoalLine.isPresent();
-				return new GoalShot(this);
+			ILineSegment passLine = Lines.segmentFromPoints(getStartPassPos(), getEndOfPass());
+			ILineSegment goalLine = NGeometry.getGoal(getPasserBot().getTeamColor().opposite())
+					.getLineSegment();
+			var intersectionPassGoalLine = goalLine.intersect(passLine);
+			successful = !intersectionPassGoalLine.isEmpty();
+			return new GoalShot(this);
 		}
+		successful = receiverBot != null;
+		return new Passing(this);
 	}
 
 
@@ -262,7 +245,27 @@ public class ShotBuilder
 		return endOfPassCause;
 	}
 
-	public class WrongBuilderStateException extends Exception
+
+	/**
+	 * stores why the pass ended
+	 */
+	public enum EndOfPassCause
+	{
+		INTERCEPT_BY_BOT,
+		BALL_OUT_OF_FIELD,
+		BALL_TOO_SLOW,
+		GAME_STATE_STOP,
+		UNKNOWN
+	}
+
+
+	private enum ShotType
+	{
+		PASS,
+		GOAL_SHOT
+	}
+
+	public static class WrongBuilderStateException extends Exception
 	{
 		public WrongBuilderStateException(String str)
 		{

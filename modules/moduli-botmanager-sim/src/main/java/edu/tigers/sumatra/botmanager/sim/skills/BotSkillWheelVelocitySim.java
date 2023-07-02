@@ -16,7 +16,7 @@ public class BotSkillWheelVelocitySim implements IBotSkillSim
 	@Override
 	public BotSkillOutput execute(final BotSkillInput input)
 	{
-		BotSkillWheelVelocity skill = (BotSkillWheelVelocity) input.getSkill();
+		BotSkillWheelVelocity skill = (BotSkillWheelVelocity) input.skill();
 		
 		return BotSkillOutput.Builder.create()
 				.driveLimits(skill.getMoveConstraints())
@@ -27,7 +27,7 @@ public class BotSkillWheelVelocitySim implements IBotSkillSim
 				.kickMode(skill.getMode())
 				.kickSpeed(skill.getKickSpeed())
 				.dribblerRPM(skill.getDribbleSpeed())
-				.strictVelocityLimit(input.isStrictVelocityLimit())
+				.strictVelocityLimit(input.strictVelocityLimit())
 				.build();
 	}
 }

@@ -7,21 +7,16 @@ package edu.tigers.sumatra.ai.pandora.roles.defense;
 import com.github.g3force.configurable.Configurable;
 import edu.tigers.sumatra.ai.metis.defense.data.IDefenseThreat;
 import edu.tigers.sumatra.ai.pandora.roles.ERole;
-import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.AngleMath;
-import edu.tigers.sumatra.math.circle.Circle;
-import edu.tigers.sumatra.math.line.v2.ILineSegment;
+import edu.tigers.sumatra.math.line.ILineSegment;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2f;
-import edu.tigers.sumatra.pathfinder.obstacles.GenericCircleObstacle;
-import edu.tigers.sumatra.pathfinder.obstacles.IObstacle;
-import edu.tigers.sumatra.wp.data.ITrackedBot;
+import edu.tigers.sumatra.pathfinder.EObstacleAvoidanceMode;
+import lombok.Getter;
 import lombok.Setter;
 
-import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 
 /**
@@ -34,11 +29,9 @@ public abstract class AOuterDefenseRole extends ADefenseRole
 	@Configurable(comment = "[deg] The angle to determine if the CenterBack is between Ball and Goal", defValue = "45.0")
 	private static double betweenBallAndGoalAngle = 45.0;
 
-	@Configurable(defValue = "10.0", comment = "Min distance [mm] to penalty area")
-	private static double minDistToPenaltyArea = 10.0;
-
 	@Setter
-	protected IDefenseThreat threat;
+	@Getter
+	protected IDefenseThreat threat = null;
 
 
 	protected AOuterDefenseRole(final ERole type)
@@ -51,15 +44,6 @@ public abstract class AOuterDefenseRole extends ADefenseRole
 
 
 	protected abstract IVector2 findDest();
-
-
-	protected Set<BotID> closeOpponentBots(IVector2 dest)
-	{
-		return getWFrame().getOpponentBots().values().stream()
-				.filter(bot -> bot.getPos().distanceTo(dest) < 500)
-				.map(ITrackedBot::getBotId)
-				.collect(Collectors.toSet());
-	}
 
 
 	protected ILineSegment protectionLine()
@@ -92,15 +76,6 @@ public abstract class AOuterDefenseRole extends ADefenseRole
 	}
 
 
-	protected IVector2 moveToValidDest(IVector2 dest)
-	{
-		IVector2 insideField = Geometry.getField().withMargin(Geometry.getBotRadius()).nearestPointInside(dest, getPos());
-		return Geometry.getPenaltyAreaOur()
-				.withMargin(Geometry.getBotRadius() + minDistToPenaltyArea)
-				.nearestPointOutside(insideField);
-	}
-
-
 	protected boolean isNotBetweenBallAndGoal()
 	{
 		IVector2 ball2Bot = getPos().subtractNew(getBall().getPos());
@@ -124,19 +99,17 @@ public abstract class AOuterDefenseRole extends ADefenseRole
 
 			skill.getMoveCon().setBallObstacle(isNotBetweenBallAndGoal());
 			skill.getMoveCon().setIgnoredBots(ignoredBots(destination));
-			skill.getMoveCon().setCustomObstacles(closeOpponentBotObstacles(destination));
+
+			if (threat.getObjectId().isBall())
+			{
+				skill.getMoveCon().setObstacleAvoidanceMode(EObstacleAvoidanceMode.AGGRESSIVE);
+			} else
+			{
+				skill.getMoveCon().setObstacleAvoidanceMode(EObstacleAvoidanceMode.NORMAL);
+			}
+
 			skill.getMoveConstraints().setFastMove(useFastMove());
 			skill.getMoveConstraints().setPrimaryDirection(primaryDirection());
-		}
-
-
-		private List<IObstacle> closeOpponentBotObstacles(IVector2 dest)
-		{
-			return closeOpponentBots(dest).stream()
-					.map(b -> new GenericCircleObstacle(
-							Circle.createCircle(getWFrame().getBot(b).getPos(), Geometry.getBotRadius() * 1.5)))
-					.map(IObstacle.class::cast)
-					.toList();
 		}
 
 

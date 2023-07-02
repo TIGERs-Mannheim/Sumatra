@@ -8,9 +8,9 @@ plugins {
 
 protobuf {
     protoc {
-        artifact = 'com.google.protobuf:protoc:3.19.4'
+        artifact = 'com.google.protobuf:protoc:3.23.2'
     }
-    // https://github.com/google/protobuf/issues/2054
+    // See: https://github.com/protocolbuffers/protobuf/issues/7271
     generateProtoTasks {
         all().each { task ->
             task.doLast {

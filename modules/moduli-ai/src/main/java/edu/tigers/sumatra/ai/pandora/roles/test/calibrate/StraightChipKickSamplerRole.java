@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.pandora.roles.test.calibrate;
@@ -43,7 +43,7 @@ public class StraightChipKickSamplerRole extends AKickSamplerRole
 			IVector2 kickTarget;
 			if (onlyOurHalf)
 			{
-				kickTarget = Vector2.fromXY(0, -Geometry.getFieldWidth() / 2);
+				kickTarget = Vector2.fromXY(-Geometry.getFieldWidth() / 2, 0);
 			} else
 			{
 				kickTarget = Vector2.fromXY(-Math.signum(kickCorner.x()) * Geometry.getFieldLength() / 2,

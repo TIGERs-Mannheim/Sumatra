@@ -7,8 +7,8 @@ package edu.tigers.sumatra.ai.metis.targetrater;
 import edu.tigers.sumatra.geometry.Goal;
 import edu.tigers.sumatra.math.AngleMath;
 import edu.tigers.sumatra.math.circle.ICircle;
-import edu.tigers.sumatra.math.line.v2.ILineSegment;
-import edu.tigers.sumatra.math.line.v2.Lines;
+import edu.tigers.sumatra.math.line.ILineSegment;
+import edu.tigers.sumatra.math.line.Lines;
 import edu.tigers.sumatra.math.triangle.TriangleMath;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
@@ -20,7 +20,6 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 
 /**
@@ -64,20 +63,20 @@ public class AngleRangeGenerator
 	 */
 	public List<AngleRange> findCoveredAngleRanges(IVector2 origin, List<ICircle> obstacles)
 	{
-		IVector2 endCenter = TriangleMath.bisector(origin, lineSegment.getStart(), lineSegment.getEnd());
+		IVector2 endCenter = TriangleMath.bisector(origin, lineSegment.getPathStart(), lineSegment.getPathEnd());
 		IVector2 originToEndCenter = endCenter.subtractNew(origin);
 
 		if (obstacles.stream().anyMatch(c -> c.isPointInShape(origin)))
 		{
 			return List.of(AngleRange.width(AngleMath.PI_TWO));
 		}
-		
+
 		return obstacles.stream()
 				.map(circle -> circle.tangentialIntersections(origin))
 				.map(intersections -> createRange(origin, originToEndCenter, intersections))
 				.filter(Optional::isPresent)
 				.map(Optional::get)
-				.collect(Collectors.toList());
+				.toList();
 	}
 
 
@@ -119,7 +118,7 @@ public class AngleRangeGenerator
 	{
 		var sortedCoveredAngles = coveredAngles.stream()
 				.sorted(Comparator.comparingDouble(AngleRange::getRight))
-				.collect(Collectors.toUnmodifiableList());
+				.toList();
 
 		List<AngleRange> uncoveredAngles = new ArrayList<>();
 		uncoveredAngles.add(fullRange);
@@ -143,8 +142,8 @@ public class AngleRangeGenerator
 	 */
 	public AngleRange getAngleRange(IVector2 origin)
 	{
-		IVector2 origin2Start = lineSegment.getStart().subtractNew(origin);
-		IVector2 origin2End = lineSegment.getEnd().subtractNew(origin);
+		IVector2 origin2Start = lineSegment.getPathStart().subtractNew(origin);
+		IVector2 origin2End = lineSegment.getPathEnd().subtractNew(origin);
 		double width = origin2End.angleToAbs(origin2Start).orElse(0.0);
 		return AngleRange.width(width);
 	}
@@ -152,8 +151,8 @@ public class AngleRangeGenerator
 
 	public Optional<IVector2> getPoint(IVector2 origin, double angle)
 	{
-		IVector2 endCenter = TriangleMath.bisector(origin, lineSegment.getStart(), lineSegment.getEnd());
+		IVector2 endCenter = TriangleMath.bisector(origin, lineSegment.getPathStart(), lineSegment.getPathEnd());
 		double baseAngle = endCenter.subtractNew(origin).getAngle();
-		return lineSegment.intersectLine(Lines.lineFromDirection(origin, Vector2.fromAngle(baseAngle + angle)));
+		return lineSegment.intersect(Lines.lineFromDirection(origin, Vector2.fromAngle(baseAngle + angle))).asOptional();
 	}
 }

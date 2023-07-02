@@ -54,7 +54,7 @@ public class KickOriginCalc extends ACalculator
 
 	private Map<BotID, KickOrigin> findKickOrigins()
 	{
-		if (ballStopped.get())
+		if (Boolean.TRUE.equals(ballStopped.get()))
 		{
 			if (canBallBeKicked())
 			{

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.pandora.roles.placement;
@@ -19,7 +19,9 @@ import edu.tigers.sumatra.math.circle.Circle;
 import edu.tigers.sumatra.math.line.LineMath;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
+import edu.tigers.sumatra.skillsystem.skills.AMoveToSkill;
 import edu.tigers.sumatra.skillsystem.skills.ApproachAndStopBallSkill;
+import edu.tigers.sumatra.skillsystem.skills.DropBallSkill;
 import edu.tigers.sumatra.skillsystem.skills.ESkillState;
 import edu.tigers.sumatra.skillsystem.skills.GetBallContactSkill;
 import edu.tigers.sumatra.skillsystem.skills.MoveToSkill;
@@ -32,6 +34,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.awt.Color;
+import java.util.function.Supplier;
 
 
 /**
@@ -45,8 +48,14 @@ public class BallPlacementRole extends ARole
 	@Configurable(defValue = "150.0", comment = "Distance [mm] to pull the ball out of the goal")
 	private static double goalPullOutDistance = 150;
 
-	@Configurable(defValue = "3.0")
-	private static double passEndSpeed = 3.0;
+	@Configurable(defValue = "2.0")
+	private static double passEndSpeed = 2.0;
+
+	@Configurable(defValue = "0.5", comment = "Time in s to wait at the end")
+	private static double clearanceWaitTime = 0.5;
+
+	@Configurable(defValue = "50", comment = "Extra tolerance to subtract from the rule-defined placement tolerance")
+	private static double extraPlacementTolerance = 50;
 
 	@Setter
 	private IVector2 ballTargetPos = Vector2.zero();
@@ -61,32 +70,39 @@ public class BallPlacementRole extends ARole
 		super(ERole.BALL_PLACEMENT);
 
 		var clearBallState = new ClearBallState();
-		var receiveState = new RoleState<>(ReceiveBallSkill::new);
+		var dropBallState = new BaseState<>(DropBallSkill::new);
+		var receiveState = new BaseState<>(ReceiveBallSkill::new);
 		var prepareState = new PrepareState();
-		var stopBallState = new RoleState<>(() -> new ApproachAndStopBallSkill().ignorePenAreas());
-		var getBallContactState = new RoleState<>(GetBallContactSkill::new);
+		var stopBallState = new BaseState<>(ApproachAndStopBallSkill::new);
+		var getBallContactState = new BaseState<>(GetBallContactSkill::new);
 		var moveWithBallState = new MoveWithBallState();
 		var passState = new PassState();
 
 		setInitialState(clearBallState);
 
-		clearBallState.addTransition(this::ballNeedsToBePlaced, receiveState);
+		clearBallState.addTransition(
+				"ball cleared, but not yet on target",
+				() -> clearBallState.isCalmedDown() && clearBallState.isCleared() && ballNotOnTargetYet(),
+				receiveState
+		);
 		receiveState.addTransition(ESkillState.SUCCESS, prepareState);
 		receiveState.addTransition(ESkillState.FAILURE, stopBallState);
-		prepareState.addTransition(this::ballIsPlaced, clearBallState);
-		prepareState.addTransition(prepareState::success, getBallContactState);
-		prepareState.addTransition(prepareState::ballMoving, receiveState);
-		prepareState.addTransition(this::ballNeedsToBePassed, passState);
-		prepareState.addTransition(prepareState::skipPrepare, getBallContactState);
+		prepareState.addTransition("ballIsPlaced", this::ballIsPlaced, dropBallState);
+		prepareState.addTransition("success", prepareState::success, getBallContactState);
+		prepareState.addTransition("ballMoving", prepareState::ballMoving, receiveState);
+		prepareState.addTransition("ballNeedsToBePassed", this::ballNeedsToBePassed, passState);
+		prepareState.addTransition("skipPrepare", prepareState::skipPrepare, getBallContactState);
 		stopBallState.addTransition(ESkillState.SUCCESS, prepareState);
 		stopBallState.addTransition(ESkillState.FAILURE, prepareState);
 		getBallContactState.addTransition(ESkillState.SUCCESS, moveWithBallState);
-		getBallContactState.addTransition(ESkillState.FAILURE, clearBallState);
-		moveWithBallState.addTransition(ESkillState.SUCCESS, clearBallState);
+		getBallContactState.addTransition(ESkillState.FAILURE, dropBallState);
+		moveWithBallState.addTransition(ESkillState.SUCCESS, dropBallState);
 		moveWithBallState.addTransition(ESkillState.FAILURE, receiveState);
 		passState.addTransition(ESkillState.FAILURE, clearBallState);
 		passState.addTransition(ESkillState.SUCCESS, clearBallState);
-		passState.addTransition(() -> passMode == EPassMode.NONE, clearBallState);
+		passState.addTransition("pass mode is NONE", () -> passMode == EPassMode.NONE, clearBallState);
+		dropBallState.addTransition(ESkillState.SUCCESS, clearBallState);
+		dropBallState.addTransition(ESkillState.FAILURE, clearBallState);
 	}
 
 
@@ -95,25 +111,19 @@ public class BallPlacementRole extends ARole
 	{
 		super.afterUpdate();
 		getShapes(EAiShapesLayer.AI_BALL_PLACEMENT).add(
-				new DrawableCircle(Circle.createCircle(getCurrentBallTarget(), RuleConstraints.getBallPlacementTolerance()),
+				new DrawableCircle(Circle.createCircle(getCurrentBallTarget(), getBallPlacementTolerance()),
 						Color.magenta)
 		);
 		getShapes(EAiShapesLayer.AI_BALL_PLACEMENT).add(
-				new DrawableCircle(Circle.createCircle(ballTargetPos, RuleConstraints.getBallPlacementTolerance()),
+				new DrawableCircle(Circle.createCircle(ballTargetPos, getBallPlacementTolerance()),
 						Color.cyan)
 		);
 	}
 
 
-	private boolean ballNeedsToBePlaced()
-	{
-		return getBall().isOnCam(0.5) && ballNotOnTargetYet();
-	}
-
-
 	private boolean ballIsPlaced()
 	{
-		return !ballNeedsToBePlaced();
+		return !ballNotOnTargetYet();
 	}
 
 
@@ -128,7 +138,7 @@ public class BallPlacementRole extends ARole
 	{
 		double target2BallDist = getCurrentBallTarget()
 				.distanceTo(getBall().getTrajectory().getPosByVel(0.0).getXYVector());
-		return target2BallDist > RuleConstraints.getBallPlacementTolerance();
+		return target2BallDist > getBallPlacementTolerance();
 	}
 
 
@@ -140,12 +150,12 @@ public class BallPlacementRole extends ARole
 		}
 
 		var ballPos = getBall().getPos();
-		var nearestInField = Geometry.getField().withMargin(-200).nearestPointInside(ballPos);
-		if (nearestInField.distanceTo(ballPos) < RuleConstraints.getBallPlacementTolerance())
+		var nearestInField = Geometry.getField().withMargin(-100).nearestPointInside(ballPos);
+		if (nearestInField.distanceTo(ballPos) < getBallPlacementTolerance())
 		{
 			return ballTargetPos;
 		}
-		return nearestInField;
+		return Geometry.getField().withMargin(-300).nearestPointInside(ballPos);
 	}
 
 
@@ -170,14 +180,20 @@ public class BallPlacementRole extends ARole
 	}
 
 
-	private class PrepareState extends RoleState<MoveToSkill>
+	private double getBallPlacementTolerance()
+	{
+		return RuleConstraints.getBallPlacementTolerance() - extraPlacementTolerance;
+	}
+
+
+	private class PrepareState extends BaseState<MoveToSkill>
 	{
 		private final GenericHysteresis forcePullHysteresis = new GenericHysteresis(
 				// lower <=> ball outside or in goal <=> force pull
-				() -> !Geometry.getField().withMargin(-200).isPointInShape(getBall().getPos())
+				() -> !Geometry.getFieldWBorders().withMargin(-300).isPointInShape(getBall().getPos())
 						|| ballInGoal(0),
 				// upper <=> ball inside and not in goal <=> no force
-				() -> Geometry.getField().withMargin(-300).isPointInShape(getBall().getPos())
+				() -> Geometry.getFieldWBorders().withMargin(-400).isPointInShape(getBall().getPos())
 						&& !ballInGoal(100)
 		);
 		private final TimestampTimer calmDownTimer = new TimestampTimer(0.0);
@@ -193,13 +209,14 @@ public class BallPlacementRole extends ARole
 		@Override
 		protected void onInit()
 		{
+			super.onInit();
+			skill.setMinTimeAtDestForSuccess(0.3);
 			skill.updateLookAtTarget(getBall());
-			skill.getMoveCon().physicalObstaclesOnly();
-			skill.getMoveCon().setBallObstacle(false);
 
 			if (getBot().getBallContact().hadContact(0.2))
 			{
-				calmDownTimer.setDuration(0.3);
+				calmDownTimer.setDuration(clearanceWaitTime);
+				skill.setComeToAStop(true);
 			} else
 			{
 				calmDownTimer.setDuration(0.0);
@@ -214,12 +231,10 @@ public class BallPlacementRole extends ARole
 		{
 			if (calmDownTimer.isTimeUp(getWFrame().getTimestamp()))
 			{
+				skill.setComeToAStop(false);
 				skill.updateDestination(getDest());
 				skill.getMoveCon().setBallObstacle(true);
 				calmedDown = true;
-			} else
-			{
-				skill.updateDestination(getPos());
 			}
 		}
 
@@ -255,19 +270,16 @@ public class BallPlacementRole extends ARole
 				return pullDest;
 			}
 
-			switch (ballHandling)
+			return switch (ballHandling)
 			{
-				case PULL:
-					return pullDest;
-				case PUSH:
-					return pushDest;
-				default:
-					return getPos().nearestTo(pullDest, pushDest);
-			}
+				case PULL -> pullDest;
+				case PUSH -> pushDest;
+				default -> getPos().nearestTo(pullDest, pushDest);
+			};
 		}
 	}
 
-	private class MoveWithBallState extends RoleState<MoveWithBallSkill>
+	private class MoveWithBallState extends BaseState<MoveWithBallSkill>
 	{
 		private IVector2 currentPlacementPos;
 
@@ -281,6 +293,7 @@ public class BallPlacementRole extends ARole
 		@Override
 		protected void onInit()
 		{
+			super.onInit();
 			currentPlacementPos = getCurrentBallTarget();
 			updateTargetPose();
 		}
@@ -313,7 +326,7 @@ public class BallPlacementRole extends ARole
 		}
 	}
 
-	private class ClearBallState extends RoleState<MoveToSkill>
+	private class ClearBallState extends BaseState<MoveToSkill>
 	{
 		private final KeepDistanceToBall awayFromBallMover = new KeepDistanceToBall(
 				new PointChecker()
@@ -333,13 +346,10 @@ public class BallPlacementRole extends ARole
 		@Override
 		protected void onInit()
 		{
-			skill.getMoveCon().physicalObstaclesOnly();
-			// ignore the ball while calming down
-			skill.getMoveCon().setBallObstacle(false);
-
+			super.onInit();
 			if (getBot().getBallContact().hadContact(0.2))
 			{
-				calmDownTimer.setDuration(0.5);
+				calmDownTimer.setDuration(clearanceWaitTime);
 			} else
 			{
 				calmDownTimer.setDuration(0.0);
@@ -351,7 +361,7 @@ public class BallPlacementRole extends ARole
 		@Override
 		protected void onUpdate()
 		{
-			if (!calmDownTimer.isTimeUp(getWFrame().getTimestamp()))
+			if (!isCalmedDown())
 			{
 				return;
 			}
@@ -364,8 +374,7 @@ public class BallPlacementRole extends ARole
 				skill.updateLookAtTarget(getBall());
 				skill.getMoveCon().setBallObstacle(true);
 
-				ballPlacedAndCleared =
-						ballTargetPos.distanceTo(getBall().getPos()) < RuleConstraints.getBallPlacementTolerance();
+				ballPlacedAndCleared = ballTargetPos.distanceTo(getBall().getPos()) < getBallPlacementTolerance();
 
 				// find a valid destination, after having sufficient distance to the ball
 				// This is required to clear the stop radius in cases where the game is not continued
@@ -383,13 +392,19 @@ public class BallPlacementRole extends ARole
 		}
 
 
+		public boolean isCalmedDown()
+		{
+			return calmDownTimer.isTimeUp(getWFrame().getTimestamp());
+		}
+
+
 		public boolean isCleared()
 		{
 			return getBall().getPos().distanceTo(getPos()) > Geometry.getBotRadius() + 50;
 		}
 	}
 
-	private class PassState extends RoleState<SingleTouchKickSkill>
+	private class PassState extends BaseState<SingleTouchKickSkill>
 	{
 		public PassState()
 		{
@@ -404,6 +419,20 @@ public class BallPlacementRole extends ARole
 			double passDistance = getBall().getPos().distanceTo(ballTargetPos);
 			double passSpeed = getBall().getStraightConsultant().getInitVelForDist(passDistance, passEndSpeed);
 			skill.setKickSpeed(passSpeed);
+		}
+	}
+
+	private class BaseState<T extends AMoveToSkill> extends RoleState<T>
+	{
+		public BaseState(Supplier<T> supplier)
+		{
+			super(supplier);
+		}
+
+
+		@Override
+		protected void onInit()
+		{
 			skill.getMoveCon().physicalObstaclesOnly();
 			skill.getMoveCon().setBallObstacle(false);
 		}

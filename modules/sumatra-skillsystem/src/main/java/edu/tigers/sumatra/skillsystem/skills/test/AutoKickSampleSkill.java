@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.skillsystem.skills.test;
@@ -14,7 +14,6 @@ import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.skillsystem.skills.AMoveToSkill;
 import edu.tigers.sumatra.skillsystem.skills.util.AroundBallCalc;
-import edu.tigers.sumatra.skillsystem.skills.util.BallStabilizer;
 import edu.tigers.sumatra.statemachine.AState;
 import edu.tigers.sumatra.statemachine.IEvent;
 import edu.tigers.sumatra.time.TimestampTimer;
@@ -25,8 +24,6 @@ import edu.tigers.sumatra.time.TimestampTimer;
  */
 public class AutoKickSampleSkill extends AMoveToSkill
 {
-	private final BallStabilizer ballStabilizer = new BallStabilizer();
-
 	private final IVector2 target;
 	private final double kickDuration;
 	private final EKickerDevice device;
@@ -49,14 +46,6 @@ public class AutoKickSampleSkill extends AMoveToSkill
 		addTransition(EEvent.KICK_DONE, prepareState);
 		addTransition(EEvent.PREPARED, calmDownState);
 		addTransition(EEvent.CALMED_DOWN, kickState);
-	}
-
-
-	@Override
-	protected void beforeStateUpdate()
-	{
-		super.beforeStateUpdate();
-		ballStabilizer.update(getBall(), getTBot());
 	}
 
 
@@ -116,7 +105,7 @@ public class AutoKickSampleSkill extends AMoveToSkill
 
 		private IVector2 getBallPos()
 		{
-			return ballStabilizer.getBallPos();
+			return getBall().getPos();
 		}
 	}
 

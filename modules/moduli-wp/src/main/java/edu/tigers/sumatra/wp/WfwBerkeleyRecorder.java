@@ -22,7 +22,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 @Log4j2
 public class WfwBerkeleyRecorder implements IBerkeleyRecorder
 {
-	private static final int MAX_BUFFER_SIZE = 1000;
+	private static final int MAX_BUFFER_SIZE = 10000;
 	private final Queue<WorldFrameWrapper> worldFrames = new ConcurrentLinkedQueue<>();
 	private final WfwObserver wfwObserver = new WfwObserver();
 	private final BerkeleyDb db;

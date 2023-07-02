@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.pandora.plays.standard;
@@ -12,11 +12,17 @@ import edu.tigers.sumatra.ai.pandora.roles.ARole;
 import edu.tigers.sumatra.ai.pandora.roles.move.MoveRole;
 import edu.tigers.sumatra.drawable.DrawableBotShape;
 import edu.tigers.sumatra.geometry.Geometry;
-import edu.tigers.sumatra.ids.BotID;
+import edu.tigers.sumatra.math.AngleMath;
 import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.math.vector.Vector2;
+import edu.tigers.sumatra.time.TimestampTimer;
+import lombok.AllArgsConstructor;
+import lombok.Value;
 
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 
 
 /**
@@ -24,9 +30,11 @@ import java.util.List;
  */
 public abstract class AMaintenancePlay extends APlay
 {
-	private long tDestReached = 0;
+	protected final PointChecker pointChecker = new PointChecker()
+			.checkBallDistances()
+			.checkCustom(this::freeOfOtherBots);
+	private final TimestampTimer completionTimer = new TimestampTimer(1);
 
-	private final PointChecker pointChecker = new PointChecker().checkBallDistances().checkPointFreeOfBots();
 
 	protected AMaintenancePlay(EPlay play)
 	{
@@ -34,10 +42,13 @@ public abstract class AMaintenancePlay extends APlay
 	}
 
 
-	@Override
-	protected ARole onRemoveRole()
+	private boolean freeOfOtherBots(IVector2 point)
 	{
-		return getLastRole();
+		double distance = Geometry.getBotRadius() * 2 + 10;
+		var ownBots = getRoles().stream().map(ARole::getBotID).toList();
+		return getWorldFrame().getBots().values().stream()
+				.filter(b -> !ownBots.contains(b.getBotId()))
+				.noneMatch(bot -> bot.getPosByTime(1).distanceTo(point) < distance);
 	}
 
 
@@ -45,22 +56,39 @@ public abstract class AMaintenancePlay extends APlay
 	protected ARole onAddRole()
 	{
 		MoveRole role = new MoveRole();
-		role.getMoveCon().setPenaltyAreaOurObstacle(false);
-		role.getMoveCon().setGoalPostsObstacle(true);
+		role.getMoveCon().physicalObstaclesOnly();
 		return role;
 	}
 
 
-	protected void drawDestinations(IVector2 startPos, IVector2 direction, double orientation)
+	private void drawDestinations(List<IVector2> destinations, double orientation)
 	{
-		for (int i = 0; i < BotID.BOT_ID_MAX; i++)
+		destinations.forEach(pos -> getShapes(EAiShapesLayer.AI_MAINTENANCE).add(
+				new DrawableBotShape(pos, AngleMath.deg2rad(orientation), Geometry.getBotRadius(),
+						Geometry.getOpponentCenter2DribblerDist())
+		));
+	}
+
+
+	private PositionData adjustPositionsToFieldSize(int nBots, double x, IVector2 direction)
+	{
+		if (Geometry.getFieldWidth() - Geometry.getBotRadius() < Math.abs((nBots - 1) * direction.y()))
 		{
-			IVector2 pos = startPos.addNew(direction.multiplyNew(i));
-			getShapes(EAiShapesLayer.AI_MAINTENANCE).add(
-					new DrawableBotShape(pos, orientation * Math.PI / 180, Geometry.getBotRadius(),
-							Geometry.getOpponentCenter2DribblerDist())
+			double xDistance = 0.0;
+			double yDistance = -Geometry.getFieldWidth() / nBots;
+			if (Math.abs(yDistance) <= 2.5 * Geometry.getBotRadius())
+			{
+				xDistance = Geometry.getBotRadius() * 2.5;
+			}
+			IVector2 startPos = Vector2.fromXY(x, Math.abs(yDistance) * (nBots - 1) / 2.0);
+			Vector2 adjustedDirection = Vector2.fromXY(xDistance, yDistance);
+			return new PositionData(
+					adjustedDirection,
+					startPos.subtractNew(adjustedDirection),
+					-1
 			);
 		}
+		return new PositionData(direction);
 	}
 
 
@@ -73,36 +101,66 @@ public abstract class AMaintenancePlay extends APlay
 	 */
 	protected void calculateBotActions(IVector2 startPos, IVector2 direction, double orientation)
 	{
-		IVector2 dest = startPos.subtractNew(direction);
-
 		List<MoveRole> roles = findRoles(MoveRole.class);
+		if (roles.isEmpty())
+		{
+			completionTimer.reset();
+			return;
+		} else if (completionTimer.isTimeUp(getWorldFrame().getTimestamp()))
+		{
+			roles.forEach(MoveRole::disableMotors);
+			return;
+		}
+
+		List<IVector2> drawingDestinations = new ArrayList<>();
+		PositionData data = adjustPositionsToFieldSize(roles.size(), startPos.x(), direction);
+		IVector2 dest = data.getStartPosition().orElse(startPos.subtractNew(direction));
 		roles.sort(Comparator.comparing(ARole::getBotID));
 
-		boolean destsReached = true;
+		int count = 0;
 		for (MoveRole role : roles)
 		{
 			do
 			{
-				dest = dest.addNew(direction);
+				dest = dest.addNew(
+						data.getDirection().multiplyNew(Vector2.fromXY(Math.pow(data.getSpacialOffsetFactor(), count), 1)));
+				count++;
+				drawingDestinations.add(dest);
 			} while (!pointChecker.allMatch(getAiFrame().getBaseAiFrame(), dest, role.getBotID()));
-
 			role.updateDestination(dest);
-			role.updateTargetAngle(orientation * Math.PI / 180);
-
-			destsReached = destsReached && (role.isCompleted() || role.isDestinationReached());
+			role.updateTargetAngle(AngleMath.deg2rad(orientation));
 		}
-		if (destsReached)
+		drawDestinations(drawingDestinations, orientation);
+		if (roles.isEmpty() || roles.stream().allMatch(MoveRole::isDestinationReached))
 		{
-			if (tDestReached == 0)
-			{
-				tDestReached = getWorldFrame().getTimestamp();
-			} else if ((getWorldFrame().getTimestamp() - tDestReached) > 1e9)
-			{
-				getRoles().forEach(ARole::setCompleted);
-			}
+			completionTimer.update(getWorldFrame().getTimestamp());
 		} else
 		{
-			tDestReached = 0;
+			completionTimer.reset();
+		}
+	}
+
+
+	@Value
+	@AllArgsConstructor
+	private static class PositionData
+	{
+		IVector2 startPosition;
+		IVector2 direction;
+		int spacialOffsetFactor;
+
+
+		public PositionData(IVector2 direction)
+		{
+			this.direction = direction;
+			startPosition = null;
+			spacialOffsetFactor = 1;
+		}
+
+
+		public Optional<IVector2> getStartPosition()
+		{
+			return Optional.ofNullable(startPosition);
 		}
 	}
 }

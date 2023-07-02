@@ -6,12 +6,12 @@ package edu.tigers.sumatra.ai.metis.support.behaviors.repulsive;
 
 
 import com.github.g3force.configurable.Configurable;
-import edu.tigers.sumatra.ai.metis.offense.action.OffensiveAction;
+import edu.tigers.sumatra.ai.metis.offense.action.RatedOffensiveAction;
 import edu.tigers.sumatra.ai.pandora.plays.EPlay;
 import edu.tigers.sumatra.bot.BotState;
 import edu.tigers.sumatra.geometry.Geometry;
-import edu.tigers.sumatra.geometry.IPenaltyArea;
 import edu.tigers.sumatra.ids.BotID;
+import edu.tigers.sumatra.math.penaltyarea.IPenaltyArea;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2f;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 
 /**
@@ -71,7 +70,7 @@ public class AttackerRepulsiveBehavior extends ARepulsiveBehavior
 
 	public AttackerRepulsiveBehavior(
 			Supplier<Map<EPlay, Set<BotID>>> desiredBots,
-			Supplier<Map<BotID, OffensiveAction>> offensiveActions,
+			Supplier<Map<BotID, RatedOffensiveAction>> offensiveActions,
 			Supplier<List<IVector2>> supportiveGoalPositions
 	)
 	{
@@ -112,7 +111,7 @@ public class AttackerRepulsiveBehavior extends ARepulsiveBehavior
 	{
 		return supportiveGoalPositions.get().stream()
 				.map(p -> new Force(p, sigmaAngleRangePoints, magnitudeAngleRangePoints))
-				.collect(Collectors.toList());
+				.toList();
 	}
 
 

@@ -8,8 +8,8 @@ import edu.tigers.sumatra.ai.BaseAiFrame;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.geometry.RuleConstraints;
 import edu.tigers.sumatra.ids.BotID;
-import edu.tigers.sumatra.math.line.v2.ILineSegment;
-import edu.tigers.sumatra.math.line.v2.Lines;
+import edu.tigers.sumatra.math.line.ILineSegment;
+import edu.tigers.sumatra.math.line.Lines;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.referee.data.GameState;
 import edu.tigers.sumatra.referee.data.RefereeMsg;
@@ -205,19 +205,19 @@ public class PointChecker
 
 	private boolean insideField(IVector2 point)
 	{
-		return Geometry.getField().isPointInShape(point, -FIELD_MARGIN);
+		return Geometry.getField().withMargin(-FIELD_MARGIN).isPointInShape(point);
 	}
 
 
 	private boolean outsideOurPenArea(IVector2 point)
 	{
-		return !Geometry.getPenaltyAreaOur().isPointInShape(point, ourPenAreaMargin);
+		return !Geometry.getPenaltyAreaOur().withMargin(ourPenAreaMargin).isPointInShape(point);
 	}
 
 
 	private boolean outsideTheirPenArea(IVector2 point)
 	{
-		return !Geometry.getPenaltyAreaTheir().isPointInShape(point, theirPenAreaMargin);
+		return !Geometry.getPenaltyAreaTheir().withMargin(theirPenAreaMargin).isPointInShape(point);
 	}
 
 
@@ -249,11 +249,9 @@ public class PointChecker
 				|| (stage == SslGcRefereeMessage.Referee.Stage.NORMAL_SECOND_HALF_PRE);
 		boolean isKickoffState = gameState.isKickoffOrPrepareKickoff() || isPreStage;
 
-		boolean isInOurHalf = Geometry.getFieldHalfOur()
-				.isPointInShape(point, -Geometry.getBotRadius());
+		boolean isInOurHalf = Geometry.getFieldHalfOur().withMargin(-Geometry.getBotRadius()).isPointInShape(point);
 
-		boolean isInCenterCircle = Geometry.getCenterCircle()
-				.isPointInShape(point, Geometry.getBotRadius());
+		boolean isInCenterCircle = Geometry.getCenterCircle().withMargin(Geometry.getBotRadius()).isPointInShape(point);
 
 		return !isKickoffState || (isInOurHalf && !isInCenterCircle);
 	}
@@ -275,7 +273,7 @@ public class PointChecker
 	{
 		double distance = Geometry.getBotRadius() * 2 + 10;
 		return worldFrame.getBots().values().stream()
-				.filter(bot -> bot.getBotId() != botID)
+				.filter(bot -> !bot.getBotId().equals(botID))
 				.noneMatch(bot -> bot.getPosByTime(1).distanceTo(point) < distance);
 	}
 

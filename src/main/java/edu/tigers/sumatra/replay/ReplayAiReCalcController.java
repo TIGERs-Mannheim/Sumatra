@@ -6,15 +6,17 @@ package edu.tigers.sumatra.replay;
 
 import edu.tigers.sumatra.ai.AIInfoFrame;
 import edu.tigers.sumatra.ai.Ai;
+import edu.tigers.sumatra.botmanager.bots.DummyBot;
+import edu.tigers.sumatra.botparams.BotParamsManager;
 import edu.tigers.sumatra.drawable.ShapeMap;
 import edu.tigers.sumatra.drawable.ShapeMapSource;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.ids.EAiTeam;
 import edu.tigers.sumatra.ids.ETeamColor;
+import edu.tigers.sumatra.model.SumatraModel;
 import edu.tigers.sumatra.persistence.BerkeleyDb;
 import edu.tigers.sumatra.presenter.replay.IReplayController;
 import edu.tigers.sumatra.presenter.replay.ReplayControlPresenter;
-import edu.tigers.sumatra.skillsystem.ASkillSystem;
 import edu.tigers.sumatra.skillsystem.GenericSkillSystem;
 import edu.tigers.sumatra.views.ASumatraView;
 import edu.tigers.sumatra.views.ESumatraViewType;
@@ -43,22 +45,24 @@ public class ReplayAiReCalcController implements IReplayController
 	private final Map<EAiTeam, Ai> ais = new EnumMap<>(EAiTeam.class);
 	private final Set<EAiTeam> aisToBeStopped = new HashSet<>();
 	private final Map<EAiTeam, ShapeMapSource> shapeMapSources = new EnumMap<>(EAiTeam.class);
-	private ASkillSystem skillSystem = GenericSkillSystem.forAnalysis();
+	private GenericSkillSystem skillSystem = GenericSkillSystem.forAnalysis();
 	private long lastTimestamp = 0;
+	private boolean runSkills = false;
 
 
 	public ReplayAiReCalcController(List<ASumatraView> sumatraViews)
 	{
 		for (ASumatraView view : sumatraViews)
 		{
-			if (view.getPresenter() instanceof IWorldFrameObserver worldFrameObserver)
-			{
-				wFrameObservers.add(worldFrameObserver);
-			}
+			view.getPresenters()
+					.filter(IWorldFrameObserver.class::isInstance)
+					.map(IWorldFrameObserver.class::cast)
+					.forEach(wFrameObservers::add);
 			if (view.getType() == ESumatraViewType.REPLAY_CONTROL)
 			{
 				ReplayControlPresenter replayControlPresenter = (ReplayControlPresenter) view.getPresenter();
 				replayControlPresenter.getViewPanel().addMenuCheckbox(new RunAiAction());
+				replayControlPresenter.getViewPanel().addMenuCheckbox(new RunSkillsAction());
 			}
 		}
 		Arrays.stream(EAiTeam.values()).forEach(team -> shapeMapSources.put(
@@ -66,6 +70,13 @@ public class ReplayAiReCalcController implements IReplayController
 				ShapeMapSource.of(team.getTeamColor().name(),
 						ShapeMapSource.of("AI", ShapeMapSource.of(RECALCULATED)))
 		));
+
+		var botParamsMgr = SumatraModel.getInstance().getModule(BotParamsManager.class);
+		BotID.getAll().forEach(id -> {
+			DummyBot bot = new DummyBot(id);
+			bot.setBotParams(botParamsMgr.get(bot.getBotParamLabel()));
+			skillSystem.onBotAdded(bot);
+		});
 	}
 
 
@@ -87,19 +98,20 @@ public class ReplayAiReCalcController implements IReplayController
 			if (aiFrame != null)
 			{
 				final boolean inverted = wfw.getWorldFrame(ai.getAiTeam()).isInverted();
-				Map<BotID, ShapeMap> skillShapeMap = skillSystem.process(wfw, ai.getAiTeam().getTeamColor());
-				skillShapeMap.values().forEach(m -> m.setInverted(inverted));
 				aiFrame.getShapeMap().setInverted(inverted);
+				wFrameObservers.forEach(
+						o -> o.onNewShapeMap(lastTimestamp, aiFrame.getShapeMap(), shapeMapSources.get(ai.getAiTeam())));
 
-				for (IWorldFrameObserver o : wFrameObservers)
+				if (runSkills)
 				{
-					o.onNewShapeMap(lastTimestamp, aiFrame.getShapeMap(), shapeMapSources.get(ai.getAiTeam()));
+					Map<BotID, ShapeMap> skillShapeMap = skillSystem.process(wfw, ai.getAiTeam().getTeamColor());
+					skillShapeMap.values().forEach(m -> m.setInverted(inverted));
 
-					skillShapeMap.forEach((id, shapeMap) -> o.onNewShapeMap(
+					wFrameObservers.forEach(o -> skillShapeMap.forEach((id, shapeMap) -> o.onNewShapeMap(
 							lastTimestamp,
 							shapeMap,
 							ShapeMapSource.of(id.toString(), SKILL_SHAPE_MAP_SOURCE)
-					));
+					)));
 				}
 			}
 		}
@@ -108,11 +120,13 @@ public class ReplayAiReCalcController implements IReplayController
 
 	private void startAi(EAiTeam aiTeam)
 	{
-		Ai preAi = ais.put(aiTeam, new Ai(aiTeam, skillSystem));
+		Ai newAi = new Ai(aiTeam, skillSystem);
+		Ai preAi = ais.put(aiTeam, newAi);
 		if (preAi != null)
 		{
 			preAi.stop();
 		}
+		newAi.start();
 	}
 
 
@@ -164,6 +178,22 @@ public class ReplayAiReCalcController implements IReplayController
 					aisToBeStopped.add(eAiTeam);
 				}
 			}
+		}
+	}
+
+	private class RunSkillsAction extends AbstractAction
+	{
+		private RunSkillsAction()
+		{
+			super("Run Skills");
+		}
+
+
+		@Override
+		public void actionPerformed(final ActionEvent e)
+		{
+			JCheckBoxMenuItem chk = (JCheckBoxMenuItem) e.getSource();
+			runSkills = chk.isSelected();
 		}
 	}
 }

@@ -6,20 +6,25 @@ package edu.tigers.sumatra.ai.pandora.plays.match.defense;
 
 import edu.tigers.sumatra.ai.athena.AthenaAiFrame;
 import edu.tigers.sumatra.ai.metis.ballresponsibility.EBallResponsibility;
+import edu.tigers.sumatra.ai.metis.defense.data.DefensePenAreaPositionAssignment;
 import edu.tigers.sumatra.ai.pandora.roles.ARole;
 import edu.tigers.sumatra.ai.pandora.roles.ERole;
 import edu.tigers.sumatra.ai.pandora.roles.defense.DefenderPenAreaRole;
 import edu.tigers.sumatra.geometry.Geometry;
+import lombok.RequiredArgsConstructor;
 
 import java.util.Comparator;
+import java.util.List;
 import java.util.stream.Stream;
 
 
 /**
  * The group containing all penArea bots
  */
+@RequiredArgsConstructor
 public class PenAreaGroup extends ADefenseGroup
 {
+	private final List<DefensePenAreaPositionAssignment> positionAssignments;
 	private AthenaAiFrame aiFrame;
 
 
@@ -38,7 +43,6 @@ public class PenAreaGroup extends ADefenseGroup
 		super.updateRoles(aiFrame);
 		this.aiFrame = aiFrame;
 
-		var positionAssignments = aiFrame.getTacticalField().getDefensePenAreaPositionAssignments();
 		var penAreaBoundary = aiFrame.getTacticalField().getDefensePenAreaBoundaryForPenAreaGroup();
 
 		for (var positionAssignment : positionAssignments)

@@ -14,7 +14,6 @@ import edu.tigers.sumatra.drawable.DrawableLine;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.circle.Circle;
-import edu.tigers.sumatra.math.line.Line;
 import edu.tigers.sumatra.math.vector.IVector2;
 import lombok.RequiredArgsConstructor;
 
@@ -70,7 +69,7 @@ public class KickoffSupportBehavior extends ASupportBehavior
 		getAiFrame().getShapeMap().get(EAiShapesLayer.SUPPORT_KICKOFF)
 				.add(new DrawableCircle(Circle.createCircle(destination, Geometry.getBotRadius() * 1.2), Color.ORANGE));
 		getAiFrame().getShapeMap().get(EAiShapesLayer.SUPPORT_KICKOFF)
-				.add(new DrawableLine(Line.fromPoints(getWFrame().getBot(botID).getPos(), destination), Color.ORANGE));
+				.add(new DrawableLine(getWFrame().getBot(botID).getPos(), destination, Color.ORANGE));
 
 		var pass = passFactory.straight(getWFrame().getBall().getPos(), destination, BotID.noBot(), botID);
 		var rating = ratedPassFactory.rateMaxCombined(pass, EPassRating.PASSABILITY, EPassRating.INTERCEPTION);

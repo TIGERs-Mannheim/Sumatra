@@ -1,11 +1,12 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.integration;
 
 import edu.tigers.sumatra.ai.AAgent;
 import edu.tigers.sumatra.ai.athena.EAIControlState;
+import edu.tigers.sumatra.ai.integration.blocker.WpSimTimeBlocker;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.ids.EAiTeam;
@@ -14,9 +15,7 @@ import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.math.vector.Vector2f;
 import edu.tigers.sumatra.model.SumatraModel;
-import edu.tigers.sumatra.pathfinder.MovementCon;
 import edu.tigers.sumatra.referee.proto.SslGcRefereeMessage.Referee.Command;
-import edu.tigers.sumatra.sim.SimulationHelper;
 import edu.tigers.sumatra.skillsystem.ASkillSystem;
 import edu.tigers.sumatra.skillsystem.skills.MoveToSkill;
 import edu.tigers.sumatra.snapshot.Snapshot;
@@ -135,10 +134,11 @@ public class FullSimPerfTest extends AFullSimIntegrationTest
 
 	private void runSim(Snapshot snapshot, Map<BotID, IVector2> destinations)
 	{
-		var params = snapshot.toBuilder()
-				.command(Command.FORCE_START)
-				.build();
-		SimulationHelper.loadSimulation(params);
+		initSimulation(
+				snapshot.toBuilder()
+						.command(Command.FORCE_START)
+						.build()
+		);
 
 		WpSimTimeBlocker simTimeBlocker = new WpSimTimeBlocker(0.1);
 		simTimeBlocker.await();
@@ -149,10 +149,6 @@ public class FullSimPerfTest extends AFullSimIntegrationTest
 			BotID botId = entry.getKey();
 			IVector2 destination = entry.getValue();
 			skill = MoveToSkill.createMoveToSkill();
-			MovementCon moveCon = skill.getMoveCon();
-			moveCon.setPenaltyAreaOurObstacle(true);
-			moveCon.setPenaltyAreaTheirObstacle(true);
-			moveCon.setGameStateObstacle(false);
 			skill.updateDestination(destination);
 			SumatraModel.getInstance().getModule(ASkillSystem.class).execute(botId, skill);
 

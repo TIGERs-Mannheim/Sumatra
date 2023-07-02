@@ -6,7 +6,7 @@ package edu.tigers.sumatra.ai.metis.defense.data;
 
 import edu.tigers.sumatra.ids.AObjectID;
 import edu.tigers.sumatra.ids.BallID;
-import edu.tigers.sumatra.math.line.v2.ILineSegment;
+import edu.tigers.sumatra.math.line.ILineSegment;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
 import lombok.Value;
@@ -31,7 +31,7 @@ public class DefenseBallThreat implements IDefenseThreat
 	@Override
 	public IVector2 getPos()
 	{
-		return threatLine.getStart();
+		return threatLine.getPathStart();
 	}
 
 
@@ -76,6 +76,13 @@ public class DefenseBallThreat implements IDefenseThreat
 	public EDefenseThreatType getType()
 	{
 		return EDefenseThreatType.BALL;
+	}
+
+
+	@Override
+	public double getThreatRating()
+	{
+		return Double.POSITIVE_INFINITY;
 	}
 
 

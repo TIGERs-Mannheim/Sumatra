@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.skillsystem.skills;
@@ -18,7 +18,6 @@ import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.skillsystem.ESkillShapesLayer;
 import edu.tigers.sumatra.skillsystem.skills.util.AroundBallCalc;
 import edu.tigers.sumatra.skillsystem.skills.util.AroundObstacleCalc;
-import edu.tigers.sumatra.skillsystem.skills.util.BallStabilizer;
 import edu.tigers.sumatra.skillsystem.skills.util.EDribblerMode;
 import edu.tigers.sumatra.skillsystem.skills.util.KickParams;
 import edu.tigers.sumatra.time.TimestampTimer;
@@ -43,7 +42,6 @@ public class PushAroundObstacleSkill extends AMoveSkill
 	@Configurable(comment = "Max acceleration when pushing", defValue = "1.0")
 	private static double pushAcc = 1.0;
 
-	private final BallStabilizer ballStabilizer = new BallStabilizer();
 	private final ExponentialMovingAverageFilter2D targetOrientationFilter = new ExponentialMovingAverageFilter2D(0.95);
 	private final ExponentialMovingAverageFilter pushFilter = new ExponentialMovingAverageFilter(0.99);
 	private final TimestampTimer releaseBallTimer = new TimestampTimer(0.3);
@@ -58,12 +56,6 @@ public class PushAroundObstacleSkill extends AMoveSkill
 	private IVector2 desiredDestination;
 	private EDribblerMode currentDribbleMode;
 	private MoveConstraints moveConstraints;
-
-
-	public boolean hasReleasedBall()
-	{
-		return releasedBallTimer.isTimeUp(getWorldFrame().getTimestamp());
-	}
 
 
 	@Override
@@ -86,8 +78,6 @@ public class PushAroundObstacleSkill extends AMoveSkill
 	{
 		obstacle = obstacle.update(getWorldFrame());
 		target = target.update(getWorldFrame());
-		ballStabilizer.update(getBall(), getTBot());
-		ballStabilizer.setBotBrakeAcc(pushAcc);
 
 		if (getVel().getLength2() <= moveConstraints.getVelMax())
 		{
@@ -198,7 +188,7 @@ public class PushAroundObstacleSkill extends AMoveSkill
 
 	private IVector2 getBallPos()
 	{
-		return ballStabilizer.getBallPos();
+		return getBall().getPos();
 	}
 
 

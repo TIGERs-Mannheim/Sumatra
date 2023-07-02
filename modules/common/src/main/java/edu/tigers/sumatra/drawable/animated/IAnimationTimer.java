@@ -14,5 +14,5 @@ public interface IAnimationTimer
 	 * 
 	 * @return Value in the range of [0.0, 1.0]
 	 */
-	float getTimerValue();
+	double getTimerValue();
 }

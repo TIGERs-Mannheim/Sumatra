@@ -24,7 +24,7 @@ public class AnimationTimerUpDown extends AAnimationTimer
 	/**
 	 * @param period Time for a full period in [s]
 	 */
-	public AnimationTimerUpDown(final float period)
+	public AnimationTimerUpDown(final double period)
 	{
 		super(period);
 	}
@@ -34,16 +34,16 @@ public class AnimationTimerUpDown extends AAnimationTimer
 	 * @param period Time for a full period in [s]
 	 * @param offset Offset for the timer in [s]. Can be used to de-synchronize multiple timers.
 	 */
-	public AnimationTimerUpDown(final float period, final float offset)
+	public AnimationTimerUpDown(final double period, final double offset)
 	{
 		super(period, offset);
 	}
 	
 	
 	@Override
-	public float getTimerValue()
+	public double getTimerValue()
 	{
-		float rel = getRelativeTimerValue();
+		double rel = getRelativeTimerValue();
 		
 		if (rel < 0.5f)
 		{

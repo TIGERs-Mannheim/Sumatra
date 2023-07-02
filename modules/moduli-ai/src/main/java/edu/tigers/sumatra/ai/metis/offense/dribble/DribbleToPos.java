@@ -18,6 +18,7 @@ public class DribbleToPos
 	IVector2 protectFromPos;
 	IVector2 dribbleToDestination;
 	EDribblingCondition dribblingCondition;
+	DribbleKickData dribbleKickData;
 
 
 	@SuppressWarnings("unused") // berkeley
@@ -26,5 +27,6 @@ public class DribbleToPos
 		protectFromPos = null;
 		dribbleToDestination = null;
 		dribblingCondition = EDribblingCondition.DEFAULT;
+		dribbleKickData = null;
 	}
 }

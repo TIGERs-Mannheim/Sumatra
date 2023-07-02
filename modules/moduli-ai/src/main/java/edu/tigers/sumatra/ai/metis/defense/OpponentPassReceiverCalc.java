@@ -30,8 +30,8 @@ import java.util.Optional;
  */
 public class OpponentPassReceiverCalc extends ACalculator
 {
-	@Configurable(comment = "Bots with a minimum curve to (ball) curve distance below this are consired to be pass receivers. [mm]", defValue = "400.0")
-	private static double validReceiveDistance = 400.0;
+	@Configurable(comment = "Bots with a minimum curve to (ball) curve distance below this are consired to be pass receivers. [mm]", defValue = "300.0")
+	private static double validReceiveDistance = 300.0;
 
 	@Configurable(comment = "Minimum ball speed to start looking for a pass receiver. [m/s]", defValue = "1.0")
 	private static double minBallSpeed = 1.0;
@@ -63,7 +63,7 @@ public class OpponentPassReceiverCalc extends ACalculator
 		List<ReceiveData> ratings = getRatings();
 
 		Optional<ReceiveData> bestReceiver = ratings.stream()
-				.filter(r -> r.getDistToBallCurve() < validReceiveDistance)
+				.filter(this::isDistanceValid)
 				.min(Comparator.comparingDouble(ReceiveData::getDistToBall));
 
 		opponentPassReceiver = bestReceiver.map(ReceiveData::getBot).orElse(null);
@@ -108,5 +108,13 @@ public class OpponentPassReceiverCalc extends ACalculator
 					maxBotToBallTravelLineDistance);
 		}
 		return ratings;
+	}
+
+
+	private boolean isDistanceValid(ReceiveData data)
+	{
+		// Per meter distance to the ball increase allowed distance to ball curve by 0.1 meter
+		var allowedDistance = validReceiveDistance + data.getDistToBall() / 10;
+		return data.getDistToBallCurve() < allowedDistance;
 	}
 }

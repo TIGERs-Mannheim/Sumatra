@@ -46,7 +46,7 @@ public class ColorAnimatorMixTwo implements IColorAnimator
 	@Override
 	public Color getColor()
 	{
-		float counterValue = timer.getTimerValue();
+		double counterValue = timer.getTimerValue();
 		
 		int r = (int) (((1.0f - counterValue) * colorA.getRed()) + (counterValue * colorB.getRed()));
 		int g = (int) (((1.0f - counterValue) * colorA.getGreen()) + (counterValue * colorB.getGreen()));

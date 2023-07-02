@@ -8,27 +8,18 @@ import edu.tigers.autoref.model.gamelog.GameLogTableModel;
 import edu.tigers.autoreferee.engine.log.ELogEntryType;
 import edu.tigers.autoreferee.engine.log.GameLogEntry;
 import edu.tigers.sumatra.components.EnumCheckBoxPanel;
-import edu.tigers.sumatra.model.SumatraModel;
-import edu.tigers.sumatra.persistence.RecordManager;
 
 import javax.swing.BoxLayout;
-import javax.swing.JMenuItem;
 import javax.swing.JPanel;
-import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
-import javax.swing.SwingUtilities;
-import javax.swing.event.PopupMenuEvent;
-import javax.swing.event.PopupMenuListener;
 import javax.swing.event.TableModelEvent;
 import javax.swing.event.TableModelListener;
 import javax.swing.table.TableRowSorter;
 import java.awt.BorderLayout;
 import java.awt.EventQueue;
-import java.awt.Point;
 import java.awt.Rectangle;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 
 
@@ -58,70 +49,7 @@ public class GameLogPanel extends JPanel
 		add(scrollPane, BorderLayout.CENTER);
 		add(logTypePanel, BorderLayout.PAGE_END);
 
-		final JPopupMenu popupMenu = new JPopupMenu();
-		JMenuItem replayItem = new JMenuItem("Replay");
-		replayItem.addActionListener(actionEvent -> viewRecording());
-		popupMenu.add(replayItem);
-		entryTable.setComponentPopupMenu(popupMenu);
-		popupMenu.addPopupMenuListener(new RowPopupMenuListener(popupMenu));
-
 		setTableModel(tableModel);
-	}
-
-
-	private void viewRecording()
-	{
-		int selectedRow = entryTable.getSelectedRow();
-		long startTime;
-		if (selectedRow < 0)
-		{
-			startTime = 0;
-		} else
-		{
-			int row = entryTable.convertRowIndexToModel(selectedRow);
-			GameLogEntry value = (GameLogEntry) entryTable.getModel().getValueAt(row, 0);
-			startTime = value.getTimestamp() - TimeUnit.SECONDS.toNanos(3);
-		}
-
-		SumatraModel.getInstance().getModuleOpt(RecordManager.class).ifPresent(m -> m.notifyViewReplay(startTime));
-	}
-
-	private class RowPopupMenuListener implements PopupMenuListener
-	{
-		private final JPopupMenu popupMenu;
-
-
-		RowPopupMenuListener(JPopupMenu popupMenu)
-		{
-			this.popupMenu = popupMenu;
-		}
-
-
-		@Override
-		public void popupMenuWillBecomeVisible(final PopupMenuEvent popupMenuEvent)
-		{
-			SwingUtilities.invokeLater(() -> {
-				int rowAtPoint = entryTable.rowAtPoint(SwingUtilities.convertPoint(popupMenu, new Point(0, 0), entryTable));
-				if (rowAtPoint > -1)
-				{
-					entryTable.setRowSelectionInterval(rowAtPoint, rowAtPoint);
-				}
-			});
-		}
-
-
-		@Override
-		public void popupMenuWillBecomeInvisible(final PopupMenuEvent popupMenuEvent)
-		{
-			// nothing to do
-		}
-
-
-		@Override
-		public void popupMenuCanceled(final PopupMenuEvent popupMenuEvent)
-		{
-			// nothing to do
-		}
 	}
 
 

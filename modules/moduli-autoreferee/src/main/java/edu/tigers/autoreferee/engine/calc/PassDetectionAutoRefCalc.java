@@ -15,7 +15,7 @@ import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.geometry.RuleConstraints;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.AngleMath;
-import edu.tigers.sumatra.math.line.v2.Lines;
+import edu.tigers.sumatra.math.line.Lines;
 import edu.tigers.sumatra.math.vector.IVector3;
 import edu.tigers.sumatra.vision.data.IKickEvent;
 import edu.tigers.sumatra.wp.data.BallKickFitState;
@@ -98,25 +98,7 @@ public class PassDetectionAutoRefCalc implements IAutoRefereeCalc
 		}
 
 		rememberState(frame);
-
-		for (var pass : lastPasses)
-		{
-			List<IDrawableShape> shapes = frame.getShapes().get(EAutoRefShapesLayer.PASS_DETECTION);
-			shapes.add(new DrawableArrow(
-					pass.getSource(),
-					pass.getTarget().subtractNew(pass.getSource()),
-					pass.isValid() ? Color.green : Color.red
-			));
-			var center = Lines.segmentFromPoints(pass.getSource(), pass.getTarget()).getCenter();
-			shapes.add(new DrawableAnnotation(
-					center,
-					String.format(
-							"%d: %.1f m/s -> %.1f m/s | α = %.0f°",
-							pass.getId(), pass.getInitialBallSpeed(), pass.getReceivingBallSpeed(),
-							pass.getDirectionChange() == null ? null : AngleMath.rad2deg(pass.getDirectionChange())
-					)
-			));
-		}
+		drawShapes(frame);
 	}
 
 
@@ -244,5 +226,28 @@ public class PassDetectionAutoRefCalc implements IAutoRefereeCalc
 		}
 		return AngleMath.diffAbs(vel3.getXYVector().getAngle(), ballVel.get(0).getXYVector().getAngle()) >
 				AngleMath.deg2rad(45);
+	}
+
+
+	private void drawShapes(AutoRefFrame frame)
+	{
+		for (var pass : lastPasses)
+		{
+			List<IDrawableShape> shapes = frame.getShapes().get(EAutoRefShapesLayer.PASS_DETECTION);
+			shapes.add(new DrawableArrow(
+					pass.getSource(),
+					pass.getTarget().subtractNew(pass.getSource()),
+					pass.isValid() ? Color.green : Color.red
+			));
+			var center = Lines.segmentFromPoints(pass.getSource(), pass.getTarget()).getPathCenter();
+			shapes.add(new DrawableAnnotation(
+					center,
+					String.format(
+							"%d: %.1f m/s -> %.1f m/s | α = %.0f°",
+							pass.getId(), pass.getInitialBallSpeed(), pass.getReceivingBallSpeed(),
+							pass.getDirectionChange() == null ? null : AngleMath.rad2deg(pass.getDirectionChange())
+					)
+			));
+		}
 	}
 }

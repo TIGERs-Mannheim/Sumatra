@@ -10,7 +10,7 @@ import edu.tigers.sumatra.botmanager.botskills.data.ESong;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.math.AngleMath;
 import edu.tigers.sumatra.math.circle.CircleMath;
-import edu.tigers.sumatra.math.line.v2.LineMath;
+import edu.tigers.sumatra.math.line.LineMath;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.math.vector.Vector2f;
@@ -47,27 +47,17 @@ public class CircleCheeringPlay implements ICheeringPlay
 	@Override
 	public List<IVector2> calcPositions()
 	{
-		switch (state)
+		return switch (state)
 		{
-			case SETUP:
-				return setup();
-			case START:
-				return setRadius(1.5, 1.5f, 0);
-			case ROTATE1:
-			case ROTATE2:
-				return rotate();
-			case GROW:
-				return setRadius(1.5, 1.4f, 0);
-			case MOVEAGAIN:
-				return move(500);
-			case MOVEAGAIN1:
-				return move(-500);
-			case SHRINK:
-				return setRadius(1.5, 0.65f, 0);
-			case SWITCH:
-				return setRadius(1.2, 1.2f, 1);
-		}
-		return new ArrayList<>();
+			case SETUP -> setup();
+			case START -> setRadius(1.5, 1.5f, 0);
+			case ROTATE1, ROTATE2 -> rotate();
+			case GROW -> setRadius(1.5, 1.4f, 0);
+			case MOVEAGAIN -> move(500);
+			case MOVEAGAIN1 -> move(-500);
+			case SHRINK -> setRadius(1.5, 0.65f, 0);
+			case SWITCH -> setRadius(1.2, 1.2f, 1);
+		};
 	}
 
 
@@ -94,31 +84,14 @@ public class CircleCheeringPlay implements ICheeringPlay
 	{
 		switch (state)
 		{
-			case SWITCH:
-			case SETUP:
-				state = CheeringPhase.START;
-				break;
-			case START:
-				state = CheeringPhase.ROTATE1;
-				break;
-			case ROTATE1:
-				state = CheeringPhase.ROTATE2;
-				break;
-			case ROTATE2:
-				state = CheeringPhase.SHRINK;
-				break;
-			case SHRINK:
-				state = CheeringPhase.MOVEAGAIN;
-				break;
-			case MOVEAGAIN:
-				state = CheeringPhase.MOVEAGAIN1;
-				break;
-			case MOVEAGAIN1:
-				state = CheeringPhase.GROW;
-				break;
-			case GROW:
-				state = CheeringPhase.SWITCH;
-				break;
+			case SWITCH, SETUP -> state = CheeringPhase.START;
+			case START -> state = CheeringPhase.ROTATE1;
+			case ROTATE1 -> state = CheeringPhase.ROTATE2;
+			case ROTATE2 -> state = CheeringPhase.SHRINK;
+			case SHRINK -> state = CheeringPhase.MOVEAGAIN;
+			case MOVEAGAIN -> state = CheeringPhase.MOVEAGAIN1;
+			case MOVEAGAIN1 -> state = CheeringPhase.GROW;
+			case GROW -> state = CheeringPhase.SWITCH;
 		}
 	}
 

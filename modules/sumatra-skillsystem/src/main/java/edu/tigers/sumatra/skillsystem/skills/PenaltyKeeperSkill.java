@@ -8,8 +8,7 @@ import com.github.g3force.configurable.Configurable;
 import edu.tigers.sumatra.bot.MoveConstraints;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.BallID;
-import edu.tigers.sumatra.math.line.Line;
-import edu.tigers.sumatra.math.line.LineMath;
+import edu.tigers.sumatra.math.line.Lines;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.math.vector.Vector2f;
@@ -19,7 +18,6 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.extern.log4j.Log4j2;
 
-import java.util.Optional;
 import java.util.Random;
 
 
@@ -140,9 +138,8 @@ public class PenaltyKeeperSkill extends AMoveSkill
 		var direction = Vector2.copy(ballPos.subtractNew(shooterPos.getPos()));
 
 		double pufferToGoalPost = Geometry.getBotRadius() + 50;
-		Optional<IVector2> possibleGoalLineIntersect = LineMath.intersectionPoint(
-				Line.fromDirection(ballPos, direction),
-				Line.fromDirection(Geometry.getGoalOur().getCenter(), Vector2f.Y_AXIS));
+		var possibleGoalLineIntersect = Geometry.getGoalOur().getLine()
+				.intersect(Lines.halfLineFromDirection(ballPos, direction)).asOptional();
 
 		if (possibleGoalLineIntersect.isPresent())
 		{

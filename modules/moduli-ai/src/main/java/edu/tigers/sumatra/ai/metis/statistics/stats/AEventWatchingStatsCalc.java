@@ -20,7 +20,7 @@ import java.util.Map;
 public abstract class AEventWatchingStatsCalc<T> extends AStatsCalc
 {
 	private final Map<Long, T> occurrences = new HashMap<>();
-	private final StateMachine<IState> stateMachine = new StateMachine<>();
+	private final StateMachine<IState> stateMachine = new StateMachine<>(this.getClass().getSimpleName());
 	private final IShapeLayerIdentifier shapeLayer;
 	protected BaseAiFrame baseAiFrame;
 	private T data;
@@ -69,7 +69,7 @@ public abstract class AEventWatchingStatsCalc<T> extends AStatsCalc
 		this.baseAiFrame = baseAiFrame;
 		clearOccurrences();
 		stateMachine.update();
-		drawBorderText(Vector2.fromXY(1.0, 8), stateMachine.getCurrentState().getIdentifier());
+		drawBorderText(Vector2.fromXY(1.0, 8), stateMachine.getCurrentState().toString());
 	}
 
 

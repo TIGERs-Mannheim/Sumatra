@@ -15,9 +15,9 @@ import edu.tigers.sumatra.drawable.DrawableLine;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.math.AngleMath;
 import edu.tigers.sumatra.math.SumatraMath;
-import edu.tigers.sumatra.math.line.ILine;
-import edu.tigers.sumatra.math.line.Line;
-import edu.tigers.sumatra.math.line.v2.LineMath;
+import edu.tigers.sumatra.math.line.ILineSegment;
+import edu.tigers.sumatra.math.line.LineMath;
+import edu.tigers.sumatra.math.line.Lines;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.skillsystem.skills.ESkillState;
@@ -34,13 +34,12 @@ import java.awt.Color;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 
 /**
  * Role for RoboCup 2021 Hardware Challenge 3: Dribbling
- * https://robocup-ssl.github.io/ssl-hardware-challenge-rules/rules.html#_challenge_3_dribbling
+ * <a href="https://robocup-ssl.github.io/ssl-hardware-challenge-rules/rules.html#_challenge_3_dribbling">rules</a>
  * Takes the ball and passes through gates of robots.
  * This advanced implementation does a single run through all gates. It uses BB trajectories alternating in sync
  * and async fashion to drive in arcs while still under full position control. The computation is pretty clever :)
@@ -59,7 +58,7 @@ public class DribbleChallengeAdvancedRole extends ARole
 	@Configurable(comment = "Maximum angular velocity [rad/s]", defValue = "2.5")
 	private static double velMaxW = 2.5;
 
-	private List<ILine> gates = new ArrayList<>();
+	private List<ILineSegment> gates = new ArrayList<>();
 	private List<IVector2> obstacles = new ArrayList<>();
 	private List<IVector2> waypoints = new ArrayList<>();
 	private List<IVector2> finalWaypoints = new ArrayList<>();
@@ -136,7 +135,7 @@ public class DribbleChallengeAdvancedRole extends ARole
 			obstacles = getWFrame().getOpponentBots().values().stream()
 					.sorted(Comparator.comparingDouble(bot -> bot.getPos().distanceTo(ballPos)))
 					.map(ITrackedBot::getPos)
-					.collect(Collectors.toList());
+					.toList();
 
 			waypoints.clear();
 			finalWaypoints.clear();
@@ -145,39 +144,10 @@ public class DribbleChallengeAdvancedRole extends ARole
 			{
 				gates = IntStream.range(0, obstacles.size() - 1)
 						.boxed()
-						.map(i -> Line.fromPoints(obstacles.get(i), obstacles.get(i + 1)))
-						.collect(Collectors.toList());
+						.map(i -> Lines.segmentFromPoints(obstacles.get(i), obstacles.get(i + 1)))
+						.toList();
 
-				for (int i = 0; i < gates.size(); i++)
-				{
-					var gate = gates.get(i);
-					var passpoint = gate.getStart().addNew(gate.directionVector().multiplyNew(0.5));
-
-					var rotation = i % 2 == 0 ? AngleMath.DEG_090_IN_RAD : -AngleMath.DEG_090_IN_RAD;
-
-					var first = passpoint.addNew(gate.directionVector().turnNew(-rotation).scaleTo(300.0));
-					var second = passpoint.addNew(gate.directionVector().turnNew(rotation).scaleTo(300.0));
-
-					if (i == gates.size() - 1)
-					{
-						second = passpoint.addNew(gate.directionVector().turnNew(rotation).scaleTo(150.0));
-					}
-
-					if (i == 0)
-					{
-						var entry = gate.getStart().addNew(gate.directionVector().turnNew(-rotation).scaleTo(300.0));
-						waypoints.add(entry);
-					}
-
-					waypoints.add(first);
-					waypoints.add(second);
-
-					if (i == gates.size() - 1)
-					{
-						finalWaypoints.add(passpoint.addNew(gate.directionVector().turnNew(-rotation).scaleTo(150.0)));
-						finalWaypoints.add(passpoint.addNew(gate.directionVector().turnNew(rotation).scaleTo(250.0)));
-					}
-				}
+				setWaypointsFromGates();
 			}
 
 			if (getAiFrame().getGameState().isGameRunning())
@@ -186,7 +156,43 @@ public class DribbleChallengeAdvancedRole extends ARole
 				triggerEvent(EEvent.DONE);
 			}
 		}
+
+
+		private void setWaypointsFromGates()
+		{
+			for (int i = 0; i < gates.size(); i++)
+			{
+				var gate = gates.get(i);
+				var passpoint = gate.getPathStart().addNew(gate.directionVector().multiplyNew(0.5));
+
+				var rotation = i % 2 == 0 ? AngleMath.DEG_090_IN_RAD : -AngleMath.DEG_090_IN_RAD;
+
+				var first = passpoint.addNew(gate.directionVector().turnNew(-rotation).scaleTo(300.0));
+				var second = passpoint.addNew(gate.directionVector().turnNew(rotation).scaleTo(300.0));
+
+				if (i == gates.size() - 1)
+				{
+					second = passpoint.addNew(gate.directionVector().turnNew(rotation).scaleTo(150.0));
+				}
+
+				if (i == 0)
+				{
+					var entry = gate.getPathStart().addNew(gate.directionVector().turnNew(-rotation).scaleTo(300.0));
+					waypoints.add(entry);
+				}
+
+				waypoints.add(first);
+				waypoints.add(second);
+
+				if (i == gates.size() - 1)
+				{
+					finalWaypoints.add(passpoint.addNew(gate.directionVector().turnNew(-rotation).scaleTo(150.0)));
+					finalWaypoints.add(passpoint.addNew(gate.directionVector().turnNew(rotation).scaleTo(250.0)));
+				}
+			}
+		}
 	}
+
 
 	private class PrepareState extends RoleState<MoveToSkill>
 	{

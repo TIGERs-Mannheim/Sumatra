@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.skillsystem.skills;
@@ -10,9 +10,9 @@ import edu.tigers.sumatra.drawable.DrawableCircle;
 import edu.tigers.sumatra.drawable.DrawableTriangle;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.BotID;
-import edu.tigers.sumatra.math.line.ILine;
-import edu.tigers.sumatra.math.line.Line;
-import edu.tigers.sumatra.math.line.v2.ILineSegment;
+import edu.tigers.sumatra.math.intersections.IIntersections;
+import edu.tigers.sumatra.math.line.ILineSegment;
+import edu.tigers.sumatra.math.line.Lines;
 import edu.tigers.sumatra.math.triangle.Triangle;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
@@ -29,7 +29,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 
 /**
@@ -52,11 +51,8 @@ public class DefendingKeeper
 	@Configurable(comment = "Speed limit of ball of ChipKickState", defValue = "0.8")
 	private static double chipKickDecisionVelocity = 0.8;
 
-	@Configurable(comment = "Additional area around PE where Opponent with Ball are very dangerous (GoOutState is triggered)", defValue = "1000.0")
-	private static double ballDangerZone = 1000.0;
-
-	@Configurable(comment = "Additional margin to PE where single Attacker is in", defValue = "2500.0")
-	private static double singleAttackerPenaltyAreaMargin = 2500.;
+	@Configurable(comment = "Additional area around PE where Opponent with Ball are very dangerous (GoOutState is triggered)", defValue = "300.0")
+	private static double ballDangerZone = 300.0;
 
 	@Configurable(comment = "Additional distance to allow until ball reach goal line", defValue = "1000.0")
 	private static double distToIntersectionTolerance = 1000;
@@ -66,18 +62,10 @@ public class DefendingKeeper
 		ConfigRegistration.registerClass("skills", DefendingKeeper.class);
 	}
 
+	private final ASkill drawingSkill;
 	private double lastTimeKicked = 0;
 	private WorldFrame worldFrame;
-	private final ASkill drawingSkill;
 	private ITrackedBall ball;
-
-	protected enum ECriticalKeeperStates implements IEvent
-	{
-		NORMAL,
-		INTERCEPT_BALL,
-		DEFEND_REDIRECT,
-		GO_OUT
-	}
 
 
 	protected DefendingKeeper(final ASkill drawingSkill)
@@ -119,8 +107,8 @@ public class DefendingKeeper
 		ILineSegment goalLine = Geometry.getGoalOur()
 				.withMargin(0, Geometry.getGoalOur().getWidth() / 2.0).getLineSegment();
 		Optional<IVector2> intersect = ball.getTrajectory().getTravelLineSegments().stream()
-				.map(line -> line.intersectSegment(goalLine))
-				.flatMap(Optional::stream)
+				.map(line -> line.intersect(goalLine))
+				.flatMap(IIntersections::stream)
 				.findAny();
 
 		if (intersect.isPresent() && (ball.getVel().x() < 0))
@@ -132,10 +120,7 @@ public class DefendingKeeper
 			boolean isBallVelocityIntersectingTheGoalLine = Math
 					.abs(intersect.get().y()) < ((Geometry.getGoalOur().getWidth() / 2) + goalAreaOffset);
 
-			if (worldFrame.getKickEvent().isPresent())
-			{
-				lastTimeKicked = worldFrame.getKickEvent().get().getTimestamp();
-			}
+			worldFrame.getKickEvent().ifPresent(iKickEvent -> lastTimeKicked = iKickEvent.getTimestamp());
 			boolean isBallKicked = ((lastTimeKicked - worldFrame.getTimestamp()) / 1e9) < maxKickTime;
 
 			boolean isBallLeavingOpponent = !isOpponentNearBall() || isBallKicked;
@@ -169,11 +154,11 @@ public class DefendingKeeper
 		boolean p2pVisibilityRedirectOpponentGoal;
 		if (redirectOpponentBot != null)
 		{
-			ILine lineGoalOpponentBot = Line.fromPoints(redirectOpponentBot, Geometry.getGoalOur().getCenter());
+			var lineGoalOpponentBot = Lines.segmentFromPoints(redirectOpponentBot, Geometry.getGoalOur().getCenter());
 			p2pVisibilityRedirectOpponentGoal = worldFrame.getBots().values().stream()
-					.filter(b -> b.getBotId() != drawingSkill.getBotId())
-					.anyMatch(b -> lineGoalOpponentBot.isPointOnLineSegment(b.getPos(),
-							Geometry.getBotRadius() + Geometry.getBallRadius()));
+					.filter(b -> !b.getBotId().equals(drawingSkill.getBotId()))
+					.anyMatch(b -> lineGoalOpponentBot.distanceTo(b.getPos())
+							< Geometry.getBotRadius() + Geometry.getBallRadius());
 		} else
 		{
 			p2pVisibilityRedirectOpponentGoal = false;
@@ -293,32 +278,23 @@ public class DefendingKeeper
 	}
 
 
-	private boolean isGoOutFeasible()
+	public boolean isGoOutFeasible()
 	{
-		return (isBallCloseToPenaltyArea() && isOpponentNearBall())
-				|| isSingleAttacker();
+		return (isPositionCloseToPenaltyArea(ball.getPos()) && isOpponentNearBall());
 	}
 
 
-	private boolean isBallCloseToPenaltyArea()
+	public boolean isPositionCloseToPenaltyArea(IVector2 position)
 	{
-		return Geometry.getPenaltyAreaOur().isPointInShape(ball.getPos(),
-				ballDangerZone);
+		return Geometry.getPenaltyAreaOur().withMargin(ballDangerZone).isPointInShape(position);
 	}
 
 
-	private boolean isSingleAttacker()
+	protected enum ECriticalKeeperStates implements IEvent
 	{
-		List<ITrackedBot> nearOpponents = worldFrame.getOpponentBots().values().stream()
-				.filter(bot -> Geometry.getPenaltyAreaOur().isPointInShape(bot.getPos(), singleAttackerPenaltyAreaMargin))
-				.collect(Collectors.toList());
-		boolean isSingleAttacker = nearOpponents.size() < 2;
-		boolean opponentHasBall = false;
-		if (!nearOpponents.isEmpty())
-		{
-			opponentHasBall = nearOpponents.stream().anyMatch(bot -> bot.getPos().distanceTo(ball.getPos()) < 1000);
-		}
-
-		return isSingleAttacker && opponentHasBall;
+		NORMAL,
+		INTERCEPT_BALL,
+		DEFEND_REDIRECT,
+		GO_OUT
 	}
 }

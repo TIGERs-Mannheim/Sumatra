@@ -72,8 +72,8 @@ public class AngleRangeTestCalc extends ACalculator
 	private DrawableTriangle createDrawable(AngleRangeGenerator angleRangeGenerator, AngleRange range, Color color)
 	{
 		IVector2 origin = getBall().getPos();
-		IVector2 start = angleRangeGenerator.getLineSegment().getStart();
-		IVector2 end = angleRangeGenerator.getLineSegment().getEnd();
+		IVector2 start = angleRangeGenerator.getLineSegment().getPathStart();
+		IVector2 end = angleRangeGenerator.getLineSegment().getPathEnd();
 
 		IVector2 endCenter = TriangleMath.bisector(origin, end, start);
 		double baseAngle = endCenter.subtractNew(origin).getAngle();

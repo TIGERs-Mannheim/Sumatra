@@ -95,8 +95,11 @@ public class AutoRefRunner implements Runnable, IWorldFrameObserver
 		SumatraModel.getInstance().getModule(AWorldPredictor.class).notifyRemoveSourceFromShapeMap(SHAPE_MAP_SOURCE);
 		try
 		{
-			executorService.shutdown();
-			Validate.isTrue(executorService.awaitTermination(2, TimeUnit.SECONDS));
+			if (executorService != null)
+			{
+				executorService.shutdown();
+				Validate.isTrue(executorService.awaitTermination(2, TimeUnit.SECONDS));
+			}
 		} catch (InterruptedException e)
 		{
 			log.error("Interrupted while awaiting termination", e);

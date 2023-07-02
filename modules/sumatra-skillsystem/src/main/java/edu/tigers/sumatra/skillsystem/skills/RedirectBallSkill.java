@@ -9,7 +9,7 @@ import edu.tigers.sumatra.drawable.DrawableAnnotation;
 import edu.tigers.sumatra.drawable.DrawableLine;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.math.AngleMath;
-import edu.tigers.sumatra.math.line.Line;
+import edu.tigers.sumatra.math.line.Lines;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.skillsystem.ESkillShapesLayer;
@@ -77,7 +77,7 @@ public class RedirectBallSkill extends ABallArrivalSkill
 		setKickParams(KickParams.of(desiredKickParams.getDevice(), desiredKickSpeed));
 		setDesiredTargetAngle(desiredTargetAngle);
 
-		var bot2Target = Line.fromPoints(getTBot().getPos(), target).getAngle().orElse(0.0);
+		var bot2Target = Lines.lineFromPoints(getTBot().getPos(), target).getAngle().orElse(0.0);
 		var turnDiff = AngleMath.diffAbs(desiredTargetAngle, getAngle());
 		var offsetDiff = AngleMath.diffAbs(desiredTargetAngle, bot2Target);
 		getShapes().get(ESkillShapesLayer.BALL_ARRIVAL_SKILL)
@@ -87,12 +87,12 @@ public class RedirectBallSkill extends ABallArrivalSkill
 
 		// bot to target
 		getShapes().get(ESkillShapesLayer.BALL_ARRIVAL_SKILL)
-				.add(new DrawableLine(Line.fromPoints(getTBot().getBotKickerPos(Geometry.getBallRadius()), target),
+				.add(new DrawableLine(getTBot().getBotKickerPos(Geometry.getBallRadius()), target,
 						getBotId().getTeamColor().getColor()));
 
 		// current angle
 		getShapes().get(ESkillShapesLayer.BALL_ARRIVAL_SKILL)
-				.add(new DrawableLine(Line.fromDirection(getPos(), Vector2.fromAngle(getAngle()).scaleTo(200)),
+				.add(new DrawableLine(Lines.segmentFromOffset(getPos(), Vector2.fromAngle(getAngle()).scaleTo(200)),
 						Color.black));
 
 		super.doUpdate();

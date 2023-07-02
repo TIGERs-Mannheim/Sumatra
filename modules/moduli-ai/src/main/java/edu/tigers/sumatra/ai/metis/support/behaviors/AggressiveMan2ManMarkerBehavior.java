@@ -15,7 +15,6 @@ import edu.tigers.sumatra.drawable.DrawableLine;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.circle.Circle;
-import edu.tigers.sumatra.math.line.Line;
 import lombok.RequiredArgsConstructor;
 
 import java.awt.Color;
@@ -64,7 +63,7 @@ public class AggressiveMan2ManMarkerBehavior extends ASupportBehavior
 			getAiFrame().getShapeMap().get(EAiShapesLayer.SUPPORT_AGGRESSIVE_MAN_MARKER)
 					.add(new DrawableCircle(Circle.createCircle(threat.getPos(), 1.5 * Geometry.getBotRadius()), color));
 			getAiFrame().getShapeMap().get(EAiShapesLayer.SUPPORT_AGGRESSIVE_MAN_MARKER)
-					.add(new DrawableLine(Line.fromPoints(getWFrame().getBot(botID).getPos(), dest), color));
+					.add(new DrawableLine(getWFrame().getBot(botID).getPos(), dest, color));
 			if (validity >= minValidity)
 			{
 				return SupportBehaviorPosition.fromDestinationAndRotationTarget(dest, getWFrame().getBall().getPos(),

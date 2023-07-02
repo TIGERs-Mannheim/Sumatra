@@ -31,31 +31,31 @@ public class BotSkillCircleBallSim implements IBotSkillSim
 	@Override
 	public BotSkillOutput execute(final BotSkillInput input)
 	{
-		BotSkillCircleBall skill = (BotSkillCircleBall) input.getSkill();
-		
+		BotSkillCircleBall skill = (BotSkillCircleBall) input.skill();
+
 		double radius = skill.getRadius() * 0.001;
 		double speed = skill.getSpeed() * 1000;
 		double targetAngle = skill.getTargetAngle();
 		double mu = skill.getFriction();
-		
-		double curSpeedAbs = input.getState().getVel().getLength2() / 1000;
-		
+
+		double curSpeedAbs = input.state().getVel().getLength2() / 1000;
+
 		IVector3 localVel;
 		EKickerMode kickerMode = EKickerMode.DISARM;
-		
+
 		if (Math.abs(radius) < 0.01)
 		{
 			localVel = Vector3f.ZERO_VECTOR;
 		} else
 		{
 			double theta = Math.atan(((curSpeedAbs * curSpeedAbs) / radius) * 9.81 * mu);
-			
-			double angDiff = AngleMath.normalizeAngle(targetAngle - input.getState().getPose().getOrientation());
+
+			double angDiff = AngleMath.normalizeAngle(targetAngle - input.state().getPose().getOrientation());
 			if (Math.abs(angDiff) < 0.01)
 			{
 				atTargetAngle = true;
 			}
-			
+
 			if (atTargetAngle && (skill.getMode() != EKickerMode.DISARM))
 			{
 				kickerMode = skill.getMode();

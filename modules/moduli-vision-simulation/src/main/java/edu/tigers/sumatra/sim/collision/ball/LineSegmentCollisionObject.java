@@ -5,8 +5,8 @@
 package edu.tigers.sumatra.sim.collision.ball;
 
 import edu.tigers.sumatra.math.AngleMath;
-import edu.tigers.sumatra.math.line.v2.ILineSegment;
-import edu.tigers.sumatra.math.line.v2.Lines;
+import edu.tigers.sumatra.math.line.ILineSegment;
+import edu.tigers.sumatra.math.line.Lines;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.IVector3;
 
@@ -35,7 +35,7 @@ public class LineSegmentCollisionObject implements ICollisionObject
 		{
 			return singleSidedNormal;
 		}
-		IVector2 lp = obstacleLine.closestPointOnLine(prePos.getXYVector());
+		IVector2 lp = obstacleLine.closestPointOnPath(prePos.getXYVector());
 		return prePos.getXYVector().subtractNew(lp).normalize();
 	}
 
@@ -61,7 +61,7 @@ public class LineSegmentCollisionObject implements ICollisionObject
 			return Optional.empty();
 		}
 
-		Optional<IVector2> collisionPoint = obstacleLine.intersectSegment(stateLine);
+		Optional<IVector2> collisionPoint = obstacleLine.intersect(stateLine).asOptional();
 		if (collisionPoint.isEmpty())
 		{
 			return Optional.empty();

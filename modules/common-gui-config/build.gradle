@@ -14,5 +14,5 @@ dependencies {
     implementation 'com.github.g3force:String2ValueConverter:2.2.1'
 
     implementation 'commons-configuration:commons-configuration:1.10'
-    implementation 'com.miglayout:miglayout-swing:11.0'
+    implementation 'com.miglayout:miglayout-swing:11.1'
 }

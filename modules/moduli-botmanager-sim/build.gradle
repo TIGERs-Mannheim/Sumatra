@@ -18,5 +18,5 @@ dependencies {
     implementation project(':moduli-vision')
     implementation project(':moduli-simulation')
 
-    implementation 'org.apache.logging.log4j:log4j-api:2.17.1'
+    implementation 'org.apache.logging.log4j:log4j-api:2.20.0'
 }

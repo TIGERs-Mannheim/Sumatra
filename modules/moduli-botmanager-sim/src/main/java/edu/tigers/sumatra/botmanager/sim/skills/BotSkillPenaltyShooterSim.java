@@ -46,7 +46,7 @@ public class BotSkillPenaltyShooterSim implements IBotSkillSim
 		outputBuilder.driveLimits(penaltyShooter.getMoveConstraints());
 		if (startPos == null)
 		{
-			startPos = input.getState().getPose().getPos();
+			startPos = input.state().getPose().getPos();
 		}
 		
 		switch (state)
@@ -78,7 +78,7 @@ public class BotSkillPenaltyShooterSim implements IBotSkillSim
 		outputBuilder.targetVelLocal(Vector3.from2d(penaltyShooter.getSpeedInTurn().multiplyNew(1e3),
 				penaltyShooter.getRotationSpeed()));
 		double nextAngleDifference = AngleMath
-				.normalizeAngle(penaltyShooter.getTargetAngle() - input.getState().getPose().getOrientation());
+				.normalizeAngle(penaltyShooter.getTargetAngle() - input.state().getPose().getOrientation());
 		if (nextAngleDifference * currentAngleDifference < .0)
 		{
 			state = EBotSkillPenaltyShooterSimState.KICK;
@@ -92,7 +92,7 @@ public class BotSkillPenaltyShooterSim implements IBotSkillSim
 		outputBuilder.modeXY(EDriveMode.WHEEL_VEL);
 		outputBuilder.modeW(EDriveMode.WHEEL_VEL);
 		outputBuilder.targetWheelVel(VectorN.from(0, 0, 0, 0));
-		if (input.gettNow() - startTime > penaltyShooter.getTimeToShoot())
+		if (input.tNow() - startTime > penaltyShooter.getTimeToShoot())
 		{
 			state = EBotSkillPenaltyShooterSimState.TURN;
 		}
@@ -104,10 +104,10 @@ public class BotSkillPenaltyShooterSim implements IBotSkillSim
 		outputBuilder.modeXY(EDriveMode.LOCAL_VEL);
 		outputBuilder.modeW(EDriveMode.LOCAL_VEL);
 		outputBuilder.targetVelLocal(Vector3.fromXYZ(0, penaltyShooter.getApproachSpeed() * 1000, 0));
-		if (input.getState().isBarrierInterrupted())
+		if (input.state().isBarrierInterrupted())
 		{
 			state = EBotSkillPenaltyShooterSimState.THREATENING_REST;
-			startTime = input.gettNow();
+			startTime = input.tNow();
 		}
 	}
 	
@@ -125,9 +125,9 @@ public class BotSkillPenaltyShooterSim implements IBotSkillSim
 	@Override
 	public void init(final BotSkillInput input)
 	{
-		penaltyShooter = (BotSkillPenaltyShooter) input.getSkill();
+		penaltyShooter = (BotSkillPenaltyShooter) input.skill();
 		currentAngleDifference = AngleMath
-				.normalizeAngle(penaltyShooter.getTargetAngle() - input.getState().getPose().getOrientation());
+				.normalizeAngle(penaltyShooter.getTargetAngle() - input.state().getPose().getOrientation());
 		state = EBotSkillPenaltyShooterSimState.SLOW_MOVE;
 	}
 }

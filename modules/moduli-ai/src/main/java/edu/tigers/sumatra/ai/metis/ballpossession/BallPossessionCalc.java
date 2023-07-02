@@ -8,12 +8,14 @@ import com.github.g3force.configurable.Configurable;
 import edu.tigers.sumatra.ai.metis.ACalculator;
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
 import edu.tigers.sumatra.ai.metis.botdistance.BotDistance;
+import edu.tigers.sumatra.ai.metis.kicking.OngoingPass;
 import edu.tigers.sumatra.drawable.DrawableBorderText;
 import edu.tigers.sumatra.drawable.DrawableCircle;
 import edu.tigers.sumatra.drawable.EFontSize;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.geometry.RuleConstraints;
 import edu.tigers.sumatra.ids.BotID;
+import edu.tigers.sumatra.ids.ETeamColor;
 import edu.tigers.sumatra.math.circle.Circle;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.referee.data.GameState;
@@ -22,6 +24,7 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 import java.awt.Color;
+import java.util.Optional;
 import java.util.function.Supplier;
 
 
@@ -58,6 +61,7 @@ public class BallPossessionCalc extends ACalculator
 	private final Supplier<BotDistance> tigerClosestToBall;
 	private final Supplier<BotDistance> opponentClosestToBall;
 	private final Supplier<ITrackedBot> opponentPassReceiver;
+	private final Supplier<Optional<OngoingPass>> ongoingPass;
 
 	@Getter
 	private BallPossession ballPossession;
@@ -116,13 +120,13 @@ public class BallPossessionCalc extends ACalculator
 							Color.BLACK));
 		}
 
-		Color hudColor = getWFrame().getTeamColor().getColor();
-		double posX = 318.0 + (hudColor.equals(Color.BLUE) ? 50 : 0);
+		var hudColor = getWFrame().getTeamColor();
+		double posX = 44.8;
 		getShapes(EAiShapesLayer.AI_BALL_POSSESSION).add(
-				new DrawableBorderText(Vector2.fromXY(posX, 35),
+				new DrawableBorderText(Vector2.fromXY(posX, hudColor == ETeamColor.BLUE ? 4.5 : 5.6),
 						ballPossession.getEBallPossession().toString())
 						.setFontSize(EFontSize.MEDIUM)
-						.setColor(hudColor)
+						.setColor(hudColor.getColor())
 		);
 	}
 
@@ -138,7 +142,8 @@ public class BallPossessionCalc extends ACalculator
 		} else if ((timeWeNear > timeThresholdNear) && (timeTheyNear > timeThresholdNear))
 		{
 			return EBallPossession.BOTH;
-		} else if ((timeWeFar > timeThresholdFar) && (timeTheyFar > timeThresholdFar))
+		} else if ((timeWeFar > timeThresholdFar) && (timeTheyFar > timeThresholdFar)
+				&& ongoingPass.get().isEmpty())
 		{
 			return EBallPossession.NO_ONE;
 		}

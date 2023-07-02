@@ -1,17 +1,18 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.skillsystem.skills;
 
 import com.github.g3force.configurable.Configurable;
 import edu.tigers.sumatra.bot.State;
+import edu.tigers.sumatra.drawable.DrawableAnnotation;
 import edu.tigers.sumatra.drawable.DrawableLine;
 import edu.tigers.sumatra.drawable.DrawablePoint;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.math.AngleMath;
-import edu.tigers.sumatra.math.line.Line;
 import edu.tigers.sumatra.math.line.LineMath;
+import edu.tigers.sumatra.math.line.Lines;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.skillsystem.ESkillShapesLayer;
@@ -48,6 +49,18 @@ public class SingleTouchKickSkill extends ATouchKickSkill
 
 	@Configurable(defValue = "1.0", comment = "The max time to wait until angle is considered reached while within tolerance")
 	private static double maxTimeTargetAngleReached = 1.0;
+
+	@Configurable(defValue = "-150", comment = "Max dist to push ball")
+	private static double maxPushDist = -150;
+
+	@Configurable(defValue = "-100", comment = "Charge rate for min margin charger")
+	private static double minMarginChargeRate = -100;
+
+	@Configurable(defValue = "50", comment = "Lower threshold for min margin charger")
+	private static double minMarginLowerThreshold = 50;
+
+	@Configurable(defValue = "80", comment = "Upper threshold for min margin charger")
+	private static double minMarginUpperThreshold = 80;
 
 	private final TargetAngleReachedChecker targetAngleReachedChecker = new TargetAngleReachedChecker(
 			roughAngleTolerance, maxTimeTargetAngleReached);
@@ -97,17 +110,16 @@ public class SingleTouchKickSkill extends ATouchKickSkill
 		getMoveConstraints().setVelMax(chillVel);
 		getMoveCon().setBallObstacle(false);
 		getMoveCon().setGameStateObstacle(false);
-		ballStabilizer.update(getBall(), getTBot());
-		initBallPos = ballStabilizer.getBallPos();
+		initBallPos = getBall().getPos();
 		dist2Ball = minDistBeforeKick;
 
 		minMarginChargeValue = MinMarginChargeValue.aMinMargin()
 				.withDefaultValue(0)
 				.withInitValue(dist2Ball)
-				.withChargeRate(-100)
-				.withLowerThreshold(50)
-				.withUpperThreshold(70)
-				.withLimit(-100)
+				.withChargeRate(minMarginChargeRate)
+				.withLowerThreshold(minMarginLowerThreshold)
+				.withUpperThreshold(minMarginUpperThreshold)
+				.withLimit(maxPushDist)
 				.build();
 	}
 
@@ -115,8 +127,6 @@ public class SingleTouchKickSkill extends ATouchKickSkill
 	@Override
 	public void doUpdate()
 	{
-		ballStabilizer.update(getBall(), getTBot());
-
 		if (getVel().getLength2() <= getMoveConstraints().getVelMax())
 		{
 			getMoveConstraints().setAccMax(chillAcc);
@@ -141,7 +151,7 @@ public class SingleTouchKickSkill extends ATouchKickSkill
 		updateTargetAngle(targetOrientation);
 		super.doUpdate();
 
-		if (readyForKick && isOrientationReached(targetOrientation))
+		if (readyForKick)
 		{
 			double kickSpeed = getKickSpeed();
 			setKickParams(KickParams.of(desiredKickParams.getDevice(), kickSpeed));
@@ -152,14 +162,15 @@ public class SingleTouchKickSkill extends ATouchKickSkill
 
 		getShapes().get(ESkillShapesLayer.KICK_SKILL).add(new DrawablePoint(getBallPos(), Color.green));
 		getShapes().get(ESkillShapesLayer.KICK_SKILL)
-				.add(new DrawableLine(Line.fromPoints(getBall().getPos(), target),
-						getBotId().getTeamColor().getColor()));
+				.add(new DrawableLine(getBall().getPos(), target, getBotId().getTeamColor().getColor()));
 		getShapes().get(ESkillShapesLayer.KICK_SKILL_DEBUG).add(new DrawableLine(
-				Line.fromDirection(dest, Vector2.fromAngle(getOrientationFromFilter()).scaleTo(5000)), Color.BLACK));
+				Lines.segmentFromOffset(dest, Vector2.fromAngle(getOrientationFromFilter()).scaleTo(5000)), Color.BLACK));
 		getShapes().get(ESkillShapesLayer.KICK_SKILL_DEBUG).add(new DrawableLine(
-				Line.fromDirection(dest, Vector2.fromAngle(targetOrientation).scaleTo(5000)), Color.RED));
+				Lines.segmentFromOffset(dest, Vector2.fromAngle(targetOrientation).scaleTo(5000)), Color.RED));
+		getShapes().get(ESkillShapesLayer.KICK_SKILL_DEBUG).add(new DrawableAnnotation(
+				getPos(), "Focussed: " + isReadyAndFocused()).withOffset(Vector2.fromX(200)));
 
-		if (initBallPos.distanceTo(ballStabilizer.getBallPos()) > 500)
+		if (initBallPos.distanceTo(getBall().getPos()) > 500)
 		{
 			setSkillState(ESkillState.FAILURE);
 		} else if (getBall().getVel().getLength2() > maxBallSpeed)
@@ -198,6 +209,8 @@ public class SingleTouchKickSkill extends ATouchKickSkill
 		if (isReadyAndFocused())
 		{
 			double dist = dest.distanceTo(getPos());
+			getShapes().get(ESkillShapesLayer.KICK_SKILL_DEBUG).add(
+					new DrawableAnnotation(getPos(), "dist: " + Math.round(dist)).withOffset(Vector2.fromX(-200)));
 			minMarginChargeValue.updateMinMargin(dist, getWorldFrame().getTimestamp());
 			return minMarginChargeValue.getMinMargin();
 		}

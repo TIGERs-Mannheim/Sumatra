@@ -64,9 +64,9 @@ public class BotSkillGlobalPosition extends AMoveBotSkill
 	{
 		this();
 
-		pos[0] = (int) (xy.x());
-		pos[1] = (int) (xy.y());
-		pos[2] = (int) (orientation * 1000.0);
+		pos[0] = (int) Math.round(xy.x());
+		pos[1] = (int) Math.round(xy.y());
+		pos[2] = (int) Math.round(orientation * 1000.0);
 
 
 		setVelMax(mc.getVelMax());

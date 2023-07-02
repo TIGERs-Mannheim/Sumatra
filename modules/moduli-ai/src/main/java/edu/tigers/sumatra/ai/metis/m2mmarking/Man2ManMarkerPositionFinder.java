@@ -10,9 +10,9 @@ import edu.tigers.sumatra.ai.metis.defense.data.IDefenseThreat;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.AngleMath;
-import edu.tigers.sumatra.math.line.v2.IHalfLine;
-import edu.tigers.sumatra.math.line.v2.ILineSegment;
-import edu.tigers.sumatra.math.line.v2.Lines;
+import edu.tigers.sumatra.math.line.IHalfLine;
+import edu.tigers.sumatra.math.line.ILineSegment;
+import edu.tigers.sumatra.math.line.Lines;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
 
@@ -54,24 +54,24 @@ public class Man2ManMarkerPositionFinder
 	{
 		if (!moveToBallLineFirst || protectionLine.distanceTo(man2ManMarkerBot.getPos()) < minDistToProtectionLine)
 		{
-			return protectionLine.getEnd();
+			return protectionLine.getPathEnd();
 		} else if (man2ManMarkerBot.getVel().getLength2() > 0.5)
 		{
 			final IHalfLine velLine = Lines.halfLineFromDirection(man2ManMarkerBot.getPos(), man2ManMarkerBot.getVel());
 			double velAngle = velLine.directionVector().getAngle();
 			double lineAngle = protectionLine.directionVector().getAngle();
-			double angleDiff = Math.abs(AngleMath.difference(velAngle, lineAngle));
+			double angleDiff = AngleMath.diffAbs(velAngle, lineAngle);
 			if (angleDiff > AngleMath.DEG_045_IN_RAD && angleDiff < AngleMath.DEG_180_IN_RAD - AngleMath.DEG_045_IN_RAD)
 			{
 
-				var candidate = protectionLine.intersectHalfLine(velLine);
+				var candidate = protectionLine.intersect(velLine).asOptional();
 				if (candidate.isPresent())
 				{
 					return candidate.get();
 				}
 			}
 		}
-		return protectionLine.closestPointOnLine(man2ManMarkerBot.getPos());
+		return protectionLine.closestPointOnPath(man2ManMarkerBot.getPos());
 	}
 
 
@@ -80,7 +80,7 @@ public class Man2ManMarkerPositionFinder
 			final IVector2 idealProtectionDest, final double backOffDistance)
 	{
 		return botMap.values().stream()
-				.filter(bot -> bot.getBotId() != man2ManMarkerBot.getBotId())
+				.filter(bot -> !bot.getBotId().equals(man2ManMarkerBot.getBotId()))
 				.filter(b -> b.getPos().distanceTo(idealProtectionDest) < backOffDistance)
 				.findAny();
 	}
@@ -89,9 +89,9 @@ public class Man2ManMarkerPositionFinder
 	private IVector2 makeRoomForAttacker(final ITrackedBot bot, final double backOffDistance,
 			final ILineSegment protectionLine)
 	{
-		final IVector2 projectedBallPosOnProtectionLine = protectionLine.closestPointOnLine(bot.getPos());
+		final IVector2 projectedBallPosOnProtectionLine = protectionLine.closestPointOnPath(bot.getPos());
 		final IVector2 backOffPoint = projectedBallPosOnProtectionLine.addNew(
 				protectionLine.directionVector().scaleToNew(backOffDistance));
-		return protectionLine.closestPointOnLine(backOffPoint);
+		return protectionLine.closestPointOnPath(backOffPoint);
 	}
 }

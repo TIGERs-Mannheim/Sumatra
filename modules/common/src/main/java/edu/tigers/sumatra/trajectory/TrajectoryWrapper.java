@@ -18,6 +18,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class TrajectoryWrapper<R> implements ITrajectory<R>
 {
+	private static final String NOT_IMPLEMENTED = "Not implemented";
 	private final ITrajectory<R> traj;
 	private final double tStart;
 	private final double tEnd;
@@ -83,13 +84,20 @@ public class TrajectoryWrapper<R> implements ITrajectory<R>
 	@Override
 	public PosVelAcc<R> getValuesAtTime(final double tt)
 	{
-		throw new IllegalStateException("Not implemented");
+		throw new IllegalStateException(NOT_IMPLEMENTED);
 	}
 
 
 	@Override
 	public List<Double> getTimeSections()
 	{
-		throw new IllegalStateException("Not implemented");
+		throw new IllegalStateException(NOT_IMPLEMENTED);
+	}
+
+
+	@Override
+	public double getMaxSpeed()
+	{
+		return traj.getMaxSpeed();
 	}
 }

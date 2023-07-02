@@ -71,12 +71,6 @@ public interface IStateMachine<T extends IState>
 
 
 	/**
-	 * @param extendedLogging if true, log a bit more, like events and state changes.
-	 */
-	void setExtendedLogging(boolean extendedLogging);
-
-
-	/**
 	 * Set a name to be used in logging.
 	 *
 	 * @param name
@@ -88,4 +82,10 @@ public interface IStateMachine<T extends IState>
 	 * @return statemachine graph
 	 */
 	Map<IEvent, Map<IState, T>> getTransitions();
+
+	/**
+	 *
+	 * @param enabled
+	 */
+	void setEnableTransitions(boolean enabled);
 }

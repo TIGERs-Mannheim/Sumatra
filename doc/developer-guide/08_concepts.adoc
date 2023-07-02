@@ -22,10 +22,11 @@ You can define different values for each AI color in Metis, without any further 
 
 Simply define spezies with the team colors and an empty spezi as default (for real matches):
 
-```java
+[source,java]
+----
 @Configurable(spezis = { "", "YELLOW", "BLUE" }, defValueSpezis = { "true", "false", "true" })
 private boolean useManToManMarker = true;
-```
+----
 
 Why only in Metis?
 Because here we have a single instance for each calculator per AI that is not instantiated more than once.

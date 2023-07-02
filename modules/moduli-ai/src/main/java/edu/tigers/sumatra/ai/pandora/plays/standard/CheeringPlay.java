@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.ai.pandora.plays.standard;
 
@@ -47,10 +47,8 @@ public class CheeringPlay extends APlay
 	{
 		for (var role : findRoles(MoveRole.class))
 		{
-			role.getMoveCon().setBotsObstacle(true);
+			role.getMoveCon().physicalObstaclesOnly();
 			role.getMoveCon().setBallObstacle(false);
-			role.getMoveCon().setPenaltyAreaOurObstacle(false);
-			role.getMoveCon().setPenaltyAreaTheirObstacle(false);
 			setSong(role.getBotID(), ESong.NONE);
 		}
 	}

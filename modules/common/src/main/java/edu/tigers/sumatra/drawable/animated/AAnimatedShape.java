@@ -145,7 +145,7 @@ public class AAnimatedShape implements IDrawableShape
 	/**
 	 * @return the strokeWidth
 	 */
-	public float getStrokeWidth()
+	public double getStrokeWidth()
 	{
 		return strokeWidth;
 	}

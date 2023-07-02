@@ -9,6 +9,7 @@ import edu.tigers.sumatra.ai.metis.ACalculator;
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
 import edu.tigers.sumatra.ai.metis.botdistance.BotDistance;
 import edu.tigers.sumatra.ai.metis.defense.data.DefenseBallThreat;
+import edu.tigers.sumatra.ai.metis.defense.data.DefensePassDisruptionAssignment;
 import edu.tigers.sumatra.ai.pandora.plays.EPlay;
 import edu.tigers.sumatra.drawable.DrawableAnnotation;
 import edu.tigers.sumatra.drawable.DrawableArc;
@@ -22,7 +23,6 @@ import edu.tigers.sumatra.math.Hysteresis;
 import edu.tigers.sumatra.math.circle.Arc;
 import edu.tigers.sumatra.math.circle.Circle;
 import edu.tigers.sumatra.math.circle.IArc;
-import edu.tigers.sumatra.math.line.v2.Lines;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
@@ -36,7 +36,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 
 /**
@@ -61,6 +60,10 @@ public class CrucialDefenderCalc extends ACalculator
 
 	@Configurable(comment = "If the BallReceiver threat rating is higher than this, activate crucial defender", defValue = "0.5")
 	private static double opponentBallReceiverDangerousRating = 0.5;
+	@Configurable(comment = "If the BallReceiver threat rating is higher than this and it is close to our PenArea, activate crucial defender", defValue = "0.3")
+	private static double opponentBallReceiverDangerousRatingWhenClose = 0.25;
+	@Configurable(comment = "[mm] Distance to our PenArea to switch between normal and close rating to determine if rating is high", defValue = "500.0")
+	private static double opponentBallReceiverDangerousDistance = 500.0;
 
 	private final DesiredDefendersCalcUtil util = new DesiredDefendersCalcUtil();
 	private final Hysteresis minDistanceToGoalHysteresis = new Hysteresis(minDistanceToGoalCenterLower,
@@ -73,6 +76,8 @@ public class CrucialDefenderCalc extends ACalculator
 	private final Supplier<Set<BotID>> crucialOffenders;
 	private final Supplier<BotDistance> tigerClosestToBall;
 	private final Supplier<BotDistance> opponentClosestToBall;
+
+	private final Supplier<DefensePassDisruptionAssignment> passDisruptionAssignment;
 
 	private boolean opponentCloseToBall = false;
 	@Getter
@@ -103,7 +108,7 @@ public class CrucialDefenderCalc extends ACalculator
 		var cause = getCrucialDefenderCause();
 		if (cause != ECrucialDefenderCause.NONE)
 		{
-			getShapes(EAiShapesLayer.DEFENSE_CRUCIAL_DEFENDERS)
+			getShapes(EAiShapesLayer.CRUCIAL_DEFENDERS)
 					.add(new DrawableAnnotation(getBall().getPos().addNew(Vector2.fromY(300)),
 							String.format("Crucial Defender cause:%n%s", cause.getCause())));
 			List<BotID> defenderCandidates = crucialDefenderCandidates();
@@ -189,12 +194,32 @@ public class CrucialDefenderCalc extends ACalculator
 		{
 			var rater = new DefenseThreatRater();
 			var rating = rater.getThreatRating(getBall().getPos(), opponentReceiver.get().getPos());
-			getShapes(EAiShapesLayer.DEFENSE_BALL_THREAT)
+			getShapes(EAiShapesLayer.CRUCIAL_DEFENDERS)
 					.add(new DrawableAnnotation(opponentReceiver.get().getPos(),
 							String.format("-> Ball <-%nRating: %.2f", rating), Vector2.fromY(200)));
-			return rating > opponentBallReceiverDangerousRating;
+			return rating > opponentReceiverMinThreatRating(opponentReceiver.get().getPos());
 		}
 		return false;
+	}
+
+
+	private double opponentReceiverMinThreatRating(IVector2 receiverPos)
+	{
+		var distance = Geometry.getPenaltyAreaOur().withMargin(opponentBallReceiverDangerousDistance)
+				.distanceTo(receiverPos);
+		if (distance <= 0)
+		{
+			return opponentBallReceiverDangerousRatingWhenClose;
+		} else if (distance >= opponentBallReceiverDangerousDistance)
+		{
+			return opponentBallReceiverDangerousRating;
+		} else
+		{
+			var ratingDiff = opponentBallReceiverDangerousRatingWhenClose - opponentBallReceiverDangerousRating;
+			var factor = 1 - (distance / opponentBallReceiverDangerousDistance);
+			return opponentBallReceiverDangerousRating + factor * ratingDiff;
+
+		}
 	}
 
 
@@ -204,15 +229,14 @@ public class CrucialDefenderCalc extends ACalculator
 				Circle.createCircle(nearestOpponentBot.getPos(), Geometry.getBotRadius() + 10),
 				new Color(255, 60, 60, 200));
 		dangerousBotShape.setFill(true);
-		getShapes(EAiShapesLayer.DEFENSE_CRUCIAL_DEFENDERS).add(dangerousBotShape);
+		getShapes(EAiShapesLayer.CRUCIAL_DEFENDERS).add(dangerousBotShape);
 
 		IVector2 leftPoint = Vector2.fromXY(nearestOpponentBot.getPos().x() - opponentToBotDistance,
 				-Geometry.getFieldWidth() / 2);
 		IVector2 rightPoint = Vector2.fromXY(nearestOpponentBot.getPos().x() - opponentToBotDistance,
 				Geometry.getFieldWidth() / 2);
-		final DrawableLine line = new DrawableLine(Lines.segmentFromPoints(leftPoint, rightPoint),
-				new Color(255, 60, 60, 255));
-		getShapes(EAiShapesLayer.DEFENSE_CRUCIAL_DEFENDERS).add(line);
+		final DrawableLine line = new DrawableLine(leftPoint, rightPoint, new Color(255, 60, 60, 255));
+		getShapes(EAiShapesLayer.CRUCIAL_DEFENDERS).add(line);
 	}
 
 
@@ -224,7 +248,7 @@ public class CrucialDefenderCalc extends ACalculator
 				AngleMath.DEG_180_IN_RAD);
 		final DrawableArc drawableArc = new DrawableArc(arc, new Color(255, 0, 0, 80));
 		drawableArc.setFill(true);
-		getShapes(EAiShapesLayer.DEFENSE_CRUCIAL_DEFENDERS).add(drawableArc);
+		getShapes(EAiShapesLayer.CRUCIAL_DEFENDERS).add(drawableArc);
 	}
 
 
@@ -234,7 +258,14 @@ public class CrucialDefenderCalc extends ACalculator
 				.filter(bot -> !getAiFrame().getKeeperId().equals(bot))
 				.filter(bot -> !crucialOffenders.get().contains(bot))
 				.filter(bot -> !botsToInterchange.get().contains(bot))
-				.collect(Collectors.toList());
+				.filter(bot -> !isPassDisruptor(bot))
+				.toList();
+	}
+
+
+	private boolean isPassDisruptor(BotID botID)
+	{
+		return passDisruptionAssignment.get() != null && passDisruptionAssignment.get().getDefenderId().equals(botID);
 	}
 
 
@@ -259,7 +290,7 @@ public class CrucialDefenderCalc extends ACalculator
 		for (BotID id : desiredDefenders)
 		{
 			ITrackedBot bot = getWFrame().getBot(id);
-			getShapes(EAiShapesLayer.DEFENSE_CRUCIAL_DEFENDERS).add(
+			getShapes(EAiShapesLayer.CRUCIAL_DEFENDERS).add(
 					AnimatedCircle.aFilledCircleWithShrinkingSize(bot.getPos(), 100, 150, 1.0f, new Color(125, 255, 50),
 							new Color(125, 255, 50, 100)));
 		}

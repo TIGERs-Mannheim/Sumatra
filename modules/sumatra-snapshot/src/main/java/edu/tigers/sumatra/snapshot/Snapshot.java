@@ -16,7 +16,6 @@ import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -24,6 +23,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.util.Map;
 import java.util.Optional;
 
@@ -40,6 +40,8 @@ public class Snapshot
 	SnapObject ball;
 	SslGcRefereeMessage.Referee.Command command;
 	SslGcRefereeMessage.Referee.Stage stage;
+	@Builder.Default
+	boolean autoContinue = true;
 	IVector2 placementPos;
 	@Singular
 	Map<BotID, IVector3> moveDestinations;
@@ -177,15 +179,12 @@ public class Snapshot
 	 */
 	public void save(final Path target) throws IOException
 	{
-		File file = target.toFile();
-		// noinspection ResultOfMethodCallIgnored
-		file.getParentFile().mkdirs();
-		boolean fileCreated = file.createNewFile();
-		if (!fileCreated)
-		{
-			throw new IOException("Could not create snapshot file: " + file.getAbsolutePath());
-		}
+		Files.createDirectories(target.toAbsolutePath().getParent());
 
-		Files.write(file.toPath(), toJSON().toJSONString().getBytes(StandardCharsets.UTF_8));
+		Files.writeString(
+				target,
+				toJSON().toJSONString(),
+				StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.CREATE
+		);
 	}
 }

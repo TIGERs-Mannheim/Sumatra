@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.wp;
@@ -19,6 +19,7 @@ import org.apache.commons.codec.binary.Base64OutputStream;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.net.ConnectException;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -71,7 +72,7 @@ public class CiGameControllerConnector
 	{
 		log.trace("Connecting");
 
-		for (int i = 0; i < 10; i++)
+		for (int i = 0; i < 50; i++)
 		{
 			// Allow the GC to come up
 			ThreadUtil.parkNanosSafe(TimeUnit.MILLISECONDS.toNanos(200));
@@ -81,6 +82,9 @@ public class CiGameControllerConnector
 				socket.setTcpNoDelay(true);
 				log.debug("Connected");
 				return;
+			} catch (ConnectException e)
+			{
+				log.debug("Still connecting: {}", e.getMessage());
 			} catch (IOException e)
 			{
 				log.debug("Connection to SSL-Game-Controller failed", e);

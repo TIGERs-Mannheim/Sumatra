@@ -17,7 +17,6 @@ import edu.tigers.sumatra.drawable.DrawableAnnotation;
 import edu.tigers.sumatra.drawable.DrawableArc;
 import edu.tigers.sumatra.drawable.DrawableBot;
 import edu.tigers.sumatra.drawable.DrawableCircle;
-import edu.tigers.sumatra.drawable.DrawableEllipse;
 import edu.tigers.sumatra.drawable.DrawableLine;
 import edu.tigers.sumatra.drawable.DrawablePoint;
 import edu.tigers.sumatra.drawable.DrawableRectangle;
@@ -26,8 +25,7 @@ import edu.tigers.sumatra.ids.EAiTeam;
 import edu.tigers.sumatra.ids.ETeamColor;
 import edu.tigers.sumatra.math.circle.Arc;
 import edu.tigers.sumatra.math.circle.Circle;
-import edu.tigers.sumatra.math.ellipse.Ellipse;
-import edu.tigers.sumatra.math.line.Line;
+import edu.tigers.sumatra.math.line.Lines;
 import edu.tigers.sumatra.math.rectangle.Rectangle;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.math.vector.Vector2f;
@@ -76,11 +74,8 @@ public class FrameFactory
 		aFrame.getShapeMap().get(EAiShapesLayer.AI_ROLE_COLOR)
 				.add(new DrawableCircle(Circle.createCircle(Vector2.fromXY(rndInField(), rndInField()), rndPositive())));
 		aFrame.getShapeMap().get(EAiShapesLayer.AI_ROLE_COLOR)
-				.add(new DrawableEllipse(Ellipse.createEllipse(Vector2.fromXY(rndInField(), rndInField()), rndPositive(),
-						rndPositive())));
-		aFrame.getShapeMap().get(EAiShapesLayer.AI_ROLE_COLOR)
 				.add(new DrawableLine(
-						Line.fromDirection(Vector2.fromXY(rndInField(), rndInField()), Vector2.fromXY(rndInField(),
+						Lines.segmentFromOffset(Vector2.fromXY(rndInField(), rndInField()), Vector2.fromXY(rndInField(),
 								rndInField()))));
 		aFrame.getShapeMap().get(EAiShapesLayer.AI_ROLE_COLOR)
 				.add(new DrawablePoint(Vector2.fromXY(rndInField(), rndInField())));

@@ -11,8 +11,16 @@
     </globalConfiguration>
 
     <module id="edu.tigers.sumatra.cam.ACam">
-        <implementation>edu.tigers.sumatra.cam.LogfileAnalyzerVisionCam</implementation>
+        <implementation>edu.tigers.sumatra.cam.GameLogCam</implementation>
+
+        <dependency>edu.tigers.sumatra.gamelog.GameLogPlayer</dependency>
     </module>
+
+
+    <module id="edu.tigers.sumatra.gamelog.GameLogPlayer"/>
+
+
+    <module id="edu.tigers.sumatra.gamelog.GameLogRecorder"/>
 
 
     <module id="edu.tigers.sumatra.geometry.GeometryUpdater">
@@ -37,6 +45,7 @@
 
         <dependency>edu.tigers.sumatra.referee.AReferee</dependency>
         <dependency>edu.tigers.sumatra.vision.AVisionFilter</dependency>
+        <dependency>edu.tigers.sumatra.cam.ACam</dependency>
         <dependency>edu.tigers.sumatra.persistence.RecordManager</dependency>
     </module>
 
@@ -59,6 +68,8 @@
 
     <module id="edu.tigers.sumatra.persistence.RecordManager">
         <implementation>edu.tigers.autoreferee.AutoRefRecordManager</implementation>
+
+        <dependency>edu.tigers.sumatra.gamelog.GameLogRecorder</dependency>
     </module>
 
 </centralSoftware>

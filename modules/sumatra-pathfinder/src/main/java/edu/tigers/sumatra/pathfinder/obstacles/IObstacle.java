@@ -1,12 +1,15 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.pathfinder.obstacles;
 
 import edu.tigers.sumatra.drawable.IDrawableShape;
 import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.pathfinder.obstacles.input.CollisionInput;
 
+import java.awt.Color;
 import java.util.List;
+import java.util.Optional;
 
 
 /**
@@ -15,62 +18,75 @@ import java.util.List;
 public interface IObstacle
 {
 	/**
-	 * Check if the given point is colliding with this obstacle at the given time.
+	 * Calculate the squared distance to the obstacle.
 	 *
-	 * @param point  the point to check
-	 * @param t      the time in future
-	 * @param margin an extra margin to apply around this obstacle
-	 * @return true, if a collision was detected
+	 * @param input collision input with some information about the current robot
+	 * @return squared distance
 	 */
-	boolean isPointCollidingWithObstacle(final IVector2 point, final double t, final double margin);
+	double distanceTo(CollisionInput input);
 
 
 	/**
-	 * @return true, if this is a critical obstacle that we really do not want to enter
-	 */
-	default boolean isEmergencyBrakeFor()
-	{
-		return false;
-	}
-
-	/**
-	 * @return true, if this is an obstacle that we want to brake for if already inside
-	 */
-	default boolean isBrakeInside()
-	{
-		return false;
-	}
-
-
-	/**
-	 * @return true, if the bot should evade this obstacle actively, i.e. even if standing on the destination already
-	 */
-	default boolean isActivelyEvade()
-	{
-		return false;
-	}
-
-
-	/**
-	 * Calculate a collision penalty for this specific obstacle for the line between from and to.
+	 * Check if the robot can collide at this input.
 	 *
-	 * @param from starting point
-	 * @param to   end point
-	 * @return a penalty score (higher is worse)
+	 * @param input collision input with some information about the current robot
+	 * @return
 	 */
-	default double collisionPenalty(final IVector2 from, final IVector2 to)
+	default boolean canCollide(CollisionInput input)
 	{
-		return 0;
+		return true;
 	}
 
 
+	/**
+	 * @return true, if the obstacle is static (can not move)
+	 */
+	default boolean isMotionLess()
+	{
+		return true;
+	}
+
+	/**
+	 * @return true, if the obstacle can move
+	 */
+	default boolean canMove()
+	{
+		return !isMotionLess();
+	}
+
+	/**
+	 * @return list of shapes to visualize obstacle
+	 */
 	List<IDrawableShape> getShapes();
 
 	/**
-	 * @return the priority of the obstacle (higher will be considered before smaller)
+	 * @return the max speed of this obstacle that it could currently reach
 	 */
-	default int getPriority()
+	default double getMaxSpeed()
 	{
 		return 0;
+	}
+
+	/**
+	 * Allow the obstacle to adapt the destination.
+	 * This is for example intended for the penArea to avoid letting the robot drive through it, once it is inside.
+	 *
+	 * @param robotPos
+	 * @param destination
+	 * @return
+	 */
+	default Optional<IVector2> adaptDestination(IVector2 robotPos, IVector2 destination)
+	{
+		return Optional.empty();
+	}
+
+	default void setColor(Color color)
+	{
+		// noop
+	}
+
+	default String getIdentifier()
+	{
+		return this.getClass().getSimpleName();
 	}
 }

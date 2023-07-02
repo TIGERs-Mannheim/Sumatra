@@ -1,14 +1,19 @@
 /*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.integration.jmh;
 
 import edu.tigers.autoreferee.engine.EAutoRefMode;
 import edu.tigers.autoreferee.module.AutoRefModule;
-import edu.tigers.sumatra.ai.integration.AiSimTimeBlocker;
-import edu.tigers.sumatra.ai.integration.BotsNotMovingStopCondition;
+import edu.tigers.sumatra.ai.AAgent;
+import edu.tigers.sumatra.ai.athena.EAIControlState;
+import edu.tigers.sumatra.ai.integration.blocker.WpSimTimeBlocker;
+import edu.tigers.sumatra.ai.integration.stopcondition.BotsReachedDestStopCondition;
+import edu.tigers.sumatra.ids.EAiTeam;
 import edu.tigers.sumatra.model.SumatraModel;
+import edu.tigers.sumatra.referee.proto.SslGcRefereeMessage;
+import edu.tigers.sumatra.snapshot.Snapshot;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Mode;
@@ -35,11 +40,12 @@ public class PathPlanningPerfTest extends AFullSimPerfTest
 	public void run()
 	{
 		SumatraModel.getInstance().getModule(AutoRefModule.class).changeMode(EAutoRefMode.OFF);
-		loadSimulation("snapshots/maintenance.snap");
-		new AiSimTimeBlocker(1)
-				.await();
-		new AiSimTimeBlocker(30)
-				.addStopCondition(new BotsNotMovingStopCondition(0.1))
+		SumatraModel.getInstance().getModule(AAgent.class).changeMode(EAiTeam.YELLOW, EAIControlState.OFF);
+		SumatraModel.getInstance().getModule(AAgent.class).changeMode(EAiTeam.BLUE, EAIControlState.OFF);
+		Snapshot snapshot = initSimulation("snapshots/pathplanning/fromSideToCenterCrossed.json");
+		sendRefereeCommand(SslGcRefereeMessage.Referee.Command.HALT);
+		new WpSimTimeBlocker(30)
+				.addStopCondition(new BotsReachedDestStopCondition(snapshot))
 				.await();
 	}
 
@@ -49,9 +55,12 @@ public class PathPlanningPerfTest extends AFullSimPerfTest
 		if (args.length > 0)
 		{
 			PathPlanningPerfTest test = new PathPlanningPerfTest();
-			test.before();
-			test.run();
-			test.after();
+			for (int i = 0; i < Integer.parseInt(args[0]); i++)
+			{
+				test.before();
+				test.run();
+				test.after();
+			}
 		} else
 		{
 			Options opt = new OptionsBuilder()

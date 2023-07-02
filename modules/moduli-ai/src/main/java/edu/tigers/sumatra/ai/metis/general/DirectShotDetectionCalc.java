@@ -11,8 +11,8 @@ import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.geometry.Goal;
 import edu.tigers.sumatra.ids.ETeam;
 import edu.tigers.sumatra.ids.ETeamColor;
-import edu.tigers.sumatra.math.line.v2.ILineSegment;
-import edu.tigers.sumatra.math.line.v2.Lines;
+import edu.tigers.sumatra.math.line.ILineSegment;
+import edu.tigers.sumatra.math.line.Lines;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.vision.data.IKickEvent;
 import lombok.Getter;
@@ -71,12 +71,12 @@ public class DirectShotDetectionCalc extends ACalculator
 			ILineSegment ballLine = Lines.segmentFromOffset(getBall().getPos(),
 					getBall().getVel().scaleToNew(Geometry.getFieldLength()));
 			ILineSegment goalLine = attackedGoal.getLineSegment();
-			Optional<IVector2> intersection = ballLine.intersectSegment(goalLine);
+			Optional<IVector2> intersection = ballLine.intersect(goalLine).asOptional();
 			if (intersection.isPresent())
 			{
 				Color color = attackingTeam == ETeam.TIGERS ? Color.GREEN : Color.RED;
 				getShapes(EAiShapesLayer.AI_DIRECT_SHOT_DETECTION).add(
-						new DrawableLine(Lines.segmentFromPoints(getBall().getPos(), intersection.get()), color));
+						new DrawableLine(getBall().getPos(), intersection.get(), color));
 				return kickEvent.get();
 			}
 		}

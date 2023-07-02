@@ -83,4 +83,11 @@ public class TrajectoryXyw implements ITrajectory<IVector3>
 		list.addAll(trajW.getTimeSections());
 		return list;
 	}
+
+
+	@Override
+	public double getMaxSpeed()
+	{
+		return trajXy.getMaxSpeed();
+	}
 }

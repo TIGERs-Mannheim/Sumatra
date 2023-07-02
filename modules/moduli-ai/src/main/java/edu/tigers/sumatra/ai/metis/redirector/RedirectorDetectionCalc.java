@@ -5,8 +5,8 @@ package edu.tigers.sumatra.ai.metis.redirector;
 
 import edu.tigers.sumatra.ai.metis.ACalculator;
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
+import edu.tigers.sumatra.ai.pandora.roles.ARole;
 import edu.tigers.sumatra.ai.pandora.roles.ERole;
-import edu.tigers.sumatra.ai.pandora.roles.offense.AttackerRole;
 import edu.tigers.sumatra.drawable.DrawableAnnotation;
 import edu.tigers.sumatra.drawable.DrawableCircle;
 import edu.tigers.sumatra.geometry.Geometry;
@@ -237,10 +237,9 @@ public class RedirectorDetectionCalc extends ACalculator
 	{
 		// detect friendly pass receiver
 		Optional<BotID> attacker = getAiFrame().getPrevFrame().getTacticalField().getOffensiveStrategy().getAttackerBot();
-		Optional<AttackerRole> attackerRole = getAiFrame().getPrevFrame().getPlayStrategy()
-				.getActiveRoles(ERole.ATTACKER)
+		Optional<ARole> attackerRole = getAiFrame().getPrevFrame().getPlayStrategy()
+				.getActiveRoles(ERole.ATTACKER, ERole.DISRUPT_OPPONENT)
 				.stream()
-				.map(AttackerRole.class::cast)
 				.findAny();
 
 		if (attackerRole.isPresent() && attacker.isPresent() && attacker.get().equals(attackerRole.get().getBotID()))
@@ -280,9 +279,9 @@ public class RedirectorDetectionCalc extends ACalculator
 			IVector2 helper = getBall().getTrajectory().closestPointTo(velOffset);
 			double relativeBotSpeed = helper.distanceTo(velOffset) / 1000.0;
 
-			if (opponentPos.distanceTo(opponentReceivePos) < Geometry.getBotRadius() * 2.0
+			if (opponentPos.distanceTo(opponentReceivePos) < Geometry.getBotRadius()
 					&& relativeBotSpeed < 0.5 && opponentPos.distanceTo(getBall().getPos()) > 600
-					&& getBall().getHeight() < 10)
+					&& getBall().getHeight() < 50)
 			{
 				redirectorDetectionInformation.setOpponentReceiverPos(opponentReceivePos);
 				redirectorDetectionInformation.setOpponentReceiving(true);

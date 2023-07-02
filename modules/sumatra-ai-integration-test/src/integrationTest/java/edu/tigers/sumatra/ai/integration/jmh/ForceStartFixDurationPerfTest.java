@@ -1,10 +1,10 @@
 /*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.integration.jmh;
 
-import edu.tigers.sumatra.ai.integration.AiSimTimeBlocker;
+import edu.tigers.sumatra.ai.integration.blocker.AiSimTimeBlocker;
 import edu.tigers.sumatra.referee.proto.SslGcRefereeMessage;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
@@ -31,7 +31,7 @@ public class ForceStartFixDurationPerfTest extends AFullSimPerfTest
 	@OutputTimeUnit(TimeUnit.MILLISECONDS)
 	public void run()
 	{
-		loadSimulation("snapshots/stoppedGame11vs11.json");
+		initSimulation("snapshots/stoppedGame11vs11.json");
 		sendRefereeCommand(SslGcRefereeMessage.Referee.Command.FORCE_START);
 		new AiSimTimeBlocker(1).await();
 	}

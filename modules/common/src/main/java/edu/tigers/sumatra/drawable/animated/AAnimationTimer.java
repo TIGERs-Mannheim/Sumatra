@@ -12,8 +12,8 @@ import com.sleepycat.persist.model.Persistent;
 @Persistent
 public abstract class AAnimationTimer implements IAnimationTimer
 {
-	private final float period;
-	private final float offset;
+	private final double period;
+	private final double offset;
 	
 	
 	@SuppressWarnings("unused")
@@ -27,7 +27,7 @@ public abstract class AAnimationTimer implements IAnimationTimer
 	/**
 	 * @param period Time for a full period in [s]
 	 */
-	protected AAnimationTimer(final float period)
+	protected AAnimationTimer(final double period)
 	{
 		this.period = period;
 		offset = 0;
@@ -38,18 +38,18 @@ public abstract class AAnimationTimer implements IAnimationTimer
 	 * @param period Time for a full period in [s]
 	 * @param offset Offset for the timer in [s]. Can be used to de-synchronize multiple timers.
 	 */
-	protected AAnimationTimer(final float period, final float offset)
+	protected AAnimationTimer(final double period, final double offset)
 	{
 		this.period = period;
 		this.offset = offset;
 	}
 	
 	
-	protected float getRelativeTimerValue()
+	protected double getRelativeTimerValue()
 	{
 		long iPeriod = (long) (period * 1e9f);
 		long iOffset = (long) (offset * 1e9f);
 		
-		return ((System.nanoTime() + iOffset) % iPeriod) / ((float) iPeriod);
+		return ((System.nanoTime() + iOffset) % iPeriod) / ((double) iPeriod);
 	}
 }

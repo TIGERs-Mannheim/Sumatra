@@ -12,8 +12,13 @@
 
 
     <module id="edu.tigers.sumatra.cam.ACam">
-        <implementation>edu.tigers.sumatra.cam.LogfileVisionCam</implementation>
+        <implementation>edu.tigers.sumatra.cam.GameLogCam</implementation>
+
+        <dependency>edu.tigers.sumatra.gamelog.GameLogPlayer</dependency>
     </module>
+
+
+    <module id="edu.tigers.sumatra.gamelog.GameLogPlayer"/>
 
 
     <module id="edu.tigers.sumatra.geometry.GeometryUpdater">
@@ -64,6 +69,19 @@
     </module>
 
 
+    <module id="edu.tigers.sumatra.botmanager.ABotManager">
+        <implementation>edu.tigers.sumatra.botmanager.GameLogBotManager</implementation>
+
+        <properties>
+            <basestation-impl>edu.tigers.sumatra.botmanager.basestation.DummyBaseStation</basestation-impl>
+        </properties>
+
+        <dependency>edu.tigers.sumatra.botparams.BotParamsManager</dependency>
+        <dependency>edu.tigers.sumatra.vision.AVisionFilter</dependency>
+        <dependency>edu.tigers.sumatra.gamelog.GameLogPlayer</dependency>
+    </module>
+
+
     <module id="edu.tigers.sumatra.ai.AAgent">
         <implementation>edu.tigers.sumatra.ai.Agent</implementation>
 
@@ -83,7 +101,15 @@
 
     <module id="edu.tigers.sumatra.persistence.RecordManager">
         <implementation>edu.tigers.sumatra.ai.AiRecordManager</implementation>
+
+        <dependency>edu.tigers.sumatra.gamelog.GameLogRecorder</dependency>
     </module>
 
+
+    <module id="edu.tigers.sumatra.gamelog.GameLogRecorder"/>
+
+
     <module id="edu.tigers.sumatra.loganalysis.LogAnalysis" />
+
+    <module id="edu.tigers.sumatra.botparams.BotParamsManager"/>
 </centralSoftware>

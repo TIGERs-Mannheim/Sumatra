@@ -283,7 +283,7 @@ public class TeamClientTask implements Runnable, GameControllerProtocol.IConnect
 				.values().stream()
 				.min(Comparator.comparingDouble(i -> i.getPos().distanceToSqr(Geometry.getGoalOur().getCenter())));
 
-		if (closestBot.isPresent() && closestBot.get().getBotId() != lastRequestedKeeperId)
+		if (closestBot.isPresent() && !closestBot.get().getBotId().equals(lastRequestedKeeperId))
 		{
 			return Optional.of(closestBot.get().getBotId());
 		}

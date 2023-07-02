@@ -8,6 +8,7 @@ import com.github.g3force.configurable.Configurable;
 import edu.tigers.sumatra.ai.metis.ACalculator;
 import edu.tigers.sumatra.ai.metis.ballresponsibility.EBallResponsibility;
 import edu.tigers.sumatra.ai.metis.defense.data.DefenseBotThreatDefData;
+import edu.tigers.sumatra.ai.metis.defense.data.DefensePassDisruptionAssignment;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.SumatraMath;
@@ -30,8 +31,8 @@ import java.util.function.Supplier;
 @RequiredArgsConstructor
 public class NumDefenderCalc extends ACalculator
 {
-	@Configurable(comment = "Minimum number of defenders to keep at all times", defValue = "1")
-	private static int minDefendersAtAllTimes = 1;
+	@Configurable(comment = "Minimum number of defenders to keep at all times", defValue = "2")
+	private static int minDefendersAtAllTimes = 2;
 
 	@Configurable(comment = "Minimum number of free bots available if ball responsibility is offense", defValue = "2")
 	private static int minFreeBotsAtBallResponsibilityOffense = 2;
@@ -43,6 +44,8 @@ public class NumDefenderCalc extends ACalculator
 	private final Supplier<Integer> numDefenderForBall;
 	private final Supplier<List<BotID>> botsToInterchange;
 	private final Supplier<List<DefenseBotThreatDefData>> defenseBotThreats;
+
+	private final Supplier<DefensePassDisruptionAssignment> passDisruptionAssignment;
 
 	@Getter
 	private int availableAttackers;
@@ -91,7 +94,7 @@ public class NumDefenderCalc extends ACalculator
 		if (getAiFrame().getGameState().isStoppedGame()
 				|| getAiFrame().getGameState().isStandardSituationForThem())
 		{
-			return nAvailableBots;
+			return nDefenderStandardThem(nAvailableBots);
 		}
 		return nDefenderRunning();
 	}
@@ -120,6 +123,17 @@ public class NumDefenderCalc extends ACalculator
 	}
 
 
+	private int nDefenderStandardThem(int nAvailableBots)
+	{
+		var pos = getAiFrame().getGameState().getBallPlacementPositionForUs();
+		if (pos != null && pos.x() > 0)
+		{
+			return nDefenderRunning();
+		}
+		return nAvailableBots;
+	}
+
+
 	private int nDefenderRunning()
 	{
 		if (isBallSafeAtOurKeeper())
@@ -128,15 +142,15 @@ public class NumDefenderCalc extends ACalculator
 		}
 
 		int nThreats = defenseBotThreats.get().size();
-		return ((int) Math.ceil(nThreats / threatsToNumDefenderDivider)
-				+ numDefenderForBall.get());
+		int nDisrupt = passDisruptionAssignment.get() != null ? 1 : 0;
+		return ((int) Math.ceil(nThreats / threatsToNumDefenderDivider) + numDefenderForBall.get()) + nDisrupt;
 	}
 
 
 	private boolean isBallSafeAtOurKeeper()
 	{
 		IVector2 ballStopPos = getBall().getTrajectory().getPosByVel(0.0).getXYVector();
-		return Geometry.getPenaltyAreaOur().isPointInShape(getBall().getPos(), -Geometry.getBotRadius())
-				&& Geometry.getPenaltyAreaOur().isPointInShape(ballStopPos, -Geometry.getBotRadius());
+		var penAreaWithMargin = Geometry.getPenaltyAreaOur().withMargin(-Geometry.getBotRadius());
+		return penAreaWithMargin.isPointInShape(getBall().getPos()) && penAreaWithMargin.isPointInShape(ballStopPos);
 	}
 }

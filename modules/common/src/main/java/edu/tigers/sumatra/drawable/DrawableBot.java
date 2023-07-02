@@ -4,16 +4,15 @@
 
 package edu.tigers.sumatra.drawable;
 
-import java.awt.Color;
-import java.awt.Graphics2D;
-
 import com.sleepycat.persist.model.Persistent;
-
 import edu.tigers.sumatra.math.circle.Circle;
-import edu.tigers.sumatra.math.line.Line;
+import edu.tigers.sumatra.math.line.Lines;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.math.vector.Vector2f;
+
+import java.awt.Color;
+import java.awt.Graphics2D;
 
 
 /**
@@ -45,7 +44,7 @@ public class DrawableBot implements IDrawableShape
 	{
 		circle = new DrawableCircle(Circle.createCircle(pos, radius), color);
 		line = new DrawableLine(
-				Line.fromDirection(pos, Vector2.fromAngle(orientation).scaleTo(center2DribbleDist)),
+				Lines.segmentFromOffset(pos, Vector2.fromAngle(orientation).scaleTo(center2DribbleDist)),
 				color);
 	}
 

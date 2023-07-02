@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.loganalysis;
@@ -71,9 +71,12 @@ public class LogEventProtobufMapper
         passingLabelBuilder.setSuccessful(passing.isSuccessful());
         passingLabelBuilder.setPasserId(passing.getPasserBot().getBotId().getNumber());
         passingLabelBuilder.setPasserTeam(mapTeamColor(passing.getPasserBot().getTeamColor()));
+        passingLabelBuilder.setStartTimestamp(passing.getStartTimestamp());
+        passingLabelBuilder.setEndTimestamp(passing.getEndTimestamp());
 
         Optional<ITrackedBot> receiverBot = passing.getReceiverBot();
-        if(receiverBot.isPresent()) {
+        if (receiverBot.isPresent())
+        {
             passingLabelBuilder.setReceiverId(receiverBot.get().getBotId().getNumber());
         }
 

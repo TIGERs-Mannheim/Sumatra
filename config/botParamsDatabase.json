@@ -142,8 +142,8 @@
         "velMaxW":20.0,
         "accMaxW":50.0,
         "jerkMaxW":1000.0,
-        "velMaxFast":4.5,
-        "accMaxFast":3.0
+        "velMaxFast":4.0,
+        "accMaxFast":3.5
       },
       "dimensions":{
         "center2DribblerDist":71.5,
@@ -152,29 +152,29 @@
       },
       "kickerSpecs":{
         "chipAngle":45.0,
-        "maxAbsoluteChipVelocity":8.0,
-        "maxAbsoluteStraightVelocity":8.0
+        "maxAbsoluteChipVelocity":6.0,
+        "maxAbsoluteStraightVelocity":7.0
       },
       "dribblerSpecs":{
         "maxBallAcceleration":5.0,
         "maxRetainingBallAngle":0.75,
         "defaultSpeed":15000.0,
-        "defaultMaxCurrent":3.0,
-        "highPowerSpeed":22000.0,
-        "highPowerMaxCurrent":5.0
+        "defaultMaxCurrent":2.0,
+        "highPowerSpeed":5000.0,
+        "highPowerMaxCurrent":2.0
       }
     },
     "Simulation":{
       "movementLimits":{
-        "velMax":3.5,
-        "accMax":4.4,
-        "brkMax":5.9,
+        "velMax":3.0,
+        "accMax":3.0,
+        "brkMax":6.0,
         "jerkMax":20.0,
-        "velMaxW":25.0,
-        "accMaxW":40.0,
+        "velMaxW":20.0,
+        "accMaxW":50.0,
         "jerkMaxW":1000.0,
-        "velMaxFast":3.5,
-        "accMaxFast":4.4
+        "velMaxFast":4.0,
+        "accMaxFast":3.5
       },
       "dimensions":{
         "center2DribblerDist":71.5,
@@ -183,16 +183,16 @@
       },
       "kickerSpecs":{
         "chipAngle":45.0,
-        "maxAbsoluteChipVelocity":8.0,
-        "maxAbsoluteStraightVelocity":8.0
+        "maxAbsoluteChipVelocity":6.0,
+        "maxAbsoluteStraightVelocity":7.0
       },
       "dribblerSpecs":{
         "maxBallAcceleration":5.0,
         "maxRetainingBallAngle":0.75,
         "defaultSpeed":15000.0,
-        "defaultMaxCurrent":3.0,
-        "highPowerSpeed":22000.0,
-        "highPowerMaxCurrent":5.0
+        "defaultMaxCurrent":2.0,
+        "highPowerSpeed":5000.0,
+        "highPowerMaxCurrent":2.0
       }
     },
     "ER-Force":{

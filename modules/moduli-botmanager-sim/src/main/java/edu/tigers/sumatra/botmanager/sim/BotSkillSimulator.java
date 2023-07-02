@@ -3,12 +3,6 @@
  */
 package edu.tigers.sumatra.botmanager.sim;
 
-import java.util.EnumMap;
-import java.util.Map;
-
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import edu.tigers.sumatra.botmanager.botskills.ABotSkill;
 import edu.tigers.sumatra.botmanager.botskills.EBotSkill;
 import edu.tigers.sumatra.botmanager.sim.skills.BotSkillCircleBallSim;
@@ -17,6 +11,7 @@ import edu.tigers.sumatra.botmanager.sim.skills.BotSkillGlobalPositionSim;
 import edu.tigers.sumatra.botmanager.sim.skills.BotSkillGlobalVelXyPosWSim;
 import edu.tigers.sumatra.botmanager.sim.skills.BotSkillGlobalVelocitySim;
 import edu.tigers.sumatra.botmanager.sim.skills.BotSkillInput;
+import edu.tigers.sumatra.botmanager.sim.skills.BotSkillReceiveBallSim;
 import edu.tigers.sumatra.botmanager.sim.skills.BotSkillLocalForceSim;
 import edu.tigers.sumatra.botmanager.sim.skills.BotSkillLocalVelocitySim;
 import edu.tigers.sumatra.botmanager.sim.skills.BotSkillMotorsOffSim;
@@ -25,6 +20,11 @@ import edu.tigers.sumatra.botmanager.sim.skills.BotSkillPenaltyShooterSim;
 import edu.tigers.sumatra.botmanager.sim.skills.BotSkillSineSim;
 import edu.tigers.sumatra.botmanager.sim.skills.BotSkillWheelVelocitySim;
 import edu.tigers.sumatra.botmanager.sim.skills.IBotSkillSim;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import java.util.EnumMap;
+import java.util.Map;
 
 
 /**
@@ -55,6 +55,7 @@ public class BotSkillSimulator
 		botSkills.put(EBotSkill.WHEEL_VELOCITY, new BotSkillWheelVelocitySim());
 		botSkills.put(EBotSkill.PENALTY_SHOOTER_SKILL, new BotSkillPenaltyShooterSim());
 		botSkills.put(EBotSkill.LOCAL_FORCE, new BotSkillLocalForceSim());
+		botSkills.put(EBotSkill.RECEIVE_BALL, new BotSkillReceiveBallSim());
 	}
 
 
@@ -66,10 +67,10 @@ public class BotSkillSimulator
 	 */
 	public BotSkillOutput execute(final BotSkillInput input)
 	{
-		ABotSkill botSkill = input.getSkill();
+		ABotSkill botSkill = input.skill();
 		if (!botSkills.containsKey(botSkill.getType()))
 		{
-			log.error("Unsupported bot skill in simulator: " + botSkill.getType());
+			log.error("Unsupported bot skill in simulator: {}", botSkill.getType());
 			return lastBotSkillOutput;
 		}
 

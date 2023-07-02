@@ -57,7 +57,7 @@
         <properties>
             <source>CI</source>
             <gameController>true</gameController>
-            <gc-ui-port>50544</gc-ui-port>
+            <gc-ui-port>12000</gc-ui-port>
         </properties>
     </module>
 
@@ -120,7 +120,12 @@
 
     <module id="edu.tigers.sumatra.persistence.RecordManager">
         <implementation>edu.tigers.sumatra.ai.AiRecordManager</implementation>
+
+        <dependency>edu.tigers.sumatra.gamelog.GameLogRecorder</dependency>
     </module>
+
+
+    <module id="edu.tigers.sumatra.gamelog.GameLogRecorder"/>
 
 
     <!--

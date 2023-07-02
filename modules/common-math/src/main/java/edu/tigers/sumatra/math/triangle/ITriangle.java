@@ -4,10 +4,10 @@
 
 package edu.tigers.sumatra.math.triangle;
 
-import java.util.List;
-
 import edu.tigers.sumatra.math.I2DShape;
 import edu.tigers.sumatra.math.vector.IVector2;
+
+import java.util.List;
 
 
 /**
@@ -29,20 +29,23 @@ public interface ITriangle extends I2DShape
 	 * @return corner A
 	 */
 	IVector2 getA();
-	
-	
+
+
 	/**
 	 * @return corner B
 	 */
 	IVector2 getB();
-	
-	
+
+
 	/**
 	 * @return corner C
 	 */
 	IVector2 getC();
-	
-	
+
+
+	@Override
+	ITriangle withMargin(double margin);
+
 	/**
 	 * Create a new Triangle (a,b',c'), such that
 	 * line b'c' is orthogonal to ax

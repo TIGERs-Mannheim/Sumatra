@@ -63,6 +63,7 @@ public class FieldPane
 		final double newLenY = (yLen) * scale;
 		offsetX -= (newLenX - oldLenX) / 2;
 		offsetY -= (newLenY - oldLenY) / 2;
+		transformation.setScale(scale);
 	}
 
 

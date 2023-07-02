@@ -9,8 +9,8 @@ import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.AngleMath;
 import edu.tigers.sumatra.math.SumatraMath;
 import edu.tigers.sumatra.math.circle.Circle;
-import edu.tigers.sumatra.math.line.ILine;
-import edu.tigers.sumatra.math.line.Line;
+import edu.tigers.sumatra.math.line.ILineSegment;
+import edu.tigers.sumatra.math.line.Lines;
 import edu.tigers.sumatra.math.pose.Pose;
 import edu.tigers.sumatra.math.triangle.ITriangle;
 import edu.tigers.sumatra.math.triangle.Triangle;
@@ -34,7 +34,7 @@ public class BotCollisionObject implements ICollisionObject
 	private final Pose pose;
 	private final IVector3 vel;
 	private final double center2DribblerDist;
-	private final ILine frontLine;
+	private final ILineSegment frontLine;
 	private final ITriangle frontTriangle;
 	private final BotID botID;
 
@@ -81,7 +81,7 @@ public class BotCollisionObject implements ICollisionObject
 		IVector2 rightBotEdge = kickCenter
 				.addNew(Vector2.fromAngleLength(pose.getOrientation() - AngleMath.DEG_090_IN_RAD, kickWidth));
 
-		frontLine = Line.fromPoints(leftBotEdge, rightBotEdge);
+		frontLine = Lines.segmentFromPoints(leftBotEdge, rightBotEdge);
 		frontTriangle = Triangle.fromCorners(pose.getPos(), leftBotEdge, rightBotEdge);
 
 		lineCollision = new KickerFrontLineCollisionObject(frontLine, vel, Vector2.fromAngle(pose.getOrientation()),
@@ -144,11 +144,11 @@ public class BotCollisionObject implements ICollisionObject
 		{
 			double margin = lineCollision.isSticky() && lineCollision.getImpulse(prePos).getXYVector().isZeroVector() ? 10
 					: 0;
-			if (frontTriangle.isPointInShape(prePos.getXYVector(), margin))
+			if (frontTriangle.withMargin(margin).isPointInShape(prePos.getXYVector()))
 			{
 				IVector2 normal = Vector2.fromAngle(pose.getOrientation());
 				IVector2 colPos;
-				colPos = frontLine.leadPointOf(prePos.getXYVector());
+				colPos = frontLine.toLine().closestPointOnPath(prePos.getXYVector());
 				return Optional.of(new Collision(colPos, normal, lineCollision));
 			}
 			return Optional.empty();

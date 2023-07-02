@@ -1,56 +1,71 @@
 /*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.pathfinder.obstacles;
 
+import edu.tigers.sumatra.drawable.DrawableShapeBoundary;
 import edu.tigers.sumatra.drawable.IDrawableShape;
-import edu.tigers.sumatra.geometry.IPenaltyArea;
+import edu.tigers.sumatra.math.penaltyarea.IPenaltyArea;
 import edu.tigers.sumatra.math.vector.IVector2;
-import lombok.Getter;
+import edu.tigers.sumatra.pathfinder.obstacles.input.CollisionInput;
+import lombok.RequiredArgsConstructor;
 
-import java.awt.Color;
 import java.util.List;
+import java.util.Optional;
 
 
 /**
  * A penalty area obstacle with efficient data storage and caching for painting
  */
+@RequiredArgsConstructor
 public class PenaltyAreaObstacle extends AObstacle
 {
-	@Getter
 	private final IPenaltyArea penaltyArea;
 
 
-	/**
-	 * @param penaltyArea the penalty area
-	 */
-	public PenaltyAreaObstacle(final IPenaltyArea penaltyArea)
+	@Override
+	public String getIdentifier()
 	{
-		this.penaltyArea = penaltyArea;
-		setEmergencyBrakeFor(true);
-		setPriority(100);
+		return super.getIdentifier() + " " + (penaltyArea.getGoalCenter().x() > 0 ? "THEIR" : "OUR");
 	}
 
 
 	@Override
-	public boolean isPointCollidingWithObstacle(final IVector2 point, final double t, final double margin)
+	protected List<IDrawableShape> initializeShapes()
 	{
-		return penaltyArea.withMargin(margin).isPointInShapeOrBehind(point);
+		return List.of(new DrawableShapeBoundary(penaltyArea));
 	}
 
 
 	@Override
-	protected void initializeShapes(final List<IDrawableShape> shapes)
+	public double distanceTo(CollisionInput input)
 	{
-		shapes.addAll(penaltyArea.getDrawableShapes());
-		shapes.forEach(s -> s.setColor(Color.BLACK));
+		return distanceTo(input.getRobotPos());
+	}
+
+
+	private double distanceTo(IVector2 pos)
+	{
+		if (penaltyArea.isBehindPenaltyArea(pos))
+		{
+			return 0;
+		}
+		return penaltyArea.distanceTo(pos);
 	}
 
 
 	@Override
-	public double collisionPenalty(final IVector2 from, final IVector2 to)
+	public Optional<IVector2> adaptDestination(IVector2 robotPos, IVector2 destination)
 	{
-		return penaltyArea.intersectionArea(from, to);
+		if (distanceTo(robotPos) <= 0)
+		{
+			return Optional.of(penaltyArea.withMargin(100).nearestPointOutside(robotPos));
+		}
+		if (distanceTo(destination) <= 0)
+		{
+			return Optional.of(penaltyArea.withMargin(1).nearestPointOutside(destination));
+		}
+		return Optional.empty();
 	}
 }

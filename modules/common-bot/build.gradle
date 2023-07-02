@@ -12,6 +12,5 @@ dependencies {
     implementation project(':common')
     implementation project(':common-math')
 
-    implementation 'commons-lang:commons-lang:2.6'
     implementation 'com.sleepycat:je:18.3.12'
 }

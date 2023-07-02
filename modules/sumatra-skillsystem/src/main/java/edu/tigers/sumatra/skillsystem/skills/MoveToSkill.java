@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.skillsystem.skills;
 
@@ -9,6 +9,7 @@ import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.skillsystem.skills.util.KickParams;
 import edu.tigers.sumatra.wp.data.DynamicPosition;
 import edu.tigers.sumatra.wp.data.ITrackedObject;
+import lombok.Setter;
 
 
 /**
@@ -21,6 +22,11 @@ public final class MoveToSkill extends AMoveToSkill
 
 	@Configurable(defValue = "0.1", comment = "Orientation tolerance for skill state")
 	private static double orientationTolerance = 0.1;
+
+	@Setter
+	private double minTimeAtDestForSuccess = 0;
+
+	private long tSuccess = 0;
 
 
 	/**
@@ -45,9 +51,21 @@ public final class MoveToSkill extends AMoveToSkill
 
 	private void updateSkillState()
 	{
-		if (isInitialized()
-				&& getDestination().distanceTo(getPos()) < positionTolerance
-				&& AngleMath.diffAbs(getTargetAngle(), getAngle()) < orientationTolerance)
+		if (!isInitialized()
+				|| (getDestination().distanceTo(getPos()) > positionTolerance)
+				|| (AngleMath.diffAbs(getTargetAngle(), getAngle()) > orientationTolerance))
+		{
+			tSuccess = 0;
+			setSkillState(ESkillState.IN_PROGRESS);
+			return;
+		}
+
+		if (tSuccess == 0)
+		{
+			tSuccess = getWorldFrame().getTimestamp();
+		}
+
+		if ((getWorldFrame().getTimestamp() - tSuccess) / 1e9 >= minTimeAtDestForSuccess)
 		{
 			setSkillState(ESkillState.SUCCESS);
 		} else
@@ -120,6 +138,18 @@ public final class MoveToSkill extends AMoveToSkill
 	public void setAccMax(final Double maxAcc)
 	{
 		getMoveConstraints().setAccMax(maxAcc);
+	}
+
+
+	public void setVelMaxW(final double maxVelW)
+	{
+		getMoveConstraints().setVelMaxW(maxVelW);
+	}
+
+
+	public void setAccMaxW(final double maxAccW)
+	{
+		getMoveConstraints().setAccMaxW(maxAccW);
 	}
 
 

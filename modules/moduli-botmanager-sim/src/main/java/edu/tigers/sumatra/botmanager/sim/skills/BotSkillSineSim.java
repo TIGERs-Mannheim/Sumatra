@@ -22,31 +22,31 @@ public class BotSkillSineSim implements IBotSkillSim
 	@Override
 	public void init(final BotSkillInput input)
 	{
-		tStart = input.gettNow();
+		tStart = input.tNow();
 	}
 	
 	
 	@Override
 	public BotSkillOutput execute(final BotSkillInput input)
 	{
-		BotSkillSine skill = (BotSkillSine) input.getSkill();
-		
+		BotSkillSine skill = (BotSkillSine) input.skill();
+
 		double freq = skill.getFrequency();
-		
-		double tNow = (input.gettNow() - tStart) * 1e-9;
-		
+
+		double tNow = (input.tNow() - tStart) * 1e-9;
+
 		double val = SumatraMath.sin(2.0 * Math.PI * tNow * freq);
 		double valC = SumatraMath.cos(2.0 * Math.PI * tNow * freq);
-		
-		if (tNow < ((0.25 * 1.0) / freq))
+
+		if (tNow < ((0.25) / freq))
 		{
 			valC = 0;
 		}
-		
+
 		double velX = skill.getVel().x() * valC * 1000;
 		double velY = skill.getVel().y() * val * 1000;
 		double velW = skill.getVel().z() * val;
-		
+
 		MoveConstraints moveCon = skill.getMoveConstraints();
 		moveCon.setAccMax(DriveLimits.MAX_ACC);
 		moveCon.setAccMaxW(DriveLimits.MAX_ACC_W);

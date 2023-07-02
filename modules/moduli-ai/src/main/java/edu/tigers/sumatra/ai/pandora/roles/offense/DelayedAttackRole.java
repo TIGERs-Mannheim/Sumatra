@@ -10,8 +10,6 @@ import edu.tigers.sumatra.ai.pandora.roles.ERole;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.math.circle.Circle;
 import edu.tigers.sumatra.math.circle.ICircle;
-import edu.tigers.sumatra.math.line.ILine;
-import edu.tigers.sumatra.math.line.Line;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.math.vector.VectorMath;
@@ -105,8 +103,7 @@ public class DelayedAttackRole extends ARole
 		{
 			ICircle movement = Circle.createCircle(getBall().getPos(), Geometry.getBotRadius() * 2 + ballDist);
 			IVector2 dir = Vector2.fromPoints(getBall().getPos(), getPos()).turn(45).scaleTo(500);
-			ILine dirLine = Line.fromDirection(getBall().getPos(), dir);
-			IVector2 newOpponent = dirLine.getEnd();
+			IVector2 newOpponent = getBall().getPos().addNew(dir);
 
 			skill.setFinalDist2Ball(ballDist);
 			boolean circlingPossible = Geometry.getField().isCircleInShape(movement)

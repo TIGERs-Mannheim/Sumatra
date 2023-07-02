@@ -13,7 +13,9 @@ import java.util.List;
 public record DefensePenAreaPositionAssignment(
 		BotID botID,
 		IVector2 movementDestination,
-		List<IDefenseThreat> defendedThreats
+		List<IDefenseThreat> defendedThreats,
+
+		EDefensePenAreaPositionAssignmentClass defenderClass
 )
 {
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.botmanager.basestation;
@@ -11,6 +11,7 @@ import com.github.g3force.configurable.IConfigObserver;
 import edu.tigers.sumatra.botmanager.bots.TigerBot;
 import edu.tigers.sumatra.botmanager.botskills.data.MatchCommand;
 import edu.tigers.sumatra.botmanager.commands.ACommand;
+import edu.tigers.sumatra.botmanager.commands.CommandFactory;
 import edu.tigers.sumatra.botmanager.commands.ECommand;
 import edu.tigers.sumatra.botmanager.commands.basestation.BaseStationACommand;
 import edu.tigers.sumatra.botmanager.commands.basestation.BaseStationAuth;
@@ -25,6 +26,10 @@ import edu.tigers.sumatra.botmanager.communication.ENetworkState;
 import edu.tigers.sumatra.botmanager.communication.ITransceiverObserver;
 import edu.tigers.sumatra.botmanager.communication.udp.UnicastTransceiverUDP;
 import edu.tigers.sumatra.cam.SSLVisionCam;
+import edu.tigers.sumatra.clock.NanoTime;
+import edu.tigers.sumatra.gamelog.EMessageType;
+import edu.tigers.sumatra.gamelog.GameLogMessage;
+import edu.tigers.sumatra.gamelog.GameLogRecorder;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.model.SumatraModel;
 import edu.tigers.sumatra.thread.GeneralPurposeTimer;
@@ -57,26 +62,28 @@ public class TigersBaseStation extends ABaseStation
 	private static final int BASE_STATION_TIMEOUT = 1000;
 	private static final int STAT_ENTRIES = 10;
 
-	@Configurable(defValue = "192.168.20.210", spezis = { "ROBOCUP", "LAB", "ANDRE", "TISCH", "NICOLAI" })
-	private static String host = "192.168.20.210";
+	@Configurable(defValue = "192.168.60.210", spezis = { "ROBOCUP", "LAB", "ANDRE", "TISCH", "NICOLAI" })
+	private static String host = "192.168.60.210";
 
 	@Configurable(defValue = "10201")
 	private static int dstPort = 10201;
 
-	@Configurable(spezis = { "ROBOCUP", "LAB", "ANDRE", "TISCH", "NICOLAI" }, defValue = "121")
+	@Configurable(spezis = { "ROBOCUP", "LAB", "ANDRE", "TISCH", "NICOLAI" }, defValue = "80")
 	private static int channel = 0;
 
 	@Configurable(comment = "Fix the runtime regardless of the number of bot that are connected.", defValue = "true")
 	private static boolean fixedRuntime = true;
 
-	@Configurable(comment = "Max communication slots to open for communication to bots", defValue = "9")
-	private static int maxBots = 9;
+	@Configurable(comment = "Max communication slots to open for communication to bots", defValue = "12")
+	private static int maxBots = 12;
 
 	private final UnicastTransceiverUDP transceiver = new UnicastTransceiverUDP();
 	private final Watchdog watchdog = new Watchdog(BASE_STATION_TIMEOUT, "TIGERs BS", this::handleTimeoutEvent);
 
 	private int visionPort = -1;
 	private String visionAddress = "";
+
+	private GameLogRecorder gameLogRecorder;
 
 	private ScheduledExecutorService pingService = null;
 	private PingThread pingThread = null;
@@ -107,6 +114,8 @@ public class TigersBaseStation extends ABaseStation
 					visionAddress = cam.getAddress();
 					visionPort = cam.getPort();
 				});
+
+		gameLogRecorder = SumatraModel.getInstance().getModuleOpt(GameLogRecorder.class).orElse(null);
 	}
 
 
@@ -129,7 +138,9 @@ public class TigersBaseStation extends ABaseStation
 			return;
 		}
 
-		transceiver.enqueueCommand(new BaseStationACommand(id, cmd));
+		var baseCmd = new BaseStationACommand(id, cmd);
+		transceiver.enqueueCommand(baseCmd);
+		recordCommand(baseCmd, EMessageType.TIGERS_BASE_STATION_CMD_SENT);
 	}
 
 
@@ -141,6 +152,7 @@ public class TigersBaseStation extends ABaseStation
 		}
 
 		transceiver.enqueueCommand(cmd);
+		recordCommand(cmd, EMessageType.TIGERS_BASE_STATION_CMD_SENT);
 	}
 
 
@@ -159,21 +171,23 @@ public class TigersBaseStation extends ABaseStation
 
 		switch (cmd.getType())
 		{
-			case CMD_BASE_ACOMMAND:
-				incCmdBaseACommand(cmd);
-				break;
-			case CMD_BASE_PING:
-				incCmdBasePing(cmd);
-				break;
-			case CMD_BASE_WIFI_STATS:
-				incCmdBaseWifiStats(cmd);
-				break;
-			case CMD_BASE_ETH_STATS:
-				incCmdBaseEthStats(cmd);
-				break;
-			default:
-				log.warn("Unknown incomming command from Base Station.");
-				break;
+			case CMD_BASE_ACOMMAND -> incCmdBaseACommand(cmd);
+			case CMD_BASE_PING -> incCmdBasePing(cmd);
+			case CMD_BASE_WIFI_STATS -> incCmdBaseWifiStats(cmd);
+			case CMD_BASE_ETH_STATS -> incCmdBaseEthStats(cmd);
+			default -> log.warn("Unknown incoming command from Base Station.");
+		}
+
+		recordCommand(cmd, EMessageType.TIGERS_BASE_STATION_CMD_RECEIVED);
+	}
+
+
+	private void recordCommand(final ACommand cmd, EMessageType type)
+	{
+		if(gameLogRecorder != null)
+		{
+			byte[] data = CommandFactory.getInstance().encode(cmd);
+			gameLogRecorder.writeMessage(new GameLogMessage(NanoTime.getTimestampNow(), type, data));
 		}
 	}
 
@@ -260,7 +274,7 @@ public class TigersBaseStation extends ABaseStation
 
 		if (baseCmd.getChild() == null)
 		{
-			log.warn("Invalid BaseStationACommand lost");
+			log.info("Invalid BaseStationACommand lost");
 			return;
 		}
 

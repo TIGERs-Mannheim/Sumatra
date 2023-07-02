@@ -1,16 +1,8 @@
 /*
- * Copyright (c) 2009 - 2019, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.wp.util;
-
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.ConcurrentLinkedQueue;
-
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import edu.tigers.moduli.exceptions.ModuleNotFoundException;
 import edu.tigers.sumatra.data.collector.IExportable;
@@ -19,6 +11,13 @@ import edu.tigers.sumatra.model.SumatraModel;
 import edu.tigers.sumatra.wp.AWorldPredictor;
 import edu.tigers.sumatra.wp.IWorldFrameObserver;
 import edu.tigers.sumatra.wp.data.ExtendedCamDetectionFrame;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 
 /**
@@ -95,7 +94,8 @@ public class TimeSeriesVisionDataProvider implements ITimeSeriesDataProvider, IW
 	private void processCamFrame(final ExtendedCamDetectionFrame frame)
 	{
 		dataBuffers.get("frameInfo").add(new ExportableFrameInfo(frame.getFrameNumber(), frame.getCameraId(),
-				frame.gettCapture(), frame.gettSent(), System.nanoTime(), frame.getCamFrameNumber()));
+				frame.gettCapture(), frame.gettSent(), (long) (System.currentTimeMillis() * 1e6),
+				frame.getCamFrameNumber()));
 		dataBuffers.get("rawBall").add(frame.getBall());
 		dataBuffers.get("rawBalls").addAll(frame.getBalls());
 		dataBuffers.get("rawBots").addAll(frame.getRobots());

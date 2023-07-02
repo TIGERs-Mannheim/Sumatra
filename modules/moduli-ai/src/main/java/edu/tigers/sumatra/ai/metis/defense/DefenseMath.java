@@ -6,13 +6,13 @@ package edu.tigers.sumatra.ai.metis.defense;
 
 import edu.tigers.sumatra.ball.trajectory.IBallTrajectory;
 import edu.tigers.sumatra.geometry.Geometry;
-import edu.tigers.sumatra.geometry.IPenaltyArea;
 import edu.tigers.sumatra.math.AngleMath;
 import edu.tigers.sumatra.math.SumatraMath;
 import edu.tigers.sumatra.math.circle.Arc;
+import edu.tigers.sumatra.math.line.ILineSegment;
 import edu.tigers.sumatra.math.line.LineMath;
-import edu.tigers.sumatra.math.line.v2.ILineSegment;
-import edu.tigers.sumatra.math.line.v2.Lines;
+import edu.tigers.sumatra.math.line.Lines;
+import edu.tigers.sumatra.math.penaltyarea.IPenaltyArea;
 import edu.tigers.sumatra.math.rectangle.IRectangle;
 import edu.tigers.sumatra.math.triangle.TriangleMath;
 import edu.tigers.sumatra.math.vector.IVector2;
@@ -48,19 +48,19 @@ public final class DefenseMath
 	 * @param threatPos        The threat to protect the defBoundary from
 	 * @param defBoundaryLeft  The left boundary
 	 * @param defBoundaryRight The right boundary
-	 * @param width            distance that covers half the area
+	 * @param halfWidth        distance that covers half the area
 	 * @return
 	 */
 	public static IVector2 calculateLineDefPoint(final IVector2 threatPos, final IVector2 defBoundaryLeft,
 			final IVector2 defBoundaryRight,
-			final double width)
+			final double halfWidth)
 	{
 		IVector2 intersectionBisectorGoal = TriangleMath.bisector(threatPos, defBoundaryLeft, defBoundaryRight);
 
 		double angleBallLeftGoal = defBoundaryLeft.subtractNew(threatPos).angleToAbs(
 				intersectionBisectorGoal.subtractNew(threatPos)).orElse(0.0);
 
-		double distBall2DefPoint = angleBallLeftGoal > 0 ? width / SumatraMath.tan(angleBallLeftGoal) : 0.0;
+		double distBall2DefPoint = angleBallLeftGoal > 0 ? halfWidth / SumatraMath.tan(angleBallLeftGoal) : 0.0;
 		distBall2DefPoint = Math.min(distBall2DefPoint, VectorMath.distancePP(threatPos, intersectionBisectorGoal));
 
 		return LineMath.stepAlongLine(threatPos, intersectionBisectorGoal, distBall2DefPoint);
@@ -82,8 +82,8 @@ public final class DefenseMath
 			final double marginToPenArea,
 			final double maxGoOutDistance)
 	{
-		IVector2 base = threatLine.getEnd();
-		IVector2 protectionPos = Geometry.getField().nearestPointInside(threatLine.getStart());
+		IVector2 base = threatLine.getPathEnd();
+		IVector2 protectionPos = Geometry.getField().nearestPointInside(threatLine.getPathStart());
 		IPenaltyArea penArea = Geometry.getPenaltyAreaOur().withMargin(marginToPenArea);
 		var arcPos = Arc.createArc(Geometry.getPenaltyAreaOur().getRectangle().getCorner(IRectangle.ECorner.TOP_RIGHT),
 				marginToPenArea, 0, AngleMath.PI_HALF);
@@ -92,11 +92,11 @@ public final class DefenseMath
 
 		var end = base
 				.nearestToOpt(Stream.concat(
-								arcPos.lineIntersections(Lines.segmentFromPoints(base, protectionPos)).stream(),
-								arcNeg.lineIntersections(Lines.segmentFromPoints(base, protectionPos)).stream())
+								arcPos.intersectPerimeterPath(Lines.segmentFromPoints(base, protectionPos)).stream(),
+								arcNeg.intersectPerimeterPath(Lines.segmentFromPoints(base, protectionPos)).stream())
 						.toList())
 				.orElseGet(() -> base
-						.nearestToOpt(penArea.lineIntersections(Lines.lineFromPoints(base, protectionPos)))
+						.nearestToOpt(penArea.intersectPerimeterPath(Lines.lineFromPoints(base, protectionPos)))
 						.orElseGet(() -> penArea.nearestPointOutside(base))
 				);
 

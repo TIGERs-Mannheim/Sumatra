@@ -3,7 +3,7 @@
  */
 package edu.tigers.sumatra.offensive.view;
 
-import edu.tigers.sumatra.ai.metis.offense.action.situation.OffensiveActionTreePath;
+import edu.tigers.sumatra.ai.metis.offense.situation.rating.OffensiveActionTreePath;
 import edu.tigers.sumatra.ids.ETeamColor;
 import edu.tigers.sumatra.model.SumatraModel;
 import edu.tigers.sumatra.trees.EOffensiveSituation;

@@ -24,6 +24,7 @@ public final class TrajectoryGenerator
 	private static final BangBangTrajectoryFactory TRAJECTORY_FACTORY = new BangBangTrajectoryFactory();
 	private static final DestinationForTimedPositionCalc OFFSET_CALC = new DestinationForTimedPositionCalc();
 
+
 	public static ITrajectory<IVector2> generatePositionTrajectory(final ITrackedBot bot, final IVector2 dest)
 	{
 		IMoveConstraints mc = new MoveConstraints(bot.getRobotInfo().getBotParams().getMovementLimits());
@@ -132,5 +133,19 @@ public final class TrajectoryGenerator
 				targetTime,
 				moveConstraints.getPrimaryDirection()
 		).multiplyNew(1e3);
+	}
+
+
+	public static ITrajectory<IVector2> generatePositionTrajectoryToReachPointInTime(
+			final ITrackedBot bot,
+			final MoveConstraints moveConstraints,
+			final IVector2 dest,
+			final double targetTime
+	)
+	{
+		// This can get optimized as an addition to the generateVirtualPositionToReachPointInTime could directly create
+		// full trajectories and not only a position.
+		var virtualDest = generateVirtualPositionToReachPointInTime(bot, moveConstraints, dest, targetTime);
+		return generatePositionTrajectory(bot, virtualDest, moveConstraints);
 	}
 }

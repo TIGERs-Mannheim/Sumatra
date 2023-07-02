@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.skillsystem.skills;
@@ -29,8 +29,8 @@ import lombok.extern.log4j.Log4j2;
 @Log4j2
 public class MoveWithBallSkill extends AMoveToSkill
 {
-	@Configurable(comment = "Min contact time [s] to reach before moving with ball", defValue = "0.3")
-	private static double minContactTime = 0.3;
+	@Configurable(comment = "Min contact time [s] to reach before moving with ball", defValue = "0.2")
+	private static double minContactTime = 0.2;
 
 	@Configurable(comment = "How fast to accelerate when rotating with ball", defValue = "10.0")
 	private static double rotationWithBallVel = 10.0;
@@ -38,11 +38,11 @@ public class MoveWithBallSkill extends AMoveToSkill
 	@Configurable(comment = "How fast to accelerate when rotating with ball", defValue = "10.0")
 	private static double rotationWithBallAcc = 10.0;
 
-	@Configurable(comment = "How fast to drive when moving with ball", defValue = "3.0")
-	private static double moveWithBallVel = 3.0;
+	@Configurable(comment = "How fast to drive when moving with ball", defValue = "1.5")
+	private static double moveWithBallVel = 1.5;
 
-	@Configurable(comment = "How fast to accelerate when moving with ball", defValue = "2.0")
-	private static double moveWithBallAcc = 2.0;
+	@Configurable(comment = "How fast to accelerate when moving with ball", defValue = "1.0")
+	private static double moveWithBallAcc = 1.0;
 
 	@Configurable(comment = "How fast to drive when pushing the ball forward", defValue = "1.5")
 	private static double moveWithBallFwdVel = 1.5;
@@ -52,6 +52,12 @@ public class MoveWithBallSkill extends AMoveToSkill
 
 	@Configurable(defValue = "true", comment = "If false, the ball is always pulled, turning with the ball by 180° if necessary")
 	private static boolean allowPushingTheBall = true;
+
+	@Configurable(defValue = "5000", comment = "Max dribble speed when pulling the ball")
+	private static double backwardDribbleSpeedMax = 5000;
+
+	@Configurable(defValue = "200", comment = "Distance from target to bot in which dribble speed is scaled")
+	private static double backwardDribbleScalingDistance = 200;
 
 	private final TimestampTimer calmDownTimer = new TimestampTimer(0.5);
 
@@ -85,18 +91,20 @@ public class MoveWithBallSkill extends AMoveToSkill
 		{
 			getMoveConstraints().setVelMax(moveWithBallFwdVel);
 			getMoveConstraints().setAccMax(moveWithBallFwdAcc);
-			if (calmDownTimer.isRunning() && getDestinationReachedIn() < 0.1)
-			{
-				setKickParams(KickParams.disarm().withDribblerMode(EDribblerMode.OFF));
-			} else
-			{
-				setKickParams(KickParams.disarm().withDribblerMode(EDribblerMode.DEFAULT));
-			}
+			setKickParams(KickParams.disarm().withDribblerMode(EDribblerMode.DEFAULT));
 		} else
 		{
 			getMoveConstraints().setAccMax(moveWithBallAcc);
 			getMoveConstraints().setVelMax(moveWithBallVel);
-			setKickParams(KickParams.disarm().withDribblerMode(EDribblerMode.DEFAULT));
+			IVector2 botToTarget = finalDest.subtractNew(getPos());
+			double dribbleSpeedRelative = Math.min(1, botToTarget.getLength2() / backwardDribbleScalingDistance);
+			double defaultDribbleSpeed = getBot().getBotParams().getDribblerSpecs().getDefaultSpeed();
+			double dribbleSpeedRpm =
+					defaultDribbleSpeed + dribbleSpeedRelative * (backwardDribbleSpeedMax - defaultDribbleSpeed);
+			setKickParams(KickParams.disarm().withDribbleSpeedRpm(
+					dribbleSpeedRpm,
+					getBot().getBotParams().getDribblerSpecs().getDefaultMaxCurrent())
+			);
 		}
 
 		super.doUpdate();
@@ -136,7 +144,8 @@ public class MoveWithBallSkill extends AMoveToSkill
 	private IVector2 calcDestination()
 	{
 		if (Math.abs(AngleMath.difference(getAngle(), getTargetAngle())) < 0.3
-				&& getTBot().getBallContact().hasContactFromVisionOrBarrier())
+				&& (getTBot().getBallContact().hadContact(minContactTime))
+				|| getTBot().getBallContact().hasContactFromVisionOrBarrier())
 		{
 			// start moving only after target angle reached approximately
 			return finalDest;
@@ -156,7 +165,7 @@ public class MoveWithBallSkill extends AMoveToSkill
 	{
 		if (finalDest.distanceTo(getPos()) > 50)
 		{
-			double forwardAngle = finalDest.subtractNew(getPos()).getAngle();
+			double forwardAngle = finalDest.subtractNew(getBall().getPos()).getAngle();
 			if (driveForward())
 			{
 				return forwardAngle;

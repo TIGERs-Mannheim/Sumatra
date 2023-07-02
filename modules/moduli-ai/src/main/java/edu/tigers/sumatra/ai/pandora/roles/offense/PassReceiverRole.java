@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.pandora.roles.offense;
@@ -12,7 +12,7 @@ import edu.tigers.sumatra.ai.pandora.roles.ERole;
 import edu.tigers.sumatra.drawable.DrawableAnnotation;
 import edu.tigers.sumatra.drawable.DrawableArrow;
 import edu.tigers.sumatra.geometry.Geometry;
-import edu.tigers.sumatra.math.line.v2.Lines;
+import edu.tigers.sumatra.math.line.Lines;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.skillsystem.skills.MoveToSkill;
 import edu.tigers.sumatra.skillsystem.skills.redirect.RedirectConsultantFactory;
@@ -37,7 +37,8 @@ public class PassReceiverRole extends ARole
 	@Setter
 	private Kick outgoingKick;
 	@Setter
-	private boolean penaltyAreaObstacle;
+	@Getter
+	private boolean physicalObstaclesOnly;
 
 	@Getter
 	private double receivingPositionReachedIn;
@@ -53,7 +54,7 @@ public class PassReceiverRole extends ARole
 
 	public void setIncomingPass(Pass incomingPass)
 	{
-		if (incomingPass == null || incomingPass.getReceiver() == getBotID())
+		if (incomingPass == null || incomingPass.getReceiver().equals(getBotID()))
 		{
 			this.incomingPass = incomingPass;
 		} else
@@ -69,6 +70,16 @@ public class PassReceiverRole extends ARole
 		private DefaultState()
 		{
 			super(MoveToSkill::new);
+		}
+
+
+		@Override
+		protected void onInit()
+		{
+			if (physicalObstaclesOnly)
+			{
+				skill.getMoveCon().physicalObstaclesOnly();
+			}
 		}
 
 
@@ -93,8 +104,6 @@ public class PassReceiverRole extends ARole
 			skill.updateDestination(dest);
 
 			skill.getMoveCon().setBallObstacle(dest.distanceTo(getPos()) > 500);
-			skill.getMoveCon().setPenaltyAreaOurObstacle(penaltyAreaObstacle);
-			skill.getMoveCon().setPenaltyAreaTheirObstacle(penaltyAreaObstacle);
 
 			receivingPositionReachedIn = skill.getDestinationReachedIn();
 			draw();
@@ -121,7 +130,7 @@ public class PassReceiverRole extends ARole
 			var incomingPassLine = Lines
 					.segmentFromPoints(incomingPass.getKick().getSource(), incomingPass.getKick().getTarget());
 			getAiFrame().getShapeMap().get(EAiShapesLayer.OFFENSIVE_PASSING)
-					.add(new DrawableArrow(incomingPassLine.getStart(), incomingPassLine.directionVector(), Color.WHITE));
+					.add(new DrawableArrow(incomingPassLine.getPathStart(), incomingPassLine.directionVector(), Color.WHITE));
 
 			if (outgoingKick != null)
 			{
@@ -129,7 +138,7 @@ public class PassReceiverRole extends ARole
 						outgoingKick.getSource(),
 						outgoingKick.getTarget());
 				getAiFrame().getShapeMap().get(EAiShapesLayer.OFFENSIVE_PASSING)
-						.add(new DrawableArrow(outgoingKickLine.getStart(), outgoingKickLine.directionVector(), Color.WHITE));
+						.add(new DrawableArrow(outgoingKickLine.getPathStart(), outgoingKickLine.directionVector(), Color.WHITE));
 			}
 		}
 	}

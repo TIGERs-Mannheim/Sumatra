@@ -144,7 +144,7 @@ public class DefenseThreatReductionRater
 		final var protectionLine = threat.centerBackDefStrategyData().protectionLine();
 		final var threatPos = threat.centerBackDefStrategyData().threatPos();
 		return bestBlockDist / Math.max(bestBlockDist,
-				protectionLine.closestPointOnLine(defender.position).distanceTo(threatPos))
+				protectionLine.closestPointOnPath(defender.position).distanceTo(threatPos))
 				* calcVelocityDifference(defender.velocity, threat.bot().getVel())
 				* Math.max(0, 1 - protectionLine.distanceTo(defender.position) / maxTravelDist);
 	}

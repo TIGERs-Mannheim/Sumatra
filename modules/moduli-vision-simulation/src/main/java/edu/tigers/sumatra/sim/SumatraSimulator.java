@@ -34,6 +34,7 @@ import edu.tigers.sumatra.vision.data.FilteredVisionBot;
 import edu.tigers.sumatra.vision.data.FilteredVisionFrame;
 import edu.tigers.sumatra.vision.data.FilteredVisionKick;
 import lombok.extern.log4j.Log4j2;
+import org.apache.logging.log4j.ThreadContext;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -239,7 +240,7 @@ public class SumatraSimulator extends ASumatraSimulator implements IRefereeObser
 		simulatorActionCallbacks.forEach(cb -> cb.updateConnectedBotList(botStates.keySet()));
 		return simulatorActionCallbacks.stream()
 				.map(cb -> cb.nextSimBotActions(botStates, simState.getSimTime()))
-				.collect(Collectors.toList());
+				.toList();
 	}
 
 
@@ -384,9 +385,10 @@ public class SumatraSimulator extends ASumatraSimulator implements IRefereeObser
 
 	private void updateKickEvent()
 	{
-		if (simState.getSimulatedBall().getState().getVel().getLength() < 0.01)
+		if (simState.getSimulatedBall().getState().getVel().getLength() < 10)
 		{
 			simState.setLastKickEvent(null);
+			return;
 		}
 
 		Optional<ICollision> lastCollision = simState.getSimulatedBall().getLastCollision();
@@ -435,6 +437,9 @@ public class SumatraSimulator extends ASumatraSimulator implements IRefereeObser
 			}
 			tLast = System.nanoTime();
 		} while (running);
+
+		ThreadContext.remove("wfTs");
+		ThreadContext.remove("wfId");
 	}
 
 
@@ -445,6 +450,8 @@ public class SumatraSimulator extends ASumatraSimulator implements IRefereeObser
 			simulate(CAM_DT);
 			updateKickEvent();
 			simState.incFrameId();
+			ThreadContext.put("wfTs", String.valueOf(simState.getSimTime()));
+			ThreadContext.put("wfId", String.valueOf(simState.getFrameId()));
 			final FilteredVisionFrame filteredFrame = createFilteredFrame();
 			storeFrameInStateBuffer(filteredFrame);
 			publishFilteredVisionFrame(filteredFrame);
@@ -466,14 +473,22 @@ public class SumatraSimulator extends ASumatraSimulator implements IRefereeObser
 			{
 				throw new IllegalStateException("Simulation must not be running");
 			}
-			simState.setSimTime(SIM_DT);
 			stateBuffer.clear();
-			simState.getSimulatedBall().resetState();
-			simState.setLastKickEvent(null);
 			simState.getSimulatedBots().keySet().forEach(this::unregisterBot);
-			publishFilteredVisionFrame(createFilteredFrame());
+			simState = new SimState();
+			// Do not start with time=0, as this is sometimes a special case
+			simState.setSimTime(SIM_DT);
+			simulatorActionCallbacks.forEach(cb -> cb.updateConnectedBotList(Set.of()));
+			onClearCamFrame();
+			publishFilteredVisionFrame();
 		}
 		log.debug("Reset simulation");
+	}
+
+
+	public void publishFilteredVisionFrame()
+	{
+		publishFilteredVisionFrame(createFilteredFrame());
 	}
 
 

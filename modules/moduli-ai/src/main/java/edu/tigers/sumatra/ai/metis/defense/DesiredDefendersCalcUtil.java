@@ -11,7 +11,7 @@ import edu.tigers.sumatra.ai.metis.defense.data.IDefenseThreat;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.AObjectID;
 import edu.tigers.sumatra.ids.BotID;
-import edu.tigers.sumatra.math.line.v2.ILineSegment;
+import edu.tigers.sumatra.math.line.ILineSegment;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
 
@@ -28,7 +28,7 @@ import java.util.stream.Collectors;
 /**
  * Helper class for Desired defenders calculators.
  */
-class DesiredDefendersCalcUtil
+public class DesiredDefendersCalcUtil
 {
 	@Configurable(comment = "Min threshold [mm]", defValue = "140.0")
 	private static double interceptionDistanceHysteresisMin = 140.0;
@@ -45,14 +45,14 @@ class DesiredDefendersCalcUtil
 	private Map<BotID, Set<AObjectID>> lastFrameDefenderMapping;
 
 
-	void update(final BaseAiFrame aiFrame)
+	public void update(final BaseAiFrame aiFrame)
 	{
 		this.aiFrame = aiFrame;
 		lastFrameDefenderMapping = buildLastFrameDefenderIdToThreatMapping();
 	}
 
 
-	Set<BotID> nextBestDefenders(
+	public Set<BotID> nextBestDefenders(
 			final IDefenseThreat threat,
 			final List<BotID> remainingDefenders,
 			final int numDefenders)

@@ -78,42 +78,6 @@ public class GameState
 	}
 
 
-	public EGameState getState()
-	{
-		return state;
-	}
-
-
-	public ETeamColor getForTeam()
-	{
-		return forTeam;
-	}
-
-
-	public EGameState getNextState()
-	{
-		return nextState;
-	}
-
-
-	public ETeamColor getNextForTeam()
-	{
-		return nextForTeam;
-	}
-
-
-	public ETeamColor getOurTeam()
-	{
-		return ourTeam;
-	}
-
-
-	public boolean isPenaltyShootout()
-	{
-		return penaltyShootout;
-	}
-
-
 	/**
 	 * @return Ball placement coordinates in vision frame.
 	 */
@@ -176,40 +140,15 @@ public class GameState
 
 
 	/**
-	 * @return true if the ball must be at rest (PENALTY, KICKOFF, INDIRECT_FREE, DIRECT_FREE)
-	 */
-	public boolean isBallAtRest()
-	{
-		switch (state)
-		{
-			case PENALTY:
-			case KICKOFF:
-			case INDIRECT_FREE:
-			case DIRECT_FREE:
-				return true;
-			default:
-				return false;
-		}
-	}
-
-
-	/**
 	 * @return true on any stopped game state (BREAK, HALT, POST_GAME, STOP, TIMEOUT, BALL_PLACEMENT)
 	 */
 	public boolean isStoppedGame()
 	{
-		switch (state)
+		return switch (state)
 		{
-			case BREAK:
-			case HALT:
-			case POST_GAME:
-			case STOP:
-			case TIMEOUT:
-			case BALL_PLACEMENT:
-				return true;
-			default:
-				return false;
-		}
+			case BREAK, HALT, POST_GAME, STOP, TIMEOUT, BALL_PLACEMENT -> true;
+			default -> false;
+		};
 	}
 
 
@@ -227,15 +166,11 @@ public class GameState
 	 */
 	public boolean isPausedGame()
 	{
-		switch (state)
+		return switch (state)
 		{
-			case BREAK:
-			case HALT:
-			case TIMEOUT:
-				return true;
-			default:
-				return false;
-		}
+			case BREAK, HALT, TIMEOUT -> true;
+			default -> false;
+		};
 	}
 
 
@@ -255,28 +190,24 @@ public class GameState
 	 */
 	public boolean isDistanceToBallRequired()
 	{
-		switch (state)
+		if (state == EGameState.STOP || state == EGameState.PREPARE_KICKOFF)
 		{
-			case STOP:
-			case PREPARE_KICKOFF:
-				return true;
-			default:
-				break;
+			return true;
 		}
 
 		if (ourTeam != forTeam)
 		{
-			// some gamestate for THEM (or NEUTRAL)
+			// some game state for THEM (or NEUTRAL)
 			switch (state)
 			{
-				case BALL_PLACEMENT:
-				case INDIRECT_FREE:
-				case DIRECT_FREE:
-				case PREPARE_PENALTY:
-				case KICKOFF:
+				case BALL_PLACEMENT, INDIRECT_FREE, DIRECT_FREE, PREPARE_PENALTY, KICKOFF ->
+				{
 					return true;
-				default:
-					break;
+				}
+				default ->
+				{
+					// not team specific
+				}
 			}
 		}
 
@@ -428,6 +359,7 @@ public class GameState
 		return state == EGameState.KICKOFF && isGameStateForUs();
 	}
 
+
 	/**
 	 * @return true if the current state is KICKOFF or PREPARE_KICKOFF
 	 */
@@ -455,27 +387,6 @@ public class GameState
 	}
 
 
-	/**
-	 * @return true if this is an INDIRECT_FREE for us.
-	 */
-	public boolean isIndirectFreeForUs()
-	{
-		return (state == EGameState.INDIRECT_FREE) && isGameStateForUs();
-	}
-
-
-	public boolean isDirectFreeForUs()
-	{
-		return state == EGameState.DIRECT_FREE && isGameStateForUs();
-	}
-
-
-	public boolean isDirectFreeForThem()
-	{
-		return state == EGameState.DIRECT_FREE && isGameStateForThem();
-	}
-
-
 	public boolean isFreeKick()
 	{
 		return state == EGameState.DIRECT_FREE || state == EGameState.INDIRECT_FREE;
@@ -488,12 +399,9 @@ public class GameState
 	}
 
 
-	/**
-	 * @return true if this is an INDIRECT_FREE for them.
-	 */
-	public boolean isIndirectFreeForThem()
+	public boolean isFreeKickForThem()
 	{
-		return (state == EGameState.INDIRECT_FREE) && isGameStateForThem();
+		return isFreeKick() && isGameStateForThem();
 	}
 
 

@@ -6,7 +6,7 @@ package edu.tigers.sumatra.ai.metis.botdistance;
 import com.github.g3force.configurable.Configurable;
 import edu.tigers.sumatra.ai.metis.ACalculator;
 import edu.tigers.sumatra.ids.ETeam;
-import edu.tigers.sumatra.math.line.v2.Lines;
+import edu.tigers.sumatra.math.line.Lines;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
 import lombok.Getter;
@@ -15,7 +15,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-import java.util.stream.Collectors;
 
 
 /**
@@ -58,7 +57,7 @@ public class BotToBallDistanceCalc extends ACalculator
 		return getBots(team).stream()
 				.map(this::createBotDistance)
 				.sorted(Comparator.comparingDouble(BotDistance::getDist))
-				.collect(Collectors.toList());
+				.toList();
 	}
 
 

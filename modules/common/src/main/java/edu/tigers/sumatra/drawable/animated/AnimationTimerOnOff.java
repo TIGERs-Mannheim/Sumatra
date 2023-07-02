@@ -14,7 +14,7 @@ import com.sleepycat.persist.model.Persistent;
 @Persistent
 public class AnimationTimerOnOff extends AAnimationTimer
 {
-	private final float onPercentage;
+	private final double onPercentage;
 	
 	
 	@SuppressWarnings("unused")
@@ -28,7 +28,7 @@ public class AnimationTimerOnOff extends AAnimationTimer
 	/**
 	 * @param period Time for a full period in [s]
 	 */
-	public AnimationTimerOnOff(final float period)
+	public AnimationTimerOnOff(final double period)
 	{
 		super(period);
 		onPercentage = 0.5f;
@@ -39,7 +39,7 @@ public class AnimationTimerOnOff extends AAnimationTimer
 	 * @param period Time for a full period in [s]
 	 * @param offset Offset for the timer in [s]. Can be used to de-synchronize multiple timers.
 	 */
-	public AnimationTimerOnOff(final float period, final float offset)
+	public AnimationTimerOnOff(final double period, final float offset)
 	{
 		super(period, offset);
 		onPercentage = 0.5f;
@@ -51,7 +51,7 @@ public class AnimationTimerOnOff extends AAnimationTimer
 	 * @param offset Offset for the timer in [s]. Can be used to de-synchronize multiple timers.
 	 * @param onPercentage Percenate of how long the on-time is. Range 0.0 - 1.0
 	 */
-	public AnimationTimerOnOff(final float period, final float offset, final float onPercentage)
+	public AnimationTimerOnOff(final double period, final float offset, final float onPercentage)
 	{
 		super(period, offset);
 		this.onPercentage = onPercentage;
@@ -59,7 +59,7 @@ public class AnimationTimerOnOff extends AAnimationTimer
 	
 	
 	@Override
-	public float getTimerValue()
+	public double getTimerValue()
 	{
 		if (getRelativeTimerValue() < onPercentage)
 		{

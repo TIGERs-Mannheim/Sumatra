@@ -16,6 +16,8 @@ import edu.tigers.sumatra.skillsystem.skills.util.KickParams;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import lombok.Value;
 
@@ -25,31 +27,37 @@ import java.util.Optional;
 /**
  * The offensive action gives instructions to the attacker
  */
-@Persistent(version = 6)
+@Persistent(version = 8)
 @Value
-@Builder
+@Builder(access = AccessLevel.PRIVATE)
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class OffensiveAction
 {
-	@NonNull
-	EOffensiveActionMove move;
-	@NonNull
-	OffensiveActionViability viability;
-
+	EOffensiveActionType type;
 	Pass pass;
 	Kick kick;
 	IVector2 ballContactPos;
 	DribbleToPos dribbleToPos;
 
-	@SuppressWarnings("unused") // used by berkeley
-	private OffensiveAction()
+
+	public OffensiveAction()
 	{
-		move = EOffensiveActionMove.PROTECT_MOVE;
-		pass = null;
-		kick = null;
-		dribbleToPos = null;
-		ballContactPos = null;
-		viability = new OffensiveActionViability(EActionViability.FALSE, 0.0);
+		this.pass = null;
+		this.kick = null;
+		this.dribbleToPos = null;
+		this.ballContactPos = null;
+		this.type = null;
+	}
+
+
+	public static OffensiveAction buildRedirectKick(
+			@NonNull Kick kick)
+	{
+		return OffensiveAction.builder()
+				.kick(kick)
+				.ballContactPos(kick.getSource())
+				.type(EOffensiveActionType.REDIRECT_KICK)
+				.build();
 	}
 
 
@@ -76,5 +84,68 @@ public class OffensiveAction
 	public Optional<IPassTarget> getPassTarget()
 	{
 		return Optional.ofNullable(pass).map(p -> new PassTarget(p.getKick().getTarget(), p.getReceiver()));
+	}
+
+
+	public static OffensiveAction buildProtect(
+			@NonNull DribbleToPos dribbleToPos)
+	{
+		return OffensiveAction.builder()
+				.type(EOffensiveActionType.PROTECT)
+				.dribbleToPos(dribbleToPos)
+				.build();
+	}
+
+
+	public static OffensiveAction buildChopTrick()
+	{
+		return OffensiveAction.builder()
+				.type(EOffensiveActionType.CHOP_TRICK)
+				.build();
+	}
+
+
+	public static OffensiveAction buildPass(
+			@NonNull Pass pass)
+	{
+		return OffensiveAction.builder()
+				.pass(pass)
+				.kick(pass.getKick())
+				.ballContactPos(pass.getKick().getSource())
+				.type(EOffensiveActionType.PASS)
+				.build();
+	}
+
+
+	public static OffensiveAction buildKick(
+			@NonNull Kick kick)
+	{
+		return OffensiveAction.builder()
+				.kick(kick)
+				.ballContactPos(kick.getSource())
+				.type(EOffensiveActionType.KICK)
+				.build();
+	}
+
+
+	public static OffensiveAction buildDribbleKick(
+			@NonNull Kick kick,
+			@NonNull DribbleToPos dribbleToPos)
+	{
+		return OffensiveAction.builder()
+				.kick(kick)
+				.type(EOffensiveActionType.DRIBBLE_KICK)
+				.dribbleToPos(dribbleToPos)
+				.build();
+	}
+
+
+	public static OffensiveAction buildReceive(
+			IVector2 ballContactPos)
+	{
+		return OffensiveAction.builder()
+				.type(EOffensiveActionType.RECEIVE)
+				.ballContactPos(ballContactPos)
+				.build();
 	}
 }

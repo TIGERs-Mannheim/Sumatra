@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.pandora.roles.test.move;
@@ -14,8 +14,7 @@ import edu.tigers.sumatra.botmanager.botskills.EDataAcquisitionMode;
 import edu.tigers.sumatra.data.collector.ITimeSeriesDataCollectorObserver;
 import edu.tigers.sumatra.export.CSVExporter;
 import edu.tigers.sumatra.math.AngleMath;
-import edu.tigers.sumatra.math.line.Line;
-import edu.tigers.sumatra.math.line.LineMath;
+import edu.tigers.sumatra.math.line.Lines;
 import edu.tigers.sumatra.math.pose.Pose;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
@@ -274,7 +273,6 @@ public class MoveTestRole extends ARole
 		protected IVector2 initPos;
 		protected double initOrientation;
 		protected final double destOrientation;
-		protected MoveToSkill skill;
 
 
 		private PrepareState(final IVector2 dest, final double orientation)
@@ -292,13 +290,12 @@ public class MoveTestRole extends ARole
 			dest = initPos.addNew(dest.subtractNew(getPos()));
 			tLastStill = 0;
 
-			MoveToSkill move = MoveToSkill.createMoveToSkill();
-			move.updateDestination(dest);
-			move.updateTargetAngle(destOrientation);
-			move.getMoveCon().setPenaltyAreaOurObstacle(false);
-			move.getMoveCon().setPenaltyAreaTheirObstacle(false);
-			move.getMoveCon().setBallObstacle(false);
-			setNewSkill(move);
+			MoveToSkill skill = MoveToSkill.createMoveToSkill();
+			skill.updateDestination(dest);
+			skill.updateTargetAngle(destOrientation);
+			skill.getMoveCon().physicalObstaclesOnly();
+			skill.getMoveCon().setBallObstacle(false);
+			setNewSkill(skill);
 		}
 
 
@@ -359,23 +356,16 @@ public class MoveTestRole extends ARole
 
 			switch (mode)
 			{
-				case MOVE_TO:
-					setNewSkill(getMoveToSkill());
-					break;
-				case TRAJ_POS:
-					setNewSkill(new MoveBangBangSkill(dest, destOrientation, EBotSkill.GLOBAL_POSITION, rollOut));
-					break;
-				case TRAJ_VEL:
-					setNewSkill(new MoveBangBangSkill(dest, destOrientation, EBotSkill.LOCAL_VELOCITY, rollOut));
-					break;
-				case TRAJ_GLOBAL_VEL:
-					setNewSkill(new MoveBangBangSkill(dest, destOrientation, EBotSkill.GLOBAL_VELOCITY, rollOut));
-					break;
-				case TRAJ_WHEEL_VEL:
-					setNewSkill(new MoveBangBangSkill(dest, destOrientation, EBotSkill.WHEEL_VELOCITY, rollOut));
-					break;
-				default:
-					break;
+				case MOVE_TO -> setNewSkill(getMoveToSkill());
+				case TRAJ_POS ->
+						setNewSkill(new MoveBangBangSkill(dest, destOrientation, EBotSkill.GLOBAL_POSITION, rollOut));
+				case TRAJ_VEL ->
+						setNewSkill(new MoveBangBangSkill(dest, destOrientation, EBotSkill.LOCAL_VELOCITY, rollOut));
+				case TRAJ_GLOBAL_VEL ->
+						setNewSkill(new MoveBangBangSkill(dest, destOrientation, EBotSkill.GLOBAL_VELOCITY, rollOut));
+				case TRAJ_WHEEL_VEL ->
+						setNewSkill(new MoveBangBangSkill(dest, destOrientation, EBotSkill.WHEEL_VELOCITY, rollOut));
+				default -> throw new IllegalArgumentException("Invalid mode: " + mode);
 			}
 
 			result = new MotionResult();
@@ -402,10 +392,9 @@ public class MoveTestRole extends ARole
 			MoveToSkill skill = MoveToSkill.createMoveToSkill();
 			skill.updateDestination(dest);
 			skill.updateTargetAngle(destOrientation);
+			skill.getMoveCon().physicalObstaclesOnly();
 			skill.getMoveCon().setBallObstacle(false);
 			skill.getMoveCon().setBotsObstacle(false);
-			skill.getMoveCon().setPenaltyAreaOurObstacle(false);
-			skill.getMoveCon().setPenaltyAreaTheirObstacle(false);
 			skill.getMoveConstraints().setPrimaryDirection(primaryDir);
 			skill.getMoveConstraints().setFastMove(fastMove);
 			return skill;
@@ -416,7 +405,7 @@ public class MoveTestRole extends ARole
 		public void doUpdate()
 		{
 			super.doUpdate();
-			double dist2Line = LineMath.distancePL(getPos(), Line.fromPoints(initPos, dest));
+			double dist2Line = Lines.lineFromPoints(initPos, dest).distanceTo(getPos());
 			result.dists2Line.add(dist2Line);
 
 			getBot().getFilteredState().ifPresent(s -> trackerVision.addMeasure(getWFrame().getTimestamp(), s));
@@ -445,9 +434,12 @@ public class MoveTestRole extends ARole
 		{
 			final double feedbackDelayWithAvg = tracker.estimateTimeDifferenceWithAvg();
 			final double feedbackDelayWithMedian = tracker.estimateTimeDifferenceWithMedian();
-			log.info("{}: Estimated feedback delay: {} (avg), {} (median)", name,
-					String.format("%.3f, ", feedbackDelayWithAvg),
-					String.format("%.3f, ", feedbackDelayWithMedian));
+			if (log.isInfoEnabled())
+			{
+				log.info("{}: Estimated feedback delay: {} (avg), {} (median)", name,
+						String.format("%.3f, ", feedbackDelayWithAvg),
+						String.format("%.3f, ", feedbackDelayWithMedian));
+			}
 			double feedbackDelay = feedbackDelayWithAvg;
 
 			Optional<RobotTrajectoryTracker.StateDifference> stateDifferenceAvg = tracker

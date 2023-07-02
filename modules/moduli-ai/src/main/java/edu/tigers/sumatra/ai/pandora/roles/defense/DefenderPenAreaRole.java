@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.pandora.roles.defense;
@@ -14,15 +14,16 @@ import edu.tigers.sumatra.drawable.DrawableLine;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.geometry.RuleConstraints;
 import edu.tigers.sumatra.ids.BotID;
-import edu.tigers.sumatra.math.line.Line;
-import edu.tigers.sumatra.math.line.v2.LineMath;
+import edu.tigers.sumatra.math.boundary.IShapeBoundary;
+import edu.tigers.sumatra.math.line.LineMath;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
+import edu.tigers.sumatra.pathfinder.EObstacleAvoidanceMode;
 import edu.tigers.sumatra.pathfinder.TrajectoryGenerator;
-import edu.tigers.sumatra.skillsystem.skills.MoveOnPenaltyAreaSkill;
+import edu.tigers.sumatra.skillsystem.skills.MoveOnShapeBoundarySkill;
 import edu.tigers.sumatra.skillsystem.skills.TouchKickSkill;
 import edu.tigers.sumatra.skillsystem.skills.util.KickParams;
-import edu.tigers.sumatra.skillsystem.skills.util.PenAreaBoundary;
+import edu.tigers.sumatra.statemachine.Transition;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
 import lombok.Getter;
 import lombok.Setter;
@@ -60,7 +61,9 @@ public class DefenderPenAreaRole extends ADefenseRole
 	@Setter
 	private IVector2 destination = Vector2.fromX(-(Geometry.getFieldLength() - Geometry.getPenaltyAreaDepth()));
 	@Setter
-	private PenAreaBoundary penAreaBoundary = PenAreaBoundary.ownWithMargin(Geometry.getBotRadius());
+	private IShapeBoundary penAreaBoundary = Geometry.getPenaltyAreaOur()
+			.withMargin(Geometry.getBotRadius())
+			.getShapeBoundary();
 
 
 	public DefenderPenAreaRole()
@@ -72,14 +75,20 @@ public class DefenderPenAreaRole extends ADefenseRole
 		var kickBall = new KickBallState();
 		var keepDistanceToBall = new KeepDistanceToBallState();
 
-		moveToPenArea.addTransition(() -> getAiFrame().getGameState().isStoppedGame(), keepDistanceToBall);
-		moveToPenArea.addTransition(moveToPenArea::reachedPenArea, moveOnPenArea);
-		moveOnPenArea.addTransition(() -> getAiFrame().getGameState().isStoppedGame(), keepDistanceToBall);
-		moveOnPenArea.addTransition(this::canKickBallAway, kickBall);
-		kickBall.addTransition(() -> getAiFrame().getGameState().isStoppedGame(), keepDistanceToBall);
-		kickBall.addTransition(this::situationIsDangerous, moveOnPenArea);
-		kickBall.addTransition(kickBall::timeRunOut, moveOnPenArea);
-		keepDistanceToBall.addTransition(() -> !getAiFrame().getGameState().isStoppedGame(), moveToPenArea);
+		var stoppedGameTransition = Transition.builder()
+				.name("game stopped")
+				.evaluation(() -> getAiFrame().getGameState().isStoppedGame())
+				.nextState(keepDistanceToBall)
+				.build();
+		moveToPenArea.addTransition(stoppedGameTransition);
+		moveToPenArea.addTransition("reachedPenArea", moveToPenArea::reachedPenArea, moveOnPenArea);
+		moveOnPenArea.addTransition(stoppedGameTransition);
+		moveOnPenArea.addTransition("canKickBallAway", this::canKickBallAway, kickBall);
+		kickBall.addTransition(stoppedGameTransition);
+		kickBall.addTransition("situationIsDangerous", this::situationIsDangerous, moveOnPenArea);
+		kickBall.addTransition("timeRunOut", kickBall::timeRunOut, moveOnPenArea);
+		keepDistanceToBall.addTransition("game not stopped", () -> !getAiFrame().getGameState().isStoppedGame(),
+				moveToPenArea);
 
 		// start with going straight to the target position
 		setInitialState(moveToPenArea);
@@ -111,27 +120,30 @@ public class DefenderPenAreaRole extends ADefenseRole
 
 	private IVector2 validFinalDestination(final IVector2 intermediatePos)
 	{
-		final double botBallRadius = Geometry.getBotRadius() + Geometry.getBallRadius();
-		final PenAreaBoundary adaptedPenArea = penAreaBoundary.withMargin(-botBallRadius);
 		if (getBot().getVel().getLength2() > 0.5)
 		{
 			for (ITrackedBot bot : getWFrame().getOpponentBots().values())
 			{
 				if (bot.getPos().distanceTo(intermediatePos) < Geometry.getBotRadius() * 1.5)
 				{
-					return penAreaBoundary
-							.projectPoint(LineMath.stepAlongLine(intermediatePos, getPos(), Geometry.getBotRadius() * 1.5));
+					var finalPos = LineMath.stepAlongLine(intermediatePos, getPos(), Geometry.getBotRadius() * 1.5);
+					return penAreaBoundary.projectPoint(Geometry.getGoalOur().getCenter(), finalPos);
 				}
 			}
+
+			double botBallRadius = Geometry.getBotRadius() + Geometry.getBallRadius();
+			var adaptedPenArea = penAreaBoundary.withMargin(-botBallRadius);
 			if (!adaptedPenArea.isPointInShape(getBall().getPos()))
 			{
-				final IVector2 ballProjectedToPenArea = adaptedPenArea.projectPoint(getBall().getPos());
+				final IVector2 ballProjectedToPenArea = adaptedPenArea.projectPoint(Geometry.getGoalOur().getCenter(),
+						getBall().getPos());
 				final double ballToPenAreaDist = ballProjectedToPenArea.distanceTo(getBall().getPos());
 
 				if (intermediatePos.distanceTo(getBall().getPos()) < botBallRadius)
 				{
 					// ball is inside destination. Better not drive onto ball
-					return adaptedPenArea.withMargin(ballToPenAreaDist + botBallRadius).projectPoint(intermediatePos);
+					return adaptedPenArea.withMargin(ballToPenAreaDist + botBallRadius)
+							.projectPoint(Geometry.getGoalOur().getCenter(), intermediatePos);
 				}
 			}
 		}
@@ -149,7 +161,7 @@ public class DefenderPenAreaRole extends ADefenseRole
 	private boolean ballInPenArea()
 	{
 		final double margin = Geometry.getBotRadius() * 2 + Geometry.getBallRadius();
-		return Geometry.getPenaltyAreaOur().isPointInShape(getWFrame().getBall().getPos(), margin);
+		return Geometry.getPenaltyAreaOur().withMargin(margin).isPointInShape(getWFrame().getBall().getPos());
 	}
 
 
@@ -164,28 +176,41 @@ public class DefenderPenAreaRole extends ADefenseRole
 		private final PointChecker pointChecker = new PointChecker()
 				.checkBallDistances()
 				.checkInsideField()
+				.checkPointFreeOfBots()
 				.checkCustom(this::canOpponentGetBallInPenArea);
 		private final KeepDistanceToBall keepDistanceToBall = new KeepDistanceToBall(pointChecker);
+		private IVector2 curPos;
 
 
 		@Override
 		protected void onInit()
 		{
 			skill.getMoveCon().setPenaltyAreaOurObstacle(false);
+			curPos = getPos();
 		}
 
 
 		@Override
 		protected void onUpdate()
 		{
-			pointChecker.checkPointFreeOfBotsExceptFor(destination);
-			if (keepDistanceToBall.isOk(getAiFrame(), destination, getBotID()))
+			if (curPos.distanceTo(getPos()) > 50)
 			{
-				skill.updateDestination(destination);
+				curPos = getPos();
+			}
+			if (Geometry.getPenaltyAreaOur().isPointInShapeOrBehind(getBall().getPos()))
+			{
+				skill.updateDestination(keepDistanceToBall.findNextFreeDest(getAiFrame(), curPos, getBotID()));
 			} else
 			{
-				// Search for next free pos, starting at the current pos to avoid driving through the placement beam
-				skill.updateDestination(keepDistanceToBall.findNextFreeDest(getAiFrame(), getPos(), getBotID()));
+				pointChecker.checkPointFreeOfBotsExceptFor(destination);
+				if (keepDistanceToBall.isOk(getAiFrame(), destination, getBotID()))
+				{
+					skill.updateDestination(destination);
+				} else
+				{
+					// Search for next free pos, starting at the current pos to avoid driving through the placement beam
+					skill.updateDestination(keepDistanceToBall.findNextFreeDest(getAiFrame(), getPos(), getBotID()));
+				}
 			}
 
 			skill.updateLookAtTarget(getBall());
@@ -201,7 +226,7 @@ public class DefenderPenAreaRole extends ADefenseRole
 			}
 			double distance = RuleConstraints.getStopRadius();
 			return getWFrame().getBots().values().stream()
-					.filter(bot -> bot.getBotId().getTeamColor() != getBotID().getTeamColor())
+					.filter(bot -> !bot.getBotId().getTeamColor().equals(getBotID().getTeamColor()))
 					.noneMatch(bot -> bot.getPos().distanceTo(point) < distance);
 		}
 	}
@@ -227,7 +252,7 @@ public class DefenderPenAreaRole extends ADefenseRole
 		private boolean reachedPenArea()
 		{
 			double margin = Geometry.getBotRadius() + moveToPenAreaMargin;
-			return Geometry.getPenaltyAreaOur().isPointInShape(getPos(), margin);
+			return Geometry.getPenaltyAreaOur().withMargin(margin).isPointInShape(getPos());
 		}
 
 
@@ -236,15 +261,15 @@ public class DefenderPenAreaRole extends ADefenseRole
 			double marginToCompanions = Geometry.getBotRadius() * 2 + 10;
 			return getAiFrame().getPlayStrategy().getActiveRoles(ERole.DEFENDER_PEN_AREA).stream()
 					.filter(r -> r.getPos().distanceTo(getPos()) > marginToCompanions)
-					.map(ARole::getBotID).collect(Collectors.toSet());
+					.map(ARole::getBotID).collect(Collectors.toUnmodifiableSet());
 		}
 	}
 
-	private class MoveOnPenAreaState extends RoleState<MoveOnPenaltyAreaSkill>
+	private class MoveOnPenAreaState extends RoleState<MoveOnShapeBoundarySkill>
 	{
 		MoveOnPenAreaState()
 		{
-			super(MoveOnPenaltyAreaSkill::new);
+			super(MoveOnShapeBoundarySkill::new);
 		}
 
 
@@ -255,10 +280,38 @@ public class DefenderPenAreaRole extends ADefenseRole
 			skill.setDestination(finalDestination);
 			skill.setPenAreaBoundary(penAreaBoundary);
 			skill.setKickParams(calcKickParams());
+			skill.setCompanions(companions());
+			skill.getMoveCon().setIgnoredBots(ignoredBots());
+			skill.getMoveCon().setObstacleAvoidanceMode(EObstacleAvoidanceMode.AGGRESSIVE);
 
 			getShapes(DEFENSE_PENALTY_AREA_ROLE).add(
-					new DrawableLine(Line.fromPoints(finalDestination, getPos()), Color.GREEN)
+					new DrawableLine(finalDestination, getPos(), Color.GREEN)
 			);
+		}
+
+
+		private Set<BotID> ignoredBots()
+		{
+			return getWFrame().getOpponentBots().keySet().stream().filter(this::isIgnoredOpponent)
+					.collect(Collectors.toUnmodifiableSet());
+		}
+
+
+		private boolean isIgnoredOpponent(BotID opponent)
+		{
+			if (getTacticalField().getOpponentPassReceiver() != null
+					&& getTacticalField().getOpponentPassReceiver().getBotId().equals(opponent))
+			{
+				return true;
+			}
+			return getBall().getPos().distanceTo(getWFrame().getBot(opponent).getPos()) < 1000;
+		}
+
+
+		private Set<BotID> companions()
+		{
+			return getAiFrame().getPlayStrategy().getActiveRoles(ERole.DEFENDER_PEN_AREA).stream()
+					.map(ARole::getBotID).collect(Collectors.toUnmodifiableSet());
 		}
 	}
 

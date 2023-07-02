@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.botmanager.commands;
 
@@ -28,7 +28,9 @@ public final class CommandFactory
 	private static final int HEADER_LENGTH = 2;
 	private static final int RELIABLE_HEADER_LENGTH = 4;
 
-	/** Reliable commands use an extended header, signaled by 8th bit in section */
+	/**
+	 * Reliable commands use an extended header, signaled by 8th bit in section
+	 */
 	private static final int RELIABLE_CMD_MASK = 0x8000;
 
 
@@ -78,7 +80,7 @@ public final class CommandFactory
 			desc.decode(desc.encode(desc.newInstance()));
 		} catch (SerialException err)
 		{
-			log.error("Could not load command: " + ecmd, err);
+			log.error("Could not load command: {}", ecmd, err);
 			return Optional.empty();
 		}
 
@@ -88,24 +90,24 @@ public final class CommandFactory
 			acmd = (ACommand) desc.newInstance();
 		} catch (SerialException err)
 		{
-			log.error("Could not create instance of: " + ecmd, err);
+			log.error("Could not create instance of: {}", ecmd, err);
 			return Optional.empty();
 		} catch (ClassCastException err)
 		{
-			log.error(ecmd + " is not based on ACommand!", err);
+			log.error("{} is not based on ACommand!", ecmd, err);
 			return Optional.empty();
 		}
 
 		if (acmd.getType().getId() != ecmd.getId())
 		{
-			log.error("ECommand id mismatch in command: " + ecmd + ". The command does not use the correct enum.");
+			log.error("ECommand id mismatch in command: {}. The command does not use the correct enum.", ecmd);
 			return Optional.empty();
 		}
 
 		if (commands.get(ecmd.getId()) != null)
 		{
-			log.error(ecmd + "'s command code is already defined by: "
-					+ commands.get(ecmd.getId()).getClass().getName());
+			log.error("{}'s command code is already defined by: {}", ecmd,
+					commands.get(ecmd.getId()).getClass().getName());
 			return Optional.empty();
 		}
 		return Optional.of(desc);
@@ -133,7 +135,7 @@ public final class CommandFactory
 
 		if (!commands.containsKey(cmdId))
 		{
-			log.warn("Unknown command: {}, length: {}", cmdId, data.length);
+			log.debug("Unknown command: {}, length: {}", cmdId, data.length);
 			return null;
 		}
 
@@ -170,12 +172,12 @@ public final class CommandFactory
 				{
 					sb.append(String.format("%02x ", b));
 				}
-				log.warn("Command " + cmdStr + " did not parse all data (" + cmdDataLen + " used of " + cmdData.length
-						+ " available) Data: " + sb.toString());
+				log.debug("Command {} did not parse all data ({}} used of {} available) Data: {}",
+						cmdStr, cmdDataLen, cmdData.length, sb);
 			}
 		} catch (SerialException err)
 		{
-			log.error("Could not parse cmd: " + cmdId, err);
+			log.info("Could not parse cmd: {}", cmdId, err);
 			return null;
 		}
 
@@ -195,7 +197,7 @@ public final class CommandFactory
 
 		if (!commands.containsKey(cmdId))
 		{
-			log.error("No description for command: " + cmdId);
+			log.error("No description for command: {}", cmdId);
 			return new byte[0];
 		}
 
@@ -207,7 +209,7 @@ public final class CommandFactory
 			cmdData = cmdDesc.encode(cmd);
 		} catch (SerialException err)
 		{
-			log.error("Could not encode command: " + cmdId, err);
+			log.error("Could not encode command: {}", cmdId, err);
 			return new byte[0];
 		}
 
@@ -248,7 +250,7 @@ public final class CommandFactory
 
 		if (!commands.containsKey(cmdId))
 		{
-			log.error("No description for command: " + cmdId);
+			log.error("No description for command: {}", cmdId);
 			return 0;
 		}
 
@@ -259,7 +261,7 @@ public final class CommandFactory
 			length = cmdDesc.getLength(cmd);
 		} catch (SerialException err)
 		{
-			log.error("Could not get length of: " + cmd.getType(), err);
+			log.error("Could not get length of: {}", cmd.getType(), err);
 			return 0;
 		}
 

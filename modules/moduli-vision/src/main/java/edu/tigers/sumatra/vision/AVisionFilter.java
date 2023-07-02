@@ -5,15 +5,12 @@
 package edu.tigers.sumatra.vision;
 
 import edu.tigers.moduli.AModule;
-import edu.tigers.moduli.exceptions.ModuleNotFoundException;
 import edu.tigers.sumatra.bot.RobotInfo;
-import edu.tigers.sumatra.cam.ACam;
 import edu.tigers.sumatra.cam.ICamFrameObserver;
 import edu.tigers.sumatra.cam.data.CamDetectionFrame;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.rectangle.IRectangle;
 import edu.tigers.sumatra.math.vector.IVector3;
-import edu.tigers.sumatra.model.SumatraModel;
 import edu.tigers.sumatra.util.Safe;
 import edu.tigers.sumatra.vision.data.FilteredVisionFrame;
 import edu.tigers.sumatra.vision.kick.estimators.IBallModelIdentResult;
@@ -59,23 +56,6 @@ public abstract class AVisionFilter extends AModule implements ICamFrameObserver
 	{
 	}
 
-
-	/**
-	 * Called once uppon moduli start
-	 */
-	protected void start()
-	{
-		// nothing to do
-	}
-
-
-	/**
-	 * Called once uppon moduli stop
-	 */
-	protected void stop()
-	{
-		robotInfoMap = new HashMap<>();
-	}
 
 
 	/**
@@ -172,46 +152,9 @@ public abstract class AVisionFilter extends AModule implements ICamFrameObserver
 
 
 	@Override
-	public void initModule()
-	{
-		// nothing to do
-	}
-
-
-	@Override
-	public void deinitModule()
-	{
-		// nothing to do
-	}
-
-
-	@Override
-	public void startModule()
-	{
-		start();
-		try
-		{
-			ACam cam = SumatraModel.getInstance().getModule(ACam.class);
-			cam.addObserver(this);
-		} catch (ModuleNotFoundException e)
-		{
-			log.error("Could not find cam module.", e);
-		}
-	}
-
-
-	@Override
 	public void stopModule()
 	{
-		try
-		{
-			ACam cam = SumatraModel.getInstance().getModule(ACam.class);
-			cam.removeObserver(this);
-		} catch (ModuleNotFoundException e)
-		{
-			log.error("Could not find cam module.", e);
-		}
-		stop();
+		robotInfoMap = new HashMap<>();
 	}
 
 

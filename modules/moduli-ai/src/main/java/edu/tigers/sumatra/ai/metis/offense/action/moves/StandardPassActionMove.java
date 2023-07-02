@@ -6,16 +6,16 @@ package edu.tigers.sumatra.ai.metis.offense.action.moves;
 
 import com.github.g3force.configurable.Configurable;
 import edu.tigers.sumatra.ai.metis.offense.action.EActionViability;
-import edu.tigers.sumatra.ai.metis.offense.action.OffensiveAction;
+import edu.tigers.sumatra.ai.metis.offense.action.RatedOffensiveAction;
 import edu.tigers.sumatra.ai.metis.offense.action.OffensiveActionViability;
 import edu.tigers.sumatra.ai.metis.pass.KickOrigin;
 import edu.tigers.sumatra.ai.metis.pass.rating.EPassRating;
 import edu.tigers.sumatra.ai.metis.pass.rating.RatedPass;
 import edu.tigers.sumatra.ids.BotID;
-import edu.tigers.sumatra.wp.data.ITrackedBot;
 import lombok.RequiredArgsConstructor;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Supplier;
 
 
@@ -31,7 +31,7 @@ public class StandardPassActionMove extends AOffensiveActionMove
 	private final Supplier<Map<KickOrigin, RatedPass>> selectedPasses;
 
 
-	private OffensiveActionViability calcViability(BotID botId, RatedPass pass)
+	private OffensiveActionViability calcViability(RatedPass pass)
 	{
 		if (pass == null)
 		{
@@ -39,28 +39,34 @@ public class StandardPassActionMove extends AOffensiveActionMove
 		}
 		return new OffensiveActionViability(
 				EActionViability.PARTIALLY,
-				applyMultiplier(viabilityScoreFor(botId, pass))
+				applyMultiplier(viabilityScoreFor(pass))
 		);
 	}
 
 
 	@Override
-	public OffensiveAction calcAction(BotID botId)
+	public Optional<RatedOffensiveAction> calcAction(BotID botId)
 	{
 		RatedPass ratedPass = findPassForMe(selectedPasses.get(), botId).orElse(null);
-		return OffensiveAction.builder()
-				.move(EOffensiveActionMove.STANDARD_PASS)
-				.viability(calcViability(botId, ratedPass))
-				.pass(ratedPass == null ? null : ratedPass.getPass())
-				.build();
+		if (ratedPass == null)
+		{
+			return Optional.empty();
+		}
+
+		return Optional.of(RatedOffensiveAction
+				.buildPass(EOffensiveActionMove.STANDARD_PASS,
+						calcViability(ratedPass),
+						ratedPass.getPass()));
 	}
 
 
-	private double viabilityScoreFor(BotID botId, RatedPass pass)
+	private double viabilityScoreFor(RatedPass pass)
 	{
-		ITrackedBot bot = getWFrame().getBot(botId);
-		if (pass.getPass().getKick().getSource().x() - maxPassBackwardsDist > bot.getPos().x())
+		double sourceX = pass.getPass().getKick().getSource().x();
+		double targetX = pass.getPass().getKick().getTarget().x();
+		if (sourceX - targetX < maxPassBackwardsDist)
 		{
+			// only consider INTERCEPTION rating no back pass longer than maxPassBackwardsDist
 			return pass.getMaxScore(
 					EPassRating.INTERCEPTION,
 					EPassRating.REFLECT_GOAL_KICK,

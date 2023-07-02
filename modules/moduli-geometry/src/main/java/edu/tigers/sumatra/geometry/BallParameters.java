@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.geometry;
@@ -21,14 +21,15 @@ public class BallParameters
 	@Configurable(
 			comment = "Ball sliding acceleration [mm/s^2]",
 			defValue = "-3000.0",
-			spezis = { "SUMATRA", "LAB", "TISCH", "ROBOCUP", "ANDRE", "NICOLAI", "SIMULATOR" }
+			spezis = { "SUMATRA", "LAB", "TISCH", "ROBOCUP", "ANDRE", "NICOLAI", "SIMULATOR" },
+			defValueSpezis = {"-3000.0", "-3000.0", "-3000.0", "-2790.0", "-3000.0", "-3000.0", "-3000.0"}
 	)
 	private double accSlide = -3000.0;
 
 	@Configurable(
 			comment = "Ball rolling acceleration [mm/s^2]",
-			defValue = "-260.0",
-			spezis = { "SUMATRA", "LAB", "TISCH", "ROBOCUP", "ANDRE", "NICOLAI", "SIMULATOR" }
+			spezis = { "SUMATRA", "LAB", "TISCH", "ROBOCUP", "ANDRE", "NICOLAI", "SIMULATOR" },
+			defValueSpezis = {"-260.0", "-260.0", "-260.0", "-330.0", "-260.0", "-260.0", "-260.0"}
 	)
 	private double accRoll = -260.0;
 
@@ -49,14 +50,14 @@ public class BallParameters
 	@Configurable(
 			comment = "Amount of spin transferred during a redirect.",
 			spezis = { "SUMATRA", "LAB", "TISCH", "ROBOCUP", "ANDRE", "NICOLAI", "SIMULATOR" },
-			defValueSpezis = { "0.8", "0.35", "0.35", "0.35", "0.35", "0.35", "0.8" }
+			defValueSpezis = { "0.8", "0.18", "0.35", "0.18", "0.35", "0.35", "0.8" }
 	)
 	private double redirectSpinFactor = 0.8;
 
 	@Configurable(
 			comment = "Restitution coefficient for redirected balls from a bot.",
 			spezis = { "SUMATRA", "LAB", "TISCH", "ROBOCUP", "ANDRE", "NICOLAI", "SIMULATOR" },
-			defValueSpezis = { "0.2", "0.55", "0.55", "0.55", "0.55", "0.55", "0.2" }
+			defValueSpezis = { "0.2", "0.07", "0.55", "0.07", "0.55", "0.55", "0.2" }
 	)
 	private double redirectRestitutionCoefficient = 0.2;
 

@@ -53,8 +53,8 @@ public interface IWorldFrameObserver
 	 * Update the shape map with given identifier
 	 *
 	 * @param timestamp
-	 * @param shapeMap the new shape map
-	 * @param source the source identifier for this shape map that should be replaced
+	 * @param shapeMap  the new shape map
+	 * @param source    the source identifier for this shape map that should be replaced
 	 */
 	default void onNewShapeMap(final long timestamp, ShapeMap shapeMap, ShapeMapSource source)
 	{

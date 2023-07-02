@@ -22,7 +22,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 
 /**
@@ -48,6 +47,7 @@ public class SupportiveAttackerCalc extends ACalculator
 	private final Supplier<Set<BotID>> potentialOffensiveBots;
 	private final Supplier<List<BotID>> ballHandlingBots;
 	private final Supplier<IVector2> supportiveAttackerPos;
+	private final Supplier<Set<BotID>> bestBallDefenderCandidates;
 
 	@Getter
 	private List<BotID> supportiveAttackers;
@@ -94,12 +94,13 @@ public class SupportiveAttackerCalc extends ACalculator
 	private List<BotID> activateSupportiveAttacker()
 	{
 		return potentialOffensiveBots.get().stream()
+				.filter(b -> !bestBallDefenderCandidates.get().contains(b))
 				.filter(b -> !ballHandlingBots.get().contains(b))
 				.map(b -> getWFrame().getBot(b))
 				.min(Comparator.comparingDouble(e -> e.getPos().distanceTo(supportiveAttackerPos.get())))
 				.map(ITrackedBot::getBotId)
 				.stream()
-				.collect(Collectors.toUnmodifiableList());
+				.toList();
 	}
 
 

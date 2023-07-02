@@ -15,7 +15,6 @@ import edu.tigers.sumatra.drawable.animated.AnimatedCircle;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.StatisticsMath;
 import edu.tigers.sumatra.math.circle.Circle;
-import edu.tigers.sumatra.math.line.Line;
 import edu.tigers.sumatra.math.rectangle.IRectangle;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
@@ -43,43 +42,26 @@ import java.util.stream.Collectors;
  */
 public class QualityInspector
 {
-	private List<CamCalibration> problematicCams = new ArrayList<>();
-	private List<RobotDeviationIssue> deviationIssues = new ArrayList<>();
-	private List<RobotInvisibleIssue> invisibleIssues = new ArrayList<>();
-	private List<FilteredVisionBot> filteredBots = new ArrayList<>();
-	private List<CameraTimeDiffIssue> camTimeDiffIssues = new ArrayList<>();
-	private Map<Integer, CamCalibration> calibrations = new HashMap<>();
-
 	@Configurable(defValue = "true", comment = "Draw camera issues in quality layer.")
 	private static boolean drawCameraIssues = true;
-
 	@Configurable(defValue = "true", comment = "Draw robot deviation issues in quality layer.")
 	private static boolean drawRobotDeviationIssues = true;
-
 	@Configurable(defValue = "true", comment = "Draw invisible robot issues in quality layer.")
 	private static boolean drawRobotInvisibleIssues = true;
-
 	@Configurable(defValue = "true", comment = "Draw robot vision quality issues in quality layer.")
 	private static boolean drawRobotQualityIssues = true;
-
 	@Configurable(defValue = "400.0", comment = "Maximum allowed camera height difference to median height. [mm]")
 	private static double maxHeightDifference = 400.0;
-
 	@Configurable(defValue = "50", comment = "Maximum allowed distance between a robot on two cameras. [mm]")
 	private static double maxOverlapDist = 50;
-
 	@Configurable(defValue = "10", comment = "Time until issues are removed. [s]")
 	private static double issueTimeout = 10;
-
 	@Configurable(defValue = "1", comment = "Robots faster than this will not be checked for position deviation. [m/s]")
 	private static double maxSpeedForDeviation = 1;
-
 	@Configurable(defValue = "0.02", comment = "Maximum difference between different camera timestamps. [s]")
 	private static double maxTimeDiffForDeviation = 0.02;
-
 	@Configurable(defValue = "1.5", comment = "Robots faster than this will be checked for invisibility. [m/s]")
 	private static double minSpeedForInvisibleCheck = 1.5;
-
 	@Configurable(defValue = "0.1", comment = "Time until an invisible fast robot is reported. [s]")
 	private static double minInvisibleTime = 0.1;
 
@@ -87,6 +69,13 @@ public class QualityInspector
 	{
 		ConfigRegistration.registerClass("vision", QualityInspector.class);
 	}
+
+	private List<CamCalibration> problematicCams = new ArrayList<>();
+	private List<RobotDeviationIssue> deviationIssues = new ArrayList<>();
+	private List<RobotInvisibleIssue> invisibleIssues = new ArrayList<>();
+	private List<FilteredVisionBot> filteredBots = new ArrayList<>();
+	private List<CameraTimeDiffIssue> camTimeDiffIssues = new ArrayList<>();
+	private Map<Integer, CamCalibration> calibrations = new HashMap<>();
 
 
 	/**
@@ -104,16 +93,17 @@ public class QualityInspector
 		// just get all RobotTracker in one list
 		List<RobotTracker> allTrackers = camFilters.stream()
 				.flatMap(f -> f.getValidRobots().values().stream())
-				.collect(Collectors.toList());
+				.toList();
 
 		for (CamFilter filter : camFilters)
 		{
-			if (!filter.getViewport().isPresent())
+			var viewPort = filter.getViewport();
+			if (viewPort.isEmpty())
 			{
 				continue;
 			}
 
-			IRectangle viewport = filter.getViewport().get();
+			IRectangle viewport = viewPort.get();
 			checkInvisibleRobot(timestamp, filter, viewport);
 		}
 
@@ -151,7 +141,7 @@ public class QualityInspector
 				.filter(c -> timestamp - c.getTimestamp() > c.getAverageFrameDt() * 2e9)
 				.map(c -> new CameraTimeDiffIssue(c.getCameraPosition().orElse(Vector3f.ZERO_VECTOR).getXYVector(),
 						timestamp - c.getTimestamp()))
-				.collect(Collectors.toList());
+				.toList();
 	}
 
 
@@ -167,7 +157,7 @@ public class QualityInspector
 						.filter(i -> i.botId.equals(tracker.getBotId()))
 						.findFirst();
 
-				if (!sameBotIssue.isPresent())
+				if (sameBotIssue.isEmpty())
 				{
 					RobotInvisibleIssue issue = new RobotInvisibleIssue();
 					issue.botId = tracker.getBotId();
@@ -240,43 +230,6 @@ public class QualityInspector
 		}
 	}
 
-	private static class RobotDeviationIssue
-	{
-		private IVector2 firstPos;
-		private IVector2 secondPos;
-		private int firstCam;
-		private int secondCam;
-		private BotID botId;
-		private long lastOccurence;
-
-
-		private IVector2 getCenterPos()
-		{
-			return firstPos.addNew(secondPos).multiply(0.5);
-		}
-	}
-
-	private static class RobotInvisibleIssue
-	{
-		private IVector2 firstPos;
-		private IVector2 lastPos;
-		private BotID botId;
-		private long lastOccurence;
-
-
-		private IVector2 getCenterPos()
-		{
-			return firstPos.addNew(lastPos).multiply(0.5);
-		}
-	}
-
-	@AllArgsConstructor
-	private static class CameraTimeDiffIssue
-	{
-		private IVector2 camPos;
-		private long diff;
-	}
-
 
 	/**
 	 * Inspect new filtered vision frame.
@@ -316,8 +269,7 @@ public class QualityInspector
 
 		List<Double> camHeights = cams.stream()
 				.map(c -> c.getCameraPosition().z())
-				.sorted(Double::compare)
-				.collect(Collectors.toList());
+				.toList();
 
 		double median = StatisticsMath.median(camHeights);
 
@@ -379,8 +331,7 @@ public class QualityInspector
 				circle.setStrokeWidth(20);
 				shapes.add(circle);
 
-				DrawableLine line = new DrawableLine(Line.fromPoints(issue.firstPos, issue.lastPos),
-						issue.botId.getTeamColor().getColor());
+				DrawableLine line = new DrawableLine(issue.firstPos, issue.lastPos, issue.botId.getTeamColor().getColor());
 				line.setStrokeWidth(20);
 				shapes.add(line);
 
@@ -406,7 +357,7 @@ public class QualityInspector
 				circle.setStrokeWidth(20);
 				shapes.add(circle);
 
-				DrawableLine line = new DrawableLine(Line.fromPoints(issue.firstPos, issue.secondPos), Color.ORANGE);
+				DrawableLine line = new DrawableLine(issue.firstPos, issue.secondPos, Color.ORANGE);
 				line.setStrokeWidth(10);
 				shapes.add(line);
 
@@ -465,5 +416,43 @@ public class QualityInspector
 				shapes.add(warn);
 			}
 		}
+	}
+
+
+	private static class RobotDeviationIssue
+	{
+		private IVector2 firstPos;
+		private IVector2 secondPos;
+		private int firstCam;
+		private int secondCam;
+		private BotID botId;
+		private long lastOccurence;
+
+
+		private IVector2 getCenterPos()
+		{
+			return firstPos.addNew(secondPos).multiply(0.5);
+		}
+	}
+
+	private static class RobotInvisibleIssue
+	{
+		private IVector2 firstPos;
+		private IVector2 lastPos;
+		private BotID botId;
+		private long lastOccurence;
+
+
+		private IVector2 getCenterPos()
+		{
+			return firstPos.addNew(lastPos).multiply(0.5);
+		}
+	}
+
+	@AllArgsConstructor
+	private static class CameraTimeDiffIssue
+	{
+		private IVector2 camPos;
+		private long diff;
 	}
 }

@@ -5,6 +5,8 @@
 package edu.tigers.sumatra.ai.metis.pass.rating;
 
 import edu.tigers.sumatra.ai.metis.kicking.Pass;
+import edu.tigers.sumatra.ai.metis.offense.situation.zone.OffensiveZones;
+import edu.tigers.sumatra.ai.metis.pass.PassStats;
 import edu.tigers.sumatra.drawable.IDrawableShape;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
 
@@ -20,8 +22,8 @@ import java.util.Map;
  */
 public class RatedPassFactory
 {
-	private final Map<EPassRating, IPassRater> passRaters = new EnumMap<>(EPassRating.class);
 
+	private final Map<EPassRating, IPassRater> passRaters = new EnumMap<>(EPassRating.class);
 
 	public RatedPassFactory()
 	{
@@ -33,6 +35,16 @@ public class RatedPassFactory
 	public void update(Collection<ITrackedBot> consideredBots)
 	{
 		passRaters.put(EPassRating.INTERCEPTION, new PassInterceptionMovingRobotRater(consideredBots));
+		passRaters.put(EPassRating.REFLECT_GOAL_KICK, new ReflectorRater(consideredBots));
+		passRaters.put(EPassRating.GOAL_KICK, new GoalRater(consideredBots));
+	}
+
+
+	public void updateDynamic(Collection<ITrackedBot> consideredBots,
+			PassStats passStats, OffensiveZones offensiveZones)
+	{
+
+		passRaters.put(EPassRating.INTERCEPTION, new DynamicPassInterceptionMovingRobotRater(consideredBots, passStats, offensiveZones));
 		passRaters.put(EPassRating.REFLECT_GOAL_KICK, new ReflectorRater(consideredBots));
 		passRaters.put(EPassRating.GOAL_KICK, new GoalRater(consideredBots));
 	}

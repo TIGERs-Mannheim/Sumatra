@@ -6,7 +6,7 @@ package edu.tigers.sumatra.ai.metis.offense;
 
 import edu.tigers.sumatra.ai.metis.ACalculator;
 import edu.tigers.sumatra.ai.metis.kicking.Pass;
-import edu.tigers.sumatra.ai.metis.offense.action.OffensiveAction;
+import edu.tigers.sumatra.ai.metis.offense.action.RatedOffensiveAction;
 import edu.tigers.sumatra.ids.AObjectID;
 import edu.tigers.sumatra.ids.BotID;
 import lombok.Getter;
@@ -25,7 +25,7 @@ import java.util.function.Supplier;
 @RequiredArgsConstructor
 public class PassReceiverCalc extends ACalculator
 {
-	private final Supplier<Map<BotID, OffensiveAction>> offensiveActions;
+	private final Supplier<Map<BotID, RatedOffensiveAction>> offensiveActions;
 	private final Supplier<Pass> keeperPass;
 
 	@Getter
@@ -42,7 +42,7 @@ public class PassReceiverCalc extends ACalculator
 		}
 		offensiveActions.get().values().stream()
 				.filter(this::isPassAction)
-				.map(OffensiveAction::getPass)
+				.map(e -> e.getAction().getPass())
 				.map(Pass::getReceiver)
 				.filter(AObjectID::isBot)
 				.forEach(newPassReceivers::add);
@@ -51,8 +51,8 @@ public class PassReceiverCalc extends ACalculator
 	}
 
 
-	private boolean isPassAction(OffensiveAction a)
+	private boolean isPassAction(RatedOffensiveAction a)
 	{
-		return a.getPass() != null;
+		return a.getAction().getPass() != null;
 	}
 }

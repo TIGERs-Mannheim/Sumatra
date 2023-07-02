@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.metis.support.behaviors;
@@ -20,18 +20,15 @@ import edu.tigers.sumatra.drawable.DrawableArc;
 import edu.tigers.sumatra.drawable.DrawableCircle;
 import edu.tigers.sumatra.drawable.DrawableLine;
 import edu.tigers.sumatra.geometry.Geometry;
-import edu.tigers.sumatra.geometry.IPenaltyArea;
 import edu.tigers.sumatra.geometry.RuleConstraints;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.AngleMath;
 import edu.tigers.sumatra.math.circle.Arc;
 import edu.tigers.sumatra.math.circle.Circle;
 import edu.tigers.sumatra.math.circle.ICircle;
-import edu.tigers.sumatra.math.line.ILine;
-import edu.tigers.sumatra.math.line.Line;
-import edu.tigers.sumatra.math.line.v2.IHalfLine;
-import edu.tigers.sumatra.math.line.v2.ILineSegment;
-import edu.tigers.sumatra.math.line.v2.Lines;
+import edu.tigers.sumatra.math.line.ILineSegment;
+import edu.tigers.sumatra.math.line.Lines;
+import edu.tigers.sumatra.math.penaltyarea.IPenaltyArea;
 import edu.tigers.sumatra.math.rectangle.IRectangle;
 import edu.tigers.sumatra.math.rectangle.Rectangle;
 import edu.tigers.sumatra.math.triangle.ITriangle;
@@ -146,41 +143,41 @@ public class PenaltyAreaAttackerRepulsiveBehavior extends ASupportBehavior
 		if (destination != null)
 		{
 			shapes.add(new DrawableCircle(Circle.createCircle(destination, Geometry.getBotRadius() * 1.2), Color.RED));
-			shapes.add(new DrawableLine(Line.fromPoints(destination, myPos), Color.RED));
+			shapes.add(new DrawableLine(destination, myPos, Color.RED));
 		}
 		// Position where attacker plans to control the ball
 		shapes.add(new DrawableCircle(Circle.createCircle(kickOrigin, Geometry.getBotRadius() * 1.2), Color.YELLOW));
 
 		// Sector borders
-		shapes.add(new DrawableLine(Line.fromPoints(
+		shapes.add(new DrawableLine(
 				Vector2.fromXY(minDistanceToCenter, Geometry.getFieldWidth() * (-0.5)),
-				Geometry.getPenaltyAreaTheir().getRectangle().getCorner(IRectangle.ECorner.BOTTOM_LEFT)), Color.CYAN));
+				Geometry.getPenaltyAreaTheir().getRectangle().getCorner(IRectangle.ECorner.BOTTOM_LEFT), Color.CYAN));
 		shapes.add(new DrawableLine(
-				Line.fromPoints(Geometry.getPenaltyAreaTheir().getRectangle().getCorner(IRectangle.ECorner.BOTTOM_LEFT),
-						Geometry.getGoalTheir().getCenter()),
+				Geometry.getPenaltyAreaTheir().getRectangle().getCorner(IRectangle.ECorner.BOTTOM_LEFT),
+				Geometry.getGoalTheir().getCenter(),
 				Color.CYAN));
 
-		shapes.add(new DrawableLine(Line.fromPoints(
+		shapes.add(new DrawableLine(
 				Vector2.fromXY(minDistanceToCenter, Geometry.getFieldWidth() * (0.5)),
-				Geometry.getPenaltyAreaTheir().getRectangle().getCorner(IRectangle.ECorner.TOP_LEFT)), Color.CYAN));
+				Geometry.getPenaltyAreaTheir().getRectangle().getCorner(IRectangle.ECorner.TOP_LEFT), Color.CYAN));
 		shapes.add(new DrawableLine(
-				Line.fromPoints(Geometry.getPenaltyAreaTheir().getRectangle().getCorner(IRectangle.ECorner.TOP_LEFT),
-						Geometry.getGoalTheir().getCenter()),
+				Geometry.getPenaltyAreaTheir().getRectangle().getCorner(IRectangle.ECorner.TOP_LEFT),
+				Geometry.getGoalTheir().getCenter(),
 				Color.CYAN));
 
-		shapes.add(new DrawableLine(
-				Line.fromPoints(Geometry.getGoalTheir().getCenter(), Vector2.fromXY(minDistanceToCenter, 0)), Color.CYAN));
+		shapes.add(
+				new DrawableLine(Geometry.getGoalTheir().getCenter(), Vector2.fromXY(minDistanceToCenter, 0), Color.CYAN));
 
 		// Is reasonable distance for Ball
-		shapes.add(new DrawableLine(Line.fromPoints(
+		shapes.add(new DrawableLine(
 				Vector2.fromXY(minDistanceToCenter, Geometry.getFieldWidth() * (-0.5)),
-				Vector2.fromXY(minDistanceToCenter, Geometry.getFieldWidth() * (0.5))), Color.CYAN));
+				Vector2.fromXY(minDistanceToCenter, Geometry.getFieldWidth() * (0.5)), Color.CYAN));
 		// Is reasonable distance for Bot
 		IVector2 center = Vector2.fromX(xCordOfPointToCalculateBotActivationDistance());
 		ICircle circle = Circle
 				.createCircle(center, xCordOfPointToCalculateBotActivationDistance() - minDistanceToCenter);
-		List<IVector2> intersectionsA = circle.lineIntersections(Geometry.getField().getEdgesAsSegments().get(1));
-		List<IVector2> intersectionsB = circle.lineIntersections(Geometry.getField().getEdgesAsSegments().get(3));
+		List<IVector2> intersectionsA = circle.intersectPerimeterPath(Geometry.getField().getEdges().get(1));
+		List<IVector2> intersectionsB = circle.intersectPerimeterPath(Geometry.getField().getEdges().get(3));
 		if (!intersectionsA.isEmpty() && !intersectionsB.isEmpty())
 		{
 			double startAngle = Vector2.fromPoints(center, intersectionsA.get(0)).getAngle();
@@ -198,17 +195,12 @@ public class PenaltyAreaAttackerRepulsiveBehavior extends ASupportBehavior
 	private SupportBehaviorPosition createRatedPosition(ITrackedBot bot, IVector2 kickOrigin)
 	{
 		Sector sector = getSectorFromPosition(kickOrigin);
-		switch (sector)
+		return switch (sector)
 		{
-			case RIGHT_CORNER:
-			case LEFT_CORNER:
-				return getPassTargetOnOppositePenaltyAreaSide(bot, sector);
-			case RIGHT_MIDDLE:
-			case LEFT_MIDDLE:
-				return getReboundIntersectionPosition(bot, kickOrigin);
-			default:
-				return SupportBehaviorPosition.notAvailable();
-		}
+			case RIGHT_CORNER, LEFT_CORNER -> getPassTargetOnOppositePenaltyAreaSide(bot, sector);
+			case RIGHT_MIDDLE, LEFT_MIDDLE -> getReboundIntersectionPosition(bot, kickOrigin);
+			default -> SupportBehaviorPosition.notAvailable();
+		};
 	}
 
 
@@ -287,7 +279,7 @@ public class PenaltyAreaAttackerRepulsiveBehavior extends ASupportBehavior
 		// Divide lineSegment into possible targets and rate the targets
 		for (int i = 0; i < nPoints; i++)
 		{
-			IVector2 pos = lineSegment.stepAlongLine(lineSegment.getLength() * i / (nPoints - 1));
+			IVector2 pos = lineSegment.stepAlongPath(lineSegment.getLength() * i / (nPoints - 1));
 
 			if (!targetClaimedByOtherTiger(pos, bot))
 			{
@@ -314,7 +306,7 @@ public class PenaltyAreaAttackerRepulsiveBehavior extends ASupportBehavior
 	private boolean targetClaimedByOtherTiger(IVector2 position, ITrackedBot myself)
 	{
 		double minDistance = getWFrame().getTigerBotsAvailable().keySet().stream()
-				.filter(e -> e != myself.getBotId())
+				.filter(e -> !e.equals(myself.getBotId()))
 				.mapToDouble(e -> getWFrame().getBot(e).getPos().distanceTo(position)).min()
 				.orElse(Geometry.getFieldLength());
 
@@ -330,22 +322,23 @@ public class PenaltyAreaAttackerRepulsiveBehavior extends ASupportBehavior
 	{
 		switch (sectorOfPassOrigin)
 		{
-			case LEFT_CORNER:
+			case LEFT_CORNER ->
+			{
 				if (myPos.y() >= 0)
 				{
 					return null;
 				}
 				return penaltyArea.getRectangle().getCorner(IRectangle.ECorner.BOTTOM_LEFT);
-
-			case RIGHT_CORNER:
+			}
+			case RIGHT_CORNER ->
+			{
 				if (myPos.y() < 0)
 				{
 					return null;
 				}
 				return penaltyArea.getRectangle().getCorner(IRectangle.ECorner.TOP_LEFT);
-
-			default:
-				throw new InvalidParameterException("Unknown corner sector passed");
+			}
+			default -> throw new InvalidParameterException("Unknown corner sector passed");
 		}
 	}
 
@@ -385,17 +378,15 @@ public class PenaltyAreaAttackerRepulsiveBehavior extends ASupportBehavior
 	{
 		var shapes = getAiFrame().getShapes(EAiShapesLayer.SUPPORT_PENALTY_AREA_ATTACKER);
 
-		ILine line = Line.fromPoints(source, target);
-		Vector2 invertedDirection = line.directionVector().multiplyNew(Vector2.fromXY(-1, 1));
-		ILine invertedLine = Line.fromDirection(target, invertedDirection);
-		IHalfLine reboundTravelLine = Lines.halfLineFromDirection(target, invertedLine.directionVector());
+		var line = Lines.segmentFromPoints(source, target);
+		var invertedDirection = line.directionVector().multiplyNew(Vector2.fromXY(-1, 1));
+		var invertedLine = Lines.halfLineFromDirection(target, invertedDirection);
+		var reboundTravelLine = Lines.halfLineFromDirection(target, invertedLine.directionVector());
 
 		shapes.add(new DrawableLine(line, Color.YELLOW));
-		shapes.add(new DrawableLine(invertedLine, Color.YELLOW));
+		shapes.add(new DrawableLine(invertedLine.toLineSegment(line.getLength()), Color.YELLOW));
 
-		List<IVector2> intersections = penaltyArea.lineIntersections(reboundTravelLine);
-		intersections.sort(Comparator.comparingDouble(IVector::y));
-
+		List<IVector2> intersections = penaltyArea.intersectPerimeterPath(reboundTravelLine);
 		return intersections.stream()
 				.min(Comparator.comparingDouble(IVector::y))
 				.orElse(null);

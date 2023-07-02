@@ -15,7 +15,7 @@ public class StateMachineTest
 	@Test
 	public void testInstanceTransition()
 	{
-		StateMachine<IState> sm = new StateMachine<>();
+		StateMachine<IState> sm = new StateMachine<>("test");
 		IState s1 = new DummyState();
 		IState s2 = new DummyState();
 		sm.setInitialState(s1);
@@ -33,7 +33,7 @@ public class StateMachineTest
 	@Test
 	public void testIdentifierTransition()
 	{
-		StateMachine<IState> sm = new StateMachine<>();
+		StateMachine<IState> sm = new StateMachine<>("test");
 		IState s1 = new Dummy1State();
 		IState s2 = new Dummy2State();
 		sm.setInitialState(s1);
@@ -51,7 +51,7 @@ public class StateMachineTest
 	@Test
 	public void testMixedTransition()
 	{
-		StateMachine<IState> sm = new StateMachine<>();
+		StateMachine<IState> sm = new StateMachine<>("test");
 		IState s11 = new Dummy1State();
 		IState s1 = new Dummy1State();
 		IState s2 = new Dummy2State();

@@ -1,10 +1,11 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.pathfinder;
 
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.ids.ETeamColor;
+import lombok.Getter;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -16,6 +17,7 @@ import java.util.Set;
  */
 public class PathFinderPrioMap
 {
+	@Getter
 	private final Map<BotID, Integer> map = new HashMap<>();
 
 
@@ -75,7 +77,7 @@ public class PathFinderPrioMap
 	/**
 	 * @param botId
 	 * @param otherBotId
-	 * @return
+	 * @return true if priority of <code>botId</code> is higher than <code>otherBotId</code>
 	 */
 	public boolean isPreferred(final BotID botId, final BotID otherBotId)
 	{

@@ -7,8 +7,12 @@ import com.sleepycat.persist.model.Entity;
 import com.sleepycat.persist.model.PrimaryKey;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.LogEvent;
+import org.apache.logging.log4j.core.impl.JdkMapAdapterStringMap;
 import org.apache.logging.log4j.core.impl.Log4jLogEvent;
 import org.apache.logging.log4j.message.SimpleMessage;
+
+import java.util.HashMap;
+import java.util.Map;
 
 
 /**
@@ -26,6 +30,7 @@ public class BerkeleyLogEvent
 	private final String thread;
 	private final String clazz;
 	private final String message;
+	private final Map<String, String> contextData;
 
 
 	@SuppressWarnings("unused") // used by BerkeleyDB
@@ -36,6 +41,7 @@ public class BerkeleyLogEvent
 		thread = "";
 		clazz = "";
 		message = "";
+		contextData = new HashMap<>();
 	}
 
 
@@ -46,6 +52,7 @@ public class BerkeleyLogEvent
 		thread = event.getThreadName();
 		clazz = event.getLoggerName();
 		message = event.getMessage().getFormattedMessage();
+		contextData = event.getContextData().toMap();
 	}
 
 
@@ -57,6 +64,7 @@ public class BerkeleyLogEvent
 				.setMessage(new SimpleMessage(message))
 				.setThreadName(thread)
 				.setTimeMillis(timestamp)
+				.setContextData(new JdkMapAdapterStringMap(contextData))
 				.build();
 	}
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai;
@@ -9,26 +9,24 @@ import edu.tigers.sumatra.ai.ares.AresData;
 import edu.tigers.sumatra.ai.athena.Athena;
 import edu.tigers.sumatra.ai.athena.AthenaAiFrame;
 import edu.tigers.sumatra.ai.athena.EAIControlState;
+import edu.tigers.sumatra.ai.common.TimeSeriesStatisticsSaver;
 import edu.tigers.sumatra.ai.metis.Metis;
 import edu.tigers.sumatra.ai.metis.MetisAiFrame;
 import edu.tigers.sumatra.ids.EAiTeam;
 import edu.tigers.sumatra.referee.data.RefereeMsg;
 import edu.tigers.sumatra.skillsystem.ASkillSystem;
+import edu.tigers.sumatra.statistics.TimeSeriesStatsEntry;
 import edu.tigers.sumatra.wp.data.WorldFrame;
 import edu.tigers.sumatra.wp.data.WorldFrameWrapper;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import lombok.extern.log4j.Log4j2;
 
 
 /**
  * The AI takes a {@link WorldFrameWrapper} as input, processes the whole AI chain and produces an {@link AIInfoFrame}
- *
- * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  */
+@Log4j2
 public class Ai
 {
-	private static final Logger log = LogManager.getLogger(Ai.class.getName());
-
 	private AIInfoFrame previousAIFrame = null;
 	private long lastRefMsgCounter = -1;
 
@@ -36,6 +34,7 @@ public class Ai
 	private final Athena athena = new Athena();
 	private final EAiTeam aiTeam;
 	private final Ares ares;
+	private final TimeSeriesStatisticsSaver timeSeriesStatisticsSaver = new TimeSeriesStatisticsSaver();
 
 
 	/**
@@ -89,7 +88,7 @@ public class Ai
 		boolean newRefereeMsg = false;
 		if ((refereeMsg != null) && isNewMessage(refereeMsg))
 		{
-			log.trace("Referee cmd: " + refereeMsg.getCommand());
+			log.trace("Referee cmd: {}", refereeMsg.getCommand());
 			newRefereeMsg = true;
 		}
 
@@ -108,6 +107,7 @@ public class Ai
 		// ### Process!
 		MetisAiFrame metisAiFrame;
 		AthenaAiFrame athenaAiFrame = null;
+		long startTime = System.nanoTime();
 		try
 		{
 			// Analyze
@@ -126,10 +126,11 @@ public class Ai
 					.athenaAiFrame(athenaAiFrame)
 					.aresData(aresData)
 					.build();
+			captureTimeSeriesStats(startTime, previousAIFrame);
 			return previousAIFrame;
 		} catch (@SuppressWarnings("squid:S1181") final Throwable ex) // we want to catch runtime exceptions, too!
 		{
-			log.error("Exception in AI " + aiTeam + ": " + ex.getMessage(), ex);
+			log.error("Exception in AI {}", aiTeam, ex);
 
 			// # Undo everything we've done this cycle to restore previous state
 			// - RefereeMsg
@@ -149,6 +150,27 @@ public class Ai
 			previousAIFrame = AIInfoFrame.fromBaseAiFrame(baseAiFrame);
 		}
 		return null;
+	}
+
+
+	private void captureTimeSeriesStats(long startTime, AIInfoFrame aiFrame)
+	{
+		long timestamp = aiFrame.getWorldFrame().getTimestamp();
+		TimeSeriesStatsEntry metisDurations = new TimeSeriesStatsEntry("metis.duration", timestamp);
+		TimeSeriesStatsEntry metisExecution = new TimeSeriesStatsEntry("metis.execution", timestamp);
+		aiFrame.getAthenaAiFrame().getMetisAiFrame().getCalculatorExecutions().forEach((calc, exec) -> {
+			metisDurations.addField(calc.getCanonicalName(), exec.getProcessingTime());
+			metisExecution.addField(calc.getCanonicalName(), exec.isExecuted());
+		});
+
+		TimeSeriesStatsEntry ai = new TimeSeriesStatsEntry("ai", timestamp);
+		ai.addField("systemTime", aiFrame.getWorldFrameWrapper().getUnixTimestamp());
+		ai.addField("startTime", startTime);
+		ai.addField("endTime", System.nanoTime());
+
+		timeSeriesStatisticsSaver.add(aiFrame.getBaseAiFrame(), metisExecution);
+		timeSeriesStatisticsSaver.add(aiFrame.getBaseAiFrame(), metisDurations);
+		timeSeriesStatisticsSaver.add(aiFrame.getBaseAiFrame(), ai);
 	}
 
 

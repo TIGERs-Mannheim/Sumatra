@@ -1,17 +1,22 @@
 /*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.skillsystem.skills;
 
 import com.github.g3force.configurable.Configurable;
+import edu.tigers.sumatra.drawable.DrawableLine;
 import edu.tigers.sumatra.geometry.Geometry;
+import edu.tigers.sumatra.math.AngleMath;
+import edu.tigers.sumatra.math.line.Lines;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
-import edu.tigers.sumatra.skillsystem.skills.util.BallStabilizer;
+import edu.tigers.sumatra.skillsystem.ESkillShapesLayer;
 import edu.tigers.sumatra.skillsystem.skills.util.EDribblerMode;
 import edu.tigers.sumatra.skillsystem.skills.util.KickParams;
 import edu.tigers.sumatra.skillsystem.skills.util.PositionValidator;
+
+import java.awt.Color;
 
 
 /**
@@ -22,28 +27,37 @@ public class GetBallContactSkill extends AMoveToSkill
 	@Configurable(defValue = "300", comment = "Max dist [mm] to push towards an invisible ball")
 	private static double maxApproachBallExtraDist = 300;
 
-	@Configurable(comment = "How fast to accelerate when getting ball contact", defValue = "1.5")
-	private static double getContactAcc = 1.5;
+	@Configurable(comment = "How fast to accelerate when getting ball contact", defValue = "1.0")
+	private static double getContactAcc = 1.0;
 
-	@Configurable(comment = "Min contact time [s] to reach before moving with ball", defValue = "0.15")
-	private static double minContactTime = 0.15;
+	@Configurable(comment = "Min contact time [s] to reach before coming to a stop", defValue = "0.2")
+	private static double minContactTime = 0.2;
+
+	@Configurable(comment = "Min contact time [s] to reach before succeeding", defValue = "0.4")
+	private static double minSuccessContactTime = 0.4;
 
 	private double cachedOrientation;
 	private double approachBallExtraDist;
 	private IVector2 initBallPos;
 
-	private final BallStabilizer ballStabilizer = new BallStabilizer();
 	private final PositionValidator positionValidator = new PositionValidator();
 
 
-	private double getTargetOrientation(final IVector2 dest)
+	private double getTargetOrientation()
 	{
-		var dir = getBall().getPos().subtractNew(dest);
-		if (!getBall().isOnCam(0.1) || dir.getLength2() < getTBot().getCenter2DribblerDist())
+		var dir = getBall().getPos().subtractNew(getPos());
+		boolean ballNotOnCamera = !getBall().isOnCam(0.1);
+		boolean insideBot = dir.getLength2() < getTBot().getCenter2DribblerDist();
+		if (ballNotOnCamera || insideBot)
 		{
 			return cachedOrientation;
 		}
-		return dir.getAngle(0);
+		double currentDir = dir.getAngle(0);
+		if (AngleMath.diffAbs(currentDir, cachedOrientation) > 0.3)
+		{
+			return currentDir;
+		}
+		return cachedOrientation;
 	}
 
 
@@ -65,7 +79,7 @@ public class GetBallContactSkill extends AMoveToSkill
 	@Override
 	public void doUpdate()
 	{
-		if (getTBot().getBallContact().getContactDuration() > minContactTime)
+		if (getTBot().getBallContact().getContactDuration() > minSuccessContactTime)
 		{
 			setSkillState(ESkillState.SUCCESS);
 		} else if (!getTBot().getBallContact().hadContact(0.1)
@@ -85,20 +99,18 @@ public class GetBallContactSkill extends AMoveToSkill
 		}
 
 		positionValidator.update(getWorldFrame(), getMoveCon());
-		ballStabilizer.setBotBrakeAcc(getContactAcc);
-		ballStabilizer.update(getBall(), getTBot());
 
-		if (getTBot().getBallContact().hasNoContact())
+		if (getTBot().getBallContact().getContactDuration() < minContactTime)
 		{
 			var dest = getDest();
 			dest = positionValidator.movePosInsideFieldWrtBallPos(dest);
 			dest = positionValidator.movePosOutOfPenAreaWrtBall(dest);
 			updateDestination(dest);
 
-			cachedOrientation = getTargetOrientation(getPos());
+			cachedOrientation = getTargetOrientation();
 			updateTargetAngle(cachedOrientation);
 
-			if (getPos().distanceTo(dest) < 5)
+			if (getPos().distanceTo(dest) < 15)
 			{
 				approachBallExtraDist += 10;
 			}
@@ -106,6 +118,11 @@ public class GetBallContactSkill extends AMoveToSkill
 		{
 			approachBallExtraDist = 0;
 		}
+
+		getShapes().get(ESkillShapesLayer.GET_BALL_CONTACT).add(new DrawableLine(
+				Lines.segmentFromOffset(getPos(), Vector2.fromAngle(cachedOrientation).scaleTo(500)),
+				Color.red
+		));
 
 		super.doUpdate();
 	}

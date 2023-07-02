@@ -5,7 +5,8 @@ package edu.tigers.sumatra.vision.kick.estimators.straight;
 
 import edu.tigers.sumatra.cam.data.CamBall;
 import edu.tigers.sumatra.geometry.Geometry;
-import edu.tigers.sumatra.math.line.Line;
+import edu.tigers.sumatra.math.line.ILineSegment;
+import edu.tigers.sumatra.math.line.Lines;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.IVector3;
 import edu.tigers.sumatra.math.vector.Vector2;
@@ -21,7 +22,6 @@ import org.apache.commons.math3.linear.SingularMatrixException;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 
 /**
@@ -39,9 +39,9 @@ public class StraightKickSolverLin3 implements IKickSolver
 
 		List<IVector2> groundPos = records.stream()
 				.map(CamBall::getFlatPos)
-				.collect(Collectors.toList());
+				.toList();
 
-		Optional<Line> kickLine = Line.fromPointsList(groundPos);
+		Optional<ILineSegment> kickLine = Lines.regressionLineFromPointsList(groundPos);
 		if (kickLine.isEmpty())
 		{
 			return Optional.empty();
@@ -52,21 +52,21 @@ public class StraightKickSolverLin3 implements IKickSolver
 		// linear solving, construct matrices...
 		RealMatrix matA = new Array2DRowRealMatrix(numRecords * 2, 3);
 		RealVector b = new ArrayRealVector(numRecords * 2);
-		
+
 		for (int i = 0; i < numRecords; i++)
 		{
-			CamBall record = records.get(i);
-			
-			IVector2 g = record.getPos().getXYVector();
-			double t = ((record.gettCapture()) - tZero) * 1e-9;
-			
+			CamBall ballRecord = records.get(i);
+
+			IVector2 g = ballRecord.getPos().getXYVector();
+			double t = ((ballRecord.gettCapture()) - tZero) * 1e-9;
+
 			matA.setRow(i * 2, new double[] { 1, 0, dir.x() * t });
 			matA.setRow((i * 2) + 1, new double[] { 0, 1, dir.y() * t });
-			
+
 			b.setEntry(i * 2, g.x() - (0.5 * dir.x() * t * t * acc));
 			b.setEntry((i * 2) + 1, g.y() - (0.5 * dir.y() * t * t * acc));
 		}
-		
+
 		DecompositionSolver solver = new QRDecomposition(matA).getSolver();
 		RealVector x;
 		try

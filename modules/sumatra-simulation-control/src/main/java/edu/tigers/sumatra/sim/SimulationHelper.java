@@ -46,25 +46,9 @@ public final class SimulationHelper
 
 		resetSimulation();
 
-		getReferee().initGameController();
-
 		initSimulation(snapshot);
 
-		sim.stepBlocking();
-		snapshot.getMoveDestinations().forEach((botId, dest) -> {
-					MoveToSkill moveToSkill = MoveToSkill.createMoveToSkill();
-					if (Geometry.getNegativeHalfTeam() != botId.getTeamColor())
-					{
-						moveToSkill.updateDestination(dest.getXYVector().multiplyNew(-1));
-						moveToSkill.updateTargetAngle(AngleMath.mirror(dest.z()));
-					} else
-					{
-						moveToSkill.updateDestination(dest.getXYVector());
-						moveToSkill.updateTargetAngle(dest.z());
-					}
-					SumatraModel.getInstance().getModule(ASkillSystem.class).execute(botId, moveToSkill);
-				}
-		);
+		sim.publishFilteredVisionFrame();
 
 		if (wasRunning)
 		{
@@ -89,6 +73,7 @@ public final class SimulationHelper
 		// add new bots
 		snapshot.getBots().forEach((k, v) -> registerBot(sim, k, v.getPos(), v.getVel()));
 
+		getReferee().sendGameControllerEvent(GcEventFactory.autoContinue(snapshot.isAutoContinue()));
 		if (snapshot.getStage() != null)
 		{
 			getReferee().sendGameControllerEvent(GcEventFactory.stage(snapshot.getStage()));
@@ -102,6 +87,21 @@ public final class SimulationHelper
 		{
 			getReferee().sendGameControllerEvent(GcEventFactory.command(snapshot.getCommand()));
 		}
+
+		snapshot.getMoveDestinations().forEach((botId, dest) -> {
+					MoveToSkill moveToSkill = MoveToSkill.createMoveToSkill();
+					if (!Geometry.getNegativeHalfTeam().equals(botId.getTeamColor()))
+					{
+						moveToSkill.updateDestination(dest.getXYVector().multiplyNew(-1));
+						moveToSkill.updateTargetAngle(AngleMath.mirror(dest.z()));
+					} else
+					{
+						moveToSkill.updateDestination(dest.getXYVector());
+						moveToSkill.updateTargetAngle(dest.z());
+					}
+					SumatraModel.getInstance().getModule(ASkillSystem.class).execute(botId, moveToSkill);
+				}
+		);
 	}
 
 
@@ -127,11 +127,12 @@ public final class SimulationHelper
 	/**
 	 * Reset the current simulation state
 	 */
-	private static void resetSimulation()
+	public static void resetSimulation()
 	{
-		SumatraModel.getInstance().getModule(SumatraSimulator.class).reset();
-		SumatraModel.getInstance().getModule(AWorldPredictor.class).reset();
+		getReferee().resetGameController();
 		SumatraModel.getInstance().getModule(AAgent.class).reset();
+		SumatraModel.getInstance().getModule(AWorldPredictor.class).reset();
+		SumatraModel.getInstance().getModule(SumatraSimulator.class).reset();
 	}
 
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.skillsystem.skills.util;
@@ -23,6 +23,8 @@ public class KickParams
 	EKickerDevice device;
 	double kickSpeed;
 	EDribblerMode dribblerMode;
+	double dribbleSpeedRpm;
+	double dribbleMaxCurrent;
 
 
 	@SuppressWarnings("unused") // berkeley
@@ -34,7 +36,7 @@ public class KickParams
 
 	private KickParams(final EKickerDevice device, final double kickSpeed)
 	{
-		this(device, kickSpeed, EDribblerMode.OFF);
+		this(device, kickSpeed, EDribblerMode.OFF, 0, 0);
 	}
 
 
@@ -76,7 +78,20 @@ public class KickParams
 
 	public KickParams withDribblerMode(EDribblerMode dribblerMode)
 	{
-		return new KickParams(device, kickSpeed, dribblerMode);
+		if (dribblerMode == EDribblerMode.OFF
+				|| dribblerMode == EDribblerMode.DEFAULT
+				|| dribblerMode == EDribblerMode.HIGH_POWER)
+		{
+			return new KickParams(device, kickSpeed, dribblerMode, 0, 0);
+		}
+		throw new IllegalArgumentException(
+				"Dribbler mode can not be set without additional parameters: " + dribblerMode);
+	}
+
+
+	public KickParams withDribbleSpeedRpm(double dribbleSpeedRpm, double dribbleMaxCurrent)
+	{
+		return new KickParams(device, kickSpeed, EDribblerMode.MANUAL, dribbleSpeedRpm, dribbleMaxCurrent);
 	}
 }
 

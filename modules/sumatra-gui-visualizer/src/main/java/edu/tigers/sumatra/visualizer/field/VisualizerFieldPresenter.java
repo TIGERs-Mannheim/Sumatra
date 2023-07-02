@@ -48,9 +48,9 @@ public class VisualizerFieldPresenter implements ISumatraPresenter, IWorldFrameO
 	@Getter
 	private final FieldPanel fieldPanel;
 
-	private final Set<String> showSources = new ConcurrentSkipListSet<>();
+	private final Set<ShapeMapSource> showSources = new ConcurrentSkipListSet<>();
 	@Getter
-	private final Map<ShapeMapSource, ShapeMap> shapeMaps = new ConcurrentHashMap<>();
+	private Map<ShapeMapSource, ShapeMap> shapeMaps = new ConcurrentHashMap<>();
 	private final Map<String, Boolean> shapeVisibilityMap = new ConcurrentHashMap<>();
 
 	@Getter
@@ -126,7 +126,7 @@ public class VisualizerFieldPresenter implements ISumatraPresenter, IWorldFrameO
 	}
 
 
-	public void setSourceVisibility(final String source, final boolean visible)
+	public void setSourceVisibility(final ShapeMapSource source, final boolean visible)
 	{
 		if (visible)
 		{
@@ -249,7 +249,7 @@ public class VisualizerFieldPresenter implements ISumatraPresenter, IWorldFrameO
 	public List<ShapeMap.ShapeLayer> visibleShapeLayers()
 	{
 		return shapeMaps.entrySet().stream()
-				.filter(s -> showSources.contains(s.getKey().getName()))
+				.filter(s -> showSources.contains(s.getKey()))
 				.map(Map.Entry::getValue)
 				.map(ShapeMap::getAllShapeLayers)
 				.flatMap(Collection::stream)

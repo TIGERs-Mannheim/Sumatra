@@ -18,7 +18,7 @@ public class BotSkillMotorsOffSim implements IBotSkillSim
 	public BotSkillOutput execute(final BotSkillInput input)
 	{
 		return BotSkillOutput.Builder.create()
-				.driveLimits(input.getSkill().getMoveConstraints())
+				.driveLimits(input.skill().getMoveConstraints())
 				.targetVelLocal(Vector3f.ZERO_VECTOR)
 				.modeXY(EDriveMode.OFF)
 				.modeW(EDriveMode.OFF)

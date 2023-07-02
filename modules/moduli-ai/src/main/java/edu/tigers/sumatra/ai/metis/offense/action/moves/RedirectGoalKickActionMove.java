@@ -6,13 +6,14 @@ package edu.tigers.sumatra.ai.metis.offense.action.moves;
 
 import com.github.g3force.configurable.Configurable;
 import edu.tigers.sumatra.ai.metis.offense.action.EActionViability;
-import edu.tigers.sumatra.ai.metis.offense.action.OffensiveAction;
+import edu.tigers.sumatra.ai.metis.offense.action.RatedOffensiveAction;
 import edu.tigers.sumatra.ai.metis.offense.action.OffensiveActionViability;
 import edu.tigers.sumatra.ai.metis.targetrater.GoalKick;
 import edu.tigers.sumatra.ids.BotID;
 import lombok.RequiredArgsConstructor;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Supplier;
 
 
@@ -59,15 +60,18 @@ public class RedirectGoalKickActionMove extends AOffensiveActionMove
 
 
 	@Override
-	public OffensiveAction calcAction(BotID botId)
+	public Optional<RatedOffensiveAction> calcAction(BotID botId)
 	{
 		var goalKick = bestGoalKickTargets.get().get(botId);
+		if (goalKick == null)
+		{
+			return Optional.empty();
+		}
 
-		return OffensiveAction.builder()
-				.move(EOffensiveActionMove.REDIRECT_GOAL_KICK)
-				.viability(calcViability(botId, goalKick))
-				.kick(goalKick == null ? null : goalKick.getKick())
-				.build();
+		return Optional.of(RatedOffensiveAction.buildRedirectKick(
+				EOffensiveActionMove.REDIRECT_GOAL_KICK,
+				calcViability(botId, goalKick),
+				goalKick.getKick()));
 	}
 
 

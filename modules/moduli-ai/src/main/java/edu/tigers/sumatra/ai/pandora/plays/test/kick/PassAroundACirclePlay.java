@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.ai.pandora.plays.test.kick;
 
@@ -26,6 +26,8 @@ public class PassAroundACirclePlay extends ARedirectPlay
 	private IVector2 center;
 	@Setter
 	private double radius;
+	@Setter
+	private double receiveBallSpeed;
 
 
 	public PassAroundACirclePlay()
@@ -72,5 +74,12 @@ public class PassAroundACirclePlay extends ARedirectPlay
 	protected EReceiveMode getReceiveMode(IVector2 origin)
 	{
 		return EReceiveMode.RECEIVE;
+	}
+
+
+	@Override
+	protected double getMaxReceivingBallSpeed(IVector2 origin)
+	{
+		return receiveBallSpeed;
 	}
 }

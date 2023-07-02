@@ -14,10 +14,9 @@ import edu.tigers.sumatra.geometry.Goal;
 import edu.tigers.sumatra.math.circle.Circle;
 import edu.tigers.sumatra.math.circle.CircleMath;
 import edu.tigers.sumatra.math.circle.ICircle;
-import edu.tigers.sumatra.math.line.ILine;
-import edu.tigers.sumatra.math.line.Line;
-import edu.tigers.sumatra.math.line.v2.IHalfLine;
-import edu.tigers.sumatra.math.line.v2.Lines;
+import edu.tigers.sumatra.math.line.IHalfLine;
+import edu.tigers.sumatra.math.line.ILineSegment;
+import edu.tigers.sumatra.math.line.Lines;
 import edu.tigers.sumatra.math.triangle.Triangle;
 import edu.tigers.sumatra.math.triangle.TriangleMath;
 import edu.tigers.sumatra.math.vector.IVector2;
@@ -28,6 +27,7 @@ import edu.tigers.sumatra.wp.data.ITrackedBot;
 import java.awt.Color;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 
@@ -142,8 +142,8 @@ public final class MaxAngleKickRater
 			shadowPointList.addAll(getShadowOfBot(bot, targetGoal, origin));
 		}
 
-		List<ILine> freeSpaces = getFreeSpaces(shadowPointList, targetGoal);
-		List<Double> angleList = getAnglesFromLines(freeSpaces, origin);
+		var freeSpaces = getFreeSpaces(shadowPointList, targetGoal);
+		var angleList = getAnglesFromLines(freeSpaces, origin);
 
 		// get the biggest angle out of the angle list
 		double biggestAngle = 0;
@@ -160,27 +160,27 @@ public final class MaxAngleKickRater
 		}
 		if (biggestIdx > -1)
 		{
-			IVector2 start = freeSpaces.get(biggestIdx).getStart();
-			IVector2 end = freeSpaces.get(biggestIdx).getEnd();
+			IVector2 start = freeSpaces.get(biggestIdx).getPathStart();
+			IVector2 end = freeSpaces.get(biggestIdx).getPathEnd();
 
 			IVector2 pointInGoal = TriangleMath.bisector(origin, start, end);
 
 			ValuePoint bestShootPoint = new ValuePoint(pointInGoal, getScoreChanceFromAngle(biggestAngle));
 			bestShootTarget = Optional.of(bestShootPoint);
 
-			shapes.add(new DrawableLine(Line.fromPoints(origin, pointInGoal)));
+			shapes.add(new DrawableLine(origin, pointInGoal));
 		}
 
 		for (int i = 0; i < freeSpaces.size(); i++)
 		{
-			ILine space = freeSpaces.get(i);
-			Double angle = angleList.get(i);
+			var space = freeSpaces.get(i);
+			var angle = angleList.get(i);
 
 			double scoreChance = getScoreChanceFromAngle(angle);
 
 			Color color = new Color((int) ((1 - scoreChance) * 255), 0, (int) (scoreChance * 255), 100);
 
-			DrawableTriangle triangle = new DrawableTriangle(origin, space.getStart(), space.getEnd(), color);
+			DrawableTriangle triangle = new DrawableTriangle(origin, space.getPathStart(), space.getPathEnd(), color);
 			triangle.setFill(true);
 
 			shapes.add(triangle);
@@ -223,8 +223,8 @@ public final class MaxAngleKickRater
 			for (ITrackedBot bot : obstacleBots)
 			{
 				// if point is in triangle
-				if ((triangle.isPointInShape(bot.getPos(), Geometry.getBotRadius())) &&
-				// if bot is closer to goal than origin
+				if ((triangle.withMargin(Geometry.getBotRadius()).isPointInShape(bot.getPos())) &&
+						// if bot is closer to goal than origin
 						(bot.getPos().distanceTo(targetGoal.getCenter()) < origin.distanceTo(targetGoal.getCenter())))
 				{
 					botPos.add(bot.getPos());
@@ -257,8 +257,8 @@ public final class MaxAngleKickRater
 		}
 
 		// get projected point on extended goal line
-		IVector2 p1 = targetGoal.getLine().intersectHalfLine(l1).orElse(targetGoal.getLeftPost());
-		IVector2 p2 = targetGoal.getLine().intersectHalfLine(l2).orElse(targetGoal.getRightPost());
+		IVector2 p1 = targetGoal.getLine().intersect(l1).asOptional().orElse(targetGoal.getLeftPost());
+		IVector2 p2 = targetGoal.getLine().intersect(l2).asOptional().orElse(targetGoal.getRightPost());
 
 
 		// if the projected point is behind the direction of the line, the point will be set to the goal of the opposite
@@ -279,8 +279,8 @@ public final class MaxAngleKickRater
 		l2 = Lines.halfLineFromPoints(l2.supportVector(), p2);
 
 		// get point in actual goal range
-		IVector2 start = targetGoal.getLineSegment().intersectHalfLine(l1).orElse(targetGoal.getLeftPost());
-		IVector2 end = targetGoal.getLineSegment().intersectHalfLine(l2).orElse(targetGoal.getRightPost());
+		IVector2 start = targetGoal.getLineSegment().intersect(l1).asOptional().orElse(targetGoal.getLeftPost());
+		IVector2 end = targetGoal.getLineSegment().intersect(l2).asOptional().orElse(targetGoal.getRightPost());
 
 
 		List<ShadowPoint> returnList = new ArrayList<>();
@@ -316,12 +316,12 @@ public final class MaxAngleKickRater
 	/**
 	 * returns all spaces to which the view is not over-shadowed.
 	 */
-	private static List<ILine> getFreeSpaces(final List<ShadowPoint> shadows, Goal targetGoal)
+	private static List<ILineSegment> getFreeSpaces(final List<ShadowPoint> shadows, Goal targetGoal)
 	{
-		List<ILine> lineList = new ArrayList<>();
+		List<ILineSegment> lineList = new ArrayList<>();
 
 		// sorts descending
-		shadows.sort((s1, s2) -> (s1.pos.y() < s2.pos.y()) ? 1 : -1);
+		shadows.sort(Comparator.comparingDouble(s -> -s.pos.y()));
 
 
 		int shadowState = 0;
@@ -334,8 +334,7 @@ public final class MaxAngleKickRater
 				shadowState++;
 				if (shadowState == 1) // free space just ended
 				{
-					ILine line = Line.fromPoints(startPoint, shadowpoint.pos);
-					lineList.add(line);
+					lineList.add(Lines.segmentFromPoints(startPoint, shadowpoint.pos));
 				}
 			} else
 			{
@@ -351,8 +350,7 @@ public final class MaxAngleKickRater
 		// if the last shadowpoint is checked but there is still free space on the goalline to the right post
 		if (shadowState == 0)
 		{
-			ILine line = Line.fromPoints(startPoint, targetGoal.getRightPost());
-			lineList.add(line);
+			lineList.add(Lines.segmentFromPoints(startPoint, targetGoal.getRightPost()));
 		}
 
 		return lineList;
@@ -362,13 +360,13 @@ public final class MaxAngleKickRater
 	/**
 	 * for each line, calculates the realistic view angle from the origin point to the end points of the line.
 	 */
-	private static List<Double> getAnglesFromLines(List<ILine> lineList, IVector2 origin)
+	private static List<Double> getAnglesFromLines(List<ILineSegment> lineList, IVector2 origin)
 	{
 		List<Double> angleList = new ArrayList<>();
-		for (ILine line : lineList)
+		for (var line : lineList)
 		{
-			IVector2 v1 = Vector2.fromPoints(origin, line.getStart());
-			IVector2 v2 = Vector2.fromPoints(origin, line.getEnd());
+			IVector2 v1 = Vector2.fromPoints(origin, line.getPathStart());
+			IVector2 v2 = Vector2.fromPoints(origin, line.getPathEnd());
 
 			angleList.add(v1.angleToAbs(v2).orElse(0d));
 		}

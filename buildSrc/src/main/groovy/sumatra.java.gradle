@@ -5,14 +5,10 @@
 plugins {
     id 'java'
     id 'groovy' // apply to all due to issues when only applying to some projects
-    id 'jacoco'
     id 'idea'
     id 'ca.cutterslade.analyze'
     id 'sumatra.versions'
 }
-
-java.targetCompatibility = JavaVersion.VERSION_17
-java.sourceCompatibility = JavaVersion.VERSION_17
 
 repositories {
     maven {
@@ -26,12 +22,20 @@ repositories {
     }
 }
 
-tasks.withType(JavaCompile) {
+tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
 }
 
 dependencies {
-    annotationProcessor "org.projectlombok:lombok:1.18.22"
-    compileOnly "org.projectlombok:lombok:1.18.22"
-    permitUnusedDeclared "org.projectlombok:lombok:1.18.22"
+    annotationProcessor "org.projectlombok:lombok:1.18.28"
+    compileOnly "org.projectlombok:lombok:1.18.28"
+    permitUnusedDeclared "org.projectlombok:lombok:1.18.28"
 }
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
+}
+
+jar.archiveVersion.convention(null)

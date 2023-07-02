@@ -257,7 +257,7 @@ public class SimulationControlModule extends AModule
 	private boolean botCollidingWithOtherBot(Map<BotID, SimBotState> botFilterStates, BotID botID)
 	{
 		var otherBotStates = botFilterStates.entrySet().stream()
-				.filter(b -> b.getKey() != botID)
+				.filter(b -> !b.getKey().equals(botID))
 				.map(Map.Entry::getValue)
 				.toList();
 		var botState = botFilterStates.get(botID);

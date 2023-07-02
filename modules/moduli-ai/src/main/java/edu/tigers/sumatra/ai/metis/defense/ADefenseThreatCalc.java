@@ -10,8 +10,7 @@ import edu.tigers.sumatra.ai.metis.defense.data.IDefenseThreat;
 import edu.tigers.sumatra.drawable.DrawableLine;
 import edu.tigers.sumatra.drawable.IDrawableShape;
 import edu.tigers.sumatra.geometry.Geometry;
-import edu.tigers.sumatra.math.line.Line;
-import edu.tigers.sumatra.math.line.v2.ILineSegment;
+import edu.tigers.sumatra.math.line.ILineSegment;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
 
@@ -36,9 +35,9 @@ public abstract class ADefenseThreatCalc extends ACalculator
 		shapes.add(
 				new DrawableLine(threat.getThreatLine(), Color.BLACK));
 		shapes.add(
-				new DrawableLine(Line.fromPoints(threat.getPos(), Geometry.getGoalOur().getLeftPost()), Color.BLACK));
+				new DrawableLine(threat.getPos(), Geometry.getGoalOur().getLeftPost(), Color.BLACK));
 		shapes.add(
-				new DrawableLine(Line.fromPoints(threat.getPos(), Geometry.getGoalOur().getRightPost()), Color.BLACK));
+				new DrawableLine(threat.getPos(), Geometry.getGoalOur().getRightPost(), Color.BLACK));
 	}
 
 

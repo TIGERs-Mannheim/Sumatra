@@ -11,8 +11,8 @@ import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.ids.ETeamColor;
 import edu.tigers.sumatra.math.AngleMath;
-import edu.tigers.sumatra.math.line.v2.ILine;
-import edu.tigers.sumatra.math.line.v2.Lines;
+import edu.tigers.sumatra.math.line.ILine;
+import edu.tigers.sumatra.math.line.Lines;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.VectorMath;
 import edu.tigers.sumatra.referee.data.EGameState;
@@ -117,7 +117,7 @@ public class BotCollisionDetector extends AGameEventDetector
 				secondaryBot = pair.blueBot.getBotId();
 			}
 
-			IVector2 centerPos = Lines.segmentFromPoints(pair.blueBot.getPos(), pair.yellowBot.getPos()).getCenter();
+			IVector2 centerPos = Lines.segmentFromPoints(pair.blueBot.getPos(), pair.yellowBot.getPos()).getPathCenter();
 
 			final BotID secondaryViolator;
 			if (Math.abs(velDiff) < minSpeedDiff)
@@ -203,10 +203,10 @@ public class BotCollisionDetector extends AGameEventDetector
 		IVector2 bot1Vel = bot1.getVel().scaleToNew(predictBotVel(bot1));
 		IVector2 bot2Vel = bot2.getVel().scaleToNew(predictBotVel(bot2));
 		IVector2 velDiff = bot1Vel.subtractNew(bot2Vel);
-		IVector2 center = Lines.segmentFromPoints(bot1.getPos(), bot2.getPos()).getCenter();
+		IVector2 center = Lines.segmentFromPoints(bot1.getPos(), bot2.getPos()).getPathCenter();
 		IVector2 crashVelReferencePoint = center.addNew(velDiff);
 		ILine collisionReferenceLine = Lines.lineFromPoints(bot1.getPos(), bot2.getPos());
-		IVector2 projectedCrashVelReferencePoint = collisionReferenceLine.closestPointOnLine(crashVelReferencePoint);
+		IVector2 projectedCrashVelReferencePoint = collisionReferenceLine.closestPointOnPath(crashVelReferencePoint);
 
 		return projectedCrashVelReferencePoint.distanceTo(center);
 	}

@@ -6,7 +6,7 @@ package edu.tigers.sumatra.ai.metis.support.behaviors.repulsive;
 
 import com.github.g3force.configurable.Configurable;
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
-import edu.tigers.sumatra.ai.metis.offense.action.OffensiveAction;
+import edu.tigers.sumatra.ai.metis.offense.action.RatedOffensiveAction;
 import edu.tigers.sumatra.ai.metis.support.behaviors.ASupportBehavior;
 import edu.tigers.sumatra.ai.metis.support.behaviors.SupportBehaviorPosition;
 import edu.tigers.sumatra.ai.pandora.plays.EPlay;
@@ -15,12 +15,12 @@ import edu.tigers.sumatra.bot.State;
 import edu.tigers.sumatra.drawable.DrawableArrow;
 import edu.tigers.sumatra.drawable.IDrawableShape;
 import edu.tigers.sumatra.geometry.Geometry;
-import edu.tigers.sumatra.geometry.IPenaltyArea;
 import edu.tigers.sumatra.geometry.RuleConstraints;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.SumatraMath;
-import edu.tigers.sumatra.math.line.v2.ILineSegment;
-import edu.tigers.sumatra.math.line.v2.Lines;
+import edu.tigers.sumatra.math.line.ILineSegment;
+import edu.tigers.sumatra.math.line.Lines;
+import edu.tigers.sumatra.math.penaltyarea.IPenaltyArea;
 import edu.tigers.sumatra.math.pose.Pose;
 import edu.tigers.sumatra.math.tube.Tube;
 import edu.tigers.sumatra.math.vector.IVector2;
@@ -37,7 +37,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 import static edu.tigers.sumatra.geometry.RuleConstraints.getPenAreaMarginStandard;
 import static java.lang.Math.exp;
@@ -100,7 +99,7 @@ public abstract class ARepulsiveBehavior extends ASupportBehavior
 
 	private final Color color;
 	private final Supplier<Map<EPlay, Set<BotID>>> desiredBots;
-	private final Supplier<Map<BotID, OffensiveAction>> offensiveActions;
+	private final Supplier<Map<BotID, RatedOffensiveAction>> offensiveActions;
 
 
 	@Override
@@ -109,8 +108,8 @@ public abstract class ARepulsiveBehavior extends ASupportBehavior
 		List<ITrackedBot> opponents = new ArrayList<>(getWFrame().getOpponentBots().values());
 		List<ITrackedBot> supporter = desiredBots.get().get(EPlay.SUPPORT).stream()
 				.map(id -> getWFrame().getBot(id))
-				.filter(s -> s.getBotId() != botID)
-				.collect(Collectors.toList());
+				.filter(s -> !s.getBotId().equals(botID))
+				.toList();
 
 		ITrackedBot tBot = getWFrame().getBot(botID);
 		var botState = BotState.of(tBot.getBotId(), tBot.getBotState());
@@ -156,7 +155,7 @@ public abstract class ARepulsiveBehavior extends ASupportBehavior
 		return opponents.stream()
 				.filter(b -> b.getPos().distanceTo(affectedBot.getPos()) < sigmaOpponentBot * 3)
 				.map(b -> new Force(b.getPos(), sigmaOpponentBot, magnitudeOpponentBot))
-				.collect(Collectors.toList());
+				.toList();
 	}
 
 
@@ -174,22 +173,22 @@ public abstract class ARepulsiveBehavior extends ASupportBehavior
 	)
 	{
 		return supporter.stream()
-				.filter(b -> b.getBotId() != affectedBot.getBotId())
+				.filter(b -> !b.getBotId().equals(affectedBot.getBotId()))
 				.filter(b -> b.getPos().distanceTo(affectedBot.getPos()) < sigmaTeamBot * 3)
 				.map(b -> new Force(b.getPos(), sigma, magnitude))
-				.collect(Collectors.toList());
+				.toList();
 	}
 
 
 	protected List<Force> getForceRepelFromPassLine(BotState affectedBot)
 	{
 		return offensiveActions.get().values().stream()
-				.map(OffensiveAction::getPass)
+				.map(e -> e.getAction().getPass())
 				.filter(Objects::nonNull)
 				.map(pass -> Lines.segmentFromPoints(pass.getKick().getSource(), pass.getKick().getTarget()))
-				.map(line -> line.closestPointOnLine(affectedBot.getPos()))
+				.map(line -> line.closestPointOnPath(affectedBot.getPos()))
 				.map(referencePoint -> new Force(referencePoint, sigmaPassLine, magnitudePassLine))
-				.collect(Collectors.toUnmodifiableList());
+				.toList();
 	}
 
 
@@ -213,14 +212,14 @@ public abstract class ARepulsiveBehavior extends ASupportBehavior
 				.map(id -> getWFrame().getBot(id))
 				.map(ITrackedBot::getPos)
 				.map(offensivePos -> getForceForOffensiveBot(affectedBot, offensivePos))
-				.collect(Collectors.toList());
+				.toList();
 	}
 
 
 	private Force getForceForOffensiveBot(BotState affectedBot, IVector2 offensivePos)
 	{
 		ILineSegment goalLine = Lines.segmentFromPoints(offensivePos, Geometry.getGoalTheir().getCenter());
-		IVector2 referencePoint = goalLine.closestPointOnLine(affectedBot.getPos());
+		IVector2 referencePoint = goalLine.closestPointOnPath(affectedBot.getPos());
 		return new Force(referencePoint, sigmaGoalSight, magnitudeGoalSight);
 	}
 
@@ -232,21 +231,12 @@ public abstract class ARepulsiveBehavior extends ASupportBehavior
 		for (Force f : forces)
 		{
 			double dist = f.getMean() - f.getPosition().distanceTo(affectedBot.getPos());
-			double resultingLength;
-			switch (f.getFunc())
+			double resultingLength = switch (f.getFunc())
 			{
-				case CONSTANT:
-					resultingLength = 1;
-					break;
-				case LINEAR:
-					resultingLength = 1 / dist;
-					break;
-				case EXPONENTIAL:
-					resultingLength = calcExponentialFactor(f, dist);
-					break;
-				default:
-					resultingLength = 0;
-			}
+				case CONSTANT -> 1;
+				case LINEAR -> 1 / dist;
+				case EXPONENTIAL -> calcExponentialFactor(f, dist);
+			};
 			if (f.isInvert())
 			{
 				resultingLength = 1 - resultingLength;
@@ -289,7 +279,8 @@ public abstract class ARepulsiveBehavior extends ASupportBehavior
 		}
 
 		// not too close to field borders
-		destination = Geometry.getField().nearestPointInside(destination, -(fieldMargin + Geometry.getBotRadius()));
+		destination = Geometry.getField().withMargin(-(fieldMargin + Geometry.getBotRadius()))
+				.nearestPointInside(destination);
 
 		if (getAiFrame().getGameState().isRunning())
 		{
@@ -312,7 +303,7 @@ public abstract class ARepulsiveBehavior extends ASupportBehavior
 		Tube tube = Tube.create(ballPos, targetBallPos, penAreaStopMargin);
 		ILineSegment placementLine = Lines.segmentFromPoints(ballPos, targetBallPos);
 		ILineSegment pos2Dest = Lines.segmentFromPoints(currentPos, destination);
-		if (placementLine.intersectSegment(pos2Dest).isPresent())
+		if (!placementLine.intersect(pos2Dest).isEmpty())
 		{
 			// avoid crossing the placement tube
 			return tube.nearestPointOutside(currentPos);
@@ -331,7 +322,7 @@ public abstract class ARepulsiveBehavior extends ASupportBehavior
 		Collection<ITrackedBot> opponents = getWFrame().getOpponentBots().values();
 		List<ITrackedBot> supportBots = desiredBots.get().get(EPlay.SUPPORT).stream()
 				.map(id -> getWFrame().getBot(id))
-				.collect(Collectors.toList());
+				.toList();
 
 		for (int x = -debugArrowsHorizontal / 2; x < debugArrowsHorizontal / 2; x++)
 		{

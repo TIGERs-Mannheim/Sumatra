@@ -11,12 +11,12 @@ import edu.tigers.sumatra.ai.metis.targetrater.AngleRange;
 import edu.tigers.sumatra.drawable.DrawableArc;
 import edu.tigers.sumatra.drawable.DrawableCircle;
 import edu.tigers.sumatra.geometry.Geometry;
-import edu.tigers.sumatra.geometry.IPenaltyArea;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.ids.ETeamColor;
 import edu.tigers.sumatra.math.AngleMath;
+import edu.tigers.sumatra.math.circle.Arc;
 import edu.tigers.sumatra.math.circle.Circle;
-import edu.tigers.sumatra.math.line.ILine;
+import edu.tigers.sumatra.math.penaltyarea.IPenaltyArea;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
 import lombok.Getter;
@@ -28,7 +28,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 
 /**
@@ -68,7 +67,7 @@ public class OffensiveBallAccessibilityCalc extends ACalculator
 			// now add bot specific forbidden angles
 			for (ITrackedBot bot : getWFrame().getTigerBotsVisible().values())
 			{
-				if (bot.getBotId() != tigerBot.getBotId())
+				if (!bot.getBotId().equals(tigerBot.getBotId()))
 				{
 					createInaccessibleRangeForBot(getBall().getPos(), bot)
 							.ifPresent(inaccessibleAnglesForBot::add);
@@ -89,18 +88,18 @@ public class OffensiveBallAccessibilityCalc extends ACalculator
 		final List<AngleRange> inaccessibleAngles = new ArrayList<>();
 		if (area.distanceTo(ballPos) < Geometry.getBotRadius())
 		{
-			List<ILine> edges = area.getRectangle().getEdges();
-			for (ILine line : edges)
+			var edges = area.getRectangle().getEdges();
+			for (var line : edges)
 			{
 				List<IVector2> list = new ArrayList<>();
 				if (area.isPointInShape(ballPos))
 				{
-					list.add(line.getEnd());
-					list.add(line.getStart());
+					list.add(line.getPathEnd());
+					list.add(line.getPathStart());
 				} else
 				{
-					list.add(line.getStart());
-					list.add(line.getEnd());
+					list.add(line.getPathStart());
+					list.add(line.getPathEnd());
 				}
 				inaccessibleAngles.add(createForbiddenRangeByPositions(ballPos, list));
 			}
@@ -115,14 +114,14 @@ public class OffensiveBallAccessibilityCalc extends ACalculator
 				.map(bot -> createInaccessibleRangeForBot(ballPos, bot))
 				.filter(Optional::isPresent)
 				.map(Optional::get)
-				.collect(Collectors.toList());
+				.toList();
 	}
 
 
 	private Optional<AngleRange> createInaccessibleRangeForBot(final IVector2 ballPos, final ITrackedBot bot)
 	{
-		// minDistBotToBall should be smaller than the minimum possible distance between opponent robot and ball, 
-		// when our robot is in between. 
+		// minDistBotToBall should be smaller than the minimum possible distance between opponent robot and ball,
+		// when our robot is in between.
 		// Otherwise, an inaccessible angle may be generated although the robot is already within this angle range.
 		double minDistBotToBall = Geometry.getBotRadius() * 2 + Geometry.getOpponentCenter2DribblerDist() - 20;
 		double maxCircleRadius = Geometry.getBotRadius() + 50;
@@ -179,7 +178,7 @@ public class OffensiveBallAccessibilityCalc extends ACalculator
 
 		for (AngleRange range : inaccessibleAngles)
 		{
-			var da = new DrawableArc(DrawableArc.createArc(ballPos, 250, range.getRight(),
+			var da = new DrawableArc(Arc.createArc(ballPos, 250, range.getRight(),
 					range.getWidth()), new Color(255, 0, 0, 100));
 			da.setFill(true);
 			getShapes(EAiShapesLayer.OFFENSIVE_ACCESSIBILITY).add(da);

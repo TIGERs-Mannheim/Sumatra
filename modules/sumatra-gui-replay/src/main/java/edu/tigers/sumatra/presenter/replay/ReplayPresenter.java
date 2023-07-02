@@ -8,6 +8,7 @@ import edu.tigers.sumatra.AMainFrame;
 import edu.tigers.sumatra.AMainPresenter;
 import edu.tigers.sumatra.clock.ThreadUtil;
 import edu.tigers.sumatra.persistence.BerkeleyDb;
+import edu.tigers.sumatra.referee.data.EGameState;
 import edu.tigers.sumatra.referee.data.RefereeMsg;
 import edu.tigers.sumatra.referee.gameevent.EGameEvent;
 import edu.tigers.sumatra.referee.gameevent.IGameEvent;
@@ -57,6 +58,7 @@ public class ReplayPresenter extends AMainPresenter
 	private boolean skipStoppedGame = false;
 	private SslGcRefereeMessage.Referee.Command searchCommand = null;
 	private EGameEvent searchGameEvent = null;
+	private EGameState searchGameState = null;
 	private boolean skipBallPlacement = false;
 
 
@@ -248,6 +250,13 @@ public class ReplayPresenter extends AMainPresenter
 
 
 	@Override
+	public void onSearchGameState(final EGameState gameState)
+	{
+		this.searchGameState = gameState;
+	}
+
+
+	@Override
 	public void onSetSkipStop(final boolean enable)
 	{
 		this.skipStoppedGame = enable;
@@ -413,15 +422,15 @@ public class ReplayPresenter extends AMainPresenter
 
 		private void skipFrames()
 		{
-			long t = getCurrentTime();
-			for (; t < recEndTime; t += 250_000_000)
+			for (long t = getCurrentTime(); t < recEndTime; t += 250_000_000)
 			{
 				boolean skipStop = !skipStoppedGame || !skipFrameStoppedGame(db.get(WorldFrameWrapper.class, t));
 				boolean command = searchCommand == null || !skipFrameCommand(db.get(WorldFrameWrapper.class, t));
 				boolean gameEvent = searchGameEvent == null || !skipFrameGameEvent(db.get(WorldFrameWrapper.class, t));
+				boolean gameState = searchGameState == null || !skipFrameGameState(db.get(WorldFrameWrapper.class, t));
 				boolean skipPlacement = !skipBallPlacement || !skipFrameBallPlacement(db.get(WorldFrameWrapper.class, t));
 
-				if (skipStop && command && gameEvent && skipPlacement)
+				if (skipStop && command && gameEvent && skipPlacement && gameState)
 				{
 					jumpAbsoluteTime(t);
 					break;
@@ -429,6 +438,7 @@ public class ReplayPresenter extends AMainPresenter
 			}
 			searchCommand = null;
 			searchGameEvent = null;
+			searchGameState = null;
 		}
 
 
@@ -458,6 +468,12 @@ public class ReplayPresenter extends AMainPresenter
 			return refMsg != null && refMsg.getGameEvents().stream()
 					.map(IGameEvent::getType)
 					.noneMatch(gameEvent -> gameEvent == searchGameEvent);
+		}
+
+
+		private boolean skipFrameGameState(final WorldFrameWrapper wfw)
+		{
+			return wfw.getGameState().getState() != searchGameState;
 		}
 
 

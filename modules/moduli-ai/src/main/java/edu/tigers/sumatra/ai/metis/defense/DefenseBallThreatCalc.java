@@ -8,9 +8,9 @@ import com.github.g3force.configurable.Configurable;
 import edu.tigers.sumatra.ai.metis.defense.data.DefenseBallThreat;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.geometry.RuleConstraints;
-import edu.tigers.sumatra.math.line.v2.IHalfLine;
-import edu.tigers.sumatra.math.line.v2.ILineSegment;
-import edu.tigers.sumatra.math.line.v2.Lines;
+import edu.tigers.sumatra.math.line.IHalfLine;
+import edu.tigers.sumatra.math.line.ILineSegment;
+import edu.tigers.sumatra.math.line.Lines;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.vision.data.IKickEvent;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
@@ -68,7 +68,7 @@ public class DefenseBallThreatCalc extends ADefenseThreatCalc
 		{
 			IHalfLine travelLine = getBall().getTrajectory().getTravelLine();
 			return Geometry.getGoalOur().withMargin(0, goalMargin).getLineSegment()
-					.intersectHalfLine(travelLine).orElse(threatTarget);
+					.intersect(travelLine).asOptional().orElse(threatTarget);
 		}
 		return threatTarget;
 	}
@@ -86,10 +86,13 @@ public class DefenseBallThreatCalc extends ADefenseThreatCalc
 		}
 		if (opponentPassReceiver.get() != null)
 		{
-			// Prefer protecting opponentPassReceiver than protecting the ball
-			return Geometry.getField().nearestPointInside(
-					opponentPassReceiver.get().getBotKickerPosByTime(ballLookahead),
-					opponentPassReceiver.get().getBotKickerPos());
+			// Prefer protecting opponentPassReceiver lead point on BallLine than protecting the ball
+			var receiverSource = Geometry.getField().nearestPointInside(
+					opponentPassReceiver.get().getBotKickerPosByTime(ballLookahead, Geometry.getBallRadius()),
+					opponentPassReceiver.get().getBotKickerPos(Geometry.getBallRadius()));
+
+			var ballLine = Lines.halfLineFromDirection(getBall().getPos(), getBall().getVel());
+			return ballLine.closestPointOnPath(receiverSource);
 		}
 		// Protect the ball
 		return threatSource;

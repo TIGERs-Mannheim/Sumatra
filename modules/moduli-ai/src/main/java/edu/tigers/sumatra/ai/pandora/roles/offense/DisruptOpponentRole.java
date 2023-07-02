@@ -10,6 +10,7 @@ import edu.tigers.sumatra.ai.pandora.roles.ERole;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.ETeam;
 import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.pathfinder.EObstacleAvoidanceMode;
 import edu.tigers.sumatra.skillsystem.skills.MoveToSkill;
 import edu.tigers.sumatra.skillsystem.skills.util.PositionValidator;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
@@ -54,6 +55,7 @@ public class DisruptOpponentRole extends ARole
 		{
 			super.onUpdate();
 			positionValidator.update(getWFrame(), skill.getMoveCon());
+			skill.getMoveCon().setObstacleAvoidanceMode(EObstacleAvoidanceMode.AGGRESSIVE);
 
 			var information = getAiFrame().getTacticalField().getRedirectorDetectionInformation();
 			if (information.getOpponentReceiver() == null)

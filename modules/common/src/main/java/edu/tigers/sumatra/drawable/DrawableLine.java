@@ -4,16 +4,14 @@
 
 package edu.tigers.sumatra.drawable;
 
-import java.awt.Color;
-import java.awt.Graphics2D;
-
 import com.sleepycat.persist.model.Persistent;
-
-import edu.tigers.sumatra.math.line.ILine;
-import edu.tigers.sumatra.math.line.Line;
-import edu.tigers.sumatra.math.line.v2.ILineSegment;
+import edu.tigers.sumatra.math.line.ILineSegment;
+import edu.tigers.sumatra.math.line.Lines;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2f;
+
+import java.awt.Color;
+import java.awt.Graphics2D;
 
 
 /**
@@ -22,50 +20,26 @@ import edu.tigers.sumatra.math.vector.Vector2f;
 @Persistent
 public class DrawableLine extends ADrawableWithStroke
 {
-	private final ILine line;
+	private final ILineSegment line;
 
 
 	@SuppressWarnings("unused")
 	private DrawableLine()
 	{
-		line = Line.fromPoints(Vector2f.ZERO_VECTOR, Vector2f.ZERO_VECTOR);
+		line = Lines.segmentFromPoints(Vector2f.ZERO_VECTOR, Vector2f.ZERO_VECTOR);
 	}
 
 
 	/**
 	 * Drawable line from normal line
 	 *
-	 * @param line to draw
-	 * @param color of this line
-	 */
-	public DrawableLine(final ILine line, final Color color)
-	{
-		this.line = line;
-		setColor(color);
-	}
-
-
-	/**
-	 * Drawable line from normal line
-	 *
-	 * @param line to draw
+	 * @param line  to draw
 	 * @param color of this line
 	 */
 	public DrawableLine(final ILineSegment line, final Color color)
 	{
-		this.line = Line.fromPoints(line.getStart(), line.getEnd());
+		this.line = line;
 		setColor(color);
-	}
-
-
-	/**
-	 * Drawable line from normal line
-	 *
-	 * @param line to draw
-	 */
-	public DrawableLine(final ILine line)
-	{
-		this(line, Color.black);
 	}
 
 
@@ -80,15 +54,40 @@ public class DrawableLine extends ADrawableWithStroke
 	}
 
 
+	/**
+	 * Drawable line from normal start and end
+	 *
+	 * @param start of line to draw
+	 * @param end   of line to draw
+	 * @param color of this line
+	 */
+	public DrawableLine(IVector2 start, IVector2 end, Color color)
+	{
+		this.line = Lines.segmentFromPoints(start, end);
+		setColor(color);
+	}
+
+
+	/**
+	 * Drawable line from normal start and end
+	 *
+	 * @param start of line to draw
+	 * @param end   of line to draw
+	 */
+	public DrawableLine(IVector2 start, IVector2 end)
+	{
+		this(start, end, Color.BLACK);
+	}
+
+
 	@Override
 	public void paintShape(final Graphics2D g, final IDrawableTool tool, final boolean invert)
 	{
 		super.paintShape(g, tool, invert);
 
 		// draw line
-		final IVector2 lineStart = tool.transformToGuiCoordinates(line.supportVector(), invert);
-		final IVector2 lineEnd = tool.transformToGuiCoordinates(line.directionVector().addNew(line.supportVector()),
-				invert);
+		final IVector2 lineStart = tool.transformToGuiCoordinates(line.getPathStart(), invert);
+		final IVector2 lineEnd = tool.transformToGuiCoordinates(line.getPathEnd(), invert);
 		g.drawLine((int) lineStart.x(), (int) lineStart.y(), (int) lineEnd.x(), (int) lineEnd.y());
 	}
 }

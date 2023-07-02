@@ -1,10 +1,11 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.pathfinder;
 
 import edu.tigers.sumatra.ids.BotID;
+import edu.tigers.sumatra.ids.ETeam;
 import edu.tigers.sumatra.pathfinder.obstacles.IObstacle;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
 import lombok.Data;
@@ -32,6 +33,9 @@ public final class MovementCon implements IMovementCon
 	private boolean goalPostsObstacle = false;
 	private boolean gameStateObstacle = true;
 
+	private Double distanceToBall;
+	private EObstacleAvoidanceMode obstacleAvoidanceMode = EObstacleAvoidanceMode.NORMAL;
+
 	private Set<BotID> ignoredBots = new HashSet<>();
 	private List<IObstacle> customObstacles = Collections.emptyList();
 
@@ -41,7 +45,7 @@ public final class MovementCon implements IMovementCon
 	 *
 	 * @param bot that is associated with this moveCon
 	 */
-	public final void update(final ITrackedBot bot)
+	public void update(final ITrackedBot bot)
 	{
 		if (prioMap == null)
 		{
@@ -81,5 +85,21 @@ public final class MovementCon implements IMovementCon
 		setGameStateObstacle(false);
 		setBotsObstacle(true);
 		setBallObstacle(true);
+	}
+
+
+	public ETeam getConsideredPenAreas()
+	{
+		if (penaltyAreaOurObstacle && penaltyAreaTheirObstacle)
+		{
+			return ETeam.BOTH;
+		} else if (penaltyAreaTheirObstacle)
+		{
+			return ETeam.OPPONENTS;
+		} else if (penaltyAreaOurObstacle)
+		{
+			return ETeam.TIGERS;
+		}
+		return ETeam.UNKNOWN;
 	}
 }

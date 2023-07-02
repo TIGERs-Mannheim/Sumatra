@@ -7,7 +7,8 @@ package edu.tigers.sumatra.vision.data;
 import com.sleepycat.persist.model.Persistent;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.AngleMath;
-import edu.tigers.sumatra.math.line.Line;
+import edu.tigers.sumatra.math.line.ILineSegment;
+import edu.tigers.sumatra.math.line.Lines;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2f;
 import edu.tigers.sumatra.vision.tracker.BallTracker.MergedBall;
@@ -19,7 +20,6 @@ import lombok.Value;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 
 /**
@@ -69,9 +69,9 @@ public class KickEvent implements IKickEvent
 	{
 		List<IVector2> points = recordsSinceKick.stream()
 				.map(MergedBall::getCamPos)
-				.collect(Collectors.toList());
+				.toList();
 
-		Optional<Line> line = Line.fromPointsList(points);
-		return line.map(Line::directionVector);
+		Optional<ILineSegment> line = Lines.regressionLineFromPointsList(points);
+		return line.map(ILineSegment::directionVector);
 	}
 }

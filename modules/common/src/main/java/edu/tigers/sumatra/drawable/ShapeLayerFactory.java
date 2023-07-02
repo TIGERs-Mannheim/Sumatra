@@ -5,18 +5,12 @@
 package edu.tigers.sumatra.drawable;
 
 import lombok.AllArgsConstructor;
-import lombok.Getter;
-
-import java.util.ArrayList;
-import java.util.List;
 
 
 @AllArgsConstructor
 public class ShapeLayerFactory
 {
 	private final Class<?> type;
-	@Getter
-	private final List<IShapeLayerIdentifier> layers = new ArrayList<>();
 	private int order;
 
 
@@ -31,12 +25,9 @@ public class ShapeLayerFactory
 	public ShapeLayerIdentifier create(ShapeLayerIdentifier.ShapeLayerIdentifierBuilder builder)
 	{
 		ShapeLayerIdentifier layer = builder.build();
-		String id = escape(createId(layer));
-		ShapeLayerIdentifier layerWithId = layer.toBuilder()
-				.id(id)
+		return layer.toBuilder()
+				.id(escape(createId(layer)))
 				.build();
-		layers.add(layerWithId);
-		return layerWithId;
 	}
 
 

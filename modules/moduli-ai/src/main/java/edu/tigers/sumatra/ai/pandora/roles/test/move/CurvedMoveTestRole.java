@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.pandora.roles.test.move;
@@ -194,8 +194,7 @@ public class CurvedMoveTestRole extends ARole
 			MoveToSkill move = MoveToSkill.createMoveToSkill();
 			move.updateDestination(dest);
 			move.updateTargetAngle(destOrientation);
-			move.getMoveCon().setPenaltyAreaOurObstacle(false);
-			move.getMoveCon().setPenaltyAreaTheirObstacle(false);
+			skill.getMoveCon().physicalObstaclesOnly();
 			move.getMoveCon().setBallObstacle(false);
 			setNewSkill(move);
 		}
@@ -262,10 +261,9 @@ public class CurvedMoveTestRole extends ARole
 			MoveToSkill skill = MoveToSkill.createMoveToSkill();
 			skill.updateDestination(dest);
 			skill.updateTargetAngle(destOrientation);
+			skill.getMoveCon().physicalObstaclesOnly();
 			skill.getMoveCon().setBallObstacle(false);
 			skill.getMoveCon().setBotsObstacle(false);
-			skill.getMoveCon().setPenaltyAreaOurObstacle(false);
-			skill.getMoveCon().setPenaltyAreaTheirObstacle(false);
 			skill.getMoveConstraints().setPrimaryDirection(primaryDir);
 			setNewSkill(skill);
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.metis.targetrater;
@@ -18,12 +18,11 @@ import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.AngleMath;
 import edu.tigers.sumatra.math.ERotationDirection;
 import edu.tigers.sumatra.math.SumatraMath;
-import edu.tigers.sumatra.math.line.v2.ILineSegment;
-import edu.tigers.sumatra.math.line.v2.Lines;
+import edu.tigers.sumatra.math.line.ILineSegment;
+import edu.tigers.sumatra.math.line.Lines;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.math.vector.Vector2f;
-import edu.tigers.sumatra.pathfinder.TrajectoryGenerator;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
 import edu.tigers.sumatra.wp.data.WorldFrame;
 import lombok.Getter;
@@ -51,8 +50,11 @@ public class BestGoalKickRater
 	@Configurable(defValue = "10")
 	private static int maxIterationsForPrediction = 10;
 
-	@Configurable(defValue = "0.5")
-	private static double rotationTimeFactor = 0.5;
+	@Configurable(defValue = "1.0")
+	private static double rotationTimeFactor = 1.0;
+
+	@Configurable(comment = "[0-1] Defender might not be able to drive perfectly as soon as kick detected (1 -> perfect driving)", defValue = "0.9")
+	private static double noneOptimalDriveFactor = 0.9;
 
 	private final IColorPicker colorPicker = ColorPickerFactory.greenRedGradient();
 	private final KickFactory kickFactory = new KickFactory();
@@ -85,6 +87,7 @@ public class BestGoalKickRater
 		kickFactory.update(worldFrame);
 		angleRangeRater = AngleRangeRater.forGoal(Geometry.getGoalTheir());
 		angleRangeRater.setObstacles(worldFrame.getOpponentBots().values());
+		angleRangeRater.setNoneOptimalDriveFactor(noneOptimalDriveFactor);
 	}
 
 
@@ -103,7 +106,7 @@ public class BestGoalKickRater
 
 		ILineSegment line = Lines.segmentFromPoints(kickOrigin.getPos(), target.getTarget());
 		shapes.add(new DrawableLine(line, colorPicker.getColor(target.getScore())));
-		shapes.add(new DrawableAnnotation(line.getEnd(), "Complex" + " -> " + DF.format(target.getScore()))
+		shapes.add(new DrawableAnnotation(line.getPathEnd(), "Complex" + " -> " + DF.format(target.getScore()))
 				.withOffset(Vector2f.fromX(100)));
 
 	}
@@ -223,9 +226,9 @@ public class BestGoalKickRater
 		{
 			ILineSegment line = Lines.segmentFromPoints(origin, target.getTarget());
 			shapes.add(new DrawableLine(line, Color.BLACK));
-			shapes.add(new DrawableAnnotation(line.getEnd(),
+			shapes.add(new DrawableAnnotation(line.getPathEnd(),
 					String.format("%d: ", step) + DF.format(target.getScore()) + " | " + DF.format(angle) + " | " + DF
-							.format(time)).withOffset(Vector2f.fromX(100)));
+							.format(time)).withOffset(Vector2f.fromX(100.0)));
 		}
 	}
 
@@ -257,8 +260,16 @@ public class BestGoalKickRater
 		final double targetAngle = Vector2.fromPoints(data.kickOrigin.getPos(), ratedTarget.getTarget()).getAngle();
 
 		// Either the bot would have turned more than needed or bot already rotated into the aimingTolerance
-		return AngleMath.rotationDirection(futureBotAngle, targetAngle) != botRotationDirection
+		return isCoveredDuringRotation(botRotationDirection, data, futureBotAngle, targetAngle)
 				|| AngleMath.diffAbs(futureBotAngle, targetAngle) < calcAimingTolerance(ratedTarget) / 2.0;
+	}
+
+
+	private boolean isCoveredDuringRotation(ERotationDirection botRotationDirection, BestGoalKickRaterData data,
+			double futureBotAngle, double targetAngle)
+	{
+		return AngleMath.rotationDirection(data.botCurrentAngle, targetAngle) == botRotationDirection
+				&& AngleMath.rotationDirection(futureBotAngle, targetAngle) != botRotationDirection;
 	}
 
 
@@ -277,8 +288,16 @@ public class BestGoalKickRater
 
 	private double calcRotationTime(final BestGoalKickRaterData data, final double angle)
 	{
-		return TrajectoryGenerator.generateRotationTrajectory(data.bot, angle).getTotalTime();
+		return RotationTimeHelper.calcRotationTime(
+				data.bot.getAngularVel(),
+				data.bot.getAngleByTime(0),
+				angle,
+				data.bot.getMoveConstraints().getVelMaxW(),
+				data.bot.getMoveConstraints().getAccMaxW()
+		);
 	}
+
+
 
 
 	private boolean isBallRedirectReasonable(KickOrigin kickOrigin, final IVector2 target)
@@ -300,5 +319,7 @@ public class BestGoalKickRater
 	}
 
 
-	private record BestGoalKickRaterData(KickOrigin kickOrigin, ITrackedBot bot, double botCurrentAngle) { }
+	private record BestGoalKickRaterData(KickOrigin kickOrigin, ITrackedBot bot, double botCurrentAngle)
+	{
+	}
 }

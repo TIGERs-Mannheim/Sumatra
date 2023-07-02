@@ -12,8 +12,8 @@ import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.geometry.RuleConstraints;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.SumatraMath;
-import edu.tigers.sumatra.math.line.v2.ILineSegment;
-import edu.tigers.sumatra.math.line.v2.Lines;
+import edu.tigers.sumatra.math.line.ILineSegment;
+import edu.tigers.sumatra.math.line.Lines;
 import edu.tigers.sumatra.math.rectangle.IRectangle;
 import edu.tigers.sumatra.math.tube.ITube;
 import edu.tigers.sumatra.math.tube.Tube;
@@ -96,8 +96,8 @@ public class DefenseBotThreatDefStrategyMan2ManCalc extends ADefenseThreatCalc
 				: Math.max(minDistanceToBall, RuleConstraints.getStopRadius());
 		final double startMargin = minDistToBall + Geometry.getBallRadius() + Geometry.getBotRadius();
 		final double endMargin = minDistanceToOpponent + Geometry.getBotRadius() * 2;
-		IVector2 start = threatLine.getStart().addNew(threatLine.directionVector().scaleToNew(startMargin));
-		IVector2 end = threatLine.getEnd().addNew(threatLine.directionVector().scaleToNew(-endMargin));
+		IVector2 start = threatLine.getPathStart().addNew(threatLine.directionVector().scaleToNew(startMargin));
+		IVector2 end = threatLine.getPathEnd().addNew(threatLine.directionVector().scaleToNew(-endMargin));
 		end = adaptEndToFieldBoundaries(start, end);
 		start = reduceStartToMaxDistanceToOpponent(start, end);
 
@@ -105,8 +105,8 @@ public class DefenseBotThreatDefStrategyMan2ManCalc extends ADefenseThreatCalc
 
 		if (hindersBallPlacement(threatDefendingLine)
 				|| nonPositiveProtectionLineLength(threatLine, threatDefendingLine)
-				|| Geometry.getPenaltyAreaOur().isIntersectingWithLine(threatDefendingLine)
-				|| Geometry.getPenaltyAreaOur().isPointInShape(threatDefendingLine.getStart()))
+				|| Geometry.getPenaltyAreaOur().isIntersectingWithPath(threatDefendingLine)
+				|| Geometry.getPenaltyAreaOur().isPointInShape(threatDefendingLine.getPathStart()))
 		{
 			return Optional.empty();
 		}
@@ -120,7 +120,7 @@ public class DefenseBotThreatDefStrategyMan2ManCalc extends ADefenseThreatCalc
 		final IRectangle field = Geometry.getField().withMargin(-Geometry.getBotRadius() * 3);
 		if (!field.isPointInShape(end))
 		{
-			final List<IVector2> points = field.lineIntersections(Lines.segmentFromPoints(start, end));
+			final List<IVector2> points = field.intersectPerimeterPath(Lines.segmentFromPoints(start, end));
 			if (!points.isEmpty())
 			{
 				end = end.nearestTo(points);
@@ -159,8 +159,8 @@ public class DefenseBotThreatDefStrategyMan2ManCalc extends ADefenseThreatCalc
 			final IVector2 ballPos = getBall().getPos();
 			final double radius = RuleConstraints.getStopRadius() + Geometry.getBotRadius();
 			ITube placementTube = Tube.create(ballPos, placePos, radius);
-			return placementTube.isPointInShape(threatDefendingLine.getEnd())
-					|| placementTube.isIntersectingWithLine(threatDefendingLine);
+			return placementTube.isPointInShape(threatDefendingLine.getPathEnd())
+					|| placementTube.isIntersectingWithPath(threatDefendingLine);
 		}
 		return false;
 	}
@@ -177,9 +177,9 @@ public class DefenseBotThreatDefStrategyMan2ManCalc extends ADefenseThreatCalc
 						bot.getBotId(),
 						threatLine,
 						pl,
-						threatLine.getEnd(),
+						threatLine.getPathEnd(),
 						getWFrame().getBall().getVel(),
-						pl.getEnd(),
+						pl.getPathEnd(),
 						EDefenseBotThreatDefStrategy.MAN_2_MAN_MARKER
 				)
 		);

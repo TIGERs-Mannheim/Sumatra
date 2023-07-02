@@ -12,6 +12,7 @@ import edu.tigers.sumatra.botmanager.botskills.data.MatchCommand;
 import edu.tigers.sumatra.botmanager.sim.skills.BotSkillInput;
 import edu.tigers.sumatra.botmanager.sim.skills.BotSkillOutput;
 import edu.tigers.sumatra.ids.BotID;
+import edu.tigers.sumatra.math.SumatraMath;
 import edu.tigers.sumatra.math.vector.Vector3;
 import edu.tigers.sumatra.sim.dynamics.bot.SimBotAction;
 import edu.tigers.sumatra.sim.dynamics.bot.SimBotState;
@@ -24,8 +25,12 @@ import java.util.Optional;
  */
 public class SumatraBot extends ASimBot
 {
+	private static final double TIME_TILL_FULL_DRIBBLE_STRENGTH = 0.5; // [s]
 	private boolean barrierInterrupted;
 	private SimBotState botState;
+
+	private long firstInterruptedTime = -1;
+	private double dribblerCurrent = 0;
 
 
 	/**
@@ -35,6 +40,13 @@ public class SumatraBot extends ASimBot
 	public SumatraBot(final BotID id, final IBaseStation bs)
 	{
 		super(EBotType.SUMATRA, id, bs);
+	}
+
+
+	@Override
+	public double getDribblerCurrent()
+	{
+		return dribblerCurrent;
 	}
 
 
@@ -66,7 +78,7 @@ public class SumatraBot extends ASimBot
 
 	public SimBotAction simulate(final SimBotState botState, final MatchCommand matchCommand, final long timestamp)
 	{
-		BotSkillInput input = new BotSkillInput(matchCommand.getSkill(), botState, timestamp,
+		BotSkillInput input = new BotSkillInput(matchCommand.getSkill(), botState, getBotParams(), timestamp,
 				matchCommand.isStrictVelocityLimit());
 
 		final BotSkillOutput botSkillOutput = botSkillSim.execute(input);
@@ -75,6 +87,20 @@ public class SumatraBot extends ASimBot
 		barrierInterrupted = botState.isBarrierInterrupted();
 		lastFeedback = botState.getLastFeedback();
 
+		if (barrierInterrupted && getMatchCtrl().getSkill().getKickerDribbler().getDribblerSpeed() > 0)
+		{
+			if (firstInterruptedTime == -1)
+			{
+				firstInterruptedTime = timestamp;
+			}
+			var percentage = SumatraMath.relative((timestamp - firstInterruptedTime) / 1e9, 0,
+					TIME_TILL_FULL_DRIBBLE_STRENGTH);
+			dribblerCurrent = percentage * getMatchCtrl().getSkill().getKickerDribbler().getDribblerMaxCurrent();
+		} else
+		{
+			firstInterruptedTime = -1;
+			dribblerCurrent = 0;
+		}
 		return botSkillOutput.getAction();
 	}
 }

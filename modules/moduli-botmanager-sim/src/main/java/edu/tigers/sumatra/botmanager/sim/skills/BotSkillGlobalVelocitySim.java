@@ -18,11 +18,11 @@ public class BotSkillGlobalVelocitySim implements IBotSkillSim
 	@Override
 	public BotSkillOutput execute(final BotSkillInput input)
 	{
-		BotSkillGlobalVelocity skill = (BotSkillGlobalVelocity) input.getSkill();
-		
+		BotSkillGlobalVelocity skill = (BotSkillGlobalVelocity) input.skill();
+
 		IVector2 localVelXY = BotMath.convertGlobalBotVector2Local(skill.getVel().getXYVector().multiplyNew(1e3),
-				input.getState().getPose().getOrientation());
-		
+				input.state().getPose().getOrientation());
+
 		return BotSkillOutput.Builder.create()
 				.driveLimits(skill.getMoveConstraints())
 				.targetVelLocal(Vector3.from2d(localVelXY, skill.getVel().z()))
@@ -32,7 +32,7 @@ public class BotSkillGlobalVelocitySim implements IBotSkillSim
 				.kickMode(skill.getMode())
 				.kickSpeed(skill.getKickSpeed())
 				.dribblerRPM(skill.getDribbleSpeed())
-				.strictVelocityLimit(input.isStrictVelocityLimit())
+				.strictVelocityLimit(input.strictVelocityLimit())
 				.build();
 	}
 }

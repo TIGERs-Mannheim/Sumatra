@@ -12,7 +12,7 @@ import edu.tigers.sumatra.ai.pandora.roles.ERole;
 import edu.tigers.sumatra.drawable.DrawableTriangle;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.geometry.RuleConstraints;
-import edu.tigers.sumatra.math.line.v2.LineMath;
+import edu.tigers.sumatra.math.line.LineMath;
 import edu.tigers.sumatra.math.triangle.Triangle;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
@@ -131,7 +131,7 @@ public class OpponentInterceptionRole extends ARole
 				BotDistance bot = getAiFrame().getTacticalField().getOpponentsToBallDistances().get(i);
 				if (bot.getDist() < searchRadius
 						&& dt.getTriangle()
-						.isPointInShape(getWFrame().getBot(bot.getBotId()).getPos(), Geometry.getBotRadius()))
+						.withMargin(Geometry.getBotRadius()).isPointInShape(getWFrame().getBot(bot.getBotId()).getPos()))
 				{
 					return bot.getDist() + Geometry.getBotRadius() * 2 + 50;
 				}

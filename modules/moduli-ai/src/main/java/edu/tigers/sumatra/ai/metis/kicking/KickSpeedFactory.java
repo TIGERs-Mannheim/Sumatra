@@ -1,9 +1,10 @@
 /*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.metis.kicking;
 
+import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
 import edu.tigers.sumatra.ball.trajectory.IBallConsultant;
 import edu.tigers.sumatra.geometry.Geometry;
@@ -18,6 +19,10 @@ public class KickSpeedFactory
 	@Configurable(comment = "Number of touchdowns before a chipped pass can be received", defValue = "4")
 	private static int touchdownsForPasses = 4;
 
+	static
+	{
+		ConfigRegistration.registerClass("metis", KickSpeedFactory.class);
+	}
 
 	public double maxChip(ITrackedBot bot)
 	{
@@ -134,7 +139,7 @@ public class KickSpeedFactory
 		{
 			double travelTime = ballConsultant.getTimeForKick(passDist, passSpeed);
 			double passEndVel = ballConsultant.getVelForKickByTime(passSpeed, travelTime);
-			if (passEndVel < maxPassEndSpeed)
+			if (passEndVel <= maxPassEndSpeed)
 			{
 				return passSpeed;
 			}

@@ -3,12 +3,12 @@
  */
 package edu.tigers.sumatra.planarcurve;
 
-import edu.tigers.sumatra.math.line.ILine;
-import edu.tigers.sumatra.math.line.Line;
+import edu.tigers.sumatra.math.line.Lines;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.math.vector.Vector2f;
 import edu.tigers.sumatra.trajectory.BangBangTrajectoryFactory;
+import edu.tigers.sumatra.trajectory.DestinationForTimedPositionCalc;
 import edu.tigers.sumatra.trajectory.ITrajectory;
 import edu.tigers.sumatra.trajectory.PlanarCurveFactory;
 import org.junit.Test;
@@ -30,6 +30,8 @@ public class PlanarCurveTest
 	private final Random rng = new Random(0);
 	private final PlanarCurveFactory planarCurveFactory = new PlanarCurveFactory();
 	private final BangBangTrajectoryFactory trajectoryFactory = new BangBangTrajectoryFactory();
+
+	private final DestinationForTimedPositionCalc timedPositionCalc = new DestinationForTimedPositionCalc();
 
 
 	private double getRandomDouble(final double minmax)
@@ -112,10 +114,8 @@ public class PlanarCurveTest
 			IVector2 finalPos2 = getRandomVector(POS_LIMIT);
 			IVector2 initialVel2 = getRandomVector(2.0);
 
-			ITrajectory<IVector2> traj1 = trajectoryFactory
-					.sync(initialPos1, finalPos1, initialVel1, 2, 3);
-			ITrajectory<IVector2> traj2 = trajectoryFactory
-					.sync(initialPos2, finalPos2, initialVel2, 2, 3);
+			ITrajectory<IVector2> traj1 = trajectoryFactory.sync(initialPos1, finalPos1, initialVel1, 2, 3);
+			ITrajectory<IVector2> traj2 = trajectoryFactory.sync(initialPos2, finalPos2, initialVel2, 2, 3);
 
 			double dist = planarCurveFactory.getPlanarCurve(traj1)
 					.getMinimumDistanceToCurve(planarCurveFactory.getPlanarCurve(traj2));
@@ -132,15 +132,54 @@ public class PlanarCurveTest
 		IVector2 finalPos1 = Vector2.fromXY(3, 0);
 		IVector2 initialVel1 = Vector2.fromXY(0, 0);
 
-		IVector2 initialPos2 = Vector2.fromXY(0, -2000);
-		IVector2 finalPos2 = Vector2.fromXY(0, 2000);
 
-		ILine line = Line.fromPoints(initialPos2, finalPos2);
+		var lineSegment = Lines.segmentFromPoints(Vector2.fromY(2000), Vector2.fromY(-2000));
+		var halfLine = Lines.halfLineFromDirection(Vector2.fromY(2000), Vector2.fromY(-1));
+		var line = Lines.lineFromDirection(Vector2.fromY(2000), Vector2.fromY(1));
 
 		ITrajectory<IVector2> traj1 = trajectoryFactory.sync(initialPos1, finalPos1, initialVel1, 2, 3);
 
-		List<IVector2> intersections = planarCurveFactory.getPlanarCurve(traj1).getIntersectionsWithLineSegment(line);
+		List<IVector2> intersections;
+		intersections = planarCurveFactory.getPlanarCurve(traj1).getIntersectionsWithLine(lineSegment);
 		assertThat(intersections).containsExactlyInAnyOrder(Vector2f.zero());
+		intersections = planarCurveFactory.getPlanarCurve(traj1).getIntersectionsWithLine(halfLine);
+		assertThat(intersections).containsExactlyInAnyOrder(Vector2f.zero());
+		intersections = planarCurveFactory.getPlanarCurve(traj1).getIntersectionsWithLine(line);
+		assertThat(intersections).containsExactlyInAnyOrder(Vector2f.zero());
+	}
+
+
+	@Test
+	public void testLineTrajIntersectionQuadratic()
+	{
+		var intersectionPoint = Vector2.fromXY(1, 1);
+		var p0 = Vector2.zero();
+		var v0 = Vector2.fromX(1);
+		// Use overshooting trajectories to the intersection distance. This will create a trajectory that passes the
+		// intersection point but continues afterward with the overshoot.
+		var destination = timedPositionCalc.destinationForBangBang2dSync(p0, intersectionPoint, v0, 2, 3, 0);
+
+		var lineSegment = Lines.segmentFromPoints(Vector2.fromY(1000), Vector2.fromXY(2000, 1000));
+		var halfLine = Lines.halfLineFromDirection(Vector2.fromY(1000), Vector2.fromX(1));
+		var line = Lines.lineFromDirection(Vector2.fromY(1000), Vector2.fromX(-1));
+
+		ITrajectory<IVector2> trajectory = trajectoryFactory.sync(p0, destination, v0, 2, 3);
+
+		List<IVector2> intersections;
+		var intersectionPointMM = intersectionPoint.multiplyNew(1e3);
+
+
+		intersections = planarCurveFactory.getPlanarCurve(trajectory).getIntersectionsWithLine(lineSegment);
+		assertThat(intersections).hasSize(1);
+		assertThat(intersections.get(0).distanceTo(intersectionPointMM)).isLessThanOrEqualTo(1);
+
+		intersections = planarCurveFactory.getPlanarCurve(trajectory).getIntersectionsWithLine(halfLine);
+		assertThat(intersections).hasSize(1);
+		assertThat(intersections.get(0).distanceTo(intersectionPointMM)).isLessThanOrEqualTo(1);
+
+		intersections = planarCurveFactory.getPlanarCurve(trajectory).getIntersectionsWithLine(line);
+		assertThat(intersections).hasSize(1);
+		assertThat(intersections.get(0).distanceTo(intersectionPointMM)).isLessThanOrEqualTo(1);
 	}
 
 
@@ -156,18 +195,17 @@ public class PlanarCurveTest
 			IVector2 initialPos2 = getRandomVector(POS_LIMIT * 1e3);
 			IVector2 finalPos2 = getRandomVector(POS_LIMIT * 1e3);
 
-			ILine line = Line.fromPoints(initialPos2, finalPos2);
+			var line = Lines.segmentFromPoints(initialPos2, finalPos2);
 
-			ITrajectory<IVector2> traj1 = trajectoryFactory
-					.sync(initialPos1, finalPos1, initialVel1, 2, 3);
+			ITrajectory<IVector2> traj1 = trajectoryFactory.sync(initialPos1, finalPos1, initialVel1, 2, 3);
 
-			List<IVector2> intersections = planarCurveFactory.getPlanarCurve(traj1).getIntersectionsWithLineSegment(line);
+			List<IVector2> intersections = planarCurveFactory.getPlanarCurve(traj1).getIntersectionsWithLine(line);
 
 			for (IVector2 inter : intersections)
 			{
 				double minDistTraj = planarCurveFactory.getPlanarCurve(traj1).getMinimumDistanceToPoint(inter);
 				assertThat(minDistTraj).isCloseTo(0.0, within(1e-3));
-				assertThat(line.isPointOnLineSegment(inter, 1e-3)).isTrue();
+				assertThat(line.distanceTo(inter)).isLessThan(1e-3);
 			}
 		}
 	}

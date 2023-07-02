@@ -5,7 +5,7 @@
 package edu.tigers.sumatra.ai.metis.defense
 
 import edu.tigers.sumatra.geometry.Geometry
-import edu.tigers.sumatra.math.line.v2.Lines
+import edu.tigers.sumatra.math.line.Lines
 import edu.tigers.sumatra.math.vector.Vector2
 import spock.lang.Specification
 
@@ -27,8 +27,8 @@ class DefenseMathTest extends Specification {
         def end = Vector2.fromX(penAreaX + endX)
 
         then:
-        pl.getStart().isCloseTo(start)
-        pl.getEnd().isCloseTo(end)
+        pl.getPathStart().isCloseTo(start)
+        pl.getPathEnd().isCloseTo(end)
 
         where:
         marginToThreat | marginToPenArea | maxGoOutX | threatX || startX | endX

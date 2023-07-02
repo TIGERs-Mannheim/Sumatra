@@ -1,0 +1,22 @@
+plugins {
+    id 'application'
+}
+
+application {
+    applicationDefaultJvmArgs = [
+            '-server',
+            '-Dsun.java2d.d3d=false',
+            '-Djava.net.preferIPv4Stack=true',
+    ]
+}
+
+// Version is set to null to skip it completely in the artifact names.
+// Thus, it is guaranteed that old artifacts are always overwritten.
+distZip.archiveVersion.convention(null)
+
+// disable tar distribution to avoid redundant artifacts
+distTar.enabled = false
+
+tasks.named("run").configure {
+    workingDir = rootProject.projectDir
+}

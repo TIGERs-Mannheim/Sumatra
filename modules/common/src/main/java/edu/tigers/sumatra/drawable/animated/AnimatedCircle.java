@@ -102,8 +102,8 @@ public class AnimatedCircle extends AAnimatedShape
 	 * @param lineColor
 	 * @return
 	 */
-	public static AnimatedCircle aCircleWithPulsingSize(final IVector2 center, final float minSize, final float maxSize,
-			final float pulsePeriod, final Color lineColor)
+	public static AnimatedCircle aCircleWithPulsingSize(final IVector2 center, final double minSize, final float maxSize,
+			final double pulsePeriod, final Color lineColor)
 	{
 		return new AnimatedCircle(center, new NumberAnimatorMinMax(minSize, maxSize, new AnimationTimerSine(pulsePeriod)),
 				new ColorAnimatorFixed(lineColor), null);
@@ -120,8 +120,8 @@ public class AnimatedCircle extends AAnimatedShape
 	 * @param lineColor
 	 * @return
 	 */
-	public static AnimatedCircle aCircleWithGrowingSize(final IVector2 center, final float minSize, final float maxSize,
-			final float pulsePeriod, final Color lineColor)
+	public static AnimatedCircle aCircleWithGrowingSize(final IVector2 center, final double minSize, final float maxSize,
+			final double pulsePeriod, final Color lineColor)
 	{
 		return new AnimatedCircle(center, new NumberAnimatorMinMax(minSize, maxSize, new AnimationTimerUp(pulsePeriod)),
 				new ColorAnimatorFixed(lineColor), null);
@@ -139,9 +139,9 @@ public class AnimatedCircle extends AAnimatedShape
 	 * @param fillColor
 	 * @return
 	 */
-	public static AnimatedCircle aFilledCircleWithGrowingSize(final IVector2 center, final float minSize,
-			final float maxSize,
-			final float pulsePeriod, final Color lineColor, final Color fillColor)
+	public static AnimatedCircle aFilledCircleWithGrowingSize(final IVector2 center, final double minSize,
+			final double maxSize,
+			final double pulsePeriod, final Color lineColor, final Color fillColor)
 	{
 		return new AnimatedCircle(center, new NumberAnimatorMinMax(minSize, maxSize, new AnimationTimerUp(pulsePeriod)),
 				new ColorAnimatorFixed(lineColor), new ColorAnimatorFixed(fillColor));
@@ -158,8 +158,8 @@ public class AnimatedCircle extends AAnimatedShape
 	 * @param lineColor
 	 * @return
 	 */
-	public static AnimatedCircle aCircleWithShrinkingSize(final IVector2 center, final float minSize,
-			final float maxSize, final float pulsePeriod, final Color lineColor)
+	public static AnimatedCircle aCircleWithShrinkingSize(final IVector2 center, final double minSize,
+			final double maxSize, final float pulsePeriod, final Color lineColor)
 	{
 		return new AnimatedCircle(center, new NumberAnimatorMinMax(minSize, maxSize, new AnimationTimerDown(pulsePeriod)),
 				new ColorAnimatorFixed(lineColor), null);
@@ -177,8 +177,8 @@ public class AnimatedCircle extends AAnimatedShape
 	 * @param fillColor
 	 * @return
 	 */
-	public static AnimatedCircle aFilledCircleWithShrinkingSize(final IVector2 center, final float minSize,
-			final float maxSize, final float pulsePeriod, final Color lineColor, final Color fillColor)
+	public static AnimatedCircle aFilledCircleWithShrinkingSize(final IVector2 center, final double minSize,
+			final double maxSize, final float pulsePeriod, final Color lineColor, final Color fillColor)
 	{
 		return new AnimatedCircle(center, new NumberAnimatorMinMax(minSize, maxSize, new AnimationTimerDown(pulsePeriod)),
 				new ColorAnimatorFixed(lineColor), new ColorAnimatorFixed(fillColor));
@@ -196,8 +196,8 @@ public class AnimatedCircle extends AAnimatedShape
 	 * @param fillColor
 	 * @return
 	 */
-	public static AnimatedCircle aFilledCircleWithPulsingSize(final IVector2 center, final float minSize,
-			final float maxSize, final float pulsePeriod, final Color lineColor, final Color fillColor)
+	public static AnimatedCircle aFilledCircleWithPulsingSize(final IVector2 center, final double minSize,
+			final double maxSize, final float pulsePeriod, final Color lineColor, final Color fillColor)
 	{
 		return new AnimatedCircle(center, new NumberAnimatorMinMax(minSize, maxSize, new AnimationTimerSine(pulsePeriod)),
 				new ColorAnimatorFixed(lineColor), new ColorAnimatorFixed(fillColor));
@@ -214,9 +214,9 @@ public class AnimatedCircle extends AAnimatedShape
 	 * @return
 	 */
 	public static AnimatedCircle aCircleWithPulsingLineColor(final ICircle circle, final Color firstColor,
-			final Color secondColor, final float pulsePeriod)
+			final Color secondColor, final double pulsePeriod)
 	{
-		return new AnimatedCircle(circle.center(), new NumberAnimatorFixed((float) circle.radius()),
+		return new AnimatedCircle(circle.center(), new NumberAnimatorFixed(circle.radius()),
 				new ColorAnimatorMixTwo(firstColor, secondColor, new AnimationTimerSine(pulsePeriod)), null);
 	}
 
@@ -231,11 +231,11 @@ public class AnimatedCircle extends AAnimatedShape
 	 * @return
 	 */
 	public static AnimatedCircle aFilledCircleWithPulsingColor(final ICircle circle, final Color firstColor,
-			final Color secondColor, final float pulsePeriod)
+			final Color secondColor, final double pulsePeriod)
 	{
 		IColorAnimator animator = new ColorAnimatorMixTwo(firstColor, secondColor, new AnimationTimerSine(pulsePeriod));
 
-		return new AnimatedCircle(circle.center(), new NumberAnimatorFixed((float) circle.radius()),
+		return new AnimatedCircle(circle.center(), new NumberAnimatorFixed(circle.radius()),
 				animator, animator);
 	}
 }

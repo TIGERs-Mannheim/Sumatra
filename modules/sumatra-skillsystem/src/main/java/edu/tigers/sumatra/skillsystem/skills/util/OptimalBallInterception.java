@@ -76,7 +76,7 @@ public final class OptimalBallInterception
 		Optional<IVector2> fieldIntersection = ballTrajectory.getPlanarCurve()
 				.getIntersectionsWithRectangle(Geometry.getField())
 				.stream()
-				.filter(p -> ballTrajectory.getTravelLineSegment().isPointOnLine(p))
+				.filter(p -> ballTrajectory.getTravelLineSegment().isPointOnPath(p))
 				.findFirst();
 		return fieldIntersection.map(pos -> Math.min(tMax, ballTrajectory.getTimeByPos(pos))).orElse(tMax);
 	}

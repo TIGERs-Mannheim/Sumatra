@@ -33,8 +33,8 @@ public class BallHandlingBotCalc extends ACalculator
 	@Configurable(defValue = "0.3", comment = "Max abs diff of slack times for adding a second bot")
 	private static double maxSlackTimeDiffForSecondBot = 0.3;
 
-	@Configurable(defValue = "0.3", comment = "Min 'ballContactTime' for adding a second bot")
-	private static double minBallContactTimeForSecondBot = 0.3;
+	@Configurable(defValue = "0.1", comment = "Time in seconds to subtract from current max traj time")
+	private static double hystTimeOffsetForNonMovingBall = 0.1;
 
 	@Configurable(defValue = "300.0", comment = "Min distance between interceptions positions for adding a second bot")
 	private static double minDistForSecondBot = 300.0;
@@ -42,13 +42,12 @@ public class BallHandlingBotCalc extends ACalculator
 	@Configurable(defValue = "1", comment = "Number of bots to assign when there are no ball interceptions")
 	private static int numBotsForNonInterceptableBall = 1;
 
-	@Configurable(defValue = "false")
-	private static boolean allowDoubleAttackerForBallInterception = false;
+	@Configurable(defValue = "true")
+	private static boolean allowDoubleAttackerForBallInterception = true;
 
 	private final Supplier<EBallResponsibility> ballResponsibility;
 	private final Supplier<Set<BotID>> potentialOffensiveBots;
 	private final Supplier<Map<BotID, RatedBallInterception>> ballInterceptions;
-	private final Supplier<Map<BotID, RatedBallInterception>> ballInterceptionsFallback;
 	private final Supplier<List<BotDistance>> tigersToBallDist;
 
 	@Getter
@@ -86,15 +85,6 @@ public class BallHandlingBotCalc extends ACalculator
 		if (!ballInterceptions.get().isEmpty())
 		{
 			return findBestPrimariesByInterception(ballInterceptions.get());
-		}
-
-		if (!ballInterceptionsFallback.get().isEmpty())
-		{
-			var interceptors = findBestPrimariesByInterception(ballInterceptionsFallback.get());
-			if (!interceptors.isEmpty())
-			{
-				return interceptors;
-			}
 		}
 
 		return getBestPrimariesForNonInterceptableBall();
@@ -138,8 +128,18 @@ public class BallHandlingBotCalc extends ACalculator
 		for (var botId : potentialOffensiveBots.get())
 		{
 			var bot = getWFrame().getBot(botId);
-			var trajectory = TrajectoryGenerator.generatePositionTrajectory(bot, getBall().getPos());
-			trajectoryTimes.put(bot.getBotId(), trajectory.getTotalTime());
+			var trajectoryTime = TrajectoryGenerator.generatePositionTrajectory(bot, getBall().getPos()).getTotalTime();
+			if (bot.hasBallContact())
+			{
+				trajectoryTime = 0;
+			}
+
+			// Hyst
+			if (!ballHandlingBots.isEmpty() && ballHandlingBots.get(0).equals(botId))
+			{
+				trajectoryTime = Math.max(0, trajectoryTime - hystTimeOffsetForNonMovingBall);
+			}
+			trajectoryTimes.put(bot.getBotId(), trajectoryTime);
 		}
 		return trajectoryTimes;
 	}
@@ -198,7 +198,6 @@ public class BallHandlingBotCalc extends ACalculator
 		var secondPrimarySlackTime = secondBestBotBallInterception.getBallInterception().getBallContactTime();
 
 		return Math.abs(firstPrimarySlackTime - secondPrimarySlackTime) < maxSlackTimeDiffForSecondBot
-				&& bestBotPos.distanceTo(secondBestBotPos) > minDistForSecondBot
-				&& bestBotBallInterception.getBallInterception().getBallContactTime() > minBallContactTimeForSecondBot;
+				&& bestBotPos.distanceTo(secondBestBotPos) > minDistForSecondBot;
 	}
 }

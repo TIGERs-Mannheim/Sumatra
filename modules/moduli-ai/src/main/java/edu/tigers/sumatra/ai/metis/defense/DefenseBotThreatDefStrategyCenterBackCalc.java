@@ -12,8 +12,8 @@ import edu.tigers.sumatra.ai.metis.defense.data.EDefenseBotThreatDefStrategy;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.Hysteresis;
-import edu.tigers.sumatra.math.line.v2.ILineSegment;
-import edu.tigers.sumatra.math.line.v2.Lines;
+import edu.tigers.sumatra.math.line.ILineSegment;
+import edu.tigers.sumatra.math.line.Lines;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
 import lombok.Getter;
@@ -86,7 +86,7 @@ public class DefenseBotThreatDefStrategyCenterBackCalc extends ADefenseThreatCal
 
 		final Optional<ITrackedBot> passReceiver = ballThreat.getPassReceiver();
 		return passReceiver.isEmpty() ||
-				(passReceiver.get().getBotId() != bot.getBotId());
+				(!passReceiver.get().getBotId().equals(bot.getBotId()));
 	}
 
 
@@ -115,9 +115,9 @@ public class DefenseBotThreatDefStrategyCenterBackCalc extends ADefenseThreatCal
 				bot.getBotId(),
 				threatLine,
 				protectionLine.orElse(null),
-				threatLine.getStart(),
+				threatLine.getPathStart(),
 				bot.getVel(),
-				protectionLine.map(ILineSegment::getStart).orElse(null),
+				protectionLine.map(ILineSegment::getPathStart).orElse(null),
 				EDefenseBotThreatDefStrategy.CENTER_BACK
 		);
 	}

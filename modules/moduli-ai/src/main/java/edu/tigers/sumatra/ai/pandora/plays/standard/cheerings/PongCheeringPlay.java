@@ -8,8 +8,8 @@ import edu.tigers.sumatra.ai.pandora.plays.standard.CheeringPlay;
 import edu.tigers.sumatra.ai.pandora.roles.ARole;
 import edu.tigers.sumatra.ai.pandora.roles.move.MoveRole;
 import edu.tigers.sumatra.geometry.Geometry;
-import edu.tigers.sumatra.math.line.v2.ILineSegment;
-import edu.tigers.sumatra.math.line.v2.Lines;
+import edu.tigers.sumatra.math.line.ILineSegment;
+import edu.tigers.sumatra.math.line.Lines;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
 
@@ -38,20 +38,20 @@ public class PongCheeringPlay implements ICheeringPlay
 	public void initialize(CheeringPlay play)
 	{
 		this.play = play;
-		ballPos = ballMoveLine.getStart();
+		ballPos = ballMoveLine.getPathStart();
 	}
 
 
 	private IVector2 getRightPadCenter()
 	{
-		if (ballMoveLine.getEnd().distanceTo(Geometry.getGoalTheir().getCenter()) < ballMoveLine.getStart()
+		if (ballMoveLine.getPathEnd().distanceTo(Geometry.getGoalTheir().getCenter()) < ballMoveLine.getPathStart()
 				.distanceTo(Geometry.getGoalTheir().getCenter()))
 		{
-			return Vector2.fromXY(ballMoveLine.getEnd().x() + Geometry.getBotRadius() * 2.5, ballMoveLine.getEnd().y());
+			return Vector2.fromXY(ballMoveLine.getPathEnd().x() + Geometry.getBotRadius() * 2.5, ballMoveLine.getPathEnd().y());
 		} else
 		{
-			return Vector2.fromXY(ballMoveLine.getStart().x() + Geometry.getBotRadius() * 2.5,
-					ballMoveLine.getStart().y());
+			return Vector2.fromXY(ballMoveLine.getPathStart().x() + Geometry.getBotRadius() * 2.5,
+					ballMoveLine.getPathStart().y());
 		}
 	}
 
@@ -59,14 +59,14 @@ public class PongCheeringPlay implements ICheeringPlay
 	private IVector2 getLeftPadCenter()
 	{
 
-		if (ballMoveLine.getEnd().distanceTo(Geometry.getGoalOur().getCenter()) < ballMoveLine.getStart()
+		if (ballMoveLine.getPathEnd().distanceTo(Geometry.getGoalOur().getCenter()) < ballMoveLine.getPathStart()
 				.distanceTo(Geometry.getGoalOur().getCenter()))
 		{
-			return Vector2.fromXY(ballMoveLine.getEnd().x() - Geometry.getBotRadius() * 2.5, ballMoveLine.getEnd().y());
+			return Vector2.fromXY(ballMoveLine.getPathEnd().x() - Geometry.getBotRadius() * 2.5, ballMoveLine.getPathEnd().y());
 		} else
 		{
-			return Vector2.fromXY(ballMoveLine.getStart().x() - Geometry.getBotRadius() * 2.5,
-					ballMoveLine.getStart().y());
+			return Vector2.fromXY(ballMoveLine.getPathStart().x() - Geometry.getBotRadius() * 2.5,
+					ballMoveLine.getPathStart().y());
 		}
 	}
 
@@ -85,7 +85,7 @@ public class PongCheeringPlay implements ICheeringPlay
 		List<IVector2> positions = new ArrayList<>();
 
 		// Ball
-		if (ballPos.distanceTo(ballMoveLine.getEnd()) > 100)
+		if (ballPos.distanceTo(ballMoveLine.getPathEnd()) > 100)
 		{
 			ballPos = ballPos.addNew(ballMoveLine.directionVector().scaleToNew(75));
 		}
@@ -122,7 +122,7 @@ public class PongCheeringPlay implements ICheeringPlay
 	{
 		List<IVector2> positions = calcPositions();
 
-		if (play.getRoles().get(0).getPos().distanceTo(ballMoveLine.getEnd()) < 250)
+		if (play.getRoles().get(0).getPos().distanceTo(ballMoveLine.getPathEnd()) < 250)
 		{
 			stage = stage.getNext();
 			ballMoveLine = getMoveLineForStage(stage);

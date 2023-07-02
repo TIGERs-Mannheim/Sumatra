@@ -109,4 +109,11 @@ class BangBangTrajectory2DAsync implements ITrajectory<IVector2>
 	{
 		return child.getTimeSections();
 	}
+
+
+	@Override
+	public double getMaxSpeed()
+	{
+		return child.getMaxSpeed();
+	}
 }

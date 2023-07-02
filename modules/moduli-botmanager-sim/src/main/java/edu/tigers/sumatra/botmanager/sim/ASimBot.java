@@ -71,7 +71,7 @@ public abstract class ASimBot extends ABot
 
 
 	@Override
-	public boolean isOK()
+	public boolean isHealthy()
 	{
 		return true;
 	}

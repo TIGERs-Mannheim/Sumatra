@@ -8,9 +8,12 @@ import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.math.AngleMath;
+import edu.tigers.sumatra.math.SumatraMath;
+import edu.tigers.sumatra.math.triangle.TriangleMath;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
-import org.apache.commons.math3.distribution.BetaDistribution;
+
+import java.util.List;
 
 
 /**
@@ -18,35 +21,25 @@ import org.apache.commons.math3.distribution.BetaDistribution;
  */
 public class DefenseThreatRater
 {
-	@Configurable(comment = "[%] Control how much of the danger distance is a DropOff", defValue = "0.15")
-	private static double dangerDropOffPercentage = 0.15;
+	@Configurable(comment = "[%] Control how much of the danger distance is a DropOff", defValue = "0.25")
+	private static double dangerDropOffPercentage = 0.25;
 
 	@Configurable(comment = "[mm] A position further away than this + FieldLength / 2 is not dangerous at all", defValue = "1000.0")
 	private static double dangerDistanceMinOffset = 1000.0;
 
-	@Configurable(comment = "ER-Force volley shot threat weight", defValue = "5.0")
-	private static double volleyAngleWeight = 5.0;
+	@Configurable(comment = "Weight to rate importance of the opponent redirect angle", defValue = "1.0")
+	private static double redirectAngleWeight = 1.0;
 
-	@Configurable(comment = "ER-Force travel angle threat weight", defValue = "1.0")
+	@Configurable(comment = "Weight to rate importance of the defense travel angle", defValue = "1.0")
 	private static double travelAngleWeight = 1.0;
 
-	@Configurable(comment = "ER-Force distance to goal weight", defValue = "1.0")
-	private static double distToGoalWeight = 1.0;
-
-	@Configurable(comment = "ER-Force volley shot threat weight", defValue = "1.0")
-	private static double altVolleyAngleWeight = 1.0;
-
-	@Configurable(comment = "ER-Force travel angle threat weight", defValue = "1.0")
-	private static double altTravelAngleWeight = 1.0;
-
-	@Configurable(comment = "ER-Force distance to goal weight", defValue = "1.0")
-	private static double altCentralizedWeight = 1.0;
+	@Configurable(comment = "Weight to rate importance of the opponent centralization", defValue = "1.0")
+	private static double centralizedWeight = 1.0;
+	@Configurable(comment = "Weight to rate importance of opponents being at the boarder", defValue = "0.5")
+	private static double atBoarderWeight = 0.5;
 
 	@Configurable(comment = "[deg] Maximum angle where a good redirect is expected, larger angles start to get lucky", defValue = "40.0")
 	private static double maxGoodRedirectAngle = 40.0;
-
-	@Configurable(defValue = "ALTERNATIVE")
-	private static ECalculationMethod calculationMethod = ECalculationMethod.ALTERNATIVE;
 
 	static
 	{
@@ -68,87 +61,91 @@ public class DefenseThreatRater
 
 	public double getThreatRating(final IVector2 ballPos, final IVector2 threatPos)
 	{
-		return switch (calculationMethod)
-				{
-					case LEGACY -> getThreatRatingLegacy(ballPos, threatPos);
-					case ALTERNATIVE -> getThreatRatingAlternative(ballPos, threatPos);
-				};
+		var target = TriangleMath.bisector(threatPos, Geometry.getGoalOur().getLeftPost(),
+				Geometry.getGoalOur().getRightPost());
+
+		var scores = List.of(
+				calcTravelAngleScore(ballPos, threatPos, target),
+				calcRedirectAngleScore(ballPos, threatPos, target),
+				calcCentralizedScore(threatPos, target),
+				calcAtBoarderScore(threatPos)
+		);
+		double weightSum = scores.stream().mapToDouble(Score::weight).sum();
+		double weightedScoreSum = scores.stream().mapToDouble(s -> s.score * s.weight).sum();
+
+		return (weightedScoreSum / weightSum) * calcDistanceToGoalFactor(threatPos);
 	}
 
 
-	private double getThreatRatingLegacy(final IVector2 ballPos, final IVector2 threatPos)
-	{
-		var minDangerDistance = calcDangerDistanceMin();
-
-		IVector2 target = Geometry.getGoalOur().getCenter();
-		BetaDistribution beta = new BetaDistribution(4, 6);
-
-		final double distanceToGoal =
-				1.0 - (Math.min(threatPos.distanceTo(target), minDangerDistance) / minDangerDistance);
-
-		IVector2 opponentBall = Vector2.fromPoints(threatPos, ballPos);
-		IVector2 opponentGoal = Vector2.fromPoints(threatPos, target);
-		IVector2 ballGoal = Vector2.fromPoints(ballPos, target);
-
-		final double volleyAngle = beta.density(opponentBall.angleToAbs(opponentGoal).orElse(0.0) / Math.PI) / 2.5;
-		final double travelAngle = ballGoal.angleToAbs(opponentGoal).orElse(0.0) / Math.PI;
-		return ((volleyAngle * volleyAngleWeight) + (travelAngle * travelAngleWeight)
-				+ (distanceToGoal * distToGoalWeight)) /
-				(volleyAngleWeight + travelAngleWeight + distToGoalWeight);
-	}
-
-
-	private double getThreatRatingAlternative(final IVector2 ballPos, final IVector2 threatPos)
+	private double calcDistanceToGoalFactor(IVector2 threatPos)
 	{
 		var minDangerDistance = calcDangerDistanceMin();
 		var minDangerDistanceBeforePenArea = minDangerDistance - Geometry.getPenaltyAreaDepth();
 		var maxDangerDistance = minDangerDistanceBeforePenArea - minDangerDistanceBeforePenArea * dangerDropOffPercentage;
 
-		final IVector2 target = Geometry.getGoalOur().getCenter();
 
 		// Closer positions are more dangerous
-		final double distToGoal = threatPos.distanceTo(target);
-		final double distanceToGoalFactor;
+		double distToGoal = threatPos.distanceTo(Geometry.getGoalOur().getCenter());
 		if (distToGoal < maxDangerDistance)
 		{
-			distanceToGoalFactor = 1.0;
+			return 1.0;
 		} else
 		{
-			final double distDifference = minDangerDistance - maxDangerDistance;
-			distanceToGoalFactor = 1 - (Math.min(distToGoal - maxDangerDistance, distDifference) / distDifference);
+			double distDifference = minDangerDistance - maxDangerDistance;
+			return 1 - (Math.min(distToGoal - maxDangerDistance, distDifference) / distDifference);
 		}
-
-		final IVector2 opponentBall = Vector2.fromPoints(threatPos, ballPos);
-		final IVector2 opponentGoal = Vector2.fromPoints(threatPos, target);
-		IVector2 ballGoal = Vector2.fromPoints(ballPos, target);
-
-		// How far has the keeper to travel to defend the new position
-		final double travelAngle = ballGoal.angleToAbs(opponentGoal).orElse(0.0) / Math.PI;
-
-		// Angle to redirect directly at the goal
-		final double volleyAngle = opponentBall.angleToAbs(opponentGoal).orElse(Math.PI);
-		final double maxAngle = AngleMath.deg2rad(maxGoodRedirectAngle);
-		final double volleyScore;
-		if (volleyAngle < maxAngle)
-		{
-			volleyScore = 1.0;
-		} else
-		{
-			volleyScore = Math.max(1 - (volleyAngle - maxAngle) / maxAngle, 0.0);
-		}
-
-		// Positions in the center are more dangerous
-		final double centralizedScore = (4.0 / 3.0) * Math.abs(opponentGoal.getAngle()) / Math.PI - (1.0 / 3.0);
-
-		return ((volleyScore * altVolleyAngleWeight) + (travelAngle * altTravelAngleWeight) + (centralizedScore
-				* altCentralizedWeight)) / (altVolleyAngleWeight + altTravelAngleWeight + altCentralizedWeight)
-				* distanceToGoalFactor;
 	}
 
 
-	private enum ECalculationMethod
+	private Score calcRedirectAngleScore(IVector2 ballPos, IVector2 threatPos, IVector2 target)
 	{
-		LEGACY,
-		ALTERNATIVE,
+		var opponentBall = Vector2.fromPoints(threatPos, ballPos);
+		var opponentGoal = Vector2.fromPoints(threatPos, target);
+		// Angle to redirect directly at the goal
+		double volleyAngle = opponentBall.angleToAbs(opponentGoal).orElse(Math.PI);
+		var maxAngle = AngleMath.deg2rad(maxGoodRedirectAngle);
+		if (volleyAngle < maxAngle)
+		{
+			return new Score(1.0, redirectAngleWeight);
+		} else
+		{
+			return new Score(Math.max(1 - (volleyAngle - maxAngle) / maxAngle, 0.0), redirectAngleWeight);
+		}
+	}
+
+
+	private Score calcTravelAngleScore(IVector2 ballPos, IVector2 threatPos, IVector2 target)
+	{
+		var opponentGoal = Vector2.fromPoints(threatPos, target);
+		var ballGoal = Vector2.fromPoints(ballPos, target);
+		// How far has the keeper to travel to defend the new position
+		return new Score(ballGoal.angleToAbs(opponentGoal).orElse(0.0) / Math.PI, travelAngleWeight);
+	}
+
+
+	private Score calcCentralizedScore(IVector2 threatPos, IVector2 target)
+	{
+		var opponentGoal = Vector2.fromPoints(threatPos, target);
+		// Positions in the center are more dangerous
+		return new Score((4.0 / 3.0) * Math.abs(opponentGoal.getAngle()) / Math.PI - (1.0 / 3.0), centralizedWeight);
+	}
+
+
+	private Score calcAtBoarderScore(IVector2 threatPos)
+	{
+		var distance = Geometry.getPenaltyAreaOur().withMargin(2 * Geometry.getBotRadius()).distanceTo(threatPos);
+		if (distance <= 0)
+		{
+			return new Score(1, atBoarderWeight);
+		} else
+		{
+			var score = SumatraMath.cap(1 - (distance / (3 * Geometry.getBotRadius())), 0, 1);
+			return new Score(score, atBoarderWeight);
+		}
+	}
+
+
+	private record Score(double score, double weight)
+	{
 	}
 }

@@ -37,7 +37,7 @@ public class OffensiveRedirectorMathIntegrationTest extends AAiIntegrationTest
 
 		Optional<IPassTarget> receiver = getMetisAiFrame().getTacticalField().getOffensiveActions().get(
 				BotID.createBotId(1, ETeamColor.YELLOW)
-		).getPassTarget();
+		).getAction().getPassTarget();
 
 		assertThat(receiver.isPresent()).isTrue();
 		receiver.ifPresent(
@@ -68,7 +68,7 @@ public class OffensiveRedirectorMathIntegrationTest extends AAiIntegrationTest
 		var attackerAction = getMetisAiFrame().getTacticalField().getOffensiveActions().get(expectedAttacker);
 		assertThat(attackerAction.getMove()).isEqualTo(EOffensiveActionMove.STANDARD_PASS);
 
-		var receiverPassTarget = attackerAction.getPassTarget();
+		var receiverPassTarget = attackerAction.getAction().getPassTarget();
 		assertThat(receiverPassTarget).isPresent();
 		assertThat(receiverPassTarget.get().getBotId()).isEqualTo(expectedReceiver);
 

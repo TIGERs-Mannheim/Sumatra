@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.ai.pandora.roles.test.calibrate;
 
@@ -186,8 +186,7 @@ public class IdentifyBotModelRole extends ARole
 			standStillTimer.reset();
 
 			MoveToSkill move = MoveToSkill.createMoveToSkill();
-			move.getMoveCon().setPenaltyAreaOurObstacle(false);
-			move.getMoveCon().setPenaltyAreaTheirObstacle(false);
+			move.getMoveCon().physicalObstaclesOnly();
 			move.updateDestination(dest);
 			move.updateTargetAngle(orientation);
 			setNewSkill(move);
@@ -367,7 +366,7 @@ public class IdentifyBotModelRole extends ARole
 				log.error(err.getMessage(), err);
 			} catch (MatlabInvocationException err)
 			{
-				log.error("Error evaluating matlab function: " + err.getMessage(), err);
+				log.error("Error evaluating matlab function: {}", err.getMessage(), err);
 			}
 			setCompleted();
 		}

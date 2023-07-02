@@ -6,14 +6,27 @@ option go_package = "github.com/RoboCup-SSL/ssl-game-controller/internal/app/eng
 import "ssl_gc_geometry.proto";
 import "ssl_gc_common.proto";
 
+import "google/protobuf/timestamp.proto";
+
+// The GC state contains settings and state independent of the match state
 message GcState {
+    // the state of each team
     map<string, GcStateTeam> team_state = 1;
+
+    // the states of the auto referees
     map<string, GcStateAutoRef> auto_ref_state = 2;
-    map<string, GcStateTracker> tracker_state = 3;
-    optional GcStateTracker tracker_state_gc = 4;
-    optional bool ready_to_continue = 5;
+
+    // the attached trackers (uuid -> source_name)
+    map<string, string> trackers = 3;
+
+    // the next actions that can be executed when continuing
+    repeated ContinueAction continue_actions = 4;
+
+    // the next actions that can be executed when continuing
+    repeated ContinueHint continue_hints = 5;
 }
 
+// The GC state for a single team
 message GcStateTeam {
     // true: The team is connected
     optional bool connected = 1;
@@ -26,13 +39,32 @@ message GcStateTeam {
 
     // true: The remote control for the team connected via TLS with a verified certificate
     optional bool remote_control_connection_verified = 4;
+
+    // the advantage choice of the team
+    optional TeamAdvantageChoice advantage_choice = 5;
 }
 
+// The choice from a team regarding the advantage rule
+message TeamAdvantageChoice {
+    // the choice of the team
+    optional AdvantageChoice choice = 1;
+
+    // possible advantage choices
+    enum AdvantageChoice {
+        // stop the game
+        STOP = 0;
+        // keep the match running
+        CONTINUE = 1;
+    }
+}
+
+// The GC state of an auto referee
 message GcStateAutoRef {
     // true: The autoRef connected via TLS with a verified certificate
     optional bool connection_verified = 1;
 }
 
+// GC state of a tracker
 message GcStateTracker {
     // Name of the source
     optional string source_name = 1;
@@ -47,6 +79,7 @@ message GcStateTracker {
     repeated Robot robots = 3;
 }
 
+// The ball state
 message Ball {
     // ball position [m]
     optional Vector3 pos = 1;
@@ -55,10 +88,63 @@ message Ball {
     optional Vector3 vel = 2;
 }
 
+// The robot state
 message Robot {
     // robot id and team
     optional RobotId id = 1;
 
     // robot position [m]
     optional Vector2 pos = 2;
+}
+
+message ContinueAction {
+    // type of action that will be performed next
+    required Type type = 1;
+
+    // for which team (if team specific)
+    required Team for_team = 2;
+
+    // list of issues that hinders the game from continuing
+    repeated string continuation_issues = 3;
+
+    // timestamp at which the action will be ready (to give some preparation time)
+    optional google.protobuf.Timestamp ready_at = 4;
+
+    // state of the action
+    optional State state = 5;
+
+    enum Type {
+        TYPE_UNKNOWN = 0;
+        HALT = 1;
+        RESUME_FROM_HALT = 10;
+        STOP_GAME = 2;
+        FORCE_START = 11;
+        FREE_KICK = 17;
+        NEXT_COMMAND = 3;
+        BALL_PLACEMENT_START = 4;
+        BALL_PLACEMENT_CANCEL = 9;
+        BALL_PLACEMENT_COMPLETE = 14;
+        BALL_PLACEMENT_FAIL = 15;
+        TIMEOUT_START = 5;
+        TIMEOUT_STOP = 6;
+        BOT_SUBSTITUTION = 7;
+        NEXT_STAGE = 8;
+        END_GAME = 16;
+        ACCEPT_GOAL = 12;
+        NORMAL_START = 13;
+        CHALLENGE_ACCEPT = 18;
+        CHALLENGE_REJECT = 19;
+    }
+
+    enum State {
+        STATE_UNKNOWN = 0;
+        BLOCKED = 1;
+        WAITING = 2;
+        READY_AUTO = 3;
+        READY_MANUAL = 4;
+    }
+}
+
+message ContinueHint {
+    required string message = 1;
 }

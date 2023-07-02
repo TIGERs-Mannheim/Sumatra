@@ -13,8 +13,7 @@ import edu.tigers.sumatra.math.AngleMath;
 import edu.tigers.sumatra.math.circle.Circle;
 import edu.tigers.sumatra.math.circle.CircleMath;
 import edu.tigers.sumatra.math.circle.ICircle;
-import edu.tigers.sumatra.math.line.Line;
-import edu.tigers.sumatra.math.line.v2.Lines;
+import edu.tigers.sumatra.math.line.Lines;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.math.vector.Vector2f;
@@ -41,6 +40,13 @@ public class InterceptionSkill extends AMoveSkill
 	private double distanceToBall = getStdDist();
 
 	private IVector2 lastValidDestination = null;
+
+
+	public static double getStdDist()
+	{
+		return RuleConstraints.getStopRadius()
+				+ Geometry.getBotRadius() + interceptionSkillSecurityDist;
+	}
 
 
 	@Override
@@ -73,12 +79,13 @@ public class InterceptionSkill extends AMoveSkill
 				+ Geometry.getBotRadius() + interceptionSkillSecurityDist);
 
 		if (isMoveTargetValid(destination)
-				&& !forbiddenCircle.lineIntersections(Lines.segmentFromPoints(getPos(), destination)).isEmpty())
+				&& !forbiddenCircle.intersectPerimeterPath(Lines.segmentFromPoints(getPos(), destination)).isEmpty())
 		{
-			DrawableLine drl = new DrawableLine(Line.fromDirection(getPos(), ballPos.subtractNew(getPos())), Color.CYAN);
+			DrawableLine drl = new DrawableLine(Lines.segmentFromOffset(getPos(), ballPos.subtractNew(getPos())),
+					Color.CYAN);
 			getShapes().get(ESkillShapesLayer.PATH_DEBUG).add(drl);
 			List<IVector2> circleIntersections = driveCircle
-					.lineIntersections(Line.fromDirection(getPos(), ballPos.subtractNew(getPos())));
+					.intersectPerimeterPath(Lines.lineFromDirection(getPos(), ballPos.subtractNew(getPos())));
 			IVector2 nextCirclePoint = getNextCirclePoint(circleIntersections);
 
 			IVector2 wayLeftTarget = CircleMath.stepAlongCircle(nextCirclePoint, ballPos, -AngleMath.PI / 8);
@@ -145,14 +152,7 @@ public class InterceptionSkill extends AMoveSkill
 	{
 		double marginPenalty = 350;
 		return Geometry.getField().isPointInShape(destination)
-				&& !Geometry.getPenaltyAreaOur().isPointInShape(destination, marginPenalty)
-				&& !Geometry.getPenaltyAreaTheir().isPointInShape(destination, marginPenalty);
-	}
-
-
-	public static double getStdDist()
-	{
-		return RuleConstraints.getStopRadius()
-				+ Geometry.getBotRadius() + interceptionSkillSecurityDist;
+				&& !Geometry.getPenaltyAreaOur().withMargin(marginPenalty).isPointInShape(destination)
+				&& !Geometry.getPenaltyAreaTheir().withMargin(marginPenalty).isPointInShape(destination);
 	}
 }

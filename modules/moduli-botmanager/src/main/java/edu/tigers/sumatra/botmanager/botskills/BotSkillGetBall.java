@@ -6,6 +6,7 @@ package edu.tigers.sumatra.botmanager.botskills;
 
 import edu.tigers.sumatra.bot.IMoveConstraints;
 import edu.tigers.sumatra.bot.MoveConstraints;
+import edu.tigers.sumatra.botmanager.botskills.data.DriveKickerDribbler;
 import edu.tigers.sumatra.botmanager.botskills.data.DriveLimits;
 import edu.tigers.sumatra.botmanager.botskills.data.KickerDribblerCommands;
 import edu.tigers.sumatra.botmanager.serial.SerialData;
@@ -27,17 +28,8 @@ public class BotSkillGetBall extends ABotSkill
 	@SerialData(type = SerialData.ESerialDataType.UINT16)
 	private int searchRadius;
 
-	@SerialData(type = SerialData.ESerialDataType.UINT8)
-	private int velMax = 0;
-	@SerialData(type = SerialData.ESerialDataType.UINT8)
-	private int velMaxW = 0;
-	@SerialData(type = SerialData.ESerialDataType.UINT8)
-	private int accMax = 0;
-	@SerialData(type = SerialData.ESerialDataType.UINT8)
-	private int accMaxW = 0;
-
 	@SerialData(type = SerialData.ESerialDataType.EMBEDDED)
-	private KickerDribblerCommands kickerDribbler = new KickerDribblerCommands();
+	private DriveKickerDribbler driveKickerDribbler = new DriveKickerDribbler();
 
 	@SerialData(type = SerialData.ESerialDataType.UINT8)
 	private int rotationSpeed;
@@ -67,12 +59,12 @@ public class BotSkillGetBall extends ABotSkill
 		this.searchOrigin[1] = (int) (searchOrigin.y());
 		this.searchRadius = (int) (searchRadius);
 
-		setVelMax(velMax);
-		setVelMaxW(velMaxW);
-		setAccMax(accMax);
-		setAccMaxW(accMaxW);
+		driveKickerDribbler.setVelMax(velMax);
+		driveKickerDribbler.setVelMaxW(velMaxW);
+		driveKickerDribbler.setAccMax(accMax);
+		driveKickerDribbler.setAccMaxW(accMaxW);
 
-		kickerDribbler.setDribbler(dribblerSpeed, dribblerCurrent);
+		driveKickerDribbler.getKickerDribbler().setDribbler(dribblerSpeed, dribblerCurrent);
 
 		setRotationSpeed(rotationSpeed);
 		setDockSpeed(dockSpeed);
@@ -123,76 +115,19 @@ public class BotSkillGetBall extends ABotSkill
 	@Override
 	public KickerDribblerCommands getKickerDribbler()
 	{
-		return kickerDribbler;
+		return driveKickerDribbler.getKickerDribbler();
 	}
 
 
 	@Override
 	public void setKickerDribbler(final KickerDribblerCommands kickerDribbler)
 	{
-		this.kickerDribbler = kickerDribbler;
+		driveKickerDribbler.setKickerDribbler(kickerDribbler);
 	}
-
-
-	public double getVelMax()
-	{
-		return DriveLimits.toDouble(velMax, DriveLimits.MAX_VEL);
-	}
-
-
-	public final void setVelMax(final double val)
-	{
-		velMax = DriveLimits.toUInt8(val, DriveLimits.MAX_VEL);
-	}
-
-
-	public double getVelMaxW()
-	{
-		return DriveLimits.toDouble(velMaxW, DriveLimits.MAX_VEL_W);
-	}
-
-
-	public final void setVelMaxW(final double val)
-	{
-		velMaxW = DriveLimits.toUInt8(val, DriveLimits.MAX_VEL_W);
-	}
-
-
-	public double getAccMax()
-	{
-		return DriveLimits.toDouble(accMax, DriveLimits.MAX_ACC);
-	}
-
-
-	public final void setAccMax(final double val)
-	{
-		accMax = DriveLimits.toUInt8(val, DriveLimits.MAX_ACC);
-	}
-
-
-	public double getAccMaxW()
-	{
-		return DriveLimits.toDouble(accMaxW, DriveLimits.MAX_ACC_W);
-	}
-
-
-	public final void setAccMaxW(final double val)
-	{
-		accMaxW = DriveLimits.toUInt8(val, DriveLimits.MAX_ACC_W);
-	}
-
 
 	@Override
 	public MoveConstraints getMoveConstraints()
 	{
-		MoveConstraints moveCon = new MoveConstraints();
-		moveCon.setVelMax(getVelMax());
-		moveCon.setVelMaxW(getVelMaxW());
-		moveCon.setAccMax(getAccMax());
-		moveCon.setAccMaxW(getAccMaxW());
-		moveCon.setJerkMax(DriveLimits.MAX_JERK);
-		moveCon.setJerkMaxW(DriveLimits.MAX_JERK_W);
-
-		return moveCon;
+		return driveKickerDribbler.getMoveConstraints();
 	}
 }

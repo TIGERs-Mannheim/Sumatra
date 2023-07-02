@@ -4,6 +4,8 @@
 
 package edu.tigers.sumatra.presenter.sim;
 
+import com.github.g3force.configurable.ConfigRegistration;
+import com.github.g3force.configurable.Configurable;
 import edu.tigers.moduli.exceptions.ModuleNotFoundException;
 import edu.tigers.sumatra.clock.FpsCounter;
 import edu.tigers.sumatra.geometry.Geometry;
@@ -57,6 +59,14 @@ public class SimulationPresenter
 		SimulationBotMgrPanel.ISimulationBotMgrObserver,
 		ISimulatorObserver
 {
+	@Configurable(defValue = "false", comment = "Save move destinations in snapshots")
+	private static boolean saveMoveDestinations = false;
+
+	static
+	{
+		ConfigRegistration.registerClass("user", SimulationPresenter.class);
+	}
+
 	@Getter
 	private final SimulationPanel viewPanel = new SimulationPanel();
 	private final SnapshotController snapshotController = new SnapshotController(viewPanel);
@@ -195,7 +205,7 @@ public class SimulationPresenter
 		SumatraModel.getInstance().getModuleOpt(SumatraSimulator.class).ifPresent(sim -> {
 			boolean wasRunning = sim.isRunning();
 			sim.pause();
-			SumatraModel.getInstance().getModule(Referee.class).initGameController();
+			SumatraModel.getInstance().getModule(Referee.class).resetGameController();
 			// consume new referee message
 			sim.stepBlocking();
 			sim.reset();
@@ -212,6 +222,7 @@ public class SimulationPresenter
 	@Override
 	public void onSaveSnapshot()
 	{
+		snapshotController.setSaveMoveDestinations(saveMoveDestinations);
 		snapshotController.onSnapshot();
 	}
 
@@ -244,6 +255,7 @@ public class SimulationPresenter
 	@Override
 	public void onCopySnapshot()
 	{
+		snapshotController.setSaveMoveDestinations(saveMoveDestinations);
 		snapshotController.onCopySnapshot();
 	}
 

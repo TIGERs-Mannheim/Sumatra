@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.skillsystem.skills;
@@ -20,7 +20,7 @@ import edu.tigers.sumatra.botmanager.botskills.data.EKickerMode;
 import edu.tigers.sumatra.botmanager.botskills.data.KickerDribblerCommands;
 import edu.tigers.sumatra.drawable.DrawableAnnotation;
 import edu.tigers.sumatra.drawable.DrawableBot;
-import edu.tigers.sumatra.drawable.DrawableTrajectoryPath;
+import edu.tigers.sumatra.drawable.DrawablePlanarCurve;
 import edu.tigers.sumatra.drawable.ShapeMap;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.EAiTeam;
@@ -65,12 +65,6 @@ public abstract class AMoveSkill extends ASkill
 	)
 	private static double maxStopSpeed = 1.0;
 
-	@Configurable(
-			comment = "Min dribble speed when kicker is armed",
-			defValue = "5000"
-	)
-	private static double minDribbleSpeedOnKick = 5000;
-
 	@Getter(AccessLevel.PROTECTED)
 	private WorldFrame worldFrame;
 	@Getter(AccessLevel.PROTECTED)
@@ -91,7 +85,7 @@ public abstract class AMoveSkill extends ASkill
 		getMatchCtrl().setSkill(getPositioningBotSkill(destination, targetAngle, moveConstraints));
 
 		ITrajectory<IVector3> trajectory = trajectoryToDestination(destination, targetAngle, moveConstraints);
-		getShapes().get(ESkillShapesLayer.PATH_DEBUG).add(new DrawableTrajectoryPath(trajectory, Color.BLACK));
+		getShapes().get(ESkillShapesLayer.PATH_DEBUG).add(new DrawablePlanarCurve(trajectory).setColor(Color.BLACK));
 
 		getShapes().get(ESkillShapesLayer.PATH_DEBUG)
 				.add(new DrawableBot(destination, targetAngle,
@@ -205,18 +199,22 @@ public abstract class AMoveSkill extends ASkill
 		{
 			switch (getMatchCtrl().getSkill().getType())
 			{
-				case GLOBAL_POSITION:
+				case GLOBAL_POSITION ->
+				{
 					BotSkillGlobalPosition botSkillGlobalPosition = (BotSkillGlobalPosition) getMatchCtrl().getSkill();
 					botSkillGlobalPosition.setVelMax(Math.min(maxStopSpeed, botSkillGlobalPosition.getVelMax()));
-					break;
-				case FAST_GLOBAL_POSITION:
+				}
+				case FAST_GLOBAL_POSITION ->
+				{
 					BotSkillFastGlobalPosition botSkillFastGlobalPosition = (BotSkillFastGlobalPosition) getMatchCtrl()
 							.getSkill();
 					botSkillFastGlobalPosition
 							.setVelMax(Math.min(maxStopSpeed, botSkillFastGlobalPosition.getVelMax()));
-					break;
-				default:
-					break;
+				}
+				default ->
+				{
+					// ignore other bot skills like MOTOR_OFF
+				}
 			}
 		}
 	}
@@ -232,7 +230,7 @@ public abstract class AMoveSkill extends ASkill
 	{
 		String botSkillName = getMatchCtrl().getSkill().getType().name();
 		String text = getClass().getSimpleName() + "\n" +
-				Optional.ofNullable(getCurrentState()).map(IState::getIdentifier).orElse("-") + "\n" +
+				Optional.ofNullable(getCurrentState()).map(IState::toString).orElse("-") + "\n" +
 				getSkillState().name() + "\n" +
 				botSkillName;
 		DrawableAnnotation dAnno = new DrawableAnnotation(getPos(), text);
@@ -297,6 +295,11 @@ public abstract class AMoveSkill extends ASkill
 				dribbleSpeed = dribblerSpecs.getHighPowerSpeed();
 				maxDribbleCurrent = dribblerSpecs.getHighPowerMaxCurrent();
 			}
+			case MANUAL ->
+			{
+				dribbleSpeed = kickParams.getDribbleSpeedRpm();
+				maxDribbleCurrent = kickParams.getDribbleMaxCurrent();
+			}
 			default ->
 			{
 				dribbleSpeed = dribblerSpecs.getDefaultSpeed();
@@ -352,6 +355,7 @@ public abstract class AMoveSkill extends ASkill
 
 		double curVel = getVel().getLength2();
 		aiInfo.setVelocityCurrent(curVel);
+		aiInfo.setDribbleTraction(getTBot().getRobotInfo().getDribbleTraction());
 
 		return aiInfo;
 	}
@@ -375,7 +379,7 @@ public abstract class AMoveSkill extends ASkill
 	}
 
 
-	public final ITrackedBall getBall()
+	protected final ITrackedBall getBall()
 	{
 		return getWorldFrame().getBall();
 	}

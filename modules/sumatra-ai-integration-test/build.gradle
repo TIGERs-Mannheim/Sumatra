@@ -20,7 +20,6 @@ dependencies {
     integrationTestImplementation project(':sumatra-snapshot')
     integrationTestImplementation project(':sumatra-model')
     integrationTestImplementation project(':sumatra-skillsystem')
-    integrationTestImplementation project(':sumatra-pathfinder')
     integrationTestImplementation project(':moduli-ai')
     integrationTestImplementation project(':moduli-autoreferee')
     integrationTestImplementation project(':moduli-geometry')
@@ -33,37 +32,39 @@ dependencies {
 
     integrationTestImplementation 'com.github.g3force:configurable:3.0'
 
-    integrationTestImplementation 'org.apache.logging.log4j:log4j-api:2.17.1'
-    integrationTestImplementation 'org.apache.logging.log4j:log4j-core:2.17.1'
-    integrationTestRuntimeOnly 'org.apache.logging.log4j:log4j-1.2-api:2.17.1'
-    integrationTestRuntimeOnly 'org.slf4j:slf4j-log4j12:1.7.36'
+    integrationTestImplementation 'org.apache.logging.log4j:log4j-api:2.20.0'
+    integrationTestImplementation 'org.apache.logging.log4j:log4j-core:2.20.0'
 
     integrationTestImplementation 'junit:junit:4.13.2'
-    integrationTestRuntimeOnly 'org.junit.vintage:junit-vintage-engine:5.8.2'
-    integrationTestImplementation 'org.assertj:assertj-core:3.22.0'
+    integrationTestRuntimeOnly 'org.junit.vintage:junit-vintage-engine:5.9.3'
+    integrationTestImplementation 'org.assertj:assertj-core:3.24.2'
 
-    integrationTestAnnotationProcessor "org.projectlombok:lombok:1.18.22"
-    integrationTestImplementation "org.projectlombok:lombok:1.18.22"
+    integrationTestAnnotationProcessor "org.projectlombok:lombok:1.18.28"
+    integrationTestImplementation "org.projectlombok:lombok:1.18.28"
 
-    integrationTestImplementation 'org.openjdk.jmh:jmh-core:1.34'
-    integrationTestAnnotationProcessor 'org.openjdk.jmh:jmh-generator-annprocess:1.34'
+    integrationTestImplementation 'org.openjdk.jmh:jmh-core:1.36'
+    integrationTestAnnotationProcessor 'org.openjdk.jmh:jmh-generator-annprocess:1.36'
 }
 
-task integrationTest(type: Test) {
+tasks.register('integrationTest', Test) {
     description = "Run the integration tests"
     group = "verification"
+
+    maxHeapSize = "2g"
+    jvmArgs([
+            '-server',
+    ])
 
     testClassesDirs = sourceSets.integrationTest.output.classesDirs
     classpath = sourceSets.integrationTest.runtimeClasspath
 
-    // set a task input that changes every second -> the task will be rerun every time it is executed
-    // inspired by: https://blog.gradle.org/stop-rerunning-tests
-    inputs.property "integration.date", System.currentTimeSeconds()
+    inputs.dir(file('config'))
 }
 
-task runPathPlanningBenchmark(type: JavaExec) {
+tasks.register('runPathPlanningBenchmark', JavaExec) {
     group = "Execution"
     description = "Run PathPlanningPerfTest"
     classpath = sourceSets.integrationTest.runtimeClasspath
     mainClass.set("edu.tigers.sumatra.ai.integration.jmh.PathPlanningPerfTest")
+    args("100")
 }

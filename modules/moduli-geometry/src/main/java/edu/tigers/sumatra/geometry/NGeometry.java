@@ -4,15 +4,16 @@
 
 package edu.tigers.sumatra.geometry;
 
-import java.util.Arrays;
-import java.util.List;
-
 import edu.tigers.sumatra.ids.ETeamColor;
-import edu.tigers.sumatra.math.line.v2.ILineSegment;
+import edu.tigers.sumatra.math.line.ILineSegment;
+import edu.tigers.sumatra.math.penaltyarea.IPenaltyArea;
 import edu.tigers.sumatra.math.rectangle.IRectangle;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.IVector3;
 import edu.tigers.sumatra.math.vector.VectorDistanceComparator;
+
+import java.util.Arrays;
+import java.util.List;
 
 
 /**
@@ -152,6 +153,6 @@ public final class NGeometry
 	 */
 	public static boolean posInsidePenaltyArea(final IVector2 pos, final double margin)
 	{
-		return getPenaltyAreas().stream().anyMatch(penArea -> penArea.isPointInShape(pos, margin));
+		return getPenaltyAreas().stream().anyMatch(penArea -> penArea.withMargin(margin).isPointInShape(pos));
 	}
 }

@@ -137,7 +137,7 @@ public class BallTracker
 		long tCapture = ball.gettCapture();
 
 		// calculate delta time since last update
-		double dtInSec = (tCapture - lastCamBall.gettCapture()) * 1e-9;
+		double dtInSec = Math.abs(tCapture - lastCamBall.gettCapture()) * 1e-9;
 
 		// calculate distance of this ball to our internal prediction
 		double distanceToPrediction = filter.getPositionEstimate().distanceTo(ballPos2D);

@@ -15,6 +15,8 @@ import edu.tigers.sumatra.cam.proto.MessagesRobocupSslGeometry;
 import edu.tigers.sumatra.ids.ETeamColor;
 import edu.tigers.sumatra.math.circle.Circle;
 import edu.tigers.sumatra.math.circle.ICircle;
+import edu.tigers.sumatra.math.penaltyarea.IPenaltyArea;
+import edu.tigers.sumatra.math.penaltyarea.PenaltyArea;
 import edu.tigers.sumatra.math.rectangle.IRectangle;
 import edu.tigers.sumatra.math.rectangle.Rectangle;
 import edu.tigers.sumatra.math.vector.IVector2;

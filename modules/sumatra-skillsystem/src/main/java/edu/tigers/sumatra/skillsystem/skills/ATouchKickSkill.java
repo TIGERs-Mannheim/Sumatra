@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.skillsystem.skills;
@@ -7,7 +7,6 @@ package edu.tigers.sumatra.skillsystem.skills;
 import com.github.g3force.configurable.Configurable;
 import edu.tigers.sumatra.botmanager.botskills.data.EKickerDevice;
 import edu.tigers.sumatra.math.vector.IVector2;
-import edu.tigers.sumatra.skillsystem.skills.util.BallStabilizer;
 import edu.tigers.sumatra.skillsystem.skills.util.KickParams;
 import edu.tigers.sumatra.skillsystem.skills.util.PositionValidator;
 import lombok.Setter;
@@ -18,11 +17,10 @@ import lombok.Setter;
  */
 public abstract class ATouchKickSkill extends AMoveToSkill
 {
-	@Configurable(defValue = "0.5")
-	protected static double maxBallSpeed = 0.5;
+	@Configurable(defValue = "0.7")
+	protected static double maxBallSpeed = 0.7;
 
 	protected final PositionValidator positionValidator = new PositionValidator();
-	protected final BallStabilizer ballStabilizer = new BallStabilizer();
 
 	@Setter
 	protected IVector2 target;
@@ -36,7 +34,7 @@ public abstract class ATouchKickSkill extends AMoveToSkill
 
 	protected IVector2 getBallPos()
 	{
-		return ballStabilizer.getBallPos();
+		return getBall().getPos();
 	}
 
 

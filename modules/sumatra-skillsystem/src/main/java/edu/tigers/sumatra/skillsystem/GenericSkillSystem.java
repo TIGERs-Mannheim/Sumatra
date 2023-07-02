@@ -8,7 +8,6 @@ import com.github.g3force.configurable.ConfigRegistration;
 import edu.tigers.sumatra.botmanager.ABotManager;
 import edu.tigers.sumatra.botmanager.IBotManagerObserver;
 import edu.tigers.sumatra.botmanager.bots.ABot;
-import edu.tigers.sumatra.botmanager.bots.DummyBot;
 import edu.tigers.sumatra.drawable.ShapeMap;
 import edu.tigers.sumatra.drawable.ShapeMapSource;
 import edu.tigers.sumatra.ids.BotID;
@@ -19,7 +18,6 @@ import edu.tigers.sumatra.skillsystem.skills.IdleSkill;
 import edu.tigers.sumatra.wp.AWorldPredictor;
 import edu.tigers.sumatra.wp.IWorldFrameObserver;
 import edu.tigers.sumatra.wp.data.WorldFrameWrapper;
-import edu.tigers.sumatra.wp.util.BotStateTrajectorySync;
 
 import java.util.HashMap;
 import java.util.List;
@@ -65,7 +63,6 @@ public class GenericSkillSystem extends ASkillSystem
 	{
 		final GenericSkillSystem skillSystem = new GenericSkillSystem();
 		BotID.getAll().forEach(skillSystem::addSkillExecutor);
-		BotID.getAll().forEach(id -> skillSystem.onBotAdded(new DummyBot(id)));
 		return skillSystem;
 	}
 
@@ -235,13 +232,6 @@ public class GenericSkillSystem extends ASkillSystem
 					ShapeMapSource.of(bot.getBotId().toString(), SKILL_SHAPE_MAP_SOURCE));
 		}
 		skillExecutorPostHooks.forEach(hook -> hook.onSkillUpdated(bot, timestamp, shapeMap));
-	}
-
-
-	@Override
-	public void onTrajectoryUpdated(BotID botID, BotStateTrajectorySync sync)
-	{
-		skillExecutorPostHooks.forEach(hook -> hook.onTrajectoryUpdated(botID, sync));
 	}
 
 

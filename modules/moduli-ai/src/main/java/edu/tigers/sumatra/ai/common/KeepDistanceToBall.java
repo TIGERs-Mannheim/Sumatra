@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.common;
@@ -12,7 +12,7 @@ import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.geometry.RuleConstraints;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.AngleMath;
-import edu.tigers.sumatra.math.line.v2.Lines;
+import edu.tigers.sumatra.math.line.Lines;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
 import lombok.RequiredArgsConstructor;
@@ -75,7 +75,7 @@ public class KeepDistanceToBall
 			}
 
 			IVector2 dir = primeDir.turnNew(i * AngleMath.PI_TWO / CIRCLE_STEPS);
-			dest = refPos.addNew(dir.scaleToNew(size));
+			dest = destination.addNew(dir.scaleToNew(size));
 
 			if (i > 0)
 			{
@@ -105,7 +105,7 @@ public class KeepDistanceToBall
 		IVector2 ballPlacementPos = aiFrame.getGameState().getBallPlacementPositionForUs();
 		if (ballPlacementPos != null)
 		{
-			return Lines.segmentFromPoints(ballPlacementPos, ballPos).closestPointOnLine(destination);
+			return Lines.segmentFromPoints(ballPlacementPos, ballPos).closestPointOnPath(destination);
 		}
 		return ballPos;
 	}

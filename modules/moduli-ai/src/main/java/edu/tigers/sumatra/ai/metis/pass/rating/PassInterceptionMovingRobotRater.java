@@ -18,6 +18,7 @@ import edu.tigers.sumatra.math.vector.Vector3;
 import edu.tigers.sumatra.pathfinder.obstacles.MovingRobot;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
 import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 
 import java.awt.Color;
 import java.util.Collection;
@@ -32,16 +33,16 @@ import java.util.Collection;
 public class PassInterceptionMovingRobotRater extends APassRater
 {
 	@Configurable(defValue = "2.0")
-	private static double maxHorizon = 2;
+	private static double maxHorizon = 2.0;
 
-	@Configurable(defValue = "2.0", comment = "Factor on relative distance. Larger -> less pessimistic")
-	private static double scoringFactor = 2;
+	@Configurable(defValue = "1.0", comment = "Factor on relative distance. Larger -> less pessimistic")
+	private static double scoringFactor = 1.0;
 
 	@Configurable(defValue = "170", comment = "Step size [mm] over the pass trajectory")
-	private static double stepSize = 170;
+	private static double stepSize = 170.0;
 
 	@Configurable(defValue = "30", comment = "Min distance [mm] between pass line and opponent robot (in addition to robot and ball radius")
-	private static double minDistToRobot = 30;
+	private static double minDistToRobot = 30.0;
 
 	@Configurable(defValue = "0.2", comment = "Chip kick score penalty")
 	private static double chipKickPenalty = 0.2;
@@ -53,6 +54,9 @@ public class PassInterceptionMovingRobotRater extends APassRater
 
 	private final Collection<ITrackedBot> consideredBots;
 	private final IColorPicker colorPicker = ColorPickerFactory.greenRedGradient();
+
+	@Setter
+	private double scoringFactorOffset = 0.0;
 
 
 	@Override
@@ -80,7 +84,7 @@ public class PassInterceptionMovingRobotRater extends APassRater
 
 	private double ratePos(IBallTrajectory passTrajectory, IVector2 pos, double duration)
 	{
-		if (Geometry.getPenaltyAreaTheir().isPointInShape(pos, Geometry.getBotRadius()))
+		if (Geometry.getPenaltyAreaTheir().withMargin(Geometry.getBotRadius()).isPointInShape(pos))
 		{
 			return 1;
 		}
@@ -107,6 +111,6 @@ public class PassInterceptionMovingRobotRater extends APassRater
 		double minDist = Geometry.getBotRadius() + Geometry.getBallRadius() + minDistToRobot;
 		double adaptedDist = distance - minDist;
 		double relativeDistance = adaptedDist / radius;
-		return relativeDistance * scoringFactor;
+		return relativeDistance * Math.max(0, scoringFactor + scoringFactorOffset);
 	}
 }

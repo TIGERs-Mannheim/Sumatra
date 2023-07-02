@@ -5,7 +5,8 @@ package edu.tigers.sumatra.vision.kick.estimators.straight;
 
 import edu.tigers.sumatra.cam.data.CamBall;
 import edu.tigers.sumatra.geometry.Geometry;
-import edu.tigers.sumatra.math.line.Line;
+import edu.tigers.sumatra.math.line.ILineSegment;
+import edu.tigers.sumatra.math.line.Lines;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.IVector3;
 import edu.tigers.sumatra.vision.kick.estimators.EBallModelIdentType;
@@ -42,9 +43,9 @@ public class StraightKickSolverNonLinIdentDirect
 	{
 		List<IVector2> groundPos = records.stream()
 				.map(CamBall::getFlatPos)
-				.collect(Collectors.toList());
+				.toList();
 
-		Optional<Line> kickLine = Line.fromPointsList(groundPos);
+		Optional<ILineSegment> kickLine = Lines.regressionLineFromPointsList(groundPos);
 		if (kickLine.isEmpty())
 		{
 			return Optional.empty();
@@ -114,6 +115,7 @@ public class StraightKickSolverNonLinIdentDirect
 
 		return timestampVelocityList;
 	}
+
 
 	public static class StraightModelIdentResult implements IBallModelIdentResult
 	{
@@ -205,11 +207,9 @@ public class StraightKickSolverNonLinIdentDirect
 		@Override
 		public String toString()
 		{
-			final StringBuilder builder = new StringBuilder();
-			builder.append("kickVel: " + kickVel + System.lineSeparator());
-			builder.append("acc: " + accSlide + ", " + accRoll + System.lineSeparator());
-			builder.append("kSwitch: " + kSwitch);
-			return builder.toString();
+			return "kickVel: " + kickVel + System.lineSeparator()
+					+ "acc: " + accSlide + ", " + accRoll + System.lineSeparator()
+					+ "kSwitch: " + kSwitch;
 		}
 	}
 

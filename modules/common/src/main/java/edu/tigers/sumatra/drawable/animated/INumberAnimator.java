@@ -14,5 +14,5 @@ public interface INumberAnimator
 	 * 
 	 * @return
 	 */
-	float getNumber();
+	double getNumber();
 }

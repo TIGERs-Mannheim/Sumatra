@@ -29,6 +29,8 @@ public class Pass
 	Kick kick;
 	@NonNull
 	BotID receiver;
+	@NonNull
+	BotID shooter;
 	double receivingSpeed;
 	double duration;
 
@@ -38,6 +40,7 @@ public class Pass
 	{
 		kick = new Kick();
 		receiver = BotID.noBot();
+		shooter = BotID.noBot();
 		receivingSpeed = 0;
 		duration = 0;
 	}

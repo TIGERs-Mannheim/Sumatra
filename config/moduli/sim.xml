@@ -56,6 +56,7 @@
         <properties>
             <source>CI</source>
             <gameController>true</gameController>
+            <useSystemBinary>false</useSystemBinary>
         </properties>
     </module>
 
@@ -116,7 +117,12 @@
 
     <module id="edu.tigers.sumatra.persistence.RecordManager">
         <implementation>edu.tigers.sumatra.ai.AiRecordManager</implementation>
+
+        <dependency>edu.tigers.sumatra.gamelog.GameLogRecorder</dependency>
     </module>
+
+
+    <module id="edu.tigers.sumatra.gamelog.GameLogRecorder"/>
 
 
     <module id="edu.tigers.sumatra.teamclient.TeamClientModule">

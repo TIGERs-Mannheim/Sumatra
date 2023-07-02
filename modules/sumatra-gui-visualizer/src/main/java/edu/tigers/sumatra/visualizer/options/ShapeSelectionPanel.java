@@ -6,10 +6,12 @@ package edu.tigers.sumatra.visualizer.options;
 
 
 import com.jidesoft.swing.CheckBoxTree;
+import edu.tigers.sumatra.components.BetterScrollPane;
 import lombok.Getter;
 import lombok.extern.log4j.Log4j2;
 
 import javax.swing.JPanel;
+import javax.swing.ScrollPaneConstants;
 import java.awt.BorderLayout;
 
 
@@ -23,6 +25,8 @@ public class ShapeSelectionPanel extends JPanel
 	public ShapeSelectionPanel()
 	{
 		setLayout(new BorderLayout());
-		add(tree, BorderLayout.CENTER);
+		var scrollPane = new BetterScrollPane(tree);
+		scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+		add(scrollPane, BorderLayout.CENTER);
 	}
 }

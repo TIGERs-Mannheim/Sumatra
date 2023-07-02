@@ -192,7 +192,7 @@ public class BotWatcher implements ITigerBotObserver
 	@Override
 	public void onIncomingBotCommand(final TigerBot tigerBot, final ACommand cmd)
 	{
-		if (tigerBot.getBotId() != botId)
+		if (!tigerBot.getBotId().equals(botId))
 		{
 			return;
 		}

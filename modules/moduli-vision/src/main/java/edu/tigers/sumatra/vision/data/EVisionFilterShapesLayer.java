@@ -33,4 +33,6 @@ public final class EVisionFilterShapesLayer
 	public static final IShapeLayerIdentifier BALL_TRACKER_SHAPES = F.create(
 			F.layer("Ball Trackers Debug").category(CATEGORY)
 					.persistenceType(EShapeLayerPersistenceType.NEVER_PERSIST));
+	public static final IShapeLayerIdentifier VIRTUAL_BALL_SHAPES = F.create(
+			F.layer("Virtual Balls").category(CATEGORY));
 }

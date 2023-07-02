@@ -16,7 +16,7 @@ public class BotSkillGlobalPositionSim implements IBotSkillSim
 	@Override
 	public BotSkillOutput execute(final BotSkillInput input)
 	{
-		BotSkillGlobalPosition skill = (BotSkillGlobalPosition) input.getSkill();
+		BotSkillGlobalPosition skill = (BotSkillGlobalPosition) input.skill();
 		
 		return BotSkillOutput.Builder.create()
 				.driveLimits(skill.getMoveConstraints())
@@ -28,7 +28,7 @@ public class BotSkillGlobalPositionSim implements IBotSkillSim
 				.kickSpeed(skill.getKickSpeed())
 				.dribblerRPM(skill.getDribbleSpeed())
 				.primaryDirection(skill.getPrimaryDirection())
-				.strictVelocityLimit(input.isStrictVelocityLimit())
+				.strictVelocityLimit(input.strictVelocityLimit())
 				.build();
 	}
 }

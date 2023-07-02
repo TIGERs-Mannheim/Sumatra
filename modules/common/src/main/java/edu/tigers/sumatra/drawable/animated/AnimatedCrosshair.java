@@ -111,9 +111,9 @@ public class AnimatedCrosshair extends AnimatedCircle
 	 * @param period
 	 * @return
 	 */
-	public AnimatedCrosshair withContinuousRotation(final float period)
+	public AnimatedCrosshair withContinuousRotation(final double period)
 	{
-		rotation = new NumberAnimatorMinMax(0, (float) AngleMath.PI_TWO, new AnimationTimerUp(period));
+		rotation = new NumberAnimatorMinMax(0, AngleMath.PI_TWO, new AnimationTimerUp(period));
 		return this;
 	}
 
@@ -124,9 +124,9 @@ public class AnimatedCrosshair extends AnimatedCircle
 	 * @param period
 	 * @return
 	 */
-	public AnimatedCrosshair withBackAndForthRotation(final float period)
+	public AnimatedCrosshair withBackAndForthRotation(final double period)
 	{
-		rotation = new NumberAnimatorMinMax(0, (float) AngleMath.PI_TWO, new AnimationTimerSine(period));
+		rotation = new NumberAnimatorMinMax(0, AngleMath.PI_TWO, new AnimationTimerSine(period));
 		return this;
 	}
 
@@ -141,8 +141,8 @@ public class AnimatedCrosshair extends AnimatedCircle
 	 * @param lineColor
 	 * @return
 	 */
-	public static AnimatedCrosshair aCrosshairWithPulsingSize(final IVector2 center, final float minSize,
-			final float maxSize, final float pulsePeriod, final Color lineColor)
+	public static AnimatedCrosshair aCrosshairWithPulsingSize(final IVector2 center, final double minSize,
+			final double maxSize, final float pulsePeriod, final Color lineColor)
 	{
 		return new AnimatedCrosshair(center,
 				new NumberAnimatorMinMax(minSize, maxSize, new AnimationTimerSine(pulsePeriod)),
@@ -161,8 +161,8 @@ public class AnimatedCrosshair extends AnimatedCircle
 	 * @param fillColor
 	 * @return
 	 */
-	public static AnimatedCrosshair aFilledCrosshairWithPulsingSize(final IVector2 center, final float minSize,
-			final float maxSize, final float pulsePeriod, final Color lineColor, final Color fillColor)
+	public static AnimatedCrosshair aFilledCrosshairWithPulsingSize(final IVector2 center, final double minSize,
+			final double maxSize, final float pulsePeriod, final Color lineColor, final Color fillColor)
 	{
 		return new AnimatedCrosshair(center,
 				new NumberAnimatorMinMax(minSize, maxSize, new AnimationTimerSine(pulsePeriod)),
@@ -179,10 +179,10 @@ public class AnimatedCrosshair extends AnimatedCircle
 	 * @return
 	 */
 	public static AnimatedCrosshair aCrosshairWithContinuousRotation(final ICircle circle,
-			final float period, final Color lineColor)
+			final double period, final Color lineColor)
 	{
-		return new AnimatedCrosshair(circle.center(), new NumberAnimatorFixed((float) circle.radius()),
-				new NumberAnimatorMinMax(0, (float) AngleMath.PI_TWO, new AnimationTimerUp(period)),
+		return new AnimatedCrosshair(circle.center(), new NumberAnimatorFixed(circle.radius()),
+				new NumberAnimatorMinMax(0, AngleMath.PI_TWO, new AnimationTimerUp(period)),
 				new ColorAnimatorFixed(lineColor), null);
 	}
 
@@ -197,10 +197,10 @@ public class AnimatedCrosshair extends AnimatedCircle
 	 * @return
 	 */
 	public static AnimatedCrosshair aFilledCrosshairWithContinuousRotation(final ICircle circle,
-			final float period, final Color lineColor, final Color fillColor)
+			final double period, final Color lineColor, final Color fillColor)
 	{
-		return new AnimatedCrosshair(circle.center(), new NumberAnimatorFixed((float) circle.radius()),
-				new NumberAnimatorMinMax(0, (float) AngleMath.PI_TWO, new AnimationTimerUp(period)),
+		return new AnimatedCrosshair(circle.center(), new NumberAnimatorFixed(circle.radius()),
+				new NumberAnimatorMinMax(0, AngleMath.PI_TWO, new AnimationTimerUp(period)),
 				new ColorAnimatorFixed(lineColor), new ColorAnimatorFixed(fillColor));
 	}
 
@@ -217,12 +217,12 @@ public class AnimatedCrosshair extends AnimatedCircle
 	 * @param secondFillColor
 	 * @return
 	 */
-	public static AnimatedCrosshair aCrazyCrosshair(final IVector2 center, final float minSize,
-			final float maxSize, final float period, final Color lineColor, final Color firstFillColor,
+	public static AnimatedCrosshair aCrazyCrosshair(final IVector2 center, final double minSize,
+			final double maxSize, final float period, final Color lineColor, final Color firstFillColor,
 			final Color secondFillColor)
 	{
 		return new AnimatedCrosshair(center, new NumberAnimatorMinMax(minSize, maxSize, new AnimationTimerSine(period)),
-				new NumberAnimatorMinMax(0, (float) AngleMath.PI_TWO, new AnimationTimerUp(period)),
+				new NumberAnimatorMinMax(0, AngleMath.PI_TWO, new AnimationTimerUp(period)),
 				new ColorAnimatorFixed(lineColor),
 				new ColorAnimatorMixTwo(firstFillColor, secondFillColor, new AnimationTimerSine(period)));
 	}

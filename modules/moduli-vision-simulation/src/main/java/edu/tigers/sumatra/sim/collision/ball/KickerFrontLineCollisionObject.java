@@ -5,8 +5,7 @@
 package edu.tigers.sumatra.sim.collision.ball;
 
 import edu.tigers.sumatra.ids.BotID;
-import edu.tigers.sumatra.math.line.ILine;
-import edu.tigers.sumatra.math.line.v2.Lines;
+import edu.tigers.sumatra.math.line.ILineSegment;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.IVector3;
 import edu.tigers.sumatra.math.vector.Vector3;
@@ -26,10 +25,10 @@ public class KickerFrontLineCollisionObject extends LineSegmentCollisionObject
 	private double dampFactor;
 
 
-	public KickerFrontLineCollisionObject(final ILine obstacleLine, final IVector3 vel, final IVector2 normal,
+	public KickerFrontLineCollisionObject(final ILineSegment obstacleLine, final IVector3 vel, final IVector2 normal,
 			final BotID botID)
 	{
-		super(Lines.segmentFromPoints(obstacleLine.getStart(), obstacleLine.getEnd()), normal);
+		super(obstacleLine, normal);
 		this.vel = vel;
 		this.botID = botID;
 	}
@@ -49,7 +48,7 @@ public class KickerFrontLineCollisionObject extends LineSegmentCollisionObject
 	@Override
 	public IVector2 stick(IVector2 pos)
 	{
-		return obstacleLine.getCenter();
+		return obstacleLine.getPathCenter();
 	}
 
 

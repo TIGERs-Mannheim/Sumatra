@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.bot;
@@ -143,24 +143,19 @@ public class MoveConstraints implements IExportable, IMoveConstraints
 	}
 
 
-	public void setVelMax(final double velMax)
+	public MoveConstraints setVelMax(final double velMax)
 	{
 		assert velMax >= 0 : "vel: " + velMax;
 		this.velMax = velMax;
+		return this;
 	}
 
 
-	public void setVelMaxW(final double velMaxW)
+	public MoveConstraints setVelMaxW(final double velMaxW)
 	{
 		assert velMaxW >= 0;
 		this.velMaxW = velMaxW;
-	}
-
-
-	@Override
-	public double getAccMax()
-	{
-		return accMax;
+		return this;
 	}
 
 

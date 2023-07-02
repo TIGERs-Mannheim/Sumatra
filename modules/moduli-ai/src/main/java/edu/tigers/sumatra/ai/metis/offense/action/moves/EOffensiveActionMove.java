@@ -22,6 +22,10 @@ public enum EOffensiveActionMove implements IInstanceableEnum
 	 */
 	REDIRECT_GOAL_KICK(new InstanceableClass<>(RedirectGoalKickActionMove.class)),
 	/**
+	 * Do a chop trick
+	 */
+	CHOP_TRICK(new InstanceableClass<>(ChopTrickActionMove.class)),
+	/**
 	 * Direct kick on the opponent goal
 	 */
 	FINISHER(new InstanceableClass<>(FinisherActionMove.class)),
@@ -49,10 +53,6 @@ public enum EOffensiveActionMove implements IInstanceableEnum
 	 * Chip the ball to the opponent Half
 	 */
 	MOVE_BALL_TO_OPPONENT_HALF(new InstanceableClass<>(MoveBallToOpponentHalfActionMove.class)),
-	/**
-	 * Pass to some free spot on the field, no robot as pass Target
-	 */
-	KICK_INS_BLAUE(new InstanceableClass<>(KickInsBlaueActionMove.class)),
 	/**
 	 * Receive the ball
 	 */

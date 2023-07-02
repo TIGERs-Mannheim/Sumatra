@@ -4,7 +4,7 @@
 package edu.tigers.sumatra.math.botshape;
 
 import edu.tigers.sumatra.math.circle.ICircular;
-import edu.tigers.sumatra.math.line.v2.ILineSegment;
+import edu.tigers.sumatra.math.line.ILineSegment;
 import edu.tigers.sumatra.math.vector.IVector2;
 
 

@@ -56,12 +56,6 @@ public class BotState extends State
 	}
 
 
-	public BotState interpolate(final BotState state, double percentage)
-	{
-		return BotState.of(botID, super.interpolate(state, percentage));
-	}
-
-
 	public BotID getBotId()
 	{
 		return botID;

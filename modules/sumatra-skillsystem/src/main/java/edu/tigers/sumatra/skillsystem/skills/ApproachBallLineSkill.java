@@ -5,6 +5,7 @@
 package edu.tigers.sumatra.skillsystem.skills;
 
 import com.github.g3force.configurable.Configurable;
+import edu.tigers.sumatra.drawable.DrawableAnnotation;
 import edu.tigers.sumatra.drawable.DrawableCircle;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.geometry.RuleConstraints;
@@ -23,6 +24,9 @@ import java.awt.Color;
 
 public class ApproachBallLineSkill extends AMoveToSkill
 {
+	@Setter
+	private double maximumReasonableRedirectAngle = 1.2;
+
 	private final PositionValidator positionValidator = new PositionValidator();
 
 	@Configurable(defValue = "100.0", comment = "When distance is below, the ball is considered catched up")
@@ -41,8 +45,6 @@ public class ApproachBallLineSkill extends AMoveToSkill
 	public void doUpdate()
 	{
 		getMoveCon().setBallObstacle(false);
-		// do not respect other bots, when on ball line
-		getMoveCon().setBotsObstacle(getBall().getTrajectory().distanceTo(getPos()) > 100);
 
 		positionValidator.update(getWorldFrame(), getMoveCon());
 		positionValidator.getMarginToPenArea().put(ETeam.OPPONENTS, marginToTheirPenArea);
@@ -58,11 +60,26 @@ public class ApproachBallLineSkill extends AMoveToSkill
 					target,
 					RuleConstraints.getMaxKickSpeed());
 
+			double redirectAngle = getBall().getVel().multiplyNew(-1).angleToAbs(Vector2.fromAngle(targetAngle))
+					.orElse(0.0);
+
+			getShapes().get(ESkillShapesLayer.APPROACH_BALL_LINE_SKILL)
+					.add(new DrawableAnnotation(catchPosition,
+							String.format("angle: %.2f", AngleMath.rad2deg(redirectAngle)), Vector2.fromY(100)));
+
+			if (redirectAngle > maximumReasonableRedirectAngle)
+			{
+				updateLookAtTarget(getBall());
+				targetAngle = getBall().getVel().multiplyNew(-1).getAngle();
+			} else
+			{
+				updateTargetAngle(targetAngle);
+			}
+
 			var center2DribblerDist = getBot().getCenter2DribblerDist() + Geometry.getBallRadius();
 			var botToKickerPos = Vector2.fromAngle(targetAngle).scaleToNew(center2DribblerDist);
 			var dest = catchPosition.subtractNew(botToKickerPos);
 
-			updateTargetAngle(targetAngle);
 			updateDestination(dest);
 			updatePrimaryDirection();
 		}
@@ -115,7 +132,7 @@ public class ApproachBallLineSkill extends AMoveToSkill
 
 	private void updatePrimaryDirection()
 	{
-		if (ballMovesInTheSameDirectionInWhichTheRobotAlsoWantsToMove())
+		if (Boolean.TRUE.equals(ballMovesInTheSameDirectionInWhichTheRobotAlsoWantsToMove()))
 		{
 			getMoveConstraints().setPrimaryDirection(Vector2.zero());
 		} else

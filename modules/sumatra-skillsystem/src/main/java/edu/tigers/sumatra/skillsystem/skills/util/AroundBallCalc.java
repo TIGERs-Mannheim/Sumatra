@@ -8,8 +8,7 @@ import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.math.AngleMath;
-import edu.tigers.sumatra.math.line.ILine;
-import edu.tigers.sumatra.math.line.Line;
+import edu.tigers.sumatra.math.line.Lines;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
 import org.apache.commons.lang.Validate;
@@ -68,9 +67,9 @@ public class AroundBallCalc
 		// to change direction when near enough
 		if (getBallPos().distanceTo(getTBot().getPos()) > 300)
 		{
-			ILine bot2Dest = Line.fromPoints(getPos(), destination);
-			IVector2 lp = bot2Dest.leadPointOf(getBallPos());
-			if (bot2Dest.isPointOnLineSegment(lp))
+			var bot2Dest = Lines.segmentFromPoints(getPos(), destination);
+			IVector2 lp = bot2Dest.toLine().closestPointOnPath(getBallPos());
+			if (bot2Dest.isPointOnPath(lp))
 			{
 				IVector2 ball2Lp = lp.subtractNew(getBallPos());
 				double relMargin = getRelativeMarginToBall();

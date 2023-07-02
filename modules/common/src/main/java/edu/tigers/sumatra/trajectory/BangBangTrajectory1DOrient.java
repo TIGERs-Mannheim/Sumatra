@@ -93,4 +93,11 @@ class BangBangTrajectory1DOrient implements ITrajectory<Double>
 	{
 		return child.getTimeSections();
 	}
+
+
+	@Override
+	public double getMaxSpeed()
+	{
+		return getTimeSections().stream().mapToDouble(this::getVelocity).max().orElseThrow();
+	}
 }

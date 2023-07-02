@@ -5,7 +5,7 @@
 package edu.tigers.sumatra.ai.metis.defense.data;
 
 import edu.tigers.sumatra.ids.BotID;
-import edu.tigers.sumatra.math.line.v2.ILineSegment;
+import edu.tigers.sumatra.math.line.ILineSegment;
 import edu.tigers.sumatra.math.vector.IVector2;
 
 

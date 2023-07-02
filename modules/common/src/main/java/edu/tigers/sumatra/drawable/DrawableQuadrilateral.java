@@ -4,14 +4,13 @@
 
 package edu.tigers.sumatra.drawable;
 
-import java.awt.Color;
-import java.awt.Graphics2D;
-
 import com.sleepycat.persist.model.Persistent;
-
-import edu.tigers.sumatra.math.line.ILine;
+import edu.tigers.sumatra.math.line.ILineSegment;
 import edu.tigers.sumatra.math.quadrilateral.IQuadrilateral;
 import edu.tigers.sumatra.math.vector.IVector2;
+
+import java.awt.Color;
+import java.awt.Graphics2D;
 
 
 /**
@@ -61,10 +60,10 @@ public class DrawableQuadrilateral extends ADrawableWithStroke
 		super.paintShape(g, tool, invert);
 
 		assert quadrilateral != null;
-		for (ILine line : quadrilateral.getEdges())
+		for (ILineSegment line : quadrilateral.getEdges())
 		{
-			final IVector2 lineStart = tool.transformToGuiCoordinates(line.getStart(), invert);
-			final IVector2 lineEnd = tool.transformToGuiCoordinates(line.getEnd(), invert);
+			final IVector2 lineStart = tool.transformToGuiCoordinates(line.getPathStart(), invert);
+			final IVector2 lineEnd = tool.transformToGuiCoordinates(line.getPathEnd(), invert);
 			g.drawLine((int) lineStart.x(), (int) lineStart.y(), (int) lineEnd.x(), (int) lineEnd.y());
 		}
 		if (fill)

@@ -4,19 +4,15 @@
 
 package edu.tigers.sumatra.skillsystem.skills.util;
 
-import java.util.Arrays;
-import java.util.List;
-
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import edu.tigers.sumatra.geometry.Geometry;
-import edu.tigers.sumatra.geometry.IPenaltyArea;
-import edu.tigers.sumatra.math.line.Line;
-import edu.tigers.sumatra.math.line.v2.Lines;
+import edu.tigers.sumatra.math.line.Lines;
+import edu.tigers.sumatra.math.penaltyarea.IPenaltyArea;
 import edu.tigers.sumatra.math.rectangle.IRectangle;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.wp.data.ITrackedBall;
+
+import java.util.Arrays;
+import java.util.List;
 
 
 /**
@@ -26,8 +22,6 @@ import edu.tigers.sumatra.wp.data.ITrackedBall;
  */
 public final class SkillUtil
 {
-	protected static final Logger log = LogManager.getLogger(SkillUtil.class.getName());
-
 	private static final double INSIDE_FIELD_MARGIN = 20;
 
 
@@ -40,7 +34,7 @@ public final class SkillUtil
 	/**
 	 * Check if pos is inside field and adapt position if necessary with respect to the ball position
 	 *
-	 * @param pos the target position of the robots kicker position
+	 * @param pos     the target position of the robots kicker position
 	 * @param ballPos the current ball position
 	 * @return the pos, if outside. An adapted pos else
 	 */
@@ -51,8 +45,7 @@ public final class SkillUtil
 		IRectangle field = Geometry.getField().withMargin(-INSIDE_FIELD_MARGIN);
 		if (!field.isPointInShape(pos))
 		{
-			List<IVector2> intersections = field
-					.lineIntersections(Line.fromPoints(ballPos, pos));
+			List<IVector2> intersections = field.intersectPerimeterPath(Lines.lineFromPoints(ballPos, pos));
 			if (intersections.isEmpty())
 			{
 				return field.nearestPointInside(pos);
@@ -72,8 +65,8 @@ public final class SkillUtil
 	 * <li>Else: Move to nearest point to given pos</li>
 	 * </ul>
 	 *
-	 * @param pos the target position of the robot
-	 * @param ball the current ball
+	 * @param pos          the target position of the robot
+	 * @param ball         the current ball
 	 * @param penaltyAreas the penalty areas to check
 	 * @return the pos, if outside. An adapted pos else
 	 */
@@ -95,8 +88,8 @@ public final class SkillUtil
 	 * <li>Else: Move to nearest point to given pos</li>
 	 * </ul>
 	 *
-	 * @param pos the target position of the robot
-	 * @param ball the current ball
+	 * @param pos          the target position of the robot
+	 * @param ball         the current ball
 	 * @param penaltyAreas the penalty areas to check
 	 * @return the pos, if outside. An adapted pos else
 	 */
@@ -111,7 +104,7 @@ public final class SkillUtil
 			{
 				if (ball.getVel().getLength2() > 0.1)
 				{
-					return pos.nearestToOpt(penArea.lineIntersections(Lines.lineFromPoints(pos, ball.getPos())))
+					return pos.nearestToOpt(penArea.intersectPerimeterPath(Lines.lineFromPoints(pos, ball.getPos())))
 							.orElseGet(() -> penArea.nearestPointOutside(pos));
 				} else if (penArea.isPointInShape(ball.getPos()))
 				{

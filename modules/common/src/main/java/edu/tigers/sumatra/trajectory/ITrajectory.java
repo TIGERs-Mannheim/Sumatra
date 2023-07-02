@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.trajectory;
 
@@ -102,5 +102,10 @@ public interface ITrajectory<T> extends IMirrorable<ITrajectory<T>>
 	default double getTotalTimeToPrimaryDirection()
 	{
 		return getTotalTime();
+	}
+
+	default double getMaxSpeed()
+	{
+		throw new IllegalStateException("Not implemented");
 	}
 }

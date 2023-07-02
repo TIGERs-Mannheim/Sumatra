@@ -44,4 +44,14 @@ public interface IDrawableTool
 	 * @return field background color
 	 */
 	Color getFieldColor();
+
+	/**
+	 * @return field turn status
+	 */
+	EFieldTurn getFieldTurn();
+
+	/**
+	 * @return scaling factor depending on zoom
+	 */
+	double getScale();
 }

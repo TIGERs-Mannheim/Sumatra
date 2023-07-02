@@ -87,7 +87,7 @@ public class DelayFreeKickCalc extends ACalculator
 				.mapToDouble(IRatedTarget::getScore)
 				.min()
 				.orElse(0.0);
-		return (getAiFrame().getGameState().isDirectFreeForUs() || getAiFrame().getGameState().isKickoff())
+		return (getAiFrame().getGameState().isFreeKickForUs() || getAiFrame().getGameState().isKickoff())
 				&& tigerClosestToBall.get().getDist() < 400
 				&& score > OffensiveConstants.getMinBotShouldDoGoalShotScore();
 	}

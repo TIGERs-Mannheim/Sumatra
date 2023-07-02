@@ -7,7 +7,10 @@ import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
 import edu.tigers.sumatra.cam.data.CamBall;
 import edu.tigers.sumatra.math.AngleMath;
-import edu.tigers.sumatra.math.line.Line;
+import edu.tigers.sumatra.math.line.ILine;
+import edu.tigers.sumatra.math.line.ILineSegment;
+import edu.tigers.sumatra.math.line.Lines;
+import edu.tigers.sumatra.math.vector.IVector;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.vision.data.FilteredVisionBot;
@@ -58,16 +61,21 @@ public class DirectionValidator implements IKickValidator
 		FilteredVisionBot bot = bots.get(0);
 
 		Map<Integer, List<MergedBall>> groupedBalls = balls.stream()
+				.filter(b -> b.getLatestCamBall().isPresent())
 				.collect(Collectors.groupingBy((final MergedBall b) -> b.getLatestCamBall().get().getCameraId()));
 
 		for (List<MergedBall> group : groupedBalls.values())
 		{
 			List<IVector2> ballPos = group.stream()
-					.map(b -> b.getLatestCamBall().get().getPos().getXYVector())
-					.collect(Collectors.toList());
+					.map(MergedBall::getLatestCamBall)
+					.filter(Optional::isPresent)
+					.map(Optional::get)
+					.map(CamBall::getPos)
+					.map(IVector::getXYVector)
+					.toList();
 
-			Optional<Line> line = Line.fromPointsList(ballPos);
-			if (!line.isPresent() || (group.size() < 3))
+			Optional<ILineSegment> line = Lines.regressionLineFromPointsList(ballPos);
+			if (line.isEmpty() || (group.size() < 3))
 			{
 				continue;
 			}
@@ -103,6 +111,7 @@ public class DirectionValidator implements IKickValidator
 		FilteredVisionBot bot = bots.get(0);
 
 		Map<Integer, List<MergedBall>> groupedBalls = balls.stream()
+				.filter(b -> b.getLatestCamBall().isPresent())
 				.collect(Collectors.groupingBy((final MergedBall b) -> b.getLatestCamBall().get().getCameraId()));
 
 		double smallestAngDiff = Math.PI;
@@ -117,11 +126,12 @@ public class DirectionValidator implements IKickValidator
 			}
 
 			List<IVector2> ballPos = group.stream()
+					.filter(b -> b.getLatestCamBall().isPresent())
 					.map(b -> b.getLatestCamBall().get().getPos().getXYVector())
-					.collect(Collectors.toList());
+					.toList();
 
-			Optional<Line> line = Line.fromPointsList(ballPos);
-			if (!line.isPresent())
+			Optional<ILineSegment> line = Lines.regressionLineFromPointsList(ballPos);
+			if (line.isEmpty())
 			{
 				return Optional.empty();
 			}
@@ -133,9 +143,10 @@ public class DirectionValidator implements IKickValidator
 				smallestAngDiff = angDiff.get();
 
 				Vector2 kickerCenter = Vector2.fromAngle(bot.getOrientation()).multiply(105).add(bot.getPos());
-				Line front = Line.fromDirection(kickerCenter, Vector2.fromAngle(bot.getOrientation() + AngleMath.PI_HALF));
+				ILine front = Lines.lineFromDirection(kickerCenter,
+						Vector2.fromAngle(bot.getOrientation() + AngleMath.PI_HALF));
 
-				kickPos = front.intersectionWith(line.get());
+				kickPos = front.intersect(line.get().toLine()).asOptional();
 				bestGroup = group;
 			}
 		}
@@ -147,14 +158,15 @@ public class DirectionValidator implements IKickValidator
 			RealMatrix matA = new Array2DRowRealMatrix(numPoints, 2);
 			RealVector b = new ArrayRealVector(numPoints);
 
-			CamBall bFirst = bestGroup.get(0).getLatestCamBall().get();
+			CamBall bFirst = bestGroup.get(0).getLatestCamBall().orElseThrow();
 			for (int i = 0; i < numPoints; i++)
 			{
 				matA.setEntry(i, 0,
-						bestGroup.get(i).getLatestCamBall().get().getPos().getXYVector().distanceTo(kickPos.get()));
+						bestGroup.get(i).getLatestCamBall().orElseThrow().getPos().getXYVector()
+								.distanceTo(kickPos.orElseThrow()));
 				matA.setEntry(i, 1, 1.0);
 
-				CamBall bNow = bestGroup.get(i).getLatestCamBall().get();
+				CamBall bNow = bestGroup.get(i).getLatestCamBall().orElseThrow();
 				double time = ((bNow.gettCapture()) - bFirst.gettCapture()) * 1e-9;
 				b.setEntry(i, time);
 			}
@@ -171,7 +183,7 @@ public class DirectionValidator implements IKickValidator
 
 			long tKick = ((long) (x.getEntry(1) * 1e9)) + bFirst.gettCapture();
 
-			return Optional.of(new Pair<>(tKick, kickPos.get()));
+			return Optional.of(new Pair<>(tKick, kickPos.orElseThrow()));
 		}
 
 		return Optional.empty();

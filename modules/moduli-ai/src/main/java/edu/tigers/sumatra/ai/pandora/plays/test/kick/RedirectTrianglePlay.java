@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.ai.pandora.plays.test.kick;
 
@@ -10,7 +10,6 @@ import edu.tigers.sumatra.drawable.DrawableLine;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.math.AngleMath;
 import edu.tigers.sumatra.math.circle.Circle;
-import edu.tigers.sumatra.math.line.Line;
 import edu.tigers.sumatra.math.vector.IVector2;
 import lombok.Setter;
 
@@ -38,11 +37,17 @@ public class RedirectTrianglePlay extends ARedirectPlay
 	@Setter
 	private double angleDegChangeSpeed;
 	@Setter
-	private double maxReceivingBallSpeedMin;
+	private double maxReceiveBallSpeedMin;
 	@Setter
-	private double maxReceivingBallSpeedMax;
+	private double maxReceiveBallSpeedMax;
 	@Setter
-	private double maxReceivingBallSpeedChangeSpeed;
+	private double maxReceiveBallSpeedChangeSpeed;
+	@Setter
+	private double maxRedirectBallSpeedMin;
+	@Setter
+	private double maxRedirectBallSpeedMax;
+	@Setter
+	private double maxRedirectBallSpeedChangeSpeed;
 	@Setter
 	private boolean goalKick;
 
@@ -74,19 +79,12 @@ public class RedirectTrianglePlay extends ARedirectPlay
 		super.doUpdateAfterRoles();
 
 		var shapes = getAiFrame().getShapeMap().get(EAiShapesLayer.TEST_KICK);
-		shapes.add(new DrawableLine(Line.fromPoints(redirectPos, getSupportPos(1)), Color.green));
-		shapes.add(new DrawableLine(Line.fromPoints(redirectPos, getSupportPos(-1)), Color.green));
+		shapes.add(new DrawableLine(redirectPos, getSupportPos(1), Color.green));
+		shapes.add(new DrawableLine(redirectPos, getSupportPos(-1), Color.green));
 		shapes.add(new DrawableCircle(Circle.createCircle(redirectPos, Geometry.getBotRadius() + 15), Color.red));
 		tLast = getWorldFrame().getTimestamp();
 
-		double tDiff = timePassed / 1e9 / 60;
-		double angleOffset = angleDegChangeSpeed * tDiff;
-		double angleRange = angleDegMax - angleDegMin;
-		angleCurrent = angleDegMin + (angleOffset % angleRange);
-
-		double speedOffset = maxReceivingBallSpeedChangeSpeed * tDiff;
-		double speedRange = maxReceivingBallSpeedMax - maxReceivingBallSpeedMin;
-		setMaxReceivingBallSpeed(maxReceivingBallSpeedMin + (speedOffset % speedRange));
+		angleCurrent = value(angleDegMin, angleDegMax, angleDegChangeSpeed);
 
 		if (redirectPos.distanceTo(getBall().getPos()) > distance - 300)
 		{
@@ -153,5 +151,34 @@ public class RedirectTrianglePlay extends ARedirectPlay
 			return goalKick;
 		}
 		return false;
+	}
+
+
+	@Override
+	protected double getMaxReceivingBallSpeed(IVector2 origin)
+	{
+		if (origin == redirectPos)
+		{
+			// kicks from redirect origin are towards bots that should receive the ball
+			return value(maxReceiveBallSpeedMin, maxReceiveBallSpeedMax, maxReceiveBallSpeedChangeSpeed);
+		}
+		return value(maxRedirectBallSpeedMin, maxRedirectBallSpeedMax, maxRedirectBallSpeedChangeSpeed);
+	}
+
+
+	private double value(
+			double min,
+			double max,
+			double speed
+	)
+	{
+		double tDiff = timePassed / 1e9 / 60;
+		double offset = speed * tDiff;
+		double range = max - min;
+		if (Math.abs(range) < 1e-5)
+		{
+			return min;
+		}
+		return min + (offset % range);
 	}
 }

@@ -13,6 +13,8 @@ import edu.tigers.sumatra.math.vector.IVector2;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
+import static com.github.g3force.instanceables.InstanceableClass.ic;
+
 
 /**
  * @author AndreR
@@ -137,6 +139,7 @@ public enum EBotSkill implements IInstanceableEnum
 			new InstanceableParameter(Double.TYPE, "dockingSpeed", "0.3"),
 			new InstanceableParameter(Double.TYPE, "aimSpeed", "0.6"))),
 
+
 	INTERCEPT_BALL(12, new InstanceableClass<>(BotSkillInterceptBall.class,
 			new InstanceableParameter(IVector2.class, "interceptPos", "0,0"),
 			new InstanceableParameter(Double.TYPE, "interceptOrient", "0.0"),
@@ -160,6 +163,61 @@ public enum EBotSkill implements IInstanceableEnum
 			new InstanceableParameter(Double.TYPE, "velMaxW", "10"),
 			new InstanceableParameter(Double.TYPE, "accMax", "3"),
 			new InstanceableParameter(Double.TYPE, "accMaxW", "50"))),
+
+	TC2022_STAGE1(14, new InstanceableClass<>(BotSkillTechChallenge2022Stage1.class,
+			new InstanceableParameter(IVector2.class, "startPos", "0,0"),
+			new InstanceableParameter(IVector2.class, "targetPos", "0,0"),
+			new InstanceableParameter(Double.TYPE, "velMax", "1.5"),
+			new InstanceableParameter(Double.TYPE, "velMaxW", "10"),
+			new InstanceableParameter(Double.TYPE, "accMax", "2.0"),
+			new InstanceableParameter(Double.TYPE, "accMaxW", "20"),
+			new InstanceableParameter(Double.TYPE, "dribblerSpeed", "18000"),
+			new InstanceableParameter(Double.TYPE, "dribblerCurrent", "3"),
+			new InstanceableParameter(Double.TYPE, "rotationSpeed", "1.0"))),
+
+	TC2022_STAGE2(15, new InstanceableClass<>(BotSkillTechChallenge2022Stage2.class,
+			new InstanceableParameter(IVector2.class, "startPos", "0,0"),
+			new InstanceableParameter(IVector2.class, "targetPos", "0,0"),
+			new InstanceableParameter(Double.TYPE, "velMax", "1.5"),
+			new InstanceableParameter(Double.TYPE, "velMaxW", "10"),
+			new InstanceableParameter(Double.TYPE, "accMax", "2.0"),
+			new InstanceableParameter(Double.TYPE, "accMaxW", "20"),
+			new InstanceableParameter(Double.TYPE, "dribblerSpeed", "18000"),
+			new InstanceableParameter(Double.TYPE, "dribblerCurrent", "3"),
+			new InstanceableParameter(Double.TYPE, "rotationSpeed", "1.0"))),
+	TC2022_STAGE3(16, new InstanceableClass<>(BotSkillTechChallenge2022Stage3.class,
+			new InstanceableParameter(IVector2.class, "startPos", "0,0"),
+			new InstanceableParameter(IVector2.class, "targetPos", "0,0"),
+			new InstanceableParameter(Double.TYPE, "velMax", "1.5"),
+			new InstanceableParameter(Double.TYPE, "velMaxW", "10"),
+			new InstanceableParameter(Double.TYPE, "accMax", "2.0"),
+			new InstanceableParameter(Double.TYPE, "accMaxW", "20"),
+			new InstanceableParameter(Double.TYPE, "dribblerSpeed", "18000"),
+			new InstanceableParameter(Double.TYPE, "dribblerCurrent", "3"),
+			new InstanceableParameter(Double.TYPE, "rotationSpeed", "1.0"))),
+
+	TC2022_STAGE4(17, new InstanceableClass<>(BotSkillTechChallenge2022Stage4.class,
+			new InstanceableParameter(IVector2.class, "startPos", "0,0"),
+			new InstanceableParameter(IVector2.class, "targetPos", "0,0"),
+			new InstanceableParameter(Double.TYPE, "velMax", "1.5"),
+			new InstanceableParameter(Double.TYPE, "velMaxW", "10"),
+			new InstanceableParameter(Double.TYPE, "accMax", "2.0"),
+			new InstanceableParameter(Double.TYPE, "accMaxW", "20"),
+			new InstanceableParameter(Double.TYPE, "dribblerSpeed", "18000"),
+			new InstanceableParameter(Double.TYPE, "dribblerCurrent", "3"),
+			new InstanceableParameter(Double.TYPE, "rotationSpeed", "1.0"))),
+
+	RECEIVE_BALL(18, ic(BotSkillReceiveBall.class)
+			.setterParam(IVector2.class, "receivePos", "0,0", BotSkillReceiveBall::setReceivePos)
+			.setterParam(Double.TYPE, "receiveOrientation", "0.0", BotSkillReceiveBall::setReceiveOrientation)
+			.setterParam(Double.TYPE, "velMaxW", "10", BotSkillReceiveBall::setVelMaxW)
+			.setterParam(Double.TYPE, "accMax", "2.0", BotSkillReceiveBall::setAccMax)
+			.setterParam(Double.TYPE, "accMaxW", "50", BotSkillReceiveBall::setAccMaxW)
+			.setterParam(Double.TYPE, "kickSpeed", "0", BotSkillReceiveBall::setKickSpeed)
+			.setterParam(EKickerDevice.class, "kickDevice", "STRAIGHT", BotSkillReceiveBall::setKickerDevice)
+			.setterParam(EKickerMode.class, "kickMode", "DISARM", BotSkillReceiveBall::setKickerMode)
+			.setterParam(IVector2.class, "ballPos", "0,0", BotSkillReceiveBall::setBallPos)
+	),
 
 	;
 

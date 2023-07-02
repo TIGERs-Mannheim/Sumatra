@@ -12,7 +12,7 @@ import edu.tigers.sumatra.drawable.DrawableTube;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.circle.Circle;
-import edu.tigers.sumatra.math.line.v2.ILineSegment;
+import edu.tigers.sumatra.math.line.ILineSegment;
 import edu.tigers.sumatra.math.tube.Tube;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.pathfinder.TrajectoryGenerator;
@@ -68,9 +68,9 @@ public class BallLeavingFieldCalc extends ACalculator
 		{
 			ILineSegment ballTravelLine = getBall().getTrajectory().getTravelLineSegment();
 			Optional<IVector2> possibleIntersection = Geometry.getGoalOur().getGoalLine()
-					.intersectSegment(ballTravelLine);
+					.intersect(ballTravelLine).asOptional();
 			Optional<IVector2> possibleGoal = Geometry.getGoalOur().withMargin(2 * Geometry.getBotRadius())
-					.getLineSegment().intersectSegment(ballTravelLine);
+					.getLineSegment().intersect(ballTravelLine).asOptional();
 			if (possibleIntersection.isPresent() && possibleGoal.isEmpty())
 			{
 				draw(possibleIntersection.get());

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.pandora.roles.offense;
@@ -16,17 +16,14 @@ import edu.tigers.sumatra.drawable.DrawableCircle;
 import edu.tigers.sumatra.drawable.DrawableLine;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.geometry.RuleConstraints;
-import edu.tigers.sumatra.math.line.ILine;
-import edu.tigers.sumatra.math.line.Line;
 import edu.tigers.sumatra.math.line.LineMath;
+import edu.tigers.sumatra.math.line.Lines;
 import edu.tigers.sumatra.math.triangle.Triangle;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.IVector3;
 import edu.tigers.sumatra.math.vector.Vector2;
-import edu.tigers.sumatra.skillsystem.skills.ApproachAndStopBallSkill;
 import edu.tigers.sumatra.skillsystem.skills.ESkillState;
 import edu.tigers.sumatra.skillsystem.skills.MoveToSkill;
-import edu.tigers.sumatra.skillsystem.skills.MoveWithBallSkill;
 import edu.tigers.sumatra.skillsystem.skills.TouchKickSkill;
 import edu.tigers.sumatra.skillsystem.skills.util.KickParams;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
@@ -39,23 +36,22 @@ import java.util.Optional;
 
 public class OneOnOneShooterRole extends ARole
 {
-	@Configurable(comment = "Distance to dribble in one go [mm]", defValue = "1000.0")
-	private static double dribbleAheadDistance = 1000.0;
-
-	@Configurable(comment = "Distance to do a quick stop to separate from ball [mm]", defValue = "100.0")
-	private static double dribbleSeparationDistance = 100.0;
-
-	@Configurable(comment = "Time without ball contact until dribbling is continued [mm]", defValue = "0.1")
-	private static double dribbleSeparationTime = 0.1;
-
 	@Configurable(comment = "Required score to execute a flat kick (0.0 - 1.0 best)", defValue = "0.3")
 	private static double requiredFlatKickScore = 0.3;
 
 	@Configurable(comment = "Distance to target behind keeper for a chip kick [mm]", defValue = "1000.0")
 	private static double chipBehindKeeperDistance = 1000.0;
 
+	@Configurable(comment = "Poke velocity [m/s]", defValue = "1.2")
+	private static double pokeVelocity = 1.2;
 
-	private IVector2 currentDribbleTarget;
+	@Configurable(comment = "Distance to ball when approaching (>150mm) [mm]", defValue = "150")
+	private static double approachDistance = 150.0;
+
+	@Configurable(comment = "Some tolerance when the ball is considered approached [mm]", defValue = "0")
+	private static double approachDistanceTolerance = 0.0;
+
+
 	private ChipOpportunity chipOpportunity;
 	private IRatedTarget flatRatedTarget;
 
@@ -68,24 +64,32 @@ public class OneOnOneShooterRole extends ARole
 		super(ERole.ONE_ON_ONE_SHOOTER);
 
 		var waitAtBallState = new WaitAtBallState();
-		var flatKickOnGoalState = new FlatKickOnGoalState();
 		var approachBallState = new ApproachBallState();
-		var dribbleForwardState = new DribbleForwardState();
-		var waitForBallSeparationState = new WaitForBallSeparation();
+		var pokeBallState = new PokeBallState();
+		var flatKickOnGoalState = new FlatKickOnGoalState();
 		var chipKickOnGoalState = new ChipKickOnGoalState();
 
 		setInitialState(waitAtBallState);
 
-		waitAtBallState.addTransition(waitAtBallState::isPenaltyActiveAndGoalEmpty, flatKickOnGoalState);
-		waitAtBallState.addTransition(waitAtBallState::isPenaltyActive, approachBallState);
-		approachBallState.addTransition(approachBallState::hasBallContact, dribbleForwardState);
+		waitAtBallState.addTransition("isPenaltyActiveAndGoalEmpty", waitAtBallState::isPenaltyActiveAndGoalEmpty, flatKickOnGoalState);
+		waitAtBallState.addTransition("isPenaltyActive", waitAtBallState::isPenaltyActive, approachBallState);
+		approachBallState.addTransition(ESkillState.SUCCESS, pokeBallState);
+		approachBallState.addTransition("isCloseToBall", approachBallState::isCloseToBall, pokeBallState);
 		approachBallState.addTransition(ESkillState.FAILURE, approachBallState);
-		dribbleForwardState.addTransition(dribbleForwardState::isCloseToDribbleTarget, waitForBallSeparationState);
-		dribbleForwardState.addTransition(this::isGoodGoalKickAvailable, flatKickOnGoalState);
-		dribbleForwardState.addTransition(this::isChipKickTheOnlyGoodPlanWeHave, chipKickOnGoalState);
-		waitForBallSeparationState.addTransition(waitForBallSeparationState::isBallSeparated, approachBallState);
-		waitForBallSeparationState.addTransition(this::isGoodGoalKickAvailable, flatKickOnGoalState);
-		waitForBallSeparationState.addTransition(this::isChipKickTheOnlyGoodPlanWeHave, chipKickOnGoalState);
+		approachBallState.addTransition("isGoodGoalKickAvailable", this::isGoodGoalKickAvailable, flatKickOnGoalState);
+		approachBallState.addTransition("isChipKickTheOnlyGoodPlanWeHave", this::isChipKickTheOnlyGoodPlanWeHave, chipKickOnGoalState);
+		approachBallState.addTransition("timeAlmostUp", this::timeAlmostUp, flatKickOnGoalState);
+
+		pokeBallState.addTransition("isBallHit", pokeBallState::isBallHit, approachBallState);
+		pokeBallState.addTransition("isGoodGoalKickAvailable", this::isGoodGoalKickAvailable, flatKickOnGoalState);
+		pokeBallState.addTransition("isChipKickTheOnlyGoodPlanWeHave", this::isChipKickTheOnlyGoodPlanWeHave, chipKickOnGoalState);
+		pokeBallState.addTransition("timeAlmostUp", this::timeAlmostUp, flatKickOnGoalState);
+	}
+
+
+	private boolean timeAlmostUp()
+	{
+		return getAiFrame().getRefereeMsg().getCurrentActionTimeRemaining() < 2;
 	}
 
 
@@ -111,7 +115,7 @@ public class OneOnOneShooterRole extends ARole
 			shapesList.add(new DrawableAnnotation(getPos().addNew(Vector2.fromX(250.0)),
 					String.format("Flat score: %.2f", flatRatedTarget.getScore())));
 
-			ILine toTarget = Line.fromPoints(getBall().getPos(), flatRatedTarget.getTarget());
+			var toTarget = Lines.segmentFromPoints(getBall().getPos(), flatRatedTarget.getTarget());
 			shapesList.add(new DrawableLine(toTarget, Color.red));
 		}
 
@@ -123,155 +127,6 @@ public class OneOnOneShooterRole extends ARole
 					String.format("Chip speed: %.2f", chipOpportunity.getKickSpeed())));
 
 			shapesList.add(new DrawableLine(chipOpportunity.getBallTrajectory().getTravelLineRolling(), Color.magenta));
-		}
-	}
-
-
-	private class WaitAtBallState extends RoleState<MoveToSkill>
-	{
-		public WaitAtBallState()
-		{
-			super(MoveToSkill::new);
-		}
-
-
-		@Override
-		protected void onUpdate()
-		{
-			var waitPos = getBall().getPos()
-					.subtractNew(Vector2.fromX(RuleConstraints.getStopRadius() + Geometry.getBotRadius() + 50));
-			skill.updateDestination(waitPos);
-			skill.updateLookAtTarget(getBall());
-		}
-
-
-		public boolean isPenaltyActive()
-		{
-			return getAiFrame().getGameState().isPenalty();
-		}
-
-
-		public boolean isPenaltyActiveAndGoalEmpty()
-		{
-			var ballGoalTriangle = Triangle.fromCorners(getBall().getPos(), Geometry.getGoalTheir().getLeftPost(),
-					Geometry.getGoalTheir().getRightPost());
-
-			boolean noOpponentInTriangle = getWFrame().getOpponentBots().values().stream()
-					.noneMatch(b -> ballGoalTriangle.isPointInShape(b.getPos(), Geometry.getBotRadius() * 2.0));
-
-			return isPenaltyActive() && noOpponentInTriangle;
-		}
-	}
-
-	private class ApproachBallState extends RoleState<ApproachAndStopBallSkill>
-	{
-		public ApproachBallState()
-		{
-			super(ApproachAndStopBallSkill::new);
-		}
-
-
-		@Override
-		protected void onUpdate()
-		{
-			skill.setMarginToTheirPenArea(0.0);
-		}
-
-
-		public boolean hasBallContact()
-		{
-			return getBot().getBallContact().hadContact(0.1);
-		}
-	}
-
-	private class DribbleForwardState extends RoleState<MoveWithBallSkill>
-	{
-		public DribbleForwardState()
-		{
-			super(MoveWithBallSkill::new);
-		}
-
-
-		@Override
-		protected void onInit()
-		{
-			currentDribbleTarget = getPos().addNew(Vector2.fromX(dribbleAheadDistance));
-		}
-
-
-		@Override
-		protected void onUpdate()
-		{
-			skill.setFinalDest(currentDribbleTarget);
-			skill.setFinalOrientation(Vector2.fromPoints(getPos(), Geometry.getGoalTheir().getCenter()).getAngle());
-		}
-
-
-		public boolean isCloseToDribbleTarget()
-		{
-			return getPos().distanceTo(currentDribbleTarget) < dribbleSeparationDistance;
-		}
-	}
-
-	private class WaitForBallSeparation extends RoleState<MoveToSkill>
-	{
-		public WaitForBallSeparation()
-		{
-			super(MoveToSkill::new);
-		}
-
-
-		@Override
-		protected void onInit()
-		{
-			skill.updateDestination(currentDribbleTarget);
-			skill.updateTargetAngle(getBot().getOrientation());
-		}
-
-
-		public boolean isBallSeparated()
-		{
-			return !getBot().getBallContact().hadContact(dribbleSeparationTime);
-		}
-	}
-
-	private class FlatKickOnGoalState extends RoleState<TouchKickSkill>
-	{
-		public FlatKickOnGoalState()
-		{
-			super(TouchKickSkill::new);
-		}
-
-
-		@Override
-		protected void onInit()
-		{
-			skill.setTarget(getKickTarget());
-			skill.setDesiredKickParams(KickParams.maxStraight());
-		}
-	}
-
-	private class ChipKickOnGoalState extends RoleState<TouchKickSkill>
-	{
-		public ChipKickOnGoalState()
-		{
-			super(TouchKickSkill::new);
-		}
-
-
-		@Override
-		protected void onInit()
-		{
-			if (chipOpportunity == null)
-			{
-				// this should not happen but it is good to have a reasonable fallback
-				skill.setTarget(getKickTarget());
-				skill.setDesiredKickParams(KickParams.maxStraight());
-			} else
-			{
-				skill.setTarget(chipOpportunity.getTarget());
-				skill.setDesiredKickParams(KickParams.chip(chipOpportunity.kickSpeed));
-			}
 		}
 	}
 
@@ -339,7 +194,7 @@ public class OneOnOneShooterRole extends ARole
 		var chipTraj = Geometry.getBallFactory()
 				.createTrajectoryFromKickedBallWithoutSpin(getBall().getPos(), kickVel.multiplyNew(1000.0));
 
-		if (chipTraj.getTravelLineRolling().intersectSegment(Geometry.getGoalTheir().getLineSegment()).isPresent())
+		if (!chipTraj.getTravelLineRolling().intersect(Geometry.getGoalTheir().getLineSegment()).isEmpty())
 		{
 			chipOpportunity = new ChipOpportunity(kickSpeedToOverchipKeeper, firstTouchdownTarget, chipTraj);
 		} else
@@ -362,5 +217,154 @@ public class OneOnOneShooterRole extends ARole
 		double kickSpeed;
 		IVector2 target;
 		IBallTrajectory ballTrajectory;
+	}
+
+	private class WaitAtBallState extends RoleState<MoveToSkill>
+	{
+		public WaitAtBallState()
+		{
+			super(MoveToSkill::new);
+		}
+
+
+		@Override
+		protected void onUpdate()
+		{
+			var waitPos = getBall().getPos()
+					.subtractNew(Vector2.fromX(RuleConstraints.getStopRadius() + Geometry.getBotRadius() + 80));
+			skill.updateDestination(waitPos);
+			skill.updateLookAtTarget(getBall());
+			skill.getMoveCon().setPenaltyAreaOurObstacle(false);
+		}
+
+
+		public boolean isPenaltyActive()
+		{
+			return getAiFrame().getGameState().isPenalty();
+		}
+
+
+		public boolean isPenaltyActiveAndGoalEmpty()
+		{
+			var ballGoalTriangle = Triangle.fromCorners(getBall().getPos(), Geometry.getGoalTheir().getLeftPost(),
+					Geometry.getGoalTheir().getRightPost());
+
+			boolean noOpponentInTriangle = getWFrame().getOpponentBots().values().stream()
+					.noneMatch(b -> ballGoalTriangle.withMargin(Geometry.getBotRadius() * 2).isPointInShape(b.getPos()));
+
+			return isPenaltyActive() && noOpponentInTriangle;
+		}
+	}
+
+	private class ApproachBallState extends RoleState<MoveToSkill>
+	{
+		public ApproachBallState()
+		{
+			super(MoveToSkill::new);
+		}
+
+
+		@Override
+		protected void onInit()
+		{
+			skill.getMoveCon().setPenaltyAreaOurObstacle(false);
+		}
+
+
+		@Override
+		protected void onUpdate()
+		{
+			IVector2 approachPos = LineMath.stepAlongLine(getBall().getPos(), Geometry.getGoalTheir().getCenter(),
+					-(Geometry.getBotRadius() + approachDistance));
+			skill.updateDestination(approachPos);
+			skill.updateTargetAngle(
+					getBall().getPos().subtractNew(getBot().getBotKickerPos()).getAngle());
+		}
+
+
+		public boolean isCloseToBall()
+		{
+			return skill.getDestination() != null && skill.getDestination().distanceTo(getBot().getPos())
+					< approachDistance + approachDistanceTolerance;
+		}
+	}
+
+	private class PokeBallState extends RoleState<MoveToSkill>
+	{
+		private IVector2 relativePosTarget;
+		private double initialBallSpeed;
+
+
+		public PokeBallState()
+		{
+			super(MoveToSkill::new);
+		}
+
+
+		@Override
+		protected void onInit()
+		{
+			relativePosTarget = Vector2.fromPoints(getBall().getPos(), getBot().getPos()).multiply(-1.0);
+			skill.getMoveCon().setBallObstacle(false);
+			skill.getMoveCon().setPenaltyAreaOurObstacle(false);
+
+			initialBallSpeed = getBall().getVel().getLength();
+		}
+
+
+		@Override
+		protected void onUpdate()
+		{
+			skill.setVelMax(pokeVelocity);
+			skill.updateDestination(getBall().getPos().addNew(relativePosTarget));
+			skill.updateTargetAngle(
+					getBall().getPos().addNew(relativePosTarget).subtractNew(getBot().getBotKickerPos()).getAngle());
+		}
+
+
+		public boolean isBallHit()
+		{
+			return getBall().getVel().getLength() > initialBallSpeed + 0.1 || getBot().hasBallContact();
+		}
+	}
+
+	private class FlatKickOnGoalState extends RoleState<TouchKickSkill>
+	{
+		public FlatKickOnGoalState()
+		{
+			super(TouchKickSkill::new);
+		}
+
+
+		@Override
+		protected void onInit()
+		{
+			skill.setTarget(getKickTarget());
+			skill.setDesiredKickParams(KickParams.maxStraight());
+		}
+	}
+
+	private class ChipKickOnGoalState extends RoleState<TouchKickSkill>
+	{
+		public ChipKickOnGoalState()
+		{
+			super(TouchKickSkill::new);
+		}
+
+
+		@Override
+		protected void onInit()
+		{
+			if (chipOpportunity == null)
+			{
+				// this should not happen but it is good to have a reasonable fallback
+				skill.setTarget(getKickTarget());
+				skill.setDesiredKickParams(KickParams.maxStraight());
+			} else
+			{
+				skill.setTarget(chipOpportunity.getTarget());
+				skill.setDesiredKickParams(KickParams.chip(chipOpportunity.kickSpeed));
+			}
+		}
 	}
 }

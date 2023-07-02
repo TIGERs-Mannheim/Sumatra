@@ -16,9 +16,9 @@ import edu.tigers.sumatra.drawable.DrawableLine;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.math.AngleMath;
 import edu.tigers.sumatra.math.SumatraMath;
-import edu.tigers.sumatra.math.line.ILine;
-import edu.tigers.sumatra.math.line.Line;
-import edu.tigers.sumatra.math.line.v2.LineMath;
+import edu.tigers.sumatra.math.line.ILineSegment;
+import edu.tigers.sumatra.math.line.LineMath;
+import edu.tigers.sumatra.math.line.Lines;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.skillsystem.skills.ESkillState;
@@ -55,7 +55,7 @@ public class DribbleChallenge2022Role extends ARole
 
 	private List<IVector2> actualRobotPositions = new ArrayList<>();
 
-	private List<ILine> gates = new ArrayList<>();
+	private List<ILineSegment> gates = new ArrayList<>();
 
 	private List<IVector2> pushPullWaypoints = new ArrayList<>();
 
@@ -135,8 +135,7 @@ public class DribbleChallenge2022Role extends ARole
 				getShapes(EAiShapesLayer.TEST_DRIBBLE_CHALLENGE).add(
 						new DrawableCircle(actualRobotPositions.get(i), Geometry.getBotRadius() + 50, Color.red));
 				getShapes(EAiShapesLayer.TEST_DRIBBLE_CHALLENGE).add(
-						new DrawableLine(Line.fromPoints(expectedRobotPositions.get(i), actualRobotPositions.get(i)),
-								Color.red));
+						new DrawableLine(expectedRobotPositions.get(i), actualRobotPositions.get(i), Color.red));
 			}
 		}
 
@@ -198,12 +197,12 @@ public class DribbleChallenge2022Role extends ARole
 			// compute gates from actual positions
 			gates.clear();
 
-			gates.add(Line.fromPoints(actualRobotPositions.get(0), actualRobotPositions.get(1))); // Gate A
-			gates.add(Line.fromPoints(actualRobotPositions.get(1), actualRobotPositions.get(2))); // Gate B
-			gates.add(Line.fromPoints(actualRobotPositions.get(2), actualRobotPositions.get(3))); // Gate C
-			gates.add(Line.fromPoints(actualRobotPositions.get(3), actualRobotPositions.get(0))); // Gate D
-			gates.add(Line.fromPoints(actualRobotPositions.get(0), actualRobotPositions.get(4))); // Gate E
-			gates.add(Line.fromPoints(actualRobotPositions.get(5), actualRobotPositions.get(6))); // Gate F
+			gates.add(Lines.segmentFromPoints(actualRobotPositions.get(0), actualRobotPositions.get(1))); // Gate A
+			gates.add(Lines.segmentFromPoints(actualRobotPositions.get(1), actualRobotPositions.get(2))); // Gate B
+			gates.add(Lines.segmentFromPoints(actualRobotPositions.get(2), actualRobotPositions.get(3))); // Gate C
+			gates.add(Lines.segmentFromPoints(actualRobotPositions.get(3), actualRobotPositions.get(0))); // Gate D
+			gates.add(Lines.segmentFromPoints(actualRobotPositions.get(0), actualRobotPositions.get(4))); // Gate E
+			gates.add(Lines.segmentFromPoints(actualRobotPositions.get(5), actualRobotPositions.get(6))); // Gate F
 
 			// compute first set of waypoints: gates A, B, and C are passed twice by push/pull motion
 			pushPullWaypoints.clear();
@@ -211,7 +210,7 @@ public class DribbleChallenge2022Role extends ARole
 			for (int i = 0; i < 3; i++)
 			{
 				var gate = gates.get(i);
-				var passpoint = gate.getStart().addNew(gate.directionVector().multiplyNew(0.5));
+				var passpoint = gate.getPathStart().addNew(gate.directionVector().multiplyNew(0.5));
 
 				var rotation = AngleMath.DEG_090_IN_RAD;
 

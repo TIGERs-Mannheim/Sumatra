@@ -6,7 +6,7 @@ package edu.tigers.sumatra.ai.metis.offense.action.moves;
 
 import com.github.g3force.configurable.Configurable;
 import edu.tigers.sumatra.ai.metis.offense.action.EActionViability;
-import edu.tigers.sumatra.ai.metis.offense.action.OffensiveAction;
+import edu.tigers.sumatra.ai.metis.offense.action.RatedOffensiveAction;
 import edu.tigers.sumatra.ai.metis.offense.action.OffensiveActionViability;
 import edu.tigers.sumatra.ai.metis.pass.KickOrigin;
 import edu.tigers.sumatra.ai.metis.pass.rating.RatedPass;
@@ -14,6 +14,7 @@ import edu.tigers.sumatra.ids.BotID;
 import lombok.RequiredArgsConstructor;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Supplier;
 
 
@@ -51,14 +52,21 @@ public class ReceiveBallActionMove extends AOffensiveActionMove
 
 
 	@Override
-	public OffensiveAction calcAction(BotID botId)
+	public Optional<RatedOffensiveAction> calcAction(BotID botId)
 	{
 		var kickOrigin = kickOrigins.get().get(botId);
-		return OffensiveAction.builder()
-				.move(EOffensiveActionMove.RECEIVE_BALL)
-				.viability(calcViability(botId, kickOrigin))
-				.ballContactPos(kickOrigin == null ? null : kickOrigin.getPos())
-				.build();
+		if (kickOrigin == null)
+		{
+			return Optional.of(RatedOffensiveAction.buildReceive(
+					EOffensiveActionMove.RECEIVE_BALL,
+					calcViability(botId, null),
+					null));
+		}
+
+		return Optional.of(RatedOffensiveAction.buildReceive(
+				EOffensiveActionMove.RECEIVE_BALL,
+				calcViability(botId, kickOrigin),
+				kickOrigin.getPos()));
 	}
 
 

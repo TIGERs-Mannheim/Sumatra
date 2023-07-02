@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.integration;
@@ -8,13 +8,13 @@ import edu.tigers.sumatra.ai.AAgent;
 import edu.tigers.sumatra.ai.AIInfoFrame;
 import edu.tigers.sumatra.ai.IAIObserver;
 import edu.tigers.sumatra.ai.athena.EAIControlState;
+import edu.tigers.sumatra.ai.integration.blocker.AiSimTimeBlocker;
 import edu.tigers.sumatra.ai.metis.offense.action.moves.EOffensiveActionMove;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.ids.EAiTeam;
 import edu.tigers.sumatra.ids.ETeamColor;
 import edu.tigers.sumatra.model.SumatraModel;
 import edu.tigers.sumatra.referee.proto.SslGcRefereeMessage;
-import edu.tigers.sumatra.sim.SimulationHelper;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
 import lombok.Builder;
 import lombok.Value;
@@ -102,11 +102,11 @@ public class OffensiveGoalShotFullSimIntegrationTest extends AFullSimIntegration
 	@Test
 	public void testGoalKickActionIsSet()
 	{
-		var params = loadSimParamsFromSnapshot(testCaseParameters.snapShotPath)
+		var snapshot = readSnapshot(testCaseParameters.snapShotPath)
 				.toBuilder()
 				.command(SslGcRefereeMessage.Referee.Command.FORCE_START)
 				.build();
-		SimulationHelper.initSimulation(params);
+		initSimulation(snapshot);
 
 		defaultSimTimeBlocker(0.1)
 				.await();

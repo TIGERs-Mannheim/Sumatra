@@ -10,8 +10,8 @@ import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
 import edu.tigers.sumatra.drawable.DrawableBorderText;
 import edu.tigers.sumatra.drawable.DrawableRectangle;
 import edu.tigers.sumatra.geometry.Geometry;
-import edu.tigers.sumatra.geometry.IPenaltyArea;
 import edu.tigers.sumatra.ids.ETeamColor;
+import edu.tigers.sumatra.math.penaltyarea.IPenaltyArea;
 import edu.tigers.sumatra.math.vector.Vector2;
 import lombok.Getter;
 
@@ -113,6 +113,7 @@ public class BallResponsibilityCalc extends ACalculator
 
 	private boolean tooNearToOurPenAreaForIntercept()
 	{
-		return Geometry.getPenaltyAreaOur().isPointInShape(getBall().getPos(), minMarginToOurPenAreaForIntercept);
+		return Geometry.getPenaltyAreaOur().withMargin(minMarginToOurPenAreaForIntercept)
+				.isPointInShape(getBall().getPos());
 	}
 }

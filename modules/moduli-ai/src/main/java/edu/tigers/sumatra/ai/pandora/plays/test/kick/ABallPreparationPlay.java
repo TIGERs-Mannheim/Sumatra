@@ -30,7 +30,7 @@ public abstract class ABallPreparationPlay extends ABallPlacementPlay
 {
 	private final IdleState idleState = new IdleState();
 	protected final BallPlacementState ballPlacementState = new BallPlacementState();
-	protected final IStateMachine<IState> stateMachine = new StateMachine<>();
+	protected final IStateMachine<IState> stateMachine = new StateMachine<>(this.getClass().getSimpleName());
 
 	@Setter
 	private IVector2 ballTargetPos = Vector2.zero();

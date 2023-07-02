@@ -8,10 +8,10 @@ import com.github.g3force.configurable.Configurable;
 import edu.tigers.autoreferee.AutoRefUtil;
 import edu.tigers.autoreferee.generic.BotPosition;
 import edu.tigers.sumatra.geometry.Geometry;
-import edu.tigers.sumatra.geometry.IPenaltyArea;
 import edu.tigers.sumatra.geometry.NGeometry;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.ids.ETeamColor;
+import edu.tigers.sumatra.math.penaltyarea.IPenaltyArea;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.referee.data.EGameState;
 import edu.tigers.sumatra.referee.gameevent.AttackerTouchedBallInDefenseArea;
@@ -129,7 +129,7 @@ public class BotInDefenseAreaDetector extends AGameEventDetector
 		IPenaltyArea opponentPenArea = NGeometry.getPenaltyArea(curKickerColor.opposite());
 		IPenaltyArea ownPenArea = NGeometry.getPenaltyArea(curKickerColor);
 
-		if (opponentPenArea.isPointInShape(curKicker.getPos(), getPartialTouchMargin()))
+		if (opponentPenArea.withMargin(getPartialTouchMargin()).isPointInShape(curKicker.getPos()))
 		{
 			/*
 			 * Attacker touched the ball while being located partially/fully inside the opponent's penalty area
@@ -143,7 +143,7 @@ public class BotInDefenseAreaDetector extends AGameEventDetector
 		}
 		if (curKickerId != frame.getRefereeMsg().getKeeperBotID(curKickerColor)
 				&& !defenderIsPushed(curKickerId, curKicker.getPos())
-				&& ownPenArea.isPointInShape(curKicker.getPos(), -Geometry.getBotRadius()))
+				&& ownPenArea.withMargin(-Geometry.getBotRadius()).isPointInShape(curKicker.getPos()))
 		{
 			/*
 			 * Multiple Defender:

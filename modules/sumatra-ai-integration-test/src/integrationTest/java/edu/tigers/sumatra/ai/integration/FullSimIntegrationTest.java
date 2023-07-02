@@ -1,9 +1,11 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.integration;
 
+import edu.tigers.sumatra.ai.integration.blocker.AiSimTimeBlocker;
+import edu.tigers.sumatra.ai.integration.stopcondition.BotsNotMovingStopCondition;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.geometry.RuleConstraints;
 import edu.tigers.sumatra.ids.ETeamColor;
@@ -14,19 +16,12 @@ import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.referee.data.EGameState;
 import edu.tigers.sumatra.referee.gameevent.EGameEvent;
-import edu.tigers.sumatra.referee.gameevent.IGameEvent;
 import edu.tigers.sumatra.referee.proto.SslGcRefereeMessage.Referee.Command;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
-import edu.tigers.sumatra.wp.data.WorldFrameWrapper;
-import org.junit.Before;
 import org.junit.Test;
 
-import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -37,16 +32,6 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 public class FullSimIntegrationTest extends AFullSimIntegrationTest
 {
-	private final List<IGameEvent> gameEvents = new CopyOnWriteArrayList<>();
-
-
-	@Before
-	public void setup()
-	{
-		gameEvents.clear();
-	}
-
-
 	/**
 	 * Check if we can handle a force start: Robots should move, no rules should be violated. That's it.
 	 */
@@ -305,12 +290,13 @@ public class FullSimIntegrationTest extends AFullSimIntegrationTest
 	private void runBallPlacement(IVector2 source, IVector2 target)
 	{
 		initSimulation(new SnapshotGenerator()
-				.maintenance(ETeamColor.BLUE, 11)
-				.maintenance(ETeamColor.YELLOW, 11)
+				.maintenance(ETeamColor.BLUE, 6)
+				.maintenance(ETeamColor.YELLOW, 6)
 				.ballPos(source)
 				.snapshotBuilder()
 				.command(Command.STOP)
 				.placementPos(target)
+				.autoContinue(false)
 				.build());
 		defaultSimTimeBlocker(5)
 				.addStopCondition(new BotsNotMovingStopCondition(0.1))
@@ -337,69 +323,5 @@ public class FullSimIntegrationTest extends AFullSimIntegrationTest
 	{
 		return new AiSimTimeBlocker(maxDuration)
 				.addStopCondition(w -> stuck);
-	}
-
-
-	private void assertNoAvoidableViolations()
-	{
-		Set<EGameEvent> avoidableViolations = new HashSet<>();
-		avoidableViolations.add(EGameEvent.PLACEMENT_FAILED);
-
-		avoidableViolations.add(EGameEvent.KEEPER_HELD_BALL);
-		avoidableViolations.add(EGameEvent.ATTACKER_DOUBLE_TOUCHED_BALL);
-		avoidableViolations.add(EGameEvent.ATTACKER_TOUCHED_BALL_IN_DEFENSE_AREA);
-		avoidableViolations.add(EGameEvent.BOT_KICKED_BALL_TOO_FAST);
-
-		avoidableViolations.add(EGameEvent.ATTACKER_TOO_CLOSE_TO_DEFENSE_AREA);
-		avoidableViolations.add(EGameEvent.BOT_INTERFERED_PLACEMENT);
-		avoidableViolations.add(EGameEvent.BOT_CRASH_DRAWN);
-		avoidableViolations.add(EGameEvent.BOT_CRASH_UNIQUE);
-		avoidableViolations.add(EGameEvent.BOT_PUSHED_BOT);
-		avoidableViolations.add(EGameEvent.BOT_HELD_BALL_DELIBERATELY);
-		avoidableViolations.add(EGameEvent.BOT_TIPPED_OVER);
-		avoidableViolations.add(EGameEvent.BOT_TOO_FAST_IN_STOP);
-		avoidableViolations.add(EGameEvent.DEFENDER_TOO_CLOSE_TO_KICK_POINT);
-		avoidableViolations.add(EGameEvent.DEFENDER_IN_DEFENSE_AREA);
-
-		avoidableViolations.add(EGameEvent.MULTIPLE_CARDS);
-		avoidableViolations.add(EGameEvent.MULTIPLE_FOULS);
-
-		List<IGameEvent> avoidableGameEvents = gameEvents.stream()
-				.filter(e -> avoidableViolations.contains(e.getType()))
-				.collect(Collectors.toList());
-		assertThat(avoidableGameEvents).isEmpty();
-	}
-
-
-	private void assertGameEvent(EGameEvent gameEvent)
-	{
-		assertThat(gameEvents.stream().map(IGameEvent::getType)).contains(gameEvent);
-	}
-
-
-	private void assertNotGameEvent(EGameEvent gameEvent)
-	{
-		assertThat(gameEvents.stream().map(IGameEvent::getType)).doesNotContain(gameEvent);
-	}
-
-
-	private void assertGameState(EGameState gameState)
-	{
-		assertThat(lastWorldFrameWrapper.getGameState().getState()).isEqualTo(gameState);
-	}
-
-
-	@Override
-	public void onNewWorldFrame(final WorldFrameWrapper wFrameWrapper)
-	{
-		final ArrayList<IGameEvent> newGameEvents = new ArrayList<>(
-				wFrameWrapper.getRefereeMsg().getGameEvents());
-		if (lastRefereeMsg != null)
-		{
-			newGameEvents.removeAll(lastRefereeMsg.getGameEvents());
-		}
-		this.gameEvents.addAll(newGameEvents);
-
-		super.onNewWorldFrame(wFrameWrapper);
 	}
 }

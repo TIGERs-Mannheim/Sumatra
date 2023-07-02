@@ -20,8 +20,8 @@ import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.AngleMath;
 import edu.tigers.sumatra.math.circle.Arc;
 import edu.tigers.sumatra.math.circle.IArc;
-import edu.tigers.sumatra.math.line.v2.ILineSegment;
-import edu.tigers.sumatra.math.line.v2.Lines;
+import edu.tigers.sumatra.math.line.ILineSegment;
+import edu.tigers.sumatra.math.line.Lines;
 import edu.tigers.sumatra.math.vector.IVector;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
@@ -101,7 +101,7 @@ public class SupportBridgePositionCalc extends ACalculator
 		List<IArc> goalArcs = generateUncoveredArc(goal, maxShootDistance).stream()
 				.filter(a -> AngleMath.diffAbs(a.getStartAngle() + a.getRotation() / 2.,
 						passSender.subtractNew(a.center()).getAngle()) > AngleMath.deg2rad(minAngleToSightLine))
-				.collect(Collectors.toList());
+				.toList();
 
 		drawArcs(goalArcs);
 		return findAllPositions(passSenderArcs, goalArcs);
@@ -140,7 +140,7 @@ public class SupportBridgePositionCalc extends ACalculator
 		}
 		List<IVector2> offensives = getAiFrame().getPrevFrame().getPlayStrategy().getActiveRoles(EPlay.OFFENSIVE).stream()
 				.map(ARole::getPos)
-				.collect(Collectors.toList());
+				.toList();
 
 		PointChecker checker = new PointChecker()
 				.checkInsideField()
@@ -152,7 +152,7 @@ public class SupportBridgePositionCalc extends ACalculator
 		return bridgePositions.stream()
 				.filter(s -> checker.allMatch(getAiFrame(), s))
 				.filter(s -> s.distanceTo(passSenderArcs.get(0).center()) > minDistToOffensive)
-				.collect(Collectors.toUnmodifiableList());
+				.toList();
 	}
 
 
@@ -163,13 +163,13 @@ public class SupportBridgePositionCalc extends ACalculator
 						.addNew(Vector2.fromAngle(passReceiverArc.getStartAngle() + passReceiverArc.getRotation() / 2.)
 								.scaleTo(passReceiverArc.radius())));
 
-		Optional<IVector2> intersection = passReceiverMidLine.intersectSegment(passSenderMidLine);
+		Optional<IVector2> intersection = passReceiverMidLine.intersect(passSenderMidLine).asOptional();
 		if (intersection.isPresent())
 		{
 			if (Geometry.getPenaltyAreaTheir().isPointInShape(intersection.get()))
 			{
 				List<IVector2> intersections = Geometry.getPenaltyAreaTheir().withMargin(Geometry.getBotRadius() * 1.5)
-						.lineIntersections(passReceiverMidLine);
+						.intersectPerimeterPath(passReceiverMidLine);
 
 				return intersections.stream().min(Comparator.comparingDouble(IVector::x));
 
@@ -177,14 +177,14 @@ public class SupportBridgePositionCalc extends ACalculator
 			return intersection;
 		} else
 		{
-			List<IVector2> intersections = passReceiverArc.lineIntersections(passSenderMidLine);
+			List<IVector2> intersections = passReceiverArc.intersectPerimeterPath(passSenderMidLine);
 			if (!intersections.isEmpty())
 			{
 				IVector2 firstIntersection = intersections.get(0);
 				if (intersections.size() == 2 && passReceiverArc.getRotation() < Math.PI)
 				{
 					IVector2 secondIntersection = intersections.get(1);
-					return Optional.of(Lines.segmentFromPoints(firstIntersection, secondIntersection).getCenter());
+					return Optional.of(Lines.segmentFromPoints(firstIntersection, secondIntersection).getPathCenter());
 				}
 
 			}
@@ -221,7 +221,7 @@ public class SupportBridgePositionCalc extends ACalculator
 				.map(this::splitArc)
 				.flatMap(Collection::stream)
 				.filter(a -> a.getRotation() > AngleMath.deg2rad(minArcWidth))
-				.collect(Collectors.toUnmodifiableList());
+				.toList();
 	}
 
 

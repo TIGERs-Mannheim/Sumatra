@@ -21,9 +21,9 @@ import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.AngleMath;
 import edu.tigers.sumatra.math.circle.Circle;
 import edu.tigers.sumatra.math.circle.ICircle;
-import edu.tigers.sumatra.math.line.v2.ILineSegment;
-import edu.tigers.sumatra.math.line.v2.LineMath;
-import edu.tigers.sumatra.math.line.v2.Lines;
+import edu.tigers.sumatra.math.line.ILineSegment;
+import edu.tigers.sumatra.math.line.LineMath;
+import edu.tigers.sumatra.math.line.Lines;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
@@ -42,7 +42,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Random;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 import static edu.tigers.sumatra.pathfinder.TrajectoryGenerator.generatePositionTrajectory;
 
@@ -79,11 +78,9 @@ public class KeeperPassTargetCalc extends ACalculator
 
 
 	private final PassFactory passFactory = new PassFactory();
-	private SlackBot lastPassTarget;
-
 	private final Supplier<Map<KickOrigin, RatedPass>> selectedPasses;
 	private final Supplier<BotDistance> opponentClosestToBall;
-
+	private SlackBot lastPassTarget;
 	@Getter
 	private Pass keeperPass;
 
@@ -115,7 +112,7 @@ public class KeeperPassTargetCalc extends ACalculator
 		var ratedTargets = generateTargets().stream()
 				.map(this::findFastestTiger)
 				.filter(Objects::nonNull)
-				.collect(Collectors.toList());
+				.toList();
 		lastPassTarget = ratedTargets.stream()
 				.max(Comparator.comparing(s -> s.slackTime))
 				.filter(p -> lastBestTarget.map(t -> p.slackTime > t.slackTime + hysteresis).orElse(true))
@@ -201,8 +198,7 @@ public class KeeperPassTargetCalc extends ACalculator
 		{
 			shapes.add(new DrawableCircle(Circle.createCircle(lastPassTarget.target, 50), Color.green).setFill(true));
 			shapes.add(new DrawableAnnotation(lastPassTarget.target, String.format("%.5f", lastPassTarget.slackTime)));
-			shapes.add(new DrawableLine(Lines.segmentFromPoints(lastPassTarget.target, lastPassTarget.bot.getPos()),
-					Color.green));
+			shapes.add(new DrawableLine(lastPassTarget.target, lastPassTarget.bot.getPos(), Color.green));
 		}
 
 		for (var slackBot : targetPoints)
@@ -249,7 +245,8 @@ public class KeeperPassTargetCalc extends ACalculator
 
 	private boolean isBallInPenaltyArea(final double getBallPenaltyAreaMargin)
 	{
-		return Geometry.getPenaltyAreaOur().getRectangle().isPointInShape(getBall().getPos(), getBallPenaltyAreaMargin);
+		return Geometry.getPenaltyAreaOur().getRectangle().withMargin(getBallPenaltyAreaMargin)
+				.isPointInShape(getBall().getPos());
 	}
 
 
@@ -296,9 +293,9 @@ public class KeeperPassTargetCalc extends ACalculator
 		{
 			ILineSegment testLine = Lines.segmentFromPoints(goalLinePos, closestOpponentKicker);
 			boolean lineBlocked = getWFrame().getTigerBotsAvailable().values().stream()
-					.filter(bot -> bot.getBotId() != getAiFrame().getKeeperId())
+					.filter(bot -> !bot.getBotId().equals(getAiFrame().getKeeperId()))
 					.anyMatch(bot -> Circle.createCircle(bot.getPos(), Geometry.getBotRadius() + 5)
-							.isIntersectingWithLine(testLine));
+							.isIntersectingWithPath(testLine));
 
 			getAiFrame().getShapeMap().get(EAiShapesLayer.AI_KEEPER)
 					.add(new DrawableLine(testLine, lineBlocked ? Color.GREEN : Color.RED).setStrokeWidth(1));

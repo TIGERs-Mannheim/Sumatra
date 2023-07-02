@@ -9,7 +9,7 @@ import com.github.g3force.configurable.Configurable;
 import edu.tigers.sumatra.botmanager.botskills.data.EKickerDevice;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.geometry.RuleConstraints;
-import edu.tigers.sumatra.math.line.v2.Lines;
+import edu.tigers.sumatra.math.line.Lines;
 import edu.tigers.sumatra.math.quadrilateral.IQuadrilateral;
 import edu.tigers.sumatra.math.quadrilateral.Quadrilateral;
 import edu.tigers.sumatra.math.vector.IVector2;
@@ -50,7 +50,10 @@ public class ChipKickFactory
 
 	public boolean reasonable(Pass chipPass, Collection<ITrackedBot> bots)
 	{
-		assert chipPass.getKick().getKickParams().getDevice() == EKickerDevice.CHIP;
+		if (chipPass.getKick().getKickParams().getDevice() != EKickerDevice.CHIP)
+		{
+			throw new IllegalStateException();
+		}
 		var dir = chipPass.getKick().getTarget().subtractNew(chipPass.getKick().getSource()).getAngle();
 		var kickVel = speedToVel(dir, chipPass.getKick().getKickParams().getKickSpeed());
 		return reasonable(chipPass.getKick().getSource(), kickVel, bots);
@@ -122,6 +125,6 @@ public class ChipKickFactory
 	{
 		return quad.isPointInShape(p1)
 				|| quad.isPointInShape(p2)
-				|| quad.isIntersectingWithLine(Lines.segmentFromPoints(p1, p2));
+				|| quad.isIntersectingWithPath(Lines.segmentFromPoints(p1, p2));
 	}
 }

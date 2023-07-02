@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.pandora.roles.defense;
@@ -31,15 +31,15 @@ public class Man2ManMarkerRole extends AOuterDefenseRole
 	@Override
 	protected Set<BotID> ignoredBots(IVector2 dest)
 	{
-		return closeOpponentBots(dest);
+		return Set.of();
 	}
 
 
 	@Override
 	protected IVector2 findDest()
 	{
-		return man2ManMarkerPositionFinder.findMan2ManMarkerPosition(getWFrame().getBots(), getBotID(), threat);
+		return mimicThreatVelocity(
+				man2ManMarkerPositionFinder.findMan2ManMarkerPosition(getWFrame().getBots(), getBotID(), threat)
+		);
 	}
-
-
 }

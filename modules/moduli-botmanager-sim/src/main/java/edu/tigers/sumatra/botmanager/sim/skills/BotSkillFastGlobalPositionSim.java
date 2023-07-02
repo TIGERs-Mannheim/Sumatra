@@ -33,12 +33,12 @@ public class BotSkillFastGlobalPositionSim implements IBotSkillSim
 	@Override
 	public BotSkillOutput execute(final BotSkillInput input)
 	{
-		BotSkillFastGlobalPosition skill = (BotSkillFastGlobalPosition) input.getSkill();
+		BotSkillFastGlobalPosition skill = (BotSkillFastGlobalPosition) input.skill();
 
 		Vector3 targetPos = Vector3.from2d(skill.getPos(), 0);
 
-		double distToTarget = input.getState().getPose().getPos().distanceTo(skill.getPos()) * 1e-3;
-		double trajVelAbs = input.getState().getVel().getLength2() * 1e-3;
+		double distToTarget = input.state().getPose().getPos().distanceTo(skill.getPos()) * 1e-3;
+		double trajVelAbs = input.state().getVel().getLength2() * 1e-3;
 
 		EDriveMode driveModeZ;
 		double localVelZ = 0;
@@ -58,12 +58,12 @@ public class BotSkillFastGlobalPositionSim implements IBotSkillSim
 				driveModeZ = EDriveMode.LOCAL_VEL;
 			} else
 			{
-				IVector2 trajVelGlobal = input.getState().getVel().getXYVector();
+				IVector2 trajVelGlobal = input.state().getVel().getXYVector();
 
 				double velOrient = Math.atan2(trajVelGlobal.y(), trajVelGlobal.x());
 				double targetOrient = velOrient + Math.PI; // assume going backward first
 				double orientDiff = AngleMath
-						.normalizeAngle(targetOrient - AngleMath.normalizeAngle(input.getState().getPose().getOrientation()));
+						.normalizeAngle(targetOrient - AngleMath.normalizeAngle(input.state().getPose().getOrientation()));
 
 				if ((Math.abs(orientDiff) > AngleMath.PI_HALF) && !backwardOnly)
 				{
@@ -72,7 +72,7 @@ public class BotSkillFastGlobalPositionSim implements IBotSkillSim
 					targetOrient = AngleMath.normalizeAngle(targetOrient);
 					orientDiff = AngleMath
 							.normalizeAngle(
-									targetOrient - AngleMath.normalizeAngle(input.getState().getPose().getOrientation()));
+									targetOrient - AngleMath.normalizeAngle(input.state().getPose().getOrientation()));
 				}
 
 				if ((Math.abs(orientDiff) < 0.1) && !fastPosMode)
@@ -102,7 +102,7 @@ public class BotSkillFastGlobalPositionSim implements IBotSkillSim
 				.kickMode(skill.getMode())
 				.kickSpeed(skill.getKickSpeed())
 				.dribblerRPM(skill.getDribbleSpeed())
-				.strictVelocityLimit(input.isStrictVelocityLimit())
+				.strictVelocityLimit(input.strictVelocityLimit())
 				.build();
 	}
 }

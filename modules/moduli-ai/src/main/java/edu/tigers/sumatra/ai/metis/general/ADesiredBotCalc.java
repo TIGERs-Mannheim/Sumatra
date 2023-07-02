@@ -79,7 +79,7 @@ public abstract class ADesiredBotCalc extends ACalculator
 	 */
 	protected boolean isAssignable(BotID botID)
 	{
-		return getUnassignedBots().stream().anyMatch(b -> b == botID);
+		return getUnassignedBots().stream().anyMatch(b -> b.equals(botID));
 	}
 
 

@@ -1,13 +1,13 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.skillsystem.skills;
 
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.geometry.Goal;
-import edu.tigers.sumatra.math.vector.IVector2;
-import edu.tigers.sumatra.math.vector.Vector2;
+import edu.tigers.sumatra.math.triangle.TriangleMath;
+import edu.tigers.sumatra.pathfinder.TrajectoryGenerator;
 
 
 public class RamboKeeperSkill extends AMoveToSkill
@@ -28,12 +28,18 @@ public class RamboKeeperSkill extends AMoveToSkill
 	public void doUpdate()
 	{
 		Goal goal = Geometry.getGoalOur();
-		IVector2 ballPosition = getBall().getPos();
-		final IVector2 directionLeftPostGoal = Vector2.fromPoints(ballPosition, goal.getLeftPost());
-		final IVector2 directionRightPostGoal = Vector2.fromPoints(ballPosition, goal.getRightPost());
-		final IVector2 direction = directionLeftPostGoal.normalizeNew().addNew(directionRightPostGoal.normalizeNew());
+		var ballPosition = getBall().getPos();
+		var defPoint = TriangleMath.bisector(ballPosition, goal.getLeftPost(), goal.getRightPost());
+		var direction = ballPosition.subtractNew(defPoint);
 
-		updateDestination(getBall().getPos());
+		var destination = TrajectoryGenerator.generateVirtualPositionToReachPointInTime(
+				getTBot(),
+				getMoveConstraints(),
+				ballPosition,
+				0.0
+		);
+
+		updateDestination(destination);
 		updateLookAtTarget(getBall());
 		getMoveConstraints().setPrimaryDirection(direction); // first move between goalLine
 

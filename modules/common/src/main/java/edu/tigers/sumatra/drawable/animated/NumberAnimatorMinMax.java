@@ -15,8 +15,8 @@ import com.sleepycat.persist.model.Persistent;
 @Persistent
 public class NumberAnimatorMinMax implements INumberAnimator
 {
-	private final float min;
-	private final float max;
+	private final double min;
+	private final double max;
 	private final IAnimationTimer timer;
 	
 	
@@ -34,7 +34,7 @@ public class NumberAnimatorMinMax implements INumberAnimator
 	 * @param max
 	 * @param timer
 	 */
-	public NumberAnimatorMinMax(final float min, final float max, final IAnimationTimer timer)
+	public NumberAnimatorMinMax(final double min, final double max, final IAnimationTimer timer)
 	{
 		this.min = min;
 		this.max = max;
@@ -43,9 +43,9 @@ public class NumberAnimatorMinMax implements INumberAnimator
 	
 	
 	@Override
-	public float getNumber()
+	public double getNumber()
 	{
-		float counterValue = timer.getTimerValue();
+		double counterValue = timer.getTimerValue();
 		
 		return ((1.0f - counterValue) * min) + (counterValue * max);
 	}

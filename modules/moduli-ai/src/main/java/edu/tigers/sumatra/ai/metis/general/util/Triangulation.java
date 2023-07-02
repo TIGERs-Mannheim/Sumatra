@@ -6,10 +6,11 @@ package edu.tigers.sumatra.ai.metis.general.util;
 
 import edu.tigers.sumatra.math.circle.Circle;
 import edu.tigers.sumatra.math.circle.ICircle;
-import edu.tigers.sumatra.math.line.v2.Lines;
+import edu.tigers.sumatra.math.line.Lines;
 import edu.tigers.sumatra.math.triangle.ITriangle;
 import edu.tigers.sumatra.math.triangle.Triangle;
 import edu.tigers.sumatra.math.vector.IVector2;
+import lombok.EqualsAndHashCode;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -36,13 +37,12 @@ import java.util.Set;
  *         the Graph class internally. Tried to make the DT algorithm clearer by
  *         explicitly creating a cavity. Added code needed to find a Voronoi cell.
  */
+@EqualsAndHashCode(callSuper = true)
 public class Triangulation extends AbstractSet<ITriangle>
 {
-
+	private static Logger logger = LogManager.getLogger(Triangulation.class);
 	private ITriangle mostRecent; // Most recently "active" triangle
 	private Graph<ITriangle> triGraph; // Holds triangles for navigation
-
-	private static Logger logger = LogManager.getLogger(Triangulation.class);
 
 
 	/**
@@ -59,6 +59,7 @@ public class Triangulation extends AbstractSet<ITriangle>
 
 
 	/* The following two methods are required by AbstractSet */
+
 
 	@Override
 	public Iterator<ITriangle> iterator()
@@ -97,7 +98,7 @@ public class Triangulation extends AbstractSet<ITriangle>
 	/**
 	 * Report neighbor opposite the given vertex of triangle.
 	 *
-	 * @param site a vertex of triangle
+	 * @param site     a vertex of triangle
 	 * @param triangle we want the neighbor of this triangle
 	 * @return the neighbor opposite site in triangle; null if none
 	 * @throws IllegalArgumentException if site is not in this triangle
@@ -158,13 +159,13 @@ public class Triangulation extends AbstractSet<ITriangle>
 			// Corner opposite point
 
 			Optional<IVector2> lineA = Lines.lineFromPoints(triangle.getC(), triangle.getB())
-					.intersectSegment(Lines.segmentFromPoints(triangle.getA(), point));
+					.intersect(Lines.segmentFromPoints(triangle.getA(), point)).asOptional();
 
 			Optional<IVector2> lineB = Lines.lineFromPoints(triangle.getC(), triangle.getA())
-					.intersectSegment(Lines.segmentFromPoints(triangle.getB(), point));
+					.intersect(Lines.segmentFromPoints(triangle.getB(), point)).asOptional();
 
 			Optional<IVector2> lineC = Lines.lineFromPoints(triangle.getA(), triangle.getB())
-					.intersectSegment(Lines.segmentFromPoints(triangle.getC(), point));
+					.intersect(Lines.segmentFromPoints(triangle.getC(), point)).asOptional();
 			if (lineA.isPresent())
 			{
 				triangle = this.neighborOpposite(triangle.getA(), triangle);
@@ -217,7 +218,7 @@ public class Triangulation extends AbstractSet<ITriangle>
 	/**
 	 * Determine the cavity caused by site.
 	 *
-	 * @param site the site causing the cavity
+	 * @param site     the site causing the cavity
 	 * @param triangle the triangle containing site
 	 * @return set of all triangles that have site in their circumcircle
 	 */
@@ -252,7 +253,7 @@ public class Triangulation extends AbstractSet<ITriangle>
 	 * Update the triangulation by removing the cavity triangles and then
 	 * filling the cavity with new triangles.
 	 *
-	 * @param site the site that created the cavity
+	 * @param site   the site that created the cavity
 	 * @param cavity the triangles with site in their circumcircle
 	 * @return one of the new triangles
 	 */

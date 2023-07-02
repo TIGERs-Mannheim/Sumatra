@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.pandora.plays.standard;
@@ -11,7 +11,7 @@ import edu.tigers.sumatra.ai.pandora.roles.move.MoveRole;
 import edu.tigers.sumatra.ai.pandora.roles.placement.BallPlacementRole;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.BotID;
-import edu.tigers.sumatra.math.line.v2.LineMath;
+import edu.tigers.sumatra.math.line.LineMath;
 import edu.tigers.sumatra.math.vector.IVector2;
 
 import java.util.Comparator;
@@ -94,7 +94,8 @@ public abstract class ABallPlacementPlay extends APlay
 
 	protected final boolean ballPlacementDone()
 	{
-		return findRoles(BallPlacementRole.class).stream().allMatch(BallPlacementRole::isBallPlacedAndCleared);
+		return !getRoles().isEmpty() && findRoles(BallPlacementRole.class).stream()
+				.allMatch(BallPlacementRole::isBallPlacedAndCleared);
 	}
 
 

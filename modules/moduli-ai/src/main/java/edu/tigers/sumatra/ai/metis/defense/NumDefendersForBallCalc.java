@@ -9,7 +9,9 @@ import edu.tigers.sumatra.ai.metis.ACalculator;
 import edu.tigers.sumatra.ai.metis.ballresponsibility.EBallResponsibility;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.math.Hysteresis;
+import edu.tigers.sumatra.math.line.Lines;
 import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.referee.data.EGameState;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -37,9 +39,6 @@ public class NumDefendersForBallCalc extends ACalculator
 	private static double angleThresholdZeroCrucialDefenderLower = 1.45;
 	@Configurable(comment = "Boundary for reducing to zero crucial defenders", defValue = "1.5")
 	private static double angleThresholdZeroCrucialDefenderUpper = 1.5;
-
-	@Configurable(comment = "Degrade one crucial defender to a standard defender during indirect for them", defValue = "true")
-	private static boolean onlyOneCrucialDuringIndirect = true;
 
 	@Configurable(comment = "Max number of defenders for covering the ball", defValue = "2")
 	private static int maxDefendersForBallThreat = 2;
@@ -83,6 +82,11 @@ public class NumDefendersForBallCalc extends ACalculator
 		final IVector2 ballPos = getBall().getTrajectory().getPosByTime(0.1).getXYVector();
 		int numBotsForBall = maxDefendersForBallThreat;
 
+		if (needToPrepareForDirectFreeThem())
+		{
+			numBotsForBall = Math.min(getBallDefenderForFreeKick(), 2 * maxDefendersForBallThreat);
+		}
+
 		if (!isBallInOurHalf())
 		{
 			numBotsForBall = Math.min(1, numBotsForBall);
@@ -108,11 +112,6 @@ public class NumDefendersForBallCalc extends ACalculator
 			numBotsForBall = Math.min(1, numBotsForBall);
 		}
 
-		if (onlyOneCrucialDuringIndirect && getAiFrame().getGameState().isIndirectFreeForThem())
-		{
-			numBotsForBall = Math.min(1, numBotsForBall);
-		}
-
 		if (ballResponsibility.get() == EBallResponsibility.DEFENSE)
 		{
 			numBotsForBall = Math.max(minDefendersForBallThreatWhenBallResponsibilityDefense, numBotsForBall);
@@ -129,5 +128,43 @@ public class NumDefendersForBallCalc extends ACalculator
 		ballXValueHysteresis.setLowerThreshold(minXValueForBallLower);
 		ballXValueHysteresis.update(ballXPos);
 		return ballXValueHysteresis.isLower();
+	}
+
+
+	private boolean needToPrepareForDirectFreeThem()
+	{
+		var gameState = getAiFrame().getGameState();
+		if (gameState.isFreeKickForThem())
+		{
+			return true;
+		}
+		if (gameState.isNextGameStateForUs() || gameState.isGameRunning())
+		{
+			return false;
+		}
+
+		return gameState.getNextState() == EGameState.DIRECT_FREE;
+	}
+
+
+	private int getBallDefenderForFreeKick()
+	{
+		var ballPos = getAiFrame().getGameState().isBallPlacement() ?
+				getAiFrame().getGameState().getBallPlacementPosition() :
+				getBall().getPos();
+
+		var ballLeftPost = Lines.segmentFromPoints(ballPos, Geometry.getGoalOur().getLeftPost());
+		var ballRightPost = Lines.segmentFromPoints(ballPos, Geometry.getGoalOur().getRightPost());
+
+		var penArea = Geometry.getPenaltyAreaOur().withMargin(Geometry.getBotRadius() * 2);
+		var defPosLeft = penArea.intersectPerimeterPath(ballLeftPost).stream().findAny();
+		var defPosRight = penArea.intersectPerimeterPath(ballRightPost).stream().findAny();
+
+		if (defPosLeft.isEmpty() || defPosRight.isEmpty())
+		{
+			return maxDefendersForBallThreat;
+		}
+		var distance = defPosRight.get().distanceTo(defPosLeft.get());
+		return (int) Math.ceil(distance / (2 * Geometry.getBotRadius()));
 	}
 }

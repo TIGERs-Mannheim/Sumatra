@@ -4,7 +4,12 @@
 
 package edu.tigers.sumatra.math.circle;
 
-import edu.tigers.sumatra.math.line.Line;
+import edu.tigers.sumatra.math.AngleMath;
+import edu.tigers.sumatra.math.I2DShapeComplianceChecker;
+import edu.tigers.sumatra.math.IBoundedPath;
+import edu.tigers.sumatra.math.IBoundedPathComplianceChecker;
+import edu.tigers.sumatra.math.line.ILine;
+import edu.tigers.sumatra.math.line.Lines;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.math.vector.Vector2f;
@@ -20,6 +25,7 @@ import java.util.Random;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.within;
 
 
 /**
@@ -44,16 +50,16 @@ public class CircleTest
 	{
 		// Test true
 		ICircle circle = Circle.createCircle(Vector2.fromXY(1, 1), 1);
-		Line line = Line.fromDirection(Vector2.fromXY(0, 0), Vector2.fromXY(1, 1));
-		Assert.assertTrue(circle.isIntersectingWithLine(line));
+		ILine line1 = Lines.lineFromDirection(Vector2.fromXY(0, 0), Vector2.fromXY(1, 1));
+		Assert.assertTrue(circle.isIntersectingWithPath(line1));
 
 		// Test true2
-		Line line3 = Line.fromDirection(Vector2.fromXY(-1, 1), Vector2.fromXY(1, 0));
-		Assert.assertTrue(circle.isIntersectingWithLine(line3));
+		ILine line2 = Lines.lineFromDirection(Vector2.fromXY(-1, 1), Vector2.fromXY(1, 0));
+		Assert.assertTrue(circle.isIntersectingWithPath(line2));
 
 		// Test false
-		Line line2 = Line.fromDirection(Vector2f.ZERO_VECTOR, Vector2.fromXY(-1, 1));
-		Assert.assertFalse(circle.isIntersectingWithLine(line2));
+		ILine line3 = Lines.lineFromDirection(Vector2f.ZERO_VECTOR, Vector2.fromXY(-1, 1));
+		Assert.assertFalse(circle.isIntersectingWithPath(line3));
 	}
 
 
@@ -67,34 +73,15 @@ public class CircleTest
 	{
 		// Test 1
 		ICircle circle = Circle.createCircle(Vector2.fromXY(1, 1), 1);
-		Line line = Line.fromDirection(Vector2f.ZERO_VECTOR, Vector2.fromXY(-1, 1));
-		Assert.assertEquals(0, circle.lineIntersections(line).size());
+		ILine line1 = Lines.lineFromDirection(Vector2f.ZERO_VECTOR, Vector2.fromXY(-1, 1));
+		Assert.assertEquals(0, circle.intersectPerimeterPath(line1).size());
 
 		// Test 2
-		Line line2 = Line.fromDirection(Vector2.fromXY(-1, 1), Vector2.fromXY(1, 0));
-		List<IVector2> result = circle.lineIntersections(line2);
+		ILine line2 = Lines.lineFromDirection(Vector2.fromXY(-1, 1), Vector2.fromXY(1, 0));
+		List<IVector2> result = circle.intersectPerimeterPath(line2);
 		Assert.assertTrue(
 				(result.get(0).x() == 2) && (result.get(0).y() == 1) && (result.get(1).x() == 0) && (result.get(1).y()
 						== 1));
-	}
-
-
-	/**
-	 * Testmethod for Circle#nearestPointOutsideCircle.
-	 *
-	 * @author Dion
-	 */
-	@Test
-	public void testNearestPointOutside()
-	{
-		// Test true
-		ICircle circle = Circle.createCircle(Vector2.fromXY(-2, 4), 3);
-		Vector2 point = Vector2.fromXY(-1, 4);
-		Assert.assertEquals(circle.nearestPointOutside(point), Vector2.fromXY(1, 4));
-
-		// Test false
-		Vector2 point3 = Vector2.fromXY(1, 2);
-		Assert.assertEquals(circle.nearestPointOutside(point3), Vector2.fromXY(1, 2));
 	}
 
 
@@ -221,7 +208,7 @@ public class CircleTest
 							StreamUtil.nonRepeatingPermutation3Fold(points)).map(Circle::fromNPoints)
 					.filter(Optional::isPresent)
 					.map(Optional::get)
-					.filter(c -> points.stream().allMatch(p -> c.isPointInShape(p, 1e-10)))
+					.filter(c -> points.stream().allMatch(p -> c.withMargin(1e-10).isPointInShape(p)))
 					.min(Comparator.comparing(ICircle::radius));
 
 			Assert.assertTrue(hullSlow.isPresent());
@@ -232,7 +219,270 @@ public class CircleTest
 			Assert.assertEquals(hullSlow.get().radius(), hullFast.get().radius(), 1e-10);
 
 			ICircle hullFastNonOpt = hullFast.orElseThrow(AssertionError::new);
-			assertThat(points).allMatch(p -> hullFastNonOpt.isPointInShape(p, 1e-10));
+			assertThat(points).allMatch(p -> hullFastNonOpt.withMargin(1e-10).isPointInShape(p));
+		}
+	}
+
+
+	@Test
+	public void testIsPointInShape()
+	{
+		var circle = Circle.createCircle(Vector2.fromX(2), 1);
+		assertThat(circle.isPointInShape(Vector2.fromXY(2, 0))).isTrue();
+		assertThat(circle.isPointInShape(Vector2.fromXY(3, 0))).isTrue();
+		assertThat(circle.isPointInShape(Vector2.fromXY(1, 0))).isTrue();
+		assertThat(circle.isPointInShape(Vector2.fromXY(2, 1))).isTrue();
+		assertThat(circle.isPointInShape(Vector2.fromXY(2, -1))).isTrue();
+
+		assertThat(circle.isPointInShape(Vector2.fromXY(3.001, 0))).isFalse();
+		assertThat(circle.isPointInShape(Vector2.fromXY(0.999, 0))).isFalse();
+		assertThat(circle.isPointInShape(Vector2.fromXY(2, 1.001))).isFalse();
+		assertThat(circle.isPointInShape(Vector2.fromXY(2, -1.001))).isFalse();
+	}
+
+
+	@Test
+	public void testWithMargin()
+	{
+		var circle = Circle.createCircle(Vector2f.fromY(3), 2);
+		var withMargin = circle.withMargin(-0.1);
+		assertThat(withMargin.center()).isEqualTo(circle.center());
+		assertThat(withMargin.radius()).isCloseTo(1.9, within(1e-6));
+		withMargin = circle.withMargin(0.1);
+		assertThat(withMargin.center()).isEqualTo(circle.center());
+		assertThat(withMargin.radius()).isCloseTo(2.1, within(1e-10));
+	}
+
+
+	@Test
+	public void testGetPerimeterPath()
+	{
+		var circle = Circle.createCircle(Vector2f.ZERO_VECTOR, 1);
+		assertThat(circle.getPerimeterPath()).containsExactly(circle);
+	}
+
+
+	@Test
+	public void testPerimeterPathOrder()
+	{
+		var perimeter = Circle.createCircle(Vector2.zero(), 1).getPerimeterPath();
+		IBoundedPath lastPath = null;
+		for (var p : perimeter)
+		{
+			if (lastPath != null)
+			{
+				assertThat(p.getPathStart()).isEqualTo(p.getPathStart());
+			}
+			lastPath = p;
+		}
+	}
+
+
+	@Test
+	public void testPointsAroundPerimeter()
+	{
+		var circle = Circle.createCircle(Vector2.fromX(2), 1);
+		assertThat(circle.nearestPointInside(circle.center())).isEqualTo(circle.center());
+		assertThat(circle.nearestPointOnPerimeterPath(circle.center())).isEqualTo(Vector2.fromX(3));
+		assertThat(circle.nearestPointOutside(circle.center())).isEqualTo(Vector2.fromX(3));
+
+		var segments = List.of(
+				Lines.segmentFromPoints(Vector2.fromXY(2.999, 0), Vector2.fromXY(3.001, 0)),
+				Lines.segmentFromPoints(Vector2.fromXY(1.001, 0), Vector2.fromXY(0.999, 0)),
+				Lines.segmentFromPoints(Vector2.fromXY(2, 0.999), Vector2.fromXY(2, 1.001)),
+				Lines.segmentFromPoints(Vector2.fromXY(2, -0.999), Vector2.fromXY(2, -1.001))
+		);
+
+		for (var segment : segments)
+		{
+			assertThat(circle.nearestPointInside(segment.getPathStart())).isEqualTo(segment.getPathStart());
+			assertThat(circle.nearestPointInside(segment.getPathCenter())).isEqualTo(segment.getPathCenter());
+			assertThat(circle.nearestPointInside(segment.getPathEnd())).isEqualTo(segment.getPathCenter());
+
+			assertThat(circle.nearestPointOutside(segment.getPathStart())).isEqualTo(segment.getPathCenter());
+			assertThat(circle.nearestPointOutside(segment.getPathCenter())).isEqualTo(segment.getPathCenter());
+			assertThat(circle.nearestPointOutside(segment.getPathEnd())).isEqualTo(segment.getPathEnd());
+
+			assertThat(circle.nearestPointOnPerimeterPath(segment.getPathStart())).isEqualTo(segment.getPathCenter());
+			assertThat(circle.nearestPointOnPerimeterPath(segment.getPathCenter())).isEqualTo(segment.getPathCenter());
+			assertThat(circle.nearestPointOnPerimeterPath(segment.getPathEnd())).isEqualTo(segment.getPathCenter());
+
+			assertThat(circle.closestPointOnPath(segment.getPathStart())).isEqualTo(segment.getPathCenter());
+			assertThat(circle.closestPointOnPath(segment.getPathCenter())).isEqualTo(segment.getPathCenter());
+			assertThat(circle.closestPointOnPath(segment.getPathEnd())).isEqualTo(segment.getPathCenter());
+
+			assertThat(circle.distanceTo(segment.getPathStart())).isCloseTo(0.001, within(1e-10));
+			assertThat(circle.distanceTo(segment.getPathCenter())).isCloseTo(0, within(1e-10));
+			assertThat(circle.distanceTo(segment.getPathEnd())).isCloseTo(0.001, within(1e-10));
+
+			assertThat(circle.distanceToSqr(segment.getPathStart())).isCloseTo(0.000001, within(1e-10));
+			assertThat(circle.distanceToSqr(segment.getPathCenter())).isCloseTo(0, within(1e-10));
+			assertThat(circle.distanceToSqr(segment.getPathEnd())).isCloseTo(0.000001, within(1e-10));
+
+			assertThat(circle.isPointOnPath(segment.getPathStart())).isFalse();
+			assertThat(circle.isPointOnPath(segment.getPathCenter())).isTrue();
+			assertThat(circle.isPointOnPath(segment.getPathEnd())).isFalse();
+		}
+	}
+
+
+	@Test
+	public void testIntersectPerimeterPathLine()
+	{
+		// Data generated with GeoGebra
+		var circle = Circle.createCircle(Vector2f.ZERO_VECTOR, 1);
+
+		var path = Lines.lineFromPoints(Vector2.fromXY(-1, -1), Vector2.fromXY(1, 1));
+		assertThat(circle.intersectPerimeterPath(path)).containsExactlyInAnyOrder(
+				Vector2.fromXY(0.70711, 0.70711),
+				Vector2.fromXY(-0.70711, -0.70711)
+		);
+	}
+
+
+	@Test
+	public void testIntersectPerimeterPathHalfLine()
+	{
+		// Data generated with GeoGebra
+		var circle = Circle.createCircle(Vector2f.ZERO_VECTOR, 1);
+
+		var path = Lines.halfLineFromPoints(Vector2.fromXY(-1, -1), Vector2.fromXY(1, 1));
+		assertThat(circle.intersectPerimeterPath(path)).containsExactlyInAnyOrder(
+				Vector2.fromXY(0.70711, 0.70711),
+				Vector2.fromXY(-0.70711, -0.70711)
+		);
+		path = Lines.halfLineFromPoints(Vector2f.ZERO_VECTOR, Vector2.fromXY(1, 1));
+		assertThat(circle.intersectPerimeterPath(path)).containsExactlyInAnyOrder(
+				Vector2.fromXY(0.70711, 0.70711)
+		);
+	}
+
+
+	@Test
+	public void testIntersectPerimeterPathLineSegment()
+	{
+		// Data generated with GeoGebra
+		var circle = Circle.createCircle(Vector2f.ZERO_VECTOR, 1);
+
+		var path = Lines.segmentFromPoints(Vector2.fromXY(-1, -1), Vector2.fromXY(1, 1));
+		assertThat(circle.intersectPerimeterPath(path)).containsExactlyInAnyOrder(
+				Vector2.fromXY(0.70711, 0.70711),
+				Vector2.fromXY(-0.70711, -0.70711)
+		);
+		path = Lines.segmentFromPoints(Vector2f.ZERO_VECTOR, Vector2.fromXY(1, 1));
+		assertThat(circle.intersectPerimeterPath(path)).containsExactlyInAnyOrder(
+				Vector2.fromXY(0.70711, 0.70711)
+		);
+		path = Lines.segmentFromPoints(Vector2f.ZERO_VECTOR, Vector2.fromXY(0.5, 0.5));
+		assertThat(circle.intersectPerimeterPath(path)).isEmpty();
+
+	}
+
+
+	@Test
+	public void testIntersectPerimeterPathCircle()
+	{
+		// Data generated with GeoGebra
+		var circle1 = Circle.createCircle(Vector2f.ZERO_VECTOR, 1);
+		var circle2 = Circle.createCircle(Vector2f.fromXY(1, 1), 1);
+
+		assertThat(circle1.intersectPerimeterPath(circle2)).containsExactlyInAnyOrder(
+				Vector2.fromX(1),
+				Vector2.fromY(1)
+		);
+	}
+
+
+	@Test
+	public void testIntersectPerimeterPathArc()
+	{
+		// Data generated with GeoGebra
+		var circle = Circle.createCircle(Vector2f.ZERO_VECTOR, 1);
+		var arc = Arc.createArc(Vector2f.fromXY(1, 1), 1, -3 * AngleMath.PI_QUART, AngleMath.PI_QUART);
+		assertThat(circle.intersectPerimeterPath(arc)).containsExactlyInAnyOrder(
+				Vector2.fromX(1)
+		);
+		arc = Arc.createArc(Vector2f.fromXY(1, 1), 1, -3 * AngleMath.PI_QUART, -AngleMath.PI_QUART);
+		assertThat(circle.intersectPerimeterPath(arc)).containsExactlyInAnyOrder(
+				Vector2.fromY(1)
+		);
+	}
+
+
+	@Test
+	public void testIsValid()
+	{
+		var center = Vector2f.ZERO_VECTOR;
+		var proper = Circle.createCircle(center, 1);
+		var invalid = Circle.createCircle(center, 1e-6);
+
+		assertThat(proper.isValid()).isTrue();
+		assertThat(invalid.isValid()).isFalse();
+
+		proper = Circle.from2Points(center, Vector2f.fromX(1));
+		invalid = Circle.from2Points(center, center);
+
+		assertThat(proper.isValid()).isTrue();
+		assertThat(invalid.isValid()).isFalse();
+	}
+
+
+	@Test
+	public void testGetPathPoints()
+	{
+		var radius = 1.0;
+		var circle = Circle.createCircle(Vector2f.ZERO_VECTOR, radius);
+		assertThat(circle.getPathStart()).isEqualTo(Vector2.fromX(radius));
+		assertThat(circle.getPathStart()).isEqualTo(circle.getPathEnd());
+		assertThat(circle.getPathCenter()).isEqualTo(Vector2.fromX(-radius));
+
+		radius = 0.1;
+		circle = Circle.createCircle(Vector2f.ZERO_VECTOR, radius);
+		assertThat(circle.getPathStart()).isEqualTo(Vector2.fromX(radius));
+		assertThat(circle.getPathStart()).isEqualTo(circle.getPathEnd());
+		assertThat(circle.getPathCenter()).isEqualTo(Vector2.fromX(-radius));
+	}
+
+
+	@Test
+	public void testGetPathLength()
+	{
+		var circle = Circle.createCircle(Vector2f.ZERO_VECTOR, 1);
+		assertThat(circle.getLength()).isCloseTo(AngleMath.PI_TWO, within(1e-6));
+		assertThat(circle.getLength()).isEqualTo(circle.getPerimeterLength());
+
+		circle = Circle.createCircle(Vector2f.ZERO_VECTOR, 0.5);
+		assertThat(circle.getLength()).isCloseTo(AngleMath.PI, within(1e-6));
+		assertThat(circle.getLength()).isEqualTo(circle.getPerimeterLength());
+	}
+
+
+	@Test
+	public void testStepAlongPath()
+	{
+		var circle = Circle.createCircle(Vector2f.ZERO_VECTOR, 1);
+		assertThat(circle.stepAlongPath(0 * AngleMath.PI_HALF)).isEqualTo(Vector2.fromX(1));
+		assertThat(circle.stepAlongPath(1 * AngleMath.PI_HALF)).isEqualTo(Vector2.fromY(1));
+		assertThat(circle.stepAlongPath(2 * AngleMath.PI_HALF)).isEqualTo(Vector2.fromX(-1));
+		assertThat(circle.stepAlongPath(3 * AngleMath.PI_HALF)).isEqualTo(Vector2.fromY(-1));
+		assertThat(circle.stepAlongPath(4 * AngleMath.PI_HALF)).isEqualTo(Vector2.fromX(1));
+		assertThat(circle.stepAlongPath(8 * AngleMath.PI_HALF)).isEqualTo(Vector2.fromX(1));
+		assertThat(circle.stepAlongPath(100 * AngleMath.PI_HALF)).isEqualTo(Vector2.fromX(1));
+	}
+
+
+	@Test
+	public void testCompliance()
+	{
+		var circles = List.of(
+				Circle.createCircle(Vector2f.ZERO_VECTOR, 1),
+				Circle.createCircle(Vector2f.ZERO_VECTOR, 0.5),
+				Circle.createCircle(Vector2.fromXY(10, 3), 7)
+		);
+		for (var circle : circles)
+		{
+			IBoundedPathComplianceChecker.checkCompliance(circle, true);
+			I2DShapeComplianceChecker.checkCompliance(circle, true);
 		}
 	}
 }

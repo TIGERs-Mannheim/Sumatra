@@ -3,9 +3,10 @@
  */
 package edu.tigers.sumatra.statemachine;
 
+import lombok.Getter;
+import lombok.Setter;
+import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang.Validate;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -16,33 +17,36 @@ import java.util.Map;
  *
  * @param <T>
  */
+@Log4j2
 public class StateMachine<T extends IState> implements IStateMachine<T>
 {
-	private static final Logger log = LogManager.getLogger(StateMachine.class.getName());
 	private static final int MAX_STATE_CHANGES_PER_UPDATE = 15;
 
+	@Getter
 	private final Map<IEvent, Map<IState, T>> transitions = new HashMap<>();
-	private String name = "StateMachine";
+
+	@Setter
+	private String name;
+
+	@Setter
+	private boolean enableTransitions = true;
+
 	private T currentState = null;
 	private boolean initialStateInitialized = false;
-	private boolean extendedLogging = false;
 	private int stateChangesSinceUpdate = 0;
+
+
+	public StateMachine(String name)
+	{
+		this.name = name;
+	}
 
 
 	private T getNextState(IEvent event)
 	{
-		Validate.notNull(currentState, "StateMachine not init");
+		Validate.notNull(currentState, "StateMachine not initialized");
 		Map<IState, T> subTransitions = transitions.computeIfAbsent(event, k -> new HashMap<>());
 		return subTransitions.getOrDefault(currentState, subTransitions.get(null));
-	}
-
-
-	private void extendedLogging(Runnable run)
-	{
-		if (extendedLogging)
-		{
-			run.run();
-		}
 	}
 
 
@@ -66,12 +70,12 @@ public class StateMachine<T extends IState> implements IStateMachine<T>
 	@Override
 	public void changeState(final T newState)
 	{
-		if (newState.equals(currentState))
+		if (!enableTransitions || newState.equals(currentState))
 		{
 			return;
 		}
 
-		extendedLogging(() -> log.trace("{}: Switch state from {} to {}", name, currentState, newState));
+		log.trace("{}: Switch state from {} to {}", name, currentState, newState);
 
 		if (stateChangesSinceUpdate > MAX_STATE_CHANGES_PER_UPDATE)
 		{
@@ -109,7 +113,12 @@ public class StateMachine<T extends IState> implements IStateMachine<T>
 	public void triggerEvent(final IEvent event)
 	{
 		Validate.notNull(event);
-		extendedLogging(() -> log.trace("{}: New event: {}", name, event));
+		if (!enableTransitions)
+		{
+			return;
+		}
+
+		log.trace("{}: New event: {}", name, event);
 
 		T newState = getNextState(event);
 		if (newState != null)
@@ -149,25 +158,5 @@ public class StateMachine<T extends IState> implements IStateMachine<T>
 			throw new IllegalStateException("Already initialized");
 		}
 		this.currentState = currentState;
-	}
-
-
-	@Override
-	public void setExtendedLogging(final boolean extendedLogging)
-	{
-		this.extendedLogging = extendedLogging;
-	}
-
-
-	@Override
-	public void setName(final String name)
-	{
-		this.name = name;
-	}
-
-	@Override
-	public Map<IEvent, Map<IState, T>> getTransitions()
-	{
-		return transitions;
 	}
 }

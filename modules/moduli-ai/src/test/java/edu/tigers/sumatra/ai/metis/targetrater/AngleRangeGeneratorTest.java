@@ -5,7 +5,7 @@
 package edu.tigers.sumatra.ai.metis.targetrater;
 
 import edu.tigers.sumatra.math.circle.Circle;
-import edu.tigers.sumatra.math.line.v2.Lines;
+import edu.tigers.sumatra.math.line.Lines;
 import edu.tigers.sumatra.math.vector.Vector2;
 import org.junit.Before;
 import org.junit.Test;

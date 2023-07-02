@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.metis.targetrater;
@@ -29,21 +29,28 @@ public class MovingObstacleGen
 	private double kickSpeed = RuleConstraints.getMaxBallSpeed();
 	@Setter
 	private double timeForBotToReact = 0.0;
+
+	@Setter
+	private double noneOptimalDriveFactor = 1.0;
+
+	@Setter
+	private double timeBeforeReactionUsageFactor = 0.0;
+
 	@Setter
 	private double maxHorizon = Double.MAX_VALUE;
+
 	@Setter
 	private EHorizonCalculation horizonCalculation = EHorizonCalculation.DEFAULT;
 
 	private static final HorizonCubicReductionCalculator cubicReductionCalculator = new HorizonCubicReductionCalculator();
 
 
-
 	public List<ICircle> generateCircles(Collection<ITrackedBot> bots, IVector2 start,
-			Map<BotID, Double> timeThatOpponentBotWillReactBeforeKick)
+			Map<BotID, Double> reactionTimeBotHasBeforeKick)
 	{
 		var ballConsultant = Geometry.getBallFactory().createFlatConsultant();
-		return bots.stream().map(e -> getMovingHorizon(start, timeThatOpponentBotWillReactBeforeKick, ballConsultant, e))
-				.collect(Collectors.toList());
+		return bots.stream().map(e -> getMovingHorizon(start, reactionTimeBotHasBeforeKick, ballConsultant, e))
+				.toList();
 	}
 
 
@@ -54,19 +61,34 @@ public class MovingObstacleGen
 	}
 
 
-	private ICircle getMovingHorizon(IVector2 start, Map<BotID, Double> timeThatOpponentBotWillReactBeforeKick,
+	private ICircle getMovingHorizon(IVector2 start, Map<BotID, Double> reactionTimeBotHasBeforeKick,
 			IFlatBallConsultant ballConsultant, ITrackedBot bot)
 	{
-		var movingRobot = MovingRobot.fromTrackedBot(bot, maxHorizon, Geometry.getBotRadius() + Geometry.getBallRadius());
-		double distBotToStart = movingRobot.getPos().distanceTo(start);
-		double timeBallToBot =
-				ballConsultant.getTimeForKick(distBotToStart, kickSpeed) + timeThatOpponentBotWillReactBeforeKick.get(
-						bot.getBotId());
-		double x = Math.max(0, timeBallToBot - timeForBotToReact);
-		double horizon = switch (horizonCalculation)
+		var timeBeforeKick = reactionTimeBotHasBeforeKick.get(bot.getBotId());
+		var deadTimeAfterKick = timeForBotToReact;
+		var reactionTimestamp = timeBeforeKick + deadTimeAfterKick;
+		var reactionPos = bot.getPosByTime(reactionTimestamp);
+		var reactionVel = bot.getVelByTime(reactionTimestamp);
+
+
+		var movingRobot = new MovingRobot(
+				reactionPos,
+				reactionVel,
+				bot.getRobotInfo().getBotParams().getMovementLimits().getVelMax(),
+				bot.getRobotInfo().getBotParams().getMovementLimits().getAccMax(),
+				maxHorizon,
+				Geometry.getBotRadius() + Geometry.getBallRadius()
+		);
+
+		var reactionDistance = reactionPos.distanceTo(start);
+		var reactionTimeAfterKick = Math.max(0,
+				noneOptimalDriveFactor * ballConsultant.getTimeForKick(reactionDistance, kickSpeed)
+						+ timeBeforeReactionUsageFactor * reactionTimestamp
+						- timeForBotToReact);
+		var horizon = switch (horizonCalculation)
 				{
-					case DEFAULT -> x;
-					case CUBIC_REDUCTION -> cubicReductionCalculator.reduceHorizon(x);
+					case DEFAULT -> reactionTimeAfterKick;
+					case CUBIC_REDUCTION -> cubicReductionCalculator.reduceHorizon(reactionTimeAfterKick);
 				};
 		return movingRobot.getMovingHorizon(horizon);
 	}

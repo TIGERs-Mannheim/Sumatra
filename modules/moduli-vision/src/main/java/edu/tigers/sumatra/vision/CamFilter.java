@@ -14,26 +14,23 @@ import edu.tigers.sumatra.cam.data.CamFieldSize;
 import edu.tigers.sumatra.cam.data.CamRobot;
 import edu.tigers.sumatra.drawable.DrawableAnnotation;
 import edu.tigers.sumatra.drawable.DrawableCircle;
-import edu.tigers.sumatra.drawable.DrawableEllipse;
 import edu.tigers.sumatra.drawable.DrawableLine;
 import edu.tigers.sumatra.drawable.IDrawableShape;
 import edu.tigers.sumatra.filter.FirstOrderMultiSampleEstimator;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.BotID;
-import edu.tigers.sumatra.math.circle.Circle;
-import edu.tigers.sumatra.math.line.Line;
+import edu.tigers.sumatra.math.line.Lines;
 import edu.tigers.sumatra.math.rectangle.IRectangle;
 import edu.tigers.sumatra.math.rectangle.Rectangle;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.IVector3;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.math.vector.Vector2f;
-import edu.tigers.sumatra.math.vector.Vector3;
-import edu.tigers.sumatra.vision.BallFilter.BallFilterOutput;
 import edu.tigers.sumatra.vision.data.FilteredVisionBall;
 import edu.tigers.sumatra.vision.data.FilteredVisionBot;
 import edu.tigers.sumatra.vision.data.FilteredVisionFrame;
 import edu.tigers.sumatra.vision.data.RobotCollisionShape;
+import edu.tigers.sumatra.vision.data.VirtualBall;
 import edu.tigers.sumatra.vision.tracker.BallTracker;
 import edu.tigers.sumatra.vision.tracker.RobotTracker;
 import lombok.Getter;
@@ -75,9 +72,6 @@ public class CamFilter
 	private Optional<IRectangle> fieldRect = Optional.empty();
 	private Optional<IRectangle> viewport = Optional.empty();
 
-	private IVector2 lastKnownBallPosition = Vector2f.ZERO_VECTOR;
-	private long lastBallVisibleTimestamp = 0;
-
 	private final Map<BotID, RobotTracker> robots = new ConcurrentHashMap<>();
 
 	private final List<BallTracker> balls = Collections.synchronizedList(new ArrayList<>());
@@ -86,20 +80,17 @@ public class CamFilter
 
 	private Queue<CamBall> ballHistory = QueueUtils.synchronizedQueue(new CircularFifoQueue<>(100));
 
+	@Getter
+	private long lastBallOnCamTimestamp = 0;
+
 	@Configurable(defValue = "1.0", comment = "Time in [s] after an invisible ball is removed")
 	private static double invisibleLifetimeBall = 1.0;
 
 	@Configurable(defValue = "2.0", comment = "Time in [s] after an invisible robot is removed")
 	private static double invisibleLifetimeRobot = 2.0;
 
-	@Configurable(defValue = "0.05", comment = "Time in [s] after which virtual balls are generated from robot info (barrier)")
-	private static double delayToVirtualBalls = 0.05;
-
 	@Configurable(defValue = "10", comment = "Maximum number of ball trackers")
 	private static int maxBallTrackers = 10;
-
-	@Configurable(defValue = "1000.0", comment = "Max. distance to last know ball location to create virtual balls")
-	private static double maxVirtualBallDistance = 1000.0;
 
 	@Configurable(defValue = "true", comment = "Restrict viewport to minimize overlap (from CameraArchitect).")
 	private static boolean restrictViewport = true;
@@ -143,13 +134,13 @@ public class CamFilter
 	 * @param frame
 	 * @param lastFilteredFrame
 	 */
-	public void update(final CamDetectionFrame frame, final FilteredVisionFrame lastFilteredFrame)
+	public void update(final CamDetectionFrame frame, final FilteredVisionFrame lastFilteredFrame, final List<VirtualBall> virtualBalls)
 	{
 		checkForNonConsecutiveFrames(frame);
 		CamDetectionFrame adjustedFrame = adjustTCapture(frame);
 
 		processRobots(adjustedFrame, lastFilteredFrame.getBots());
-		processBalls(adjustedFrame, lastFilteredFrame.getBall(), lastFilteredFrame.getBots());
+		processBalls(adjustedFrame, lastFilteredFrame.getBall(), lastFilteredFrame.getBots(), virtualBalls);
 
 		timestamp = adjustedFrame.gettCapture();
 	}
@@ -198,23 +189,9 @@ public class CamFilter
 	}
 
 
-	/**
-	 * Set ball info from BallFilter.
-	 *
-	 * @param ballFilterOutput
-	 */
-	public void setBallInfo(final BallFilterOutput ballFilterOutput)
-	{
-		lastKnownBallPosition = ballFilterOutput.getLastKnownPosition().getXYVector();
-		lastBallVisibleTimestamp = ballFilterOutput.getFilteredBall().getLastVisibleTimestamp();
-	}
-
-
 	private void reset()
 	{
 		frameIntervalFilter.reset();
-		lastKnownBallPosition = Vector2f.ZERO_VECTOR;
-		lastBallVisibleTimestamp = 0;
 		robots.clear();
 		balls.clear();
 		ballHistory.clear();
@@ -281,44 +258,11 @@ public class CamFilter
 				botRadius = Geometry.getBotRadius();
 			}
 
-			shapes.add(new RobotCollisionShape(bot.getPos(), bot.getOrientation(), botRadius, center2Drib,
+			shapes.add(new RobotCollisionShape(bot.getPos(), bot.getOrientation(), bot.getVel().multiplyNew(1e3), botRadius, center2Drib,
 					maxBallBotHullLoss, maxBallBotFrontLoss));
 		}
 
 		return shapes;
-	}
-
-
-	private List<CamBall> getVirtualBalls(final long timestamp, final long frameId)
-	{
-		List<CamBall> virtualBalls = new ArrayList<>();
-
-		if (((timestamp - lastBallVisibleTimestamp) * 1e-9) < delayToVirtualBalls)
-		{
-			return virtualBalls;
-		}
-
-		for (RobotInfo r : robotInfoMap.values())
-		{
-			RobotTracker tracker = robots.get(r.getBotId());
-			if (tracker == null)
-			{
-				continue;
-			}
-
-			IVector2 ballAtDribblerPos = tracker.getPosition(timestamp)
-					.addNew(Vector2.fromAngle(tracker.getOrientation(timestamp))
-							.scaleTo(r.getCenter2DribblerDist() + Geometry.getBallRadius()));
-
-			if ((ballAtDribblerPos.distanceTo(lastKnownBallPosition) < maxVirtualBallDistance) && r.isBarrierInterrupted())
-			{
-				CamBall camBall = new CamBall(0, 0, Vector3.from2d(ballAtDribblerPos, 0), Vector2f.ZERO_VECTOR,
-						timestamp, camId, frameId);
-				virtualBalls.add(camBall);
-			}
-		}
-
-		return virtualBalls;
 	}
 
 
@@ -374,7 +318,7 @@ public class CamFilter
 			// check if there are other robots very close by, could be a false vision detection then
 			// we filter out the robot with the cam bots id before to allow trackers at the same location
 			long numCloseTrackers = mergedRobots.stream()
-					.filter(m -> m.getBotID() != r.getBotId())
+					.filter(m -> !m.getBotID().equals(r.getBotId()))
 					.filter(m -> m.getPos().distanceTo(r.getPos()) < (Geometry.getBotRadius() * 1.5)).count();
 
 			if (numCloseTrackers > 0)
@@ -419,7 +363,7 @@ public class CamFilter
 
 
 	private void processBalls(final CamDetectionFrame frame, final FilteredVisionBall ball,
-			final List<FilteredVisionBot> mergedRobots)
+			final List<FilteredVisionBot> mergedRobots, final List<VirtualBall> virtualBalls)
 	{
 		// remove trackers of balls that have not been visible for some time
 		balls.removeIf(e -> ((frame.gettCapture() - e.getLastUpdateTimestamp()) * 1e-9) > invisibleLifetimeBall);
@@ -435,11 +379,15 @@ public class CamFilter
 			b.predict(frame.gettCapture(), colShapes, ball.getPos().z() > maxHeightForCollision);
 		}
 
+		if(!frame.getBalls().isEmpty())
+			lastBallOnCamTimestamp = timestamp;
+
 		List<CamBall> camBalls = new ArrayList<>(frame.getBalls());
-		if (frame.getBalls().isEmpty())
-		{
-			camBalls.addAll(getVirtualBalls(frame.gettCapture(), frame.getFrameNumber()));
-		}
+
+		var mappedBalls = virtualBalls.stream()
+				.map(b -> b.toCamBall(camId, frame.getFrameNumber()))
+				.toList();
+		camBalls.addAll(mappedBalls);
 
 		// iterate over all balls on the camera
 		for (CamBall b : camBalls)
@@ -543,13 +491,13 @@ public class CamFilter
 
 		// Draw camera origin cross
 		DrawableLine xLine = new DrawableLine(
-				Line.fromPoints(pos.subtractNew(Vector2.fromX(100)), pos.addNew(Vector2.fromX(100))));
+				Lines.segmentFromPoints(pos.subtractNew(Vector2.fromX(100)), pos.addNew(Vector2.fromX(100))));
 		xLine.setStrokeWidth(20);
 		xLine.setColor(Color.CYAN);
 		shapes.add(xLine);
 
 		DrawableLine yLine = new DrawableLine(
-				Line.fromPoints(pos.subtractNew(Vector2.fromY(100)), pos.addNew(Vector2.fromY(100))));
+				Lines.segmentFromPoints(pos.subtractNew(Vector2.fromY(100)), pos.addNew(Vector2.fromY(100))));
 		yLine.setStrokeWidth(20);
 		yLine.setColor(Color.CYAN);
 		shapes.add(yLine);
@@ -608,17 +556,6 @@ public class CamFilter
 			age.withOffset(Vector2.fromXY(150, (camId * 45.0) - 100.0));
 			age.setColor(Color.GREEN);
 			shapes.add(age);
-
-			final Optional<IVector3> cameraPosition = getCameraPosition();
-			if (cameraPosition.isPresent() && (cameraPosition.get().z() > 120.0))
-			{
-				DrawableEllipse shadow = new DrawableEllipse(
-						Circle.createCircle(pos, 90).projectToGround(cameraPosition.get(), 120),
-						Color.BLACK);
-				shadow.setFill(false);
-				shadow.setStrokeWidth(5);
-				shapes.add(shadow);
-			}
 		}
 
 		return shapes;

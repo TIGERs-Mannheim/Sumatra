@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.sim;
@@ -81,9 +81,19 @@ public class SimulatedBot implements ISimulatedObject, ISimBot
 	}
 
 
-	public void setState(final SimBotState state)
+	public void setState(final SimBotDynamicsState state)
 	{
-		this.state = state;
+		if (this.state != null)
+		{
+			this.state = new SimBotState(
+					state,
+					this.state.isBarrierInterrupted(),
+					this.state.getLastFeedback()
+			);
+		} else
+		{
+			this.state = new SimBotState(state, false, 0);
+		}
 		dynamics.setPose(state.getPose());
 		dynamics.setVelGlobal(state.getVel());
 	}

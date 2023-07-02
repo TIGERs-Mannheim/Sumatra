@@ -10,7 +10,10 @@ import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
 import edu.tigers.sumatra.ai.metis.defense.DefenseThreatRater;
 import edu.tigers.sumatra.ai.metis.kicking.Pass;
 import edu.tigers.sumatra.ai.metis.kicking.PassFactory;
+import edu.tigers.sumatra.ai.metis.offense.situation.zone.OffensiveZones;
 import edu.tigers.sumatra.ai.metis.pass.KickOrigin;
+import edu.tigers.sumatra.ai.metis.pass.PassStats;
+import edu.tigers.sumatra.ai.metis.pass.rating.DynamicPassInterceptionMovingRobotRater;
 import edu.tigers.sumatra.ai.metis.pass.rating.EPassRating;
 import edu.tigers.sumatra.ai.metis.pass.rating.FreeSpaceRater;
 import edu.tigers.sumatra.ai.metis.pass.rating.IPassRater;
@@ -37,6 +40,7 @@ import edu.tigers.sumatra.wp.data.ITrackedBot;
 import java.awt.Color;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.function.Supplier;
 import java.util.function.ToDoubleFunction;
 
 
@@ -75,11 +79,24 @@ public class DebugGridTestCalc extends ACalculator
 	@Configurable(defValue = "0.0")
 	private static double minPassDuration = 0.0;
 
+	private final Supplier<PassStats> passStats;
+
+	private final Supplier<OffensiveZones> offensiveZones;
+
 	private final PassFactory passFactory = new PassFactory();
 	private final RatedPassFactory ratingFactory = new RatedPassFactory();
 	private Collection<ITrackedBot> consideredBots;
 	private IColorPicker colorPicker;
 	private DynamicPosition pointOfInterest;
+
+
+	public DebugGridTestCalc(
+			Supplier<PassStats> passStats,
+			Supplier<OffensiveZones> offensiveZones)
+	{
+		this.passStats = passStats;
+		this.offensiveZones = offensiveZones;
+	}
 
 
 	@Override
@@ -101,6 +118,7 @@ public class DebugGridTestCalc extends ACalculator
 			case BEST_GOAL_KICK_RATING -> bestGoalKickRating();
 			case MAX_ANGLE_GOAL_KICK_RATING -> maxAngleGoalKickRating();
 			case PASS_INTERCEPTION_RATING -> passInterceptionRating();
+			case PASS_INTERCEPTION_RATING_DYNAMIC -> passInterceptionRatingDynamic();
 			case PASS_TARGET_RATING -> passTargetRating();
 			case REFLECTOR_RATING -> reflectorRating();
 			case FREE_SPACE_RATING -> freeSpaceRating();
@@ -170,6 +188,17 @@ public class DebugGridTestCalc extends ACalculator
 	}
 
 
+	private void passInterceptionRatingDynamic()
+	{
+		consideredBots = getWFrame().getOpponentBots().values().stream()
+				.filter(b -> !Arrays.asList(ignoredBots).contains(b.getBotId()))
+				.toList();
+		IPassRater passRater = new DynamicPassInterceptionMovingRobotRater(consideredBots, passStats.get(),
+				offensiveZones.get());
+		draw(pos -> getMaxRateOfChipOrStraightPass(passRater, pos));
+	}
+
+
 	private void passTargetRating()
 	{
 		draw(this::ratePassTargetRating);
@@ -232,6 +261,7 @@ public class DebugGridTestCalc extends ACalculator
 		BEST_GOAL_KICK_RATING,
 		MAX_ANGLE_GOAL_KICK_RATING,
 		PASS_INTERCEPTION_RATING,
+		PASS_INTERCEPTION_RATING_DYNAMIC,
 		PASS_TARGET_RATING,
 		REFLECTOR_RATING,
 		FREE_SPACE_RATING,

@@ -14,7 +14,6 @@ import edu.tigers.sumatra.drawable.DrawableLine;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.circle.Circle;
-import edu.tigers.sumatra.math.line.Line;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
@@ -85,7 +84,7 @@ public class MidfieldRepulsiveBehavior extends ASupportBehavior
 		getAiFrame().getShapeMap().get(EAiShapesLayer.SUPPORT_MIDFIELD)
 				.add(new DrawableCircle(Circle.createCircle(destination, Geometry.getBotRadius() * 1.2), Color.ORANGE));
 		getAiFrame().getShapeMap().get(EAiShapesLayer.SUPPORT_MIDFIELD)
-				.add(new DrawableLine(Line.fromPoints(getWFrame().getBot(botID).getPos(), destination), Color.ORANGE));
+				.add(new DrawableLine(getWFrame().getBot(botID).getPos(), destination, Color.ORANGE));
 
 		var pass = passFactory.straight(getWFrame().getBall().getPos(), destination, BotID.noBot(), botID);
 		var rating = ratedPassFactory.rateMaxCombined(pass, EPassRating.PASSABILITY, EPassRating.INTERCEPTION);
@@ -106,14 +105,14 @@ public class MidfieldRepulsiveBehavior extends ASupportBehavior
 				.filter(bot -> bot.getPos().x() >= offenseZone).count() > minRequiredOffensivePositions;
 
 		getAiFrame().getShapeMap().get(EAiShapesLayer.SUPPORT_MIDFIELD)
-				.add(new DrawableLine(Line.fromPoints(
+				.add(new DrawableLine(
 						Vector2.fromXY(ballDecisionOffset, -0.5 * Geometry.getFieldWidth()),
-						Vector2.fromXY(ballDecisionOffset, 0.5 * Geometry.getFieldWidth())), Color.ORANGE));
+						Vector2.fromXY(ballDecisionOffset, 0.5 * Geometry.getFieldWidth()), Color.ORANGE));
 
 		getAiFrame().getShapeMap().get(EAiShapesLayer.SUPPORT_MIDFIELD)
-				.add(new DrawableLine(Line.fromPoints(
+				.add(new DrawableLine(
 						Vector2.fromXY(offenseZone, -0.5 * Geometry.getFieldWidth()),
-						Vector2.fromXY(offenseZone, 0.5 * Geometry.getFieldWidth())), Color.RED));
+						Vector2.fromXY(offenseZone, 0.5 * Geometry.getFieldWidth()), Color.RED));
 
 		return enoughOffensives && isOnOpponentHalf && ballOnOurHalf;
 	}

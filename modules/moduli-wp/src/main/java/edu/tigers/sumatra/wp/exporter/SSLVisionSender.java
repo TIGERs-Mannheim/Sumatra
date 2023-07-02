@@ -11,6 +11,7 @@ import edu.tigers.sumatra.cam.proto.MessagesRobocupSslDetection.SSL_DetectionFra
 import edu.tigers.sumatra.cam.proto.MessagesRobocupSslGeometry;
 import edu.tigers.sumatra.cam.proto.MessagesRobocupSslGeometry.SSL_FieldCircularArc;
 import edu.tigers.sumatra.cam.proto.MessagesRobocupSslGeometry.SSL_FieldLineSegment;
+import edu.tigers.sumatra.cam.proto.MessagesRobocupSslGeometry.SSL_FieldShapeType;
 import edu.tigers.sumatra.cam.proto.MessagesRobocupSslGeometry.SSL_GeometryData;
 import edu.tigers.sumatra.cam.proto.MessagesRobocupSslGeometry.SSL_GeometryFieldSize;
 import edu.tigers.sumatra.cam.proto.MessagesRobocupSslGeometry.Vector2f;
@@ -18,8 +19,8 @@ import edu.tigers.sumatra.cam.proto.MessagesRobocupSslWrapper.SSL_WrapperPacket;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.ETeamColor;
 import edu.tigers.sumatra.math.AngleMath;
-import edu.tigers.sumatra.math.line.v2.ILineSegment;
-import edu.tigers.sumatra.math.line.v2.Lines;
+import edu.tigers.sumatra.math.line.ILineSegment;
+import edu.tigers.sumatra.math.line.Lines;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.model.SumatraModel;
 import edu.tigers.sumatra.network.MulticastUDPTransmitter;
@@ -29,6 +30,8 @@ import edu.tigers.sumatra.wp.data.ITrackedBot;
 import edu.tigers.sumatra.wp.data.WorldFrameWrapper;
 import lombok.extern.log4j.Log4j2;
 
+import java.util.List;
+
 
 /**
  * Send out SSL vision frames based on WorldFrames
@@ -37,6 +40,7 @@ import lombok.extern.log4j.Log4j2;
 public class SSLVisionSender extends AModule implements IWorldFrameObserver
 {
 	private static final double GEOMETRY_BROADCAST_INTERVAL = 3;
+	private static final int LINE_THICKNESS = 10;
 
 	private MulticastUDPTransmitter transmitter;
 	private int frameNumber = 0;
@@ -131,68 +135,31 @@ public class SSLVisionSender extends AModule implements IWorldFrameObserver
 	{
 		SSL_GeometryData.Builder geometry = SSL_GeometryData.newBuilder();
 		SSL_GeometryFieldSize.Builder field = SSL_GeometryFieldSize.newBuilder();
-		field.setBoundaryWidth((int) Geometry.getBoundaryWidth());
 		field.setFieldLength((int) Geometry.getFieldLength());
 		field.setFieldWidth((int) Geometry.getFieldWidth());
-		field.setGoalDepth((int) Geometry.getGoalOur().getDepth());
 		field.setGoalWidth((int) Geometry.getGoalOur().getWidth());
+		field.setGoalDepth((int) Geometry.getGoalOur().getDepth());
+		field.setBoundaryWidth((int) Geometry.getBoundaryWidth());
+		field.setPenaltyAreaDepth((int) Geometry.getPenaltyAreaDepth());
+		field.setPenaltyAreaWidth((int) Geometry.getPenaltyAreaWidth());
+		field.setCenterCircleRadius((int) Geometry.getCenterCircle().radius());
+		field.setLineThickness(LINE_THICKNESS);
+		field.setGoalCenterToPenaltyMark((int) Geometry.getGoalCenterToPenaltyMark());
+		field.setGoalHeight((int) Geometry.getGoalHeight());
+		field.setBallRadius((int) Geometry.getBallRadius());
+		field.setMaxRobotRadius((int) Geometry.getBotRadius());
 
-		SSL_FieldLineSegment.Builder penAreaLineStretchLeft = SSL_FieldLineSegment.newBuilder();
-		Vector2f.Builder pl1 = Vector2f.newBuilder();
-		pl1.setX((float) Geometry.getPenaltyAreaTheir().getNegCorner().x());
-		pl1.setY((float) Geometry.getPenaltyAreaTheir().getNegCorner().y());
-		Vector2f.Builder pl2 = Vector2f.newBuilder();
-		pl2.setX((float) Geometry.getPenaltyAreaTheir().getPosCorner().x());
-		pl2.setY((float) Geometry.getPenaltyAreaTheir().getPosCorner().y());
-		penAreaLineStretchLeft.setP1(pl1);
-		penAreaLineStretchLeft.setP2(pl2);
-		penAreaLineStretchLeft.setThickness(10);
-		penAreaLineStretchLeft.setName("LeftPenaltyStretch");
-		field.addFieldLines(penAreaLineStretchLeft);
-
-		SSL_FieldLineSegment.Builder penAreaLineStretchRight = SSL_FieldLineSegment.newBuilder();
-		Vector2f.Builder pr1 = Vector2f.newBuilder();
-		pr1.setX((float) Geometry.getPenaltyAreaOur().getNegCorner().x());
-		pr1.setY((float) Geometry.getPenaltyAreaOur().getNegCorner().y());
-		Vector2f.Builder pr2 = Vector2f.newBuilder();
-		pr2.setX((float) Geometry.getPenaltyAreaOur().getPosCorner().x());
-		pr2.setY((float) Geometry.getPenaltyAreaOur().getPosCorner().y());
-		penAreaLineStretchRight.setP1(pr1);
-		penAreaLineStretchRight.setP2(pr2);
-		penAreaLineStretchRight.setThickness(10);
-		penAreaLineStretchRight.setName("RightPenaltyStretch");
-		field.addFieldLines(penAreaLineStretchRight);
-
-		Geometry.getPenaltyAreaOur().getRectangle().getEdges().stream()
-				.map(Lines::segmentFromLine)
-				.map(l -> createLineSegment("", l))
-				.forEach(field::addFieldLines);
-
-		Geometry.getPenaltyAreaTheir().getRectangle().getEdges().stream()
-				.map(Lines::segmentFromLine)
-				.map(l -> createLineSegment("", l))
-				.forEach(field::addFieldLines);
-
-		Geometry.getField().getEdges().stream()
-				.map(Lines::segmentFromLine)
-				.map(l -> createLineSegment("", l))
-				.forEach(field::addFieldLines);
-		field.addFieldLines(createLineSegment("HalfwayLine",
-				Lines.segmentFromPoints(
-						Vector2.fromY(Geometry.getFieldWidth() / 2),
-						Vector2.fromY(-Geometry.getFieldWidth() / 2))));
-		field.addFieldLines(createLineSegment("CenterLine",
-				Lines.segmentFromPoints(
-						Vector2.fromX(Geometry.getFieldLength() / 2),
-						Vector2.fromX(-Geometry.getFieldLength() / 2))));
+		field.addAllFieldLines(createPenAreas());
+		field.addAllFieldLines(createFieldBorder());
 
 		SSL_FieldCircularArc.Builder centerCircle = SSL_FieldCircularArc.newBuilder();
 		centerCircle.setCenter(Vector2f.newBuilder().setX(0).setY(0).build());
 		centerCircle.setA1(0);
 		centerCircle.setA2((float) AngleMath.PI_TWO);
 		centerCircle.setRadius((float) Geometry.getCenterCircle().radius());
-		centerCircle.setThickness(10);
-		centerCircle.setName("CenterCircle");
+		centerCircle.setThickness(LINE_THICKNESS);
+		centerCircle.setName(SSL_FieldShapeType.CenterCircle.name());
+		centerCircle.setType(SSL_FieldShapeType.CenterCircle);
 		field.addFieldArcs(centerCircle);
 
 		geometry.setField(field);
@@ -213,19 +180,131 @@ public class SSLVisionSender extends AModule implements IWorldFrameObserver
 	}
 
 
-	private SSL_FieldLineSegment.Builder createLineSegment(final String name, final ILineSegment line)
+	private List<SSL_FieldLineSegment> createPenAreas()
+	{
+		return List.of(
+				createLineSegment(
+						SSL_FieldShapeType.LeftPenaltyStretch,
+						Lines.segmentFromPoints(
+								Geometry.getPenaltyAreaTheir().getNegCorner(),
+								Geometry.getPenaltyAreaTheir().getPosCorner()
+						)
+				).build(),
+				createLineSegment(
+						SSL_FieldShapeType.LeftFieldLeftPenaltyStretch,
+						Lines.segmentFromPoints(
+								Vector2.fromXY(
+										Geometry.getPenaltyAreaTheir().getGoalCenter().x(),
+										Geometry.getPenaltyAreaTheir().getPosCorner().y()
+								),
+								Geometry.getPenaltyAreaTheir().getPosCorner())
+				).build(),
+				createLineSegment(
+						SSL_FieldShapeType.LeftFieldRightPenaltyStretch,
+						Lines.segmentFromPoints(
+								Vector2.fromXY(
+										Geometry.getPenaltyAreaTheir().getGoalCenter().x(),
+										Geometry.getPenaltyAreaTheir().getNegCorner().y()
+								),
+								Geometry.getPenaltyAreaTheir().getNegCorner())
+				).build(),
+				createLineSegment(
+						SSL_FieldShapeType.RightPenaltyStretch,
+						Lines.segmentFromPoints(
+								Geometry.getPenaltyAreaOur().getNegCorner(),
+								Geometry.getPenaltyAreaOur().getPosCorner()
+						)
+				).build(),
+				createLineSegment(
+						SSL_FieldShapeType.RightFieldLeftPenaltyStretch,
+						Lines.segmentFromPoints(
+								Vector2.fromXY(
+										Geometry.getPenaltyAreaOur().getGoalCenter().x(),
+										Geometry.getPenaltyAreaOur().getPosCorner().y()
+								),
+								Geometry.getPenaltyAreaOur().getPosCorner())
+				).build(),
+				createLineSegment(
+						SSL_FieldShapeType.RightFieldRightPenaltyStretch,
+						Lines.segmentFromPoints(
+								Vector2.fromXY(
+										Geometry.getPenaltyAreaOur().getGoalCenter().x(),
+										Geometry.getPenaltyAreaOur().getNegCorner().y()
+								),
+								Geometry.getPenaltyAreaOur().getNegCorner())
+				).build()
+		);
+	}
+
+
+	private List<SSL_FieldLineSegment> createFieldBorder()
+	{
+		return List.of(
+				createLineSegment(
+						SSL_FieldShapeType.TopTouchLine,
+						Lines.segmentFromPoints(
+								Vector2.fromXY(Geometry.getFieldLength() / 2, Geometry.getFieldWidth() / 2),
+								Vector2.fromXY(-Geometry.getFieldLength() / 2, Geometry.getFieldWidth() / 2)
+						)
+				).build(),
+
+				createLineSegment(
+						SSL_FieldShapeType.BottomTouchLine,
+						Lines.segmentFromPoints(
+								Vector2.fromXY(Geometry.getFieldLength() / 2, -Geometry.getFieldWidth() / 2),
+								Vector2.fromXY(-Geometry.getFieldLength() / 2, -Geometry.getFieldWidth() / 2)
+						)
+				).build(),
+
+				createLineSegment(
+						SSL_FieldShapeType.LeftGoalLine,
+						Lines.segmentFromPoints(
+								Vector2.fromXY(-Geometry.getFieldLength() / 2, Geometry.getFieldWidth() / 2),
+								Vector2.fromXY(-Geometry.getFieldLength() / 2, -Geometry.getFieldWidth() / 2)
+						)
+				).build(),
+
+				createLineSegment(
+						SSL_FieldShapeType.RightGoalLine,
+						Lines.segmentFromPoints(
+								Vector2.fromXY(Geometry.getFieldLength() / 2, Geometry.getFieldWidth() / 2),
+								Vector2.fromXY(Geometry.getFieldLength() / 2, -Geometry.getFieldWidth() / 2)
+						)
+				).build(),
+
+				createLineSegment(
+						SSL_FieldShapeType.HalfwayLine,
+						Lines.segmentFromPoints(
+								Vector2.fromY(Geometry.getFieldWidth() / 2),
+								Vector2.fromY(-Geometry.getFieldWidth() / 2)
+						)
+				).build(),
+
+				createLineSegment(
+						SSL_FieldShapeType.CenterLine,
+						Lines.segmentFromPoints(
+								Vector2.fromX(Geometry.getFieldLength() / 2),
+								Vector2.fromX(-Geometry.getFieldLength() / 2)
+						)
+				).build()
+		);
+	}
+
+
+	private SSL_FieldLineSegment.Builder createLineSegment(final SSL_FieldShapeType type, final ILineSegment line)
 	{
 		SSL_FieldLineSegment.Builder lineSegment = SSL_FieldLineSegment.newBuilder();
 		Vector2f.Builder pr1 = Vector2f.newBuilder();
-		pr1.setX((float) line.getStart().x());
-		pr1.setY((float) line.getStart().y());
+		pr1.setX((float) line.getPathStart().x());
+		pr1.setY((float) line.getPathStart().y());
 		Vector2f.Builder pr2 = Vector2f.newBuilder();
-		pr2.setX((float) line.getEnd().x());
-		pr2.setY((float) line.getEnd().y());
+		pr2.setX((float) line.getPathEnd().x());
+		pr2.setY((float) line.getPathEnd().y());
 		lineSegment.setP1(pr1);
 		lineSegment.setP2(pr2);
-		lineSegment.setThickness(10);
-		lineSegment.setName(name);
+		lineSegment.setThickness(LINE_THICKNESS);
+		lineSegment.setName(type.name());
+		lineSegment.setType(type);
 		return lineSegment;
 	}
 }

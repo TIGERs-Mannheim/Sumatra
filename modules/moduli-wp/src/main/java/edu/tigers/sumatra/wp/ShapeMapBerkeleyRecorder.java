@@ -23,7 +23,7 @@ import java.util.concurrent.ConcurrentSkipListMap;
 @Log4j2
 public class ShapeMapBerkeleyRecorder implements IBerkeleyRecorder
 {
-	private static final int MAX_BUFFER_SIZE = 1000;
+	private static final int MAX_BUFFER_SIZE = 10000;
 	private static final long BUFFER_TIME = 1_000_000_000L;
 	private final WfwObserver wfwObserver = new WfwObserver();
 	private final BerkeleyDb db;

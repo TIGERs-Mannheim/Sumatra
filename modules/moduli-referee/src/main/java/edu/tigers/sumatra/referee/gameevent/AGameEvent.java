@@ -94,6 +94,9 @@ public abstract class AGameEvent implements IGameEvent
 
 	protected String formatVector(IVector2 vec)
 	{
+		if(vec == null)
+			return "null";
+
 		return String.format("(%.3f | %.3f)", vec.x(), vec.y());
 	}
 

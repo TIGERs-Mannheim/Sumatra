@@ -5,6 +5,7 @@
 package edu.tigers.sumatra.math;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 
@@ -15,13 +16,13 @@ import java.util.List;
  */
 public final class StatisticsMath
 {
-	
+
 	@SuppressWarnings("unused")
 	private StatisticsMath()
 	{
 	}
-	
-	
+
+
 	/**
 	 * Calculate mean value
 	 *
@@ -37,12 +38,12 @@ public final class StatisticsMath
 		}
 		return sum / values.size();
 	}
-	
-	
+
+
 	/**
 	 * Calculate mean value.
-	 * 
-	 * @param values all values (will be sorted on return)
+	 *
+	 * @param values all values
 	 * @return the median value
 	 */
 	public static <T extends Number> double median(final List<T> values)
@@ -51,19 +52,19 @@ public final class StatisticsMath
 		{
 			return 0;
 		}
-		
-		values.sort((v1, v2) -> Double.compare(v1.doubleValue(), v2.doubleValue()));
-		
-		int middle = values.size() / 2;
-		if ((values.size() % 2) == 1)
+
+		List<T> valuesSorted = values.stream().sorted(Comparator.comparingDouble(Number::doubleValue)).toList();
+
+		int middle = valuesSorted.size() / 2;
+		if ((valuesSorted.size() % 2) == 1)
 		{
-			return values.get(middle).doubleValue();
+			return valuesSorted.get(middle).doubleValue();
 		}
-		
-		return (values.get(middle - 1).doubleValue() + values.get(middle).doubleValue()) / 2.0;
+
+		return (valuesSorted.get(middle - 1).doubleValue() + valuesSorted.get(middle).doubleValue()) / 2.0;
 	}
-	
-	
+
+
 	/**
 	 * Calculate variance
 	 *
@@ -81,8 +82,8 @@ public final class StatisticsMath
 		}
 		return mean(val2);
 	}
-	
-	
+
+
 	/**
 	 * Calculate standard deviation
 	 *

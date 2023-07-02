@@ -7,6 +7,13 @@ import "ssl_gc_game_event.proto";
 
 // Each UDP packet contains one of these messages.
 message Referee {
+    // A random UUID of the source that is kept constant at the source while running
+    // If multiple sources are broadcasting to the same network, this id can be used to identify individual sources
+    optional string source_identifier = 18;
+
+    // The match type is a meta information about the current match that helps to process the logs after a competition
+    optional MatchType match_type = 19 [default = UNKNOWN_MATCH];
+
     // The UNIX timestamp when the packet was sent, in microseconds.
     // Divide by 1,000,000 to get a time_t.
     required uint64 packet_timestamp = 1;
@@ -90,16 +97,15 @@ message Referee {
         // The blue team may take a direct free kick.
         DIRECT_FREE_BLUE = 9;
         // The yellow team may take an indirect free kick.
-        INDIRECT_FREE_YELLOW = 10;
+        INDIRECT_FREE_YELLOW = 10 [deprecated = true];
         // The blue team may take an indirect free kick.
-        INDIRECT_FREE_BLUE = 11;
+        INDIRECT_FREE_BLUE = 11 [deprecated = true];
         // The yellow team is currently in a timeout.
         TIMEOUT_YELLOW = 12;
         // The blue team is currently in a timeout.
         TIMEOUT_BLUE = 13;
         // The yellow team just scored a goal.
         // For information only.
-        // For rules compliance, teams must treat as STOP.
         // Deprecated: Use the score field from the team infos instead. That way, you can also detect revoked goals.
         GOAL_YELLOW = 14 [deprecated = true];
         // The blue team just scored a goal. See also GOAL_YELLOW.
@@ -153,6 +159,8 @@ message Referee {
         optional bool bot_substitution_intent = 14;
         // Indicate if the team reached the maximum allowed ball placement failures and is thus not allowed to place the ball anymore
         optional bool ball_placement_failures_reached = 15;
+        // The team is allowed to substitute one or more robots currently
+        optional bool bot_substitution_allowed = 16;
     }
 
     // Information about the two teams.
@@ -207,4 +215,16 @@ message GameEventProposalGroup {
     repeated GameEvent game_event = 1;
     // Whether the proposal group was accepted
     optional bool accepted = 2;
+}
+
+// MatchType is a meta information about the current match for easier log processing
+enum MatchType {
+    // not set
+    UNKNOWN_MATCH = 0;
+    // match is part of the group phase
+    GROUP_PHASE = 1;
+    // match is part of the elimination phase
+    ELIMINATION_PHASE = 2;
+    // a friendly match, not part of a tournament
+    FRIENDLY = 3;
 }

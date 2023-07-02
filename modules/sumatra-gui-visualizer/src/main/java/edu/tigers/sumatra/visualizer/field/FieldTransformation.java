@@ -30,6 +30,7 @@ public class FieldTransformation implements IDrawableTool
 
 	private EFieldTurn fieldTurn = EFieldTurn.NORMAL;
 	private boolean darkMode = false;
+	private double scale = 1.0;
 
 
 	/**
@@ -183,7 +184,8 @@ public class FieldTransformation implements IDrawableTool
 			heightScaleFactor = ((double) height) / getFieldTotalHeight();
 			widthScaleFactor = ((double) width) / getFieldTotalWidth();
 		}
-		return Math.min(heightScaleFactor, widthScaleFactor);
+		scale = Math.min(heightScaleFactor, widthScaleFactor);
+		return scale;
 	}
 
 

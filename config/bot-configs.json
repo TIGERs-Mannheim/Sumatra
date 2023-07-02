@@ -1,0 +1,57 @@
+{
+  "savedConfigFiles":{
+    "2":{
+      "7":{
+        "names":[ "Max. Voltage [V]", "Charge Hysteresis [V]", "Cooldown [ms]", "Ignore Kick Threshold", "Kick Conv. Offset", "Kick Conv. Factor", "Kick Time Min [ms]", "Chip Conv. Offset", "Chip Conv. Factor", "Chip Time Min [ms]" ],
+        "values":[ "180.0", "5.0", "80", "0.9", "-0.49", "0.89", "1.0", "-2.7", "1.7", "2.0" ],
+        "elements":[ 6, 6, 4, 6, 6, 6, 6, 6, 6, 6 ],
+        "name":"kick/cfg"
+      }
+    },
+    "257":{
+      "3":{
+        "names":[ "noise/pos/xy [m]", "noise/pos/w [rad]", "noise/vel/xy [m/s]", "noise/vis/xy [m]", "noise/vis/w [rad]", "outlier/vel/xy [m/s]", "outlier/vel/w [rad/s]", "tracking/coeff", "vision/capture/delay [ms]", "fusion/horizon [ms]", "vision/timeout [ms]", "ema/accel/T [s]", "ir/noise/pos [mm]", "ir/noise/ir/x [mm]", "ir/noise/ir/y [mm]", "ir/outlier/vel [mm/s]", "ir/timeout [ms]" ],
+        "values":[ "0.001", "0.001", "0.005", "0.05", "0.1", "3.0", "3.0", "1.0", "20", "35", "1000", "0.01", "1000.0", "1.0", "4.0", "500.0", "500" ],
+        "elements":[ 6, 6, 6, 6, 6, 6, 6, 6, 0, 0, 2, 6, 6, 6, 6, 6, 2 ],
+        "name":"v2020/ekf"
+      }
+    },
+    "289":{
+      "1":{
+        "names":[ "pos/xy/k", "pos/xy/max [m/s]", "pos/xy/anti_jitter", "pos/w/k", "pos/w/max [rad/s]", "pos/w/anti_jitter", "vel/w/k", "vel/w/cent_acc [m/s^2]" ],
+        "values":[ "8.0", "1.0", "0.05", "8", "10", "0.05", "4", "4" ],
+        "elements":[ 6, 6, 6, 6, 6, 6, 6, 6 ],
+        "name":"v2020/ctrl"
+      },
+      "2":{
+        "names":[ "pos/xy/k", "pos/xy/max [m/s]", "pos/xy/anti_jitter", "pos/w/k", "pos/w/max [rad/s]", "pos/w/anti_jitter", "vel/w/k", "vel/w/cent_acc [m/s^2]", "drib/cur2acc [m/(s^2*A)]" ],
+        "values":[ "8.0", "2.0", "0.01", "8.0", "8.0", "0.01", "1.0", "2.0", "1.0" ],
+        "elements":[ 6, 6, 6, 6, 6, 6, 6, 6, 6 ],
+        "name":"v2020/ctrl"
+      }
+    },
+    "273":{
+      "1":{
+        "names":[ "xy/coulomb [N]", "xy/viscous [Ns/m]", "w/coulomb [N]", "w/viscous [Ns/m]", "xy/efficiency [-]", "w/efficiency [-]", "enc/gain/x [-]", "enc/gain/y [-]", "enc/time/x [s]", "enc/time/y [s]" ],
+        "values":[ "2.65", "0.0", "0.097", "0.0", "0.72", "0.72", "0.95", "1.0", "0.095", "0.05" ],
+        "elements":[ 6, 6, 6, 6, 6, 6, 6, 6, 6, 6 ],
+        "name":"v2020/model"
+      }
+    },
+    "53":{
+      "7":{
+        "names":[ "drive/Kp", "drive/Ki", "drive/antiJitter [rad/s]", "dribbler/Kp", "dribbler/Ki" ],
+        "values":[ "300.0", "0.0", "1.5", "25.0", "0.0" ],
+        "elements":[ 6, 6, 6, 6, 6 ],
+        "name":"motors/vel"
+      }
+    }
+  },
+  "autoUpdateConfigs":{
+    "2":[ 7 ],
+    "257":[ 3 ],
+    "289":[ 1, 2 ],
+    "273":[ 1 ],
+    "53":[ 7 ]
+  }
+}

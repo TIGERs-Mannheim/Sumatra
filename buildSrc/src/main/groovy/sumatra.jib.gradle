@@ -1,0 +1,16 @@
+plugins {
+    id 'com.google.cloud.tools.jib'
+}
+
+jib {
+    to {
+        tags = [rootProject.version]
+    }
+    from {
+        image = "ghcr.io/graalvm/jdk@sha256:baa525245fe29647d396c6a2e14caca6305b7800513da0aae47b2d4965894d62"
+    }
+    container.jvmFlags = [
+            '-Djava.net.preferIPv4Stack=true',
+            '-Dsun.java2d.d3d=false',
+    ]
+}

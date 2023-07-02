@@ -9,19 +9,9 @@ package edu.tigers.sumatra.statemachine;
  */
 public class AState implements IState
 {
-	private final String defaultIdentifier = this.getClass().getSimpleName();
-	
-	
-	@Override
-	public String getIdentifier()
-	{
-		return defaultIdentifier;
-	}
-	
-	
 	@Override
 	public String toString()
 	{
-		return getIdentifier();
+		return getName();
 	}
 }

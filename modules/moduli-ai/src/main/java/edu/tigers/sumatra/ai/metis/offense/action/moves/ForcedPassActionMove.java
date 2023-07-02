@@ -5,7 +5,7 @@
 package edu.tigers.sumatra.ai.metis.offense.action.moves;
 
 import edu.tigers.sumatra.ai.metis.offense.action.EActionViability;
-import edu.tigers.sumatra.ai.metis.offense.action.OffensiveAction;
+import edu.tigers.sumatra.ai.metis.offense.action.RatedOffensiveAction;
 import edu.tigers.sumatra.ai.metis.offense.action.OffensiveActionViability;
 import edu.tigers.sumatra.ai.metis.pass.KickOrigin;
 import edu.tigers.sumatra.ai.metis.pass.rating.RatedPass;
@@ -13,6 +13,7 @@ import edu.tigers.sumatra.ids.BotID;
 import lombok.RequiredArgsConstructor;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Supplier;
 
 
@@ -37,13 +38,12 @@ public class ForcedPassActionMove extends AOffensiveActionMove
 
 
 	@Override
-	public OffensiveAction calcAction(BotID botId)
+	public Optional<RatedOffensiveAction> calcAction(BotID botId)
 	{
-		RatedPass ratedPass = findPassForMe(selectedPasses.get(), botId).orElse(null);
-		return OffensiveAction.builder()
-				.move(EOffensiveActionMove.FORCED_PASS)
-				.viability(calcViability(ratedPass))
-				.pass(ratedPass == null ? null : ratedPass.getPass())
-				.build();
+		return findPassForMe(selectedPasses.get(), botId)
+				.map(ratedPass -> RatedOffensiveAction
+						.buildPass(EOffensiveActionMove.FORCED_PASS,
+								calcViability(ratedPass),
+								ratedPass.getPass()));
 	}
 }

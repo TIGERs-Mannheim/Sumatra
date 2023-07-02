@@ -6,7 +6,7 @@ package edu.tigers.sumatra.ai.metis.offense.action.moves;
 
 import edu.tigers.sumatra.ai.metis.kicking.KickFactory;
 import edu.tigers.sumatra.ai.metis.offense.action.EActionViability;
-import edu.tigers.sumatra.ai.metis.offense.action.OffensiveAction;
+import edu.tigers.sumatra.ai.metis.offense.action.RatedOffensiveAction;
 import edu.tigers.sumatra.ai.metis.offense.action.OffensiveActionViability;
 import edu.tigers.sumatra.ai.metis.targetrater.GoalKick;
 import edu.tigers.sumatra.geometry.Geometry;
@@ -14,6 +14,7 @@ import edu.tigers.sumatra.ids.BotID;
 import lombok.RequiredArgsConstructor;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Supplier;
 
 
@@ -41,16 +42,16 @@ public class LowChanceGoalKickActionMove extends AOffensiveActionMove
 
 
 	@Override
-	public OffensiveAction calcAction(BotID botId)
+	public Optional<RatedOffensiveAction> calcAction(BotID botId)
 	{
 		kf.update(getWFrame());
 		var goalKick = bestGoalKickTargets.get().get(botId);
 		var fallBackGoalKick = kf.goalKick(getWFrame().getBall().getPos(), Geometry.getGoalTheir().getCenter());
-		return OffensiveAction.builder()
-				.move(EOffensiveActionMove.LOW_CHANCE_GOAL_KICK)
-				.viability(calcViability(goalKick))
-				.kick(goalKick == null ? fallBackGoalKick : goalKick.getKick())
-				.build();
+
+		return Optional.of(RatedOffensiveAction.buildKick(
+				EOffensiveActionMove.LOW_CHANCE_GOAL_KICK,
+				calcViability(goalKick),
+				goalKick == null ? fallBackGoalKick : goalKick.getKick()));
 	}
 
 

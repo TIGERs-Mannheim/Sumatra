@@ -27,10 +27,10 @@ dependencies {
     implementation 'commons-lang:commons-lang:2.6'
     implementation 'commons-configuration:commons-configuration:1.10'
 
-    implementation 'org.apache.logging.log4j:log4j-api:2.17.1'
+    implementation 'org.apache.logging.log4j:log4j-api:2.20.0'
 
     implementation 'com.sleepycat:je:18.3.12'
     implementation 'com.googlecode.json-simple:json-simple:1.1.1'
-    api 'com.google.protobuf:protobuf-java:3.19.4'
+    api 'com.google.protobuf:protobuf-java:3.23.2'
     implementation 'commons-codec:commons-codec:1.15'
 }

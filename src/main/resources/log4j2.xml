@@ -2,14 +2,18 @@
 <Configuration>
     <Appenders>
         <Console name="CONSOLE" target="SYSTEM_OUT">
-            <PatternLayout pattern="%d %p [%t|%c{1}] %m%n"/>
+            <PatternLayout pattern="%d %p [%t|%c{1}|%X] %m%n"/>
         </Console>
+        <File name="FILE" fileName="data/logs/Sumatra-${date:yyyy-MM-dd'_'HH-mm-ss}.log">
+            <PatternLayout pattern="%d %p [%t|%c{1}|%X] %m%n"/>
+        </File>
         <SumatraAppender name="berkeley"/>
         <SumatraAppender name="logView">
-            <PatternLayout pattern="%d %p [%t|%c{1}] %m%n"/>
+            <PatternLayout pattern="%d %p [%t|%c{1}|%X] %m%n"/>
         </SumatraAppender>
         <Async name="ASYNC">
             <AppenderRef ref="CONSOLE" level="info"/>
+            <AppenderRef ref="FILE" level="debug"/>
             <AppenderRef ref="berkeley" level="all"/>
             <AppenderRef ref="logView" level="all"/>
         </Async>

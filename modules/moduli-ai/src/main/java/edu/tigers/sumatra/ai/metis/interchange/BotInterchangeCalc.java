@@ -64,14 +64,14 @@ public class BotInterchangeCalc extends ACalculator
 		boolean substitutionFlag = getAiFrame().getRefereeMsg().getTeamInfo(getAiFrame().getTeamColor())
 				.isBotSubstitutionIntent();
 		int numWeakBots = 0;
-		int numBotsToBeRemoved = Math.max(0, getWFrame().getTigerBotsVisible().size() - numberOfAllowedBots());
+		int numBotsToBeRemoved = Math.max(0, getWFrame().getTigerBotsAvailable().size() - numberOfAllowedBots());
 		if (interchangeWeakBots)
 		{
 			numWeakBots = weakBots.get().size();
 		}
 
 		int numBotsToInterchange = Math.max(numBotsToBeRemoved, numWeakBots);
-		if (substitutionFlag)
+		if (substitutionFlag && numBotsToBeRemoved == 0)
 		{
 			numBotsToInterchange += 1;
 		}
@@ -92,6 +92,7 @@ public class BotInterchangeCalc extends ACalculator
 		weakestBots.addAll(weakBots.get());
 		weakestBots.addAll(allBotsSortedByBattery());
 		return weakestBots.stream()
+				.filter(b -> getWFrame().getBot(b) != null)
 				.filter(b -> b != getAiFrame().getKeeperId())
 				.limit(numberOfBotsToBeRemoved)
 				.toList();

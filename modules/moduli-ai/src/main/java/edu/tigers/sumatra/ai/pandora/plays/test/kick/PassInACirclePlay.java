@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.ai.pandora.plays.test.kick;
 
@@ -12,6 +12,7 @@ import edu.tigers.sumatra.drawable.DrawableCircle;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.AngleMath;
 import edu.tigers.sumatra.math.circle.Circle;
+import edu.tigers.sumatra.math.intersections.IIntersections;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.wp.data.BallKickFitState;
@@ -20,11 +21,9 @@ import org.apache.commons.lang.Validate;
 
 import java.awt.Color;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 
 /**
@@ -43,6 +42,8 @@ public class PassInACirclePlay extends ARedirectPlay
 	private boolean moveOnCircle;
 	@Setter
 	private double rotationSpeed;
+	@Setter
+	private double receiveBallSpeed;
 
 	private static Map<Integer, Integer> map4 = new HashMap<>();
 	private static Map<Integer, Integer> map6 = new HashMap<>();
@@ -161,9 +162,9 @@ public class PassInACirclePlay extends ARedirectPlay
 		{
 			var circle = Circle.createCircle(center, radius);
 			var intersections = getBall().getTrajectory().getTravelLinesRolling().stream()
-					.map(circle::lineIntersections)
-					.flatMap(Collection::stream)
-					.collect(Collectors.toUnmodifiableList());
+					.map(circle::intersect)
+					.flatMap(IIntersections::stream)
+					.toList();
 			return origin.nearestToOpt(intersections).orElse(origin);
 		}
 		return origin;
@@ -190,25 +191,25 @@ public class PassInACirclePlay extends ARedirectPlay
 
 	private int getTargetIdx(final int currentIdx)
 	{
-		switch (getRoles().size())
+		return switch (getRoles().size())
 		{
-			case 1:
-				return currentIdx;
-			case 2:
+			case 1 -> currentIdx;
+			case 2 ->
 				// next bot
-				return (currentIdx + 1) % getRoles().size();
-			case 4:
-				return map4.get(currentIdx);
-			case 6:
-				return map6.get(currentIdx);
-			case 8:
-				return map8.get(currentIdx);
-			case 3:
-			case 5:
-			case 7:
-			default:
+					(currentIdx + 1) % getRoles().size();
+			case 4 -> map4.get(currentIdx);
+			case 6 -> map6.get(currentIdx);
+			case 8 -> map8.get(currentIdx);
+			default ->
 				// opposite bot
-				return (currentIdx + (getRoles().size() / 2)) % getRoles().size();
-		}
+					(currentIdx + (getRoles().size() / 2)) % getRoles().size();
+		};
+	}
+
+
+	@Override
+	protected double getMaxReceivingBallSpeed(IVector2 origin)
+	{
+		return receiveBallSpeed;
 	}
 }

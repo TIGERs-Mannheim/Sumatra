@@ -6,7 +6,7 @@ package edu.tigers.sumatra.ai.metis.defense.data;
 
 import edu.tigers.sumatra.ids.AObjectID;
 import edu.tigers.sumatra.ids.BotID;
-import edu.tigers.sumatra.math.line.v2.ILineSegment;
+import edu.tigers.sumatra.math.line.ILineSegment;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
 import lombok.Value;
@@ -31,6 +31,7 @@ public class DefenseBotThreat implements IDefenseThreat
 	}
 
 
+	@Override
 	public double getThreatRating()
 	{
 		return threatRating;

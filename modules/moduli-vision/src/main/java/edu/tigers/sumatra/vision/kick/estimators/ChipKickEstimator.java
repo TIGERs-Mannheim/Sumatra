@@ -15,7 +15,7 @@ import edu.tigers.sumatra.drawable.DrawableLine;
 import edu.tigers.sumatra.drawable.IDrawableShape;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.math.AngleMath;
-import edu.tigers.sumatra.math.line.Line;
+import edu.tigers.sumatra.math.line.Lines;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.IVector3;
 import edu.tigers.sumatra.math.vector.Vector2;
@@ -29,6 +29,7 @@ import edu.tigers.sumatra.vision.kick.estimators.chip.ChipKickSolverLin3Offset;
 import edu.tigers.sumatra.vision.kick.estimators.chip.ChipKickSolverLin5Offset;
 import edu.tigers.sumatra.vision.kick.estimators.chip.ChipKickSolverNonLin3Direct;
 import edu.tigers.sumatra.vision.kick.estimators.chip.ChipKickSolverNonLinIdentDirect;
+import edu.tigers.sumatra.vision.tracker.BallTracker;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -109,9 +110,11 @@ public class ChipKickEstimator implements IKickEstimator
 		solverLin5 = new ChipKickSolverLin5Offset(event.getPosition(), event.getTimestamp(), camCalib);
 
 		List<CamBall> camBalls = event.getRecordsSinceKick().stream()
-				.map(r -> r.getLatestCamBall().get())
+				.map(BallTracker.MergedBall::getLatestCamBall)
+				.filter(Optional::isPresent)
+				.map(Optional::get)
 				.filter(b -> b.getFlatPos().distanceTo(event.getPosition()) > 50.0)
-				.collect(Collectors.toList());
+				.toList();
 
 		records.addAll(camBalls);
 		allRecords.addAll(camBalls);
@@ -159,10 +162,10 @@ public class ChipKickEstimator implements IKickEstimator
 
 
 	@Override
-	public void addCamBall(final CamBall record)
+	public void addCamBall(final CamBall newRecord)
 	{
-		records.add(record);
-		allRecords.add(record);
+		records.add(newRecord);
+		allRecords.add(newRecord);
 
 		if (records.size() < minRecords)
 		{
@@ -214,7 +217,8 @@ public class ChipKickEstimator implements IKickEstimator
 		List<IVector2> modelPoints = records.stream()
 				.map(r -> currentTraj.getMilliStateAtTime((r.gettCapture() - kickTimestamp) * 1e-9).getPos()
 						.projectToGroundNew(getCameraPosition(r.getCameraId())))
-				.collect(Collectors.toList());
+				.map(IVector2.class::cast)
+				.toList();
 
 		double avgDist = IntStream.range(0, records.size())
 				.mapToDouble(i -> modelPoints.get(i).distanceTo(records.get(i).getFlatPos()))
@@ -376,11 +380,12 @@ public class ChipKickEstimator implements IKickEstimator
 		List<CamBall> usedRecords = allRecords.stream()
 				.filter(r -> (r.gettCapture() < timeAfterKick)
 						|| Geometry.getField().withMargin(-100).isPointInShape(r.getFlatPos()))
-				.collect(Collectors.toList());
+				.toList();
 
 		// solve to estimate all parameters
 		ChipKickSolverNonLinIdentDirect identSolver = new ChipKickSolverNonLinIdentDirect(
-				solverNonLin.getKickPosition(), solverNonLin.getKickTimestamp(), camCalib, fitResult.getKickVel());
+				solverNonLin.getKickPosition(), solverNonLin.getKickTimestamp(), camCalib,
+				fitResult.getKickVel().multiplyNew(1000));
 
 		Optional<IBallModelIdentResult> chipResult = identSolver.identModel(usedRecords);
 		if (chipResult.isPresent())
@@ -430,7 +435,7 @@ public class ChipKickEstimator implements IKickEstimator
 			DrawableCircle kick = new DrawableCircle(fit.getKickPos(), 30, Color.CYAN);
 			shapes.add(kick);
 
-			DrawableLine speed = new DrawableLine(Line.fromDirection(
+			DrawableLine speed = new DrawableLine(Lines.segmentFromOffset(
 					fit.getKickPos(), fit.getKickVel().getXYVector().multiplyNew(100)), Color.CYAN);
 			speed.setStrokeWidth(10);
 			shapes.add(speed);

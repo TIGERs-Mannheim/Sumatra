@@ -7,6 +7,7 @@ import edu.tigers.autoreferee.engine.EAutoRefMode;
 import edu.tigers.autoreferee.module.AutoRefModule;
 import edu.tigers.sumatra.ai.AAgent;
 import edu.tigers.sumatra.ai.athena.EAIControlState;
+import edu.tigers.sumatra.cam.SSLVisionCam;
 import edu.tigers.sumatra.ids.EAiTeam;
 import edu.tigers.sumatra.ids.ETeamColor;
 import edu.tigers.sumatra.model.SumatraModel;
@@ -18,14 +19,14 @@ import edu.tigers.sumatra.referee.proto.SslGcRefereeMessage.Referee.Command;
 import edu.tigers.sumatra.sim.SimulationHelper;
 import edu.tigers.sumatra.sim.SumatraSimulator;
 import edu.tigers.sumatra.sim.net.SimNetClient;
+import edu.tigers.sumatra.wp.exporter.VisionTrackerSender;
+import lombok.extern.log4j.Log4j2;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import javax.swing.SwingUtilities;
 import java.util.ArrayList;
@@ -65,23 +66,10 @@ import java.util.List;
  * @author bernhard
  */
 @SuppressWarnings("squid:S1147") // calling System.exit() is ok in this entry class
+@Log4j2
 public final class Sumatra
 {
-	private static final Logger LOG;
 	private static CommandLine cmd;
-
-
-	private Sumatra()
-	{
-	}
-
-
-	static
-	{
-		// Connect java.util.logging (for jinput)
-		System.setProperty("java.util.logging.manager", "org.apache.logging.log4j.jul.LogManager");
-		LOG = LogManager.getLogger(Sumatra.class);
-	}
 
 
 	/**
@@ -91,7 +79,7 @@ public final class Sumatra
 	 */
 	public static void main(final String[] args)
 	{
-		LOG.info("Starting Sumatra {}", SumatraModel.getVersion());
+		log.info("Starting Sumatra {}", SumatraModel.getVersion());
 		Options options = createOptions();
 		cmd = parseOptions(args, options, new DefaultParser());
 
@@ -102,6 +90,9 @@ public final class Sumatra
 		ifHasOption("w", () -> SumatraSimulator.setWaitForRemoteAis(true));
 		ifHasOption("ho", () -> SimNetClient.setStartupHost(cmd.getOptionValue("ho")));
 		ifHasOption("p", () -> SumatraModel.getInstance().setTournamentMode(true));
+		ifHasOption("va", () -> setVisionAddress(cmd.getOptionValue("va")));
+		ifHasOption("ra", () -> setRefereeAddress(cmd.getOptionValue("ra")));
+		ifHasOption("ta", () -> setTrackerAddress(cmd.getOptionValue("ta")));
 
 		start(cmd);
 		ifHasOption("to", () -> setTimeout(cmd));
@@ -109,7 +100,52 @@ public final class Sumatra
 		ifHasOption("pt", () -> limitMatchDuration(cmd));
 		ifHasOption("c", () -> setInitialRefereeCommand(cmd));
 		ifHasOption("ar", Sumatra::activateAutoRef);
-		LOG.trace("Started Sumatra");
+		log.trace("Started Sumatra");
+	}
+
+
+	private static void setVisionAddress(String fullAddress)
+	{
+		String[] parts = fullAddress.split(":");
+		String address = parts[0];
+		if (!address.isBlank())
+		{
+			SSLVisionCam.setCustomAddress(address);
+		}
+		if (parts.length > 1)
+		{
+			SSLVisionCam.setCustomPort(Integer.parseInt(parts[1]));
+		}
+	}
+
+
+	private static void setRefereeAddress(String fullAddress)
+	{
+		String[] parts = fullAddress.split(":");
+		String address = parts[0];
+		if (!address.isBlank())
+		{
+			Referee.setCustomAddress(address);
+		}
+		if (parts.length > 1)
+		{
+			Referee.setCustomPort(Integer.parseInt(parts[1]));
+		}
+	}
+
+
+	private static void setTrackerAddress(String fullAddress)
+	{
+		String[] parts = fullAddress.split(":");
+		String address = parts[0];
+		if (!address.isBlank())
+		{
+			VisionTrackerSender.setCustomAddress(address);
+		}
+		if (parts.length > 1)
+		{
+			VisionTrackerSender.setCustomPort(Integer.parseInt(parts[1]));
+		}
 	}
 
 
@@ -142,6 +178,9 @@ public final class Sumatra
 		options.addOption("ho", "host", true, "the host of the simulator to connect to");
 		options.addOption("to", "timeout", true, "the timeout [s] after which the application will be exited");
 		options.addOption("p", "productive", false, "run in tournament mode (aka productive mode)");
+		options.addOption("va", "visionAddress", true, "address:port for vision");
+		options.addOption("ra", "refereeAddress", true, "address:port for GC");
+		options.addOption("ta", "trackerAddress", true, "address:port for tracker");
 		return options;
 	}
 
@@ -185,7 +224,7 @@ public final class Sumatra
 		try
 		{
 			Thread.sleep((long) (timeout * 1000));
-			LOG.info("Timed out after {} s", () -> String.format("%.1f", timeout));
+			log.info("Timed out after {} s", () -> String.format("%.1f", timeout));
 			tearDown();
 		} catch (InterruptedException e)
 		{
@@ -211,7 +250,7 @@ public final class Sumatra
 					.ifPresent(r -> r.sendGameControllerEvent(GcEventFactory.command(command)));
 		} catch (IllegalArgumentException err)
 		{
-			LOG.error("Could not parse command: {}. It should be one of: {}",
+			log.error("Could not parse command: {}. It should be one of: {}",
 					cmd.getOptionValue("c"),
 					Arrays.toString(Command.values()), err);
 			System.exit(1);
@@ -261,7 +300,8 @@ public final class Sumatra
 			SumatraModel.getInstance().startModules();
 		} catch (Throwable e)
 		{
-			LOG.error("Could not start Sumatra.", e);
+			log.error("Could not start Sumatra. Setting moduli config to default. Please try again.", e);
+			SumatraModel.getInstance().setCurrentModuliConfig(SumatraModel.MODULI_CONFIG_FILE_DEFAULT);
 			System.exit(1);
 		}
 		if (cmd.hasOption("ay") || cmd.hasOption("ab"))
@@ -299,7 +339,7 @@ public final class Sumatra
 			return parser.parse(options, args);
 		} catch (ParseException e)
 		{
-			LOG.error("Could not parse options.", e);
+			log.error("Could not parse options.", e);
 			printHelp(options);
 		}
 		return null;
@@ -318,7 +358,7 @@ public final class Sumatra
 			double stageTimeLeft = refMsg.getStageTimeLeft() / 1e6;
 			if (stageTimeLeft < desiredStageTimeLeft)
 			{
-				LOG.info("Match reached the desired stageTime: {}", stageTimeLeft);
+				log.info("Match reached the desired stageTime: {}", stageTimeLeft);
 				SumatraModel.getInstance().getModule(Referee.class).removeObserver(this);
 				new Thread(Sumatra::tearDown).start();
 			}

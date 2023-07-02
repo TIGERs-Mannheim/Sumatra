@@ -12,14 +12,11 @@ import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.line.LineMath;
 import edu.tigers.sumatra.math.vector.IVector2;
-import edu.tigers.sumatra.model.SumatraModel;
 import edu.tigers.sumatra.skillsystem.skills.ASkill;
-import edu.tigers.sumatra.skillsystem.skills.ESkillState;
 import edu.tigers.sumatra.skillsystem.skills.ISkill;
 import edu.tigers.sumatra.skillsystem.skills.IdleSkill;
 import edu.tigers.sumatra.skillsystem.skills.MoveToSkill;
 import edu.tigers.sumatra.skillsystem.skills.util.SkillUtil;
-import edu.tigers.sumatra.statemachine.AState;
 import edu.tigers.sumatra.statemachine.IEvent;
 import edu.tigers.sumatra.statemachine.IState;
 import edu.tigers.sumatra.statemachine.IStateMachine;
@@ -27,11 +24,9 @@ import edu.tigers.sumatra.statemachine.StateMachine;
 import edu.tigers.sumatra.wp.data.ITrackedBall;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
 import edu.tigers.sumatra.wp.data.WorldFrame;
-import lombok.RequiredArgsConstructor;
-import lombok.Value;
+import lombok.Getter;
 import lombok.extern.log4j.Log4j2;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
@@ -44,7 +39,8 @@ import java.util.function.Supplier;
 public abstract class ARole
 {
 	private final ERole type;
-	private final IStateMachine<IState> stateMachine;
+	@Getter
+	private final IStateMachine<IState> stateMachine = new StateMachine<>(this.getClass().getSimpleName());
 
 	private BotID botID = BotID.noBot();
 	private boolean firstUpdate = true;
@@ -56,11 +52,9 @@ public abstract class ARole
 	private ISkill newSkillExternal = null;
 
 
-	public ARole(final ERole type)
+	protected ARole(final ERole type)
 	{
 		this.type = type;
-		stateMachine = new StateMachine<>();
-		stateMachine.setExtendedLogging(!SumatraModel.getInstance().isTournamentMode());
 	}
 
 
@@ -83,7 +77,7 @@ public abstract class ARole
 	 * @param event     the event that triggers the transition
 	 * @param nextState the resulting state
 	 */
-	protected final void addTransition(final IEvent event, final IState nextState)
+	public final void addTransition(final IEvent event, final IState nextState)
 	{
 		stateMachine.addTransition(null, event, nextState);
 	}
@@ -315,7 +309,6 @@ public abstract class ARole
 	{
 		if (!completed)
 		{
-			log.trace(this + ": Completed");
 			completed = true;
 			stateMachine.stop();
 			if (currentSkill.getClass() != IdleSkill.class)
@@ -411,92 +404,6 @@ public abstract class ARole
 		return skill;
 	}
 
-
-	/**
-	 * State with a skill
-	 *
-	 * @param <T> the skill class
-	 */
-	@RequiredArgsConstructor
-	protected class RoleState<T extends ASkill> extends AState
-	{
-		private final List<Transition> transitions = new ArrayList<>();
-		private final Supplier<T> supplier;
-		protected T skill;
-
-
-		public final void addTransition(ESkillState skillState, IState nextState)
-		{
-			transitions.add(new Transition(() -> skill.getSkillState() == skillState, nextState));
-		}
-
-
-		public final void addTransition(Supplier<Boolean> evaluation, IState nextState)
-		{
-			transitions.add(new Transition(evaluation, nextState));
-		}
-
-
-		protected void onInit()
-		{
-			// can be overwritten
-		}
-
-
-		protected void onExit()
-		{
-			// can be overwritten
-		}
-
-
-		protected void onUpdate()
-		{
-			// can be overwritten
-		}
-
-
-		@Override
-		public final void doEntryActions()
-		{
-			skill = supplier.get();
-			setNewSkill(skill);
-			onInit();
-		}
-
-
-		@Override
-		public final void doExitActions()
-		{
-			onExit();
-		}
-
-
-		@Override
-		public final void doUpdate()
-		{
-			for (var transition : transitions)
-			{
-				if (transition.evaluation.get())
-				{
-					changeState(transition.nextState);
-					return;
-				}
-			}
-			onUpdate();
-		}
-
-
-		@Override
-		public String getIdentifier()
-		{
-			if (skill != null)
-			{
-				return super.getIdentifier() + "<" + skill.getClass().getSimpleName() + ">";
-			}
-			return super.getIdentifier();
-		}
-	}
-
 	/**
 	 * A role state with a simple {@link MoveToSkill}.
 	 */
@@ -520,7 +427,7 @@ public abstract class ARole
 			IVector2 tmpDest = dest;
 			for (ITrackedBot bot : getWFrame().getBots().values())
 			{
-				if (bot.getBotId().getTeamColor() != getBotID().getTeamColor()
+				if (!bot.getBotId().getTeamColor().equals(getBotID().getTeamColor())
 						|| bot.getBotId().equals(getBotID())
 						|| bot.getVel().getLength2() > speedTolerance)
 				{
@@ -558,13 +465,14 @@ public abstract class ARole
 		}
 	}
 
-	@Value
-	private static class Transition
-	{
-		Supplier<Boolean> evaluation;
-		IState nextState;
-	}
 
+	protected class RoleState<T extends ASkill> extends RoleStateExtern<T>
+	{
+		public RoleState(Supplier<T> supplier)
+		{
+			super(supplier, ARole.this);
+		}
+	}
 
 	public Map<IEvent, Map<IState, IState>> getStateGraph()
 	{

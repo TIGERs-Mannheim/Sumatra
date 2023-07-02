@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.pandora.roles.test;
@@ -13,9 +13,9 @@ import edu.tigers.sumatra.drawable.DrawableCircle;
 import edu.tigers.sumatra.drawable.DrawableLine;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.math.AngleMath;
-import edu.tigers.sumatra.math.line.v2.ILineSegment;
-import edu.tigers.sumatra.math.line.v2.LineMath;
-import edu.tigers.sumatra.math.line.v2.Lines;
+import edu.tigers.sumatra.math.line.ILineSegment;
+import edu.tigers.sumatra.math.line.LineMath;
+import edu.tigers.sumatra.math.line.Lines;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.skillsystem.skills.ApproachAndStopBallSkill;
@@ -157,15 +157,13 @@ public class ContestedPossessionChallengeRole extends ARole
 		protected void onInit()
 		{
 			skill.getMoveCon().physicalObstaclesOnly();
+			skill.getMoveCon().setBallObstacle(false);
 		}
 
 
 		@Override
 		protected void onUpdate()
 		{
-			skill.getMoveCon().setGameStateObstacle(false);
-			skill.getMoveCon().setBallObstacle(false);
-
 			IVector2 defenderPos = getWFrame().getBot(getTacticalField().getOpponentClosestToBall().getBotId()).getPos();
 			IVector2 preparePos = LineMath.stepAlongLine(getBall().getPos(), defenderPos, -300.0);
 

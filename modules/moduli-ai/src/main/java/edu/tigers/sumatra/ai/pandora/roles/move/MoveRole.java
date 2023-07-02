@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.ai.pandora.roles.move;
 
@@ -8,6 +8,8 @@ import edu.tigers.sumatra.ai.pandora.roles.ERole;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.VectorMath;
 import edu.tigers.sumatra.pathfinder.MovementCon;
+import edu.tigers.sumatra.skillsystem.skills.ESkillState;
+import edu.tigers.sumatra.skillsystem.skills.IdleSkill;
 import edu.tigers.sumatra.skillsystem.skills.MoveToSkill;
 import edu.tigers.sumatra.statemachine.AState;
 import edu.tigers.sumatra.wp.data.DynamicPosition;
@@ -54,11 +56,18 @@ public class MoveRole extends ARole
 	}
 
 
+	public final boolean isSkillStateSuccess()
+	{
+		return skill.getSkillState() == ESkillState.SUCCESS;
+	}
+
+
 	/**
 	 * @param destination to set
 	 */
 	public void updateDestination(final IVector2 destination)
 	{
+		activateMotors();
 		skill.updateDestination(destination);
 	}
 
@@ -68,6 +77,7 @@ public class MoveRole extends ARole
 	 */
 	public void updateTargetAngle(final double angle)
 	{
+		activateMotors();
 		skill.updateTargetAngle(angle);
 	}
 
@@ -79,6 +89,7 @@ public class MoveRole extends ARole
 	 */
 	public void updateLookAtTarget(final DynamicPosition lookAtTarget)
 	{
+		activateMotors();
 		skill.updateLookAtTarget(lookAtTarget);
 	}
 
@@ -106,5 +117,35 @@ public class MoveRole extends ARole
 	public final IVector2 getDestination()
 	{
 		return skill.getDestination();
+	}
+
+
+	public void setVelMaxW(final double maxVelW)
+	{
+		skill.setVelMaxW(maxVelW);
+	}
+
+
+	public void setAccMaxW(final double maxAccW)
+	{
+		skill.setAccMaxW(maxAccW);
+	}
+
+
+	public void disableMotors()
+	{
+		if (getCurrentSkill().getClass() != IdleSkill.class)
+		{
+			setNewSkill(new IdleSkill());
+		}
+	}
+
+
+	private void activateMotors()
+	{
+		if (getCurrentSkill() != skill)
+		{
+			setNewSkill(skill);
+		}
 	}
 }

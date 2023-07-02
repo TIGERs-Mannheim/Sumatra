@@ -1,12 +1,14 @@
 /*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.metis.pass;
 
+import com.github.g3force.configurable.Configurable;
 import edu.tigers.sumatra.ai.metis.ACalculator;
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
 import edu.tigers.sumatra.ai.metis.kicking.Pass;
+import edu.tigers.sumatra.ai.metis.offense.situation.zone.OffensiveZones;
 import edu.tigers.sumatra.ai.metis.pass.rating.EPassRating;
 import edu.tigers.sumatra.ai.metis.pass.rating.RatedPass;
 import edu.tigers.sumatra.ai.metis.pass.rating.RatedPassFactory;
@@ -15,7 +17,6 @@ import edu.tigers.sumatra.drawable.DrawableAnnotation;
 import edu.tigers.sumatra.drawable.DrawableCircle;
 import edu.tigers.sumatra.drawable.DrawableLine;
 import edu.tigers.sumatra.geometry.Geometry;
-import edu.tigers.sumatra.math.line.Line;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
@@ -38,9 +39,18 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class PassRatingCalc extends ACalculator
 {
+
+	@Configurable(defValue = "true")
+	private static boolean useDynamicInterceptionRating = true;
+
 	private final Supplier<Map<KickOrigin, List<Pass>>> generatedPasses;
 
+	private final Supplier<PassStats> passStats;
+
+	private final Supplier<OffensiveZones> offensiveZones;
+
 	private final RatedPassFactory ratingFactory = new RatedPassFactory();
+
 
 	@Getter
 	private Map<KickOrigin, List<RatedPass>> passesRated;
@@ -52,8 +62,15 @@ public class PassRatingCalc extends ACalculator
 		// all opponents except those which are in a skirmish
 		var consideredBots = getWFrame().getOpponentBots().values().stream()
 				.filter(p -> p.getPos().distanceTo(getBall().getPos()) > Geometry.getBotRadius() + 100)
-				.collect(Collectors.toList());
-		ratingFactory.update(consideredBots);
+				.toList();
+
+		if (useDynamicInterceptionRating)
+		{
+			ratingFactory.updateDynamic(consideredBots, passStats.get(), offensiveZones.get());
+		} else
+		{
+			ratingFactory.update(consideredBots);
+		}
 
 		passesRated = generatedPasses.get().entrySet().stream()
 				.collect(Collectors.toUnmodifiableMap(
@@ -68,10 +85,10 @@ public class PassRatingCalc extends ACalculator
 
 	private List<RatedPass> ratePasses(List<Pass> passes)
 	{
-		return passes.stream()
+		return passes.parallelStream()
 				.map(ratingFactory::rate)
 				.sorted(Comparator.comparing(this::compareRatedPasses))
-				.collect(Collectors.toUnmodifiableList());
+				.toList();
 	}
 
 
@@ -91,8 +108,7 @@ public class PassRatingCalc extends ACalculator
 		IVector2 target = ratedPass.getPass().getKick().getTarget();
 		if (!kickerPos.equals(target))
 		{
-			getShapes(EAiShapesLayer.PASS_SELECTION).add(
-					new DrawableLine(Line.fromPoints(kickerPos, target), new Color(55, 55, 55, 70)));
+			getShapes(EAiShapesLayer.PASS_SELECTION).add(new DrawableLine(kickerPos, target, new Color(55, 55, 55, 70)));
 		}
 	}
 

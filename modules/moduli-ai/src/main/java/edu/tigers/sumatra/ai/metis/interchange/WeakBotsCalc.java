@@ -37,7 +37,7 @@ public class WeakBotsCalc extends ACalculator
 	private List<BotID> weakBots()
 	{
 		return getWFrame().getTigerBotsAvailable().values().stream()
-				.filter(bot -> !bot.getRobotInfo().isOk())
+				.filter(bot -> !bot.getRobotInfo().isHealthy())
 				.sorted((bot1, bot2) -> Float.compare(bot1.getRobotInfo().getBatteryRelative(),
 						bot2.getRobotInfo().getBatteryRelative()))
 				.map(ITrackedBot::getBotId)

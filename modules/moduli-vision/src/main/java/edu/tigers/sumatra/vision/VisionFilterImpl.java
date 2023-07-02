@@ -6,6 +6,8 @@ package edu.tigers.sumatra.vision;
 
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
+import edu.tigers.moduli.exceptions.StartModuleException;
+import edu.tigers.sumatra.cam.ACam;
 import edu.tigers.sumatra.cam.data.CamCalibration;
 import edu.tigers.sumatra.cam.data.CamDetectionFrame;
 import edu.tigers.sumatra.cam.data.CamGeometry;
@@ -19,6 +21,7 @@ import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.IVector3;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.math.vector.Vector2f;
+import edu.tigers.sumatra.model.SumatraModel;
 import edu.tigers.sumatra.thread.NamedThreadFactory;
 import edu.tigers.sumatra.util.Safe;
 import edu.tigers.sumatra.vision.BallFilter.BallFilterOutput;
@@ -71,6 +74,7 @@ public class VisionFilterImpl extends AVisionFilter
 	private final QualityInspector qualityInspector = new QualityInspector();
 	private final ViewportArchitect viewportArchitect = new ViewportArchitect();
 	private final RobotQualityInspector robotQualityInspector = new RobotQualityInspector();
+	private final VirtualBallProducer virtualBallProducer = new VirtualBallProducer();
 
 	private Map<Integer, CamFilter> cams = new ConcurrentHashMap<>();
 	private FilteredVisionFrame lastFrame = FilteredVisionFrame.createEmptyFrame();
@@ -93,12 +97,10 @@ public class VisionFilterImpl extends AVisionFilter
 			lastFrame = constructFilteredVisionFrame(lastFrame);
 			var extrapolatedFrame = extrapolateFilteredFrame(lastFrame, lastFrame.getTimestamp());
 			publishFilteredVisionFrame(extrapolatedFrame);
-		} catch (Exception e)
-		{
-			log.warn("Uncaught exception while publishing vision filter frames", e);
+			virtualBallProducer.update(extrapolatedFrame, getRobotInfoMap(), cams.values());
 		} catch (Throwable e)
 		{
-			log.error("Uncaught throwable while publishing vision filter frames", e);
+			log.error("Uncaught exception while publishing vision filter frames", e);
 		}
 	}
 
@@ -166,6 +168,9 @@ public class VisionFilterImpl extends AVisionFilter
 			} catch (InterruptedException e)
 			{
 				Thread.currentThread().interrupt();
+			} catch(Exception e)
+			{
+				log.error("Uncaught exception while processing cam frame", e);
 			}
 		}
 	}
@@ -187,11 +192,8 @@ public class VisionFilterImpl extends AVisionFilter
 		// update robot infos on all camera filters
 		camFilter.setRobotInfoMap(getRobotInfoMap());
 
-		// set latest ball info on all camera filters (to generate virtual balls from barrier info)
-		camFilter.setBallInfo(lastBallFilterOutput);
-
 		// update camera filter with new detection frame
-		camFilter.update(camDetectionFrame, lastFrame);
+		camFilter.update(camDetectionFrame, lastFrame, virtualBallProducer.getVirtualBalls());
 
 		// update robot quality inspector
 		camDetectionFrame.getRobots().forEach(robotQualityInspector::addDetection);
@@ -259,6 +261,8 @@ public class VisionFilterImpl extends AVisionFilter
 				.addAll(getBallTrackerShapes(timestamp));
 		frame.getShapeMap().get(EVisionFilterShapesLayer.ROBOT_QUALITY_INSPECTOR)
 				.addAll(getRobotQualityInspectorShapes(mergedRobots));
+		frame.getShapeMap().get(EVisionFilterShapesLayer.VIRTUAL_BALL_SHAPES)
+				.addAll(getVirtualBallShapes());
 
 		return frame;
 	}
@@ -266,13 +270,9 @@ public class VisionFilterImpl extends AVisionFilter
 
 	private List<FilteredVisionBot> mergeRobots(final Collection<CamFilter> camFilters, final long timestamp)
 	{
-		// just get all RobotTracker in one list
-		List<RobotTracker> allTrackers = camFilters.stream()
+		Map<BotID, List<RobotTracker>> trackersById = camFilters.stream()
 				.flatMap(f -> f.getValidRobots().values().stream())
-				.collect(Collectors.toList());
-
-		// group trackers by BotID
-		Map<BotID, List<RobotTracker>> trackersById = allTrackers.stream()
+				// group trackers by BotID
 				.collect(Collectors.groupingBy(RobotTracker::getBotId));
 
 		List<FilteredVisionBot> mergedBots = new ArrayList<>();
@@ -339,9 +339,10 @@ public class VisionFilterImpl extends AVisionFilter
 
 
 	@Override
-	protected void start()
+	public void startModule() throws StartModuleException
 	{
-		super.start();
+		super.startModule();
+		SumatraModel.getInstance().getModule(ACam.class).addObserver(this);
 
 		viewportArchitect.addObserver(this);
 		ballFilterPreprocessor.addObserver(this);
@@ -361,9 +362,10 @@ public class VisionFilterImpl extends AVisionFilter
 
 
 	@Override
-	protected void stop()
+	public void stopModule()
 	{
-		super.stop();
+		super.stopModule();
+		SumatraModel.getInstance().getModule(ACam.class).removeObserver(this);
 		if (scheduledExecutorService != null)
 		{
 			scheduledExecutorService.shutdown();
@@ -400,6 +402,7 @@ public class VisionFilterImpl extends AVisionFilter
 		super.onClearCamFrame();
 		cams.clear();
 		ballFilterPreprocessor.clear();
+		robotQualityInspector.reset();
 		lastFrame = FilteredVisionFrame.createEmptyFrame();
 	}
 
@@ -471,6 +474,25 @@ public class VisionFilterImpl extends AVisionFilter
 		}
 
 		shapes.addAll(ballFilter.getShapes());
+
+		return shapes;
+	}
+
+	private List<IDrawableShape> getVirtualBallShapes()
+	{
+		List<IDrawableShape> shapes = new ArrayList<>();
+
+		boolean virtualBallUsed = !virtualBallProducer.getVirtualBalls().isEmpty();
+		if(virtualBallUsed)
+		{
+			DrawableAnnotation virtHint = new DrawableAnnotation(lastBallFilterOutput.getFilteredBall().getPos().getXYVector(), "VIRTUAL", true);
+			virtHint.setColor(Color.ORANGE);
+			virtHint.withOffset(Vector2.fromY(40));
+			virtHint.withFontHeight(30);
+			shapes.add(virtHint);
+		}
+
+		shapes.addAll(virtualBallProducer.getVirtualBallShapes());
 
 		return shapes;
 	}

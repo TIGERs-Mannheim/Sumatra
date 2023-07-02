@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.botmanager;
 
@@ -109,11 +109,11 @@ public abstract class ABotManager extends AModule
 	@Override
 	public void onBotOffline(final BotID id)
 	{
-		log.debug("Bot is offline: " + id);
+		log.debug("Bot is offline: {}", id);
 		ABot bot = botTable.remove(id);
 		if (bot == null)
 		{
-			log.warn("Tried to remove a non-existing bot with id " + id);
+			log.warn("Tried to remove a non-existing bot with id {}", id);
 		} else
 		{
 			observers.forEach(o -> o.onBotRemoved(bot));
@@ -124,10 +124,10 @@ public abstract class ABotManager extends AModule
 	@Override
 	public void onBotOnline(final ABot bot)
 	{
-		log.debug("Bot is online: " + bot);
+		log.debug("Bot is online: {}", bot);
 		if (botTable.containsKey(bot.getBotId()))
 		{
-			log.warn("Bot came online, but we already have it: " + bot, new Exception());
+			log.warn("Bot came online, but we already have it: {}", bot, new Exception());
 		} else
 		{
 			bot.setBotParams(botParamsManager.get(bot.getBotParamLabel()));

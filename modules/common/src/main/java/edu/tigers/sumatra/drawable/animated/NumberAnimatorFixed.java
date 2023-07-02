@@ -14,7 +14,7 @@ import com.sleepycat.persist.model.Persistent;
 @Persistent
 public class NumberAnimatorFixed implements INumberAnimator
 {
-	private final float number;
+	private final double number;
 	
 	
 	@SuppressWarnings("unused")
@@ -27,14 +27,14 @@ public class NumberAnimatorFixed implements INumberAnimator
 	/**
 	 * @param number
 	 */
-	public NumberAnimatorFixed(final float number)
+	public NumberAnimatorFixed(final double number)
 	{
 		this.number = number;
 	}
 	
 	
 	@Override
-	public float getNumber()
+	public double getNumber()
 	{
 		return number;
 	}

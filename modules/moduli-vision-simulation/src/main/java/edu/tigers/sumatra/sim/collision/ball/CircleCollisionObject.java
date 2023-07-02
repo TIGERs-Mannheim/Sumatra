@@ -4,23 +4,24 @@
 
 package edu.tigers.sumatra.sim.collision.ball;
 
-import java.util.List;
-import java.util.Optional;
-
 import edu.tigers.sumatra.math.circle.ICircle;
-import edu.tigers.sumatra.math.line.v2.ILineSegment;
-import edu.tigers.sumatra.math.line.v2.Lines;
+import edu.tigers.sumatra.math.line.ILineSegment;
+import edu.tigers.sumatra.math.line.Lines;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.IVector3;
 import edu.tigers.sumatra.math.vector.Vector2;
 
+import java.util.List;
+import java.util.Optional;
+
 
 /**
+ *
  */
 public class CircleCollisionObject implements ICollisionObject
 {
-	private final ICircle	circle;
-	private final IVector3	vel;
+	private final ICircle circle;
+	private final IVector3 vel;
 	
 	
 	CircleCollisionObject(final ICircle circle, final IVector3 vel)
@@ -41,7 +42,7 @@ public class CircleCollisionObject implements ICollisionObject
 	public Optional<ICollision> getCollision(final IVector3 prePos, final IVector3 postPos)
 	{
 		ILineSegment stateLine = Lines.segmentFromPoints(prePos.getXYVector(), postPos.getXYVector());
-		List<IVector2> points = circle.lineIntersections(stateLine);
+		List<IVector2> points = circle.intersectPerimeterPath(stateLine);
 		if (!points.isEmpty())
 		{
 			IVector2 collisionPoint = stateLine.supportVector().nearestTo(points);

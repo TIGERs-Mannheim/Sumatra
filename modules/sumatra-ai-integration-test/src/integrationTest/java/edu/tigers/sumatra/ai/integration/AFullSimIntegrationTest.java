@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.integration;
@@ -13,9 +13,9 @@ import edu.tigers.sumatra.ai.AiBerkeleyRecorder;
 import edu.tigers.sumatra.ai.BerkeleyAiFrame;
 import edu.tigers.sumatra.ai.IAIObserver;
 import edu.tigers.sumatra.ai.athena.EAIControlState;
-import edu.tigers.sumatra.geometry.Geometry;
+import edu.tigers.sumatra.ai.integration.blocker.AiSimTimeBlocker;
 import edu.tigers.sumatra.ids.EAiTeam;
-import edu.tigers.sumatra.ids.ETeamColor;
+import edu.tigers.sumatra.log.LogEventWatcher;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.model.SumatraModel;
 import edu.tigers.sumatra.persistence.BerkeleyAccessor;
@@ -46,6 +46,7 @@ import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.LogEvent;
 import org.apache.logging.log4j.message.Message;
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
@@ -56,9 +57,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
-import java.util.EnumMap;
-import java.util.Map;
-import java.util.stream.Collectors;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -73,10 +76,10 @@ public abstract class AFullSimIntegrationTest implements IWorldFrameObserver, IA
 
 	private BerkeleyAsyncRecorder recorder;
 	private final LogEventWatcher logEventWatcher = new LogEventWatcher(Level.WARN, Level.ERROR);
+	private final List<IGameEvent> gameEvents = new CopyOnWriteArrayList<>();
 
-	protected WorldFrameWrapper lastWorldFrameWrapper = null;
-	protected Map<EAiTeam, AIInfoFrame> lastAiFrames = new EnumMap<>(EAiTeam.class);
-	protected RefereeMsg lastRefereeMsg = null;
+	protected WorldFrameWrapper lastWorldFrameWrapper;
+	private RefereeMsg lastRefereeMsg = null;
 	protected boolean testCaseSucceeded;
 
 	protected boolean stuck;
@@ -90,7 +93,15 @@ public abstract class AFullSimIntegrationTest implements IWorldFrameObserver, IA
 		ConfigRegistration.setDefPath("../../config/");
 		SumatraModel.getInstance().setCurrentModuliConfig(MODULI_CONFIG);
 		SumatraModel.getInstance().loadModulesOfConfig(MODULI_CONFIG);
-		Geometry.setNegativeHalfTeam(ETeamColor.BLUE);
+
+		SumatraModel.getInstance().startModules();
+		SimulationHelper.setSimulateWithMaxSpeed(true);
+		SimulationHelper.setHandleBotCount(false);
+
+		SumatraModel.getInstance().getModule(AutoRefModule.class).changeMode(EAutoRefMode.ACTIVE);
+
+		SumatraModel.getInstance().getModule(AAgent.class).changeMode(EAiTeam.YELLOW, EAIControlState.MATCH_MODE);
+		SumatraModel.getInstance().getModule(AAgent.class).changeMode(EAiTeam.BLUE, EAIControlState.MATCH_MODE);
 	}
 
 
@@ -101,16 +112,14 @@ public abstract class AFullSimIntegrationTest implements IWorldFrameObserver, IA
 		log.debug("Setting up test case {}", testName.getMethodName());
 		lastRefereeMsg = null;
 		lastWorldFrameWrapper = null;
-		lastAiFrames.clear();
 		stuck = false;
 		botMoved = false;
 		testCaseSucceeded = false;
 		logEventWatcher.clear();
 		logEventWatcher.start();
+		gameEvents.clear();
 
-		SumatraModel.getInstance().startModules();
-		SimulationHelper.setSimulateWithMaxSpeed(true);
-		SimulationHelper.setHandleBotCount(false);
+		SimulationHelper.resetSimulation();
 
 		BerkeleyDb db = BerkeleyDb.withCustomLocation(Paths.get("../../" + BerkeleyDb.getDefaultBasePath(),
 				BerkeleyDb.getDefaultName() + "_" + testName.getMethodName()));
@@ -125,11 +134,6 @@ public abstract class AFullSimIntegrationTest implements IWorldFrameObserver, IA
 		recorder.add(new WfwBerkeleyRecorder(db));
 		recorder.add(new ShapeMapBerkeleyRecorder(db));
 		recorder.start();
-
-		SumatraModel.getInstance().getModule(AutoRefModule.class).changeMode(EAutoRefMode.ACTIVE);
-
-		SumatraModel.getInstance().getModule(AAgent.class).changeMode(EAiTeam.YELLOW, EAIControlState.MATCH_MODE);
-		SumatraModel.getInstance().getModule(AAgent.class).changeMode(EAiTeam.BLUE, EAIControlState.MATCH_MODE);
 
 		SumatraModel.getInstance().getModule(AWorldPredictor.class).addObserver(this);
 		SumatraModel.getInstance().getModule(AAgent.class).addObserver(this);
@@ -153,20 +157,38 @@ public abstract class AFullSimIntegrationTest implements IWorldFrameObserver, IA
 			recorder.getDb().compress();
 			Path dbPath = Paths.get(recorder.getDb().getDbPath());
 			Path targetFolder = dbPath.getParent();
-			Files.move(Paths.get("build/state-store.json.stream"),
-					targetFolder.resolve(dbPath.getFileName() + "_state-store.json.stream"),
-					StandardCopyOption.REPLACE_EXISTING);
+			Path stateStorePath = Paths.get("build/state-store.json.stream");
+			if (Files.exists(stateStorePath))
+			{
+				Files.copy(stateStorePath,
+						targetFolder.resolve(dbPath.getFileName() + "_state-store.json.stream"),
+						StandardCopyOption.REPLACE_EXISTING);
+			}
 		}
 		recorder.getDb().delete();
 
-		SumatraModel.getInstance().stopModules();
 		log.debug("Test case cleanup done for {}", testName.getMethodName());
+	}
+
+
+	@AfterClass
+	public static void afterClass()
+	{
+		SumatraModel.getInstance().stopModules();
 	}
 
 
 	@Override
 	public void onNewWorldFrame(final WorldFrameWrapper wFrameWrapper)
 	{
+		final ArrayList<IGameEvent> newGameEvents = new ArrayList<>(
+				wFrameWrapper.getRefereeMsg().getGameEvents());
+		if (lastRefereeMsg != null)
+		{
+			newGameEvents.removeAll(lastRefereeMsg.getGameEvents());
+		}
+		this.gameEvents.addAll(newGameEvents);
+
 		if (lastRefereeMsg != null
 				&& lastRefereeMsg.getCommand() != SslGcRefereeMessage.Referee.Command.HALT
 				&& wFrameWrapper.getRefereeMsg().getCommand() == SslGcRefereeMessage.Referee.Command.HALT)
@@ -181,14 +203,7 @@ public abstract class AFullSimIntegrationTest implements IWorldFrameObserver, IA
 	}
 
 
-	@Override
-	public void onNewAIInfoFrame(final AIInfoFrame lastAIInfoframe)
-	{
-		lastAiFrames.put(lastAIInfoframe.getAiTeam(), lastAIInfoframe);
-	}
-
-
-	protected Snapshot loadSimParamsFromSnapshot(final String snapshotFile)
+	protected Snapshot readSnapshot(final String snapshotFile)
 	{
 		try
 		{
@@ -202,7 +217,7 @@ public abstract class AFullSimIntegrationTest implements IWorldFrameObserver, IA
 
 	protected void initSimulation(String snapshotFile)
 	{
-		initSimulation(loadSimParamsFromSnapshot(snapshotFile));
+		SimulationHelper.initSimulation(readSnapshot(snapshotFile));
 	}
 
 
@@ -223,17 +238,66 @@ public abstract class AFullSimIntegrationTest implements IWorldFrameObserver, IA
 		assertThat(logEventWatcher.getEvents(Level.ERROR).stream()
 				.map(LogEvent::getMessage)
 				.map(Message::getFormattedMessage)
-				.collect(Collectors.toList())).isEmpty();
+				.toList()).isEmpty();
 		assertThat(logEventWatcher.getEvents(Level.WARN).stream()
 				.map(LogEvent::getMessage)
 				.map(Message::getFormattedMessage)
-				.collect(Collectors.toList())).isEmpty();
+				.toList()).isEmpty();
 	}
 
 
 	protected void assertBotsHaveMoved()
 	{
 		assertThat(botMoved).withFailMessage("No robot moved during test").isTrue();
+	}
+
+
+	protected void assertNoAvoidableViolations()
+	{
+		Set<EGameEvent> avoidableViolations = new HashSet<>();
+		avoidableViolations.add(EGameEvent.PLACEMENT_FAILED);
+
+		avoidableViolations.add(EGameEvent.KEEPER_HELD_BALL);
+		avoidableViolations.add(EGameEvent.ATTACKER_DOUBLE_TOUCHED_BALL);
+		avoidableViolations.add(EGameEvent.ATTACKER_TOUCHED_BALL_IN_DEFENSE_AREA);
+		avoidableViolations.add(EGameEvent.BOT_KICKED_BALL_TOO_FAST);
+
+		avoidableViolations.add(EGameEvent.ATTACKER_TOO_CLOSE_TO_DEFENSE_AREA);
+		avoidableViolations.add(EGameEvent.BOT_INTERFERED_PLACEMENT);
+		avoidableViolations.add(EGameEvent.BOT_CRASH_DRAWN);
+		avoidableViolations.add(EGameEvent.BOT_CRASH_UNIQUE);
+		avoidableViolations.add(EGameEvent.BOT_PUSHED_BOT);
+		avoidableViolations.add(EGameEvent.BOT_HELD_BALL_DELIBERATELY);
+		avoidableViolations.add(EGameEvent.BOT_TIPPED_OVER);
+		avoidableViolations.add(EGameEvent.BOT_TOO_FAST_IN_STOP);
+		avoidableViolations.add(EGameEvent.DEFENDER_TOO_CLOSE_TO_KICK_POINT);
+		avoidableViolations.add(EGameEvent.DEFENDER_IN_DEFENSE_AREA);
+
+		avoidableViolations.add(EGameEvent.MULTIPLE_CARDS);
+		avoidableViolations.add(EGameEvent.MULTIPLE_FOULS);
+
+		List<IGameEvent> avoidableGameEvents = gameEvents.stream()
+				.filter(e -> avoidableViolations.contains(e.getType()))
+				.toList();
+		assertThat(avoidableGameEvents).isEmpty();
+	}
+
+
+	protected void assertGameEvent(EGameEvent gameEvent)
+	{
+		assertThat(gameEvents.stream().map(IGameEvent::getType)).contains(gameEvent);
+	}
+
+
+	protected void assertNotGameEvent(EGameEvent gameEvent)
+	{
+		assertThat(gameEvents.stream().map(IGameEvent::getType)).doesNotContain(gameEvent);
+	}
+
+
+	protected void assertGameState(EGameState gameState)
+	{
+		assertThat(lastWorldFrameWrapper.getGameState().getState()).isEqualTo(gameState);
 	}
 
 

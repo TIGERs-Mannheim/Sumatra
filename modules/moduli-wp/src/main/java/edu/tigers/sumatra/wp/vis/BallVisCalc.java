@@ -17,7 +17,7 @@ import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.geometry.RuleConstraints;
 import edu.tigers.sumatra.math.circle.Circle;
 import edu.tigers.sumatra.math.circle.ICircle;
-import edu.tigers.sumatra.math.line.v2.ILineSegment;
+import edu.tigers.sumatra.math.line.ILineSegment;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.wp.data.ITrackedBall;
@@ -53,7 +53,7 @@ public class BallVisCalc implements IWpCalc
 		if (invisibleFor > 0.05)
 		{
 			shapeMap.get(EWpShapesLayer.BALL)
-					.add(new DrawableAnnotation(ball.getPos(), String.format("Invisible for:\n%.2fs", invisibleFor))
+					.add(new DrawableAnnotation(ball.getPos(), String.format("Invisible for:%n%.2fs", invisibleFor))
 							.withCenterHorizontally(true)
 							.withOffset(Vector2.fromY(90))
 							.setColor(Color.orange));
@@ -77,8 +77,7 @@ public class BallVisCalc implements IWpCalc
 
 		if (wfw.getSimpleWorldFrame().getBall().getVel().getLength2() > 0.1)
 		{
-			var ballCurve = new DrawablePlanarCurve(wfw.getSimpleWorldFrame().getBall().getTrajectory().getPlanarCurve(),
-					0.1, 0.02);
+			var ballCurve = new DrawablePlanarCurve(wfw.getSimpleWorldFrame().getBall().getTrajectory().getPlanarCurve());
 			ballCurve.setStrokeWidth(10);
 			ballCurve.setColor(Color.PINK);
 			shapeMap.get(EWpShapesLayer.BALL_PREDICTION).add(ballCurve);

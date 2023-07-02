@@ -1,35 +1,18 @@
 import org.apache.tools.ant.filters.ReplaceTokens
 
-/*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
- */
-
 plugins {
-    id 'org.sonarqube' version '3.3'
-    id 'com.palantir.git-version' version '0.13.0'
-    id 'ca.cutterslade.analyze' version '1.8.3'
-    id 'com.google.cloud.tools.jib' version '3.2.0'
-    id 'com.github.ben-manes.versions' version '0.42.0'
-    id 'se.patrikerdes.use-latest-versions' version '0.2.18'
-    id "com.google.protobuf" version "0.8.18" apply(false)
+    id 'com.palantir.git-version' version '3.0.0'
+    id 'org.sonarqube'
+    id 'idea'
 
     id 'sumatra.java'
-    id 'application'
-    id 'idea'
+    id 'sumatra.jib'
+    id 'sumatra.application'
 }
 
 ext.versionPrefix = 'merge/'
 ext.versionDetails = versionDetails(prefix: versionPrefix)
 version versionDetails.lastTag + '-' + versionDetails.gitHash
-
-// set version here to avoid overriding the project version.
-// version is set to null to skip it completely in the artifact names
-// Thus, it is guaranteed that old artifacts are always overwritten.
-distZip.archiveVersion.convention(null)
-jar.archiveVersion.convention(null)
-
-// disable tar distribution to avoid redundant artifacts
-distTar.enabled = false
 
 processResources {
     inputs.property("project.version", rootProject.versionDetails.lastTag)
@@ -38,6 +21,94 @@ processResources {
     ]
 }
 
-apply from: 'gradle/application.gradle'
-apply from: 'gradle/docker.gradle'
-apply from: 'gradle/sonarqube.gradle'
+dependencies {
+    implementation project(':common')
+    implementation project(':common-gui')
+    implementation project(':common-gui-config')
+    implementation project(':sumatra-model')
+    implementation project(':sumatra-skillsystem')
+    implementation project(':sumatra-simulation-control')
+    implementation project(':sumatra-gui-skills')
+    implementation project(':sumatra-gui-ai')
+    implementation project(':sumatra-gui-bot')
+    implementation project(':sumatra-gui-bot-params')
+    implementation project(':sumatra-gui-log')
+    implementation project(':sumatra-gui-rcm')
+    implementation project(':sumatra-gui-referee')
+    implementation project(':sumatra-gui-replay')
+    implementation project(':sumatra-gui-sim')
+    implementation project(':sumatra-gui-timer')
+    implementation project(':sumatra-gui-wp')
+    implementation project(':sumatra-gui-logfile')
+    implementation project(':sumatra-gui-kick')
+    implementation project(':autoreferee-gui')
+    runtimeOnly project(':moduli-movement-limit-observer')
+    implementation project(':moduli-botmanager')
+    runtimeOnly project(':moduli-botmanager-sim')
+    implementation project(':moduli-botmanager-tigers')
+    implementation project(':moduli-ai')
+    implementation project(':moduli-record')
+    implementation project(':moduli-referee')
+    implementation project(':moduli-wp')
+    runtimeOnly project(':moduli-vision')
+    implementation project(':moduli-cam')
+    implementation project(':moduli-ai-controller')
+    implementation project(':moduli-vision-simulation')
+    implementation project(':moduli-autoreferee')
+    runtimeOnly project(':moduli-team-client')
+    implementation project(':moduli-bot-params')
+    runtimeOnly project(':moduli-log-analysis')
+
+    implementation 'com.github.TIGERs-Mannheim:moduli:4.1'
+
+    implementation 'org.apache.logging.log4j:log4j-api:2.20.0'
+    runtimeOnly 'org.apache.logging.log4j:log4j-core:2.20.0'
+
+    implementation 'commons-cli:commons-cli:1.5.0'
+}
+
+application {
+    mainClass.set('edu.tigers.sumatra.Sumatra')
+}
+
+jib {
+    to {
+        image = "sumatra"
+        auth {
+            username = "docker"
+            password = System.getenv("GITLAB_DOCKER_REGISTRY_TOKEN") ?: ""
+        }
+    }
+    container {
+        workingDirectory = "/Sumatra"
+    }
+    extraDirectories {
+        paths {
+            path {
+                from = file('config')
+                into = '/Sumatra/config'
+            }
+            path {
+                from = file('src/main/jib')
+                into = '/Sumatra/'
+            }
+        }
+        permissions.put('/Sumatra/**', '777')
+    }
+}
+
+sonarqube {
+    properties {
+        property "sonar.projectKey", "main_Sumatra_AXyeyj5BLG1xSGHUS0Xf"
+        property "sonar.projectVersion", versionDetails.lastTag
+        property "sonar.host.url", System.getenv("SONARQUBE_URL")
+        property "sonar.login", System.getenv("SONARQUBE_AUTH_TOKEN")
+        if (System.getenv("CI_MERGE_REQUEST_IID") != null) {
+            property "sonar.pullrequest.key", System.getenv("CI_MERGE_REQUEST_IID")
+            property "sonar.pullrequest.branch", System.getenv("CI_MERGE_REQUEST_SOURCE_BRANCH_NAME")
+            property "sonar.pullrequest.base", System.getenv("CI_MERGE_REQUEST_TARGET_BRANCH_NAME")
+        } else {
+            property "sonar.branch.name", System.getenv("CI_COMMIT_REF_NAME")
+        }
+    }
+}

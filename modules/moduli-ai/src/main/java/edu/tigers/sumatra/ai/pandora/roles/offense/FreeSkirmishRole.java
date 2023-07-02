@@ -11,8 +11,6 @@ import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.skillsystem.skills.RotationSkill;
 import edu.tigers.sumatra.statemachine.AState;
 
-import java.util.Optional;
-
 
 public class FreeSkirmishRole extends ARole
 {
@@ -30,22 +28,16 @@ public class FreeSkirmishRole extends ARole
 		public void doEntryActions()
 		{
 			IVector2 target = getAiFrame().getTacticalField().getSkirmishInformation().getSupportiveCircleCatchPos();
-			Optional<Double> angle;
+			double angle = 0;
 			if (target != null)
 			{
 				IVector2 ballToTarget = target.subtractNew(getWFrame().getBall().getPos());
 				IVector2 meToBall = getWFrame().getBall().getPos().subtractNew(getPos());
-				angle = meToBall.angleTo(ballToTarget);
-			} else
-			{
-				angle = Optional.empty();
+				angle = meToBall.angleTo(ballToTarget).orElse(0.0);
 			}
 
 			RotationSkill skill;
-			if (angle.isEmpty())
-			{
-				skill = new RotationSkill(AngleMath.deg2rad(170));
-			} else if (angle.get() > 0)
+			if (angle > 0)
 			{
 				// right
 				skill = new RotationSkill(AngleMath.deg2rad(170));

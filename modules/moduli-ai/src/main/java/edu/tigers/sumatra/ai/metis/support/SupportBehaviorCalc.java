@@ -10,7 +10,7 @@ import edu.tigers.sumatra.ai.metis.ballpossession.BallPossession;
 import edu.tigers.sumatra.ai.metis.defense.data.DefenseBotThreat;
 import edu.tigers.sumatra.ai.metis.general.SkirmishInformation;
 import edu.tigers.sumatra.ai.metis.kicking.OngoingPass;
-import edu.tigers.sumatra.ai.metis.offense.action.OffensiveAction;
+import edu.tigers.sumatra.ai.metis.offense.action.RatedOffensiveAction;
 import edu.tigers.sumatra.ai.metis.offense.strategy.OffensiveStrategy;
 import edu.tigers.sumatra.ai.metis.pass.KickOrigin;
 import edu.tigers.sumatra.ai.metis.support.behaviors.AggressiveMan2ManMarkerBehavior;
@@ -64,13 +64,14 @@ public class SupportBehaviorCalc extends ACalculator
 
 	private final Supplier<List<IVector2>> possibleSupporterKickoffPositions;
 	private final Supplier<List<ICircle>> freeSpots;
-	private final Supplier<Map<BotID, OffensiveAction>> offensiveActions;
+	private final Supplier<Map<BotID, RatedOffensiveAction>> offensiveActions;
 	private final Supplier<Map<BotID, KickOrigin>> kickOrigins;
 	private final Supplier<GoalKick> bestGoalKick;
 	private final Supplier<SkirmishInformation> skirmishInformation;
 	private final Supplier<List<IArc>> offensiveShadows;
 	private final Supplier<Optional<OngoingPass>> ongoingPass;
 	private final Supplier<Map<BotID, DefenseBotThreat>> supporterToBotThreatMapping;
+	private final Supplier<Optional<Boolean>> canOngoingPassBeTrusted;
 
 	@Getter
 	private final Map<BotID, EnumMap<ESupportBehavior, SupportBehaviorPosition>> supportViabilities = new HashMap<>();
@@ -96,7 +97,8 @@ public class SupportBehaviorCalc extends ACalculator
 		));
 		behaviors.put(ESupportBehavior.FAKE_PASS_RECEIVER, new FakePassReceiverSupportBehavior(
 				offensiveActions,
-				ongoingPass
+				ongoingPass,
+				canOngoingPassBeTrusted
 		));
 		behaviors.put(ESupportBehavior.PENALTY_AREA_ATTACKER, new PenaltyAreaAttackerRepulsiveBehavior(
 				offensiveStrategy,

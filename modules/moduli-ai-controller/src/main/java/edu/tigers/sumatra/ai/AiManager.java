@@ -7,7 +7,6 @@ package edu.tigers.sumatra.ai;
 import edu.tigers.sumatra.ai.athena.EAIControlState;
 import edu.tigers.sumatra.drawable.ShapeMapSource;
 import edu.tigers.sumatra.ids.EAiTeam;
-import edu.tigers.sumatra.ids.ETeamColor;
 import edu.tigers.sumatra.model.SumatraModel;
 import edu.tigers.sumatra.skillsystem.ASkillSystem;
 import edu.tigers.sumatra.timer.ATimer;
@@ -17,6 +16,7 @@ import edu.tigers.sumatra.wp.data.WorldFrameWrapper;
 import org.apache.commons.lang.Validate;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.ThreadContext;
 
 import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.ExecutorService;
@@ -157,6 +157,8 @@ public class AiManager
 			ai.stop();
 			agent.notifyAIStopped(ai.getAiTeam());
 			wp.notifyRemoveSourceFromShapeMap(shapeMapSource);
+			ThreadContext.remove("wfTs");
+			ThreadContext.remove("wfId");
 		}
 
 
@@ -170,6 +172,8 @@ public class AiManager
 
 			long tNow = wfw.getSimpleWorldFrame().getTimestamp();
 			long id = wfw.getSimpleWorldFrame().getFrameNumber();
+			ThreadContext.put("wfTs", String.valueOf(tNow));
+			ThreadContext.put("wfId", String.valueOf(id));
 
 			skipCounter++;
 			if (skipCounter < RUN_EVERY_N_TH_FRAME)
@@ -204,11 +208,5 @@ public class AiManager
 				timer.stop(aiName, id);
 			}
 		}
-	}
-
-
-	public static String getShapeMapSource(ETeamColor teamColor)
-	{
-		return teamColor == ETeamColor.YELLOW ? "Yellow" : "Blue";
 	}
 }

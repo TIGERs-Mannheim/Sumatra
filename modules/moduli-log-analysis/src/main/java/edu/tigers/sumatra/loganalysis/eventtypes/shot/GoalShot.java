@@ -12,8 +12,8 @@ import edu.tigers.sumatra.gamelog.proto.LogLabels;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.loganalysis.LogEventProtobufMapper;
 import edu.tigers.sumatra.math.circle.Circle;
-import edu.tigers.sumatra.math.line.ILine;
-import edu.tigers.sumatra.math.line.Line;
+import edu.tigers.sumatra.math.line.ILineSegment;
+import edu.tigers.sumatra.math.line.Lines;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
 
@@ -22,17 +22,26 @@ import java.util.ArrayList;
 import java.util.List;
 
 
-public class GoalShot implements IShotEventType {
-	/** When did the shot start */
+public class GoalShot implements IShotEventType
+{
+	/**
+	 * When did the shot start
+	 */
 	private final long startTimestamp;
 
-	/** When did the shot end */
+	/**
+	 * When did the shot end
+	 */
 	private final long endTimestamp;
 
-	/** Did the shot enter the goal? */
+	/**
+	 * Did the shot enter the goal?
+	 */
 	private final boolean successful;
 
-	/** Which robot took the shot? Which team did the shooter belong to */
+	/**
+	 * Which robot took the shot? Which team did the shooter belong to
+	 */
 	private final ITrackedBot shooterBot;
 
 
@@ -73,8 +82,10 @@ public class GoalShot implements IShotEventType {
 		return shooterBot;
 	}
 
+
 	/**
 	 * Creates a list of {@link IDrawableShape } from this goal shot object in order to draw it later
+	 *
 	 * @return list of shapes for goal shot
 	 */
 	@Override
@@ -83,21 +94,20 @@ public class GoalShot implements IShotEventType {
 		List<IDrawableShape> shapeList = new ArrayList<>();
 
 		String timestampsString = "Start: " + startTimestamp + "\nEnd: " + endTimestamp;
-		ILine passLine = null;
+		ILineSegment passLine = null;
 		Color colorPassLine;
 
-		if(successful)
+		if (successful)
 		{
 			colorPassLine = Color.CYAN;
-		}
-		else
+		} else
 		{
 			colorPassLine = Color.MAGENTA;
 		}
 
-		if(shooterBot != null && endOfPass != null)
+		if (shooterBot != null && endOfPass != null)
 		{
-			passLine = Line.fromPoints(shooterBot.getBotKickerPos(), endOfPass);
+			passLine = Lines.segmentFromPoints(shooterBot.getBotKickerPos(), endOfPass);
 		}
 
 		// source bot that kicks the ball in this pass

@@ -4,6 +4,7 @@ function [result] = identifyBotModelV2(varargin)
 
 if sum(size(varargin)) == 2
     % called via matlab
+    % use this to list: files = fullfile('..\data\botModelV2', {dir('..\data\botModelV2\*ident*').name})
     filenames = varargin{1};
 else
     % called via Sumatra
@@ -107,7 +108,7 @@ theta = [front, pi-front, pi+back, 2*pi-back];
 
 %% do friction analysis during rollout
 fricYParams = zeros(numYRolloutSamples, 6); % [dataset vic cou couOnly errVC errC]
-fricWParams = zeros(numYRolloutSamples, 6);
+fricWParams = zeros(numWSamples, 6);
 fricYIndex = 1;
 fricWIndex = 1;
 
@@ -284,8 +285,8 @@ function showResults(~, ~)
     ylim([0 1]);
 
     subplot(3, 2, 4);
-    plot(effWParams(:,1), effYParams(:,2), 'bo', ...
-        effWParams(:,1), ones(size(effYParams,1))*mean(effYParams(:,2)), 'b--');
+    plot(effWParams(:,1), effWParams(:,2), 'bo', ...
+        effWParams(:,1), ones(size(effWParams,1))*mean(effWParams(:,2)), 'b--');
     grid on;
     grid minor;
     title('Output Efficiency W');

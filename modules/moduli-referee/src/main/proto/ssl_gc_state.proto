@@ -30,7 +30,7 @@ message Foul {
 
 message Command {
     required Type type = 1;
-    optional Team for_team = 2;
+    required Team for_team = 2;
 
     enum Type {
         UNKNOWN = 0;
@@ -39,7 +39,7 @@ message Command {
         NORMAL_START = 3;
         FORCE_START = 4;
         DIRECT = 5;
-        INDIRECT = 6;
+        reserved 6; // INDIRECT
         KICKOFF = 7;
         PENALTY = 8;
         TIMEOUT = 9;
@@ -96,6 +96,7 @@ message TeamInfo {
     optional google.protobuf.Timestamp requests_timeout_since = 15;
     optional google.protobuf.Timestamp requests_emergency_stop_since = 16;
     optional int32 challenge_flags = 17;
+    optional bool bot_substitution_allowed = 18;
 }
 
 message State {
@@ -112,6 +113,8 @@ message State {
     repeated GameEvent game_events = 13;
     repeated ProposalGroup proposal_groups = 14;
     optional Division division = 15;
-    optional bool auto_continue = 16;
+    reserved 16;
     optional Team first_kickoff_team = 17;
+    optional MatchType match_type = 18;
+    optional google.protobuf.Timestamp ready_continue_time = 20;
 }

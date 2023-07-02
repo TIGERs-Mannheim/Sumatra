@@ -14,7 +14,6 @@ import edu.tigers.sumatra.botmanager.botskills.data.IMatchCommand;
 import edu.tigers.sumatra.botmanager.botskills.data.MultimediaControl;
 import edu.tigers.sumatra.drawable.ShapeMap;
 import edu.tigers.sumatra.ids.BotID;
-import edu.tigers.sumatra.model.SumatraModel;
 import edu.tigers.sumatra.statemachine.AState;
 import edu.tigers.sumatra.statemachine.IEvent;
 import edu.tigers.sumatra.statemachine.IState;
@@ -41,7 +40,7 @@ public abstract class ASkill implements ISkill
 {
 	protected static final IState IDLE_STATE = new DefaultState();
 
-	private final IStateMachine<IState> stateMachine = new StateMachine<>();
+	private final IStateMachine<IState> stateMachine = new StateMachine<>(this.getClass().getSimpleName());
 	@Getter
 	private final AverageTimeMeasure averageTimeMeasure = new AverageTimeMeasure();
 
@@ -57,7 +56,6 @@ public abstract class ASkill implements ISkill
 	protected ASkill()
 	{
 		stateMachine.setInitialState(IDLE_STATE);
-		stateMachine.setExtendedLogging(!SumatraModel.getInstance().isTournamentMode());
 		averageTimeMeasure.setAveragingTime(0.5);
 	}
 
@@ -278,6 +276,8 @@ public abstract class ASkill implements ISkill
 		aiInfo.setSkillState(getCurrentState());
 		aiInfo.setMaxProcTime(averageTimeMeasure.getMaxTime());
 		aiInfo.setAvgProcTime(averageTimeMeasure.getAverageTime());
+		aiInfo.setDribbleCurrent(bot.getDribblerCurrent());
+		aiInfo.setDribbleCurrentMax(getMatchCtrl().getSkill().getKickerDribbler().getDribblerMaxCurrent());
 
 		if (bot.getClass().equals(TigerBot.class))
 		{

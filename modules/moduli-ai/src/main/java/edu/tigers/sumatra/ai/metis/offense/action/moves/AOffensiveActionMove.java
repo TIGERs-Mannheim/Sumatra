@@ -5,7 +5,7 @@
 package edu.tigers.sumatra.ai.metis.offense.action.moves;
 
 import edu.tigers.sumatra.ai.BaseAiFrame;
-import edu.tigers.sumatra.ai.metis.offense.action.OffensiveAction;
+import edu.tigers.sumatra.ai.metis.offense.action.RatedOffensiveAction;
 import edu.tigers.sumatra.ai.metis.pass.KickOrigin;
 import edu.tigers.sumatra.ai.metis.pass.rating.RatedPass;
 import edu.tigers.sumatra.drawable.IDrawableShape;
@@ -41,7 +41,7 @@ public abstract class AOffensiveActionMove
 	}
 
 
-	public abstract OffensiveAction calcAction(BotID botId);
+	public abstract Optional<RatedOffensiveAction> calcAction(BotID botId);
 
 
 	protected double applyMultiplier(double baseScore)
@@ -53,7 +53,7 @@ public abstract class AOffensiveActionMove
 	protected Optional<RatedPass> findPassForMe(Map<KickOrigin, RatedPass> passes, BotID botID)
 	{
 		return passes.entrySet().stream()
-				.filter(k -> k.getKey().getShooter() == botID || k.getKey().getShooter().isUninitializedID())
+				.filter(k -> k.getKey().getShooter().equals(botID) || k.getKey().getShooter().isUninitializedID())
 				.map(Map.Entry::getValue)
 				.findAny();
 	}

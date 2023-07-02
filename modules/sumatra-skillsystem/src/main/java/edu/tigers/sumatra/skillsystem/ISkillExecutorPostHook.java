@@ -6,7 +6,6 @@ package edu.tigers.sumatra.skillsystem;
 import edu.tigers.sumatra.botmanager.bots.ABot;
 import edu.tigers.sumatra.drawable.ShapeMap;
 import edu.tigers.sumatra.ids.BotID;
-import edu.tigers.sumatra.wp.util.BotStateTrajectorySync;
 
 
 /**
@@ -20,10 +19,6 @@ public interface ISkillExecutorPostHook
 
 
 	default void onRobotRemoved(final BotID botID)
-	{
-	}
-
-	default void onTrajectoryUpdated(BotID botID, BotStateTrajectorySync sync)
 	{
 	}
 }

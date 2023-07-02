@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.visualizer;
@@ -27,8 +27,8 @@ import java.util.Objects;
 
 public class RobotInteractor
 {
-	@Configurable(comment = "Enter penalty area when moving bot with point'n click", defValue = "true")
-	private static boolean moveToPenAreaAllowed = true;
+	@Configurable(comment = "Consider physical obstacles only", defValue = "true")
+	private static boolean physicalObstaclesOnly = true;
 
 	@Configurable(comment = "Use fastPosMove for point'n click", defValue = "false")
 	private static boolean useFastPosMove = false;
@@ -49,7 +49,7 @@ public class RobotInteractor
 	{
 		if (mouseMoveUpdateDestinationMode && skill != null && Objects.equals(skill.getBotId(), selectedRobotId))
 		{
-			if (Geometry.getNegativeHalfTeam() != skill.getBotId().getTeamColor())
+			if (!Geometry.getNegativeHalfTeam().equals(skill.getBotId().getTeamColor()))
 			{
 				skill.updateDestination(Vector2.fromXY(-pos.x(), -pos.y()));
 			} else
@@ -102,8 +102,10 @@ public class RobotInteractor
 	{
 		MoveToSkill moveToSkill = MoveToSkill.createMoveToSkill();
 		MovementCon moveCon = moveToSkill.getMoveCon();
-		moveCon.setPenaltyAreaOurObstacle(!moveToPenAreaAllowed);
-		moveCon.setPenaltyAreaTheirObstacle(!moveToPenAreaAllowed);
+		if (physicalObstaclesOnly)
+		{
+			moveCon.physicalObstaclesOnly();
+		}
 		moveCon.setBallObstacle(ballObstacle);
 		moveToSkill.getMoveConstraints().setFastMove(useFastPosMove);
 		return moveToSkill;
@@ -112,7 +114,7 @@ public class RobotInteractor
 
 	private IVector2 adjustPosForTeam(BotID botID, IVector2 pos)
 	{
-		if (Geometry.getNegativeHalfTeam() != botID.getTeamColor())
+		if (!Geometry.getNegativeHalfTeam().equals(botID.getTeamColor()))
 		{
 			return pos.multiplyNew(-1);
 		}

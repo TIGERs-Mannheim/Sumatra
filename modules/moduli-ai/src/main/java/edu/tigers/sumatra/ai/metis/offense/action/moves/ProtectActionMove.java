@@ -5,17 +5,16 @@
 package edu.tigers.sumatra.ai.metis.offense.action.moves;
 
 import com.github.g3force.configurable.Configurable;
-import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
 import edu.tigers.sumatra.ai.metis.offense.action.EActionViability;
-import edu.tigers.sumatra.ai.metis.offense.action.OffensiveAction;
+import edu.tigers.sumatra.ai.metis.offense.action.RatedOffensiveAction;
 import edu.tigers.sumatra.ai.metis.offense.action.OffensiveActionViability;
-import edu.tigers.sumatra.ai.metis.offense.dribble.BallDribbleToPosGenerator;
-import edu.tigers.sumatra.ai.metis.offense.dribble.DribblingInformation;
+import edu.tigers.sumatra.ai.metis.offense.dribble.DribbleToPos;
 import edu.tigers.sumatra.ai.metis.pass.KickOrigin;
 import edu.tigers.sumatra.ids.BotID;
 import lombok.RequiredArgsConstructor;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Supplier;
 
 
@@ -25,18 +24,15 @@ import java.util.function.Supplier;
 @RequiredArgsConstructor
 public class ProtectActionMove extends AOffensiveActionMove
 {
-	@Configurable(defValue = "0.21")
-	private static double minScore = 0.21;
+	@Configurable(defValue = "0.26")
+	private static double minScore = 0.26;
 
-	@Configurable(defValue = "0.02")
-	private static double antiToggleBonus = 0.02;
-
-	private BallDribbleToPosGenerator dribbleGenerator = new BallDribbleToPosGenerator();
+	@Configurable(defValue = "0.05")
+	private static double antiToggleBonus = 0.05;
 
 	private final Supplier<Map<BotID, KickOrigin>> kickOrigins;
 
-	private final Supplier<DribblingInformation> dribblingInformation;
-
+	private final Supplier<DribbleToPos> dribbleToPos;
 
 	private OffensiveActionViability calcViability(BotID botId)
 	{
@@ -52,18 +48,12 @@ public class ProtectActionMove extends AOffensiveActionMove
 
 
 	@Override
-	public OffensiveAction calcAction(BotID botId)
+	public Optional<RatedOffensiveAction> calcAction(BotID botId)
 	{
-		var pos = dribbleGenerator
-				.getDribbleToPos(getWFrame(),
-						getAiFrame().getPrevFrame().getTacticalField().getOpponentClosestToBall().getBotId(),
-						getWFrame().getBot(botId), dribblingInformation.get(),
-						getAiFrame().getShapes(EAiShapesLayer.OFFENSIVE_DRIBBLE));
-		return OffensiveAction.builder()
-				.move(EOffensiveActionMove.PROTECT_MOVE)
-				.dribbleToPos(pos)
-				.viability(calcViability(botId))
-				.build();
+		return Optional.of(RatedOffensiveAction.buildProtect(
+				EOffensiveActionMove.PROTECT_MOVE,
+				calcViability(botId),
+				dribbleToPos.get()));
 	}
 
 

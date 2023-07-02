@@ -7,7 +7,7 @@ package edu.tigers.sumatra.offensive.view;
 
 import edu.tigers.sumatra.trees.OffensiveActionTree;
 import edu.tigers.sumatra.trees.OffensiveActionTreeNode;
-import edu.tigers.sumatra.ai.metis.offense.action.situation.OffensiveActionTreePath;
+import edu.tigers.sumatra.ai.metis.offense.situation.rating.OffensiveActionTreePath;
 import edu.tigers.sumatra.ai.metis.offense.action.moves.EOffensiveActionMove;
 import net.miginfocom.swing.MigLayout;
 

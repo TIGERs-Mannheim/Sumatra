@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.view.timer;
@@ -56,8 +56,10 @@ public class TimerChartPanel extends JPanel
 	private static final Logger log = LogManager.getLogger(TimerChartPanel.class.getName());
 	private static final long serialVersionUID = -422217644518603954L;
 
-	/** Maximum time everything is allowed to take (currently {@value} , 60 FPS) */
-	private static final double MAXIMUM_DURATION = 16.7;
+	/**
+	 * Maximum time everything is allowed to take (currently {@value} , 100 FPS)
+	 */
+	private static final double MAXIMUM_DURATION = 10;
 	private final JTextField txtMaxRange;
 	private final JTextField txtCombinedFrames;
 	private final ArrayList<Color> colors = new ArrayList<>();

@@ -40,6 +40,10 @@ public interface IBot
 	 */
 	double getKickerLevel();
 
+	/**
+	 * @return
+	 */
+	double getDribblerCurrent();
 
 	/**
 	 * The absolute maximum kicker level possible for the bot (not the currently set max cap!)
@@ -152,7 +156,7 @@ public interface IBot
 	 *
 	 * @return
 	 */
-	boolean isOK();
+	boolean isHealthy();
 
 
 	/**
@@ -164,4 +168,11 @@ public interface IBot
 	{
 		return "No versioning";
 	}
+
+	/**
+	 * Get ball state as seen/estimated by robot.
+	 *
+	 * @return Empty if the robot does not detect a ball.
+	 */
+	default Optional<BotBallState> getBallState() { return Optional.empty(); }
 }

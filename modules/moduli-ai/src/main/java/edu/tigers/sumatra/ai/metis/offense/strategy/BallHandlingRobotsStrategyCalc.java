@@ -36,7 +36,7 @@ public class BallHandlingRobotsStrategyCalc extends ACalculator
 		{
 			return EOffensiveStrategy.STOP;
 		}
-		if (getAiFrame().getGameState().isPenaltyOrPreparePenaltyForUs())
+		if (getAiFrame().getGameState().isPenaltyOrPreparePenalty())
 		{
 			return EOffensiveStrategy.PENALTY_KICK;
 		}

@@ -104,5 +104,5 @@ public abstract class AReferee extends AModule implements IRefereeSourceObserver
 	/**
 	 * Reset and initialize the game controller.
 	 */
-	public abstract void initGameController();
+	public abstract void resetGameController();
 }

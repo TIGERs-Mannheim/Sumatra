@@ -146,7 +146,7 @@ public class RobotTracker
 	 */
 	public void update(final CamRobot robot)
 	{
-		double dtInSec = (robot.gettCapture() - lastUpdateTimestamp) * 1e-9;
+		double dtInSec = Math.abs(robot.gettCapture() - lastUpdateTimestamp) * 1e-9;
 		double distanceToPrediction = filterXY.getPositionEstimate().distanceTo(robot.getPos());
 		if (distanceToPrediction > (dtInSec * maxLinearVel))
 		{

@@ -32,23 +32,3 @@ The parameters are stored under Cfg -> geom -> edu.tigers.sumatra.geometry.BallP
 
 The parameters can be determined using the "Ball & Kick Model" view which shows further instructions.
 Any passing or redirect test play can be used to perform redirects.
-
-
-=== Trajectory synchronization
-
-Sumatra by default uses the current robot path trajectories as the current robot states.
-This way, to the AI, the robots move more predictable and less noisy.
-A synchronization mechanism makes sure the state is reset when the real state diverges too much.
-
-The parameters are stored under Cfg -> wp -> edu.tigers.sumatra.wp.util.BotStateTrajectorySync.
-
-The visualizer layer Field -> Bot Buffered Traj shows the divergence to the real state.
-It should not get red too often.
-The state is reset when the divergence holds for 0.5s.
-
-One factor can be state latency.
-The robots predict their state into the future so that there should be no latency.
-Else, the robot config can be tweaked.
-Additionally, Sumatra also has a parameter to configure additional latency.
-
-Use the MoveTestRole to capture some data and plot it using the Vision view (requires Matlab).

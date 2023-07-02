@@ -129,10 +129,10 @@ public class StubTrajectory<T> implements ITrajectory<T>
 			return (StubTrajectory<T>) new StubTrajectory<>(((IVector2) posMM).multiplyNew(-1),
 					((IVector2) pos).multiplyNew(-1),
 					((IVector2) vel).multiplyNew(-1), ((IVector2) acc).multiplyNew(-1));
-		} else if (posMM instanceof IVector3 vector3)
+		} else if (posMM instanceof IVector3 pos3)
 		{
-			IVector3 newPosMM = Vector3.from2d((vector3.getXYVector()).multiplyNew(-1),
-					AngleMath.normalizeAngle(vector3.z() + AngleMath.PI));
+			IVector3 newPosMM = Vector3.from2d(((pos3).getXYVector()).multiplyNew(-1),
+					AngleMath.normalizeAngle((pos3).z() + AngleMath.PI));
 			IVector3 newPos = Vector3.from2d((((IVector3) pos).getXYVector()).multiplyNew(-1),
 					AngleMath.normalizeAngle(((IVector3) pos).z() + AngleMath.PI));
 			IVector3 newVel = Vector3.from2d((((IVector3) vel).getXYVector()).multiplyNew(-1),
@@ -142,5 +142,12 @@ public class StubTrajectory<T> implements ITrajectory<T>
 			return (StubTrajectory<T>) new StubTrajectory<>(newPosMM, newPos, newVel, newAcc);
 		}
 		throw new IllegalStateException("Unsupported generic type: " + posMM.getClass());
+	}
+
+
+	@Override
+	public double getMaxSpeed()
+	{
+		return 0.0;
 	}
 }

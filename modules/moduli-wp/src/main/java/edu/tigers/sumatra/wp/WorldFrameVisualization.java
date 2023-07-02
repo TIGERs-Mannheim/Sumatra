@@ -4,12 +4,6 @@
 
 package edu.tigers.sumatra.wp;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import edu.tigers.sumatra.drawable.ShapeMap;
 import edu.tigers.sumatra.referee.IRefereeObserver;
 import edu.tigers.sumatra.wp.data.WorldFrameWrapper;
@@ -20,31 +14,25 @@ import edu.tigers.sumatra.wp.vis.BufferVisCalc;
 import edu.tigers.sumatra.wp.vis.IWpCalc;
 import edu.tigers.sumatra.wp.vis.RefereeVisCalc;
 import edu.tigers.sumatra.wp.vis.VelocityVisCalc;
+import lombok.extern.log4j.Log4j2;
+
+import java.util.List;
 
 
 /**
  * Aggregate multiple calculators to collect all WP-related shapes
  */
+@Log4j2
 public class WorldFrameVisualization implements IRefereeObserver
 {
-	@SuppressWarnings("unused")
-	private static final Logger log = LogManager.getLogger(WorldFrameVisualization.class.getName());
-
-	private final List<IWpCalc> calcs = new ArrayList<>();
-
-
-	/**
-	 * Create new instance
-	 */
-	public WorldFrameVisualization()
-	{
-		calcs.add(new BallVisCalc());
-		calcs.add(new BorderVisCalc());
-		calcs.add(new BotVisCalc());
-		calcs.add(new BufferVisCalc());
-		calcs.add(new RefereeVisCalc());
-		calcs.add(new VelocityVisCalc());
-	}
+	private final List<IWpCalc> calcs = List.of(
+			new BallVisCalc(),
+			new BorderVisCalc(),
+			new BotVisCalc(),
+			new BufferVisCalc(),
+			new RefereeVisCalc(),
+			new VelocityVisCalc()
+	);
 
 
 	/**
@@ -62,7 +50,7 @@ public class WorldFrameVisualization implements IRefereeObserver
 	/**
 	 * Add shapes to {@link WorldFrameWrapper}
 	 *
-	 * @param wfw world frame
+	 * @param wfw      world frame
 	 * @param shapeMap
 	 */
 	public synchronized void process(final WorldFrameWrapper wfw, final ShapeMap shapeMap)

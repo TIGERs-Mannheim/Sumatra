@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.autoref.presenter;
 
@@ -61,7 +61,8 @@ public class AutoRefPresenter implements ISumatraViewPresenter, IStartStopPanelO
 	@Override
 	public void changeMode(final EAutoRefMode mode)
 	{
-		EventQueue.invokeLater(() -> SumatraModel.getInstance().getModule(AutoRefModule.class).changeMode(mode));
+		EventQueue.invokeLater(() -> SumatraModel.getInstance().getModuleOpt(AutoRefModule.class)
+				.ifPresent(autoRef -> autoRef.changeMode(mode)));
 	}
 
 
@@ -71,13 +72,14 @@ public class AutoRefPresenter implements ISumatraViewPresenter, IStartStopPanelO
 		// empty
 	}
 
+
 	private static class GameEventDetectorObserver implements IEnumPanelObserver<EGameEventDetectorType>
 	{
 		@Override
 		public void onValueTicked(final EGameEventDetectorType type, final boolean value)
 		{
-			AutoRefModule autoRef = SumatraModel.getInstance().getModule(AutoRefModule.class);
-			autoRef.setGameEventDetectorActive(type, value);
+			SumatraModel.getInstance().getModuleOpt(AutoRefModule.class)
+					.ifPresent(autoRef -> autoRef.setGameEventDetectorActive(type, value));
 		}
 	}
 }

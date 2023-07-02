@@ -8,16 +8,16 @@ import com.github.g3force.configurable.Configurable;
 import edu.tigers.sumatra.ai.metis.kicking.Kick;
 import edu.tigers.sumatra.ai.metis.offense.OffensiveConstants;
 import edu.tigers.sumatra.ai.metis.offense.action.EActionViability;
-import edu.tigers.sumatra.ai.metis.offense.action.OffensiveAction;
 import edu.tigers.sumatra.ai.metis.offense.action.OffensiveActionViability;
+import edu.tigers.sumatra.ai.metis.offense.action.RatedOffensiveAction;
 import edu.tigers.sumatra.ai.metis.targetrater.GoalKick;
 import edu.tigers.sumatra.geometry.Geometry;
-import edu.tigers.sumatra.geometry.IPenaltyArea;
 import edu.tigers.sumatra.ids.BotID;
-import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.math.penaltyarea.IPenaltyArea;
 import lombok.RequiredArgsConstructor;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Supplier;
 
 
@@ -70,22 +70,18 @@ public class GoalKickActionMove extends AOffensiveActionMove
 
 
 	@Override
-	public OffensiveAction calcAction(BotID botId)
+	public Optional<RatedOffensiveAction> calcAction(BotID botId)
 	{
 		var goalKick = bestGoalKickPerBot.get().get(botId);
-		IVector2 ballContactPos = null;
-		Kick kick = null;
-		if (goalKick != null)
+		if (goalKick == null)
 		{
-			ballContactPos = goalKick.getKickOrigin().isReached() ? null : goalKick.getKickOrigin().getPos();
-			kick = goalKick.getKickOrigin().isReached() ? goalKick.getKick() : null;
+			return Optional.empty();
 		}
 
-		return OffensiveAction.builder()
-				.move(EOffensiveActionMove.GOAL_KICK)
-				.viability(calcViability(goalKick, botId))
-				.ballContactPos(ballContactPos)
-				.kick(kick)
-				.build();
+		Kick kick = goalKick.getKick();
+		return Optional.of(RatedOffensiveAction.buildKick(
+				EOffensiveActionMove.GOAL_KICK,
+				calcViability(goalKick, botId),
+				kick));
 	}
 }

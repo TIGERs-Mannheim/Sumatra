@@ -13,8 +13,7 @@ import edu.tigers.sumatra.gamelog.proto.LogLabels;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.loganalysis.LogEventProtobufMapper;
 import edu.tigers.sumatra.math.circle.Circle;
-import edu.tigers.sumatra.math.line.ILine;
-import edu.tigers.sumatra.math.line.Line;
+import edu.tigers.sumatra.math.line.Lines;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
 
@@ -27,28 +26,44 @@ import java.util.Optional;
 public class Passing implements IShotEventType
 {
 
-	/** When did the pass start */
+	/**
+	 * When did the pass start
+	 */
 	private long startTimestamp;
 
-	/** When did the pass end */
+	/**
+	 * When did the pass end
+	 */
 	private long endTimestamp;
 
-	/** Did the pass reach a receiver of the same team */
+	/**
+	 * Did the pass reach a receiver of the same team
+	 */
 	private boolean successful;
 
-	/** bot that kicks the ball in this pass/Which team is shot */
+	/**
+	 * bot that kicks the ball in this pass/Which team is shot
+	 */
 	private ITrackedBot passerBot;
 
-	/** real receiver of the pass */
+	/**
+	 * real receiver of the pass
+	 */
 	private ITrackedBot receiverBot;
 
-	/** chip kick */
+	/**
+	 * chip kick
+	 */
 	private boolean isChipKick;
 
-	/** fake receiver (receiver with is in pass line during the kick) */
+	/**
+	 * fake receiver (receiver with is in pass line during the kick)
+	 */
 	private ITrackedBot receiverBotAtKick;
 
-	/** the end of the pass line (is not always the receiverBot kicker pos) */
+	/**
+	 * the end of the pass line (is not always the receiverBot kicker pos)
+	 */
 	private IVector2 endOfPass;
 
 
@@ -118,7 +133,6 @@ public class Passing implements IShotEventType
 		List<IDrawableShape> shapeList = new ArrayList<>();
 
 		String timestampsString = "Start: " + startTimestamp + "\nEnd: " + endTimestamp;
-		ILine passLine = null;
 		Color colorPassLine;
 
 		if (successful)
@@ -141,7 +155,7 @@ public class Passing implements IShotEventType
 
 		if (passerBot != null && endOfPass != null)
 		{
-			passLine = Line.fromPoints(passerBot.getBotKickerPos(), endOfPass);
+			var passLine = Lines.segmentFromPoints(passerBot.getBotKickerPos(), endOfPass);
 			shapeList.add(new DrawableLine(passLine, colorPassLine));
 		}
 

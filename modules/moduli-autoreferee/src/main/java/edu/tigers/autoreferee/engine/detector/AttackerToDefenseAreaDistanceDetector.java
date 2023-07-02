@@ -12,7 +12,7 @@ import edu.tigers.sumatra.geometry.NGeometry;
 import edu.tigers.sumatra.geometry.RuleConstraints;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.circle.Circle;
-import edu.tigers.sumatra.math.line.v2.Lines;
+import edu.tigers.sumatra.math.line.Lines;
 import edu.tigers.sumatra.referee.data.EGameState;
 import edu.tigers.sumatra.referee.gameevent.AttackerTooCloseToDefenseArea;
 import edu.tigers.sumatra.referee.gameevent.IGameEvent;
@@ -90,7 +90,8 @@ public class AttackerToDefenseAreaDistanceDetector extends AGameEventDetector
 	private boolean isInOpponentPenaltyArea(ITrackedBot bot)
 	{
 		return NGeometry.getPenaltyArea(bot.getTeamColor().opposite())
-				.isPointInShape(bot.getPos(), requiredMargin);
+				.withMargin(requiredMargin)
+				.isPointInShape(bot.getPos());
 	}
 
 
@@ -120,7 +121,7 @@ public class AttackerToDefenseAreaDistanceDetector extends AGameEventDetector
 				// push in direction of penalty area
 				.map(b -> Lines.halfLineFromPoints(b.getPos(), attacker.getPos()))
 				// find intersection that show that defenders pushes towards penArea
-				.map(defenderPenaltyArea::lineIntersections)
+				.map(defenderPenaltyArea::intersectPerimeterPath)
 				.flatMap(List::stream)
 				.findAny()
 				// if any intersection is present, some defender pushes the attacker

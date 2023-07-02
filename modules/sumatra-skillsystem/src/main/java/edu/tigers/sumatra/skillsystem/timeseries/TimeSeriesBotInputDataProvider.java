@@ -1,16 +1,8 @@
 /*
- * Copyright (c) 2009 - 2019, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.skillsystem.timeseries;
-
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.ConcurrentLinkedQueue;
-
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import edu.tigers.moduli.exceptions.ModuleNotFoundException;
 import edu.tigers.sumatra.botmanager.bots.ABot;
@@ -25,6 +17,13 @@ import edu.tigers.sumatra.math.vector.Vector3;
 import edu.tigers.sumatra.model.SumatraModel;
 import edu.tigers.sumatra.skillsystem.ASkillSystem;
 import edu.tigers.sumatra.skillsystem.ISkillSystemObserver;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 
 /**
@@ -92,7 +91,7 @@ public class TimeSeriesBotInputDataProvider implements ITimeSeriesDataProvider, 
 	@Override
 	public void onCommandSent(final ABot bot, final long timestamp)
 	{
-		long tSent = System.nanoTime();
+		long tSent = (long) (System.currentTimeMillis() * 1e6);
 		ExportableBotInput botInput = new ExportableBotInput(bot.getBotId().getNumber(), bot.getColor(), timestamp);
 		botInput.settSent(tSent);
 		saveTrajectory(bot, timestamp, botInput);

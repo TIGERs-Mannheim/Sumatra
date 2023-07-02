@@ -171,6 +171,7 @@ public class VisualizerPresenter implements ISumatraViewPresenter, IWorldFrameOb
 	@Override
 	public void onStop()
 	{
+		saveVisibility();
 		if (updateThread != null)
 		{
 			updateThread.interrupt();
@@ -242,7 +243,6 @@ public class VisualizerPresenter implements ISumatraViewPresenter, IWorldFrameOb
 	private void onSelectionChanged(TreeSelectionEvent treeSelectionEvent)
 	{
 		updateVisibility();
-		saveVisibility();
 	}
 
 
@@ -250,7 +250,7 @@ public class VisualizerPresenter implements ISumatraViewPresenter, IWorldFrameOb
 	{
 		shapeSelectionModel.getSources().forEach((source, node) -> {
 			boolean visible = isSelected(node);
-			fieldPresenter.setSourceVisibility(source.getName(), visible);
+			fieldPresenter.setSourceVisibility(source, visible);
 		});
 
 		shapeSelectionModel.getLayers().forEach((layer, node) -> {

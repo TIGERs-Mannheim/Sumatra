@@ -4,12 +4,8 @@
 
 package edu.tigers.sumatra.cam;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
-
 import edu.tigers.sumatra.cam.data.ACamObject;
 import edu.tigers.sumatra.cam.data.CamBall;
 import edu.tigers.sumatra.cam.data.CamDetectionFrame;
@@ -18,10 +14,13 @@ import edu.tigers.sumatra.math.rectangle.Rectangle;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2f;
 
+import java.util.ArrayList;
+import java.util.List;
+
 
 /**
  * Filter out unwanted objects from camera, for example balls from another field half
- * 
+ *
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  */
 public class CamObjectFilter
@@ -64,7 +63,7 @@ public class CamObjectFilter
 	private boolean isWithinExclusionRectangle(final IVector2 p)
 	{
 		Rectangle rect = Rectangle.fromPoints(exclusionRectP1, exclusionRectP2);
-		return rect.isPointInShape(p, -0.00001f);
+		return rect.withMargin(-0.00001f).isPointInShape(p);
 	}
 	
 	

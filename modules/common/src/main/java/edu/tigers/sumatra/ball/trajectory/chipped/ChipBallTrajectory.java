@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.ball.trajectory.chipped;
 
@@ -9,8 +9,8 @@ import edu.tigers.sumatra.ball.BallState;
 import edu.tigers.sumatra.ball.trajectory.ABallTrajectory;
 import edu.tigers.sumatra.ball.trajectory.IBallTrajectory;
 import edu.tigers.sumatra.math.SumatraMath;
-import edu.tigers.sumatra.math.line.v2.ILineSegment;
-import edu.tigers.sumatra.math.line.v2.Lines;
+import edu.tigers.sumatra.math.line.ILineSegment;
+import edu.tigers.sumatra.math.line.Lines;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.IVector3;
 import edu.tigers.sumatra.math.vector.Vector2f;
@@ -322,7 +322,7 @@ public class ChipBallTrajectory extends ABallTrajectory
 		if (distance > distStop)
 		{
 			// cannot reach the requested distance!
-			return tNow + tStop;
+			return Double.POSITIVE_INFINITY;
 		}
 
 		double timeToDist = ((SumatraMath.sqrt((v * v) + (2.0 * a * p) + 1e-6) - v) / a) + 1e-6;

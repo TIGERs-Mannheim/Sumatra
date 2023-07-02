@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.pandora.plays.test;
@@ -35,16 +35,20 @@ public class BallPlacementTestPlay extends ABallPlacementPlay
 	protected void doUpdateBeforeRoles()
 	{
 		super.doUpdateBeforeRoles();
+
+		var shapes = getAiFrame().getShapeMap().get(EAiShapesLayer.TEST_BALL_PLACEMENT);
 		if (ballPlacementDone())
 		{
 			placementPositionIdx = (placementPositionIdx + 1) % placementPositions.size();
 		}
 
-		var shapes = getAiFrame().getShapeMap().get(EAiShapesLayer.AI_BALL_PLACEMENT);
 		for (var pos : placementPositions)
 		{
 			shapes.add(new DrawableCircle(Circle.createCircle(pos, 50)));
 		}
+
+		IVector2 pos = placementPositions.get(placementPositionIdx);
+		shapes.add(new DrawableCircle(Circle.createCircle(pos, 70)));
 
 		assignBallPlacementRoles();
 	}

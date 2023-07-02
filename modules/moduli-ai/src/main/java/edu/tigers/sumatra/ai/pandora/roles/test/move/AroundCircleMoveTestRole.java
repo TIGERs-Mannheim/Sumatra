@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.pandora.roles.test.move;
@@ -12,6 +12,7 @@ import edu.tigers.sumatra.botmanager.botskills.EDataAcquisitionMode;
 import edu.tigers.sumatra.data.collector.ITimeSeriesDataCollectorObserver;
 import edu.tigers.sumatra.math.AngleMath;
 import edu.tigers.sumatra.math.circle.Circle;
+import edu.tigers.sumatra.math.line.LineMath;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.VectorMath;
 import edu.tigers.sumatra.pathfinder.obstacles.GenericCircleObstacle;
@@ -66,7 +67,7 @@ public class AroundCircleMoveTestRole extends ARole
 		collectorObserver.parameters.put("iterations", String.valueOf(iterations));
 
 		double distToObstacle = obstacleCenter.distanceTo(initPos);
-		IVector2 finalPos = edu.tigers.sumatra.math.line.v2.LineMath
+		IVector2 finalPos = LineMath
 				.stepAlongLine(initPos, obstacleCenter, distToObstacle * 2);
 
 		IState lastState = new InitState();
@@ -182,7 +183,6 @@ public class AroundCircleMoveTestRole extends ARole
 		protected IVector2 initPos;
 		protected double initOrientation;
 		protected final double destOrientation;
-		protected MoveToSkill skill;
 
 
 		private PrepareState(final IVector2 dest, final double orientation)
@@ -200,13 +200,12 @@ public class AroundCircleMoveTestRole extends ARole
 			dest = initPos.addNew(dest.subtractNew(getPos()));
 			tLastStill = 0;
 
-			MoveToSkill move = MoveToSkill.createMoveToSkill();
-			move.updateDestination(dest);
-			move.updateTargetAngle(destOrientation);
-			move.getMoveCon().setPenaltyAreaOurObstacle(false);
-			move.getMoveCon().setPenaltyAreaTheirObstacle(false);
-			move.getMoveCon().setBallObstacle(false);
-			setNewSkill(move);
+			MoveToSkill skill = MoveToSkill.createMoveToSkill();
+			skill.updateDestination(dest);
+			skill.updateTargetAngle(destOrientation);
+			skill.getMoveCon().physicalObstaclesOnly();
+			skill.getMoveCon().setBallObstacle(false);
+			setNewSkill(skill);
 		}
 
 
@@ -268,12 +267,12 @@ public class AroundCircleMoveTestRole extends ARole
 			MoveToSkill skill = MoveToSkill.createMoveToSkill();
 			skill.updateDestination(dest);
 			skill.updateTargetAngle(destOrientation);
+			skill.getMoveCon().physicalObstaclesOnly();
 			skill.getMoveCon().setBallObstacle(false);
 			skill.getMoveCon().setBotsObstacle(false);
-			skill.getMoveCon().setPenaltyAreaOurObstacle(false);
-			skill.getMoveCon().setPenaltyAreaTheirObstacle(false);
 			skill.getMoveCon().setCustomObstacles(Collections
-					.singletonList(new GenericCircleObstacle(Circle.createCircle(obstacleCenter, obstacleRadius))));
+					.singletonList(
+							new GenericCircleObstacle("circle", Circle.createCircle(obstacleCenter, obstacleRadius))));
 			setNewSkill(skill);
 		}
 	}

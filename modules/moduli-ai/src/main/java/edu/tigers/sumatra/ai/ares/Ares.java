@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.ares;
@@ -108,8 +108,8 @@ public class Ares
 		for (BotID botId : botsLeft)
 		{
 			// No role for this bot: Stop him (if not yet done)
-			final Boolean stopped = botIsStopped.get(botId);
-			if ((stopped == null) || !stopped)
+			final boolean stopped = botIsStopped.getOrDefault(botId, true);
+			if (!stopped)
 			{
 				skillSystem.execute(botId, new IdleSkill());
 				botIsStopped.put(botId, Boolean.TRUE);

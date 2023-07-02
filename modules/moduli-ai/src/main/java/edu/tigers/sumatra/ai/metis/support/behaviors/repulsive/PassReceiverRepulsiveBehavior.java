@@ -7,16 +7,17 @@ package edu.tigers.sumatra.ai.metis.support.behaviors.repulsive;
 import com.github.g3force.configurable.Configurable;
 import edu.tigers.sumatra.ai.metis.general.ESkirmishStrategy;
 import edu.tigers.sumatra.ai.metis.general.SkirmishInformation;
-import edu.tigers.sumatra.ai.metis.offense.action.OffensiveAction;
+import edu.tigers.sumatra.ai.metis.offense.action.RatedOffensiveAction;
 import edu.tigers.sumatra.ai.metis.offense.strategy.OffensiveStrategy;
 import edu.tigers.sumatra.ai.pandora.plays.EPlay;
 import edu.tigers.sumatra.bot.BotState;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.AngleMath;
+import edu.tigers.sumatra.math.SumatraMath;
 import edu.tigers.sumatra.math.circle.IArc;
-import edu.tigers.sumatra.math.line.v2.IHalfLine;
-import edu.tigers.sumatra.math.line.v2.Lines;
+import edu.tigers.sumatra.math.line.IHalfLine;
+import edu.tigers.sumatra.math.line.Lines;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
@@ -97,7 +98,7 @@ public class PassReceiverRepulsiveBehavior extends ARepulsiveBehavior
 
 	public PassReceiverRepulsiveBehavior(
 			Supplier<Map<EPlay, Set<BotID>>> desiredBots,
-			Supplier<Map<BotID, OffensiveAction>> offensiveActions,
+			Supplier<Map<BotID, RatedOffensiveAction>> offensiveActions,
 			Supplier<OffensiveStrategy> offensiveStrategy,
 			Supplier<SkirmishInformation> skirmishInformation,
 			Supplier<List<IArc>> offensiveShadows
@@ -146,6 +147,7 @@ public class PassReceiverRepulsiveBehavior extends ARepulsiveBehavior
 		// More then one supporter available
 		int amountFieldParts = (numberPassReceiversAtOwnGoal - numberPassReceiversAtTheirGoal) + 1;
 		double distanceToBoundary = (getWFrame().getBall().getPos().x() + (Geometry.getFieldLength() * 0.5d));
+		distanceToBoundary = SumatraMath.cap(distanceToBoundary, 0, Geometry.getFieldLength());
 		double fieldPartLength = (Geometry.getFieldLength() / amountFieldParts);
 
 
@@ -278,7 +280,7 @@ public class PassReceiverRepulsiveBehavior extends ARepulsiveBehavior
 	{
 		IVector2 lineDirVector = Vector2.fromPoints(getWFrame().getBall().getPos(), opponent.getPos());
 		IHalfLine passSegment = Lines.halfLineFromDirection(opponent.getPos(), lineDirVector);
-		IVector2 referencePoint = passSegment.closestPointOnLine(affectedBot.getPos());
+		IVector2 referencePoint = passSegment.closestPointOnPath(affectedBot.getPos());
 		return new Force(referencePoint, sigmaBehindOpponentLine, magnitudeBehindOpponentLine);
 	}
 
@@ -297,7 +299,7 @@ public class PassReceiverRepulsiveBehavior extends ARepulsiveBehavior
 		double angleBisector = arc.getStartAngle() + (arc.getRotation() * 0.5d);
 		IVector2 lineDirection = Vector2.fromAngle(angleBisector);
 		IHalfLine freeLine = Lines.halfLineFromDirection(arc.center(), lineDirection);
-		IVector2 referencePoint = freeLine.closestPointOnLine(affectedBot.getPos());
+		IVector2 referencePoint = freeLine.closestPointOnPath(affectedBot.getPos());
 		return new Force(referencePoint, sigmaFreeLine, magnitudeFreeLine);
 	}
 

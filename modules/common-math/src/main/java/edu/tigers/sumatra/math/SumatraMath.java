@@ -237,19 +237,16 @@ public final class SumatraMath
 
 	public static List<Double> quadraticFunctionRoots(final double a, final double b, final double c)
 	{
-		List<Double> roots = new ArrayList<>();
-
 		if (isEqual(a, 0.0))
 		{
 			if (isEqual(b, 0.0))
 			{
 				// the function is of constant form 'c = 0' => no roots
-				return roots;
+				return List.of();
 			}
 
 			double x1 = -c / b;
-			roots.add(x1);
-			return roots;
+			return List.of(x1);
 		}
 
 		// normalize coefficients
@@ -262,20 +259,18 @@ public final class SumatraMath
 		if (d < 0.0)
 		{
 			// no real solution
+			return List.of();
 		} else if (d > 0.0)
 		{
 			double pHalf = p * 0.5;
 			double x1 = -pHalf + SumatraMath.sqrt((pHalf * pHalf) - q);
 			double x2 = -pHalf - SumatraMath.sqrt((pHalf * pHalf) - q);
-			roots.add(x1);
-			roots.add(x2);
+			return List.of(x1, x2);
 		} else
 		{
 			double x1 = -p * 0.5;
-			roots.add(x1);
+			return List.of(x1);
 		}
-
-		return roots;
 	}
 
 
@@ -285,7 +280,7 @@ public final class SumatraMath
 	 * <p>
 	 * <I>ax</I><SUP>3</SUP> + <I>bx</I><SUP>2</SUP> + <I>cx</I> + <I>d</I> = 0
 	 * <p>
-	 * Source taken from: https://github.com/davidzof/wattzap/blob/master/src/com/wattzap/model/power/Cubic.java
+	 * Source taken from: <a href="https://github.com/davidzof/wattzap/blob/master/src/com/wattzap/model/power/Cubic.java">algorithm</a>
 	 *
 	 * @param a3 Coefficient of <I>x</I><SUP>3</SUP>.
 	 * @param b2 Coefficient of <I>x</I><SUP>2</SUP>.
@@ -296,12 +291,10 @@ public final class SumatraMath
 	public static List<Double> cubicFunctionRoots(final double a3, final double b2, final double c1, final double d0)
 	{
 		// Verify preconditions.
-		if (isEqual(a3, 0.0))
+		if (isZero(a3))
 		{
 			return quadraticFunctionRoots(b2, c1, d0);
 		}
-
-		List<Double> roots = new ArrayList<>();
 
 		// normalize coefficients
 		double a = b2 / a3;
@@ -324,9 +317,7 @@ public final class SumatraMath
 			double x1 = (2.0 * sqrtQ * SumatraMath.cos(theta / 3.0)) - aOver3;
 			double x2 = (2.0 * sqrtQ * SumatraMath.cos((theta + AngleMath.PI_TWO) / 3.0)) - aOver3;
 			double x3 = (2.0 * sqrtQ * SumatraMath.cos((theta + (AngleMath.PI * 4.0)) / 3.0)) - aOver3;
-			roots.add(x1);
-			roots.add(x2);
-			roots.add(x3);
+			return List.of(x1, x2, x3);
 		} else if (d > 0.0)
 		{
 			// One real root.
@@ -334,17 +325,89 @@ public final class SumatraMath
 			double s = Math.cbrt(r + sqrtD);
 			double t = Math.cbrt(r - sqrtD);
 			double x1 = (s + t) - aOver3;
-			roots.add(x1);
+			return List.of(x1);
 		} else
 		{
 			// Three real roots, at least two equal.
 			double cbrtR = Math.cbrt(r);
 			double x1 = (2 * cbrtR) - aOver3;
 			double x2 = -cbrtR - aOver3;
-			roots.add(x1);
-			roots.add(x2);
+			return List.of(x1, x2);
+		}
+	}
+
+
+	/**
+	 * Solves for the real roots of a quartic equation with real
+	 * coefficients. The quartic equation is of the form
+	 * <p>
+	 * z_4x^4 + z_3x^3 z_2x^2 + z_1x + z_0 = 0
+	 * <p>
+	 * <a href="https://quarticequations.com/Quartic.pdf">Improved ferrari's method</a>
+	 *
+	 * @param z4 Coefficient for x^4
+	 * @param z3 Coefficient for x^3
+	 * @param z2 Coefficient for x^2
+	 * @param z1 Coefficient for x
+	 * @param z0 Constant coefficient
+	 * @return A list of roots.
+	 */
+	public static List<Double> quarticFunctionRoots(double z4, double z3, double z2, double z1, double z0)
+	{
+		// Verify preconditions
+		if (isZero(z4))
+		{
+			return cubicFunctionRoots(z3, z2, z1, z0);
 		}
 
+		// Normalize coefficients
+		double a3 = z3 / z4;
+		double a2 = z2 / z4;
+		double a1 = z1 / z4;
+		double a0 = z0 / z4;
+
+		// Commence solution
+		double c = a3 / 4;
+		double c2 = c * c;
+		double c3 = c2 * c;
+		double c4 = c3 * c;
+		double b2 = a2 - 6 * c2;
+		double b1 = a1 - 2 * a2 * c + 8 * c3;
+		double b0 = a0 - a1 * c + a2 * c2 - 3 * c4;
+
+		double tmp = b2 * b2 / 4 - b0;
+
+		var cubeRoots = cubicFunctionRoots(1, b2, tmp, -b1 * b1 / 8);
+		double m = cubeRoots.stream().filter(r -> r >= 0).findAny().orElse(0.0);
+		int sign = b1 > 0 ? 1 : -1;
+		double rRadicand = m * m + b2 * m + tmp;
+		Validate.isTrue(rRadicand >= 0);
+		double r = sign * SumatraMath.sqrt(rRadicand);
+		double radicand1 = -m / 2 - b2 / 2 - r;
+		double radicand2 = -m / 2 - b2 / 2 + r;
+		double sqrtMHalf = SumatraMath.sqrt(m / 2);
+
+		var roots = new ArrayList<Double>();
+
+		if (SumatraMath.isZero(radicand1))
+		{
+			roots.add(sqrtMHalf);
+		} else if (radicand1 > 0)
+		{
+			var root = SumatraMath.sqrt(radicand1);
+			roots.add(sqrtMHalf - c + root);
+			roots.add(sqrtMHalf - c - root);
+		}
+
+		if (SumatraMath.isZero(radicand2))
+		{
+			roots.add(-sqrtMHalf);
+		} else if (radicand2 > 0)
+		{
+			var root = SumatraMath.sqrt(radicand2);
+			roots.add(-sqrtMHalf - c + root);
+			roots.add(-sqrtMHalf - c - root);
+		}
 		return roots;
 	}
 

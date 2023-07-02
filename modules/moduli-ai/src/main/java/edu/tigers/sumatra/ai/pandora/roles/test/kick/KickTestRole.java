@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.pandora.roles.test.kick;
@@ -23,9 +23,6 @@ import edu.tigers.sumatra.statemachine.IEvent;
  */
 public class KickTestRole extends ARole
 {
-	@Configurable(comment = "Allow entering the penalty areas for testing purposes", defValue = "true")
-	private static boolean allowPenAreas = true;
-
 	@Configurable(comment = "The kick skill to use", defValue = "TOUCH")
 	private static EKickSkill kickSkill = EKickSkill.TOUCH;
 
@@ -80,8 +77,7 @@ public class KickTestRole extends ARole
 			var skill = getSkill();
 			setNewSkill(skill);
 
-			skill.getMoveCon().setPenaltyAreaOurObstacle(!allowPenAreas);
-			skill.getMoveCon().setPenaltyAreaTheirObstacle(!allowPenAreas);
+			skill.getMoveCon().physicalObstaclesOnly();
 		}
 
 
@@ -104,8 +100,7 @@ public class KickTestRole extends ARole
 		public void doEntryActions()
 		{
 			MoveToSkill skill = MoveToSkill.createMoveToSkill();
-			skill.getMoveCon().setPenaltyAreaOurObstacle(!allowPenAreas);
-			skill.getMoveCon().setPenaltyAreaTheirObstacle(!allowPenAreas);
+			skill.getMoveCon().physicalObstaclesOnly();
 			setNewSkill(skill);
 		}
 	}

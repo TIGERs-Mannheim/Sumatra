@@ -1,16 +1,19 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.pathfinder.obstacles;
 
 import edu.tigers.sumatra.drawable.IDrawableShape;
-import lombok.AccessLevel;
+import edu.tigers.sumatra.math.I2DShape;
+import edu.tigers.sumatra.math.vector.IVector2;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.experimental.Accessors;
 
-import java.util.ArrayList;
+import java.awt.Color;
 import java.util.List;
+import java.util.Optional;
 
 
 /**
@@ -19,21 +22,37 @@ import java.util.List;
 public abstract class AObstacle implements IObstacle
 {
 	@Getter
-	@Setter(AccessLevel.PROTECTED)
-	private boolean emergencyBrakeFor = false;
+	@Setter
+	@Accessors(chain = true)
+	private boolean motionLess = true;
+
 	@Getter
-	@Setter(AccessLevel.PROTECTED)
-	private boolean brakeInside = false;
-	@Getter
-	@Setter(AccessLevel.PROTECTED)
-	private boolean activelyEvade = false;
-	@Getter
-	@Setter(AccessLevel.PROTECTED)
-	private int priority;
+	@Setter
+	@Accessors(chain = true)
+	private double maxSpeed;
+
+	@Setter
+	private Color color;
+
 	private List<IDrawableShape> shapes;
 
 
-	protected abstract void initializeShapes(final List<IDrawableShape> shapes);
+	protected List<IDrawableShape> initializeShapes()
+	{
+		return List.of();
+	}
+
+
+	protected AObstacle()
+	{
+		configure();
+	}
+
+
+	protected void configure()
+	{
+		// can be overwritten to configure the numerous attributes above
+	}
 
 
 	@Override
@@ -41,9 +60,23 @@ public abstract class AObstacle implements IObstacle
 	{
 		if (shapes == null)
 		{
-			shapes = new ArrayList<>();
-			initializeShapes(shapes);
+			shapes = initializeShapes();
+			shapes.forEach(s -> s.setColor(color));
 		}
 		return shapes;
+	}
+
+
+	protected final Optional<IVector2> adaptDestination(I2DShape shape, IVector2 robotPos, IVector2 destination)
+	{
+		if (shape.withMargin(-10).isPointInShape(robotPos))
+		{
+			return Optional.of(shape.withMargin(10).nearestPointOutside(robotPos));
+		}
+		if (shape.isPointInShape(destination))
+		{
+			return Optional.of(shape.withMargin(1).nearestPointOutside(destination));
+		}
+		return Optional.empty();
 	}
 }

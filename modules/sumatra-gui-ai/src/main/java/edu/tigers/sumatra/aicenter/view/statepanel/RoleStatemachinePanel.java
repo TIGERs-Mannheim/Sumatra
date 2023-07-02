@@ -8,7 +8,7 @@ import edu.tigers.sumatra.ai.AIInfoFrame;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.circle.CircleMath;
 import edu.tigers.sumatra.math.line.ILine;
-import edu.tigers.sumatra.math.line.Line;
+import edu.tigers.sumatra.math.line.Lines;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.statemachine.IEvent;
@@ -249,6 +249,7 @@ public class RoleStatemachinePanel extends JPanel implements MouseMotionListener
 			drawableVertices.forEach((key, value) -> value.drawEdges(g2, outgoingEdges.get(key), drawableVertices));
 		}
 
+
 		private Map<String, List<StateEdge>> generateDrawableEdges(List<IState> listVertices)
 		{
 			Map<String, List<StateEdge>> outgoingEdges = new HashMap<>();
@@ -282,16 +283,13 @@ public class RoleStatemachinePanel extends JPanel implements MouseMotionListener
 					}
 				} else
 				{
-					originStateString = originState.getIdentifier();
+					originStateString = originState.toString();
 				}
 
-				if (!outgoingEdges.containsKey(originStateString))
-				{
-					outgoingEdges.put(originStateString, new ArrayList<>());
-				}
+				outgoingEdges.computeIfAbsent(originStateString, k -> new ArrayList<>());
 				outgoingEdges.get(originStateString)
-						.add(new StateEdge(originStateString, targetState.getIdentifier(),
-								    edges.getKey().toString()));
+						.add(new StateEdge(originStateString, targetState.toString(),
+								edges.getKey().toString()));
 			}
 		}
 
@@ -301,15 +299,18 @@ public class RoleStatemachinePanel extends JPanel implements MouseMotionListener
 		{
 			for (var fromState : listVertices)
 			{
-				if (!fromState.getIdentifier().equals(targetState.getIdentifier()))
+				if (fromState != targetState)
 				{
-					StateEdge stateEdge = new StateEdge(fromState.getIdentifier(), targetState.getIdentifier(),
-							edges.getKey().toString());
-					if (!outgoingEdges.containsKey(fromState.getIdentifier()))
+					StateEdge stateEdge = new StateEdge(
+							fromState.toString(),
+							targetState.toString(),
+							edges.getKey().toString()
+					);
+					if (!outgoingEdges.containsKey(fromState.toString()))
 					{
-						outgoingEdges.put(fromState.getIdentifier(), new ArrayList<>());
+						outgoingEdges.put(fromState.toString(), new ArrayList<>());
 					}
-					outgoingEdges.get(fromState.getIdentifier()).add(stateEdge);
+					outgoingEdges.get(fromState.toString()).add(stateEdge);
 				}
 			}
 		}
@@ -321,18 +322,19 @@ public class RoleStatemachinePanel extends JPanel implements MouseMotionListener
 		{
 			for (IState listVertex : listVertices)
 			{
-				String text = listVertex.getIdentifier();
+				String text = listVertex.toString();
 				IVector2 pos = CircleMath.stepAlongCircle(center, vec, angle).getXYVector();
 				IVector2 rcenter = center.addNew(Vector2.fromX(circleRadius));
-				ILine topLine = Line.fromDirection(rcenter.addNew(Vector2.fromY(circleRadius)), Vector2.fromX(1));
-				ILine bottomLine = Line.fromDirection(rcenter.addNew(Vector2.fromY(-circleRadius)), Vector2.fromX(1));
+				ILine topLine = Lines.lineFromDirection(rcenter.addNew(Vector2.fromY(circleRadius)), Vector2.fromX(1));
+				ILine bottomLine = Lines.lineFromDirection(rcenter.addNew(Vector2.fromY(-circleRadius)), Vector2.fromX(1));
 
 				double distance;
 				if (center.subtractNew(pos).y() > 0)
 				{
 					// move towards bottom line
 					distance = bottomLine.distanceTo(pos) * fanciness;
-				} else {
+				} else
+				{
 					// move towards top line
 					distance = -topLine.distanceTo(pos) * fanciness;
 				}
@@ -343,7 +345,7 @@ public class RoleStatemachinePanel extends JPanel implements MouseMotionListener
 					// move towards bottom line
 					distance = -distance;
 				}
-				pos =  pos.addNew(Vector2.fromX(rcenter.subtractNew(pos).x() > 0 ? distance : -distance));
+				pos = pos.addNew(Vector2.fromX(rcenter.subtractNew(pos).x() > 0 ? distance : -distance));
 
 				int width = g.getFontMetrics().stringWidth(text);
 				int height = g.getFontMetrics().getHeight();
@@ -356,6 +358,7 @@ public class RoleStatemachinePanel extends JPanel implements MouseMotionListener
 				angle += stepSize;
 			}
 		}
+
 
 		private List<IState> getListOfVertices()
 		{
@@ -378,7 +381,14 @@ public class RoleStatemachinePanel extends JPanel implements MouseMotionListener
 
 			if (addAllState)
 			{
-				vertices.add(() -> "All Transition");
+				vertices.add(new IState()
+				{
+					@Override
+					public String getName()
+					{
+						return "All states";
+					}
+				});
 			}
 
 			return new ArrayList<>(vertices);
@@ -399,8 +409,8 @@ public class RoleStatemachinePanel extends JPanel implements MouseMotionListener
 	{
 		if (mousePressed)
 		{
-			xPos -= (startDragX - mouseEvent.getX())*scale;
-			yPos -= (startDragY - mouseEvent.getY())*scale;
+			xPos -= (startDragX - mouseEvent.getX()) * scale;
+			yPos -= (startDragY - mouseEvent.getY()) * scale;
 			startDragX = mouseEvent.getX();
 			startDragY = mouseEvent.getY();
 			repaint();
@@ -408,7 +418,7 @@ public class RoleStatemachinePanel extends JPanel implements MouseMotionListener
 	}
 
 
-	public void fillComboBox(List<BotID> bots)
+	private void fillComboBox(List<BotID> bots)
 	{
 		if (bots.stream().anyMatch(e -> !this.bots.contains(e)))
 		{

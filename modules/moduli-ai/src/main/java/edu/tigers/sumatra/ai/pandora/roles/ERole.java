@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.pandora.roles;
@@ -11,22 +11,25 @@ import edu.tigers.sumatra.ai.pandora.roles.defense.CenterBackRole;
 import edu.tigers.sumatra.ai.pandora.roles.defense.DefenderPenAreaRole;
 import edu.tigers.sumatra.ai.pandora.roles.defense.DefenderPlaceholderRole;
 import edu.tigers.sumatra.ai.pandora.roles.defense.Man2ManMarkerRole;
+import edu.tigers.sumatra.ai.pandora.roles.defense.PassDisruptionRole;
 import edu.tigers.sumatra.ai.pandora.roles.keeper.KeeperRole;
 import edu.tigers.sumatra.ai.pandora.roles.move.MoveRole;
-import edu.tigers.sumatra.ai.pandora.roles.offense.AttackerRole;
 import edu.tigers.sumatra.ai.pandora.roles.offense.DelayedAttackRole;
 import edu.tigers.sumatra.ai.pandora.roles.offense.DisruptOpponentRole;
+import edu.tigers.sumatra.ai.pandora.roles.offense.DribbleKickTestRole;
 import edu.tigers.sumatra.ai.pandora.roles.offense.FreeSkirmishRole;
 import edu.tigers.sumatra.ai.pandora.roles.offense.KeepDistToBallRole;
 import edu.tigers.sumatra.ai.pandora.roles.offense.OneOnOneShooterRole;
 import edu.tigers.sumatra.ai.pandora.roles.offense.OpponentInterceptionRole;
 import edu.tigers.sumatra.ai.pandora.roles.offense.PassReceiverRole;
 import edu.tigers.sumatra.ai.pandora.roles.offense.SupportiveAttackerRole;
+import edu.tigers.sumatra.ai.pandora.roles.offense.attacker.AttackerRole;
 import edu.tigers.sumatra.ai.pandora.roles.placement.BallPlacementRole;
 import edu.tigers.sumatra.ai.pandora.roles.support.SupportRole;
 import edu.tigers.sumatra.ai.pandora.roles.test.ContestedPossessionChallengeRole;
 import edu.tigers.sumatra.ai.pandora.roles.test.ContestedPossessionChallengeRoleV2;
 import edu.tigers.sumatra.ai.pandora.roles.test.DribbleChallenge2022Role;
+import edu.tigers.sumatra.ai.pandora.roles.test.DribbleChallenge2022SimpleRole;
 import edu.tigers.sumatra.ai.pandora.roles.test.DribbleChallengeAdvancedRole;
 import edu.tigers.sumatra.ai.pandora.roles.test.DribbleChallengeSimpleRole;
 import edu.tigers.sumatra.ai.pandora.roles.test.DribbleTestRole;
@@ -35,7 +38,6 @@ import edu.tigers.sumatra.ai.pandora.roles.test.calibrate.CrookedKickSamplerRole
 import edu.tigers.sumatra.ai.pandora.roles.test.calibrate.IdentifyBotModelRole;
 import edu.tigers.sumatra.ai.pandora.roles.test.calibrate.StraightChipKickSamplerRole;
 import edu.tigers.sumatra.ai.pandora.roles.test.kick.KickTestRole;
-import edu.tigers.sumatra.ai.pandora.roles.test.kick.RedirectTestRole;
 import edu.tigers.sumatra.ai.pandora.roles.test.move.AroundCircleMoveTestRole;
 import edu.tigers.sumatra.ai.pandora.roles.test.move.CurvedMoveTestRole;
 import edu.tigers.sumatra.ai.pandora.roles.test.move.EnduranceRole;
@@ -67,6 +69,10 @@ public enum ERole implements IInstanceableEnum
 	DELAYED_ATTACK(ic(DelayedAttackRole.class)),
 	PASS_RECEIVER(ic(PassReceiverRole.class)),
 	DISRUPT_OPPONENT(ic(DisruptOpponentRole.class)),
+	DRIBBLE_KICK_TEST(ic(DribbleKickTestRole.class)
+			.setterParam(IVector2.class, "approachFrom", "0,0", DribbleKickTestRole::setApproachFrom)
+			.setterParam(IVector2.class, "kickTarget", "6000,0", DribbleKickTestRole::setKickTarget)
+			.setterParam(IVector2.class, "dribbleToPos", "4000,1000", DribbleKickTestRole::setDribbleToPos)),
 
 	// support
 
@@ -76,6 +82,7 @@ public enum ERole implements IInstanceableEnum
 
 	KEEPER(ic(KeeperRole.class)),
 	MAN_2_MAN_MARKER(ic(Man2ManMarkerRole.class)),
+	PASS_DISRUPTION_DEFENDER(ic(PassDisruptionRole.class)),
 	CENTER_BACK(ic(CenterBackRole.class)),
 	DEFENDER_PLACEHOLDER(ic(DefenderPlaceholderRole.class)),
 	DEFENDER_PEN_AREA(ic(DefenderPenAreaRole.class)
@@ -156,10 +163,6 @@ public enum ERole implements IInstanceableEnum
 			new InstanceableParameter(Double.TYPE, "kickSpeed", "6.5"))
 	),
 
-	REDIRECT_TEST(ic(RedirectTestRole.class,
-			new InstanceableParameter(DynamicPosition.class, "target", "0,0"))
-	),
-
 	STRAIGHT_CHIP_KICK_SAMPLER(ic(StraightChipKickSamplerRole.class,
 			new InstanceableParameter(Boolean.TYPE, "onlyOurHalf", "false"),
 			new InstanceableParameter(Boolean.TYPE, "chipFromSide", "false"),
@@ -196,6 +199,7 @@ public enum ERole implements IInstanceableEnum
 	CONTESTED_POSSESSION_CHALLENGE_ROLE(ic(ContestedPossessionChallengeRole.class)),
 	CONTESTED_POSSESSION_CHALLENGE_ROLE_V2(ic(ContestedPossessionChallengeRoleV2.class)),
 
+	DRIBBLE_CHALLENGE_2022_SIMPLE_ROLE(ic(DribbleChallenge2022SimpleRole.class)),
 	DRIBBLE_CHALLENGE_2022_ROLE(ic(DribbleChallenge2022Role.class)),
 
 	;

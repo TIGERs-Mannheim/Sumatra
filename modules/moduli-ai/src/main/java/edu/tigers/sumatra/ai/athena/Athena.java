@@ -72,17 +72,10 @@ public class Athena
 		athenaAdapter.stop(athenaGuiInput);
 		switch (controlState)
 		{
-			case EMERGENCY_MODE:
-				athenaAdapter = new EmergencyModeAthenaAdapter();
-				break;
-			case MATCH_MODE:
-				athenaAdapter = new MatchModeAthenaAdapter();
-				break;
-			case TEST_MODE:
-				athenaAdapter = new TestModeAthenaAdapter();
-				break;
-			default:
-				throw new IllegalStateException();
+			case EMERGENCY_MODE -> athenaAdapter = new EmergencyModeAthenaAdapter();
+			case MATCH_MODE -> athenaAdapter = new MatchModeAthenaAdapter();
+			case TEST_MODE -> athenaAdapter = new TestModeAthenaAdapter();
+			default -> throw new IllegalStateException();
 		}
 	}
 
@@ -124,8 +117,9 @@ public class Athena
 			String text = role.getType().name();
 			if (state != null)
 			{
-				text += "\n" + state.getIdentifier();
+				text += "\n" + state;
 			}
+			text += "\n" + role.getCurrentSkill().getClass().getSimpleName();
 			DrawableAnnotation dTxtRole = new DrawableAnnotation(pos, text);
 			dTxtRole.setColor(aiFrame.getTeamColor().getColor());
 			dTxtRole.withFontHeight(50);

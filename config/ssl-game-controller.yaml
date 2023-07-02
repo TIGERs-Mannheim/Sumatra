@@ -1,8 +1,8 @@
 time-acquisition-mode: ci
 network:
-  publish-address:
+  publish-address: ""
   # set a network IP to only publish to that network - else messages will be published to all network interfaces
-  publish-nif:
+  publish-nif: ""
   vision-address: 224.5.23.2:11006
   tracker-address: 224.5.23.2:11010
   skip-interfaces: [ ]
@@ -51,7 +51,7 @@ game:
   challenge-flags: 3
   emergency-stop-grace-period: 10s
   normal:
-    half-duration: 5m
+    half-duration: 35m # The GC will not auto continue if halftime is over, this is a quick fix. Longer times are not possible due to int overflow in the protobuf communication
     half-time-duration: 5m
     timeout-duration: 5m
     timeouts: 4

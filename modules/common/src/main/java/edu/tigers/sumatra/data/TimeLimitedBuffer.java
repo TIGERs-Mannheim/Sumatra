@@ -93,6 +93,23 @@ public class TimeLimitedBuffer<T>
 		}
 	}
 
+	public void reset()
+	{
+		data.clear();
+	}
+
+	public void reduceByAbsoluteDuration(long currentTimestamp)
+	{
+		if (maxDuration <= 0 || data.isEmpty())
+		{
+			// no duration limit
+			return;
+		}
+		while (!data.isEmpty() && data.get(0).timestamp < currentTimestamp - (long) (maxDuration * 1e9))
+		{
+			data.remove(0);
+		}
+	}
 
 	@Value
 	private static class Entry<T> implements Comparable<Entry<T>>

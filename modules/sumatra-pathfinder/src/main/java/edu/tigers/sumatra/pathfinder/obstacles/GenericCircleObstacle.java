@@ -1,49 +1,56 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.pathfinder.obstacles;
-
-import java.awt.Color;
-import java.util.List;
 
 import edu.tigers.sumatra.drawable.DrawableCircle;
 import edu.tigers.sumatra.drawable.IDrawableShape;
 import edu.tigers.sumatra.math.circle.ICircle;
 import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.pathfinder.obstacles.input.CollisionInput;
+import lombok.RequiredArgsConstructor;
+
+import java.util.List;
+import java.util.Optional;
 
 
 /**
  * A simple circle-based obstacle
  */
+@RequiredArgsConstructor
 public class GenericCircleObstacle extends AObstacle
 {
+	private final String qualifier;
 	private final ICircle circle;
-	private Color color = Color.black;
 
 
-	public GenericCircleObstacle(final ICircle circle)
+	@Override
+	public String getIdentifier()
 	{
-		this.circle = circle;
+		return super.getIdentifier() + " " + qualifier;
 	}
 
 
 	@Override
-	public boolean isPointCollidingWithObstacle(final IVector2 point, final double t, final double margin)
+	public double distanceTo(CollisionInput input)
 	{
-		return circle.isPointInShape(point, margin);
+		return circle.center().distanceTo(input.getRobotPos()) - circle.radius();
 	}
 
 
 	@Override
-	protected void initializeShapes(final List<IDrawableShape> shapes)
+	protected List<IDrawableShape> initializeShapes()
 	{
-		shapes.add(new DrawableCircle(circle, color));
+		return List.of(
+				new DrawableCircle(circle)
+		);
 	}
 
 
-	public void setColor(final Color color)
+	@Override
+	public Optional<IVector2> adaptDestination(IVector2 robotPos, IVector2 destination)
 	{
-		this.color = color;
+		return adaptDestination(circle, robotPos, destination);
 	}
 }

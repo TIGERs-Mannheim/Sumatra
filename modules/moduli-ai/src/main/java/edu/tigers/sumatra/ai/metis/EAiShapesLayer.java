@@ -22,10 +22,14 @@ public final class EAiShapesLayer
 	private static final String DEFENSE = "Defense";
 	private static final String OFFENSIVE = "Offensive";
 
+	private static final String DEFENSE_OFFENSE_COORDINATION = "D/O Coordination";
+
 	public static final IShapeLayerIdentifier AI_ROLE_COLOR = F.create(
 			F.layer("Colored Roles").category("AI").persistenceType(ALWAYS_PERSIST).orderId(1));
 	public static final IShapeLayerIdentifier AI_ROLE_NAMES = F.create(
 			F.layer("Role names").category("AI"));
+	public static final IShapeLayerIdentifier AI_PATH_FINDER_PRIORITIES = F.create(
+			F.layer("Path finder priorities").category("AI"));
 
 	public static final IShapeLayerIdentifier SUPPORT_MOVE_FREE = F.create(
 			F.layer("Possible Free Positions").category(SUPPORT));
@@ -81,6 +85,8 @@ public final class EAiShapesLayer
 
 	public static final IShapeLayerIdentifier KICK_ORIGIN = F.create(
 			F.layer("Kick Origin").category("Pass"));
+	public static final IShapeLayerIdentifier PASS_STATS= F.create(
+			F.layer("Pass Stats").category("Pass"));
 	public static final IShapeLayerIdentifier PASS_GENERATION = F.create(
 			F.layer("Generation").category("Pass"));
 	public static final IShapeLayerIdentifier PASS_GENERATION_PASS_DIR = F.create(
@@ -94,10 +100,11 @@ public final class EAiShapesLayer
 	public static final IShapeLayerIdentifier PASS_SELECTION = F.create(
 			F.layer("Selection").category("Pass"));
 
-	public static final IShapeLayerIdentifier DEFENSE_CRUCIAL_DEFENDERS = F.create(
-			F.layer("Crucial Defenders").category(DEFENSE));
 	public static final IShapeLayerIdentifier DEFENSE_BOT_THREATS = F.create(
 			F.layer("Bot Threats").category(DEFENSE));
+
+	public static final IShapeLayerIdentifier DEFENSE_PASS_DISRUPTION = F.create(
+			F.layer("Pass Disruption").category(DEFENSE));
 	public static final IShapeLayerIdentifier DEFENSE_THREATS = F.create(
 			F.layer("Threats").category(DEFENSE));
 	public static final IShapeLayerIdentifier DEFENSE_THREAT_ASSIGNMENT = F.create(
@@ -110,6 +117,8 @@ public final class EAiShapesLayer
 			F.layer("Pass Receiver").category(DEFENSE));
 	public static final IShapeLayerIdentifier DEFENSE_COVERAGE = F.create(
 			F.layer("Coverage").category(DEFENSE));
+	public static final IShapeLayerIdentifier DEFENSE_DRIBBLER_KICKER = F.create(
+			F.layer("DribblerKicker").category(DEFENSE));
 
 	public static final IShapeLayerIdentifier DEFENSE_PENALTY_AREA_GROUP_FINDER = F.create(
 			F.layer("Penalty Area Group Finder").category(DEFENSE));
@@ -118,12 +127,23 @@ public final class EAiShapesLayer
 	public static final IShapeLayerIdentifier DEFENSE_PENALTY_AREA_ROLE = F.create(
 			F.layer("Penalty Area Role").category(DEFENSE));
 
+	public static final IShapeLayerIdentifier CRUCIAL_OFFENDERS = F.create(
+			F.layer("Crucial Offenders").category(DEFENSE_OFFENSE_COORDINATION));
+	public static final IShapeLayerIdentifier CRUCIAL_DEFENDERS = F.create(
+			F.layer("Crucial Defenders").category(DEFENSE_OFFENSE_COORDINATION));
+	public static final IShapeLayerIdentifier BEST_BALL_DEFENDER_CANDIDATES = F.create(
+			F.layer("Ball Defender Candidates").category(DEFENSE_OFFENSE_COORDINATION));
+	public static final IShapeLayerIdentifier BALL_DEFENSE_READY = F.create(
+			F.layer("Ball Defense Ready").category(DEFENSE_OFFENSE_COORDINATION));
+
 	public static final IShapeLayerIdentifier OFFENSIVE_ONGOING_PASS = F.create(
 			F.layer("Ongoing Passes").category(OFFENSIVE));
 	public static final IShapeLayerIdentifier OFFENSIVE_ATTACKER = F.create(
 			F.layer("Attacker").category(OFFENSIVE));
 	public static final IShapeLayerIdentifier OFFENSIVE_FINISHER = F.create(
 			F.layer("Finisher").category(OFFENSIVE));
+	public static final IShapeLayerIdentifier CHOP_TRICK = F.create(
+			F.layer("Chop Trick").category(OFFENSIVE));
 	public static final IShapeLayerIdentifier OFFENSIVE_ACCESSIBILITY = F.create(
 			F.layer("Accessibility").category(OFFENSIVE).persistenceType(NEVER_PERSIST));
 	public static final IShapeLayerIdentifier OFFENSIVE_SITUATION = F.create(
@@ -134,8 +154,6 @@ public final class EAiShapesLayer
 			F.layer("Clearing kick").category(OFFENSIVE));
 	public static final IShapeLayerIdentifier OFFENSIVE_PASSING = F.create(
 			F.layer("Passing").category(OFFENSIVE));
-	public static final IShapeLayerIdentifier OFFENSIVE_KICK_INS_BLAUE = F.create(
-			F.layer("Kick ins Blaue").category(OFFENSIVE).persistenceType(NEVER_PERSIST));
 	public static final IShapeLayerIdentifier OFFENSIVE_BALL_INTERCEPTION = F.create(
 			F.layer("Ball Interception").category(OFFENSIVE));
 	public static final IShapeLayerIdentifier OFFENSIVE_BALL_INTERCEPTION_DEBUG = F.create(
@@ -168,6 +186,8 @@ public final class EAiShapesLayer
 			F.layer("Dribble Challenge").category("Test"));
 	public static final IShapeLayerIdentifier TEST_CONTESTED_POSSESSION_CHALLENGE = F.create(
 			F.layer("Contested Possession").category("Test"));
+	public static final IShapeLayerIdentifier TEST_MOVE_AROUND_PEN_AREA = F.create(
+			F.layer("Move Around Penalty Area").category("Test"));
 
 	public static final IShapeLayerIdentifier STATS_DEBUG_BALL_DEFENDER_IN_TIME = F.create(
 			F.layer("BallDefenderInTimeStatsCalc - Debug").category("StatisticsDebug").persistenceType(DEBUG_PERSIST));

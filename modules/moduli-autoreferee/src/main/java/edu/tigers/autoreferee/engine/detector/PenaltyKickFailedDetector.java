@@ -5,6 +5,7 @@
 package edu.tigers.autoreferee.engine.detector;
 
 import edu.tigers.autoreferee.generic.BotPosition;
+import edu.tigers.sumatra.data.TimeLimitedBuffer;
 import edu.tigers.sumatra.ids.ETeamColor;
 import edu.tigers.sumatra.math.AngleMath;
 import edu.tigers.sumatra.math.vector.IVector2;
@@ -18,20 +19,35 @@ import java.util.Optional;
 
 public class PenaltyKickFailedDetector extends AGameEventDetector
 {
+	private static final double BALL_STOPPED_TOL = 1e-3;
+	private final TimeLimitedBuffer<IVector2> ballVelBuffer = new TimeLimitedBuffer<>();
+
+
 	public PenaltyKickFailedDetector()
 	{
 		super(EGameEventDetectorType.PENALTY_KICK_FAILED, EGameState.PENALTY);
 		setDeactivateOnFirstGameEvent(true);
+		ballVelBuffer.setMaxElements(10);
+		ballVelBuffer.setMaxDuration(0.2);
 	}
 
 
 	@Override
 	public Optional<IGameEvent> doUpdate()
 	{
-		Optional<Double> angle = frame.getWorldFrame().getBall().getVel()
-				.angleToAbs(frame.getPreviousFrame().getWorldFrame().getBall().getVel());
+		ballVelBuffer.add(frame.getWorldFrame().getTimestamp(), frame.getWorldFrame().getBall().getVel());
+		if (!frame.isBallInsideField())
+		{
+			return Optional.empty();
+		}
 
-		if (frame.isBallInsideField() && angle.isPresent() && angle.get() >= AngleMath.DEG_090_IN_RAD)
+		IVector2 ballVelNow = ballVelBuffer.getLatest().orElseThrow();
+		IVector2 ballVelPre = ballVelBuffer.getOldest().orElseThrow();
+		boolean ballStopped = ballVelPre.getLength2() > BALL_STOPPED_TOL && ballVelNow.getLength2() <= BALL_STOPPED_TOL;
+		double ballVelDirChangeAngle = ballVelNow.angleToAbs(ballVelPre).orElse(0.0);
+		boolean ballVelDirChanged = ballVelDirChangeAngle > AngleMath.DEG_090_IN_RAD;
+
+		if (ballStopped || ballVelDirChanged)
 		{
 			List<BotPosition> lastBots = frame.getBotsLastTouchedBall();
 

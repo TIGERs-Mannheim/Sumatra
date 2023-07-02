@@ -4,7 +4,7 @@
 
 package edu.tigers.sumatra.ai.integration;
 
-import edu.tigers.sumatra.ai.metis.offense.action.OffensiveAction;
+import edu.tigers.sumatra.ai.metis.offense.action.RatedOffensiveAction;
 import edu.tigers.sumatra.ai.metis.offense.action.moves.EOffensiveActionMove;
 import edu.tigers.sumatra.ai.metis.offense.strategy.EOffensiveStrategy;
 import edu.tigers.sumatra.ai.metis.offense.strategy.OffensiveStrategy;
@@ -45,7 +45,7 @@ public class OffensiveIntegrationTest extends AAiIntegrationTest
 		assertThat(strategy.getCurrentOffensivePlayConfiguration().get(id)).isEqualTo(EOffensiveStrategy.KICK);
 
 		// in this situation the current strategy should be a direct goal_shot
-		OffensiveAction action = getMetisAiFrame().getTacticalField().getOffensiveActions().get(id);
+		RatedOffensiveAction action = getMetisAiFrame().getTacticalField().getOffensiveActions().get(id);
 		assertThat(action.getMove()).isEqualTo(EOffensiveActionMove.GOAL_KICK);
 
 		setGameState(GameState.STOP);
@@ -86,10 +86,10 @@ public class OffensiveIntegrationTest extends AAiIntegrationTest
 		assertThat(strategy.getCurrentOffensivePlayConfiguration().get(id)).isEqualTo(EOffensiveStrategy.KICK);
 
 		// in this situation the current strategy should be a pass and the pass receiver should be yellow bot 2
-		OffensiveAction action = getMetisAiFrame().getTacticalField().getOffensiveActions().get(id);
+		RatedOffensiveAction action = getMetisAiFrame().getTacticalField().getOffensiveActions().get(id);
 		assertThat(action.getMove()).isEqualTo(EOffensiveActionMove.STANDARD_PASS);
 		var passID = BotID.createBotId(2, ETeamColor.YELLOW);
-		assertThat(action.getPassTarget().orElseThrow().getBotId()).isEqualTo(passID);
+		assertThat(action.getAction().getPassTarget().orElseThrow().getBotId()).isEqualTo(passID);
 
 		// the scoring of the pass target should be greater 0.25, because the goal is free :D
 		assertThat(action.getViability().getScore()).isGreaterThan(0.25);

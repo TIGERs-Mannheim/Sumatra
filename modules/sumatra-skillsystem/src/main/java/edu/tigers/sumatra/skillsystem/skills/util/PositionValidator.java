@@ -5,13 +5,12 @@
 package edu.tigers.sumatra.skillsystem.skills.util;
 
 import edu.tigers.sumatra.geometry.Geometry;
-import edu.tigers.sumatra.geometry.IPenaltyArea;
 import edu.tigers.sumatra.ids.ETeam;
-import edu.tigers.sumatra.math.line.Line;
+import edu.tigers.sumatra.math.line.ILine;
+import edu.tigers.sumatra.math.line.ILineSegment;
 import edu.tigers.sumatra.math.line.LineMath;
-import edu.tigers.sumatra.math.line.v2.ILine;
-import edu.tigers.sumatra.math.line.v2.ILineSegment;
-import edu.tigers.sumatra.math.line.v2.Lines;
+import edu.tigers.sumatra.math.line.Lines;
+import edu.tigers.sumatra.math.penaltyarea.IPenaltyArea;
 import edu.tigers.sumatra.math.rectangle.IRectangle;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.pathfinder.IMovementCon;
@@ -56,7 +55,7 @@ public class PositionValidator
 		if (collidingBot.isPresent())
 		{
 			ILineSegment ballLine = Lines.segmentFromPoints(pos, wFrame.getBall().getPos());
-			IVector2 opponentPosOnLine = ballLine.closestPointOnLine(collidingBot.get().getPos());
+			IVector2 opponentPosOnLine = ballLine.closestPointOnPath(collidingBot.get().getPos());
 			// move pos in front of opponent (pos may be the kicker pos, so add 3*botRadius
 			return LineMath.stepAlongLine(opponentPosOnLine, wFrame.getBall().getPos(), Geometry.getBotRadius() * 3);
 		}
@@ -84,7 +83,7 @@ public class PositionValidator
 		if (!field.isPointInShape(pos))
 		{
 			List<IVector2> intersections = field
-					.lineIntersections(Line.fromPoints(wFrame.getBall().getPos(), pos));
+					.intersectPerimeterPath(Lines.lineFromPoints(wFrame.getBall().getPos(), pos));
 			if (intersections.isEmpty())
 			{
 				return field.nearestPointInside(pos);
@@ -144,7 +143,7 @@ public class PositionValidator
 	{
 		if (wFrame.getBall().getVel().getLength2() > 0.1)
 		{
-			return pos.nearestToOpt(penArea.lineIntersections(ballLine(pos)))
+			return pos.nearestToOpt(penArea.intersectPerimeterPath(ballLine(pos)))
 					.orElseGet(() -> penArea.nearestPointOutside(pos));
 		} else if (penArea.isPointInShape(wFrame.getBall().getPos()))
 		{

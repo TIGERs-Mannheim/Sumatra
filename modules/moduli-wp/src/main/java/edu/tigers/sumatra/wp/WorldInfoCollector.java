@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.wp;
@@ -12,7 +12,6 @@ import edu.tigers.moduli.exceptions.StartModuleException;
 import edu.tigers.sumatra.ball.BallState;
 import edu.tigers.sumatra.bot.BotState;
 import edu.tigers.sumatra.bot.RobotInfo;
-import edu.tigers.sumatra.bot.State;
 import edu.tigers.sumatra.cam.ACam;
 import edu.tigers.sumatra.cam.ICamFrameObserver;
 import edu.tigers.sumatra.cam.data.CamBall;
@@ -23,7 +22,6 @@ import edu.tigers.sumatra.drawable.ShapeMapSource;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.pose.Pose;
-import edu.tigers.sumatra.math.vector.IVector3;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.math.vector.Vector2f;
 import edu.tigers.sumatra.math.vector.Vector3;
@@ -36,7 +34,6 @@ import edu.tigers.sumatra.referee.data.GameState;
 import edu.tigers.sumatra.referee.data.RefereeMsg;
 import edu.tigers.sumatra.referee.proto.SslGcRefereeMessage;
 import edu.tigers.sumatra.referee.source.ERefereeMessageSource;
-import edu.tigers.sumatra.trajectory.ITrajectory;
 import edu.tigers.sumatra.util.Safe;
 import edu.tigers.sumatra.vision.AVisionFilter;
 import edu.tigers.sumatra.vision.IVisionFilterObserver;
@@ -47,7 +44,6 @@ import edu.tigers.sumatra.vision.data.IKickEvent;
 import edu.tigers.sumatra.vision.data.KickEvent;
 import edu.tigers.sumatra.wp.data.BallContact;
 import edu.tigers.sumatra.wp.data.BallKickFitState;
-import edu.tigers.sumatra.wp.data.DelayedBotState;
 import edu.tigers.sumatra.wp.data.ExtendedCamDetectionFrame;
 import edu.tigers.sumatra.wp.data.ITrackedBall;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
@@ -98,20 +94,6 @@ public class WorldInfoCollector extends AWorldPredictor
 	)
 	private static boolean preferRobotFeedback = true;
 
-	@Configurable(
-			spezis = { "NICOLAI", "SUMATRA", "LAB", "TISCH", "ROBOCUP", "ANDRE", "SIMULATOR" },
-			defValueSpezis = { "0.06", "0.0", "0.06", "0.06", "0.06", "0.06", "0.03" },
-			comment = "Delay [s] from giving a robot command to receiving the reaction on this command from vision"
-	)
-	private static double visionFeedbackDelay = 0.06;
-
-	@Configurable(
-			spezis = { "NICOLAI", "SUMATRA", "LAB", "TISCH", "ROBOCUP", "ANDRE", "SIMULATOR" },
-			defValueSpezis = { "0.0", "0.0", "0.0", "0.0", "0.0", "0.0", "0.0125" },
-			comment = "Delay [s] between path planning trajectory state and robot feedback state"
-	)
-	private static double robotFeedbackDelay = 0.0;
-
 	static
 	{
 		ConfigRegistration.registerClass("wp", WorldInfoCollector.class);
@@ -130,11 +112,11 @@ public class WorldInfoCollector extends AWorldPredictor
 
 	private final BerkeleyAutoPauseHook berkeleyAutoPauseHook = new BerkeleyAutoPauseHook();
 	private final TimestampBasedBuffer<ITrackedBall> ballBuffer = new TimestampBasedBuffer<>(0.3);
-	private GameStateCalculator gameStateCalculator;
-	private WorldFrameVisualization worldFrameVisualization;
-	private BallContactCalculator ballContactCalculator;
-	private CurrentBallDetector currentBallDetector;
-	private CamFrameShapeMapProducer camFrameShapeMapProducer;
+	private final GameStateCalculator gameStateCalculator = new GameStateCalculator();
+	private final WorldFrameVisualization worldFrameVisualization = new WorldFrameVisualization();
+	private final BallContactCalculator ballContactCalculator = new BallContactCalculator();
+	private final CurrentBallDetector currentBallDetector = new CurrentBallDetector();
+	private final CamFrameShapeMapProducer camFrameShapeMapProducer = new CamFrameShapeMapProducer();
 	private AVisionFilter visionFilter;
 	private IRobotInfoProvider robotInfoProvider = new DefaultRobotInfoProvider();
 	private Referee referee;
@@ -173,25 +155,26 @@ public class WorldInfoCollector extends AWorldPredictor
 	}
 
 
-	private DelayedBotState selectRobotState(BotState filterState, BotState internalState)
+	private BotState selectRobotState(BotState filterState, BotState internalState)
 	{
 		if ((internalState != null && preferRobotFeedback) || filterState == null)
 		{
-			return DelayedBotState.fromBotState(internalState, robotFeedbackDelay);
+			return internalState;
 		}
-		return DelayedBotState.fromBotState(filterState, visionFeedbackDelay);
+		return filterState;
 	}
 
 
+	/**
+	 * Get last ball contact.
+	 *
+	 * @param robotInfo
+	 * @param pose      the pose of the robot, ideally that of vision (not predicted)
+	 * @return
+	 */
 	private BallContact getLastBallContact(final RobotInfo robotInfo, final Pose pose)
 	{
 		return ballContactCalculator.ballContact(robotInfo, pose, robotInfo.getCenter2DribblerDist());
-	}
-
-
-	private State trajectoryToState(final ITrajectory<IVector3> traj)
-	{
-		return State.of(Pose.from(traj.getPositionMM(0.0)), traj.getVelocity(0.0));
 	}
 
 
@@ -206,16 +189,15 @@ public class WorldInfoCollector extends AWorldPredictor
 			return null;
 		}
 		var currentBotState = selectRobotState(filterState, internalState);
-		var botState = robotInfo.getTrajectory().map(this::trajectoryToState).orElse(currentBotState);
+		var visionBotState = Optional.ofNullable(filterState).orElse(internalState);
 
 		return TrackedBot.newBuilder()
 				.withBotId(robotInfo.getBotId())
 				.withTimestamp(lastWFTimestamp)
-				.withState(botState)
-				.withCurrentState(currentBotState)
+				.withState(currentBotState)
 				.withFilteredState(filterState)
 				.withBotInfo(robotInfo)
-				.withLastBallContact(getLastBallContact(robotInfo, botState.getPose()))
+				.withLastBallContact(getLastBallContact(robotInfo, visionBotState.getPose()))
 				.withQuality(filteredVisionBot != null ? filteredVisionBot.getQuality() : 0)
 				.build();
 	}
@@ -328,6 +310,7 @@ public class WorldInfoCollector extends AWorldPredictor
 		Safe.forEach(observers, c -> c.onNewWorldFrame(wfw));
 
 		visualize(wfw);
+		ShapeMap.setPersistDebugShapes(!SumatraModel.getInstance().isTournamentMode());
 	}
 
 
@@ -365,8 +348,6 @@ public class WorldInfoCollector extends AWorldPredictor
 		registerToRefereeModule();
 		registerToCamModule();
 		registerToRecordManagerModule();
-
-		ShapeMap.setPersistDebugShapes(!SumatraModel.getInstance().isTournamentMode());
 	}
 
 
@@ -478,13 +459,23 @@ public class WorldInfoCollector extends AWorldPredictor
 	@Override
 	public void reset()
 	{
-		gameStateCalculator = new GameStateCalculator();
-		worldFrameVisualization = new WorldFrameVisualization();
-		ballContactCalculator = new BallContactCalculator();
-		currentBallDetector = new CurrentBallDetector();
-		camFrameShapeMapProducer = new CamFrameShapeMapProducer();
+		log.debug("Resetting world info collector");
+		observers.forEach(IWorldFrameObserver::onClearCamDetectionFrame);
+
+		gameStateCalculator.reset();
+		worldFrameVisualization.reset();
+		currentBallDetector.reset();
+		camFrameShapeMapProducer.reset();
+		ballContactCalculator.reset();
 		lastWFTimestamp = 0;
 		latestRefereeMsg = new RefereeMsg();
+	}
+
+
+	@Override
+	public void onClearCamFrame()
+	{
+		reset();
 	}
 
 
@@ -540,19 +531,6 @@ public class WorldInfoCollector extends AWorldPredictor
 		ExtendedCamDetectionFrame eFrame = new ExtendedCamDetectionFrame(camDetectionFrame, ball);
 		observers.forEach(o -> o.onNewCamDetectionFrame(eFrame));
 		camFrameShapeMapProducer.updateCamFrameShapes(eFrame);
-	}
-
-
-	@Override
-	public void onClearCamFrame()
-	{
-		observers.forEach(IWorldFrameObserver::onClearCamDetectionFrame);
-		lastWFTimestamp = 0;
-		currentBallDetector.reset();
-		camFrameShapeMapProducer.reset();
-		gameStateCalculator.reset();
-		worldFrameVisualization.reset();
-		latestRefereeMsg = new RefereeMsg();
 	}
 
 

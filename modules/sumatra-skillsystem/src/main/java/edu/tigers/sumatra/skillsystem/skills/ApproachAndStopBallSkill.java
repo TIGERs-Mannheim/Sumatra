@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.skillsystem.skills;
@@ -12,13 +12,11 @@ import edu.tigers.sumatra.geometry.RuleConstraints;
 import edu.tigers.sumatra.ids.ETeam;
 import edu.tigers.sumatra.math.AngleMath;
 import edu.tigers.sumatra.math.Hysteresis;
-import edu.tigers.sumatra.math.line.Line;
-import edu.tigers.sumatra.math.line.v2.ILine;
-import edu.tigers.sumatra.math.line.v2.Lines;
+import edu.tigers.sumatra.math.line.ILine;
+import edu.tigers.sumatra.math.line.Lines;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.skillsystem.ESkillShapesLayer;
-import edu.tigers.sumatra.skillsystem.skills.util.BallStabilizer;
 import edu.tigers.sumatra.skillsystem.skills.util.DoubleChargingValue;
 import edu.tigers.sumatra.skillsystem.skills.util.EDribblerMode;
 import edu.tigers.sumatra.skillsystem.skills.util.KickParams;
@@ -32,15 +30,21 @@ public class ApproachAndStopBallSkill extends AMoveToSkill
 	@Configurable(defValue = "0.6")
 	private static double maxLookahead = 0.6;
 
-	@Configurable(comment = "The target velocity difference between bot and ball to aim for when trying catch up ball", defValue = "0.6")
-	private static double catchUpBallTargetVelDiff = 0.6;
+	@Configurable(comment = "The target velocity difference between bot and ball to aim for when trying catch up ball", defValue = "0.8")
+	private static double catchUpBallTargetVelDiff = 0.8;
+
+	@Configurable(defValue = "0.1")
+	private static double contactFor = 0.1;
 
 	@Configurable(comment = "Margin to our Penalty Area", defValue = "100.0")
 	private static double marginToOurPenArea = 100.0;
 
+	@Configurable(comment = "Brake acc when stopping the ball", defValue = "2.0")
+	private static double accMaxBrake = 2.0;
+
 	private final Hysteresis ballSpeedHysteresis = new Hysteresis(0.1, 0.6);
-	private final BallStabilizer ballStabilizer = new BallStabilizer();
 	private final PositionValidator positionValidator = new PositionValidator();
+	private final TimestampTimer stopBallTimer = new TimestampTimer(0.1);
 	private final DoubleChargingValue lookaheadChargingValue = new DoubleChargingValue(
 			0,
 			1.0,
@@ -51,25 +55,13 @@ public class ApproachAndStopBallSkill extends AMoveToSkill
 	@Setter
 	private double marginToTheirPenArea = 0;
 
-	private TimestampTimer changeStateTimer = new TimestampTimer(0.1);
-
 	private IVector2 primaryDirection;
-
-	private IVector2 catchPos;
-
-
-	public ApproachAndStopBallSkill ignorePenAreas()
-	{
-		getMoveCon().setPenaltyAreaOurObstacle(false);
-		getMoveCon().setPenaltyAreaTheirObstacle(false);
-		return this;
-	}
 
 
 	private void updateDribbler()
 	{
 		EDribblerMode dribbleMode = EDribblerMode.OFF;
-		if (getPos().distanceTo(getBallPos()) < 300)
+		if (getPos().distanceTo(getBallPos()) < 300 && !ballStoppedByBot())
 		{
 			dribbleMode = EDribblerMode.DEFAULT;
 		}
@@ -77,7 +69,7 @@ public class ApproachAndStopBallSkill extends AMoveToSkill
 	}
 
 
-	public boolean ballStoppedByBot()
+	private boolean ballStoppedByBot()
 	{
 		return ballSpeedHysteresis.isLower() && ballIsNearRobotKicker();
 	}
@@ -85,11 +77,11 @@ public class ApproachAndStopBallSkill extends AMoveToSkill
 
 	private boolean ballIsNearRobotKicker()
 	{
-		return ballStabilizer.getBallPos().distanceTo(getTBot().getBotKickerPos()) < 50;
+		return getBall().getPos().distanceTo(getTBot().getBotKickerPos()) < 50;
 	}
 
 
-	public boolean ballStoppedMoving()
+	private boolean ballStoppedMoving()
 	{
 		return ballSpeedHysteresis.isLower();
 	}
@@ -127,7 +119,6 @@ public class ApproachAndStopBallSkill extends AMoveToSkill
 	public void doUpdate()
 	{
 		ballSpeedHysteresis.update(getBall().getVel().getLength2());
-		ballStabilizer.update(getBall(), getTBot());
 
 		// do not respect other bots, when on ball line
 		getMoveCon().setBotsObstacle((getBall().getTrajectory().distanceTo(getPos()) > 100));
@@ -136,10 +127,13 @@ public class ApproachAndStopBallSkill extends AMoveToSkill
 		positionValidator.getMarginToPenArea().put(ETeam.OPPONENTS, marginToTheirPenArea);
 		positionValidator.getMarginToPenArea().put(ETeam.TIGERS, marginToOurPenArea);
 
-		primaryDirection = getBall().getVel();
+		if (getBall().getVel().getLength2() > 0.5)
+		{
+			primaryDirection = getBall().getVel();
+		}
 		IVector2 ballPos = getBallPos();
 		IVector2 botPos = getTBot().getFilteredState().orElse(getTBot().getBotState()).getPos();
-		if (!Line.fromDirection(botPos, primaryDirection).isPointInFront(ballPos))
+		if (!Lines.halfLineFromDirection(botPos, primaryDirection).isPointInFront(ballPos))
 		{
 			primaryDirection = primaryDirection.multiplyNew(-1);
 		}
@@ -165,42 +159,46 @@ public class ApproachAndStopBallSkill extends AMoveToSkill
 		updateSkillState();
 
 		getShapes().get(ESkillShapesLayer.APPROACH_AND_STOP_BALL_SKILL)
-				.add(new DrawableLine(Line.fromDirection(getBallPos(), primaryDirection.scaleToNew(1000))));
+				.add(new DrawableLine(Lines.segmentFromOffset(getBallPos(), primaryDirection.scaleToNew(1000))));
 	}
 
 
 	private void stayStillIfBotHasBallContact()
 	{
-		if (getTBot().getBallContact().hasContact())
+		setComeToAStop(isTouchingBall());
+		if (isTouchingBall())
 		{
-			changeStateTimer.update(getWorldFrame().getTimestamp());
-			if (changeStateTimer.isTimeUp(getWorldFrame().getTimestamp()))
-			{
-				if (catchPos == null)
-				{
-					catchPos = getPos();
-				}
-				updateDestination(catchPos);
-			}
+			getMoveConstraints().setAccMax(accMaxBrake);
 		} else
 		{
-			catchPos = null;
-			changeStateTimer.reset();
+			getMoveConstraints().setAccMax(getBot().getBotParams().getMovementLimits().getAccMax());
 		}
 	}
 
 
 	private void updateSkillState()
 	{
-		if (ballStoppedByBot())
+		boolean stopped = ballStoppedByBot();
+		if (stopped)
 		{
-			setSkillState(ESkillState.SUCCESS);
+			stopBallTimer.update(getWorldFrame().getTimestamp());
+			if (stopBallTimer.isTimeUp(getWorldFrame().getTimestamp()))
+			{
+				setSkillState(ESkillState.SUCCESS);
+			} else
+			{
+				setSkillState(ESkillState.IN_PROGRESS);
+			}
 		} else if (ballStoppedMoving() || ballMovesTowardsMe())
 		{
 			setSkillState(ESkillState.FAILURE);
 		} else
 		{
 			setSkillState(ESkillState.IN_PROGRESS);
+		}
+		if (!stopped)
+		{
+			stopBallTimer.reset();
 		}
 	}
 
@@ -220,7 +218,7 @@ public class ApproachAndStopBallSkill extends AMoveToSkill
 	private void updateTargetOrientation()
 	{
 		ILine ballLine = Lines.lineFromDirection(getBall().getPos(), getBall().getVel());
-		if (ballLine.distanceTo(getPos()) < 30)
+		if (ballLine.distanceTo(getPos()) < 50)
 		{
 			updateTargetAngle(primaryDirection.getAngle());
 		} else
@@ -250,18 +248,18 @@ public class ApproachAndStopBallSkill extends AMoveToSkill
 
 	private boolean isTouchingBall()
 	{
-		return getTBot().hadBallContact(0.1);
+		return getTBot().getBallContact().getContactDuration() > contactFor;
 	}
 
 
 	private IVector2 getBallPos(double lookahead)
 	{
-		return ballStabilizer.getBallPos(lookahead);
+		return getBall().getTrajectory().getPosByTime(lookahead).getXYVector();
 	}
 
 
 	private IVector2 getBallPos()
 	{
-		return ballStabilizer.getBallPos();
+		return getBall().getPos();
 	}
 }

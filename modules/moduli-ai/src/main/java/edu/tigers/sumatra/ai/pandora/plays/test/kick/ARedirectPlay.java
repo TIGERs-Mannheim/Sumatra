@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.ai.pandora.plays.test.kick;
 
@@ -9,17 +9,19 @@ import edu.tigers.sumatra.ai.metis.kicking.Kick;
 import edu.tigers.sumatra.ai.metis.kicking.KickFactory;
 import edu.tigers.sumatra.ai.metis.kicking.Pass;
 import edu.tigers.sumatra.ai.metis.kicking.PassFactory;
+import edu.tigers.sumatra.ai.metis.offense.action.OffensiveAction;
 import edu.tigers.sumatra.ai.pandora.plays.EPlay;
 import edu.tigers.sumatra.ai.pandora.roles.ARole;
 import edu.tigers.sumatra.ai.pandora.roles.move.MoveRole;
-import edu.tigers.sumatra.ai.pandora.roles.offense.AttackerRole;
 import edu.tigers.sumatra.ai.pandora.roles.offense.PassReceiverRole;
+import edu.tigers.sumatra.ai.pandora.roles.offense.attacker.AttackerRole;
 import edu.tigers.sumatra.ai.pandora.roles.placement.BallPlacementRole;
+import edu.tigers.sumatra.botmanager.botskills.data.EKickerDevice;
 import edu.tigers.sumatra.drawable.DrawableCircle;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.circle.Circle;
-import edu.tigers.sumatra.math.line.v2.LineMath;
+import edu.tigers.sumatra.math.line.LineMath;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.statemachine.AState;
 import edu.tigers.sumatra.wp.data.BallKickFitState;
@@ -53,6 +55,8 @@ public abstract class ARedirectPlay extends ABallPreparationPlay
 	private double maxDistBall2PassStart = 500;
 	@Setter
 	private double minPassDuration;
+	@Setter
+	private EKickerDevice kickerDevice = EKickerDevice.STRAIGHT;
 
 	protected List<IVector2> origins = Collections.emptyList();
 	private Map<BotID, IVector2> botIdToOriginMap = Collections.emptyMap();
@@ -67,16 +71,13 @@ public abstract class ARedirectPlay extends ABallPreparationPlay
 	}
 
 
-	public void setMaxReceivingBallSpeed(double maxReceivingBallSpeed)
-	{
-		passFactory.setMaxReceivingBallSpeed(maxReceivingBallSpeed);
-	}
-
-
 	protected abstract List<IVector2> getOrigins();
 
 
 	protected abstract IVector2 getReceiverTarget(IVector2 origin);
+
+
+	protected abstract double getMaxReceivingBallSpeed(IVector2 origin);
 
 
 	protected IVector2 getReceiverCatchPoint(IVector2 origin)
@@ -112,13 +113,6 @@ public abstract class ARedirectPlay extends ABallPreparationPlay
 
 	protected void updateDuringExecution()
 	{
-	}
-
-
-	@Override
-	protected void handleNonPlacingRole(ARole role)
-	{
-		reassignRole(role, MoveRole.class, MoveRole::new);
 	}
 
 
@@ -169,6 +163,8 @@ public abstract class ARedirectPlay extends ABallPreparationPlay
 
 	private void updatePassReceiver(PassReceiverRole passReceiverRole)
 	{
+		passReceiverRole.setPhysicalObstaclesOnly(true);
+
 		var origin = botIdToOriginMap.get(passReceiverRole.getBotID());
 		var target = getReceiverTarget(origin);
 		var receiver = getReceiverBot(origin);
@@ -179,6 +175,8 @@ public abstract class ARedirectPlay extends ABallPreparationPlay
 			passReceiverRole.setOutgoingKick(null);
 		} else
 		{
+			// Set the outgoing kick for the pass receiver
+			// This pass will not be really be performed, it is just for the pass receiver to look to the right direction.
 			var pass = passFactory.straight(
 					passReceiverRole.getIncomingPass().getKick().getTarget(),
 					target,
@@ -187,19 +185,18 @@ public abstract class ARedirectPlay extends ABallPreparationPlay
 					minPassDuration);
 			passReceiverRole.setOutgoingKick(pass.getKick());
 		}
-		passReceiverRole.setPenaltyAreaObstacle(false);
 	}
 
 
 	private void updateAttacker(AttackerRole attackerRole)
 	{
-		attackerRole.setAllowPenAreas(true);
+		attackerRole.setPhysicalObstaclesOnly(true);
 
 		var origin = botIdToOriginMap.get(attackerRole.getBotID());
 		var receiveMode = getReceiveMode(origin);
 		if (receiveMode == EReceiveMode.REDIRECT && doGoalKick(origin))
 		{
-			attackerRole.setKick(createGoalKick(origin));
+			attackerRole.setAction(OffensiveAction.buildKick(createGoalKick(origin)));
 
 			// set default incoming passes
 			findRoles(PassReceiverRole.class)
@@ -216,10 +213,10 @@ public abstract class ARedirectPlay extends ABallPreparationPlay
 			if ((receiveMode == EReceiveMode.REDIRECT && redirectAngle < maxAllowedRedirectAngle)
 					|| getBall().getVel().getLength2() < 0.5)
 			{
-				attackerRole.setPass(pass);
+				attackerRole.setAction(OffensiveAction.buildPass(pass));
 			} else
 			{
-				attackerRole.setBallContactPos(pass.getKick().getSource());
+				attackerRole.setAction(OffensiveAction.buildReceive(pass.getKick().getSource()));
 			}
 
 			// set default incoming passes
@@ -231,15 +228,27 @@ public abstract class ARedirectPlay extends ABallPreparationPlay
 
 	private Pass createPass(AttackerRole attackerRole, IVector2 origin)
 	{
+		passFactory.setMaxReceivingBallSpeed(getMaxReceivingBallSpeed(origin));
 		var source = getReceiverCatchPoint(origin);
 		var target = getReceiverTarget(origin);
 		var receiver = getReceiverBot(origin);
-		return passFactory.straight(
+		if (kickerDevice == EKickerDevice.STRAIGHT)
+		{
+			return passFactory.straight(
+					source,
+					target,
+					attackerRole.getBotID(),
+					receiver,
+					minPassDuration
+			);
+		}
+		return passFactory.chip(
 				source,
 				target,
 				attackerRole.getBotID(),
 				receiver,
-				minPassDuration);
+				minPassDuration
+		);
 	}
 
 
@@ -285,8 +294,7 @@ public abstract class ARedirectPlay extends ABallPreparationPlay
 		var dest = LineMath.stepAlongLine(origin, target, -dist);
 		moveRole.updateDestination(dest);
 		moveRole.updateLookAtTarget(target);
-		moveRole.getMoveCon().setPenaltyAreaTheirObstacle(false);
-		moveRole.getMoveCon().setPenaltyAreaOurObstacle(false);
+		moveRole.getMoveCon().physicalObstaclesOnly();
 	}
 
 
@@ -344,7 +352,7 @@ public abstract class ARedirectPlay extends ABallPreparationPlay
 			var nearest2BallRole = reassignRole(getBestRoleForBall(), AttackerRole.class, AttackerRole::new);
 			var origin = botIdToOriginMap.get(nearest2BallRole.getBotID());
 			var receiver = getReceiverBot(origin);
-			Validate.isTrue(nearest2BallRole.getBotID() != receiver);
+			Validate.isTrue(!nearest2BallRole.getBotID().equals(receiver));
 			Objects.requireNonNull(receiver);
 			var passReceiverRole = getRoles().stream()
 					.filter(r -> Objects.equals(r.getBotID(), receiver))

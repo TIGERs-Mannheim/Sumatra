@@ -16,6 +16,7 @@ import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.IVector3;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.math.vector.Vector3;
+import lombok.Getter;
 
 import java.awt.Color;
 import java.util.ArrayList;
@@ -29,6 +30,7 @@ import java.util.stream.DoubleStream;
 public class DribblingVerifier
 {
 	private final double maxDribbleBallAcceleration;
+	@Getter
 	private final double maxRetainingBallAngle;
 	private final double center2DribblerDist;
 	private final double ballRadius;
@@ -70,6 +72,21 @@ public class DribblingVerifier
 				.orElse(-1.0);
 	}
 
+	/**
+	 * Compute a score for a given trajectory step judging how likely it is to lose the ball.
+	 *
+	 * @param orientation
+	 * @param angularVel angular velocity
+	 * @param acc acceleration
+	 * @return score < 0 ball lost, score = 0 might just work, score = 1 sure not to lose ball
+	 */
+	public double getRetentationScoreForTrajStep(double orientation, double angularVel, IVector3 acc)
+	{
+		var localAcc = Vector3.from2d(BotMath.convertGlobalBotVector2Local(acc.getXYVector(), orientation), acc.z());
+		IVector2 ballAccLocal = totalBallAccelerationAtDribbler(angularVel, localAcc);
+		double accAngle = ballAccelerationAngle(ballAccLocal);
+		return ballRetentionScore(accAngle);
+	}
 
 	/**
 	 * Compute various shapes which help to get insight of dribbling behaviour.

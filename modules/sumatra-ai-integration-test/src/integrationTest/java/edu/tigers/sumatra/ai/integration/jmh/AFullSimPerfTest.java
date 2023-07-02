@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.integration.jmh;
@@ -68,7 +68,7 @@ public abstract class AFullSimPerfTest
 	}
 
 
-	private Snapshot loadSimParamsFromSnapshot(final String snapshotFile)
+	private Snapshot readSnapshot(final String snapshotFile)
 	{
 		try
 		{
@@ -80,15 +80,11 @@ public abstract class AFullSimPerfTest
 	}
 
 
-	protected void loadSimulation(String snapshotFile)
+	protected Snapshot initSimulation(String snapshotFile)
 	{
-		loadSimulation(loadSimParamsFromSnapshot(snapshotFile));
-	}
-
-
-	private void loadSimulation(Snapshot snapshot)
-	{
-		SimulationHelper.loadSimulation(snapshot);
+		Snapshot snapshot = readSnapshot(snapshotFile);
+		SimulationHelper.initSimulation(snapshot);
+		return snapshot;
 	}
 
 

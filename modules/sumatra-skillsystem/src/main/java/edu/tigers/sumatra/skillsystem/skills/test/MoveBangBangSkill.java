@@ -94,7 +94,9 @@ public class MoveBangBangSkill extends AMoveSkill
 		if (rollOut)
 		{
 			IVector2 acc = trajXY.getAcceleration(t);
-			if (vel.angleToAbs(acc).orElse(0.0) > AngleMath.PI_HALF)
+			if (  vel.getLength() > velMax / 2.0 &&
+					acc.getLength() > accMax / 2.0 &&
+					vel.angleToAbs(acc).orElse(0.0) > AngleMath.PI_HALF + AngleMath.PI_QUART)
 			{
 				motorsOff = true;
 			}
@@ -109,23 +111,18 @@ public class MoveBangBangSkill extends AMoveSkill
 		double rot = trajW.getVelocity(t);
 		switch (botSkill)
 		{
-			case GLOBAL_POSITION:
-				setTargetPose(dest, orient, moveConstraints);
-				break;
-			case GLOBAL_VELOCITY:
-				setGlobalVelocity(vel, rot, moveConstraints);
-				break;
-			case LOCAL_VELOCITY:
-				setLocalVelocity(BotMath.convertGlobalBotVector2Local(vel, trajW.getPosition(t)), rot, moveConstraints);
-				break;
-			case WHEEL_VELOCITY:
+			case GLOBAL_POSITION -> setTargetPose(dest, orient, moveConstraints);
+			case GLOBAL_VELOCITY -> setGlobalVelocity(vel, rot, moveConstraints);
+			case LOCAL_VELOCITY ->
+					setLocalVelocity(BotMath.convertGlobalBotVector2Local(vel, trajW.getPosition(t)), rot, moveConstraints);
+			case WHEEL_VELOCITY ->
+			{
 				MatrixMotorModel motorModel = new MatrixMotorModel();
 				IVectorN motors = motorModel.getWheelSpeed(Vector3.from2d(vel, rot));
 				BotSkillWheelVelocity skill = new BotSkillWheelVelocity(motors.toArray());
 				getMatchCtrl().setSkill(skill);
-				break;
-			default:
-				throw new IllegalArgumentException("Unsupported bot skill: " + botSkill);
+			}
+			default -> throw new IllegalArgumentException("Unsupported bot skill: " + botSkill);
 		}
 	}
 }

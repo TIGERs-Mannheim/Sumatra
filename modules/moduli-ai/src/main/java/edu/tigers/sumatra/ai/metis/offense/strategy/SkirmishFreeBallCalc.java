@@ -100,13 +100,13 @@ public class SkirmishFreeBallCalc extends ACalculator
 			fail = true;
 		}
 
-		if (!Geometry.getField().isPointInShape(ballPos, -400))
+		if (!Geometry.getField().withMargin(-400).isPointInShape(ballPos))
 		{
 			info += "field Border |";
 			fail = true;
 		}
 
-		if (Geometry.getPenaltyAreaOur().isPointInShape(ballPos, 1000))
+		if (Geometry.getPenaltyAreaOur().withMargin(1000).isPointInShape(ballPos))
 		{
 			info += "Geometry Area";
 			fail = true;

@@ -7,8 +7,8 @@ package edu.tigers.sumatra.ai;
 import com.sleepycat.persist.model.Persistent;
 import edu.tigers.sumatra.ai.athena.IPlayStrategy;
 import edu.tigers.sumatra.ai.data.BotAiInformation;
-import edu.tigers.sumatra.ai.metis.offense.action.OffensiveAction;
-import edu.tigers.sumatra.ai.metis.offense.action.situation.OffensiveActionTreePath;
+import edu.tigers.sumatra.ai.metis.offense.action.RatedOffensiveAction;
+import edu.tigers.sumatra.ai.metis.offense.situation.rating.OffensiveActionTreePath;
 import edu.tigers.sumatra.ai.metis.offense.ballinterception.BallInterceptionInformation;
 import edu.tigers.sumatra.ai.metis.offense.statistics.OffensiveAnalysedFrame;
 import edu.tigers.sumatra.ai.metis.offense.statistics.OffensiveStatisticsFrame;
@@ -43,7 +43,7 @@ public class VisualizationFrame
 
 	MatchStats matchStats;
 	OffensiveStrategy offensiveStrategy;
-	Map<BotID, OffensiveAction> offensiveActions = new HashMap<>();
+	Map<BotID, RatedOffensiveAction> offensiveActions = new HashMap<>();
 	Map<BotID, BotAiInformation> aiInfos = new HashMap<>();
 	OffensiveAnalysedFrame offensiveStatisticsFrame;
 	OffensiveStatisticsFrame offensiveStatisticsFrameRaw;

@@ -105,9 +105,14 @@
     -->
 
 
-        <module id="edu.tigers.sumatra.persistence.RecordManager">
-            <implementation>edu.tigers.sumatra.ai.AiRecordManager</implementation>
-        </module>
+    <module id="edu.tigers.sumatra.persistence.RecordManager">
+        <implementation>edu.tigers.sumatra.ai.AiRecordManager</implementation>
+
+        <dependency>edu.tigers.sumatra.gamelog.GameLogRecorder</dependency>
+    </module>
+
+
+    <module id="edu.tigers.sumatra.gamelog.GameLogRecorder"/>
 
 
     <!--

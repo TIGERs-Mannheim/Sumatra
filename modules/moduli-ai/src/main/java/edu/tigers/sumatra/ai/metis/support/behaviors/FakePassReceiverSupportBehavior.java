@@ -7,14 +7,15 @@ package edu.tigers.sumatra.ai.metis.support.behaviors;
 import com.github.g3force.configurable.Configurable;
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
 import edu.tigers.sumatra.ai.metis.kicking.OngoingPass;
-import edu.tigers.sumatra.ai.metis.offense.action.OffensiveAction;
+import edu.tigers.sumatra.ai.metis.kicking.PassFactory;
+import edu.tigers.sumatra.ai.metis.offense.action.RatedOffensiveAction;
 import edu.tigers.sumatra.drawable.DrawableLine;
 import edu.tigers.sumatra.drawable.IDrawableShape;
 import edu.tigers.sumatra.drawable.animated.AnimatedCrosshair;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.BotID;
-import edu.tigers.sumatra.math.line.v2.ILineSegment;
-import edu.tigers.sumatra.math.line.v2.Lines;
+import edu.tigers.sumatra.math.line.ILineSegment;
+import edu.tigers.sumatra.math.line.Lines;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.pathfinder.TrajectoryGenerator;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
@@ -50,29 +51,43 @@ public class FakePassReceiverSupportBehavior extends ASupportBehavior
 	@Configurable(comment = "Max time to fakePosition[sec]", defValue = "1.0")
 	private static double maxTimeToDestination = 1;
 
-	private final Supplier<Map<BotID, OffensiveAction>> offensiveActions;
+	private final Supplier<Map<BotID, RatedOffensiveAction>> offensiveActions;
 
 	private final Supplier<Optional<OngoingPass>> ongoingPass;
+
+	private final Supplier<Optional<Boolean>> canOngoingPassBeTrusted;
+
+	private PassFactory passFactory = new PassFactory();
 
 
 	@Override
 	public SupportBehaviorPosition calculatePositionForRobot(BotID botID)
 	{
+		if (getAiFrame().getGameState().isStoppedGame())
+		{
+			return SupportBehaviorPosition.notAvailable();
+		}
+		passFactory.update(getWFrame());
 		return Stream.concat(
-						offensiveActions.get().values().stream().map(OffensiveAction::getPass),
-						ongoingPass.get().stream().map(OngoingPass::getPass))
+						offensiveActions.get().values().stream().map(e -> e.getAction().getPass()),
+						Stream.of(ongoingPass.get().stream().map(OngoingPass::getPass)
+								.filter(e -> canOngoingPassBeTrusted.get().orElse(false))
+								.findAny()
+								.orElse(passFactory.straight(getWFrame().getBall().getPos(),
+										getWFrame().getBall().getTrajectory().getTravelLineSegment().getPathEnd(),
+										BotID.noBot(), botID))))
 				.filter(Objects::nonNull)
 				.map(pass -> Lines.segmentFromPoints(pass.getKick().getSource(), pass.getKick().getTarget()))
 				.filter(lineSegment -> isFakePassReceiverReasonableOn(lineSegment, getWFrame().getBot(botID)))
-				.findFirst()
 				.map(iLineSegment -> getPositionOnPassLine(iLineSegment, getWFrame().getBot(botID)))
+				.findAny()
 				.orElseGet(SupportBehaviorPosition::notAvailable);
 	}
 
 
 	private SupportBehaviorPosition getPositionOnPassLine(ILineSegment passLine, ITrackedBot bot)
 	{
-		IVector2 intersectionPoint = passLine.closestPointOnLine(bot.getPos());
+		IVector2 intersectionPoint = passLine.closestPointOnPath(bot.getPos());
 		IVector2 direction = passLine.toLine().getOrthogonalLine().directionVector().normalizeNew();
 		if (direction.x() > 0)
 		{
@@ -83,20 +98,20 @@ public class FakePassReceiverSupportBehavior extends ASupportBehavior
 
 		draw(passLine, destination);
 		return SupportBehaviorPosition
-				.fromDestinationAndRotationTarget(destination, passLine.closestPointOnLine(destination), 1.0);
+				.fromDestinationAndRotationTarget(destination, passLine.closestPointOnPath(destination), 1.0);
 	}
 
 
 	private boolean isFakePassReceiverReasonableOn(ILineSegment segment, ITrackedBot bot)
 	{
-		IVector2 referencePoint = segment.closestPointOnLine(bot.getPos());
+		IVector2 referencePoint = segment.closestPointOnPath(bot.getPos());
 		boolean isBehindPassLine = referencePoint.subtractNew(bot.getPos()).x() > 0;
 		boolean isInsidePenaltyArea = Geometry.getPenaltyAreaTheir().isPointInShapeOrBehind(referencePoint);
 		boolean isReachableInTime = TrajectoryGenerator
 				.generatePositionTrajectory(bot, referencePoint)
 				.getTotalTime() <= maxTimeToDestination;
-		double distToA = referencePoint.distanceTo(segment.getStart());
-		double distToB = referencePoint.distanceTo(segment.getEnd());
+		double distToA = referencePoint.distanceTo(segment.getPathStart());
+		double distToB = referencePoint.distanceTo(segment.getPathEnd());
 		return min(distToA, distToB) > minDistanceToPassingBots
 				&& isBehindPassLine
 				&& !isInsidePenaltyArea

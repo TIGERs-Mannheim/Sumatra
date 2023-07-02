@@ -4,6 +4,7 @@
 
 package edu.tigers.sumatra.wp.exporter;
 
+import com.github.g3force.configurable.Configurable;
 import edu.tigers.moduli.AModule;
 import edu.tigers.sumatra.model.SumatraModel;
 import edu.tigers.sumatra.network.MulticastUDPTransmitter;
@@ -12,7 +13,9 @@ import edu.tigers.sumatra.wp.IWorldFrameObserver;
 import edu.tigers.sumatra.wp.TrackerPacketGenerator;
 import edu.tigers.sumatra.wp.data.WorldFrameWrapper;
 import edu.tigers.sumatra.wp.proto.SslVisionWrapperTracked;
+import lombok.Setter;
 import lombok.extern.log4j.Log4j2;
+import org.apache.commons.lang.StringUtils;
 
 
 /**
@@ -24,12 +27,22 @@ public class VisionTrackerSender extends AModule implements IWorldFrameObserver
 	private MulticastUDPTransmitter transmitter;
 	private TrackerPacketGenerator trackerPacketGenerator;
 
+	@Configurable(comment = "Custom vision port that overwrites the value from moduli")
+	@Setter
+	private static int customPort;
+
+	@Configurable(comment = "Custom vision address that overwrites the value from moduli")
+	@Setter
+	private static String customAddress;
+
 
 	@Override
 	public void startModule()
 	{
-		String address = getSubnodeConfiguration().getString("address", "224.5.23.2");
-		int port = getSubnodeConfiguration().getInt("port", 10010);
+		String address = StringUtils.isNotBlank(customAddress) ?
+				customAddress :
+				getSubnodeConfiguration().getString("address", "224.5.23.2");
+		int port = customPort > 0 ? customPort : getSubnodeConfiguration().getInt("port", 10010);
 		transmitter = new MulticastUDPTransmitter(address, port);
 
 		String nifName = getSubnodeConfiguration().getString("interface", null);

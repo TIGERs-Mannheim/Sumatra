@@ -4,6 +4,7 @@
 
 package edu.tigers.sumatra.view.replay;
 
+import edu.tigers.sumatra.referee.data.EGameState;
 import edu.tigers.sumatra.referee.gameevent.EGameEvent;
 import edu.tigers.sumatra.referee.proto.SslGcRefereeMessage;
 import edu.tigers.sumatra.util.GlobalShortcuts;
@@ -167,6 +168,11 @@ public class ReplayControlPanel extends JPanel implements IReplayPositionObserve
 		Arrays.stream(SslGcRefereeMessage.Referee.Command.values())
 				.map(JumpCommandAction::new)
 				.forEach(jumpCommandMenu::add);
+		JMenu jumpGameStateMenu = new JMenu("Jump to Game State");
+		menuBar.add(jumpGameStateMenu);
+		Arrays.stream(EGameState.values())
+				.map(JumpGameStateAction::new)
+				.forEach(jumpGameStateMenu::add);
 		JMenu jumpGameEventMenu = new JMenu("Jump to Game Event");
 		menuBar.add(jumpGameEventMenu);
 		Arrays.stream(EGameEvent.values())
@@ -470,6 +476,28 @@ public class ReplayControlPanel extends JPanel implements IReplayPositionObserve
 			for (IReplayControlPanelObserver o : observers)
 			{
 				o.onSearchGameEvent(gameEvent);
+			}
+		}
+	}
+
+	private class JumpGameStateAction extends AbstractAction
+	{
+		private final EGameState gameState;
+
+
+		public JumpGameStateAction(EGameState gameState)
+		{
+			super(gameState.name());
+			this.gameState = gameState;
+		}
+
+
+		@Override
+		public void actionPerformed(final ActionEvent e)
+		{
+			for (IReplayControlPanelObserver o : observers)
+			{
+				o.onSearchGameState(gameState);
 			}
 		}
 	}

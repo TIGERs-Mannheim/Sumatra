@@ -48,6 +48,11 @@ public class ShapeMapSource implements Comparable<ShapeMapSource>
 	@Override
 	public int compareTo(ShapeMapSource o)
 	{
+		int parentCompare = ObjectUtils.compare(parent, o.parent);
+		if (parentCompare != 0)
+		{
+			return parentCompare;
+		}
 		return ObjectUtils.compare(name, o.name);
 	}
 
@@ -82,7 +87,7 @@ public class ShapeMapSource implements Comparable<ShapeMapSource>
 		ShapeMapSource source = getParent();
 		while (source != null)
 		{
-			path.add(source);
+			path.add(0, source);
 			source = source.getParent();
 		}
 		return path;

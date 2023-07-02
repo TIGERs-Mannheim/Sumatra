@@ -169,6 +169,18 @@ public class DrawableAnnotation implements IDrawableShape
 	}
 
 
+	public DrawableAnnotation withOffsetX(double offsetX)
+	{
+		return withOffset(Vector2f.fromX(offsetX));
+	}
+
+
+	public DrawableAnnotation withOffsetY(double offsetY)
+	{
+		return withOffset(Vector2f.fromY(offsetY));
+	}
+
+
 	/**
 	 * @param offset the offset to set
 	 * @return

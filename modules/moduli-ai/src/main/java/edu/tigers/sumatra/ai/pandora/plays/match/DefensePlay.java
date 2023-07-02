@@ -11,6 +11,7 @@ import edu.tigers.sumatra.ai.pandora.plays.EPlay;
 import edu.tigers.sumatra.ai.pandora.plays.match.defense.ADefenseGroup;
 import edu.tigers.sumatra.ai.pandora.plays.match.defense.CenterBackGroup;
 import edu.tigers.sumatra.ai.pandora.plays.match.defense.Man2ManMarkerGroup;
+import edu.tigers.sumatra.ai.pandora.plays.match.defense.PassDisruptionGroup;
 import edu.tigers.sumatra.ai.pandora.plays.match.defense.PenAreaGroup;
 import edu.tigers.sumatra.ai.pandora.plays.match.defense.SwitchableDefenderRole;
 import edu.tigers.sumatra.ai.pandora.roles.ARole;
@@ -57,9 +58,29 @@ public class DefensePlay extends APlay
 	{
 		var newGroupSet = new GroupSet();
 		var roleMap = getRoles().stream().collect(Collectors.toMap(ARole::getBotID, Function.identity()));
+		assignPassDisruptorGroup(newGroupSet, roleMap);
 		assignOuterGroups(newGroupSet, roleMap);
 		assignPenAreaGroup(newGroupSet, roleMap);
 		return newGroupSet;
+	}
+
+
+	private void assignPassDisruptorGroup(GroupSet newGroupSet, Map<BotID, ARole> roleMap)
+	{
+
+		var disruptionAssignment = getAiFrame().getTacticalField().getDefensePassDisruptionAssignment();
+		if (disruptionAssignment != null)
+		{
+			var defender = roleMap.get(disruptionAssignment.getDefenderId());
+			if (defender != null)
+			{
+				var disruptionGroup = new PassDisruptionGroup();
+				newGroupSet.addGroup(disruptionGroup);
+				disruptionGroup.addRole(defender);
+				roleMap.remove(defender.getBotID());
+			}
+		}
+
 	}
 
 
@@ -134,9 +155,9 @@ public class DefensePlay extends APlay
 	}
 
 
-	private static class GroupSet
+	private class GroupSet
 	{
-		final PenAreaGroup penAreaGroup = new PenAreaGroup();
+		final PenAreaGroup penAreaGroup = new PenAreaGroup(getTacticalField().getDefensePenAreaPositionAssignments());
 		final List<ADefenseGroup> allGroups = new ArrayList<>();
 
 

@@ -14,12 +14,9 @@ import edu.tigers.sumatra.botmanager.commands.ACommand;
 import edu.tigers.sumatra.botmanager.commands.CommandFactory;
 import edu.tigers.sumatra.botmanager.commands.basestation.BaseStationCameraViewport;
 import edu.tigers.sumatra.botmanager.commands.basestation.BaseStationWifiStats;
-import edu.tigers.sumatra.botmanager.commands.tigerv2.TigerSystemConsoleCommand;
-import edu.tigers.sumatra.botmanager.commands.tigerv2.TigerSystemConsoleCommand.ConsoleCommandTarget;
 import edu.tigers.sumatra.botmanager.commands.tigerv3.TigerConfigWrite;
 import edu.tigers.sumatra.botmanager.configs.ConfigFileDatabaseManager;
 import edu.tigers.sumatra.ids.BotID;
-import edu.tigers.sumatra.ids.ETeamColor;
 import edu.tigers.sumatra.math.rectangle.IRectangle;
 import edu.tigers.sumatra.model.SumatraModel;
 import edu.tigers.sumatra.vision.AVisionFilter;
@@ -57,9 +54,8 @@ public class TigersBotManager extends ABotManager implements IVisionFilterObserv
 
 		CommandFactory.getInstance().loadCommands();
 
-		autoCharge = Boolean.valueOf(SumatraModel.getInstance().getUserProperty(
+		autoCharge = Boolean.parseBoolean(SumatraModel.getInstance().getUserProperty(
 				PROP_AUTO_CHARGE, String.valueOf(true)));
-
 	}
 
 
@@ -147,14 +143,14 @@ public class TigersBotManager extends ABotManager implements IVisionFilterObserv
 
 	public Optional<TigerBot> getTigerBot(final BotID botID)
 	{
-		return getBot(botID).map(b -> (TigerBot) b);
+		return getBot(botID).map(TigerBot.class::cast);
 	}
 
 
-	public Map<BotID, TigerBot> getTigerBots()
+	private Map<BotID, TigerBot> getTigerBots()
 	{
 		return getBots().values().stream()
-				.map(b -> (TigerBot) b)
+				.map(TigerBot.class::cast)
 				.collect(Collectors.toMap(TigerBot::getBotId, Function.identity()));
 	}
 
@@ -183,37 +179,6 @@ public class TigersBotManager extends ABotManager implements IVisionFilterObserv
 	{
 		super.onBotOnline(bot);
 		bot.getMatchCtrl().setKickerAutocharge(autoCharge);
-		updateColorOfAllRobotsToMajority((TigerBot) bot);
-	}
-
-
-	private void updateColorOfAllRobotsToMajority(final TigerBot bot)
-	{
-		if (SumatraModel.getInstance().isTournamentMode())
-		{
-			long numY = getBots().values().stream().map(b -> b.getBotId().getTeamColor())
-					.filter(tc -> tc.equals(ETeamColor.YELLOW)).count();
-			long numB = getBots().size() - numY;
-			String command = null;
-			if (numY > numB)
-			{
-				if (bot.getBotId().getTeamColor().equals(ETeamColor.BLUE))
-				{
-					command = "color y";
-				}
-			} else
-			{
-				if (bot.getBotId().getTeamColor().equals(ETeamColor.YELLOW))
-				{
-					command = "color b";
-				}
-			}
-			if (command != null)
-			{
-				TigerSystemConsoleCommand cmd = new TigerSystemConsoleCommand(ConsoleCommandTarget.MAIN, command);
-				bot.execute(cmd);
-			}
-		}
 	}
 
 

@@ -18,8 +18,8 @@ import edu.tigers.sumatra.cam.proto.MessagesRobocupSslGeometry.SSL_GeometryField
 import edu.tigers.sumatra.cam.proto.MessagesRobocupSslGeometry.Vector2f;
 import edu.tigers.sumatra.math.circle.Arc;
 import edu.tigers.sumatra.math.circle.IArc;
-import edu.tigers.sumatra.math.line.ILine;
-import edu.tigers.sumatra.math.line.Line;
+import edu.tigers.sumatra.math.line.ILineSegment;
+import edu.tigers.sumatra.math.line.Lines;
 import edu.tigers.sumatra.math.vector.IVector;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
@@ -60,7 +60,7 @@ public class SSLVisionCamGeometryTranslator
 	{
 		List<SSL_GeometryCameraCalibration> calibrations = camGeometry.getCameraCalibrations().values().stream()
 				.map(this::toProtobuf)
-				.collect(Collectors.toUnmodifiableList());
+				.toList();
 		return SSL_GeometryData.newBuilder()
 				.setModels(camGeometry.getBallModels())
 				.setField(toProtobuf(camGeometry.getFieldSize()))
@@ -72,9 +72,9 @@ public class SSLVisionCamGeometryTranslator
 	private CamFieldSize fromProtobuf(SSL_GeometryFieldSize field)
 	{
 		List<CamFieldLine> fieldLines = field.getFieldLinesList().stream().map(this::fromProtobuf)
-				.collect(Collectors.toUnmodifiableList());
+				.toList();
 		List<CamFieldArc> fieldArcs = field.getFieldArcsList().stream().map(this::fromProtobuf)
-				.collect(Collectors.toUnmodifiableList());
+				.toList();
 		return CamFieldSize.builder()
 				.fieldLength(field.getFieldLength())
 				.fieldWidth(field.getFieldWidth())
@@ -109,8 +109,8 @@ public class SSLVisionCamGeometryTranslator
 				.setGoalWidth((int) field.getGoalWidth())
 				.setGoalDepth((int) field.getGoalDepth())
 				.setBoundaryWidth((int) field.getBoundaryWidth())
-				.addAllFieldLines(field.getFieldLines().stream().map(this::toProtobuf).collect(Collectors.toList()))
-				.addAllFieldArcs(field.getFieldArcs().stream().map(this::toProtobuf).collect(Collectors.toList()))
+				.addAllFieldLines(field.getFieldLines().stream().map(this::toProtobuf).toList())
+				.addAllFieldArcs(field.getFieldArcs().stream().map(this::toProtobuf).toList())
 				.setPenaltyAreaDepth((int) field.getPenaltyAreaDepth())
 				.setPenaltyAreaWidth((int) field.getPenaltyAreaWidth())
 				.setCenterCircleRadius((int) field.getCenterCircleRadius())
@@ -127,15 +127,15 @@ public class SSLVisionCamGeometryTranslator
 	{
 		IVector2 p1 = Vector2.fromXY(lineSegment.getP1().getX(), lineSegment.getP1().getY());
 		IVector2 p2 = Vector2.fromXY(lineSegment.getP2().getX(), lineSegment.getP2().getY());
-		ILine line = Line.fromPoints(p1, p2);
+		var line = Lines.segmentFromPoints(p1, p2);
 		return new CamFieldLine(lineSegment.getName(), lineSegment.getType(), lineSegment.getThickness(), line);
 	}
 
 
 	private SSL_FieldLineSegment toProtobuf(CamFieldLine lineSegment)
 	{
-		IVector2 p1 = lineSegment.getLine().getStart();
-		IVector2 p2 = lineSegment.getLine().getEnd();
+		IVector2 p1 = lineSegment.getLine().getPathStart();
+		IVector2 p2 = lineSegment.getLine().getPathEnd();
 		return SSL_FieldLineSegment.newBuilder()
 				.setName(lineSegment.getName())
 				.setThickness((float) lineSegment.getThickness())
@@ -250,7 +250,7 @@ public class SSLVisionCamGeometryTranslator
 
 		List<CamFieldLine> penaltyStretches = lines.stream()
 				.filter(l -> penaltyStretchTypes.contains(l.getType()) || penaltyStretchTypeNames.contains(l.getName()))
-				.collect(Collectors.toUnmodifiableList());
+				.toList();
 
 		if (penaltyStretches.size() != penaltyStretchTypes.size())
 		{
@@ -261,10 +261,10 @@ public class SSLVisionCamGeometryTranslator
 		// calculate length of penalty area front line
 		List<Double> lengths = penaltyStretches.stream()
 				.map(CamFieldLine::getLine)
-				.map(ILine::directionVector)
+				.map(ILineSegment::directionVector)
 				.map(IVector::getLength2)
 				.distinct()
-				.collect(Collectors.toUnmodifiableList());
+				.toList();
 
 		if (lengths.size() != 1)
 		{

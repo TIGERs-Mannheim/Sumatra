@@ -8,7 +8,7 @@ import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
 import edu.tigers.sumatra.ai.pandora.plays.EPlay;
 import edu.tigers.sumatra.ai.pandora.roles.ARole;
 import edu.tigers.sumatra.ai.pandora.roles.move.MoveRole;
-import edu.tigers.sumatra.ai.pandora.roles.offense.AttackerRole;
+import edu.tigers.sumatra.ai.pandora.roles.offense.attacker.AttackerRole;
 import edu.tigers.sumatra.ai.pandora.roles.test.kick.KickTestRole;
 import edu.tigers.sumatra.botmanager.botskills.data.EKickerDevice;
 import edu.tigers.sumatra.drawable.DrawableCircle;
@@ -16,7 +16,6 @@ import edu.tigers.sumatra.drawable.DrawableLine;
 import edu.tigers.sumatra.drawable.IDrawableShape;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.math.circle.Circle;
-import edu.tigers.sumatra.math.line.Line;
 import edu.tigers.sumatra.math.line.LineMath;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.statemachine.AState;
@@ -69,7 +68,7 @@ public class ReproducibleKickRollingBallPlay extends ABallPreparationPlay
 		passerTargetPos = LineMath.stepAlongLine(ballTargetPos, passTarget, -(Geometry.getBotRadius() + 150));
 
 		List<IDrawableShape> shapes = getAiFrame().getShapeMap().get(EAiShapesLayer.TEST_KICK);
-		shapes.add(new DrawableLine(Line.fromPoints(ballTargetPos, passTarget), Color.ORANGE));
+		shapes.add(new DrawableLine(ballTargetPos, passTarget, Color.ORANGE));
 		shapes.add(new DrawableCircle(Circle.createCircle(passerTargetPos, Geometry.getBotRadius()), Color.ORANGE));
 		shapes.add(new DrawableCircle(Circle.createCircle(botTargetPos, Geometry.getBotRadius()), Color.CYAN));
 	}
@@ -90,6 +89,11 @@ public class ReproducibleKickRollingBallPlay extends ABallPreparationPlay
 		return getRoles().size() == 2;
 	}
 
+
+	private enum EKickEvent implements IEvent
+	{
+		PREPARED
+	}
 
 	private class PreparationState extends AState
 	{
@@ -190,10 +194,5 @@ public class ReproducibleKickRollingBallPlay extends ABallPreparationPlay
 				stateMachine.triggerEvent(EEvent.EXECUTED);
 			}
 		}
-	}
-
-	private enum EKickEvent implements IEvent
-	{
-		PREPARED
 	}
 }

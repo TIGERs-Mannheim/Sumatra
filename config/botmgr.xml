@@ -1,9 +1,4 @@
 <?xml version="1.0" encoding="UTF-8"?><edu.tigers.sumatra.botmanager.basestation.TigersBaseStation base="edu.tigers.sumatra.botmanager.basestation.TigersBaseStation">
-    <channel:LAB>80</channel:LAB>
-    <channel:ROBOCUP>80</channel:ROBOCUP>
-    <channel:NICOLAI>80</channel:NICOLAI>
-    <host:ROBOCUP>10.10.11.210</host:ROBOCUP>
     <host:ANDRE>192.168.1.210</host:ANDRE>
     <host:NICOLAI>192.168.178.210</host:NICOLAI>
-    <host:LAB>192.168.60.210</host:LAB>
 </edu.tigers.sumatra.botmanager.basestation.TigersBaseStation>

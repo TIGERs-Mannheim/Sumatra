@@ -11,6 +11,10 @@ import edu.tigers.sumatra.bot.MoveConstraints;
 import edu.tigers.sumatra.botmanager.botskills.ABotSkill;
 import edu.tigers.sumatra.botmanager.botskills.BotSkillGetBall;
 import edu.tigers.sumatra.botmanager.botskills.BotSkillInterceptBall;
+import edu.tigers.sumatra.botmanager.botskills.BotSkillTechChallenge2022Stage1;
+import edu.tigers.sumatra.botmanager.botskills.BotSkillTechChallenge2022Stage2;
+import edu.tigers.sumatra.botmanager.botskills.BotSkillTechChallenge2022Stage3;
+import edu.tigers.sumatra.botmanager.botskills.BotSkillTechChallenge2022Stage4;
 import edu.tigers.sumatra.botmanager.botskills.data.KickerDribblerCommands;
 import edu.tigers.sumatra.referee.proto.SslGcRefereeMessage;
 import edu.tigers.sumatra.skillsystem.skills.BotSkillWrapperSkill;
@@ -57,7 +61,12 @@ public class VisionBlackoutRole extends ARole
 	public enum EChallengeType
 	{
 		STATIC_BALL,
-		MOVING_BALL
+		MOVING_BALL,
+
+		TECH_CHALLENGE_STAGE1,
+		TECH_CHALLENGE_STAGE2,
+		TECH_CHALLENGE_STAGE3,
+		TECH_CHALLENGE_STAGE4,
 	}
 
 	private enum EEvent implements IEvent
@@ -105,7 +114,8 @@ public class VisionBlackoutRole extends ARole
 
 			switch (type)
 			{
-				case STATIC_BALL:
+				case STATIC_BALL ->
+				{
 					MoveConstraints mcGet = getBot().getMoveConstraints();
 					mcGet.setVelMax(getMaxSpeed);
 					mcGet.setAccMax(getAcceleration);
@@ -113,8 +123,9 @@ public class VisionBlackoutRole extends ARole
 							getBot().getRobotInfo().getBotParams().getDribblerSpecs().getDefaultSpeed(),
 							getBot().getRobotInfo().getBotParams().getDribblerSpecs().getDefaultMaxCurrent(), getRotationSpeed,
 							getDockingSpeed);
-					break;
-				case MOVING_BALL:
+				}
+				case MOVING_BALL ->
+				{
 					MoveConstraints mcIntercept = getBot().getMoveConstraints();
 					mcIntercept.setVelMax(interceptMaxSpeed);
 					mcIntercept.setAccMax(interceptAcceleration);
@@ -122,11 +133,49 @@ public class VisionBlackoutRole extends ARole
 					KickerDribblerCommands kd = new KickerDribblerCommands();
 					kd.setDribbler(getBot().getRobotInfo().getBotParams().getDribblerSpecs().getDefaultSpeed(),
 							getBot().getRobotInfo().getBotParams().getDribblerSpecs().getDefaultMaxCurrent());
-
 					skill.setKickerDribbler(kd);
-					break;
-				default:
-					throw new IllegalStateException("Unexpected value: " + type);
+				}
+				case TECH_CHALLENGE_STAGE1 ->
+				{
+					MoveConstraints mcTC2022Stage1 = getBot().getMoveConstraints();
+					mcTC2022Stage1.setVelMax(getMaxSpeed);
+					mcTC2022Stage1.setAccMax(getAcceleration);
+					skill = new BotSkillTechChallenge2022Stage1(mcTC2022Stage1,
+							getBot().getRobotInfo().getBotParams().getDribblerSpecs().getDefaultSpeed(),
+							getBot().getRobotInfo().getBotParams().getDribblerSpecs().getDefaultMaxCurrent(),
+							getRotationSpeed);
+				}
+				case TECH_CHALLENGE_STAGE2 ->
+				{
+					MoveConstraints mcTC2022Stage2 = getBot().getMoveConstraints();
+					mcTC2022Stage2.setVelMax(getMaxSpeed);
+					mcTC2022Stage2.setAccMax(getAcceleration);
+					skill = new BotSkillTechChallenge2022Stage2(mcTC2022Stage2,
+							getBot().getRobotInfo().getBotParams().getDribblerSpecs().getDefaultSpeed(),
+							getBot().getRobotInfo().getBotParams().getDribblerSpecs().getDefaultMaxCurrent(),
+							getRotationSpeed);
+				}
+				case TECH_CHALLENGE_STAGE3 ->
+				{
+					MoveConstraints mcTC2022Stage3 = getBot().getMoveConstraints();
+					mcTC2022Stage3.setVelMax(getMaxSpeed);
+					mcTC2022Stage3.setAccMax(getAcceleration);
+					skill = new BotSkillTechChallenge2022Stage3(mcTC2022Stage3,
+							getBot().getRobotInfo().getBotParams().getDribblerSpecs().getDefaultSpeed(),
+							getBot().getRobotInfo().getBotParams().getDribblerSpecs().getDefaultMaxCurrent(),
+							getRotationSpeed);
+				}
+				case TECH_CHALLENGE_STAGE4 ->
+				{
+					MoveConstraints mcTC2022Stage4 = getBot().getMoveConstraints();
+					mcTC2022Stage4.setVelMax(getMaxSpeed);
+					mcTC2022Stage4.setAccMax(getAcceleration);
+					skill = new BotSkillTechChallenge2022Stage4(mcTC2022Stage4,
+							getBot().getRobotInfo().getBotParams().getDribblerSpecs().getDefaultSpeed(),
+							getBot().getRobotInfo().getBotParams().getDribblerSpecs().getDefaultMaxCurrent(),
+							getRotationSpeed);
+				}
+				default -> throw new IllegalStateException("Unexpected value: " + type);
 			}
 
 			BotSkillWrapperSkill wrapper = new BotSkillWrapperSkill(skill);

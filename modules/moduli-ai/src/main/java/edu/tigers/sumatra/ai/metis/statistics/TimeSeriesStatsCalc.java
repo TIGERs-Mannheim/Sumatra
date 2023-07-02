@@ -1,9 +1,10 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.metis.statistics;
 
+import edu.tigers.sumatra.ai.common.TimeSeriesStatisticsSaver;
 import edu.tigers.sumatra.ai.metis.ACalculator;
 import edu.tigers.sumatra.ai.metis.ballpossession.BallPossession;
 import edu.tigers.sumatra.ai.metis.botdistance.BotDistance;
@@ -15,6 +16,7 @@ import edu.tigers.sumatra.ai.metis.statistics.timeseries.BallPossessionTssCalc;
 import edu.tigers.sumatra.ai.metis.statistics.timeseries.BallVelTssCalc;
 import edu.tigers.sumatra.ai.metis.statistics.timeseries.GameEventsTssCalc;
 import edu.tigers.sumatra.ai.metis.statistics.timeseries.ITssCalc;
+import edu.tigers.sumatra.ai.metis.statistics.timeseries.RealTimeTssCalc;
 import edu.tigers.sumatra.ai.metis.statistics.timeseries.RefereeTssCalc;
 import edu.tigers.sumatra.ai.metis.statistics.timeseries.StatisticsTssCalc;
 import edu.tigers.sumatra.ai.pandora.plays.EPlay;
@@ -29,7 +31,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 
 /**
@@ -42,9 +43,9 @@ public class TimeSeriesStatsCalc extends ACalculator
 
 	private SslGcRefereeMessage.Referee.Stage currentStage = SslGcRefereeMessage.Referee.Stage.NORMAL_FIRST_HALF_PRE;
 	private long initialStageTime = 0;
-	private String identifierSuffix;
 
 	private final List<ITssCalc> tssCalcs = new ArrayList<>();
+	private final TimeSeriesStatisticsSaver timeSeriesStatisticsSaver = new TimeSeriesStatisticsSaver();
 
 
 	public TimeSeriesStatsCalc(
@@ -55,6 +56,7 @@ public class TimeSeriesStatsCalc extends ACalculator
 			Supplier<MatchStats> matchStats
 	)
 	{
+		tssCalcs.add(new RealTimeTssCalc());
 		tssCalcs.add(new AiRoleNumberTssCalc(
 				desiredBotMap
 		));
@@ -94,15 +96,6 @@ public class TimeSeriesStatsCalc extends ACalculator
 			currentStage = getAiFrame().getRefereeMsg().getStage();
 		}
 
-		if (identifierSuffix == null)
-		{
-			final String stage = getAiFrame().getRefereeMsg().getStage().name();
-			final String teamName = getAiFrame().getRefereeMsg().getTeamInfo(getAiFrame().getTeamColor()).getName()
-					.replaceAll(" ", "_");
-			final String teamColor = getAiFrame().getTeamColor().name().toLowerCase();
-			identifierSuffix = stage + "_" + teamName + "_" + teamColor;
-		}
-
 		long timestamp = (initialStageTime - getAiFrame().getRefereeMsg().getStageTimeLeft()) * 1000;
 
 		generateEntries(timestamp);
@@ -113,15 +106,11 @@ public class TimeSeriesStatsCalc extends ACalculator
 	{
 		final List<TimeSeriesStatsEntry> entries = tssCalcs.stream()
 				.map(c -> c.createTimeSeriesStatsEntry(getAiFrame(), timestamp))
-				.collect(Collectors.toList());
+				.toList();
 
 		for (TimeSeriesStatsEntry entry : entries)
 		{
-			entry.addTag("stage", getAiFrame().getRefereeMsg().getStage().name());
-			entry.addTag("team.name",
-					getAiFrame().getRefereeMsg().getTeamInfo(getAiFrame().getTeamColor()).getName().replaceAll(" ", "_"));
-			entry.addTag("team.color", getAiFrame().getTeamColor().name().toLowerCase());
-			SumatraModel.getInstance().getModule(StatisticsSaver.class).add(identifierSuffix, entry);
+			timeSeriesStatisticsSaver.add(getAiFrame(), entry);
 		}
 	}
 

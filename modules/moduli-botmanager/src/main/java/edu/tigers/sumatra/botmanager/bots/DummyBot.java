@@ -24,8 +24,8 @@ public class DummyBot extends ABot
 	{
 		super(EBotType.UNKNOWN, BotID.noBot(), new DummyBaseStation());
 	}
-	
-	
+
+
 	/**
 	 * @param botId
 	 */
@@ -33,64 +33,71 @@ public class DummyBot extends ABot
 	{
 		super(EBotType.UNKNOWN, botId, new DummyBaseStation());
 	}
-	
-	
+
+
 	@Override
 	public boolean isBarrierInterrupted()
 	{
 		return false;
 	}
-	
-	
+
+
 	@Override
 	public double getCenter2DribblerDist()
 	{
 		return 75;
 	}
-	
-	
+
+
 	@Override
 	public int getHardwareId()
 	{
 		return getBotId().getNumberWithColorOffsetBS();
 	}
-	
-	
+
+
 	@Override
 	public EDribblerState getDribblerState()
 	{
 		return EDribblerState.COLD;
 	}
-	
-	
+
+
 	@Override
 	public double getKickerLevel()
 	{
 		return 0;
 	}
-	
-	
+
+
+	@Override
+	public double getDribblerCurrent()
+	{
+		return 0;
+	}
+
+
 	@Override
 	public double getBatteryRelative()
 	{
 		return 0;
 	}
-	
-	
+
+
 	@Override
 	public ERobotMode getRobotMode()
 	{
 		return ERobotMode.READY;
 	}
-	
-	
+
+
 	@Override
-	public boolean isOK()
+	public boolean isHealthy()
 	{
 		return true;
 	}
-	
-	
+
+
 	@Override
 	public EBotParamLabel getBotParamLabel()
 	{

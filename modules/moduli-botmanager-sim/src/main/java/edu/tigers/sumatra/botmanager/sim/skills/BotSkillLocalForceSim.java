@@ -16,7 +16,7 @@ public class BotSkillLocalForceSim implements IBotSkillSim
 	public BotSkillOutput execute(final BotSkillInput input)
 	{
 		// By now only for spinTest
-		BotSkillLocalForce skill = (BotSkillLocalForce) input.getSkill();
+		BotSkillLocalForce skill = (BotSkillLocalForce) input.skill();
 
 		final double fraction = 0.2;
 		return BotSkillOutput.Builder.create()
@@ -28,7 +28,7 @@ public class BotSkillLocalForceSim implements IBotSkillSim
 				.kickMode(skill.getMode())
 				.kickSpeed(skill.getKickSpeed())
 				.dribblerRPM(skill.getDribbleSpeed())
-				.strictVelocityLimit(input.isStrictVelocityLimit())
+				.strictVelocityLimit(input.strictVelocityLimit())
 				.build();
 	}
 }

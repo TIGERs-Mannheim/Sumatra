@@ -141,7 +141,7 @@ public final class BotID extends AObjectID
 	@Override
 	public String getSaveableString()
 	{
-		return String.format("%d %s", getNumber(), getTeamColor().name().charAt(0));
+		return getNumber() + " " + getTeamColor().name().charAt(0);
 	}
 
 

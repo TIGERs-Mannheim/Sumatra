@@ -21,7 +21,6 @@ public class RulerMouseAdapter extends MouseAdapter
 	private final Consumer<DrawableRuler> rulerConsumer;
 	private IVector2 dragPointStart;
 
-
 	@Override
 	public void mousePressed(final MouseEvent e)
 	{
@@ -35,7 +34,8 @@ public class RulerMouseAdapter extends MouseAdapter
 		if (SwingUtilities.isLeftMouseButton(e) && (e.isControlDown() || e.isAltDown()) && dragPointStart != null)
 		{
 			IVector2 dragPointEnd = mousePointTransformer.toGlobal(e.getX(), e.getY());
-			rulerConsumer.accept(new DrawableRuler(dragPointStart, dragPointEnd));
+			DrawableRuler ruler = new DrawableRuler(dragPointStart, dragPointEnd);
+			rulerConsumer.accept(ruler);
 		}
 	}
 

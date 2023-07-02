@@ -5,6 +5,7 @@
 package edu.tigers.sumatra.ai.metis.kicking;
 
 import com.sleepycat.persist.model.Persistent;
+import edu.tigers.sumatra.ai.metis.offense.situation.zone.EOffensiveZone;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.NonNull;
@@ -24,11 +25,15 @@ public class OngoingPass
 	Pass pass;
 	long kickStartTime;
 
+	EOffensiveZone originatingZone;
+	EOffensiveZone targetZone;
 
 	@SuppressWarnings("unused") // berkeley
 	private OngoingPass()
 	{
 		pass = new Pass();
 		kickStartTime = 0;
+		originatingZone = null;
+		targetZone = null;
 	}
 }

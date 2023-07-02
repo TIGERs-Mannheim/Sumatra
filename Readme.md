@@ -19,11 +19,12 @@ Run `./gradlew build` to build the full application.
 You can skip the tests with `./gradlew build -x test`. 
 
 ## Run
-Start Sumatra with `./gradlew run` or use the provided IntelliJ run configuration.
+Start Sumatra with `./gradlew :run` or use the provided IntelliJ run configuration.
 
 Custom Sumatra arguments can be passed with `--args="--my-arg"`.
-For development, use `./gradlew run -Pdevelopment` to enable some more runtime checks (assertions).
-For a real match, use `./gradlew run -Pproductive` to disable some checks, start recordings automatically and increase the heap size.
+For development, use `./gradlew :run -Pdevelopment` to enable some more runtime checks (assertions).
+For a real match, use `./gradlew :run -Pproductive` to disable some checks, start recordings automatically and increase
+the heap size.
 
 ## Install
 Sumatra can be installed into a single directory containing all dependencies: `./gradlew installDist`.

@@ -1,12 +1,11 @@
 package edu.tigers.sumatra.sim.collision.ball;
 
-import java.util.Optional;
-
-import edu.tigers.sumatra.math.line.ILine;
-import edu.tigers.sumatra.math.line.Line;
+import edu.tigers.sumatra.math.line.Lines;
 import edu.tigers.sumatra.math.rectangle.IRectangle;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.IVector3;
+
+import java.util.Optional;
 
 
 /**
@@ -33,16 +32,16 @@ public class RectCollisionObject implements ICollisionObject
 	@Override
 	public Optional<ICollision> getCollision(final IVector3 prePos, final IVector3 postPos)
 	{
-		ILine stateLine = Line.fromPoints(prePos.getXYVector(), postPos.getXYVector());
+		var stateLine = Lines.segmentFromPoints(prePos.getXYVector(), postPos.getXYVector());
 		
 		if (stateLine.directionVector().isZeroVector())
 		{
 			return Optional.empty();
 		}
-		
-		for (ILine edge : rect.getEdges())
+
+		for (var edge : rect.getEdges())
 		{
-			Optional<IVector2> collisionPoint = edge.intersectionOfSegments(stateLine);
+			var collisionPoint = edge.intersect(stateLine).asOptional();
 			if (collisionPoint.isPresent())
 			{
 				return Optional.of(new Collision(collisionPoint.get(), calcNormal(prePos), this));

@@ -9,12 +9,13 @@ import com.github.g3force.configurable.Configurable;
 import edu.tigers.sumatra.ai.metis.botdistance.BotDistance;
 import edu.tigers.sumatra.ai.metis.kicking.PassFactory;
 import edu.tigers.sumatra.ai.metis.offense.action.EActionViability;
-import edu.tigers.sumatra.ai.metis.offense.action.OffensiveAction;
+import edu.tigers.sumatra.ai.metis.offense.action.RatedOffensiveAction;
 import edu.tigers.sumatra.ai.metis.offense.action.OffensiveActionViability;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.BotID;
 import lombok.RequiredArgsConstructor;
 
+import java.util.Optional;
 import java.util.function.Supplier;
 
 
@@ -24,8 +25,8 @@ import java.util.function.Supplier;
 @RequiredArgsConstructor
 public class MoveBallToOpponentHalfActionMove extends AOffensiveActionMove
 {
-	@Configurable(comment = "Viability for GoToOtherHalf", defValue = "0.24")
-	private static double defaultGoToOtherHalfViability = 0.24;
+	@Configurable(comment = "Viability for GoToOtherHalf", defValue = "0.27")
+	private static double defaultGoToOtherHalfViability = 0.27;
 
 	@Configurable(comment = "Factor to reduce GoToOtherHalf viability during own kickoff", defValue = "0.5")
 	private static double kickoffGoToOtherHalfViabilityFactor = 0.5;
@@ -59,17 +60,16 @@ public class MoveBallToOpponentHalfActionMove extends AOffensiveActionMove
 
 
 	@Override
-	public OffensiveAction calcAction(BotID botId)
+	public Optional<RatedOffensiveAction> calcAction(BotID botId)
 	{
 		passFactory.update(getWFrame());
 		passFactory.setAimingTolerance(0.6);
 		var target = Geometry.getGoalTheir().getCenter();
 		var pass = passFactory.chip(getBall().getPos(), target, botId, BotID.noBot());
-		return OffensiveAction.builder()
-				.move(EOffensiveActionMove.MOVE_BALL_TO_OPPONENT_HALF)
-				.viability(calcViability())
-				.pass(pass)
-				.build();
+		return Optional.of(RatedOffensiveAction.buildPass(
+				EOffensiveActionMove.MOVE_BALL_TO_OPPONENT_HALF,
+				calcViability(),
+				pass));
 	}
 
 

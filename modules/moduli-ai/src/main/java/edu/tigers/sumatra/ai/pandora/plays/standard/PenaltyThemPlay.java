@@ -93,7 +93,7 @@ public class PenaltyThemPlay extends APlay
 	private boolean isShapeOccupiedByBots(I2DShape shape, Collection<ITrackedBot> bots, BotID ignoredBot)
 	{
 		return bots.stream()
-				.filter(bot -> bot.getBotId() != ignoredBot)
+				.filter(bot -> !bot.getBotId().equals(ignoredBot))
 				.anyMatch(bot -> shape.isPointInShape(bot.getPos()));
 	}
 }

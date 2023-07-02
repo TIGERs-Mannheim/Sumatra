@@ -3,11 +3,6 @@
  */
 package edu.tigers.sumatra.vision.data;
 
-import java.util.List;
-import java.util.Optional;
-
-import org.apache.commons.lang.Validate;
-
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.math.AngleMath;
 import edu.tigers.sumatra.math.BotMath;
@@ -15,45 +10,29 @@ import edu.tigers.sumatra.math.SumatraMath;
 import edu.tigers.sumatra.math.botshape.BotShape;
 import edu.tigers.sumatra.math.circle.Circle;
 import edu.tigers.sumatra.math.circle.ICircle;
-import edu.tigers.sumatra.math.line.v2.ILineSegment;
-import edu.tigers.sumatra.math.line.v2.Lines;
+import edu.tigers.sumatra.math.line.ILineSegment;
+import edu.tigers.sumatra.math.line.Lines;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.math.vector.Vector3;
+import lombok.Value;
+
+import java.util.List;
 
 
 /**
  * @author AndreR <andre@ryll.cc>
  */
+@Value
 public class RobotCollisionShape
 {
-	private final IVector2 pos;
-	private final double orient;
-	private final double radius;
-	private final double center2Dribbler;
-	private final double maxCircleLoss;
-	private final double maxFrontLoss;
-	
-	
-	/**
-	 * @param pos
-	 * @param orient
-	 * @param radius
-	 * @param center2Dribbler
-	 * @param maxCircleLoss
-	 * @param maxFrontLoss
-	 */
-	public RobotCollisionShape(final IVector2 pos, final double orient, final double radius,
-			final double center2Dribbler, final double maxCircleLoss,
-			final double maxFrontLoss)
-	{
-		this.pos = pos;
-		this.orient = orient;
-		this.radius = radius;
-		this.center2Dribbler = center2Dribbler;
-		this.maxCircleLoss = maxCircleLoss;
-		this.maxFrontLoss = maxFrontLoss;
-	}
+	IVector2 pos;
+	double orient;
+	IVector2 vel;
+	double radius;
+	double center2Dribbler;
+	double maxCircleLoss;
+	double maxFrontLoss;
 	
 	
 	/**
@@ -80,15 +59,17 @@ public class RobotCollisionShape
 			IVector2 outside = botCircle.nearestPointOutside(ballPos);
 			ballVelUsed = ballPos.subtractNew(outside);
 		}
+
+		ballVelUsed = ballVelUsed.subtractNew(vel);
 		
 		ILineSegment frontLine = BotMath.getDribblerFrontLine(Vector3.from2d(pos, orient), radius + ballRadius,
 				center2Dribbler + ballRadius);
 		
 		ILineSegment ballVelLine = Lines.segmentFromOffset(ballPos, ballVelUsed.multiplyNew(-1.0).scaleTo(radius * 5.0));
 		
-		Optional<IVector2> frontIntersect = frontLine.intersectSegment(ballVelLine);
+		var frontIntersect = frontLine.intersect(ballVelLine);
 		
-		if (frontIntersect.isPresent())
+		if (!frontIntersect.isEmpty())
 		{
 			double collisionAngle = Vector2.fromAngle(orient).multiply(-1.0).angleTo(ballVelUsed).orElse(Math.PI);
 			double collisionAngleAbs = Math.abs(collisionAngle);
@@ -97,18 +78,18 @@ public class RobotCollisionShape
 				// ball is rolling away from robot => no real front collision with reflection
 				return new CollisionResult(ECollisionLocation.CIRCLE, null);
 			}
-			
+
 			double outVelAbs = ballVelUsed.getLength2()
 					- (ballVelUsed.getLength2() * SumatraMath.cos(collisionAngleAbs) * maxFrontLoss);
 			
 			Vector2 outVel = Vector2.fromAngle(orient).multiply(-1.0).turn(-collisionAngle).multiply(-1.0)
-					.scaleTo(outVelAbs);
+					.scaleTo(outVelAbs).add(vel);
 			
 			return new CollisionResult(ECollisionLocation.FRONT, outVel);
 		}
 		
 		ICircle botCircle = Circle.createCircle(pos, radius + ballRadius);
-		List<IVector2> intersect = botCircle.lineIntersections(ballVelLine);
+		List<IVector2> intersect = botCircle.intersectPerimeterPath(ballVelLine);
 		
 		if (!intersect.isEmpty())
 		{
@@ -125,13 +106,10 @@ public class RobotCollisionShape
 					- (ballVelUsed.getLength2() * SumatraMath.cos(collisionAngleAbs) * maxCircleLoss);
 			
 			Vector2 outVel = Vector2.fromPoints(intersectCircle, pos).turn(-collisionAngle).multiply(-1.0)
-					.scaleTo(outVelAbs);
+					.scaleTo(outVelAbs).add(vel);
 			
 			return new CollisionResult(ECollisionLocation.CIRCLE, outVel);
 		}
-		
-		// this should actually not happen
-		Validate.isTrue(false);
 		
 		return new CollisionResult(ECollisionLocation.NONE, null);
 	}

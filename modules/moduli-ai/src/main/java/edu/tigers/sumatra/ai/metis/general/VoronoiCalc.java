@@ -15,10 +15,9 @@ import edu.tigers.sumatra.drawable.DrawableLine;
 import edu.tigers.sumatra.drawable.DrawableTriangle;
 import edu.tigers.sumatra.drawable.IDrawableShape;
 import edu.tigers.sumatra.geometry.Geometry;
-import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.circle.Circle;
 import edu.tigers.sumatra.math.circle.ICircle;
-import edu.tigers.sumatra.math.line.v2.Lines;
+import edu.tigers.sumatra.math.line.Lines;
 import edu.tigers.sumatra.math.rectangle.IRectangle;
 import edu.tigers.sumatra.math.rectangle.Rectangle;
 import edu.tigers.sumatra.math.triangle.ITriangle;
@@ -65,7 +64,7 @@ public class VoronoiCalc extends ACalculator
 	@Override
 	public boolean isCalculationNecessary()
 	{
-		return isActive && tigerClosestToBall.get().getBotId() != BotID.noBot();
+		return isActive && tigerClosestToBall.get().getBotId().isBot();
 	}
 
 
@@ -99,7 +98,7 @@ public class VoronoiCalc extends ACalculator
 	private List<IVector2> getConsideredPoints()
 	{
 		List<IVector2> points = getWFrame().getOpponentBots().values().stream()
-				.filter(b -> b.getBotId() != getAiFrame().getKeeperOpponentId())
+				.filter(b -> !b.getBotId().equals(getAiFrame().getKeeperOpponentId()))
 				.map(ITrackedObject::getPos)
 				.collect(Collectors.toList());
 		points.add(getWFrame().getTiger(tigerClosestToBall.get().getBotId()).getPos());

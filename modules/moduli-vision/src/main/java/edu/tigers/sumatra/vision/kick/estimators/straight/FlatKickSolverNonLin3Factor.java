@@ -7,7 +7,8 @@ package edu.tigers.sumatra.vision.kick.estimators.straight;
 import edu.tigers.sumatra.cam.data.CamBall;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.math.AngleMath;
-import edu.tigers.sumatra.math.line.Line;
+import edu.tigers.sumatra.math.line.ILineSegment;
+import edu.tigers.sumatra.math.line.Lines;
 import edu.tigers.sumatra.math.pose.Pose;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.IVector3;
@@ -48,24 +49,31 @@ public class FlatKickSolverNonLin3Factor implements IKickSolver
 	private final SimplexOptimizer optimizer = new SimplexOptimizer(1e-3, 1e-3);
 	private final NelderMeadSimplex simplex = new NelderMeadSimplex(3, 100.0);
 
-	private Optional<IVector2> fixedKickDir = Optional.empty();
+	private IVector2 fixedKickDir = null;
 
 
-	public FlatKickSolverNonLin3Factor(final Pose kickingBotPose, final Optional<FilteredVisionBall> ballStateAtKick)
+	public FlatKickSolverNonLin3Factor(final Pose kickingBotPose, final FilteredVisionBall ballStateAtKick)
 	{
-		initialSpin = ballStateAtKick.map(FilteredVisionBall::getSpin).orElse(Vector2f.ZERO_VECTOR);
+		initialSpin = ballStateAtKick.getSpin();
+		kickBotOrient = kickingBotPose.getOrientation();
+	}
+
+
+	public FlatKickSolverNonLin3Factor(final Pose kickingBotPose)
+	{
+		initialSpin = Vector2f.ZERO_VECTOR;
 		kickBotOrient = kickingBotPose.getOrientation();
 	}
 
 
 	public Optional<IBallModelIdentResult> identModel(final List<CamBall> records)
 	{
-		if (!isRedirect())
+		if (isNotRedirect())
 		{
 			return Optional.empty();
 		}
 
-		var kickDir = fixedKickDir.or(() -> getKickDir(records));
+		var kickDir = Optional.ofNullable(fixedKickDir).or(() -> getKickDir(records));
 		if (kickDir.isEmpty())
 		{
 			return Optional.empty();
@@ -103,12 +111,12 @@ public class FlatKickSolverNonLin3Factor implements IKickSolver
 	@Override
 	public Optional<KickSolverResult> solve(final List<CamBall> records)
 	{
-		if (!isRedirect())
+		if (isNotRedirect())
 		{
 			return Optional.empty();
 		}
 
-		var kickDir = fixedKickDir.or(() -> getKickDir(records));
+		var kickDir = Optional.ofNullable(fixedKickDir).or(() -> getKickDir(records));
 		if (kickDir.isEmpty())
 		{
 			return Optional.empty();
@@ -127,10 +135,10 @@ public class FlatKickSolverNonLin3Factor implements IKickSolver
 	}
 
 
-	private boolean isRedirect()
+	private boolean isNotRedirect()
 	{
 		// if initial spin not greater than an equal velocity of 1m/s => not a redirect
-		return initialSpin.multiplyNew(Geometry.getBallRadius()).getLength2() > 1000.0;
+		return initialSpin.multiplyNew(Geometry.getBallRadius()).getLength2() <= 1000.0;
 	}
 
 
@@ -142,21 +150,17 @@ public class FlatKickSolverNonLin3Factor implements IKickSolver
 		List<IVector2> groundPos = groupedBalls.values().stream()
 				.flatMap(List::stream)
 				.map(CamBall::getFlatPos)
-				.collect(Collectors.toList());
+				.toList();
 
-		Optional<Line> kickLine = Line.fromPointsList(groundPos);
-		if (kickLine.isEmpty())
-		{
-			return Optional.empty();
-		}
+		Optional<ILineSegment> kickLine = Lines.regressionLineFromPointsList(groundPos);
+		return kickLine.map(iLineSegment -> iLineSegment.directionVector().normalizeNew());
 
-		return Optional.of(kickLine.get().directionVector().normalizeNew());
 	}
 
 
 	private void computeFixedKickDir(final List<CamBall> records)
 	{
-		if (fixedKickDir.isPresent())
+		if (fixedKickDir != null)
 		{
 			return;
 		}
@@ -171,7 +175,7 @@ public class FlatKickSolverNonLin3Factor implements IKickSolver
 		{
 			// We need to store the kick dir at some point because records will get pruned and
 			// this would screw up our kick dir calculation.
-			fixedKickDir = getKickDir(records);
+			fixedKickDir = getKickDir(records).orElse(null);
 		}
 	}
 

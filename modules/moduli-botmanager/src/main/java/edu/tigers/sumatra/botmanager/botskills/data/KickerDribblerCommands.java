@@ -44,7 +44,7 @@ public class KickerDribblerCommands
 	{
 		origDribblerSpeed = speed;
 
-		if (speed > 0)
+		if (speed >= 0)
 		{
 			int bits = ((int) (speed + 500.0)) / 1000;
 
@@ -68,7 +68,7 @@ public class KickerDribblerCommands
 	{
 		origDribblerMaxCurrent = maxCurrent;
 
-		if (maxCurrent > 0)
+		if (maxCurrent >= 0)
 		{
 			int bits = (int) ((maxCurrent + 0.25) * 2.0);
 

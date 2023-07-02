@@ -152,6 +152,13 @@ class BangBangTrajectory1D implements ITrajectory<Double>
 	}
 
 
+	@Override
+	public double getMaxSpeed()
+	{
+		return getTimeSections().stream().mapToDouble(this::getVelocity).max().orElseThrow();
+	}
+
+
 	private int findPartIdx(double t)
 	{
 		for (int i = 0; i < numParts; i++)

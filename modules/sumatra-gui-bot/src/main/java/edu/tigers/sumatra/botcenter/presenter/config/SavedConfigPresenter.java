@@ -56,7 +56,7 @@ public class SavedConfigPresenter implements IBotConfigObserver
 	}
 
 
-	private void onDelete(int configId, int version)
+	private void onDelete(int configId, Integer version)
 	{
 		databaseManager.deleteEntry(configId, version);
 		setTabs(databaseManager.getAllSavedConfigs());
@@ -80,7 +80,7 @@ public class SavedConfigPresenter implements IBotConfigObserver
 	 * @param version  current version number of the config
 	 * @param update   true, if automatic update should be enabled
 	 */
-	private void onEnableAutoUpdate(int configId, int version, boolean update)
+	private void onEnableAutoUpdate(int configId, Integer version, boolean update)
 	{
 		databaseManager.setAutoUpdateFor(configId, version, update);
 		if (update)
@@ -162,11 +162,12 @@ public class SavedConfigPresenter implements IBotConfigObserver
 		}
 
 
+		@SuppressWarnings("unchecked")
 		@Override
 		public void actionPerformed(ActionEvent e)
 		{
-			int version = (int) ((JComboBox<Integer>) e.getSource()).getSelectedItem();
-			if (version > -1)
+			Integer version = (Integer) ((JComboBox<Integer>) e.getSource()).getSelectedItem();
+			if (version != null && version > -1)
 			{
 				onVersionSelected(configId, version);
 			}

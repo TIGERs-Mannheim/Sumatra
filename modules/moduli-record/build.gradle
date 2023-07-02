@@ -15,12 +15,12 @@ dependencies {
     implementation 'com.github.TIGERs-Mannheim:moduli:4.1'
     implementation 'com.github.g3force:configurable:3.0'
 
-    implementation 'org.apache.logging.log4j:log4j-api:2.17.1'
-    implementation 'org.apache.logging.log4j:log4j-core:2.17.1'
+    implementation 'org.apache.logging.log4j:log4j-api:2.20.0'
+    implementation 'org.apache.logging.log4j:log4j-core:2.20.0'
 
-    implementation 'commons-io:commons-io:2.11.0'
+    implementation 'commons-io:commons-io:2.13.0'
     implementation 'commons-lang:commons-lang:2.6'
 
-    implementation 'net.lingala.zip4j:zip4j:2.9.1'
+    implementation 'net.lingala.zip4j:zip4j:2.11.5'
     implementation 'com.sleepycat:je:18.3.12'
 }

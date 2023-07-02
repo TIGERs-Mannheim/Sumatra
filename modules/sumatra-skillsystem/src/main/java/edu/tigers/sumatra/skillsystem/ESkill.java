@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.skillsystem;
@@ -18,15 +18,13 @@ import edu.tigers.sumatra.skillsystem.skills.ApproachBallLineSkill;
 import edu.tigers.sumatra.skillsystem.skills.BotSkillWrapperSkill;
 import edu.tigers.sumatra.skillsystem.skills.CommandListSkill;
 import edu.tigers.sumatra.skillsystem.skills.CriticalKeeperSkill;
-import edu.tigers.sumatra.skillsystem.skills.DragBallSkill;
-import edu.tigers.sumatra.skillsystem.skills.DribbleKickSkill;
-import edu.tigers.sumatra.skillsystem.skills.DribbleSkill;
+import edu.tigers.sumatra.skillsystem.skills.DropBallSkill;
 import edu.tigers.sumatra.skillsystem.skills.GetBallContactSkill;
 import edu.tigers.sumatra.skillsystem.skills.IdleSkill;
 import edu.tigers.sumatra.skillsystem.skills.InterceptionSkill;
 import edu.tigers.sumatra.skillsystem.skills.KeeperSkill;
 import edu.tigers.sumatra.skillsystem.skills.ManualControlSkill;
-import edu.tigers.sumatra.skillsystem.skills.MoveOnPenaltyAreaSkill;
+import edu.tigers.sumatra.skillsystem.skills.MoveOnShapeBoundarySkill;
 import edu.tigers.sumatra.skillsystem.skills.MoveToSkill;
 import edu.tigers.sumatra.skillsystem.skills.MoveWithBallSkill;
 import edu.tigers.sumatra.skillsystem.skills.PenaltyKeeperSkill;
@@ -43,6 +41,9 @@ import edu.tigers.sumatra.skillsystem.skills.RotateWithBallSkill;
 import edu.tigers.sumatra.skillsystem.skills.RotationSkill;
 import edu.tigers.sumatra.skillsystem.skills.SingleTouchKickSkill;
 import edu.tigers.sumatra.skillsystem.skills.TouchKickSkill;
+import edu.tigers.sumatra.skillsystem.skills.dribbling.DragBallSkill;
+import edu.tigers.sumatra.skillsystem.skills.dribbling.DribbleKickSkill;
+import edu.tigers.sumatra.skillsystem.skills.dribbling.DribbleSkill;
 import edu.tigers.sumatra.skillsystem.skills.test.AutoKickSampleSkill;
 import edu.tigers.sumatra.skillsystem.skills.test.IdentDelaysSkill;
 import edu.tigers.sumatra.skillsystem.skills.test.IdentMotorSkill;
@@ -128,6 +129,8 @@ public enum ESkill implements IInstanceableEnum
 
 	PROTECTIVE_GET_BALL(ic(ProtectiveGetBallSkill.class)
 			.setterParam(IVector2.class, "protectionTarget", "0,0", ProtectiveGetBallSkill::setProtectionTarget)
+			.setterParam(Boolean.TYPE, "strongDribblerContactNeeded", "false",
+					ProtectiveGetBallSkill::setStrongDribblerContactNeeded)
 	),
 	// Skills for standards
 
@@ -135,6 +138,7 @@ public enum ESkill implements IInstanceableEnum
 			.setterParam(new InstanceableSetter<>(DynamicPosition.class, "target", "4050,0", DribbleSkill::setTargetPos))
 			.setterParam(new InstanceableSetter<>(Double.TYPE, "safeDistance", "0", DribbleSkill::setSafeDistance))
 	),
+	DROP_BALL(ic(DropBallSkill.class)),
 	INTERCEPTION(ic(InterceptionSkill.class)),
 	PENALTY_SHOOT(ic(PenaltyShootSkill.class)
 			.setterParam(ERotateDirection.class, "shootDirection", "CW", PenaltyShootSkill::setShootDirection)
@@ -142,8 +146,8 @@ public enum ESkill implements IInstanceableEnum
 	PENALTY_KEEPER(ic(PenaltyKeeperSkill.class)
 			.setterParam(DynamicPosition.class, "shooterID", "3,YELLOW", PenaltyKeeperSkill::setShooterPos)
 	),
-	MOVE_ON_PENALTY_AREA(ic(MoveOnPenaltyAreaSkill.class)
-			.setterParam(IVector2.class, "destination", "0,0", MoveOnPenaltyAreaSkill::setDestination)
+	MOVE_ON_PENALTY_AREA(ic(MoveOnShapeBoundarySkill.class)
+			.setterParam(IVector2.class, "destination", "0,0", MoveOnShapeBoundarySkill::setDestination)
 	),
 	CRITICAL_KEEPER(ic(CriticalKeeperSkill.class)),
 	RAMBO_KEEPER(ic(RamboKeeperSkill.class)),

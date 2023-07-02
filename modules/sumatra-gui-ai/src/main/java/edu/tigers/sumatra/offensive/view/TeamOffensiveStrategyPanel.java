@@ -4,7 +4,7 @@
 
 package edu.tigers.sumatra.offensive.view;
 
-import edu.tigers.sumatra.ai.metis.offense.action.OffensiveAction;
+import edu.tigers.sumatra.ai.metis.offense.action.RatedOffensiveAction;
 import edu.tigers.sumatra.ai.metis.offense.strategy.EOffensiveStrategy;
 import edu.tigers.sumatra.ids.BotID;
 import net.miginfocom.swing.MigLayout;
@@ -102,13 +102,13 @@ public class TeamOffensiveStrategyPanel extends JPanel
 	/**
 	 * @param offensiveActions
 	 */
-	public void setOffensiveActions(final Map<BotID, OffensiveAction> offensiveActions)
+	public void setOffensiveActions(final Map<BotID, RatedOffensiveAction> offensiveActions)
 	{
 		var actions = new String[offensiveActions.size()][7];
 		var i = 0;
-		for (Map.Entry<BotID, OffensiveAction> entry : offensiveActions.entrySet())
+		for (Map.Entry<BotID, RatedOffensiveAction> entry : offensiveActions.entrySet())
 		{
-			OffensiveAction action = entry.getValue();
+			RatedOffensiveAction action = entry.getValue();
 			var botID = entry.getKey();
 			actions[i][0] = botID.toString();
 			actions[i][1] = "invalid";

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.metis.targetrater;
@@ -49,11 +49,11 @@ public class AngleRangeRater implements ITargetRater
 {
 	private static final DecimalFormat DF = new DecimalFormat("0.00");
 
-	@Configurable(comment = "Max time horizon to consider for moving robots", defValue = "2.0")
+	@Configurable(comment = "[s] Max time horizon to consider for moving robots", defValue = "2.0")
 	private static double maxHorizon = 2.0;
 
-	@Configurable(comment = "The time a robot needs to react to the ball movement", defValue = "0.1")
-	private static double timeForBotToReact = 0.1;
+	@Configurable(comment = "[s] The time a robot needs to react to the ball movement", defValue = "0.085")
+	private static double timeForBotToReact = 0.085;
 
 	@Configurable(comment = "[rad] The angle that is considered a safe goal. Any higher angle will not improve the score", defValue = "0.3")
 	private static double probablyAGoalAngle = 0.3;
@@ -63,6 +63,9 @@ public class AngleRangeRater implements ITargetRater
 
 	@Configurable(defValue = "CUBIC_REDUCTION")
 	private static EHorizonCalculation horizonCalculatorMode = EHorizonCalculation.CUBIC_REDUCTION;
+
+	@Configurable(comment = "[0-1] How good can the opponents use time before kick to improve the position", defValue = "0.2")
+	private static double timeBeforeReactionUsageFactor = 0.2;
 
 	static
 	{
@@ -90,6 +93,9 @@ public class AngleRangeRater implements ITargetRater
 
 	@Setter
 	private double opponentConsideredReactingVel = maxOpponentReactionVel;
+
+	@Setter
+	private double noneOptimalDriveFactor = 1.0;
 
 	@Getter
 	private LastContext lastContext = new LastContext();
@@ -120,6 +126,8 @@ public class AngleRangeRater implements ITargetRater
 		movingObstacleGen.setMaxHorizon(maxHorizon);
 		movingObstacleGen.setTimeForBotToReact(timeForBotToReact);
 		movingObstacleGen.setHorizonCalculation(horizonCalculatorMode);
+		movingObstacleGen.setNoneOptimalDriveFactor(noneOptimalDriveFactor);
+		movingObstacleGen.setTimeBeforeReactionUsageFactor(timeBeforeReactionUsageFactor);
 
 		lastContext.botTimeToReact =
 				obstacles.stream().collect(Collectors.toMap(Function.identity(), this::getTimeForBotToReact));
@@ -220,8 +228,8 @@ public class AngleRangeRater implements ITargetRater
 
 		public List<IDrawableShape> drawableAngleRanges()
 		{
-			IVector2 start = angleRangeGenerator.getLineSegment().getStart();
-			IVector2 end = angleRangeGenerator.getLineSegment().getEnd();
+			IVector2 start = angleRangeGenerator.getLineSegment().getPathStart();
+			IVector2 end = angleRangeGenerator.getLineSegment().getPathEnd();
 
 			IVector2 endCenter = TriangleMath.bisector(origin, end, start);
 			double baseAngle = endCenter.subtractNew(origin).getAngle();

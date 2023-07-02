@@ -11,49 +11,65 @@ import edu.tigers.sumatra.ai.metis.kicking.KickFactory;
 import edu.tigers.sumatra.ai.metis.offense.action.EActionViability;
 import edu.tigers.sumatra.ai.metis.offense.action.OffensiveAction;
 import edu.tigers.sumatra.ai.metis.offense.action.OffensiveActionViability;
+import edu.tigers.sumatra.ai.metis.offense.action.RatedOffensiveAction;
+import edu.tigers.sumatra.ai.metis.offense.dribble.DribbleKickData;
 import edu.tigers.sumatra.ai.metis.offense.dribble.DribbleToPos;
 import edu.tigers.sumatra.ai.metis.offense.dribble.DribblingInformation;
 import edu.tigers.sumatra.ai.metis.offense.dribble.EDribblingCondition;
 import edu.tigers.sumatra.ai.metis.targetrater.AngleRangeRater;
 import edu.tigers.sumatra.ai.metis.targetrater.IRatedTarget;
+import edu.tigers.sumatra.ai.metis.targetrater.RotationTimeHelper;
 import edu.tigers.sumatra.ai.pandora.roles.ERole;
 import edu.tigers.sumatra.drawable.ColorPickerFactory;
 import edu.tigers.sumatra.drawable.DrawableAnnotation;
 import edu.tigers.sumatra.drawable.DrawableArrow;
 import edu.tigers.sumatra.drawable.DrawableCircle;
-import edu.tigers.sumatra.drawable.DrawableLine;
+import edu.tigers.sumatra.drawable.DrawableFinisherMoveShape;
 import edu.tigers.sumatra.drawable.IColorPicker;
+import edu.tigers.sumatra.drawable.animated.AnimatedArrowsOnFinisherMoveShape;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.SumatraMath;
 import edu.tigers.sumatra.math.circle.Circle;
-import edu.tigers.sumatra.math.line.v2.ILineSegment;
-import edu.tigers.sumatra.math.line.v2.Lines;
+import edu.tigers.sumatra.math.circle.ICircle;
+import edu.tigers.sumatra.math.line.Lines;
+import edu.tigers.sumatra.math.penarea.EDribbleKickMoveDirection;
+import edu.tigers.sumatra.math.penarea.FinisherMoveShape;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
 import lombok.RequiredArgsConstructor;
 
 import java.awt.Color;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 
 /**
- * Directly kick on the opponent goal even when the chance is low
+ * Directly kick on the opponent goal with a dribbling move
  */
 @RequiredArgsConstructor
 public class FinisherActionMove extends AOffensiveActionMove
 {
-	@Configurable(defValue = "0.35")
-	private static double finisherPenaltyScoreAdjustment = 0.35;
+	@Configurable(defValue = "0.25")
+	private static double finisherPenaltyScoreAdjustment = 0.25;
+
+	@Configurable(defValue = "0.55")
+	private static double wrongDirectionPenalty = 0.55;
 
 	@Configurable(defValue = "0.20")
 	private static double minScoreForPartialViability = 0.20;
 
-	@Configurable(defValue = "0.4")
-	private static double distancePenaltyFactor = 0.4;
+	@Configurable(defValue = "0.2")
+	private static double distancePenaltyFactor = 0.2;
+
+	@Configurable(defValue = "200.0")
+	private static double samplingStepDistanceOnFinisherMoveShape = 200;
+
+	@Configurable(defValue = "600.0")
+	private static double finisherMoveShapeCircleRadius = 600;
 
 	@Configurable(defValue = "true")
 	private static boolean activateFinisherMoves = true;
@@ -63,24 +79,28 @@ public class FinisherActionMove extends AOffensiveActionMove
 	private final Supplier<BotDistance> opponentClosestToBall;
 	private final Supplier<DribblingInformation> dribblingInformation;
 
+	private final Supplier<Boolean> ballStopped;
+
 	private final KickFactory kf = new KickFactory();
 
 	private double finalScore;
 	private DribbleToPos finalDribbleToPos;
 	private IVector2 finalTarget;
 
+	private FinisherMoveShape finisherMoveShape;
+
 
 	@Override
-	public OffensiveAction calcAction(BotID botId)
+	public Optional<RatedOffensiveAction> calcAction(BotID botId)
 	{
-
 		finalDribbleToPos = null;
 		finalScore = 0.0;
 		finalTarget = null;
 
 		EActionViability viability = EActionViability.FALSE;
 		if (dribblingInformation.get().getDribblingCircle() != null && getAiFrame().getGameState().isRunning()
-				&& activateFinisherMoves)
+				&& activateFinisherMoves && Boolean.TRUE.equals(ballStopped.get())
+				&& getBall().getPos().x() > 0)
 		{
 			viability = doCalc(botId);
 			if (forceTrueViability(botId, finalScore))
@@ -94,15 +114,17 @@ public class FinisherActionMove extends AOffensiveActionMove
 			}
 		}
 
+		if (finalTarget == null || finalDribbleToPos == null)
+		{
+			return Optional.empty();
+		}
+
 		kf.update(getWFrame());
-		return OffensiveAction.builder()
-				.move(EOffensiveActionMove.FINISHER)
-				.dribbleToPos(finalDribbleToPos)
-				.kick(finalTarget != null && finalDribbleToPos != null ?
-						kf.goalKick(finalDribbleToPos.getDribbleToDestination(), finalTarget) :
-						null)
-				.viability(new OffensiveActionViability(viability, finalScore))
-				.build();
+		return Optional.of(RatedOffensiveAction.buildDribbleKick(
+				EOffensiveActionMove.FINISHER,
+				new OffensiveActionViability(viability, finalScore),
+				kf.goalKick(finalDribbleToPos.getDribbleToDestination(), finalTarget),
+				finalDribbleToPos));
 	}
 
 
@@ -114,108 +136,333 @@ public class FinisherActionMove extends AOffensiveActionMove
 		var opponentPos = getWFrame().getOpponentBots().containsKey(opponentID) ?
 				getWFrame().getOpponentBot(opponentID).getPos() : Geometry.getGoalTheir().getCenter();
 		var dribblingCircle = dribblingInformation.get().getDribblingCircle();
-		var botPos = getWFrame().getBot(botId);
+		var botPos = getWFrame().getBot(botId).getPos();
 
 		IVector2 lineBase = getLineBase(botPos);
-		IVector2 dir = getBotPosLineDirection();
-		var botPosLine = Lines.lineFromDirection(lineBase, dir.getNormalVector());
+		if (recalculateFinisherMoveShapeNeeded(botPos))
+		{
+			finisherMoveShape = generateFinisherMoveMovementShape(lineBase);
+		}
 
-		var intersections = dribblingCircle.lineIntersections(botPosLine);
+		getShapes(EAiShapesLayer.OFFENSIVE_FINISHER).add(
+				new DrawableFinisherMoveShape(finisherMoveShape).setColor(Color.PINK));
 
 		IVector2 bestOrigin = null;
 		IRatedTarget bestRatedTarget = null;
 		double bestAdjustedScore = 0;
-		if (intersections.size() == 2)
+		for (var sampledPoint : sampleAlongFinisherMoveShape(dribblingCircle))
 		{
-			var limitedBotLine = Lines.segmentFromPoints(intersections.get(0), intersections.get(1));
-			getShapes(EAiShapesLayer.OFFENSIVE_FINISHER).add(new DrawableLine(limitedBotLine));
-
-			List<IVector2> samples = calculateSamples(limitedBotLine);
-			samples.add(botPos.getPos());
-
-			for (var sampledPoint : samples)
+			var ratedTarget = rater.rate(sampledPoint);
+			if (ratedTarget.isEmpty())
 			{
-				var ratedTarget = rater.rate(sampledPoint);
-				if (ratedTarget.isEmpty())
-				{
-					continue;
-				}
-
-				double adjustedScore = ratedTarget.map(
-						e -> adjustScore(e, botPos.getPos(), botPos.getBotId(), sampledPoint)).orElse(0.0);
-				getShapes(EAiShapesLayer.OFFENSIVE_FINISHER).add(
-						new DrawableArrow(sampledPoint, ratedTarget.get().getTarget().subtractNew(sampledPoint)).setColor(
-								colorPicker.getColor(adjustedScore)));
-
-				if (bestRatedTarget == null || adjustedScore > bestAdjustedScore)
-				{
-					bestRatedTarget = ratedTarget.get();
-					bestOrigin = sampledPoint;
-					bestAdjustedScore = adjustedScore;
-				}
+				continue;
 			}
 
-			if (bestRatedTarget != null)
+			double startStep = finisherMoveShape.getStepPositionOnShape(lineBase);
+			double endStep = finisherMoveShape.getStepPositionOnShape(sampledPoint);
+			EDribbleKickMoveDirection direction =
+					endStep > startStep ? EDribbleKickMoveDirection.POSITIVE : EDribbleKickMoveDirection.NEGATIVE;
+			double adjustedScore = ratedTarget.map(e -> adjustScore(e, botId, direction)).orElse(0.0);
+			ratedTarget.ifPresent(e -> drawRatedTarget(sampledPoint, ratedTarget.get(), adjustedScore));
+
+			if (bestRatedTarget == null || adjustedScore > bestAdjustedScore)
 			{
-				getShapes(EAiShapesLayer.OFFENSIVE_FINISHER).add(
-						new DrawableCircle(Circle.createCircle(bestOrigin, 50)).setColor(Color.CYAN).setFill(true));
-				finalDribbleToPos = new DribbleToPos(opponentPos, bestOrigin, EDribblingCondition.DRIBBLING_KICK);
-				finalScore = applyMultiplier(bestAdjustedScore);
-				finalTarget = bestRatedTarget.getTarget();
-				return EActionViability.PARTIALLY;
+				bestRatedTarget = ratedTarget.get();
+				bestOrigin = sampledPoint;
+				bestAdjustedScore = adjustedScore;
 			}
+		}
+
+		if (bestRatedTarget != null)
+		{
+			double startStep = finisherMoveShape.getStepPositionOnShape(lineBase);
+			double endStep = finisherMoveShape.getStepPositionOnShape(bestOrigin);
+			EDribbleKickMoveDirection direction =
+					endStep > startStep ? EDribbleKickMoveDirection.POSITIVE : EDribbleKickMoveDirection.NEGATIVE;
+			determineFinalScoreTargetAndDribblePos(botId, opponentPos, bestOrigin, bestRatedTarget,
+					bestAdjustedScore, startStep, direction);
+			return EActionViability.PARTIALLY;
 		}
 		return EActionViability.FALSE;
 	}
 
 
-	private IVector2 getLineBase(ITrackedBot botPos)
+	private void determineFinalScoreTargetAndDribblePos(BotID botId, IVector2 opponentPos, IVector2 bestOrigin,
+			IRatedTarget bestRatedTarget, double bestAdjustedScore, double startStep,
+			EDribbleKickMoveDirection direction)
+	{
+		getShapes(EAiShapesLayer.OFFENSIVE_FINISHER).add(
+				new DrawableCircle(Circle.createCircle(bestOrigin, 70)).setColor(Color.CYAN));
+		double adjustedTargetStep = getAdjustedTargetStep(startStep, direction);
+		IVector2 moveToDestination = finisherMoveShape.stepOnShape(adjustedTargetStep);
+
+		finalScore = applyMultiplier(bestAdjustedScore);
+		finalTarget = bestRatedTarget.getTarget();
+		finalDribbleToPos = new DribbleToPos(opponentPos, moveToDestination, EDribblingCondition.DRIBBLING_KICK,
+				new DribbleKickData(finisherMoveShape, direction,
+						isViolationUnavoidable(botId, finalTarget),
+						isViolationImminent(botId)));
+	}
+
+
+	private double getAdjustedTargetStep(double startStep, EDribbleKickMoveDirection direction)
+	{
+		double adjustedTargetStep;
+		if (direction == EDribbleKickMoveDirection.POSITIVE)
+		{
+			adjustedTargetStep = Math.min(startStep + 1000, finisherMoveShape.getMaxLength());
+			getShapes(EAiShapesLayer.OFFENSIVE_FINISHER).add(
+					AnimatedArrowsOnFinisherMoveShape.createArrowsOnFinisherMoveShape(finisherMoveShape, startStep,
+							startStep + 1000).setColor(Color.GREEN.darker()));
+		} else
+		{
+			adjustedTargetStep = Math.max(0, startStep - 1000);
+			getShapes(EAiShapesLayer.OFFENSIVE_FINISHER).add(
+					AnimatedArrowsOnFinisherMoveShape.createArrowsOnFinisherMoveShape(finisherMoveShape, startStep,
+							startStep - 1000).setColor(Color.GREEN.darker()));
+		}
+		return adjustedTargetStep;
+	}
+
+
+	private List<IVector2> sampleAlongFinisherMoveShape(ICircle dribblingCircle)
+	{
+		List<IVector2> samples = new ArrayList<>();
+		for (int i = 0; i < finisherMoveShape.getMaxLength(); i += samplingStepDistanceOnFinisherMoveShape)
+		{
+			var sample = finisherMoveShape.stepOnShape(i);
+			if (dribblingCircle.isPointInShape(sample))
+			{
+				samples.add(sample);
+			}
+		}
+		return samples;
+	}
+
+
+	private boolean isViolationUnavoidable(BotID botId, IVector2 target)
+	{
+		var bot = getWFrame().getBot(botId);
+		var botPos = bot.getPos();
+		var v0 = bot.getVel().getLength();
+		double a = -bot.getMoveConstraints().getAccMax();
+		if (v0 < 0.1)
+		{
+			return false;
+		}
+
+		if (!dribblingInformation.get().getDribblingCircle().isPointInShape(botPos))
+		{
+			return true;
+		}
+		IVector2 intersectionPoint = getIntersectionWithDribblingCircle(bot);
+
+		double sMax = intersectionPoint.distanceTo(botPos) / 1000.0;
+		double t = RotationTimeHelper.calcRotationTime(
+				bot.getAngularVel(),
+				bot.getAngleByTime(0),
+				target.subtractNew(botPos).getAngle(),
+				bot.getMoveConstraints().getVelMaxW(),
+				10
+		);
+		double sNeeded = 0.5 * a * t * t + v0 * t;
+		return sNeeded > sMax;
+	}
+
+
+	private boolean isViolationImminent(BotID botId)
+	{
+		var bot = getWFrame().getBot(botId);
+		var botPos = bot.getPos();
+		var v0 = bot.getVel().getLength();
+		if (v0 < 0.1)
+		{
+			return false;
+		}
+
+		if (!dribblingInformation.get().getDribblingCircle().isPointInShape(botPos))
+		{
+			return true;
+		}
+		IVector2 intersectionPoint = getIntersectionWithDribblingCircle(bot);
+		getShapes(EAiShapesLayer.OFFENSIVE_FINISHER)
+				.add((new DrawableCircle(Circle.createCircle(intersectionPoint, 50))).setColor(Color.BLACK)
+						.setFill(true));
+
+		double s = intersectionPoint.distanceTo(botPos) / 1000.0;
+		double t = s / v0;
+		return t < 0.1;
+	}
+
+
+	private Vector2 getCurrentMoveToDestination(ITrackedBot bot)
+	{
+		return bot.getPos().addNew(bot.getVel().scaleToNew(dribblingInformation.get()
+				.getDribblingCircle().radius() * 2.5));
+	}
+
+
+	private IVector2 getIntersectionWithDribblingCircle(ITrackedBot bot)
+	{
+		var halfLine = Lines.halfLineFromDirection(bot.getPos(), getCurrentMoveToDestination(bot));
+		var intersection = halfLine.intersect(dribblingInformation.get().getDribblingCircle());
+		// must have exactly one intersection, since half line starts inside the circle!
+		assert intersection.size() == 1;
+		return intersection.asList().get(0);
+	}
+
+
+	private void drawRatedTarget(IVector2 sampledPoint, IRatedTarget ratedTarget, double adjustedScore)
+	{
+		Color color = colorPicker.getColor(adjustedScore);
+		getShapes(EAiShapesLayer.OFFENSIVE_FINISHER).add(
+				new DrawableArrow(sampledPoint, ratedTarget.getTarget().subtractNew(sampledPoint)).setColor(
+						color));
+
+		Color transparentColor = new Color(color.getRed(), color.getGreen(), color.getBlue(), 125);
+		getShapes(EAiShapesLayer.OFFENSIVE_FINISHER)
+				.add((new DrawableCircle(Circle.createCircle(sampledPoint, 50))).setColor(transparentColor)
+						.setFill(true));
+	}
+
+
+	private boolean recalculateFinisherMoveShapeNeeded(IVector2 botPos)
+	{
+		return finisherMoveShape == null || !dribblingInformation.get().isDribblingInProgress() ||
+				finisherMoveShape.stepOnShape(finisherMoveShape.getStepPositionOnShape(botPos)).distanceTo(
+						botPos) > Geometry.getBotRadius();
+	}
+
+
+	private FinisherMoveShape generateFinisherMoveMovementShape(IVector2 lineBase)
+	{
+		double yMin = determineYMin(lineBase);
+		double y = Math.min(yMin + 1000, Math.max(Math.abs(lineBase.y()), yMin));
+
+		double xMax = determineXMax(lineBase);
+		double x = Math.max(xMax - 1900, Math.min(lineBase.x(), xMax));
+
+		var finisherMoveShapeCandidate = new FinisherMoveShape(x, Geometry.getFieldLength() / 2.0, y,
+				finisherMoveShapeCircleRadius);
+
+		return redefineShapeToFitLineBaseOnCornerPoints(lineBase, yMin, y, xMax, x, finisherMoveShapeCandidate);
+	}
+
+
+	private FinisherMoveShape redefineShapeToFitLineBaseOnCornerPoints(IVector2 lineBase, double yMin, double y,
+			double xMax, double x,
+			FinisherMoveShape finisherMoveShapeCandidate)
+	{
+		var boundingRectangle = finisherMoveShapeCandidate.getBoundingRectangle();
+		double distToBounding = finisherMoveShapeCandidate.stepOnShape(
+						finisherMoveShapeCandidate.getStepPositionOnShape(lineBase))
+				.distanceTo(boundingRectangle.nearestPointOutside(lineBase));
+		if (distToBounding > 1e-5)
+		{
+			// modify Finisher Shape to fit corner circles with lineBase pos
+			IVector2 basePoint = finisherMoveShapeCandidate.stepOnShape(
+					finisherMoveShapeCandidate.getStepPositionOnShape(lineBase));
+			var baseToBall = lineBase.subtractNew(basePoint);
+			double offsetX = baseToBall.x();
+			double offsetY = baseToBall.y();
+			y += Math.abs(offsetY);
+			x -= Math.abs(offsetX);
+			y = Math.min(yMin + 1000, Math.max(y, yMin));
+			x = Math.max(xMax - 1900, Math.min(x, xMax));
+			finisherMoveShapeCandidate = new FinisherMoveShape(x, Geometry.getFieldLength() / 2.0, y,
+					finisherMoveShapeCircleRadius);
+		}
+		return finisherMoveShapeCandidate;
+	}
+
+
+	private double determineXMax(IVector2 lineBase)
+	{
+		double xMax = Geometry.getFieldLength() / 2.0 - Geometry.getPenaltyAreaTheir().getRectangle().xExtent()
+				- Geometry.getBotRadius() * 3 + Geometry.getBallRadius();
+		if (lineBase.x() > Geometry.getFieldLength() / 2.0 - Geometry.getPenaltyAreaTheir().getRectangle().xExtent())
+		{
+			xMax = xMax - (1 - SumatraMath.relative(
+					Math.max(0, Math.abs(lineBase.y()) - Geometry.getPenaltyAreaTheir().getRectangle().yExtent() / 2.0), 0,
+					400)) * 500;
+		}
+		return xMax;
+	}
+
+
+	private double determineYMin(IVector2 lineBase)
+	{
+		double yMin = Geometry.getPenaltyAreaTheir().getRectangle().yExtent() / 2.0 + Geometry.getBotRadius() * 2;
+		if (Math.abs(lineBase.y()) < Geometry.getPenaltyAreaTheir().getRectangle().yExtent() / 2.0)
+		{
+			yMin = yMin + (1 - SumatraMath.relative(
+					Geometry.getFieldLength() / 2.0 - Geometry.getPenaltyAreaTheir().getRectangle().xExtent() - lineBase.x(),
+					0, 500)) * 500;
+		}
+		return yMin;
+	}
+
+
+	private IVector2 getLineBase(IVector2 botPos)
 	{
 		IVector2 lineBase = getWFrame().getBall().getPos();
-		if (botPos.getPos().distanceTo(lineBase) < 200)
+		if (botPos.distanceTo(lineBase) < 400)
 		{
-			lineBase = botPos.getPos();
+			return botPos;
 		}
 		return lineBase;
 	}
 
 
-	private IVector2 getBotPosLineDirection()
+	private double adjustScore(IRatedTarget ratedTarget, BotID botId, EDribbleKickMoveDirection direction)
 	{
-		IVector2 posCorner = Geometry.getPenaltyAreaTheir().getPosCorner();
-		if (getBall().getPos().x() < posCorner.x())
+		var directionPenalty = 0.0;
+		var oldAction = getOldAction(botId);
+		var oldMoveDircetion = getDirectionFronmOldAction(oldAction);
+		if (oldMoveDircetion.isPresent() && oldMoveDircetion.get() != direction
+				&& getWFrame().getTiger(botId).hadBallContact(0.2))
 		{
-			return Vector2.fromX(1);
+			directionPenalty = wrongDirectionPenalty;
 		}
-		return Vector2.fromY(1);
+
+		var antiToggleBonus = 0.0;
+		if (getWFrame().getTiger(botId).hadBallContact(0.2))
+		{
+			antiToggleBonus = 0.25;
+		}
+
+		// https://gitlab.tigers-mannheim.de/main/Sumatra/-/issues/1775 driving away from target penalty.
+
+		return Math.min(1, Math.max(0,
+				ratedTarget.getScore() - directionPenalty
+						- finisherPenaltyScoreAdjustment
+						+ getAntiToggleValue(botId, EOffensiveActionMove.FINISHER, antiToggleBonus)));
 	}
 
 
-	private List<IVector2> calculateSamples(ILineSegment limitedBotLine)
+	private OffensiveAction getOldAction(BotID botId)
 	{
-		return limitedBotLine.withMargin(-100).getSteps(150)
-				.stream().filter(this::isPointLegal).collect(Collectors.toList());
+		var actions = getAiFrame().getPrevFrame().getTacticalField().getOffensiveActions();
+		if (actions == null)
+		{
+			return null;
+		}
+		if (!actions.containsKey(botId))
+		{
+			return null;
+		}
+		return actions.get(botId).getAction();
 	}
 
 
-	private double adjustScore(IRatedTarget ratedTarget, IVector2 botPosPos, BotID botId,
-			IVector2 pos)
+	private Optional<EDribbleKickMoveDirection> getDirectionFronmOldAction(OffensiveAction oldAction)
 	{
-		var distToPoint = botPosPos.distanceTo(pos);
-		var distPenalty = SumatraMath.relative(distToPoint, 0, 1000) * distancePenaltyFactor;
-		return Math.min(1,
-				Math.max(0, ratedTarget.getScore() - distPenalty - finisherPenaltyScoreAdjustment + getAntiToggleValue(
-						botId, EOffensiveActionMove.FINISHER, 0.15)));
-	}
-
-
-	private boolean isPointLegal(IVector2 point)
-	{
-		var opponentBotBlocksTarget = getWFrame().getOpponentBots().values().stream()
-				.anyMatch(e -> e.getPos().distanceTo(point) < Geometry.getBotRadius() * 2.0);
-		return Geometry.getField().isPointInShape(point) && !Geometry.getPenaltyAreaTheir()
-				.isPointInShape(point, Geometry.getBotRadius())
-				&& point.x() > 0 && !opponentBotBlocksTarget;
+		if (oldAction == null || oldAction.getDribbleToPos() == null
+				|| oldAction.getDribbleToPos().getDribbleKickData() == null)
+		{
+			return Optional.empty();
+		}
+		return Optional.of(oldAction.getDribbleToPos().getDribbleKickData().getDirection());
 	}
 
 

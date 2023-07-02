@@ -91,7 +91,11 @@ function setSelectedBot(val)
 end
 
 function uIds = getAvailableBots()
-  uIds = unique([D.wpBots.id, D.wpBots.color],'rows');
+  if isfield(D, 'wpBots')
+    uIds = unique([D.wpBots.id, D.wpBots.color],'rows');
+  else
+    uIds = [];
+  end
 end
 
 function loadData(~,~)

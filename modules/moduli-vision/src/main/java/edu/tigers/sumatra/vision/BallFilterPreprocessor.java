@@ -5,6 +5,7 @@ package edu.tigers.sumatra.vision;
 
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
+import edu.tigers.sumatra.ball.BallState;
 import edu.tigers.sumatra.bot.RobotInfo;
 import edu.tigers.sumatra.drawable.DrawableCircle;
 import edu.tigers.sumatra.drawable.DrawableLine;
@@ -12,7 +13,8 @@ import edu.tigers.sumatra.drawable.IDrawableShape;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.AngleMath;
-import edu.tigers.sumatra.math.line.Line;
+import edu.tigers.sumatra.math.line.ILineSegment;
+import edu.tigers.sumatra.math.line.Lines;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2f;
 import edu.tigers.sumatra.vision.data.FilteredVisionBall;
@@ -53,27 +55,22 @@ import java.util.stream.Collectors;
 public class BallFilterPreprocessor
 {
 	private static final Logger log = LogManager.getLogger(BallFilterPreprocessor.class.getName());
-
-	private final BallTrackerMerger ballTrackerMerger = new BallTrackerMerger();
-	private final KickDetectors kickDetectors = new KickDetectors();
-	private final KickEstimators kickEstimators = new KickEstimators();
-
-	private final List<IBallModelIdentificationObserver> observers = new CopyOnWriteArrayList<>();
-
 	@Configurable(defValue = "300.0", comment = "Minimum search radius for cam balls around last known position [mm]")
 	private static double minSearchRadius = 300.0;
-
 	@Configurable(defValue = "0.2", comment = "Factor by which a estimator must be better than the last one to use it")
 	private static double estimatorSwitchHysteresis = 0.2;
-
-	@Configurable(comment = "Enable model identification solver", defValue = "false")
-	private boolean doModelIdentification = false;
-
 
 	static
 	{
 		ConfigRegistration.registerClass("vision", BallFilterPreprocessor.class);
 	}
+
+	private final BallTrackerMerger ballTrackerMerger = new BallTrackerMerger();
+	private final KickDetectors kickDetectors = new KickDetectors();
+	private final KickEstimators kickEstimators = new KickEstimators();
+	private final List<IBallModelIdentificationObserver> observers = new CopyOnWriteArrayList<>();
+	@Configurable(comment = "Enable model identification solver", defValue = "false")
+	private boolean doModelIdentification = false;
 
 
 	/**
@@ -150,6 +147,188 @@ public class BallFilterPreprocessor
 		return shapes;
 	}
 
+
+	private static class KickDetectors
+	{
+		private final KickDetector slowDetector = new KickDetector();
+		private final EarlyKickDetector earlyDetector = new EarlyKickDetector();
+
+
+		private KickEvent process(final MergedBall mergedBall, final List<FilteredVisionBot> mergedRobots)
+		{
+			if (mergedBall == null)
+			{
+				return null;
+			}
+
+			// is this merged ball based on a real measurement?
+			if (mergedBall.getLatestCamBall().isEmpty())
+			{
+				return null;
+			}
+
+			KickEvent earlyEvent = earlyDetector.addRecord(mergedBall, mergedRobots);
+			KickEvent slowEvent = slowDetector.addRecord(mergedBall, mergedRobots);
+
+			// Prefer a slow event if one exists
+			if (slowEvent != null)
+			{
+				return slowEvent;
+			}
+
+			return earlyEvent;
+		}
+
+
+		private List<IDrawableShape> getShapes()
+		{
+			List<IDrawableShape> shapes = new ArrayList<>();
+
+			shapes.addAll(slowDetector.getDrawableShapes());
+			shapes.addAll(earlyDetector.getDrawableShapes());
+
+			return shapes;
+		}
+
+
+		private void reset()
+		{
+			slowDetector.reset();
+			earlyDetector.reset();
+		}
+	}
+
+	private static class BallTrackerMerger
+	{
+		private double lastBallSearchRadius = 1;
+		private List<IVector2> lastSearchPositions = new ArrayList<>();
+		private long lastBallUpdateTimestamp = 0;
+
+
+		private MergedBall process(final List<BallTracker> ballTrackers, final long timestamp,
+				final FilteredVisionBall lastFilteredBall)
+		{
+			if (ballTrackers.isEmpty())
+			{
+				// no valid ball trackers at all
+				return null;
+			}
+
+			if (lastBallUpdateTimestamp == 0)
+			{
+				lastBallUpdateTimestamp = lastFilteredBall.getLastVisibleTimestamp();
+			}
+
+			lastBallSearchRadius = Math.abs((timestamp - lastBallUpdateTimestamp) * 1e-9 * BallTracker.getMaxLinearVel());
+			lastBallSearchRadius = Math.max(lastBallSearchRadius, minSearchRadius);
+
+			lastSearchPositions.clear();
+			List<BallTracker> primaryTrackers;
+			if (lastFilteredBall.getBallState().isChipped() && !Geometry.getLastCamGeometry().getCameraCalibrations()
+					.isEmpty())
+			{
+				// if the ball is airborne we project its position to the ground from all cameras and use these locations as
+				// search point
+				List<IVector2> projectedPos = Geometry.getLastCamGeometry().getCameraCalibrations().values().stream()
+						.map(c -> lastFilteredBall.getPos().projectToGroundNew(c.getCameraPosition()))
+						.map(IVector2.class::cast)
+						.toList();
+
+				lastSearchPositions.addAll(projectedPos);
+
+				primaryTrackers = ballTrackers.stream()
+						.filter(t -> projectedPos.stream()
+								.anyMatch(p -> t.getPosition(timestamp).distanceTo(p) < lastBallSearchRadius))
+						.toList();
+			} else
+			{
+				// if the ball is not airborne we simply use the last known location as search point
+				lastSearchPositions.add(lastFilteredBall.getPos().getXYVector());
+
+				primaryTrackers = ballTrackers.stream()
+						.filter(BallTracker::isGrownUp)
+						.filter(t -> t.getPosition(timestamp)
+								.distanceTo(lastFilteredBall.getPos().getXYVector()) < lastBallSearchRadius)
+						.toList();
+			}
+
+			if (primaryTrackers.isEmpty())
+			{
+				// no valid trackers in search radius
+				return null;
+			}
+
+			// -- select only one tracker per cam at max --
+			// group ball trackers by camera id
+			Map<Integer, List<BallTracker>> trackersByCam = primaryTrackers.stream()
+					.collect(Collectors.groupingBy(BallTracker::getCameraId));
+
+			// select only one tracker from each group (most recently updated one)
+			List<BallTracker> distinctTrackers = trackersByCam.values().stream()
+					.map(li -> li.stream().max(Comparator.comparingLong(b -> b.getLastCamBall().getTimestamp())))
+					.filter(Optional::isPresent)
+					.map(Optional::get)
+					.toList();
+
+			// Merge these few trackers
+			MergedBall mergedBall = BallTracker.mergeBallTrackers(distinctTrackers, timestamp);
+
+			mergedBall.getLatestCamBall().ifPresent(latestBall -> lastBallUpdateTimestamp = latestBall.gettCapture());
+
+			return mergedBall;
+		}
+
+
+		private List<IDrawableShape> getShapes()
+		{
+			List<IDrawableShape> shapes = new ArrayList<>();
+
+			for (IVector2 pos : lastSearchPositions)
+			{
+				DrawableCircle search = new DrawableCircle(pos, lastBallSearchRadius + 0.1, Color.PINK);
+				shapes.add(search);
+			}
+
+			return shapes;
+		}
+
+
+		private void reset()
+		{
+			lastBallUpdateTimestamp = 0;
+		}
+	}
+
+	/**
+	 * Output data structure of the ball filter preprocessor.
+	 *
+	 * @author AndreR <andre@ryll.cc>
+	 */
+	@RequiredArgsConstructor
+	public static class BallFilterPreprocessorOutput
+	{
+		private final MergedBall mergedBall;
+		private final KickEvent kickEvent;
+		private final KickFitResult bestKickFitResult;
+
+
+		public Optional<MergedBall> getMergedBall()
+		{
+			return Optional.ofNullable(mergedBall);
+		}
+
+
+		public Optional<KickEvent> getKickEvent()
+		{
+			return Optional.ofNullable(kickEvent);
+		}
+
+
+		public Optional<KickFitResult> getBestKickFitResult()
+		{
+			return Optional.ofNullable(bestKickFitResult);
+		}
+	}
 
 	private class KickEstimators
 	{
@@ -239,8 +418,10 @@ public class BallFilterPreprocessor
 
 			// ignore event when best fit state is chipped
 			if ((chipEstimator != null) && (chipEstimator == lastBestEstimator)
-					&& chipEstimator.getFitResult().isPresent()
-					&& chipEstimator.getFitResult().get().getState(timestamp).isChipped())
+					&& chipEstimator.getFitResult()
+					.map(fitResult -> fitResult.getState(timestamp))
+					.map(BallState::isChipped)
+					.orElse(false))
 			{
 				log.debug("Ignoring kick event due to airborne ball state");
 
@@ -273,7 +454,7 @@ public class BallFilterPreprocessor
 			if (flatEstimator == null)
 			{
 				flatEstimator = new StraightKickEstimator(kickEvent,
-						filteredBallHistory.stream().collect(Collectors.toList()));
+						filteredBallHistory.stream().toList());
 
 				log.debug("Spawned flat estimator");
 			}
@@ -281,15 +462,16 @@ public class BallFilterPreprocessor
 			// try to merge kick event if we already have an estimator running
 			if (lastBestEstimator != null)
 			{
-				IVector2 bestEstimatorVelDir = lastBestEstimator.getFitResult().get().getKickVel().getXYVector();
-				IVector2 kickDir = kickEvent.getKickDirection().get();
+				IVector2 bestEstimatorVelDir = lastBestEstimator.getFitResult().orElseThrow().getKickVel().getXYVector();
+				IVector2 kickDir = kickEvent.getKickDirection().orElseThrow();
 
 				if ((bestEstimatorVelDir.angleToAbs(kickDir).orElse(Math.PI) > AngleMath.deg2rad(20)) ||
-						(lastBestEstimator.getFitResult().get().getKickPos().distanceTo(kickEvent.getPosition()) > 500.0))
+						(lastBestEstimator.getFitResult().orElseThrow().getKickPos().distanceTo(kickEvent.getPosition())
+								> 500.0))
 				{
 					// large angle deviation or some distance away from last kick, spawn new estimator
 					flatEstimator = new StraightKickEstimator(kickEvent,
-							filteredBallHistory.stream().collect(Collectors.toList()));
+							filteredBallHistory.stream().toList());
 					log.debug("Spawned flat estimator due to angle/pos deviation");
 				} else
 				{
@@ -318,8 +500,8 @@ public class BallFilterPreprocessor
 			{
 				IKickEstimator est = bestEstimator.get();
 				boolean noLastBestEstimator = (lastBestEstimator == null) || !estimators.contains(lastBestEstimator);
-				if (noLastBestEstimator || ((est != lastBestEstimator) && (est.getFitResult().get()
-						.getAvgDistance() < (lastBestEstimator.getFitResult().get().getAvgDistance()
+				if (noLastBestEstimator || ((est != lastBestEstimator) && (est.getFitResult().orElseThrow()
+						.getAvgDistance() < (lastBestEstimator.getFitResult().orElseThrow().getAvgDistance()
 						* (1.0 - estimatorSwitchHysteresis))))
 						|| (lastBestEstimator.getType() == est.getType()))
 				{
@@ -332,7 +514,7 @@ public class BallFilterPreprocessor
 
 			if (lastBestEstimator != null)
 			{
-				KickFitResult bestKickFitResult = lastBestEstimator.getFitResult().get();
+				KickFitResult bestKickFitResult = lastBestEstimator.getFitResult().orElseThrow();
 				if (((timestamp - lastKickTimestamp) * 1e-9) > 0.5)
 				{
 					// only keep the best estimator 0.5s after kick
@@ -367,9 +549,9 @@ public class BallFilterPreprocessor
 
 				List<IVector2> points = kick.getRecordsSinceKick().stream()
 						.map(MergedBall::getCamPos)
-						.collect(Collectors.toList());
+						.toList();
 
-				Optional<Line> line = Line.fromPointsList(points);
+				Optional<ILineSegment> line = Lines.regressionLineFromPointsList(points);
 				if (line.isPresent())
 				{
 					DrawableLine dir = new DrawableLine(line.get(), col);
@@ -388,189 +570,6 @@ public class BallFilterPreprocessor
 			kickEventHistory.clear();
 			filteredBallHistory.clear();
 			lastBestEstimator = null;
-		}
-	}
-
-	private static class KickDetectors
-	{
-		private final KickDetector slowDetector = new KickDetector();
-		private final EarlyKickDetector earlyDetector = new EarlyKickDetector();
-
-
-		private KickEvent process(final MergedBall mergedBall, final List<FilteredVisionBot> mergedRobots)
-		{
-			if (mergedBall == null)
-			{
-				return null;
-			}
-
-			// is this merged ball based on a real measurement?
-			if (mergedBall.getLatestCamBall().isEmpty())
-			{
-				return null;
-			}
-
-			KickEvent earlyEvent = earlyDetector.addRecord(mergedBall, mergedRobots);
-			KickEvent slowEvent = slowDetector.addRecord(mergedBall, mergedRobots);
-
-			// Prefer a slow event if one exists
-			if (slowEvent != null)
-			{
-				return slowEvent;
-			}
-
-			return earlyEvent;
-		}
-
-
-		private List<IDrawableShape> getShapes()
-		{
-			List<IDrawableShape> shapes = new ArrayList<>();
-
-			shapes.addAll(slowDetector.getDrawableShapes());
-			shapes.addAll(earlyDetector.getDrawableShapes());
-
-			return shapes;
-		}
-
-
-		private void reset()
-		{
-			slowDetector.reset();
-			earlyDetector.reset();
-		}
-	}
-
-	private static class BallTrackerMerger
-	{
-		private double lastBallSearchRadius = 1;
-		private List<IVector2> lastSearchPositions = new ArrayList<>();
-		private long lastBallUpdateTimestamp = 0;
-
-
-		private MergedBall process(final List<BallTracker> ballTrackers, final long timestamp,
-				final FilteredVisionBall lastFilteredBall)
-		{
-			if (ballTrackers.isEmpty())
-			{
-				// no valid ball trackers at all
-				return null;
-			}
-
-			if (lastBallUpdateTimestamp == 0)
-			{
-				lastBallUpdateTimestamp = lastFilteredBall.getLastVisibleTimestamp();
-			}
-
-			lastBallSearchRadius = Math.abs((timestamp - lastBallUpdateTimestamp) * 1e-9 * BallTracker.getMaxLinearVel());
-			lastBallSearchRadius = Math.max(lastBallSearchRadius, minSearchRadius);
-
-			lastSearchPositions.clear();
-			List<BallTracker> primaryTrackers;
-			if (lastFilteredBall.getBallState().isChipped() && !Geometry.getLastCamGeometry().getCameraCalibrations().isEmpty())
-			{
-				// if the ball is airborne we project its position to the ground from all cameras and use these locations as
-				// search point
-				List<IVector2> projectedPos = Geometry.getLastCamGeometry().getCameraCalibrations().values().stream()
-						.map(c -> lastFilteredBall.getPos().projectToGroundNew(c.getCameraPosition()))
-						.collect(Collectors.toList());
-
-				lastSearchPositions.addAll(projectedPos);
-
-				primaryTrackers = ballTrackers.stream()
-						.filter(t -> projectedPos.stream()
-								.anyMatch(p -> t.getPosition(timestamp).distanceTo(p) < lastBallSearchRadius))
-						.collect(Collectors.toList());
-			} else
-			{
-				// if the ball is not airborne we simply use the last known location as search point
-				lastSearchPositions.add(lastFilteredBall.getPos().getXYVector());
-
-				primaryTrackers = ballTrackers.stream()
-						.filter(BallTracker::isGrownUp)
-						.filter(t -> t.getPosition(timestamp)
-								.distanceTo(lastFilteredBall.getPos().getXYVector()) < lastBallSearchRadius)
-						.collect(Collectors.toList());
-			}
-
-			if (primaryTrackers.isEmpty())
-			{
-				// no valid trackers in search radius
-				return null;
-			}
-
-			// -- select only one tracker per cam at max --
-			// group ball trackers by camera id
-			Map<Integer, List<BallTracker>> trackersByCam = primaryTrackers.stream()
-					.collect(Collectors.groupingBy(BallTracker::getCameraId));
-
-			// select only one tracker from each group (most recently updated one)
-			List<BallTracker> distinctTrackers = trackersByCam.values().stream()
-					.map(li -> li.stream()
-							.max(Comparator.comparingLong(b -> b.getLastCamBall().getTimestamp()))
-							.get())
-					.collect(Collectors.toList());
-
-			// Merge these few trackers
-			MergedBall mergedBall = BallTracker.mergeBallTrackers(distinctTrackers, timestamp);
-
-			if (mergedBall.getLatestCamBall().isPresent())
-			{
-				lastBallUpdateTimestamp = mergedBall.getLatestCamBall().get().gettCapture();
-			}
-
-			return mergedBall;
-		}
-
-
-		private List<IDrawableShape> getShapes()
-		{
-			List<IDrawableShape> shapes = new ArrayList<>();
-
-			for (IVector2 pos : lastSearchPositions)
-			{
-				DrawableCircle search = new DrawableCircle(pos, lastBallSearchRadius + 0.1, Color.PINK);
-				shapes.add(search);
-			}
-
-			return shapes;
-		}
-
-
-		private void reset()
-		{
-			lastBallUpdateTimestamp = 0;
-		}
-	}
-
-	/**
-	 * Output data structure of the ball filter preprocessor.
-	 *
-	 * @author AndreR <andre@ryll.cc>
-	 */
-	@RequiredArgsConstructor
-	public static class BallFilterPreprocessorOutput
-	{
-		private final MergedBall mergedBall;
-		private final KickEvent kickEvent;
-		private final KickFitResult bestKickFitResult;
-
-
-		public Optional<MergedBall> getMergedBall()
-		{
-			return Optional.ofNullable(mergedBall);
-		}
-
-
-		public Optional<KickEvent> getKickEvent()
-		{
-			return Optional.ofNullable(kickEvent);
-		}
-
-
-		public Optional<KickFitResult> getBestKickFitResult()
-		{
-			return Optional.ofNullable(bestKickFitResult);
 		}
 	}
 }

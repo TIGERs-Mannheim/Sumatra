@@ -31,7 +31,7 @@ import java.util.function.Supplier;
 @RequiredArgsConstructor
 public class SkirmishDetectorCalc extends ACalculator
 {
-	private final StateMachine<ASkirmishState> stateMachine = new StateMachine<>();
+	private final StateMachine<ASkirmishState> stateMachine = new StateMachine<>(this.getClass().getSimpleName());
 	private final IdleSkirmishState idleSkirmishState = new IdleSkirmishState();
 	private final TransitionSkirmishState transitionSkirmishState = new TransitionSkirmishState();
 	private final SkirmishState skirmishState = new SkirmishState();

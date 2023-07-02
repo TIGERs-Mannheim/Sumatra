@@ -15,6 +15,7 @@ import edu.tigers.sumatra.referee.data.RefereeMsg;
 import edu.tigers.sumatra.referee.proto.SslGcRefereeMessage.Referee.Command;
 import edu.tigers.sumatra.referee.proto.SslGcRefereeMessage.Referee.Stage;
 import edu.tigers.sumatra.time.TimestampTimer;
+import lombok.extern.log4j.Log4j2;
 
 import java.util.Optional;
 
@@ -22,6 +23,7 @@ import java.util.Optional;
 /**
  * Check in which game state we are by consulting new referee messages and the ball position
  */
+@Log4j2
 public class GameStateCalculator
 {
 	@Configurable(comment = "Ball movement tolerance", defValue = "50")
@@ -32,11 +34,17 @@ public class GameStateCalculator
 		ConfigRegistration.registerClass("wp", GameStateCalculator.class);
 	}
 
-	private IVector2 ballPosOnPrepare = null;
+	private IVector2 ballPosOnPrepare;
 	private final TimestampTimer ballMovedTimer = new TimestampTimer(0.03);
-	private long lastRefMsgCounter = -1;
-	private GameState lastGameState = GameState.empty().build();
-	private Command lastRefCmd = Command.STOP;
+	private long lastRefMsgCounter;
+	private GameState lastGameState;
+	private Command lastRefCmd;
+
+
+	public GameStateCalculator()
+	{
+		reset();
+	}
 
 
 	/**
@@ -44,16 +52,8 @@ public class GameStateCalculator
 	 */
 	public void reset()
 	{
-		reset(GameState.empty().build());
-	}
-
-
-	/**
-	 * reset state
-	 */
-	public void reset(GameState gameState)
-	{
-		lastGameState = gameState;
+		lastGameState = GameState.empty().build();
+		lastRefCmd = Command.STOP;
 		lastRefMsgCounter = -1;
 		ballPosOnPrepare = null;
 		ballMovedTimer.reset();
@@ -79,6 +79,7 @@ public class GameStateCalculator
 
 		if (refereeMsg.getCmdCounter() != lastRefMsgCounter)
 		{
+			log.debug("Referee message with new command: {}", refereeMsg);
 			lastRefMsgCounter = refereeMsg.getCmdCounter();
 			processCommand(refereeMsg.getCommand(), lastRefCmd, builder);
 			storeBallPosition(refereeMsg.getCommand(), ballPos);
@@ -86,18 +87,12 @@ public class GameStateCalculator
 		}
 
 		processNextCommand(refereeMsg.getNextCommand(), refereeMsg.getCommand(), builder);
-		builder.withBallPlacementPosition(refereeMsg.getBallPlacementPosNeutral());
 		processStage(refereeMsg.getStage(), builder);
 		processBallMovement(ballPos, builder, timestamp);
 		processActionTimeRemaining(builder, refereeMsg.getCurrentActionTimeRemaining());
 
-		if ((refereeMsg.getCommand() == Command.BALL_PLACEMENT_BLUE
-				|| refereeMsg.getCommand() == Command.BALL_PLACEMENT_YELLOW)
-				&& refereeMsg.getBallPlacementPosNeutral() == null)
-		{
-			// just to avoid NPEs
-			builder.withBallPlacementPosition(Vector2.zero());
-		}
+		var placementPos = Optional.ofNullable(refereeMsg.getBallPlacementPosNeutral()).orElse(Vector2.zero());
+		builder.withBallPlacementPosition(placementPos);
 
 		// we build this with NEUTRAL ourTeam because we don't know our team yet
 		return builder.withOurTeam(ETeamColor.NEUTRAL).build();
@@ -115,7 +110,10 @@ public class GameStateCalculator
 			case PENALTY_SHOOTOUT -> builder.withPenaltyShootout(true);
 			default ->
 			{
-				// ignore stage
+				if (lastGameState.getState() == EGameState.BREAK || lastGameState.getState() == EGameState.POST_GAME)
+				{
+					builder.withState(EGameState.HALT).withForTeam(ETeamColor.NEUTRAL);
+				}
 			}
 		}
 	}
@@ -159,18 +157,18 @@ public class GameStateCalculator
 	private EGameState commandToState(final Command command)
 	{
 		return switch (command)
-				{
-					case HALT -> EGameState.HALT;
-					case STOP -> EGameState.STOP;
-					case NORMAL_START, FORCE_START -> EGameState.RUNNING;
-					case PREPARE_KICKOFF_YELLOW, PREPARE_KICKOFF_BLUE -> EGameState.PREPARE_KICKOFF;
-					case PREPARE_PENALTY_YELLOW, PREPARE_PENALTY_BLUE -> EGameState.PREPARE_PENALTY;
-					case DIRECT_FREE_YELLOW, DIRECT_FREE_BLUE -> EGameState.DIRECT_FREE;
-					case INDIRECT_FREE_YELLOW, INDIRECT_FREE_BLUE -> EGameState.INDIRECT_FREE;
-					case TIMEOUT_YELLOW, TIMEOUT_BLUE -> EGameState.TIMEOUT;
-					case BALL_PLACEMENT_YELLOW, BALL_PLACEMENT_BLUE -> EGameState.BALL_PLACEMENT;
-					default -> null;
-				};
+		{
+			case HALT -> EGameState.HALT;
+			case STOP -> EGameState.STOP;
+			case NORMAL_START, FORCE_START -> EGameState.RUNNING;
+			case PREPARE_KICKOFF_YELLOW, PREPARE_KICKOFF_BLUE -> EGameState.PREPARE_KICKOFF;
+			case PREPARE_PENALTY_YELLOW, PREPARE_PENALTY_BLUE -> EGameState.PREPARE_PENALTY;
+			case DIRECT_FREE_YELLOW, DIRECT_FREE_BLUE -> EGameState.DIRECT_FREE;
+			case INDIRECT_FREE_YELLOW, INDIRECT_FREE_BLUE -> EGameState.INDIRECT_FREE;
+			case TIMEOUT_YELLOW, TIMEOUT_BLUE -> EGameState.TIMEOUT;
+			case BALL_PLACEMENT_YELLOW, BALL_PLACEMENT_BLUE -> EGameState.BALL_PLACEMENT;
+			default -> null;
+		};
 	}
 
 
@@ -178,36 +176,35 @@ public class GameStateCalculator
 	private ETeamColor commandToTeam(final Command command)
 	{
 		return switch (command)
-				{
-					case PREPARE_KICKOFF_YELLOW, PREPARE_PENALTY_YELLOW, DIRECT_FREE_YELLOW, INDIRECT_FREE_YELLOW, TIMEOUT_YELLOW, BALL_PLACEMENT_YELLOW ->
-							ETeamColor.YELLOW;
-					case PREPARE_KICKOFF_BLUE, PREPARE_PENALTY_BLUE, DIRECT_FREE_BLUE, INDIRECT_FREE_BLUE, TIMEOUT_BLUE, BALL_PLACEMENT_BLUE ->
-							ETeamColor.BLUE;
-					case HALT, STOP, NORMAL_START, FORCE_START -> ETeamColor.NEUTRAL;
-					default -> null;
-				};
+		{
+			case PREPARE_KICKOFF_YELLOW, PREPARE_PENALTY_YELLOW, DIRECT_FREE_YELLOW, INDIRECT_FREE_YELLOW, TIMEOUT_YELLOW, BALL_PLACEMENT_YELLOW ->
+					ETeamColor.YELLOW;
+			case PREPARE_KICKOFF_BLUE, PREPARE_PENALTY_BLUE, DIRECT_FREE_BLUE, INDIRECT_FREE_BLUE, TIMEOUT_BLUE, BALL_PLACEMENT_BLUE ->
+					ETeamColor.BLUE;
+			case HALT, STOP, NORMAL_START, FORCE_START -> ETeamColor.NEUTRAL;
+			default -> null;
+		};
 	}
 
 
 	private EGameState normalStartToState(final Command lastCommand)
 	{
 		return switch (lastCommand)
-				{
-					case PREPARE_KICKOFF_BLUE, PREPARE_KICKOFF_YELLOW -> EGameState.KICKOFF;
-					case PREPARE_PENALTY_BLUE, PREPARE_PENALTY_YELLOW -> EGameState.PENALTY;
-					default -> EGameState.RUNNING;
-				};
+		{
+			case PREPARE_KICKOFF_BLUE, PREPARE_KICKOFF_YELLOW -> EGameState.KICKOFF;
+			case PREPARE_PENALTY_BLUE, PREPARE_PENALTY_YELLOW -> EGameState.PENALTY;
+			default -> EGameState.RUNNING;
+		};
 	}
 
 
 	private void storeBallPosition(final Command command, final IVector2 ballPos)
 	{
 		ballPosOnPrepare = switch (command)
-				{
-					case DIRECT_FREE_BLUE, DIRECT_FREE_YELLOW, INDIRECT_FREE_BLUE, INDIRECT_FREE_YELLOW, NORMAL_START ->
-							ballPos;
-					default -> null;
-				};
+		{
+			case DIRECT_FREE_BLUE, DIRECT_FREE_YELLOW, INDIRECT_FREE_BLUE, INDIRECT_FREE_YELLOW, NORMAL_START -> ballPos;
+			default -> null;
+		};
 	}
 
 

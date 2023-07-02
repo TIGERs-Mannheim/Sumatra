@@ -6,9 +6,9 @@ package edu.tigers.sumatra.ball.trajectory;
 
 import com.sleepycat.persist.model.Persistent;
 import edu.tigers.sumatra.ball.BallParameters;
-import edu.tigers.sumatra.math.line.v2.IHalfLine;
-import edu.tigers.sumatra.math.line.v2.ILineSegment;
-import edu.tigers.sumatra.math.line.v2.Lines;
+import edu.tigers.sumatra.math.line.IHalfLine;
+import edu.tigers.sumatra.math.line.ILineSegment;
+import edu.tigers.sumatra.math.line.Lines;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.IVector3;
 import edu.tigers.sumatra.math.vector.Vector2f;
@@ -17,7 +17,6 @@ import lombok.Getter;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 
 
 /**
@@ -247,8 +246,8 @@ public abstract class ABallTrajectory implements IBallTrajectory
 	public IVector2 closestPointTo(IVector2 point)
 	{
 		var closestPointsToIdealPos = getTravelLinesRolling().stream()
-				.map(line -> line.closestPointOnLine(point))
-				.collect(Collectors.toUnmodifiableList());
+				.map(line -> line.closestPointOnPath(point))
+				.toList();
 		return point.nearestTo(closestPointsToIdealPos);
 	}
 

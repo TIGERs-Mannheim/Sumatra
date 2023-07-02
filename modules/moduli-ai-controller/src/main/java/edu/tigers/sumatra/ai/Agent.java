@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2019, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai;
@@ -18,6 +18,7 @@ import org.apache.logging.log4j.Logger;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 
 /**
@@ -115,8 +116,13 @@ public class Agent extends AAgent
 	@Override
 	public void reset()
 	{
+		Map<EAiTeam, EAIControlState> previousControlStates = aiManagers.values().stream().collect(Collectors.toMap(
+				a -> a.getAi().getAiTeam(),
+				a -> a.getAi().getAthena().getControlState())
+		);
 		removeAis();
 		addAis();
+		previousControlStates.forEach(this::changeMode);
 	}
 
 
@@ -171,6 +177,7 @@ public class Agent extends AAgent
 		}
 		return Optional.empty();
 	}
+
 
 	private class WorldFrameObserver implements IWorldFrameObserver
 	{

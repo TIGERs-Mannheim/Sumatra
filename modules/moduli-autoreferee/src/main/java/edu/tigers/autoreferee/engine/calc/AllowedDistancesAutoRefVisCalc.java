@@ -4,17 +4,18 @@
 
 package edu.tigers.autoreferee.engine.calc;
 
-import java.awt.Color;
-import java.util.List;
-
 import edu.tigers.autoreferee.AutoRefFrame;
 import edu.tigers.autoreferee.EAutoRefShapesLayer;
 import edu.tigers.sumatra.drawable.DrawableCircle;
+import edu.tigers.sumatra.drawable.DrawableShapeBoundary;
 import edu.tigers.sumatra.drawable.IDrawableShape;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.geometry.NGeometry;
 import edu.tigers.sumatra.geometry.RuleConstraints;
 import edu.tigers.sumatra.math.circle.Circle;
+
+import java.awt.Color;
+import java.util.List;
 
 
 public class AllowedDistancesAutoRefVisCalc implements IAutoRefereeCalc
@@ -23,14 +24,15 @@ public class AllowedDistancesAutoRefVisCalc implements IAutoRefereeCalc
 	public void process(final AutoRefFrame frame)
 	{
 		List<IDrawableShape> shapes = frame.getShapes().get(EAutoRefShapesLayer.ALLOWED_DISTANCES);
-		
+
 		if (frame.getGameState().isStandardSituation() || frame.getGameState().isStoppedGame())
 		{
 			NGeometry.getPenaltyAreas().stream()
-					.map(p -> p.withMargin(RuleConstraints.getBotToPenaltyAreaMarginStandard()).getDrawableShapes())
-					.forEach(shapes::addAll);
+					.map(p -> p.withMargin(RuleConstraints.getBotToPenaltyAreaMarginStandard()))
+					.map(DrawableShapeBoundary::new)
+					.forEach(shapes::add);
 		}
-		
+
 		if (frame.getGameState().isStoppedGame())
 		{
 			shapes.add(new DrawableCircle(Circle.createCircle(frame.getWorldFrame().getBall().getPos(),

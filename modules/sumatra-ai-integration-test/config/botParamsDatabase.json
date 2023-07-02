@@ -27,11 +27,15 @@
       "kickerSpecs":{
         "chipAngle":45.0,
         "maxAbsoluteChipVelocity":5.0,
-        "maxAbsoluteStraightVelocity":8.0,
-        "maxDribbleSpeed":10000.0,
-        "dribbleSpeedGain":1.0,
-        "maxDribbleBallAcceleration":5.0,
-        "maxRetainingBallAngle":0.75
+        "maxAbsoluteStraightVelocity":8.0
+      },
+      "dribblerSpecs":{
+        "maxBallAcceleration":5.0,
+        "maxRetainingBallAngle":0.75,
+        "defaultSpeed":15000.0,
+        "defaultMaxCurrent":3.0,
+        "highPowerSpeed":22000.0,
+        "highPowerMaxCurrent":5.0
       }
     }
   }

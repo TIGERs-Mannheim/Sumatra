@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.pandora.plays.test.kick;
@@ -15,7 +15,6 @@ import edu.tigers.sumatra.drawable.DrawableLine;
 import edu.tigers.sumatra.drawable.IDrawableShape;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.math.circle.Circle;
-import edu.tigers.sumatra.math.line.Line;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.statemachine.AState;
 import edu.tigers.sumatra.statemachine.IEvent;
@@ -57,20 +56,13 @@ public class ReproducibleKickLyingPlay extends ABallPreparationPlay
 
 
 	@Override
-	protected ARole onAddRole()
-	{
-		return new MoveRole();
-	}
-
-
-	@Override
 	protected void doUpdateAfterRoles()
 	{
 		super.doUpdateAfterRoles();
 		setBallTargetPos(ballTargetPos);
 
 		List<IDrawableShape> shapes = getAiFrame().getShapeMap().get(EAiShapesLayer.TEST_KICK);
-		shapes.add(new DrawableLine(Line.fromPoints(ballTargetPos, kickTarget), Color.GREEN));
+		shapes.add(new DrawableLine(ballTargetPos, kickTarget, Color.GREEN));
 		shapes.add(new DrawableCircle(Circle.createCircle(getBotDest(), Geometry.getBotRadius()), Color.GREEN));
 	}
 
@@ -108,8 +100,7 @@ public class ReproducibleKickLyingPlay extends ABallPreparationPlay
 			move = new MoveRole();
 			move.updateDestination(getBotDest());
 			move.updateLookAtTarget(getBall());
-			move.getMoveCon().setPenaltyAreaTheirObstacle(false);
-			move.getMoveCon().setPenaltyAreaOurObstacle(false);
+			move.getMoveCon().physicalObstaclesOnly();
 			switchRoles(getRoles().get(0), move);
 			timer.reset();
 		}

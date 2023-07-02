@@ -4,16 +4,19 @@
 package edu.tigers.sumatra.math.botshape;
 
 import edu.tigers.sumatra.math.AngleMath;
+import edu.tigers.sumatra.math.IBoundedPath;
+import edu.tigers.sumatra.math.IPath;
 import edu.tigers.sumatra.math.SumatraMath;
-import edu.tigers.sumatra.math.line.Line;
-import edu.tigers.sumatra.math.line.LineMath;
-import edu.tigers.sumatra.math.line.v2.ILineSegment;
-import edu.tigers.sumatra.math.line.v2.Lines;
+import edu.tigers.sumatra.math.circle.Arc;
+import edu.tigers.sumatra.math.line.ILineSegment;
+import edu.tigers.sumatra.math.line.Lines;
 import edu.tigers.sumatra.math.pose.Pose;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
+
+import java.util.List;
 
 
 /**
@@ -27,6 +30,51 @@ public class BotShape implements IBotShape
 	private final double radius;
 	private final double center2Dribbler;
 	private final double orientation;
+
+
+	/**
+	 * Calculates the position of the dribbler/kicker depending on bot position and orientation (angle)
+	 *
+	 * @param botPos
+	 * @param orientation
+	 * @param center2Dribbler
+	 * @return kick position of a bot that is located at botPos
+	 */
+	public static IVector2 getKickerCenterPos(final IVector2 botPos, final double orientation,
+			final double center2Dribbler)
+	{
+		return botPos.addNew(Vector2.fromAngle(orientation).scaleTo(center2Dribbler));
+	}
+
+
+	/**
+	 * Calculates the position of the dribbler/kicker depending on bot position and orientation (angle)
+	 *
+	 * @param pose
+	 * @param center2Dribbler
+	 * @return kick position of a bot that is located at botPos
+	 */
+	public static IVector2 getKickerCenterPos(final Pose pose,
+			final double center2Dribbler)
+	{
+		return getKickerCenterPos(pose.getPos(), pose.getOrientation(), center2Dribbler);
+	}
+
+
+	/**
+	 * Calculates the position of the robot's center based on the given kicer position, orientation and
+	 * distance from center to dribbler
+	 *
+	 * @param kickerPos
+	 * @param orientation
+	 * @param center2Dribbler
+	 * @return the bot center position
+	 */
+	public static IVector2 getCenterFromKickerPos(final IVector2 kickerPos, final double orientation,
+			final double center2Dribbler)
+	{
+		return kickerPos.addNew(Vector2.fromAngle(orientation).multiply(-center2Dribbler));
+	}
 
 
 	@Override
@@ -57,51 +105,6 @@ public class BotShape implements IBotShape
 	}
 
 
-	/**
-	 * Calculates the position of the dribbler/kicker depending on bot position and orientation (angle)
-	 *
-	 * @param botPos
-	 * @param orientation
-	 * @param center2Dribbler
-	 * @return kick position of a bot that is located at botPos
-	 */
-	public static IVector2 getKickerCenterPos(final IVector2 botPos, final double orientation,
-			final double center2Dribbler)
-	{
-		return botPos.addNew(Vector2.fromAngle(orientation).scaleTo(center2Dribbler));
-	}
-
-
-	/**
-	 * Calculates the position of the dribbler/kicker depending on bot position and orientation (angle)
-	 *
-	 * @param pose
-	 * @param center2Dribbler
-	 * @return kick position of a bot that is located at botPos
-	 */
-	public static IVector2 getKickerCenterPos(final Pose pose,
-			final double center2Dribbler)
-	{
-		return pose.getPos().addNew(Vector2.fromAngle(pose.getOrientation()).scaleTo(center2Dribbler));
-	}
-
-
-	/**
-	 * Calculates the position of the robot's center based on the given kicer position, orientation and
-	 * distance from center to dribbler
-	 *
-	 * @param kickerPos
-	 * @param orientation
-	 * @param center2Dribbler
-	 * @return the bot center position
-	 */
-	public static IVector2 getCenterFromKickerPos(final IVector2 kickerPos, final double orientation,
-			final double center2Dribbler)
-	{
-		return kickerPos.addNew(Vector2.fromAngle(orientation).multiply(-center2Dribbler));
-	}
-
-
 	@Override
 	public ILineSegment getKickerLine()
 	{
@@ -124,9 +127,8 @@ public class BotShape implements IBotShape
 	@Override
 	public boolean isPointInKickerZone(final IVector2 point, final double zoneLength, final double zoneWidth)
 	{
-		Line orientLine = Line.fromDirection(position, Vector2.fromAngle(orientation));
-
-		Vector2 leadPoint = orientLine.leadPointOf(point);
+		var orientLine = Lines.halfLineFromDirection(position, Vector2.fromAngle(orientation));
+		var leadPoint = orientLine.toLine().closestPointOnPath(point);
 
 		if (!orientLine.isPointInFront(leadPoint))
 		{
@@ -143,21 +145,6 @@ public class BotShape implements IBotShape
 		double distPointToLeadPoint = point.distanceTo(leadPoint);
 
 		return distPointToLeadPoint <= (zoneWidth * 0.5);
-	}
-
-
-	@Override
-	public IVector2 nearestPointOutside(final IVector2 point)
-	{
-		if (!isPointInShape(point))
-		{
-			return point;
-		}
-		if (isPointInKickerZone(point, 0))
-		{
-			return Lines.segmentFromPoints(center(), point).intersectSegment(getKickerLine()).orElse(point);
-		}
-		return LineMath.stepAlongLine(center(), point, radius);
 	}
 
 
@@ -186,20 +173,28 @@ public class BotShape implements IBotShape
 	@Override
 	public boolean isPointInShape(final IVector2 point)
 	{
-		if (position.distanceTo(point) > radius)
+		if (position.distanceTo(point) > radius + IPath.LINE_MARGIN)
 		{
 			return false;
 		}
 		// check if point is not in front of kicker.
 		// Use radius as kickerZone as maximum value here (in case of center2Dribbler==0)
-		return !isPointInKickerZone(point, radius);
+		return !isPointInKickerZone(point, radius) || getKickerLine().isPointOnPath(point);
 	}
 
 
 	@Override
-	public boolean isPointInShape(final IVector2 point, final double margin)
+	public List<IBoundedPath> getPerimeterPath()
 	{
-		return withMargin(margin).isPointInShape(point);
+		double r = radius;
+		double alpha = SumatraMath.acos(center2Dribbler / r);
+		double startAngleRad = orientation - alpha;
+		double angleExtent = 2 * alpha - AngleMath.PI_TWO;
+
+		return List.of(
+				Arc.createArc(position, radius, startAngleRad, angleExtent),
+				getKickerLine()
+		);
 	}
 
 

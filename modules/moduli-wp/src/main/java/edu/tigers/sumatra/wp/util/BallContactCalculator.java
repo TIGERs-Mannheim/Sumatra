@@ -88,4 +88,12 @@ public class BallContactCalculator
 	{
 		this.ballPos = ballPos;
 	}
+
+
+	public void reset()
+	{
+		ballContactLastFrame.clear();
+		startBallContactMap.clear();
+		endBallContactMap.clear();
+	}
 }

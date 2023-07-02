@@ -1,12 +1,11 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.ai.pandora.plays.test.kick;
 
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
 import edu.tigers.sumatra.ai.pandora.plays.EPlay;
 import edu.tigers.sumatra.drawable.DrawableLine;
-import edu.tigers.sumatra.math.line.Line;
 import edu.tigers.sumatra.math.vector.IVector2;
 import lombok.Setter;
 
@@ -28,6 +27,8 @@ public class PassToEachOtherPlay extends ARedirectPlay
 	private EReceiveMode receiveMode1;
 	@Setter
 	private EReceiveMode receiveMode2;
+	@Setter
+	private double receiveBallSpeed;
 
 
 	public PassToEachOtherPlay()
@@ -42,7 +43,7 @@ public class PassToEachOtherPlay extends ARedirectPlay
 		super.doUpdateAfterRoles();
 
 		var shapes = getAiFrame().getShapeMap().get(EAiShapesLayer.TEST_KICK);
-		shapes.add(new DrawableLine(Line.fromPoints(p1, p2), Color.green));
+		shapes.add(new DrawableLine(p1, p2, Color.green));
 	}
 
 
@@ -87,5 +88,12 @@ public class PassToEachOtherPlay extends ARedirectPlay
 			return receiveMode1;
 		}
 		throw new IllegalArgumentException("Unmapped origin: " + origin);
+	}
+
+
+	@Override
+	protected double getMaxReceivingBallSpeed(IVector2 origin)
+	{
+		return receiveBallSpeed;
 	}
 }

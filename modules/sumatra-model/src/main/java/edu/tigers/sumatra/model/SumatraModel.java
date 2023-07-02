@@ -50,7 +50,7 @@ public final class SumatraModel extends Moduli
 	// --- moduli config ---
 	private static final String KEY_MODULI_CONFIG = SumatraModel.class.getName() + ".moduliConfig";
 	public static final String MODULI_CONFIG_PATH = "./config/moduli/";
-	private static final String MODULI_CONFIG_FILE_DEFAULT = "sim.xml";
+	public static final String MODULI_CONFIG_FILE_DEFAULT = "sim.xml";
 
 	// Application Properties
 	private static final String CONFIG_SETTINGS_PATH = "./config/";

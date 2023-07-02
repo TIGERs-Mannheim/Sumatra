@@ -7,13 +7,13 @@ dependencies {
     testImplementation 'junit:junit:4.13.2'
     permitTestUnusedDeclared 'junit:junit:4.13.2'
     // Support junit 5
-    testImplementation 'org.junit.jupiter:junit-jupiter:5.8.2'
-    permitTestUnusedDeclared 'org.junit.jupiter:junit-jupiter:5.8.2'
-    testRuntimeOnly 'org.junit.vintage:junit-vintage-engine:5.8.2'
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.9.3'
+    permitTestUnusedDeclared 'org.junit.jupiter:junit-jupiter:5.9.3'
+    testRuntimeOnly 'org.junit.vintage:junit-vintage-engine:5.9.3'
 
     // Add common test tools
-    testImplementation 'org.assertj:assertj-core:3.22.0'
-    permitTestUnusedDeclared 'org.assertj:assertj-core:3.22.0'
+    testImplementation 'org.assertj:assertj-core:3.24.2'
+    permitTestUnusedDeclared 'org.assertj:assertj-core:3.24.2'
     testImplementation 'org.mockito:mockito-all:1.10.19'
     permitTestUnusedDeclared 'org.mockito:mockito-all:1.10.19'
 }
@@ -28,7 +28,7 @@ test {
 }
 
 jacoco {
-    toolVersion = "0.8.7"
+    toolVersion = "0.8.9"
 }
 
 jacocoTestReport {
