@@ -69,6 +69,11 @@ dependencies {
 
 application {
     mainClass.set('edu.tigers.sumatra.Sumatra')
+    applicationDefaultJvmArgs = [
+            // Change font (size):
+//            "-Dswing.plaf.metal.controlFont=sans-serif-16",
+//            "-Dswing.plaf.metal.userFont=sans-serif-16",
+    ]
 }
 
 jib {
