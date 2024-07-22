@@ -11,16 +11,16 @@ import edu.tigers.sumatra.ai.metis.defense.data.IDefenseThreat;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.AObjectID;
 import edu.tigers.sumatra.ids.BotID;
+import edu.tigers.sumatra.math.SumatraMath;
 import edu.tigers.sumatra.math.line.ILineSegment;
-import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
 
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -35,6 +35,9 @@ public class DesiredDefendersCalcUtil
 
 	@Configurable(comment = "Min + this [mm] * botVel [m/s] is the threshold for switching to another threat", defValue = "300.0")
 	private static double interceptionDistanceHysteresis = 300.0;
+
+	@Configurable(comment = "[%] maximum portion of the interception rating influenced by the velocity", defValue = "0.67")
+	private static double interceptionRatingMaxVelocityPortion = 0.67;
 
 	static
 	{
@@ -61,20 +64,11 @@ public class DesiredDefendersCalcUtil
 		{
 			return Collections.emptySet();
 		}
-		final Set<BotID> desiredDefenders = new HashSet<>();
-		Map<BotID, Double> interceptionRatings = interceptionRatings(threat, remainingDefenders);
-		while (desiredDefenders.size() < numDefenders)
-		{
-			if (interceptionRatings.isEmpty())
-			{
-				return desiredDefenders;
-			}
-
-			BotID defender = nextBestDefender(interceptionRatings);
-			interceptionRatings.remove(defender);
-			desiredDefenders.add(defender);
-		}
-		return Collections.unmodifiableSet(desiredDefenders);
+		return interceptionRatings(threat, remainingDefenders).stream()
+				.sorted(Comparator.comparingDouble(InterceptionRating::adjustedDistance))
+				.limit(numDefenders)
+				.map(InterceptionRating::defender)
+				.collect(Collectors.toUnmodifiableSet());
 	}
 
 
@@ -100,27 +94,17 @@ public class DesiredDefendersCalcUtil
 	}
 
 
-	private BotID nextBestDefender(final Map<BotID, Double> interceptionRatings)
-	{
-		return interceptionRatings.entrySet().stream().min(Comparator.comparingDouble(Map.Entry::getValue))
-				.orElseThrow(IllegalStateException::new).getKey();
-	}
-
-
-	private Map<BotID, Double> interceptionRatings(final IDefenseThreat threat,
+	private List<InterceptionRating> interceptionRatings(final IDefenseThreat threat,
 			final List<BotID> remainingDefenders)
 	{
 		final ILineSegment protectionLine = threat.getProtectionLine()
 				.orElseGet(() -> getThreatDefendingLineForCenterBack(threat.getThreatLine()));
 
-		Map<BotID, Double> interceptionRating = new HashMap<>();
-		for (BotID botID : remainingDefenders)
-		{
-			ITrackedBot tBot = getAiFrame().getWorldFrame().getBot(botID);
-			double dist = dist2Threat(threat, protectionLine, tBot);
-			interceptionRating.put(botID, dist - assignedLastFrameBonus(threat, botID));
-		}
-		return interceptionRating;
+		return remainingDefenders.stream()
+				.map(botID -> getAiFrame().getWorldFrame().getBot(botID))
+				.filter(Objects::nonNull)
+				.map(bot -> rateInterceptability(threat, protectionLine, bot))
+				.toList();
 	}
 
 
@@ -128,30 +112,57 @@ public class DesiredDefendersCalcUtil
 	{
 		return DefenseMath.getProtectionLine(threatLine,
 				Geometry.getBotRadius() * 2,
-				DefenseConstants.getMinGoOutDistance(),
+				Math.min(Geometry.getBotRadius() * 2, DefenseConstants.getMinGoOutDistance()),
 				DefenseConstants.getMaxGoOutDistance());
 	}
 
 
-	private double dist2Threat(final IDefenseThreat threat, final ILineSegment protectionLine, final ITrackedBot tBot)
+	private InterceptionRating rateInterceptability(IDefenseThreat threat, ILineSegment protectionLine, ITrackedBot bot)
 	{
-		IVector2 botPos = tBot.getPosByTime(DefenseConstants.getLookaheadBotThreats(tBot.getVel().getLength()));
+		double rawDistance;
 		if (protectionLine.getLength() > 1)
 		{
-			return protectionLine.distanceTo(botPos);
+			rawDistance = protectionLine.distanceTo(bot.getPos());
+		} else
+		{
+			rawDistance = threat.getPos().distanceTo(bot.getPos());
 		}
-		return threat.getPos().distanceTo(botPos);
+
+		double adjusted = rawDistance - assignedLastFrameBonus(threat, bot);
+
+		var botVel = bot.getVel().normalizeNew();
+		var threatVel = threat.getVel().normalizeNew();
+		// 1 -> same direction, 0 -> opposite direction
+		var directionFactor = -0.5 * (botVel.scalarProduct(threatVel) + 1);
+		// Square it to penalize opposite same direction even more
+		directionFactor = directionFactor * directionFactor;
+		// Invert it same direction is good -> 0, opposite is bad -> 1
+		directionFactor = 1 - directionFactor;
+
+		var velocitiesAdded = bot.getVel().getLength() + threatVel.getLength();
+		// If both are fast or one extremely fast -> up to 2/3 of distance are influenced by velocity direction
+		// If both are slow velocity direction will take close to no influence and overall distance is more important
+		var velocityPortion = interceptionRatingMaxVelocityPortion * SumatraMath.relative(velocitiesAdded, 0, 5);
+
+		adjusted = adjusted * directionFactor * velocityPortion + adjusted * (1 - velocityPortion);
+
+		return new InterceptionRating(
+				threat,
+				bot.getBotId(),
+				adjusted,
+				rawDistance
+		);
 	}
 
 
-	private double assignedLastFrameBonus(final IDefenseThreat threat, final BotID botID)
+	private double assignedLastFrameBonus(IDefenseThreat threat, ITrackedBot bot)
 	{
-		if (wasAssignedLastFrame(botID, threat))
+		if (wasAssignedLastFrame(bot.getBotId(), threat))
 		{
 			// velocity based hysteresis:
 			// slow -> low threshold for changing
 			return interceptionDistanceHysteresisMin
-					+ interceptionDistanceHysteresis * getAiFrame().getWorldFrame().getBot(botID).getVel().getLength2();
+					+ interceptionDistanceHysteresis * bot.getVel().getLength2();
 		}
 		return 0;
 	}
@@ -166,5 +177,15 @@ public class DesiredDefendersCalcUtil
 	private BaseAiFrame getAiFrame()
 	{
 		return aiFrame;
+	}
+
+
+	private record InterceptionRating(
+			IDefenseThreat threat,
+			BotID defender,
+			double adjustedDistance,
+			double originalDistance
+	)
+	{
 	}
 }

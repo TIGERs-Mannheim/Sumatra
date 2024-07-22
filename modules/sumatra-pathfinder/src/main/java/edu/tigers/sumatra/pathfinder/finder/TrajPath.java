@@ -290,8 +290,10 @@ public class TrajPath implements ITrajectory<IVector2>
 	{
 		return Stream.concat(
 				trajectory.getTimeSections().stream().filter(t -> t <= tEnd),
-				child != null ? child.getTimeSections().stream().map(t -> t + tEnd) : Stream.empty()
-		).toList();
+				Stream.concat(
+						Stream.of(tEnd),
+						child != null ? child.getTimeSections().stream().map(t -> t + tEnd) : Stream.empty()
+				)).toList();
 	}
 
 

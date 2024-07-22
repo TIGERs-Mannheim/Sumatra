@@ -144,7 +144,7 @@ public class LogfilePresenter implements ISumatraViewPresenter, ILogfilePanelObs
 		new MergeTool()
 				.withInputFiles(inputs)
 				.withOutputFile(output)
-				.withFilter(LogfilePresenter::isIdle)
+				.withFilter(removeIdle ? LogfilePresenter::isIdle : null)
 				.merge();
 	}
 

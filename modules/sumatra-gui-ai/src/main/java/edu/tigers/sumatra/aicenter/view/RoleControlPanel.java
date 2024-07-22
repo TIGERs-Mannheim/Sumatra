@@ -32,6 +32,7 @@ import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -74,7 +75,9 @@ public class RoleControlPanel extends JPanel
 		final JScrollPane scrollPaneActiveRoles = new JScrollPane();
 		scrollPaneActiveRoles.getViewport().setView(activeRolesList);
 
-		instanceablePanel = new InstanceablePanel(ERole.values(), SumatraModel.getInstance().getUserSettings());
+		var enums = ERole.values();
+		Arrays.sort(enums, (o1, o2) -> String.CASE_INSENSITIVE_ORDER.compare(o1.name(), o2.name()));
+		instanceablePanel = new InstanceablePanel(enums, SumatraModel.getInstance().getUserSettings());
 		instanceablePanel.setShowCreate(false);
 		instanceablePanel.addObserver(new NewInstanceObserver());
 

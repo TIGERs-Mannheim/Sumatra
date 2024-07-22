@@ -10,6 +10,25 @@ import edu.tigers.moduli.AModule;
 public class GameLogRecorder extends AModule
 {
 	private final GameLogWriter writer = new GameLogWriter(GameLogType.LOG_FILE);
+	private String matchType = "";
+	private String matchStage = "";
+	private String teamYellow = "";
+	private String teamBlue = "";
+
+
+	/**
+	 * @param match  type of match
+	 * @param stage  stage of match
+	 * @param yellow name of yellow team
+	 * @param blue   name of blue team
+	 */
+	public void setMatchInfo(String match, String stage, String yellow, String blue)
+	{
+		matchType = match;
+		matchStage = stage;
+		teamYellow = yellow;
+		teamBlue = blue;
+	}
 
 
 	@Override
@@ -26,7 +45,7 @@ public class GameLogRecorder extends AModule
 	{
 		if (enable && !writer.isOpen())
 		{
-			writer.open();
+			writer.open(matchType, matchStage, teamYellow, teamBlue);
 		} else if (!enable && writer.isOpen())
 		{
 			writer.close();

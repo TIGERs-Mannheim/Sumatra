@@ -26,19 +26,6 @@ public interface CollisionInput
 
 	default double getExtraMargin()
 	{
-		return getExtraMargin(getRobotVel().getLength2());
-	}
-
-	/**
-	 * Get the extra margin based on the current velocity
-	 *
-	 * @return extra margin
-	 */
-	static double getExtraMargin(double vel)
-	{
-		double maxVel = 3;
-		double vel3 = Math.min(maxVel, vel);
-		double relMargin = vel3 / maxVel;
-		return relMargin * relMargin * 200;
+		return DynamicMargin.getExtraMargin(getRobotVel().getLength2());
 	}
 }

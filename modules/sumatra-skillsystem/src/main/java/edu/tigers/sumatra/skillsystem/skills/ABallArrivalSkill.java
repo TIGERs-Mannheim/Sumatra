@@ -5,9 +5,6 @@
 package edu.tigers.sumatra.skillsystem.skills;
 
 import com.github.g3force.configurable.Configurable;
-import edu.tigers.sumatra.botmanager.botskills.BotSkillFastGlobalPosition;
-import edu.tigers.sumatra.botmanager.botskills.BotSkillGlobalPosition;
-import edu.tigers.sumatra.botmanager.botskills.BotSkillReceiveBall;
 import edu.tigers.sumatra.drawable.DrawableAnnotation;
 import edu.tigers.sumatra.drawable.DrawableCircle;
 import edu.tigers.sumatra.drawable.DrawableLine;
@@ -22,7 +19,7 @@ import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.math.vector.Vector2f;
 import edu.tigers.sumatra.skillsystem.ESkillShapesLayer;
 import edu.tigers.sumatra.skillsystem.skills.util.PositionValidator;
-import edu.tigers.sumatra.wp.data.BallKickFitState;
+import edu.tigers.sumatra.wp.data.KickedBall;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
@@ -46,16 +43,14 @@ public abstract class ABallArrivalSkill extends AMoveToSkill
 	@Configurable(defValue = "110.0", comment = "Margin between penalty area and bot destination [mm] (should be larger than botRadius + Geometry#getPenaltyAreaMargin()")
 	private static double marginBetweenDestAndPenArea = 110.0;
 
-	@Configurable(comment = "If the robot is allowed to use the on bot vision for ball interception", defValue = "false")
-	private static boolean useOnBotVision = false;
-
 	@Configurable(defValue = "0.1", comment = "[s] Maximum expected time the vision might deviate from the real world")
 	private static double maxExpectedVisionTimeDeviation = 0.1;
 
-	private final Hysteresis ballSpeedHysteresis = new Hysteresis(0.1, 0.6).initiallyInUpperState();
 	private final PositionValidator positionValidator = new PositionValidator();
 	@Setter
 	protected IVector2 ballReceivingPosition;
+	@Setter
+	private Hysteresis ballSpeedHysteresis = new Hysteresis(0.1, 0.6);
 	private IVector2 currentBallReceivingPosition;
 	@Getter(AccessLevel.PROTECTED)
 	@Setter(AccessLevel.PROTECTED)
@@ -115,36 +110,6 @@ public abstract class ABallArrivalSkill extends AMoveToSkill
 		drawShapes();
 
 		super.doUpdate();
-
-		if (useOnBotVision)
-		{
-			activateOnBotVisionBotSkill();
-		}
-	}
-
-
-	private void activateOnBotVisionBotSkill()
-	{
-		var originalBotSkill = getMatchCtrl().getSkill();
-		IVector2 dest;
-		double orient;
-		if (getMatchCtrl().getSkill() instanceof BotSkillGlobalPosition)
-		{
-			var originalBotSkillSlow = (BotSkillGlobalPosition) originalBotSkill;
-			dest = originalBotSkillSlow.getPos();
-			orient = originalBotSkillSlow.getOrientation();
-		} else
-		{
-			var originalBotSkillFast = (BotSkillFastGlobalPosition) getMatchCtrl().getSkill();
-			dest = originalBotSkillFast.getPos();
-			orient = originalBotSkillFast.getOrientation();
-		}
-		var interceptPoint = BotShape.getKickerCenterPos(dest, orient, getBot().getCenter2DribblerDist());
-
-		var mc = getMatchCtrl().getSkill().getMoveConstraints();
-		var kd = getMatchCtrl().getSkill().getKickerDribbler();
-
-		getMatchCtrl().setSkill(new BotSkillReceiveBall(interceptPoint, orient, mc, kd, getBall().getPos()));
 	}
 
 
@@ -170,8 +135,8 @@ public abstract class ABallArrivalSkill extends AMoveToSkill
 		);
 		var idealBallReceivingPosition = Optional.ofNullable(ballReceivingPosition).orElse(kickPos);
 		var closestPointToIdealPos = projectIdealBallReceivingPosOnBallTrajectory(idealBallReceivingPosition);
-		var kickAge = getWorldFrame().getKickFitState()
-				.map(BallKickFitState::getKickTimestamp)
+		var kickAge = getWorldFrame().getKickedBall()
+				.map(KickedBall::getKickTimestamp)
 				.map(ts -> (getWorldFrame().getTimestamp() - ts) / 1e9)
 				.orElse(Double.POSITIVE_INFINITY);
 

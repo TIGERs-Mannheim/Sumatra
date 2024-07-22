@@ -123,7 +123,7 @@ public class OpponentInterceptionRole extends ARole
 					Geometry.getGoalOur().getRightPost());
 			DrawableTriangle dt = new DrawableTriangle(triangle, new Color(125, 125, 125, 100));
 			dt.setFill(true);
-			getAiFrame().getShapeMap().get(EAiShapesLayer.OFFENSIVE_OPPONENT_INTERCEPTION)
+			getAiFrame().getShapeMap().get(EAiShapesLayer.OFFENSE_OPPONENT_INTERCEPTION)
 					.add(dt);
 
 			for (int i = 1; i < getAiFrame().getTacticalField().getOpponentsToBallDistances().size(); i++)

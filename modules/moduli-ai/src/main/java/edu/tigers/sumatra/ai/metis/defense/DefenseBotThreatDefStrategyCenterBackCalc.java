@@ -5,7 +5,6 @@
 package edu.tigers.sumatra.ai.metis.defense;
 
 import com.github.g3force.configurable.Configurable;
-import edu.tigers.sumatra.ai.metis.botdistance.BotDistance;
 import edu.tigers.sumatra.ai.metis.defense.data.DefenseBallThreat;
 import edu.tigers.sumatra.ai.metis.defense.data.DefenseBotThreatDefStrategyData;
 import edu.tigers.sumatra.ai.metis.defense.data.EDefenseBotThreatDefStrategy;
@@ -39,7 +38,6 @@ public class DefenseBotThreatDefStrategyCenterBackCalc extends ADefenseThreatCal
 
 
 	private final Supplier<DefenseBallThreat> defenseBallThreat;
-	private final Supplier<List<BotDistance>> opponentsToBallDist;
 
 
 	@Getter
@@ -67,8 +65,8 @@ public class DefenseBotThreatDefStrategyCenterBackCalc extends ADefenseThreatCal
 		{
 			final Hysteresis hysteresis = opponentDangerZoneHysteresis.computeIfAbsent(bot.getBotId(),
 					botID -> new Hysteresis(0, 1));
-			hysteresis.setLowerThreshold(DefenseThreatRater.getDangerZoneX() - 100);
-			hysteresis.setUpperThreshold(DefenseThreatRater.getDangerZoneX() + 100);
+			hysteresis.setLowerThreshold(DefenseThreatRater.getDangerDropOffX() - 100);
+			hysteresis.setUpperThreshold(DefenseThreatRater.getDangerDropOffX() + 100);
 			hysteresis.update(predictedOpponentPos(bot).x());
 		}
 	}
@@ -92,9 +90,7 @@ public class DefenseBotThreatDefStrategyCenterBackCalc extends ADefenseThreatCal
 
 	private boolean notCloseToBall(final ITrackedBot bot)
 	{
-		return opponentsToBallDist.get().stream()
-				.filter(d -> d.getDist() < opponentsCloseToBallDistance)
-				.noneMatch(d -> d.getBotId().equals(bot.getBotId()));
+		return defenseBallThreat.get().getPos().distanceTo(bot.getPos()) > opponentsCloseToBallDistance;
 	}
 
 

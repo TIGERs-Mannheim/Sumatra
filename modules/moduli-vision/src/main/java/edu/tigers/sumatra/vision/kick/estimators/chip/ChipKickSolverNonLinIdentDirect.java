@@ -137,13 +137,16 @@ public class ChipKickSolverNonLinIdentDirect extends AChipKickSolver
 					.withChipDampingZ(dampZ)
 					.build();
 
+			double tKickOffset = records.get(0).gettCapture() - kickTimestamp;
+			double tKick = records.get(0).getCameraCaptureTimestamp() - tKickOffset;
+
 			var traj = new BallFactory(params)
 					.createTrajectoryFromKickedBallWithoutSpin(kickPosition, kickVel);
 
 			double error = 0;
 			for (CamBall ball : records)
 			{
-				IVector3 trajPos = traj.getMilliStateAtTime((ball.gettCapture() - kickTimestamp) * 1e-9).getPos();
+				IVector3 trajPos = traj.getMilliStateAtTime((ball.getCameraCaptureTimestamp() - tKick) * 1e-9).getPos();
 				IVector2 ground = trajPos.projectToGroundNew(getCameraPosition(ball.getCameraId()));
 
 				error += ball.getFlatPos().distanceTo(ground);

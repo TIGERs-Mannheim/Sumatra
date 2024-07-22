@@ -7,6 +7,7 @@ package edu.tigers.sumatra.sim.collision.ball;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.IVector3;
+import edu.tigers.sumatra.math.vector.Vector2f;
 import edu.tigers.sumatra.math.vector.Vector3f;
 
 import java.util.Optional;
@@ -20,6 +21,11 @@ public interface ICollisionObject
 	default IVector3 getVel()
 	{
 		return Vector3f.ZERO_VECTOR;
+	}
+
+	default IVector2 getSurfaceVel(IVector2 contactPos)
+	{
+		return Vector2f.ZERO_VECTOR;
 	}
 
 
@@ -41,6 +47,11 @@ public interface ICollisionObject
 	default double getDampFactor()
 	{
 		return 0.5;
+	}
+
+	default double getDampFactorOrthogonal()
+	{
+		return 0;
 	}
 
 	default IVector2 stick(IVector2 pos)
@@ -73,10 +84,9 @@ public interface ICollisionObject
 
 
 	/**
-	 * @param prePos
 	 * @return the impulse to add to the ball on a collision
 	 */
-	default IVector3 getImpulse(final IVector3 prePos)
+	default IVector3 getImpulse()
 	{
 		return Vector3f.ZERO_VECTOR;
 	}
@@ -88,5 +98,13 @@ public interface ICollisionObject
 	default BotID getBotID()
 	{
 		return BotID.noBot();
+	}
+
+	/**
+	 * @return if the collision object is a field boundary and therefore can't be chipped over
+	 */
+	default boolean isFieldBoundary()
+	{
+		return false;
 	}
 }

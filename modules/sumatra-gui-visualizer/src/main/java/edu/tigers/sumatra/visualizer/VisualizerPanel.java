@@ -10,6 +10,7 @@ import lombok.Getter;
 import lombok.extern.log4j.Log4j2;
 
 import javax.swing.JPanel;
+import javax.swing.JSplitPane;
 import java.awt.BorderLayout;
 import java.io.Serial;
 
@@ -30,6 +31,8 @@ public class VisualizerPanel extends JPanel
 	private final VisualizerToolbar toolbar = new VisualizerToolbar();
 	@Getter
 	private final ShapeSelectionPanel shapeSelectionPanel = new ShapeSelectionPanel();
+	@Getter
+	private final JSplitPane splitPane = new JSplitPane();
 
 
 	public VisualizerPanel()
@@ -37,7 +40,11 @@ public class VisualizerPanel extends JPanel
 		setLayout(new BorderLayout());
 
 		add(toolbar, BorderLayout.PAGE_START);
-		add(fieldPanel, BorderLayout.CENTER);
-		add(shapeSelectionPanel, BorderLayout.EAST);
+		splitPane.setOrientation(JSplitPane.HORIZONTAL_SPLIT);
+		splitPane.setLeftComponent(fieldPanel);
+		splitPane.setRightComponent(shapeSelectionPanel);
+		add(splitPane, BorderLayout.CENTER);
+
+		splitPane.setResizeWeight(1);
 	}
 }

@@ -12,13 +12,13 @@ dependencies {
     implementation project(':sumatra-model')
     implementation project(':moduli-record')
 
-    implementation 'com.github.TIGERs-Mannheim:infonode:1.7.0'
-    api 'com.github.TIGERs-Mannheim:moduli:4.1'
+    implementation(libs.com.github.TIGERs.mannheim.infonode)
+    api(libs.com.github.TIGERs.mannheim.moduli)
 
-    implementation 'commons-configuration:commons-configuration:1.10'
+    implementation(libs.commons.configuration)
 
-    implementation 'org.apache.logging.log4j:log4j-api:2.20.0'
+    implementation(libs.org.apache.logging.log4j.log4j.api)
 
-    implementation 'com.miglayout:miglayout-swing:11.1'
-    implementation 'com.miglayout:miglayout-core:11.1'
+    implementation(libs.com.miglayout.miglayout.swing)
+    implementation(libs.com.miglayout.miglayout.core)
 }

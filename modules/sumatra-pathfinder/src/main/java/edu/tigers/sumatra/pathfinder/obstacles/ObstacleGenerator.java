@@ -9,11 +9,13 @@ import com.github.g3force.configurable.Configurable;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.geometry.RuleConstraints;
 import edu.tigers.sumatra.ids.BotID;
-import edu.tigers.sumatra.math.circle.Circle;
 import edu.tigers.sumatra.math.rectangle.IRectangle;
 import edu.tigers.sumatra.math.tube.Tube;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
+import edu.tigers.sumatra.movingrobot.AcceleratingRobotFactory;
+import edu.tigers.sumatra.movingrobot.IMovingRobot;
+import edu.tigers.sumatra.pathfinder.EObstacleAvoidanceMode;
 import edu.tigers.sumatra.pathfinder.IMovementCon;
 import edu.tigers.sumatra.referee.data.GameState;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
@@ -29,29 +31,38 @@ import java.util.Optional;
  */
 public class ObstacleGenerator
 {
-	@Configurable(defValue = "200.0", comment = "Default security distance to ball")
-	private static double defaultDistanceToBall = 200;
+	@Configurable(defValue = "50.0", comment = "Default security distance [mm] to ball (in addition to ball radius)")
+	private static double defaultDistanceToBall = 50;
 
-	@Configurable(defValue = "0.5", comment = "Maximum time to which opponent robots are predicted")
-	private static double opponentBotTimeHorizon = 0.5;
+	@Configurable(defValue = "1.0", comment = "Maximum time [s] to which opponent robots are considered")
+	private static double opponentBotTimeHorizon = 1.0;
 
-	@Configurable(defValue = "0.4", comment = "Maximum time to which opponent robots are predicted (const velocity)")
+	@Configurable(defValue = "0.5", comment = "Maximum time [s] to which opponent robots are predicted")
+	private static double opponentBotMaxMovingTimeHorizon = 0.3;
+
+	@Configurable(defValue = "0.1", comment = "Reaction time of opponent [s] for MovingRobots. Predicts constant velocity in this time.")
+	private static double opponentBotReactionTime = 0.1;
+
+	@Configurable(defValue = "0.4", comment = "Maximum time [s] to which opponent robots are predicted (const velocity)")
 	private static double opponentBotTimeHorizonForConstVel = 0.4;
 
-	@Configurable(defValue = "0.2", comment = "Maximum time to which own robots are predicted (when not using trajectory)")
+	@Configurable(defValue = "0.2", comment = "Maximum time [s] to which own robots are predicted (when not using trajectory)")
 	private static double ownBotTimeHorizon = 0.2;
 
-	@Configurable(defValue = "0.5", comment = "Maximum time to which own robots are considered that have higher path priority")
+	@Configurable(defValue = "0.5", comment = "Maximum time [s] to which own robots are considered that have higher path priority")
 	private static double ownBotTimeHorizonOnPrio = 0.5;
 
-	@Configurable(defValue = "0.7", comment = "Min velocity of our bot where it considers opponents as obstacle")
+	@Configurable(defValue = "0.7", comment = "Min velocity [m/s] of our bot where it considers opponents as obstacle")
 	private static double minVelocity = 0.7;
 
-	@Configurable(defValue = "2.0", comment = "Assumed placement pass receive speed for obstacle")
+	@Configurable(defValue = "2.0", comment = "Assumed placement pass receive speed [m/s] for obstacle")
 	private static double placementPassReceiveSpeed = 2.0;
 
-	@Configurable(defValue = "30.0", comment = "Extra margin on the opponent penArea during free kick")
+	@Configurable(defValue = "30.0", comment = "Extra margin [mm] on the opponent penArea during free kick")
 	private static double opponentPenAreaStandardExtraMargin = 30;
+
+	@Configurable(defValue = "true", comment = "Use tube for movingRobot obstacle")
+	private static boolean useTubeForMovingRobot = true;
 
 
 	private IMovementCon moveCon;
@@ -113,19 +124,13 @@ public class ObstacleGenerator
 
 	private IObstacle selectObstacleForOurBot(WorldFrame wFrame, BotID botId, ITrackedBot bot)
 	{
-		double radius = (2 * Geometry.getBotRadius()) - 10;
+		double radius = 2 * Geometry.getBotRadius();
 		var trajectory = bot.getRobotInfo().getTrajectory();
 		if (trajectory.isEmpty())
 		{
 			var tube = Tube.create(bot.getPos(), bot.getPosByTime(ownBotTimeHorizon), radius);
-			return new TubeObstacle(bot.getBotId().getSaveableString(), tube).setMotionLess(false);
-		}
-
-		if (moveCon.getPrioMap().isPreferred(botId, bot.getBotId()))
-		{
-			var circle = Circle.createCircle(bot.getPos(), radius);
-			var obs = new GenericCircleObstacle(bot.getBotId().getSaveableString(), circle);
-			return new LimitedTimeObstacle(obs, ownBotTimeHorizonOnPrio);
+			// assume a static (motionless) obstacle, as we may have no control over the robot without a trajectory
+			return new TubeObstacle(bot.getBotId().getSaveableString(), tube);
 		}
 
 		var trajectoryAge = (wFrame.getTimestamp() - bot.getTimestamp()) / 1e9;
@@ -133,8 +138,21 @@ public class ObstacleGenerator
 		var tStart = Math.min(trajectoryAge, traj.getTotalTime());
 		var extraMarginBase = 0;
 		var maxSpeed = traj.getMaxSpeed();
-		return new TrajAwareRobotObstacle(bot.getBotId(), traj, radius, tStart, extraMarginBase)
+		var obs = new TrajAwareRobotObstacle(bot.getBotId(), traj, radius, tStart, extraMarginBase)
 				.setMaxSpeed(maxSpeed);
+
+		obs.setOrderId(IObstacle.BOT_OUR_ORDER_ID);
+
+		if (moveCon.getObstacleAvoidanceMode() == EObstacleAvoidanceMode.AGGRESSIVE)
+		{
+			obs.setUseDynamicMargin(false);
+		}
+
+		if (moveCon.getPrioMap().isPreferred(botId, bot.getBotId()))
+		{
+			return new LimitedTimeObstacle(obs, ownBotTimeHorizonOnPrio);
+		}
+		return obs.setHasPriority(true);
 	}
 
 
@@ -143,6 +161,7 @@ public class ObstacleGenerator
 		return wFrame.getOpponentBots().values().stream()
 				.filter(tBot -> !moveCon.getIgnoredBots().contains(tBot.getBotId()))
 				.map(this::opponentObstacle)
+				.map(o -> (IObstacle) new LimitedTimeObstacle(o, opponentBotTimeHorizon))
 				.toList();
 	}
 
@@ -150,18 +169,25 @@ public class ObstacleGenerator
 	private IObstacle opponentObstacle(ITrackedBot tBot)
 	{
 		return switch (moveCon.getObstacleAvoidanceMode())
-				{
-					case NORMAL -> movingRobotObstacle(tBot);
-					case AGGRESSIVE -> constVelocityObstacle(tBot);
-				};
+		{
+			case NORMAL -> movingRobotObstacle(tBot);
+			case AGGRESSIVE -> constVelocityObstacle(tBot);
+		};
 	}
 
 
 	private IObstacle movingRobotObstacle(ITrackedBot tBot)
 	{
-		MovingRobot movingRobot = movingRobot(tBot);
-		return new MovingRobotTubeObstacle(tBot.getBotId(), movingRobot, minVelocity)
-				.setMaxSpeed(movingRobot.getMaxSpeed());
+		IMovingRobot movingRobot = movingRobot(tBot);
+		if (useTubeForMovingRobot)
+		{
+			return new MovingRobotTubeObstacle(tBot.getBotId(), movingRobot, minVelocity, opponentBotMaxMovingTimeHorizon)
+					.setMaxSpeed(tBot.getMoveConstraints().getVelMax())
+					.setOrderId(IObstacle.BOT_THEIR_ORDER_ID);
+		}
+		return new MovingRobotObstacle(tBot.getBotId(), movingRobot, minVelocity, opponentBotMaxMovingTimeHorizon)
+				.setMaxSpeed(tBot.getMoveConstraints().getVelMax())
+				.setOrderId(IObstacle.BOT_THEIR_ORDER_ID);
 	}
 
 
@@ -173,20 +199,22 @@ public class ObstacleGenerator
 				2 * Geometry.getBotRadius(),
 				opponentBotTimeHorizonForConstVel,
 				minVelocity
-		).setMaxSpeed(tBot.getVel().getLength2());
+		)
+				.setMaxSpeed(tBot.getVel().getLength2())
+				.setOrderId(IObstacle.BOT_THEIR_ORDER_ID);
 	}
 
 
-	private MovingRobot movingRobot(ITrackedBot tBot)
+	private IMovingRobot movingRobot(ITrackedBot tBot)
 	{
 		double speed = tBot.getVel().getLength2();
-		return new MovingRobot(
+		return AcceleratingRobotFactory.create(
 				tBot.getPos(),
 				speed < 0.5 ? Vector2.zero() : tBot.getVel(),
 				Math.max(tBot.getMoveConstraints().getVelMax(), speed),
 				tBot.getMoveConstraints().getAccMax(),
-				opponentBotTimeHorizon,
-				2 * Geometry.getBotRadius()
+				2 * Geometry.getBotRadius(),
+				opponentBotReactionTime
 		);
 	}
 
@@ -219,7 +247,10 @@ public class ObstacleGenerator
 		if (moveCon.isBallObstacle())
 		{
 			double distanceToBall = Optional.ofNullable(moveCon.getDistanceToBall()).orElse(defaultDistanceToBall);
-			obstacles.add(new SimpleTimeAwareBallObstacle(wFrame.getBall().getTrajectory(), distanceToBall));
+			obstacles.add(new SimpleTimeAwareBallObstacle(
+					wFrame.getBall().getTrajectory(),
+					Geometry.getBallRadius() + Geometry.getBotRadius() + distanceToBall
+			).setOrderId(IObstacle.BALL_ORDER_ID));
 		}
 
 		if (moveCon.isGameStateObstacle())
@@ -253,7 +284,8 @@ public class ObstacleGenerator
 			} else
 			{
 				obs.add(new TubeObstacle("placement",
-						Tube.create(ballPos, placementPos, getEffectiveBotToBallDistanceOnStop())));
+						Tube.create(ballPos, placementPos, getEffectiveBotToBallDistanceOnStop()))
+						.setOrderId(IObstacle.BALL_ORDER_ID));
 			}
 		}
 
@@ -276,7 +308,7 @@ public class ObstacleGenerator
 				trajectory,
 				getEffectiveBotToBallDistanceOnStop(),
 				tEnd
-		);
+		).setOrderId(IObstacle.BALL_ORDER_ID);
 	}
 
 

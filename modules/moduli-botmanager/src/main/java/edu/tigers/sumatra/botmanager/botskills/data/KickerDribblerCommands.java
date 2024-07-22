@@ -33,53 +33,73 @@ public class KickerDribblerCommands
 	private EKickerDevice device = EKickerDevice.STRAIGHT;
 	private EKickerMode mode = EKickerMode.DISARM;
 	private double origDribblerSpeed = 0;
-	private double origDribblerMaxCurrent = 3.0;
+	private double origDribblerForce = 3.0;
 
 
 	/**
-	 * @param speed Dribbler speed in RPM.
-	 * @note Speed must always be positive and can only represent steps of 1000 RPM.
+	 * @param speed Dribbling bar surface speed in m/s.
+	 * @note Speed must always be positive and can only represent steps of 0.25m/s.
 	 */
 	private void setDribblerSpeed(final double speed)
 	{
-		origDribblerSpeed = speed;
-
-		if (speed >= 0)
+		if(speed > 7.75)
 		{
-			int bits = ((int) (speed + 500.0)) / 1000;
+			log.warn("dribble speed is > 7.75: {}", speed, new Exception());
+			origDribblerSpeed = 7.75;
+		}
+		else if (speed >= 0)
+		{
+			origDribblerSpeed = speed;
+		}
+		else
+		{
+			log.warn("dribble speed is < 0: {}", speed, new Exception());
+			origDribblerSpeed = 0;
+		}
 
-			dribbler &= 0xF0;
-			dribbler |= (bits >> 1) & 0x0F;
+		int bits = (int) (origDribblerSpeed * 4.0 + 0.5);
 
-			if (mode != EKickerMode.ARM_TIME)
-			{
-				flags &= 0xFD;
-				flags |= (bits & 0x01) << 1;
-			}
+		dribbler &= 0xF0;
+		dribbler |= (bits >> 1) & 0x0F;
+
+		if (mode != EKickerMode.ARM_TIME)
+		{
+			flags &= 0xFD;
+			flags |= (bits & 0x01) << 1;
 		}
 	}
 
 
 	/**
-	 * @param maxCurrent Dribbler maximum current in [A].
-	 * @note Current ranges from 0.0 - 15.5A and can only represent steps of 0.5A.
+	 * @param force Dribbler maximum force in [N].
+	 * @note Force ranges from 0.0 - 15.5N and can only represent steps of 0.5N.
 	 */
-	private void setDribblerMaxCurrent(final double maxCurrent)
+	private void setDribblerForce(final double force)
 	{
-		origDribblerMaxCurrent = maxCurrent;
-
-		if (maxCurrent >= 0)
+		if(force > 15.5)
 		{
-			int bits = (int) ((maxCurrent + 0.25) * 2.0);
+			log.warn("dribble force is > 15.5: {}", force, new Exception());
+			origDribblerForce = 15.5;
+		}
+		else if (force >= 0)
+		{
+			origDribblerForce = force;
+		}
+		else
+		{
+			log.warn("dribble force is < 0: {}", force, new Exception());
+			origDribblerForce = 0;
+		}
 
-			dribbler &= 0x0F;
-			dribbler |= (bits << 3) & 0xF0;
+		int bits = (int) (origDribblerForce * 2.0 + 0.5);
 
-			if (mode != EKickerMode.ARM_TIME)
-			{
-				flags &= 0xFB;
-				flags |= (bits & 0x01) << 2;
-			}
+		dribbler &= 0x0F;
+		dribbler |= (bits << 3) & 0xF0;
+
+		if (mode != EKickerMode.ARM_TIME)
+		{
+			flags &= 0xFB;
+			flags |= (bits & 0x01) << 2;
 		}
 	}
 
@@ -87,13 +107,13 @@ public class KickerDribblerCommands
 	/**
 	 * Set dribbler details.
 	 *
-	 * @param speed      [rpm], 0 - 31000, steps 1000
-	 * @param maxCurrent [A], 0.0 - 15.5, steps 0.5
+	 * @param speed [m/s], 0 - 7.75, steps 0.25
+	 * @param force [N], 0.0 - 15.5, steps 0.5
 	 */
-	public void setDribbler(final double speed, final double maxCurrent)
+	public void setDribbler(final double speed, final double force)
 	{
 		setDribblerSpeed(speed);
-		setDribblerMaxCurrent(maxCurrent);
+		setDribblerForce(force);
 	}
 
 
@@ -117,11 +137,11 @@ public class KickerDribblerCommands
 	{
 		if (kickSpeed < 0)
 		{
-			log.warn("Kickspeed is < 0: " + kickSpeed);
+			log.warn("Kickspeed is < 0: {}", kickSpeed, new Exception());
 			origKickSpeed = 0;
 		} else if (kickSpeed > 10 && mode != EKickerMode.ARM_TIME)
 		{
-			log.warn("Kickspeed is > 10: " + kickSpeed);
+			log.warn("Kickspeed is > 10: {}", kickSpeed, new Exception());
 			origKickSpeed = 10;
 		} else
 		{
@@ -166,13 +186,13 @@ public class KickerDribblerCommands
 
 			this.kickSpeed = timeIn10Us & 0xFF;
 			flags = (timeIn10Us & 0x700) >> 7;
-			flags |= device | (mode << 4);
 		} else
 		{
 			this.kickSpeed = (int) ((kickSpeed / 0.04) + 0.5);
 			flags &= 0x0E;
-			flags |= device | (mode << 4);
 		}
+
+		flags |= device | (mode << 4);
 	}
 
 
@@ -204,7 +224,7 @@ public class KickerDribblerCommands
 
 
 	/**
-	 * @return the origDribblerSpeed
+	 * @return the origDribblerSpeed [m/s]
 	 */
 	public final double getDribblerSpeed()
 	{
@@ -215,8 +235,8 @@ public class KickerDribblerCommands
 	/**
 	 * @return the origDribblerMaxCurrent
 	 */
-	public final double getDribblerMaxCurrent()
+	public final double getDribblerForce()
 	{
-		return origDribblerMaxCurrent;
+		return origDribblerForce;
 	}
 }

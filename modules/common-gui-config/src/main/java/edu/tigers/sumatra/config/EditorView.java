@@ -4,9 +4,12 @@
 
 package edu.tigers.sumatra.config;
 
+import edu.tigers.sumatra.model.SumatraModel;
 import edu.tigers.sumatra.treetable.ITreeTableModel;
 import edu.tigers.sumatra.treetable.JTreeTable;
+import edu.tigers.sumatra.treetable.NodeNameAndObjectTreePath;
 import org.apache.commons.configuration.HierarchicalConfiguration;
+import org.apache.commons.configuration.tree.ConfigurationNode;
 
 import javax.swing.AbstractAction;
 import javax.swing.Action;
@@ -17,7 +20,10 @@ import javax.swing.JButton;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.ScrollPaneConstants;
+import javax.swing.SwingUtilities;
 import javax.swing.event.TableModelEvent;
+import javax.swing.event.TreeExpansionEvent;
+import javax.swing.event.TreeExpansionListener;
 import java.awt.event.ActionEvent;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -32,23 +38,17 @@ public class EditorView extends JPanel
 	private static final long serialVersionUID = -7098099480668190062L;
 
 	private static final boolean DISABLE_APPLY = false;
-
-	private boolean wasLoaded = false;
-
 	private final String configKey;
-
-
-	private transient ITreeTableModel model;
 	private final JTreeTable treetable;
-
 	private final Action applyAction;
 	private final Action saveAction;
-
 	private final List<IConfigEditorViewObserver> observers = new CopyOnWriteArrayList<>();
+	private boolean wasLoaded = false;
+	private transient ITreeTableModel model;
+	private boolean listenForExpansionEvents = false;
 
 
-	public EditorView(final String title, final String configKey, final HierarchicalConfiguration config,
-			final boolean editable)
+	public EditorView(final String title, final String configKey, final HierarchicalConfiguration config)
 	{
 		super();
 		this.configKey = configKey;
@@ -127,7 +127,6 @@ public class EditorView extends JPanel
 
 		// Finally: Add model
 		model = new ConfigXMLTreeTableModel(config);
-		model.setEditable(editable);
 		treetable = new JTreeTable(model);
 		treetable.getModel().addTableModelListener(event -> {
 			if ((event.getType() == TableModelEvent.UPDATE) && (event.getFirstRow() == event.getLastRow()))
@@ -135,26 +134,49 @@ public class EditorView extends JPanel
 				markDirty();
 			}
 		});
+		listenForExpansionEvents = false;
+		treetable.getTree().addTreeExpansionListener(new MyTreeExpansionListener());
 		scrollpane.add(treetable);
 		scrollpane.setViewportView(treetable);
 	}
 
 
 	/**
-	 * @param config
-	 * @param editable
+	 * @param model
 	 */
-	public void updateModel(final HierarchicalConfiguration config, final boolean editable)
+	public void updateModel(ConfigXMLTreeTableModel model, boolean modelIsFiltered)
 	{
-		model = new ConfigXMLTreeTableModel(config);
-		model.setEditable(editable);
+		this.model = model;
 		treetable.setTreeTableModel(model);
+		treetable.getTree().addTreeExpansionListener(new MyTreeExpansionListener());
 		treetable.getModel().addTableModelListener(event -> {
 			if ((event.getType() == TableModelEvent.UPDATE) && (event.getFirstRow() == event.getLastRow()))
 			{
 				markDirty();
 			}
 		});
+		if (modelIsFiltered)
+		{
+			listenForExpansionEvents = false;
+			model.getAllTreePaths()
+					.forEach(pair -> SwingUtilities.invokeLater(() -> treetable.getTree().expandPath(pair.objectPath())));
+		} else
+		{
+			listenForExpansionEvents = false;
+			model.getAllTreePaths().forEach(this::applyExpansions);
+			listenForExpansionEvents = true;
+		}
+	}
+
+
+	private void applyExpansions(NodeNameAndObjectTreePath pair)
+	{
+		var expanded = SumatraModel.getInstance()
+				.getUserProperty(EditorView.class, pair.nodeNamePath().toString(), false);
+		if (expanded)
+		{
+			SwingUtilities.invokeLater(() -> treetable.getTree().expandPath(pair.objectPath()));
+		}
 	}
 
 
@@ -183,6 +205,7 @@ public class EditorView extends JPanel
 
 		reload();
 	}
+
 
 	public void reload()
 	{
@@ -253,6 +276,8 @@ public class EditorView extends JPanel
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
+
+
 	/**
 	 * @return
 	 */
@@ -260,4 +285,50 @@ public class EditorView extends JPanel
 	{
 		return configKey;
 	}
+
+
+	private class MyTreeExpansionListener implements TreeExpansionListener
+	{
+		@Override
+		public void treeCollapsed(TreeExpansionEvent event)
+		{
+			if (!listenForExpansionEvents)
+			{
+				return;
+			}
+			var obj = event.getPath().getLastPathComponent();
+			if (obj instanceof ConfigurationNode node)
+			{
+				iterateChildrenToCollapse(node);
+			}
+			var path = model.getNodeNameTreePathFromObjectTreePath(event.getPath());
+			path.ifPresent(p -> SumatraModel.getInstance().setUserProperty(EditorView.class, p.toString(), null));
+		}
+
+
+		private void iterateChildrenToCollapse(ConfigurationNode node)
+		{
+			for (var child : node.getChildren())
+			{
+				var path = model.getNodeNameTreePathToRoot(child);
+				path.ifPresent(p -> SumatraModel.getInstance().setUserProperty(EditorView.class, p.toString(), null));
+				iterateChildrenToCollapse(child);
+			}
+		}
+
+
+		@Override
+		public void treeExpanded(TreeExpansionEvent event)
+		{
+			if (!listenForExpansionEvents)
+			{
+				return;
+			}
+			var path = model.getNodeNameTreePathFromObjectTreePath(event.getPath());
+			path.ifPresent(p -> SumatraModel.getInstance().setUserProperty(EditorView.class, p.toString(), true));
+		}
+
+
+	}
+
 }

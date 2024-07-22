@@ -22,10 +22,6 @@ public enum EOffensiveActionMove implements IInstanceableEnum
 	 */
 	REDIRECT_GOAL_KICK(new InstanceableClass<>(RedirectGoalKickActionMove.class)),
 	/**
-	 * Do a chop trick
-	 */
-	CHOP_TRICK(new InstanceableClass<>(ChopTrickActionMove.class)),
-	/**
 	 * Direct kick on the opponent goal
 	 */
 	FINISHER(new InstanceableClass<>(FinisherActionMove.class)),
@@ -37,10 +33,6 @@ public enum EOffensiveActionMove implements IInstanceableEnum
 	 * Pass is forced in standard situations
 	 */
 	FORCED_PASS(new InstanceableClass<>(ForcedPassActionMove.class)),
-	/**
-	 * Free the ball when its dangerous and near our penalty area
-	 */
-	CLEARING_KICK(new InstanceableClass<>(ClearingKickActionMove.class)),
 	/**
 	 * A standard pass to another friendly robot
 	 */

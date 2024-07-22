@@ -16,12 +16,12 @@ dependencies {
     implementation project(':moduli-botmanager')
     implementation project(':moduli-botmanager-tigers')
 
-    implementation 'com.github.TIGERs-Mannheim:moduli:4.1'
-    implementation 'commons-lang:commons-lang:2.6'
+    implementation(libs.com.github.TIGERs.mannheim.moduli)
+    implementation(libs.commons.lang)
 
-    implementation 'org.apache.logging.log4j:log4j-api:2.20.0'
+    implementation(libs.org.apache.logging.log4j.log4j.api)
 
-    implementation 'net.sf.jchart2d:jchart2d:3.3.2'
-    implementation 'com.googlecode.json-simple:json-simple:1.1.1'
-    implementation 'com.miglayout:miglayout-swing:11.1'
+    implementation(libs.net.sf.jchart2d)
+    implementation(libs.com.googlecode.json.simple)
+    implementation(libs.com.miglayout.miglayout.swing)
 }

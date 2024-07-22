@@ -17,7 +17,7 @@ import java.util.List;
 /**
  * Passing between two robots.
  */
-public class PassToEachOtherPlay extends ARedirectPlay
+public class PassToEachOtherPlay extends APassingPlay
 {
 	@Setter
 	private IVector2 p1;
@@ -42,7 +42,7 @@ public class PassToEachOtherPlay extends ARedirectPlay
 	{
 		super.doUpdateAfterRoles();
 
-		var shapes = getAiFrame().getShapeMap().get(EAiShapesLayer.TEST_KICK);
+		var shapes = getAiFrame().getShapeMap().get(EAiShapesLayer.TEST_PASSING);
 		shapes.add(new DrawableLine(p1, p2, Color.green));
 	}
 

@@ -20,20 +20,16 @@ public abstract class APassRater implements IPassRater
 	private List<IDrawableShape> shapes;
 
 
-	protected void draw(Supplier<IDrawableShape> shapeSupplier)
+	/**
+	 * Draw a shape, if drawing is enabled.
+	 *
+	 * @param shapeSupplier
+	 */
+	protected final void draw(Supplier<IDrawableShape> shapeSupplier)
 	{
 		if (shapes != null)
 		{
 			shapes.add(shapeSupplier.get());
-		}
-	}
-
-
-	protected void drawAll(List<IDrawableShape> shapelist)
-	{
-		if (shapes != null)
-		{
-			shapes.addAll(shapelist);
 		}
 	}
 }

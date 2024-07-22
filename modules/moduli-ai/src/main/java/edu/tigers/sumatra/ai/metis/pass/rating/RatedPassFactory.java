@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.metis.pass.rating;
@@ -22,8 +22,8 @@ import java.util.Map;
  */
 public class RatedPassFactory
 {
-
 	private final Map<EPassRating, IPassRater> passRaters = new EnumMap<>(EPassRating.class);
+
 
 	public RatedPassFactory()
 	{
@@ -32,19 +32,27 @@ public class RatedPassFactory
 	}
 
 
-	public void update(Collection<ITrackedBot> consideredBots)
+	public void update(Collection<ITrackedBot> consideredBots, Collection<ITrackedBot> consideredBotsIntercept)
 	{
-		passRaters.put(EPassRating.INTERCEPTION, new PassInterceptionMovingRobotRater(consideredBots));
+		passRaters.put(EPassRating.INTERCEPTION, new PassInterceptionMovingRobotRater(consideredBotsIntercept));
 		passRaters.put(EPassRating.REFLECT_GOAL_KICK, new ReflectorRater(consideredBots));
 		passRaters.put(EPassRating.GOAL_KICK, new GoalRater(consideredBots));
 	}
 
 
-	public void updateDynamic(Collection<ITrackedBot> consideredBots,
-			PassStats passStats, OffensiveZones offensiveZones)
+	public void updateDynamic(
+			Collection<ITrackedBot> consideredBots,
+			Collection<ITrackedBot> consideredBotsIntercept,
+			PassStats passStats,
+			OffensiveZones offensiveZones
+	)
 	{
-
-		passRaters.put(EPassRating.INTERCEPTION, new DynamicPassInterceptionMovingRobotRater(consideredBots, passStats, offensiveZones));
+		passRaters.put(EPassRating.INTERCEPTION, new DynamicPassInterceptionMovingRobotRater(
+				consideredBots,
+				consideredBotsIntercept,
+				passStats,
+				offensiveZones
+		));
 		passRaters.put(EPassRating.REFLECT_GOAL_KICK, new ReflectorRater(consideredBots));
 		passRaters.put(EPassRating.GOAL_KICK, new GoalRater(consideredBots));
 	}
@@ -70,5 +78,11 @@ public class RatedPassFactory
 	public void setShapes(List<IDrawableShape> shapes)
 	{
 		passRaters.values().forEach(r -> r.setShapes(shapes));
+	}
+
+
+	public void drawShapes(List<IDrawableShape> shapes)
+	{
+		passRaters.values().forEach(r -> r.drawShapes(shapes));
 	}
 }

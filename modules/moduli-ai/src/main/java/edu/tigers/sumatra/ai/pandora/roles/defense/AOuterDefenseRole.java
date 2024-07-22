@@ -6,16 +6,20 @@ package edu.tigers.sumatra.ai.pandora.roles.defense;
 
 import com.github.g3force.configurable.Configurable;
 import edu.tigers.sumatra.ai.metis.defense.data.IDefenseThreat;
+import edu.tigers.sumatra.ai.metis.offense.action.EOffensiveActionType;
 import edu.tigers.sumatra.ai.pandora.roles.ERole;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.AngleMath;
 import edu.tigers.sumatra.math.line.ILineSegment;
 import edu.tigers.sumatra.math.vector.IVector2;
-import edu.tigers.sumatra.math.vector.Vector2f;
 import edu.tigers.sumatra.pathfinder.EObstacleAvoidanceMode;
+import edu.tigers.sumatra.pathfinder.obstacles.IObstacle;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 
@@ -32,6 +36,8 @@ public abstract class AOuterDefenseRole extends ADefenseRole
 	@Setter
 	@Getter
 	protected IDefenseThreat threat = null;
+	@Getter(AccessLevel.PROTECTED)
+	private Destination defendDestination;
 
 
 	protected AOuterDefenseRole(final ERole type)
@@ -40,10 +46,17 @@ public abstract class AOuterDefenseRole extends ADefenseRole
 	}
 
 
-	protected abstract Set<BotID> ignoredBots(IVector2 dest);
+	@Override
+	protected void beforeUpdate()
+	{
+		defendDestination = findDest();
+	}
 
 
-	protected abstract IVector2 findDest();
+	protected abstract Set<BotID> ignoredBots();
+
+
+	protected abstract Destination findDest();
 
 
 	protected ILineSegment protectionLine()
@@ -76,6 +89,26 @@ public abstract class AOuterDefenseRole extends ADefenseRole
 	}
 
 
+	protected List<IObstacle> offensePassObstacles()
+	{
+		return getAiFrame().getTacticalField().getPrimaryPassObstacles().entrySet().stream()
+				.filter(entry -> avoidKickFromAction(entry.getKey()))
+				.map(Map.Entry::getValue)
+				.flatMap(List::stream)
+				.toList();
+	}
+
+
+	private boolean avoidKickFromAction(EOffensiveActionType type)
+	{
+		return switch (type)
+		{
+			case REDIRECT_KICK, PASS -> true;
+			default -> false;
+		};
+	}
+
+
 	protected boolean isNotBetweenBallAndGoal()
 	{
 		IVector2 ball2Bot = getPos().subtractNew(getBall().getPos());
@@ -93,12 +126,18 @@ public abstract class AOuterDefenseRole extends ADefenseRole
 		{
 			skill.setKickParams(calcKickParams());
 
-			final IVector2 destination = moveToValidDest(findDest());
-			skill.updateDestination(destination);
+			skill.updateDestination(defendDestination.validPos());
 			skill.updateTargetAngle(protectionTargetAngle());
+			skill.setComeToAStop(defendDestination.comeToAStopIsFaster());
 
-			skill.getMoveCon().setBallObstacle(isNotBetweenBallAndGoal());
-			skill.getMoveCon().setIgnoredBots(ignoredBots(destination));
+			skill.getMoveCon().setIgnoredBots(ignoredBots());
+			if (isNotBetweenBallAndGoal())
+			{
+				skill.getMoveCon().setCustomObstacles(offensePassObstacles());
+			} else
+			{
+				skill.getMoveCon().setCustomObstacles(List.of());
+			}
 
 			if (threat.getObjectId().isBall())
 			{
@@ -109,17 +148,6 @@ public abstract class AOuterDefenseRole extends ADefenseRole
 			}
 
 			skill.getMoveConstraints().setFastMove(useFastMove());
-			skill.getMoveConstraints().setPrimaryDirection(primaryDirection());
-		}
-
-
-		private IVector2 primaryDirection()
-		{
-			if (!skill.getMoveConstraints().isFastMove() && isNotBetweenBallAndGoal())
-			{
-				return threat.getThreatLine().directionVector();
-			}
-			return Vector2f.ZERO_VECTOR;
 		}
 
 

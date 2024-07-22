@@ -26,6 +26,7 @@ import edu.tigers.sumatra.math.vector.Vector2f;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
 import edu.tigers.sumatra.wp.data.WorldFrame;
 import lombok.Getter;
+import lombok.Setter;
 
 import java.awt.Color;
 import java.text.DecimalFormat;
@@ -34,6 +35,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 
 /**
@@ -56,22 +58,24 @@ public class BestGoalKickRater
 	@Configurable(comment = "[0-1] Defender might not be able to drive perfectly as soon as kick detected (1 -> perfect driving)", defValue = "0.9")
 	private static double noneOptimalDriveFactor = 0.9;
 
-	private final IColorPicker colorPicker = ColorPickerFactory.greenRedGradient();
-	private final KickFactory kickFactory = new KickFactory();
-
-	private AngleRangeRater angleRangeRater;
-
-	private WorldFrame worldFrame;
-
-	@Getter
-	private List<IDrawableShape> shapes = new ArrayList<>();
-
-	private Map<BotID, GoalKick> previousBestGoalKickPerBot;
-
 	static
 	{
 		ConfigRegistration.registerClass("metis", BestGoalKickRater.class);
 	}
+
+	private final IColorPicker colorPicker = ColorPickerFactory.greenRedGradient();
+	private final KickFactory kickFactory = new KickFactory();
+	private AngleRangeRater angleRangeRater;
+	private WorldFrame worldFrame;
+
+	@Setter
+	private double waitTime = 0.0;
+
+
+	@Getter
+	private List<IDrawableShape> shapes = new ArrayList<>();
+	private Map<BotID, GoalKick> previousBestGoalKickPerBot;
+
 
 	public void update(WorldFrame worldFrame)
 	{
@@ -86,13 +90,16 @@ public class BestGoalKickRater
 		this.worldFrame = worldFrame;
 		kickFactory.update(worldFrame);
 		angleRangeRater = AngleRangeRater.forGoal(Geometry.getGoalTheir());
-		angleRangeRater.setObstacles(worldFrame.getOpponentBots().values());
 		angleRangeRater.setNoneOptimalDriveFactor(noneOptimalDriveFactor);
 	}
 
 
 	public Optional<GoalKick> rateKickOrigin(final KickOrigin kickOrigin)
 	{
+		angleRangeRater.setObstacles(
+				Stream.concat(worldFrame.getOpponentBots().values().stream(),
+						worldFrame.getTigerBotsAvailable().values().stream()
+								.filter(e -> e.getBotId() != kickOrigin.getShooter())).toList());
 		Optional<GoalKick> goalKick = rateKickOriginComplex(kickOrigin);
 		goalKick.ifPresent(this::drawBestKick);
 		return goalKick;
@@ -239,6 +246,11 @@ public class BestGoalKickRater
 	{
 		final double timeToKick = calcRotationTime(data, targetAngle);
 		setAngleRangeRaterTimeToKick(data, timeToKick);
+		var potentialGoalTime = potentialGoalTimeCalc(data, timeToKick);
+		if (waitTime - potentialGoalTime > 0)
+		{
+			return Optional.empty();
+		}
 		var reachableTargets = angleRangeRater.rateMultiple(data.kickOrigin.getPos()).stream()
 				.filter(ratedTarget -> willRatedTargetBeReached(botRotationDirection, data, targetAngle, ratedTarget))
 				.toList();
@@ -253,6 +265,15 @@ public class BestGoalKickRater
 		return reachableTargets.stream().max(Comparator.comparingDouble(IRatedTarget::getScore));
 	}
 
+
+	private double potentialGoalTimeCalc(final BestGoalKickRaterData data, final double timeToKick)
+	{
+		final double freeTimeToRotate = Double.isInfinite(data.kickOrigin.getImpactTime()) ?
+				0.0 :
+				data.kickOrigin.getImpactTime();
+		var rotationTime = Math.max(0.0, timeToKick - freeTimeToRotate);
+		return rotationTime + freeTimeToRotate;
+	}
 
 	private boolean willRatedTargetBeReached(final ERotationDirection botRotationDirection,
 			final BestGoalKickRaterData data, final double futureBotAngle, final IRatedTarget ratedTarget)
@@ -296,8 +317,6 @@ public class BestGoalKickRater
 				data.bot.getMoveConstraints().getAccMaxW()
 		);
 	}
-
-
 
 
 	private boolean isBallRedirectReasonable(KickOrigin kickOrigin, final IVector2 target)

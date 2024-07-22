@@ -14,23 +14,23 @@ import edu.tigers.sumatra.cam.data.CamRobot;
 
 /**
  * This frame _might_ contain data from multiple camera frames
- * 
+ *
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  */
 @Persistent
 public class ExtendedCamDetectionFrame extends CamDetectionFrame
 {
 	private final CamBall ball;
-	
-	
+
+
 	@SuppressWarnings("unused")
 	private ExtendedCamDetectionFrame()
 	{
 		super();
 		ball = null;
 	}
-	
-	
+
+
 	/**
 	 * @param frame
 	 * @param ball
@@ -40,8 +40,8 @@ public class ExtendedCamDetectionFrame extends CamDetectionFrame
 		super(frame);
 		this.ball = ball;
 	}
-	
-	
+
+
 	/**
 	 * @param frameId
 	 * @param frame
@@ -54,13 +54,14 @@ public class ExtendedCamDetectionFrame extends CamDetectionFrame
 			final List<CamBall> balls, final List<CamRobot> yellowBots, final List<CamRobot> blueBots,
 			final CamBall ball)
 	{
-		super(frame.gettCapture(), frame.gettSent(), frame.getCameraId(), frame.getCamFrameNumber(), frameId, balls,
+		super(frame.gettCapture(), frame.gettSent(), frame.getTCaptureCamera(), frame.getCameraId(),
+				frame.getCamFrameNumber(), frameId, balls,
 				yellowBots,
 				blueBots);
 		this.ball = ball;
 	}
-	
-	
+
+
 	/**
 	 * @return the ball
 	 */

@@ -27,6 +27,7 @@ public enum ECheeringPlays implements IInstanceableEnum, IEvent
 	MACARENA(new InstanceableClass<>(MacarenaCheeringPlay.class)),
 	TIGER(new InstanceableClass<>(TigerCheeringPlay.class)),
 	CIRCLE(new InstanceableClass<>(CircleCheeringPlay.class)),
+	TETRIS(new InstanceableClass<>(TetrisCheeringPlay.class)),
 	;
 
 	private final InstanceableClass<?> instanceableClass;
@@ -38,6 +39,10 @@ public enum ECheeringPlays implements IInstanceableEnum, IEvent
 
 		for (ECheeringPlays play : ECheeringPlays.values())
 		{
+			if (play == CIRCLE)
+			{
+				continue;
+			}
 			try
 			{
 				plays.add((ICheeringPlay) play.getInstanceableClass().newInstance());

@@ -71,11 +71,11 @@ public class TigersBaseStation extends ABaseStation
 	@Configurable(spezis = { "ROBOCUP", "LAB", "ANDRE", "TISCH", "NICOLAI" }, defValue = "80")
 	private static int channel = 0;
 
-	@Configurable(comment = "Fix the runtime regardless of the number of bot that are connected.", defValue = "true")
-	private static boolean fixedRuntime = true;
+	@Configurable(comment = "Fix the runtime regardless of the number of bot that are connected.", defValue = "false")
+	private static boolean fixedRuntime = false;
 
-	@Configurable(comment = "Max communication slots to open for communication to bots", defValue = "12")
-	private static int maxBots = 12;
+	@Configurable(comment = "Max communication slots to open for communication to bots", defValue = "16")
+	private static int maxBots = 16;
 
 	private final UnicastTransceiverUDP transceiver = new UnicastTransceiverUDP();
 	private final Watchdog watchdog = new Watchdog(BASE_STATION_TIMEOUT, "TIGERs BS", this::handleTimeoutEvent);

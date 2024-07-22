@@ -51,6 +51,7 @@ public class BallState implements IMirrorable<BallState>
 	/**
 	 * The spin of the ball in [rad/s], positive spin corresponds to positive linear velocity
 	 */
+	@NonNull
 	IVector2 spin;
 
 

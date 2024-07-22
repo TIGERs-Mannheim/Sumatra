@@ -223,6 +223,19 @@ public final class SumatraMath
 
 
 	/**
+	 * Add a magnitude to the absolute of a value.
+	 *
+	 * @param baseValue the base value
+	 * @param offset    the magnitude to add to the absolute of the base value
+	 * @return the result
+	 */
+	public static double addMagnitude(double baseValue, double offset)
+	{
+		return Math.signum(baseValue) * (Math.abs(baseValue) + offset);
+	}
+
+
+	/**
 	 * Solves for the real roots of a quadratic equation with real
 	 * coefficients. The quadratic equation is of the form
 	 * <p>

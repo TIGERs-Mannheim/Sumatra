@@ -90,9 +90,9 @@ public class LogfilePanel extends JPanel
 		final JButton btnNextMuch = new JButton(">>>");
 		btnNextMuch.addActionListener(new StepAction(100));
 
-		final JButton btnSkipToDirectIndirect = new JButton("Seek to Direct/Indirect");
-		btnSkipToDirectIndirect.addActionListener(new SeekAction(new Command[] { Command.INDIRECT_FREE_YELLOW,
-				Command.INDIRECT_FREE_BLUE, Command.DIRECT_FREE_YELLOW, Command.DIRECT_FREE_BLUE }));
+		final JButton btnSkipToDirectIndirect = new JButton("Seek to Freekick");
+		btnSkipToDirectIndirect.addActionListener(
+				new SeekAction(new Command[] { Command.DIRECT_FREE_YELLOW, Command.DIRECT_FREE_BLUE }));
 
 		JComboBox<SslGcGameEvent.GameEvent.Type> cboGameEvent = new JComboBox<>(SslGcGameEvent.GameEvent.Type.values());
 		JButton btnSeekGameEvent = new JButton();

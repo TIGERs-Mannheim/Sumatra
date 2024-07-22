@@ -14,6 +14,7 @@ import edu.tigers.sumatra.pathfinder.EPathFinderShapesLayer;
 import edu.tigers.sumatra.pathfinder.acceptor.MotionLessObstacleResultAcceptor;
 import edu.tigers.sumatra.pathfinder.acceptor.MovingObstacleResultAcceptor;
 import edu.tigers.sumatra.pathfinder.acceptor.PathFinderResultAcceptor;
+import edu.tigers.sumatra.pathfinder.finder.PathFinderCollision;
 import edu.tigers.sumatra.pathfinder.finder.PathFinderInput;
 import edu.tigers.sumatra.pathfinder.finder.PathFinderResult;
 import edu.tigers.sumatra.pathfinder.finder.TrajPath;
@@ -21,6 +22,8 @@ import edu.tigers.sumatra.pathfinder.obstacles.IObstacle;
 import lombok.RequiredArgsConstructor;
 
 import java.awt.Color;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 
@@ -45,12 +48,13 @@ public class SubPathCollisionChecker
 	private final ShapeMap shapeMap;
 	private final IMoveConstraints moveConstraints;
 	private final IVector2 dest;
+	private final List<PathFinderResult> rejectedResults = new ArrayList<>();
 
 
 	public static SubPathCollisionChecker of(PathFinderInput input, ShapeMap shapeMap)
 	{
 		List<IObstacle> motionLessObstacles = input.getObstacles().stream().filter(IObstacle::isMotionLess).toList();
-		List<IObstacle> movingObstacles = input.getObstacles().stream().filter(IObstacle::canMove).toList();
+		List<IObstacle> movingObstacles = input.getObstacles().stream().filter(o -> !o.isMotionLess()).toList();
 		return new SubPathCollisionChecker(
 				new MotionLessObstacleResultAcceptor(),
 				new MovingObstacleResultAcceptor(input.getMoveConstraints()),
@@ -63,7 +67,32 @@ public class SubPathCollisionChecker
 	}
 
 
-	public Optional<PathFinderResult> findDirectPath(TrajPath path, double initialTimeOffset)
+	public Optional<PathFinderResult> getBestRejectedResult()
+	{
+		return rejectedResults.stream()
+				.min(Comparator.comparing(r -> distanceToClosestMovingCollision(r, dest)));
+	}
+
+
+	private double distanceToClosestMovingCollision(PathFinderResult result, IVector2 dest)
+	{
+		return result.getCollisions().stream()
+				.filter(c -> !c.getObstacle().isMotionLess())
+				.map(PathFinderCollision::getFirstCollisionTime)
+				.min(Double::compareTo)
+				.map(t -> result.getTrajectory().getPositionMM(t).distanceToSqr(dest))
+				.orElse(Double.MAX_VALUE);
+	}
+
+
+	/**
+	 * Check if the given (complete) path is accepted by the collision checkers and return the result, if so.
+	 *
+	 * @param path              a complete path
+	 * @param initialTimeOffset the initial time offset to start checking the path
+	 * @return the result, if the path is accepted
+	 */
+	public Optional<PathFinderResult> getAcceptablePath(TrajPath path, double initialTimeOffset)
 	{
 		var motionLessSubPathCollisionChecker = PathCollisionChecker.ofPath(
 				path, motionLessObstacles, shapeMap, initialTimeOffset
@@ -85,16 +114,25 @@ public class SubPathCollisionChecker
 		{
 			movingSubPathCollisionChecker.checkUntil(path.getTotalTime());
 			PathFinderResult movingResult = movingSubPathCollisionChecker.getPathFinderResult();
+			PathFinderResult mergedResult = movingResult.merge(motionLessResult);
 			if (movingObstacleResultAcceptor.accept(movingResult))
 			{
-				return Optional.of(movingResult.merge(motionLessResult));
+				return Optional.of(mergedResult);
 			}
+			rejectedResults.add(mergedResult);
 		}
 		return Optional.empty();
 	}
 
 
-	public Optional<PathFinderResult> findValidPath(TrajPath subPath, double initialTimeOffset)
+	/**
+	 * Find an acceptable path based on given sub path.
+	 *
+	 * @param subPath           a path to an intermediate destination
+	 * @param initialTimeOffset the initial time offset to start checking the path
+	 * @return the result, if the path is accepted
+	 */
+	public Optional<PathFinderResult> findAcceptablePath(TrajPath subPath, double initialTimeOffset)
 	{
 		var motionLessSubPathCollisionChecker = PathCollisionChecker.ofPath(
 				subPath, motionLessObstacles, shapeMap, initialTimeOffset
@@ -104,8 +142,11 @@ public class SubPathCollisionChecker
 		);
 
 		double subTotalTime = motionLessSubPathCollisionChecker.getPath().getTotalTime();
+		int subDestCtr = 0;
 		for (double switchTime = stepSizeOnSubPath + initialTimeOffset;
-		     switchTime < subTotalTime; switchTime += stepSizeOnSubPath)
+		     switchTime < subTotalTime;
+		     switchTime += stepSizeOnSubPath
+		)
 		{
 			motionLessSubPathCollisionChecker.checkUntil(switchTime);
 			PathCollisionChecker motionLessPathCollisionChecker = motionLessSubPathCollisionChecker.append(
@@ -136,10 +177,18 @@ public class SubPathCollisionChecker
 				);
 				movingPathCollisionChecker.checkUntil(totalTime);
 				PathFinderResult movingResult = movingPathCollisionChecker.getPathFinderResult();
+				PathFinderResult mergedResult = movingResult.merge(motionLessResult);
 				if (movingObstacleResultAcceptor.accept(movingResult))
 				{
-					return Optional.of(movingResult.merge(motionLessResult));
+					return Optional.of(mergedResult);
 				}
+				rejectedResults.add(mergedResult);
+			}
+
+			if (subDestCtr++ > 1000)
+			{
+				throw new IllegalStateException(
+						"Possible endless loop detected in SubPathCollisionChecker.findAcceptablePath()");
 			}
 		}
 		return Optional.empty();

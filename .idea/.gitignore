@@ -19,3 +19,5 @@
 /dataSources.local.xml
 /libraries-with-intellij-classes.xml
 /jpa-buddy.xml
+# GitHub Copilot persisted chat sessions
+/copilot/chatSessions

@@ -20,6 +20,7 @@ import edu.tigers.sumatra.skillsystem.skills.util.AroundBallCalc;
 import edu.tigers.sumatra.skillsystem.skills.util.KickParams;
 import edu.tigers.sumatra.skillsystem.skills.util.MinMarginChargeValue;
 import edu.tigers.sumatra.skillsystem.skills.util.TargetAngleReachedChecker;
+import edu.tigers.sumatra.time.TimestampTimer;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
@@ -65,6 +66,8 @@ public class SingleTouchKickSkill extends ATouchKickSkill
 	private final TargetAngleReachedChecker targetAngleReachedChecker = new TargetAngleReachedChecker(
 			roughAngleTolerance, maxTimeTargetAngleReached);
 
+	private final TimestampTimer readyTimeoutTimer = new TimestampTimer(0.3);
+
 	@Setter
 	private boolean readyForKick = true;
 
@@ -87,6 +90,18 @@ public class SingleTouchKickSkill extends ATouchKickSkill
 				&& isOrientationReached(targetOrientation)
 				&& (getVel().getLength2() < 0.1
 				|| Math.abs(AngleMath.difference(getVel().getAngle(), targetOrientation)) < 0.1);
+	}
+
+
+	private boolean isReady()
+	{
+		boolean ready = isReadyAndFocused();
+		if (ready)
+		{
+			readyTimeoutTimer.start(getWorldFrame().getTimestamp());
+			return true;
+		}
+		return readyTimeoutTimer.isRunning() && !readyTimeoutTimer.isTimeUp(getWorldFrame().getTimestamp());
 	}
 
 
@@ -121,6 +136,8 @@ public class SingleTouchKickSkill extends ATouchKickSkill
 				.withUpperThreshold(minMarginUpperThreshold)
 				.withLimit(maxPushDist)
 				.build();
+
+		readyTimeoutTimer.reset();
 	}
 
 
@@ -169,6 +186,8 @@ public class SingleTouchKickSkill extends ATouchKickSkill
 				Lines.segmentFromOffset(dest, Vector2.fromAngle(targetOrientation).scaleTo(5000)), Color.RED));
 		getShapes().get(ESkillShapesLayer.KICK_SKILL_DEBUG).add(new DrawableAnnotation(
 				getPos(), "Focussed: " + isReadyAndFocused()).withOffset(Vector2.fromX(200)));
+		getShapes().get(ESkillShapesLayer.KICK_SKILL_DEBUG).add(new DrawableAnnotation(
+				getPos(), "Ready: " + isReady()).withOffset(Vector2.fromXY(200, 100)));
 
 		if (initBallPos.distanceTo(getBall().getPos()) > 500)
 		{
@@ -182,7 +201,7 @@ public class SingleTouchKickSkill extends ATouchKickSkill
 			{
 				setSkillState(ESkillState.FAILURE);
 			}
-		} else if (!Geometry.getField().isPointInShape(getBallPos()))
+		} else if (!Geometry.getFieldWBorders().withMargin(-200).isPointInShape(getBallPos()))
 		{
 			setSkillState(ESkillState.FAILURE);
 		} else
@@ -206,7 +225,7 @@ public class SingleTouchKickSkill extends ATouchKickSkill
 
 	private double getMinMargin(final IVector2 dest)
 	{
-		if (isReadyAndFocused())
+		if (isReady())
 		{
 			double dist = dest.distanceTo(getPos());
 			getShapes().get(ESkillShapesLayer.KICK_SKILL_DEBUG).add(

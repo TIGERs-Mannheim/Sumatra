@@ -27,14 +27,17 @@ public class GetBallContactSkill extends AMoveToSkill
 	@Configurable(defValue = "300", comment = "Max dist [mm] to push towards an invisible ball")
 	private static double maxApproachBallExtraDist = 300;
 
+	@Configurable(defValue = "50", comment = "Offset [mm] to add to the boundary margin for the position validator")
+	private static double boundaryMarginOffset = 50;
+
 	@Configurable(comment = "How fast to accelerate when getting ball contact", defValue = "1.0")
 	private static double getContactAcc = 1.0;
 
-	@Configurable(comment = "Min contact time [s] to reach before coming to a stop", defValue = "0.2")
-	private static double minContactTime = 0.2;
+	@Configurable(comment = "Min contact time [s] to reach before coming to a stop", defValue = "0.1")
+	private static double minContactTime = 0.1;
 
-	@Configurable(comment = "Min contact time [s] to reach before succeeding", defValue = "0.4")
-	private static double minSuccessContactTime = 0.4;
+	@Configurable(comment = "Min contact time [s] to reach before succeeding", defValue = "0.1")
+	private static double minSuccessContactTime = 0.1;
 
 	private double cachedOrientation;
 	private double approachBallExtraDist;
@@ -65,14 +68,14 @@ public class GetBallContactSkill extends AMoveToSkill
 	public void doEntryActions()
 	{
 		super.doEntryActions();
-		positionValidator.setMarginToFieldBorder(Geometry.getBoundaryWidth() - Geometry.getBotRadius());
+		positionValidator.setMarginToFieldBorder(Geometry.getBoundaryWidth() - Geometry.getBotRadius() + boundaryMarginOffset);
 		cachedOrientation = getBall().getPos().subtractNew(getPos()).getAngle();
 		approachBallExtraDist = 0;
 		initBallPos = getBall().getPos();
 		setKickParams(KickParams.disarm().withDribblerMode(EDribblerMode.DEFAULT));
 
-		getMoveCon().physicalObstaclesOnly();
-		getMoveCon().setBallObstacle(false);
+		// We just drive a bit forward to get contact with the ball, just ignore everything
+		getMoveCon().noObstacles();
 	}
 
 
@@ -103,7 +106,6 @@ public class GetBallContactSkill extends AMoveToSkill
 		if (getTBot().getBallContact().getContactDuration() < minContactTime)
 		{
 			var dest = getDest();
-			dest = positionValidator.movePosInsideFieldWrtBallPos(dest);
 			dest = positionValidator.movePosOutOfPenAreaWrtBall(dest);
 			updateDestination(dest);
 

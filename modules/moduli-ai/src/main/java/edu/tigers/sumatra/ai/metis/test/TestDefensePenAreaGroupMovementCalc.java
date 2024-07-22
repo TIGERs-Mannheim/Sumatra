@@ -9,6 +9,7 @@ import edu.tigers.sumatra.ai.metis.ACalculator;
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
 import edu.tigers.sumatra.ai.metis.defense.data.DefenseBallThreat;
 import edu.tigers.sumatra.ai.metis.defense.data.DefenseThreatAssignment;
+import edu.tigers.sumatra.ai.metis.defense.data.EDefenseBallThreatSourceType;
 import edu.tigers.sumatra.drawable.DrawableCircle;
 import edu.tigers.sumatra.drawable.DrawableLine;
 import edu.tigers.sumatra.drawable.DrawableShapeBoundary;
@@ -101,7 +102,8 @@ public class TestDefensePenAreaGroupMovementCalc extends ACalculator
 
 
 		var ballThreat = new DefenseBallThreat(
-				threatSpeed.isZeroVector() ? threatSpeed : threatSpeed.scaleTo(movementSpeed), threatLine, null, null);
+				threatSpeed.isZeroVector() ? threatSpeed : threatSpeed.scaleTo(movementSpeed), threatLine, null, null,
+				EDefenseBallThreatSourceType.BALL);
 
 
 		getShapes(EAiShapesLayer.TEST_MOVE_AROUND_PEN_AREA).add(

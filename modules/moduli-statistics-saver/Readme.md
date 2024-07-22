@@ -2,7 +2,7 @@
 
 ## Run simulation
 
-Sumatra can be run with multiple instances (using different versions of the AI) in docker-compose.
+Sumatra can be run with multiple instances (using different versions of the AI) in docker compose.
 
 Simply run: `./scripts/runDockerSimulationLocal.sh`
 
@@ -18,16 +18,16 @@ like:
 Note that Grafana and InfluxDB are started in the background by default (only once) and need to be stopped manually
 afterwards:
 
-`docker-compose -p "sumatra_stats" -f docker-compose.statistics.yml down`
+`docker compose -p "sumatra_stats" -f docker-compose.statistics.yml down`
 
 ## See time series statistics
 
-The docker-compose setup also runs a local InfluxDB which stores time-series match statistics. They can be viewed with
+The docker compose setup also runs a local InfluxDB which stores time-series match statistics. They can be viewed with
 Grafana.
 
 If Grafana is not yet running, start it with:
 
-`docker-compose -p "sumatra_stats" -f docker-compose.statistics.yml up -d grafana`
+`docker compose -p "sumatra_stats" -f docker-compose.statistics.yml up -d grafana`
 
 Then open http://localhost:3000. Username is `admin`, password `fCQW904U3mtzui8MAAxXXE7i1DN2gphY`.
 

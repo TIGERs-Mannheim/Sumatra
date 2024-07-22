@@ -29,4 +29,8 @@ public class PassStats
 	@Getter
 	@Setter
 	int successfulPasses = 0;
+
+	@Getter
+	@Setter
+	int numPassLineReachedOnTime = 0;
 }

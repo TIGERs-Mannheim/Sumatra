@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.metis.pass;
@@ -9,11 +9,13 @@ import com.github.g3force.configurable.Configurable;
 import edu.tigers.sumatra.ai.BaseAiFrame;
 import edu.tigers.sumatra.ai.common.PointChecker;
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
+import edu.tigers.sumatra.ai.metis.kicking.EBallReceiveMode;
 import edu.tigers.sumatra.ai.metis.kicking.Pass;
 import edu.tigers.sumatra.ai.metis.kicking.PassFactory;
 import edu.tigers.sumatra.ai.metis.offense.OffensiveConstants;
 import edu.tigers.sumatra.ai.metis.pass.rating.RatedPass;
 import edu.tigers.sumatra.ai.metis.targetrater.AngleRange;
+import edu.tigers.sumatra.bot.MoveConstraints;
 import edu.tigers.sumatra.drawable.DrawableAnnotation;
 import edu.tigers.sumatra.drawable.DrawableArc;
 import edu.tigers.sumatra.drawable.DrawableCircle;
@@ -27,18 +29,22 @@ import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.AngleMath;
 import edu.tigers.sumatra.math.SumatraMath;
 import edu.tigers.sumatra.math.circle.Arc;
-import edu.tigers.sumatra.math.circle.Circle;
-import edu.tigers.sumatra.math.circle.IArc;
 import edu.tigers.sumatra.math.circle.ICircle;
 import edu.tigers.sumatra.math.circle.ICircular;
 import edu.tigers.sumatra.math.line.IHalfLine;
 import edu.tigers.sumatra.math.line.LineMath;
 import edu.tigers.sumatra.math.line.Lines;
-import edu.tigers.sumatra.math.pose.Pose;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.math.vector.Vector2f;
-import edu.tigers.sumatra.pathfinder.TrajectoryGenerator;
+import edu.tigers.sumatra.movingrobot.StoppingRobotFactory;
+import edu.tigers.sumatra.pathfinder.IPathFinder;
+import edu.tigers.sumatra.pathfinder.MovementCon;
+import edu.tigers.sumatra.pathfinder.finder.PathFinder;
+import edu.tigers.sumatra.pathfinder.finder.PathFinderInput;
+import edu.tigers.sumatra.pathfinder.finder.PathFinderResult;
+import edu.tigers.sumatra.pathfinder.obstacles.IObstacle;
+import edu.tigers.sumatra.pathfinder.obstacles.ObstacleGenerator;
 import edu.tigers.sumatra.wp.data.ITrackedBall;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
 import edu.tigers.sumatra.wp.data.WorldFrame;
@@ -51,6 +57,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
 import java.util.function.Supplier;
@@ -62,8 +69,14 @@ public class PassGenerator
 	private static final Color FORBIDDEN_AREA_COLOR = new Color(212, 102, 6, 128);
 	private static final Color GENERATION_AREA_COLOR = new Color(6, 212, 188, 128);
 
-	@Configurable(defValue = "10", comment = "How many pass targets to generate per bot in addition to those from last frame")
-	private static int maxNewPassTargetsPerBot = 10;
+	@Configurable(defValue = "6", comment = "How many pass targets to choose per bot in addition to those from last frame")
+	private static int maxNewPassTargetsPerBot = 6;
+
+	@Configurable(defValue = "3", comment = "How many pass targets to choose per bot from last frame")
+	private static int maxOldPassTargetsPerBot = 3;
+
+	@Configurable(defValue = "15", comment = "How many pass targets to generate per bot in addition to those from last frame")
+	private static int maxGeneratePassTargetsPerBot = 15;
 
 	@Configurable(defValue = "1500.0", comment = "Safety distance to keep to our penalty area")
 	private static double safetyDistanceToPenaltyArea = 1500.0;
@@ -71,8 +84,8 @@ public class PassGenerator
 	@Configurable(defValue = "200.0", comment = "Safety distance to their goal line")
 	private static double safetyDistanceToGoalLine = 200;
 
-	@Configurable(defValue = "500.0", comment = " Min distance from pass target to Ball")
-	private static double minDistanceToBall = 500.0;
+	@Configurable(defValue = "1500.0", comment = " Min distance from pass target to Ball")
+	private static double minDistanceToBall = 1500.0;
 
 	@Configurable(defValue = "1.5", comment = "Min allowed duration [s] until the ball enters our own penalty area")
 	private static double minPassDurationUntilReachingPenaltyArea = 1.5;
@@ -81,25 +94,21 @@ public class PassGenerator
 	private static double maxBotHorizon = 2.0;
 
 	@Configurable(defValue = "0.9", comment = "Relative amount of time based on approx. pass duration for the the pass target generation radius")
-	private static double relativBotHorizon = 0.9;
-
-	@Configurable(defValue = "0.3", comment = "The time [s] that the pass receiver should get after it moved to the target pos")
-	private static double minPassReceiverPrepareTime = 0.3;
+	private static double relativeBotHorizon = 0.9;
 
 	@Configurable(defValue = "50.0", comment = "Min distance [mm] between generated positions")
 	private static double minDistanceBetweenTargets = 50;
 
-	@Configurable(defValue = "0.2", comment = "Minimum angle range in front of kick origin for pass generation")
-	private static double minAngleRange = 0.2;
+	@Configurable(defValue = "0.08", comment = "Min angle tolerance for filtering passes during free kick")
+	private static double minAngleTolerance = 0.08;
 
-	@Configurable(defValue = "0.3", comment = "Lower impact time at which the minimum angle range applies")
-	private static double impactTimeLower = 0.3;
+	@Configurable(defValue = "0.15", comment = "[s]")
+	private static double minSlackTimeForPassReception = 0.15;
 
-	@Configurable(defValue = "2.0", comment = "Upper impact time at which passes in all directions are generated")
-	private static double impactTimeUpper = 2.0;
+	@Configurable(defValue = "-150", comment = "Margin around the field to include passes in")
+	private static double fieldMargin = -150;
 
-	@Configurable(defValue = "0.10", comment = "Min angle tolerance for filtering passes during free kick")
-	private static double minAngleTolerance = 0.10;
+	private final IPathFinder finder = new PathFinder();
 
 	static
 	{
@@ -107,23 +116,22 @@ public class PassGenerator
 	}
 
 	private final PassFactory passFactory = new PassFactory();
+	private final PassCreator passCreator = new PassCreator();
 	private final Random rnd;
 	private final Supplier<Map<BotID, List<AngleRange>>> inaccessibleBallAngles;
+
 	private BaseAiFrame aiFrame = null;
 	private Set<BotID> consideredBots;
 	private KickOrigin kickOrigin;
-	private double passDir;
-	private double maxAngleRange;
 	private final PointChecker pointChecker = new PointChecker()
 			.checkInsideField()
 			.checkNotInPenaltyAreas()
 			.checkConfirmWithKickOffRules()
+			.checkCustom("inFieldWithMargin", this::inFieldWithMargin)
 			.checkCustom("keepDirectionDuringFreeKick", this::keepDirectionDuringFreeKick)
 			.checkCustom("keepMinDistanceToBall", this::keepMinDistanceToBall)
 			.checkCustom("canBeReceivedOutsidePenArea", this::canBeReceivedOutsidePenArea)
-			.checkCustom("isRedirectAngleDoable", this::isRedirectAngleDoable)
 			.checkCustom("isTargetApproachAngleAccessible", this::isTargetApproachAngleAccessible)
-			.checkCustom("isDoablePassDirection", this::isDoablePassDirection)
 			.checkCustom("isNotNearGoalLine", this::isNotNearGoalLine);
 
 
@@ -144,6 +152,7 @@ public class PassGenerator
 	{
 		this.aiFrame = aiFrame;
 		passFactory.update(getWFrame());
+		passCreator.update(getWFrame());
 		updatePenaltyAreaMargin();
 	}
 
@@ -152,13 +161,6 @@ public class PassGenerator
 	{
 		this.consideredBots = consideredBots;
 		this.kickOrigin = kickOrigin;
-		this.passDir = getAiFrame().getPrevFrame().getTacticalField().getSelectedPasses().entrySet().stream()
-				.filter(k -> k.getKey().getPos().distanceTo(kickOrigin.getPos()) < 100)
-				.findAny()
-				.map(Map.Entry::getValue)
-				.map(rp -> rp.getPass().getKick().getKickVel().getXYVector().getAngle())
-				.orElseGet(() -> getWFrame().getBot(kickOrigin.getShooter()).getOrientation());
-		maxAngleRange = findMaxAngleRange();
 
 		Map<BotID, ICircle> dynamicGenerationCircles = new HashMap<>();
 		consideredBots.forEach(botId -> dynamicGenerationCircles.put(botId, createDynamicGenerationCircle(botId)));
@@ -170,22 +172,10 @@ public class PassGenerator
 				new DrawableCircle(circle).setColor(GENERATION_AREA_COLOR).setFill(true)));
 		getShapes(EAiShapesLayer.PASS_GENERATION_FORBIDDEN).add(
 				new DrawableCircle(kickOrigin.getPos(), minDistanceToBall, FORBIDDEN_AREA_COLOR).setFill(true));
-		drawMaxAngleRange();
 		drawForbiddenPenaltyArea();
 		drawAllowedRedirectAngles();
 		candidates.forEach(this::draw);
 		return select(candidates);
-	}
-
-
-	private void drawMaxAngleRange()
-	{
-		if (maxAngleRange < AngleMath.DEG_180_IN_RAD)
-		{
-			IArc arc = Arc.createArc(kickOrigin.getPos(), 5000, passDir - maxAngleRange, maxAngleRange * 2);
-			getShapes(EAiShapesLayer.PASS_GENERATION_PASS_DIR).add(
-					new DrawableArc(arc).setFill(true).setColor(new Color(79, 123, 0, 168)));
-		}
 	}
 
 
@@ -195,44 +185,42 @@ public class PassGenerator
 	}
 
 
-	private double findMaxAngleRange()
+	private PathFinderInput getPathFinderInput(IVector2 destination, BotID botID, MoveConstraints currentMoveConstraints,
+			List<IObstacle> obstacles)
 	{
-		if (kickOrigin.getImpactTime() > 0)
-		{
-			double relImpactTime = SumatraMath.relative(kickOrigin.getImpactTime(), impactTimeLower, impactTimeUpper);
-			return relImpactTime * (AngleMath.DEG_180_IN_RAD - minAngleRange) + minAngleRange;
-		}
-		return AngleMath.DEG_180_IN_RAD;
+		var tBot = getWFrame().getBot(botID);
+		long timestamp = getWFrame().getTimestamp();
+		PathFinderInput.PathFinderInputBuilder inputBuilder = PathFinderInput.fromBot(tBot.getBotState());
+
+		return inputBuilder
+				.timestamp(timestamp)
+				.moveConstraints(currentMoveConstraints)
+				.obstacles(obstacles)
+				.dest(destination)
+				.build();
 	}
 
 
-	private boolean isDoablePassDirection(IVector2 pos)
+	private boolean isReachable(IVector2 pos, BotID receiverId)
 	{
-		var targetAngle = pos.subtractNew(kickOrigin.getPos()).getAngle();
-		return AngleMath.diffAbs(targetAngle, passDir) < maxAngleRange;
+		MovementCon moveCon = new MovementCon();
+		ObstacleGenerator obstacleGen = new ObstacleGenerator(moveCon);
+
+		var receiver = getWFrame().getBot(receiverId);
+		moveCon.update(receiver);
+		List<IObstacle> obstacles = obstacleGen.generateObstacles(getWFrame(), receiverId, getAiFrame().getGameState());
+
+		PathFinderInput pathFinderInput = getPathFinderInput(pos, receiverId, receiver.getMoveConstraints(),
+				obstacles);
+
+		var path = finder.calcValidDirectPath(pathFinderInput);
+		return path.map(PathFinderResult::isCollisionFree).orElse(false);
 	}
 
 
 	private boolean isNotNearGoalLine(IVector2 pos)
 	{
 		return pos.x() < Geometry.getFieldLength() / 2.0 - safetyDistanceToGoalLine;
-	}
-
-
-	private boolean isRedirectAngleDoable(IVector2 point)
-	{
-		if (kickOrigin.getShooter().isUninitializedID())
-		{
-			return true;
-		}
-
-		IVector2 targetToReceiver = kickOrigin.getPos().subtractNew(point);
-		IVector2 senderToReceiver = getBall().getVel().getLength2() > 0.5
-				? getBall().getVel()
-				: kickOrigin.getPos().subtractNew(getBall().getPos());
-
-		double angle = targetToReceiver.angleToAbs(senderToReceiver).orElse(0.0);
-		return angle < OffensiveConstants.getMaximumReasonableRedirectAngle();
 	}
 
 
@@ -247,6 +235,12 @@ public class PassGenerator
 	private boolean keepMinDistanceToBall(final IVector2 point)
 	{
 		return kickOrigin.getPos().distanceTo(point) > minDistanceToBall;
+	}
+
+
+	private boolean inFieldWithMargin(IVector2 point)
+	{
+		return Geometry.getField().withMargin(fieldMargin).isPointInShape(point);
 	}
 
 
@@ -269,24 +263,17 @@ public class PassGenerator
 		}
 
 		ITrackedBot shooter = getWFrame().getBot(kickOrigin.getShooter());
-		IVector2 shooterPos = shooter.getDestinationPose()
-				.map(Pose::getPos)
-				.orElseGet(shooter::getPos);
-		double shooterToPosDist = shooterPos.distanceTo(kickOrigin.getPos());
+
+		double shooterToPosDist = shooter.getBotKickerPos().distanceTo(kickOrigin.getPos()) - Geometry.getBallRadius();
 		double relDist = SumatraMath.relative(
 				shooterToPosDist,
-				2.0 * Geometry.getBotRadius(),
-				3.0 * Geometry.getBotRadius()
+				80,
+				100
 		);
 
 		double angleTolerance = minAngleTolerance + relDist * (AngleMath.DEG_180_IN_RAD - minAngleTolerance);
 		double dir = point.subtractNew(kickOrigin.getPos()).getAngle();
 		double curDir = ratedPass.getPass().getKick().getKickVel().getXYVector().getAngle();
-
-		if (shooter.getBallContact().hasContactFromVisionOrBarrier())
-		{
-			return false;
-		}
 
 		return AngleMath.diffAbs(dir, curDir) < angleTolerance;
 	}
@@ -380,26 +367,18 @@ public class PassGenerator
 
 	private List<Pass> createPasses(PassTargetCandidate candidate)
 	{
-		var minPassDuration = timeUntilBotReached(candidate.pos, candidate.receiver)
-				- timeTillBallReachesBot()
-				+ minPassReceiverPrepareTime;
-		var origin = kickOrigin.getPos();
-		var shooter = kickOrigin.getShooter();
-		return passFactory.passes(origin, candidate.pos, shooter, candidate.receiver, minPassDuration);
+		return passCreator.createPasses(kickOrigin, candidate.pos, candidate.receiver);
 	}
 
 
 	private PassTargetCandidate createPassTargetCandidate(final IVector2 pos, final BotID receiver)
 	{
 		var nonLegal = pointChecker.findFirstNonMatching(getAiFrame(), pos, BotID.noBot());
+		if (nonLegal.isEmpty() && !isReachable(pos, receiver))
+		{
+			nonLegal = Optional.of("isReachable");
+		}
 		return new PassTargetCandidate(pos, receiver, nonLegal.orElse(null));
-	}
-
-
-	private double timeUntilBotReached(final IVector2 pos, final BotID botID)
-	{
-		ITrackedBot tBot = getWFrame().getBot(botID);
-		return TrajectoryGenerator.generatePositionTrajectory(tBot, pos).getTotalTime();
 	}
 
 
@@ -421,46 +400,24 @@ public class PassGenerator
 	private ICircle createDynamicGenerationCircle(BotID botID)
 	{
 		ITrackedBot bot = getWFrame().getBot(botID);
-
 		var minApproxPassDuration = passFactory
-				.straight(kickOrigin.getPos(), bot.getPos(), BotID.noBot(), botID)
+				.straight(kickOrigin.getPos(), bot.getPos(), kickOrigin.getShooter(), botID, EBallReceiveMode.DONT_CARE)
 				.getDuration();
-		var botHorizon = Math.min(maxBotHorizon, minApproxPassDuration + timeTillBallReachesBot()) * relativBotHorizon;
+		var t = Math.min(maxBotHorizon,
+				minApproxPassDuration + kickOrigin.impactTimeOrZero() - minSlackTimeForPassReception) * relativeBotHorizon;
 
-		double botSpeed = bot.getVel().getLength2();
-		double botMaxAcc = bot.getMoveConstraints().getAccMax();
-		double botBrkTime = botSpeed / botMaxAcc;
-		double botAdditionalTime = Math.max(0, botHorizon - botBrkTime);
-		double distBrk = botSpeed * botBrkTime * 0.5;
+		double aLimit = bot.getMoveConstraints().getAccMax();
+		double vLimit = bot.getMoveConstraints().getVelMax();
 
-		double fwdMaxReachableVel = botSpeed + (botMaxAcc * botAdditionalTime * 0.5);
-		double fwdMaxVel = Math.min(fwdMaxReachableVel, bot.getMoveConstraints().getVelMax());
-		double fwdAddVel = fwdMaxVel - botSpeed;
-		double fwdAccBrkTime = fwdAddVel / botMaxAcc;
-		double fwdDistAccBrk = botSpeed * fwdAccBrkTime + fwdAddVel * fwdAccBrkTime * 0.5;
-		double fwdDistDrive = fwdMaxVel * (botAdditionalTime - fwdAccBrkTime * 2);
-		double fwdDist = fwdDistAccBrk * 2 + fwdDistDrive;
-
-		double bwdMaxReachableVel = (botMaxAcc * botAdditionalTime * 0.5);
-		double bwdMaxVel = Math.min(bwdMaxReachableVel, bot.getMoveConstraints().getVelMax());
-		double bwdAccBrkTime = bwdMaxVel / botMaxAcc;
-		double bwdDistAccBrk = bwdMaxVel * bwdAccBrkTime * 0.5;
-		double bwdDistDrive = bwdMaxVel * (botAdditionalTime - bwdAccBrkTime * 2);
-		double bwdDist = bwdDistAccBrk * 2 + bwdDistDrive;
-
-		double offset = distBrk + (fwdDist - bwdDist) / 2;
-		double radius = Math.max(1e-3, (fwdDist + bwdDist) / 2);
-
-		IVector2 center = bot.getBotKickerPos(Geometry.getBallRadius())
-				.addNew(bot.getVel().scaleToNew(offset * 1000));
-
-		return Circle.createCircle(center, radius * 1000);
-	}
-
-
-	private double timeTillBallReachesBot()
-	{
-		return Double.isFinite(kickOrigin.getImpactTime()) ? kickOrigin.getImpactTime() : 0.0;
+		return StoppingRobotFactory.create(
+				bot.getBotKickerPos(Geometry.getBallRadius()),
+				bot.getVel(),
+				vLimit,
+				aLimit,
+				aLimit,
+				Geometry.getBotRadius(),
+				0
+		).getMovingHorizon(t);
 	}
 
 
@@ -472,7 +429,7 @@ public class PassGenerator
 		passTargets.add(centerPassTargetCandidate);
 
 		int maxIterations = 0;
-		while (passTargets.size() < maxNewPassTargetsPerBot && maxIterations < maxNewPassTargetsPerBot * 1.5)
+		while (passTargets.size() < maxNewPassTargetsPerBot && maxIterations < maxGeneratePassTargetsPerBot)
 		{
 			double angle = AngleMath.PI_TWO * rnd.nextDouble();
 			double radius = circle.radius() * rnd.nextDouble();
@@ -504,7 +461,6 @@ public class PassGenerator
 	private List<PassTargetCandidate> getPreviousPassTargets(BotID botID, ICircular circle, List<RatedPass> ratedPasses)
 	{
 		List<PassTargetCandidate> passTargets = new ArrayList<>();
-		int addedPasses = 0;
 		for (var ratedPass : ratedPasses)
 		{
 			if (ratedPass.getPass().getReceiver().equals(botID))
@@ -513,10 +469,9 @@ public class PassGenerator
 				if (circle.isPointInShape(targetPos))
 				{
 					passTargets.add(createPassTargetCandidate(targetPos, botID));
-					addedPasses++;
 				}
 			}
-			if (addedPasses > maxNewPassTargetsPerBot / 2)
+			if (passTargets.size() >= maxOldPassTargetsPerBot)
 			{
 				break;
 			}

@@ -52,7 +52,7 @@ public class InterceptBallCurveDestinationCalculator extends AInterceptBallDesti
 		if (intersections.size() == 1)
 		{
 			timeA = 0;
-			timeB = intersections.get(0);
+			timeB = intersections.getFirst();
 		} else
 		{
 			if (Geometry.getGoalOur().getLine().distanceTo(ballCurve.getPos(intersections.get(0))) < 1e-3)
@@ -76,9 +76,9 @@ public class InterceptBallCurveDestinationCalculator extends AInterceptBallDesti
 				.map(tt -> buildDestWithTrajectory(ballCurve.getPos(tt), tt)).max(DestWithTrajectory::compareTo)
 				.map(DestWithTrajectory::dest).orElse(fallbackPoint);
 
-		getShapes().get(ESkillShapesLayer.KEEPER)
+		getShapes().get(ESkillShapesLayer.KEEPER_POSITIONING_CALCULATORS)
 				.add(new DrawablePlanarCurve(ballCurve.restrictToStart(timeA).restrictToEnd(timeB)));
-		getShapes().get(ESkillShapesLayer.KEEPER)
+		getShapes().get(ESkillShapesLayer.KEEPER_POSITIONING_CALCULATORS)
 				.add(new DrawableCircle(Circle.createCircle(bestPoint, 35), Color.GREEN));
 		return new TimedPos(fallbackPoint, Optional.empty());
 	}
@@ -101,6 +101,7 @@ public class InterceptBallCurveDestinationCalculator extends AInterceptBallDesti
 		return getWorldFrame().getBall().getTrajectory().getTouchdownLocations().stream()
 				.filter(td -> td.x() > Geometry.getGoalOur().getCenter().x())
 				.filter(td -> td.distanceTo(getPos()) < maxChipInterceptDist)
+				.filter(td -> td.x() < destination.pos.x())
 				.min(Comparator.comparingDouble(goalLine::distanceToSqr)).map(pos -> new TimedPos(pos, Optional.empty()))
 				.orElse(destination);
 	}
@@ -136,8 +137,7 @@ public class InterceptBallCurveDestinationCalculator extends AInterceptBallDesti
 				targetTime = 0.0;
 			}
 		}
-		return TrajectoryGenerator.generateVirtualPositionToReachPointInTime(getTBot(), getMoveConstraints(),
-				timedPos.pos, targetTime);
+		return TrajectoryGenerator.generateVirtualPositionToReachPointInTime(getTBot(), timedPos.pos, targetTime);
 	}
 
 

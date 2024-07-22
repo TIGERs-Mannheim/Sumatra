@@ -6,20 +6,12 @@ package edu.tigers.sumatra.ai.pandora.roles.support;
 
 import com.github.g3force.configurable.Configurable;
 import edu.tigers.sumatra.ai.common.PointChecker;
-import edu.tigers.sumatra.ai.metis.kicking.Kick;
 import edu.tigers.sumatra.ai.metis.offense.action.EOffensiveActionType;
-import edu.tigers.sumatra.ai.metis.offense.action.OffensiveAction;
-import edu.tigers.sumatra.ai.metis.offense.action.RatedOffensiveAction;
 import edu.tigers.sumatra.ai.metis.support.behaviors.ESupportBehavior;
 import edu.tigers.sumatra.ai.metis.support.behaviors.SupportBehaviorPosition;
-import edu.tigers.sumatra.ai.pandora.plays.EPlay;
 import edu.tigers.sumatra.ai.pandora.roles.ARole;
 import edu.tigers.sumatra.ai.pandora.roles.ERole;
-import edu.tigers.sumatra.geometry.Geometry;
-import edu.tigers.sumatra.geometry.RuleConstraints;
-import edu.tigers.sumatra.math.tube.Tube;
 import edu.tigers.sumatra.pathfinder.obstacles.IObstacle;
-import edu.tigers.sumatra.pathfinder.obstacles.TubeObstacle;
 import edu.tigers.sumatra.skillsystem.skills.IdleSkill;
 import edu.tigers.sumatra.skillsystem.skills.MoveToSkill;
 import lombok.Setter;
@@ -41,24 +33,22 @@ public class SupportRole extends ARole
 	@Configurable(defValue = "true", comment = "Keep the current position during stop, as long as it is valid to reduce movement and the ball is in our half")
 	private static boolean keepPositionInStopIfBallInOurHalf = true;
 
-	@Setter
-	private SupportBehaviorPosition target;
-	@Setter
-	private ESupportBehavior behavior;
-	@Setter
-	private double maxPlannedKickObstacleLength;
-
-
-	@Setter
-	private boolean avoidPassesFromOffensive = true;
-
-
+	@Configurable(defValue = "500", comment = "Distance [mm] to the ball to keep all the time")
+	private static double distanceToBall = 500;
 	private final PointChecker pointChecker = new PointChecker()
 			.checkBallDistances()
 			.checkPointFreeOfBots()
 			.checkNotInPenaltyAreas()
 			.checkConfirmWithKickOffRules()
 			.checkInsideField();
+	@Setter
+	private SupportBehaviorPosition target;
+	@Setter
+	private ESupportBehavior behavior;
+	@Setter
+	private double maxPlannedKickObstacleLength;
+	@Setter
+	private boolean avoidPassesFromOffensive = true;
 
 
 	public SupportRole()
@@ -85,7 +75,6 @@ public class SupportRole extends ARole
 		@Override
 		protected void onUpdate()
 		{
-			double distanceToBall = RuleConstraints.getStopRadius() + Geometry.getBotRadius();
 			skill.getMoveCon().setDistanceToBall(distanceToBall);
 			skill.getMoveCon().setCustomObstacles(createCustomObstacle());
 
@@ -101,13 +90,10 @@ public class SupportRole extends ARole
 
 		private List<IObstacle> createCustomObstacle()
 		{
-			return getTacticalField().getOffensiveActions().entrySet().stream()
-					.filter(entry -> getTacticalField().getDesiredBotMap().get(EPlay.OFFENSIVE).contains(entry.getKey()))
+			return getTacticalField().getAllPassObstacles().entrySet().stream()
+					.filter(entry -> avoidKickFromAction(entry.getKey()))
 					.map(Map.Entry::getValue)
-					.map(RatedOffensiveAction::getAction)
-					.filter(action -> avoidKickFromAction(action.getType()))
-					.map(OffensiveAction::getKick)
-					.map(this::createKickObstacle)
+					.flatMap(List::stream)
 					.toList();
 		}
 
@@ -120,20 +106,6 @@ public class SupportRole extends ARole
 				case PASS -> avoidPassesFromOffensive;
 				default -> false;
 			};
-		}
-
-
-		private IObstacle createKickObstacle(Kick kick)
-		{
-			var direction = kick.getTarget().subtractNew(kick.getSource())
-					.scaleTo(Math.min(kick.getTarget().distanceTo(kick.getSource()), maxPlannedKickObstacleLength));
-			return new TubeObstacle("Kick",
-					Tube.create(
-							kick.getSource(),
-							kick.getSource().addNew(direction),
-							2 * Geometry.getBotRadius() + Geometry.getBallRadius()
-					)
-			);
 		}
 
 

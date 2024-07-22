@@ -20,6 +20,7 @@ public class PenaltyKickFailed extends AGameEvent
 	ETeamColor team;
 	IVector2 location;
 
+
 	@SuppressWarnings("unsued") // used by berkeley
 	protected PenaltyKickFailed()
 	{

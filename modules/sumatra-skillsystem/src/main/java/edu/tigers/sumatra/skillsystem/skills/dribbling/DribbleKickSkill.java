@@ -9,6 +9,7 @@ import edu.tigers.sumatra.bot.State;
 import edu.tigers.sumatra.drawable.DrawableAnnotation;
 import edu.tigers.sumatra.drawable.DrawableArrow;
 import edu.tigers.sumatra.geometry.Geometry;
+import edu.tigers.sumatra.math.SumatraMath;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.pathfinder.EObstacleAvoidanceMode;
@@ -25,24 +26,18 @@ import java.awt.Color;
 
 
 /**
- * Protect the ball against a given opponent
+ * Dribble and kick the ball, aka finisher.
  */
 public class DribbleKickSkill extends AMoveToSkill
 {
-	@Configurable(defValue = "0.3", comment = "The approximate tolerance when the angle is considered to be reached")
-	private static double roughAngleTolerance = 0.3;
+	@Configurable(defValue = "0.2", comment = "The approximate tolerance when the angle is considered to be reached")
+	private static double roughAngleTolerance = 0.2;
 
 	@Configurable(defValue = "0.08", comment = "The max time to wait until angle is considered reached while within tolerance")
 	private static double maxTimeTargetAngleReached = 0.08;
 
-	@Configurable(defValue = "5.0")
-	private static double velMaxW = 5.0;
-
 	@Configurable(defValue = "1.5")
-	private static double velMax = 1.5;
-
-	@Configurable(defValue = "15.0")
-	private static double accMaxW = 15.0;
+	private static double initialVelMax = 1.5;
 
 	@Configurable(defValue = "5.0")
 	private static double initialAccMaxW = 5.0;
@@ -56,15 +51,15 @@ public class DribbleKickSkill extends AMoveToSkill
 	@Configurable(defValue = "10.0")
 	private static double kickNowVelMaxW = 10.0;
 
-	@Configurable(defValue = "2.0")
-	private static double accMax = 2.0;
+	@Configurable(defValue = "1.5")
+	private static double initialAccMax = 1.5;
 
 	private final TargetAngleReachedChecker targetAngleReachedChecker = new TargetAngleReachedChecker(
 			roughAngleTolerance, maxTimeTargetAngleReached);
 
 	private final TimestampTimer changeStateTimer = new TimestampTimer(0.1);
 
-	private final TimestampTimer safeOrientationLimitsTimer = new TimestampTimer(1.0);
+	private final TimestampTimer safeOrientationLimitsTimer = new TimestampTimer(0.25);
 
 	@Setter
 	private IVector2 destination;
@@ -76,7 +71,7 @@ public class DribbleKickSkill extends AMoveToSkill
 	private boolean kickIfTargetOrientationReached = false;
 
 	@Setter
-	private boolean forceKick = false;
+	private double forceKickSpeed = 0.0;
 	private double finalTargetKickSpeed;
 
 
@@ -93,10 +88,6 @@ public class DribbleKickSkill extends AMoveToSkill
 	public void doUpdate()
 	{
 		// Base stats
-		getMoveConstraints().setAccMax(accMax);
-		getMoveConstraints().setAccMaxW(accMaxW);
-		getMoveConstraints().setVelMaxW(velMaxW);
-		getMoveConstraints().setVelMax(velMax);
 		getMoveCon().setObstacleAvoidanceMode(EObstacleAvoidanceMode.AGGRESSIVE);
 
 		updateDestination(destination);
@@ -120,11 +111,13 @@ public class DribbleKickSkill extends AMoveToSkill
 		}
 
 		safeOrientationLimitsTimer.update(getWorldFrame().getTimestamp());
-		if (!safeOrientationLimitsTimer.isTimeUp(getWorldFrame().getTimestamp()))
+		if (!safeOrientationLimitsTimer.isTimeUp(getWorldFrame().getTimestamp()) && !kickIfTargetOrientationReached)
 		{
 			// we reduce our limits if we just started to dribble, the ball has still weak binding to the robot.
 			getMoveConstraints().setAccMaxW(initialAccMaxW);
 			getMoveConstraints().setVelMaxW(initialVelMaxW);
+			getMoveConstraints().setAccMax(initialAccMax);
+			getMoveConstraints().setVelMax(initialVelMax);
 		}
 
 		getShapes().get(ESkillShapesLayer.DRIBBLING_KICK).add(new DrawableArrow(getPos(), target.subtractNew(getPos())));
@@ -137,12 +130,18 @@ public class DribbleKickSkill extends AMoveToSkill
 						.setColor(Color.ORANGE));
 
 		// try being a bit more precise than the pass range, but have a minimum tolerance
-		if ((isFocused() && kickIfTargetOrientationReached) || forceKick)
+		if ((isFocused() && kickIfTargetOrientationReached))
 		{
 			// kick now!
-			setKickParams(KickParams.straight(finalTargetKickSpeed));
+			setKickParams(KickParams.straight(finalTargetKickSpeed).withDribblerMode(EDribblerMode.HIGH_POWER));
 			getShapes().get(ESkillShapesLayer.DRIBBLING_KICK)
-					.add(new DrawableAnnotation(getPos(), "is focused || force kick", Vector2.fromY(50)));
+					.add(new DrawableAnnotation(getPos(), "is focused", Vector2.fromY(50)));
+		} else if (forceKickSpeed > 0)
+		{
+			var kickSpeed = SumatraMath.min(forceKickSpeed, finalTargetKickSpeed);
+			setKickParams(KickParams.straight(kickSpeed).withDribblerMode(EDribblerMode.HIGH_POWER));
+			getShapes().get(ESkillShapesLayer.DRIBBLING_KICK)
+					.add(new DrawableAnnotation(getPos(), "force kick", Vector2.fromY(50)));
 		} else
 		{
 			setKickParams(KickParams.disarm().withDribblerMode(EDribblerMode.HIGH_POWER));

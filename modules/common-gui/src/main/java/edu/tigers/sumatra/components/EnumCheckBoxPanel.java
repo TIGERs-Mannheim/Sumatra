@@ -3,8 +3,16 @@
  */
 package edu.tigers.sumatra.components;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import javax.swing.BorderFactory;
+import javax.swing.BoxLayout;
+import javax.swing.JButton;
+import javax.swing.JCheckBox;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
+import java.io.Serial;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
@@ -14,15 +22,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
-import java.util.stream.Collectors;
-
-import javax.swing.BorderFactory;
-import javax.swing.BoxLayout;
-import javax.swing.JButton;
-import javax.swing.JCheckBox;
-
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 
 /**
@@ -34,6 +33,7 @@ import org.apache.logging.log4j.Logger;
  */
 public class EnumCheckBoxPanel<T extends Enum<T>> extends BasePanel<EnumCheckBoxPanel.IEnumPanelObserver<T>>
 {
+	@Serial
 	private static final long serialVersionUID = 5263861341015714105L;
 	private static final Logger log = LogManager.getLogger(EnumCheckBoxPanel.class);
 
@@ -99,7 +99,7 @@ public class EnumCheckBoxPanel<T extends Enum<T>> extends BasePanel<EnumCheckBox
 		setLayout(new BoxLayout(this, orientation));
 
 		List<T> sortedEntries = Arrays.stream(enumClass.getEnumConstants())
-				.sorted(Comparator.comparing(Enum::toString)).collect(Collectors.toList());
+				.sorted(Comparator.comparing(Enum::toString)).toList();
 		for (T type : sortedEntries)
 		{
 			JCheckBox checkBox = new JCheckBox(getBoxLabel(type));

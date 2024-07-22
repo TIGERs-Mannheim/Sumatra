@@ -63,7 +63,6 @@ public class PassStatisticsCalc extends ACalculator
 	@Override
 	protected void doCalc()
 	{
-
 		var ongoingPassOpt = ongoingPass.get();
 		if (ongoingPassOpt.isPresent())
 		{
@@ -86,14 +85,25 @@ public class PassStatisticsCalc extends ACalculator
 		shapes.add(getDrawableText("num successful: " + passStats.getSuccessfulPasses(), 2));
 		shapes.add(getDrawableText(
 				"ratio: " + String.format("%.2f", passStats.getSuccessfulPasses() / (double) passStats.getNPasses()), 3));
+		shapes.add(getDrawableText("num reached: " + passStats.getNumPassLineReachedOnTime(), 4));
+		shapes.add(getDrawableText(
+				"ratio: " + String.format("%.2f",
+						passStats.getNumPassLineReachedOnTime() / (double) passStats.getNPasses()), 5));
 	}
 
 
 	private void storeOngoingPass(OngoingPass currentPass)
 	{
-		if (currentPass.getPass().getKick().getSource().distanceTo(getWFrame().getBall().getPos()) < filterBlockedPassesMinDist)
+		if (currentPass.getPass().getKick().getSource().distanceTo(getWFrame().getBall().getPos())
+				< filterBlockedPassesMinDist)
 		{
+			// probably an invalid pass
 			return;
+		}
+
+		if (currentPass.isPassLineBeenReachedByReceiver())
+		{
+			passStats.setNumPassLineReachedOnTime(passStats.getNumPassLineReachedOnTime() + 1);
 		}
 
 		passStats.setNPasses(passStats.getNPasses() + 1);
@@ -119,7 +129,8 @@ public class PassStatisticsCalc extends ACalculator
 
 	private IDrawableShape getDrawableText(final String text, final int offset)
 	{
-		return new DrawableBorderText(Vector2.fromXY(1, 5.0 + offset), text)
+		double baseOffset = getWFrame().getTeamColor() == ETeamColor.YELLOW ? 9.8 : 16;
+		return new DrawableBorderText(Vector2.fromXY(1, baseOffset + offset), text)
 				.setColor(getWFrame().getTeamColor() == ETeamColor.YELLOW ? Color.YELLOW : Color.BLUE);
 	}
 }

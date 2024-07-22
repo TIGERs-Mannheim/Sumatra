@@ -13,9 +13,9 @@ dependencies {
     implementation project(':sumatra-model')
     implementation project(':moduli-bot-params')
 
-    implementation 'org.apache.logging.log4j:log4j-api:2.20.0'
+    implementation(libs.org.apache.logging.log4j.log4j.api)
 
-    implementation 'com.fasterxml.jackson.core:jackson-databind:2.15.2'
-    implementation 'com.fasterxml.jackson.core:jackson-core:2.15.2'
-    implementation 'com.miglayout:miglayout-swing:11.1'
+    implementation(libs.com.fasterxml.jackson.core.jackson.databind)
+    implementation(libs.com.fasterxml.jackson.core.jackson.core)
+    implementation(libs.com.miglayout.miglayout.swing)
 }

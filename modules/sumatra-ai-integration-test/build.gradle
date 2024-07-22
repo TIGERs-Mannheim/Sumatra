@@ -30,20 +30,20 @@ dependencies {
     integrationTestImplementation project(':moduli-bot-params')
     integrationTestRuntimeOnly project(':moduli-botmanager-sim')
 
-    integrationTestImplementation 'com.github.g3force:configurable:3.0'
+    integrationTestImplementation(libs.com.github.g3force.configurable)
 
-    integrationTestImplementation 'org.apache.logging.log4j:log4j-api:2.20.0'
-    integrationTestImplementation 'org.apache.logging.log4j:log4j-core:2.20.0'
+    integrationTestImplementation(libs.org.apache.logging.log4j.log4j.api)
+    integrationTestImplementation(libs.org.apache.logging.log4j.log4j.core)
 
-    integrationTestImplementation 'junit:junit:4.13.2'
-    integrationTestRuntimeOnly 'org.junit.vintage:junit-vintage-engine:5.9.3'
-    integrationTestImplementation 'org.assertj:assertj-core:3.24.2'
+    integrationTestImplementation(libs.junit)
+    integrationTestRuntimeOnly(libs.org.junit.vintage.junit.vintage.engine)
+    integrationTestImplementation(libs.org.assertj.assertj.core)
 
-    integrationTestAnnotationProcessor "org.projectlombok:lombok:1.18.28"
-    integrationTestImplementation "org.projectlombok:lombok:1.18.28"
+    integrationTestAnnotationProcessor(libs.org.projectlombok.lombok)
+    integrationTestImplementation(libs.org.projectlombok.lombok)
 
-    integrationTestImplementation 'org.openjdk.jmh:jmh-core:1.36'
-    integrationTestAnnotationProcessor 'org.openjdk.jmh:jmh-generator-annprocess:1.36'
+    integrationTestImplementation(libs.org.openjdk.jmh.jmh.core)
+    integrationTestAnnotationProcessor(libs.org.openjdk.jmh.jmh.generator.annprocess)
 }
 
 tasks.register('integrationTest', Test) {
@@ -51,9 +51,6 @@ tasks.register('integrationTest', Test) {
     group = "verification"
 
     maxHeapSize = "2g"
-    jvmArgs([
-            '-server',
-    ])
 
     testClassesDirs = sourceSets.integrationTest.output.classesDirs
     classpath = sourceSets.integrationTest.runtimeClasspath

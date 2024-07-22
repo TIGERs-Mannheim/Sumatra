@@ -64,7 +64,7 @@ public class OffensiveStrategyCalc extends ACalculator
 		for (var entry : offensiveStrategy.getCurrentOffensivePlayConfiguration().entrySet())
 		{
 			ITrackedBot tBot = getWFrame().getBot(entry.getKey());
-			getShapes(EAiShapesLayer.OFFENSIVE_STRATEGY_DEBUG)
+			getShapes(EAiShapesLayer.OFFENSE_STRATEGY_DEBUG)
 					.add(new DrawableAnnotation(tBot.getPos(), entry.getValue().name(), COLOR)
 							.withCenterHorizontally(true)
 							.withOffset(Vector2f.fromY(-170)));

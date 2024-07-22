@@ -28,9 +28,10 @@ import edu.tigers.sumatra.pathfinder.finder.PathFinder;
 import edu.tigers.sumatra.pathfinder.finder.PathFinderInput;
 import edu.tigers.sumatra.pathfinder.finder.PathFinderInputProcessor;
 import edu.tigers.sumatra.pathfinder.finder.PathFinderResult;
+import edu.tigers.sumatra.pathfinder.finder.TrajPath;
 import edu.tigers.sumatra.pathfinder.obstacles.IObstacle;
 import edu.tigers.sumatra.pathfinder.obstacles.ObstacleGenerator;
-import edu.tigers.sumatra.pathfinder.obstacles.input.CollisionInput;
+import edu.tigers.sumatra.pathfinder.obstacles.input.DynamicMargin;
 import edu.tigers.sumatra.skillsystem.ESkillShapesLayer;
 import edu.tigers.sumatra.skillsystem.skills.util.DoubleChargingValue;
 import edu.tigers.sumatra.trajectory.TrajectoryWithTime;
@@ -45,17 +46,31 @@ import lombok.extern.log4j.Log4j2;
 import java.awt.Color;
 import java.text.DecimalFormat;
 import java.util.List;
+import java.util.Optional;
 
 
 @Log4j2
 public abstract class AMoveToSkill extends AMoveSkill
 {
 	private static final DecimalFormat DF_2 = new DecimalFormat("#.##");
+
 	@Configurable(defValue = "false")
 	private static boolean debugShapes = false;
 
-	@Configurable(defValue = "0.1", comment = "Time offset [s] to add to brake time to compensate reaction time")
-	private static double brakeReactionTime = 0.1;
+	@Configurable(defValue = "0.05", comment = "Time offset [s] to add to brake time to compensate reaction time")
+	private static double brakeReactionTime = 0.05;
+
+	@Configurable(defValue = "0.6", comment = "Velocity [m/s] to subtract from current velocity when calculating brake time")
+	private static double brakeVelTolerance = 0.6;
+
+	@Configurable(defValue = "0.5", comment = "Minimum velocity [m/s] to limit the max velocity to when no good path is found")
+	private static double maxRobotSpeedLimiterMinVel = 0.5;
+
+	@Configurable(defValue = "5", comment = "Rate [m/s²] that the limited velocity is increased")
+	private static double maxRobotSpeedLimiterIncreaseRate = 5;
+
+	@Configurable(defValue = "-5", comment = "Rate [m/s²] that the limited velocity is decreased")
+	private static double maxRobotSpeedLimiterDecreaseRate = -5;
 
 
 	@Getter
@@ -92,7 +107,11 @@ public abstract class AMoveToSkill extends AMoveSkill
 		moveConstraints.resetLimits(getBot().getBotParams().getMovementLimits());
 		double maxVel = getBot().getBotParams().getMovementLimits().getVelMaxFast();
 		maxRobotSpeedLimiter = new DoubleChargingValue(
-				maxVel, 5, -2.5, 1, maxVel
+				maxVel,
+				maxRobotSpeedLimiterIncreaseRate,
+				maxRobotSpeedLimiterDecreaseRate,
+				maxRobotSpeedLimiterMinVel,
+				maxVel
 		);
 	}
 
@@ -116,21 +135,46 @@ public abstract class AMoveToSkill extends AMoveSkill
 
 		List<IObstacle> obstacles = obstacleGen.generateObstacles(getWorldFrame(), getBot().getBotId(), getGameState());
 
-		PathFinderResult pathResult = findNewPath(currentMoveConstraints, obstacles);
-		drawPathFinderResult(pathResult);
+		PathFinderInput pathFinderInput = getPathFinderInput(currentMoveConstraints, obstacles);
+		Optional<PathFinderResult> pathResult = finder.calcPath(pathFinderInput);
+		pathResult.ifPresent(this::drawPathFinderResult);
 
-		if (comeToAStop || needToBrake(pathResult))
+		if (comeToAStop)
+		{
+			performBrake(currentMoveConstraints);
+			destinationReachedIn = Double.POSITIVE_INFINITY;
+		} else if (pathResult.isEmpty() || needToBrake(pathResult.get()))
 		{
 			maxRobotSpeedLimiter.setChargeMode(DoubleChargingValue.ChargeMode.DECREASE);
 			performBrake(currentMoveConstraints);
+			drawDirectPath(pathFinderInput, currentMoveConstraints);
+			destinationReachedIn = Double.POSITIVE_INFINITY;
 		} else
 		{
 			maxRobotSpeedLimiter.setChargeMode(DoubleChargingValue.ChargeMode.INCREASE);
-			executePath(pathResult, currentMoveConstraints);
+			executePath(pathResult.get().getTrajectory(), currentMoveConstraints);
+			destinationReachedIn = pathResult.get().getTrajectory().getTotalTime();
 		}
 
+		getShapes().get(ESkillShapesLayer.PATH_LIMITED_VEL).add(
+				new DrawableAnnotation(getPos(), "limVel: " + DF_2.format(maxRobotSpeedLimiter.getValue()))
+						.withOffsetX(150)
+		);
 		maxRobotSpeedLimiter.update(getWorldFrame().getTimestamp());
-		destinationReachedIn = pathResult.getTrajectory().getTotalTime();
+	}
+
+
+	private void drawDirectPath(PathFinderInput pathFinderInput, MoveConstraints currentMoveConstraints)
+	{
+		getShapes().get(ESkillShapesLayer.PATH).add(
+				new DrawablePlanarCurve(
+						TrajectoryGenerator.generatePositionTrajectory(
+								getTBot(),
+								pathFinderInput.getDest(),
+								currentMoveConstraints
+						)
+				).setColor(Color.magenta)
+		);
 	}
 
 
@@ -142,7 +186,8 @@ public abstract class AMoveToSkill extends AMoveSkill
 
 	private double brakeTime()
 	{
-		return getTBot().getVel().getLength2() / getTBot().getMoveConstraints().getAccMaxDerived() + brakeReactionTime;
+		double vel = Math.max(0, getTBot().getVel().getLength2() - brakeVelTolerance);
+		return vel / getTBot().getMoveConstraints().getAccMaxDerived() + brakeReactionTime;
 	}
 
 
@@ -154,15 +199,7 @@ public abstract class AMoveToSkill extends AMoveSkill
 						.setStrokeWidth(30)
 		);
 
-		if (comeToAStop)
-		{
-			// brake normally
-			currentMoveConstraints.setAccMax(currentMoveConstraints.getAccMax());
-		} else
-		{
-			// brake as fast as possible
-			currentMoveConstraints.setAccMax(currentMoveConstraints.getBrkMax());
-		}
+		currentMoveConstraints.setAccMax(currentMoveConstraints.getBrkMax());
 		currentMoveConstraints.setAccMaxW(DriveLimits.MAX_ACC_W);
 		currentMoveConstraints.setJerkMax(DriveLimits.MAX_JERK);
 		currentMoveConstraints.setJerkMaxW(DriveLimits.MAX_JERK_W);
@@ -172,7 +209,7 @@ public abstract class AMoveToSkill extends AMoveSkill
 	}
 
 
-	private PathFinderResult findNewPath(MoveConstraints currentMoveConstraints, List<IObstacle> obstacles)
+	private PathFinderInput getPathFinderInput(MoveConstraints currentMoveConstraints, List<IObstacle> obstacles)
 	{
 		long timestamp = getWorldFrame().getTimestamp();
 		PathFinderInput.PathFinderInputBuilder inputBuilder = PathFinderInput.fromBot(getTBot().getBotState());
@@ -196,7 +233,7 @@ public abstract class AMoveToSkill extends AMoveSkill
 				new DrawableCircle(Circle.createCircle(adaptedInput.getDest(), radius - 10)).setColor(color)
 		);
 
-		return finder.calcPath(adaptedInput);
+		return adaptedInput;
 	}
 
 
@@ -229,27 +266,35 @@ public abstract class AMoveToSkill extends AMoveSkill
 
 
 	private void executePath(
-			PathFinderResult pathFinderResult,
+			TrajPath trajPath,
 			IMoveConstraints currentMoveConstraints
 	)
 	{
-		var trajectory = pathFinderResult.getTrajectory();
-
-		var dest = trajectory.getNextDestination(0);
+		var dest = trajPath.getNextDestination(0);
 		setTargetPose(dest, targetAngle, currentMoveConstraints);
 
 		var trajW = TrajectoryGenerator.generateRotationTrajectory(getTBot(), targetAngle, currentMoveConstraints);
-		var trajectoryXyw = new TrajectoryXyw(trajectory, trajW);
+		var trajectoryXyw = new TrajectoryXyw(trajPath, trajW);
 		currentTrajectory = new TrajectoryWithTime<>(trajectoryXyw, getWorldFrame().getTimestamp());
+
+		getShapes().get(ESkillShapesLayer.PATH).add(
+				new DrawablePlanarCurve(trajPath).setColor(Color.green)
+		);
+
+		getShapes().get(ESkillShapesLayer.PATH_DEBUG).add(
+				new DrawableAnnotation(destination, "tt: " + DF_2.format(trajPath.getTotalTime()))
+		);
+		if (debugShapes)
+		{
+			getShapes().get(EPathFinderShapesLayer.PATH_COLLISION_AREA).add(
+					new DrawableTrajectoryArea(trajPath, DynamicMargin::getExtraMargin)
+			);
+		}
 	}
 
 
 	private void drawPathFinderResult(PathFinderResult pathResult)
 	{
-		getShapes().get(ESkillShapesLayer.PATH).add(
-				new DrawablePlanarCurve(pathResult.getTrajectory()).setColor(Color.green)
-		);
-
 		for (var collision : pathResult.getCollisions())
 		{
 			if (Double.isFinite(collision.getFirstCollisionTime()))
@@ -259,16 +304,6 @@ public abstract class AMoveToSkill extends AMoveSkill
 						new DrawablePoint(collisionPos).setColor(Color.RED)
 				);
 			}
-		}
-
-		getShapes().get(ESkillShapesLayer.PATH_DEBUG).add(
-				new DrawableAnnotation(destination, "tt: " + DF_2.format(pathResult.getTrajectory().getTotalTime()))
-		);
-		if (debugShapes)
-		{
-			getShapes().get(EPathFinderShapesLayer.PATH_COLLISION_AREA).add(
-					new DrawableTrajectoryArea(pathResult.getTrajectory(), CollisionInput::getExtraMargin)
-			);
 		}
 	}
 

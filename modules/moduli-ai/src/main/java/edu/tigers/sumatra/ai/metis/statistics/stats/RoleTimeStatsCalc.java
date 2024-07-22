@@ -57,7 +57,7 @@ public class RoleTimeStatsCalc extends AStatsCalc
 
 		totalRoleCount += playMapGeneral.keySet().stream()
 				.map(previousPlayStrategy::getActiveRoles)
-				.mapToLong(Collection::size)
+				.mapToInt(Collection::size)
 				.sum();
 
 		for (Map.Entry<EPlay, Percentage> entry : playMapGeneral.entrySet())

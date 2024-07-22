@@ -21,6 +21,7 @@ import edu.tigers.sumatra.views.ASumatraView;
 import edu.tigers.sumatra.views.ESumatraViewType;
 import edu.tigers.sumatra.views.EViewMode;
 import edu.tigers.sumatra.views.ISumatraPresenter;
+import edu.tigers.sumatra.visualizer.VisualizerPresenter;
 import edu.tigers.sumatra.wp.IWorldFrameObserver;
 import edu.tigers.sumatra.wp.data.WorldFrameWrapper;
 import lombok.extern.log4j.Log4j2;
@@ -79,6 +80,12 @@ public class ReplayPresenter extends AMainPresenter
 			if (view.getType() == ESumatraViewType.REPLAY_CONTROL)
 			{
 				replayControlPresenter = (ReplayControlPresenter) view.getPresenter();
+			}
+
+			if (view.getType() == ESumatraViewType.VISUALIZER)
+			{
+				var visualizerPresenter = (VisualizerPresenter) view.getPresenter();
+				visualizerPresenter.setPropertiesPrefix(ReplayPresenter.class.getCanonicalName() + ".VisualizerPresenter.");
 			}
 		}
 
@@ -330,7 +337,7 @@ public class ReplayPresenter extends AMainPresenter
 			updateEndTime();
 			if (playing)
 			{
-				replayCurTime += ((System.nanoTime() - replayLastTime) * speed);
+				replayCurTime += Math.round((System.nanoTime() - replayLastTime) * speed);
 				if (replayCurTime < 0)
 				{
 					replayCurTime = 0;

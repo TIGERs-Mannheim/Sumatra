@@ -38,14 +38,14 @@ public class BotOverviewPresenter implements ISumatraViewPresenter, IVisualizati
 	@Override
 	public void onStartModuli()
 	{
-		SumatraModel.getInstance().getModule(Agent.class).addVisObserver(this);
+		SumatraModel.getInstance().getModuleOpt(Agent.class).ifPresent(a -> a.addVisObserver(this));
 	}
 
 
 	@Override
 	public void onStopModuli()
 	{
-		SumatraModel.getInstance().getModule(Agent.class).removeVisObserver(this);
+		SumatraModel.getInstance().getModuleOpt(Agent.class).ifPresent(a -> a.removeVisObserver(this));
 	}
 
 

@@ -20,21 +20,20 @@ dependencies {
     implementation project(':moduli-wp')
     implementation project(':moduli-botmanager')
     implementation project(':moduli-botmanager-tigers')
-    implementation project(':moduli-vision')
     implementation project(':moduli-cam')
-    api project(':moduli-offensive-tree')
     implementation project(':moduli-referee')
     implementation project(':moduli-geometry')
     implementation project(':moduli-statistics-saver')
 
-    implementation 'com.github.TIGERs-Mannheim.matlabcontrol:matlabcontrol:4.1.2'
-    api 'com.github.g3force:configurable:3.0'
-    implementation 'com.github.g3force:instanceables:5.2'
+    implementation(libs.com.github.TIGERs.mannheim.matlabcontrol)
+    api(libs.com.github.g3force.configurable)
+    implementation(libs.com.github.g3force.instanceables)
 
-    implementation 'org.apache.logging.log4j:log4j-api:2.20.0'
+    implementation(libs.org.apache.commons.commons.math3)
+    implementation(libs.org.apache.logging.log4j.log4j.api)
 
-    implementation 'commons-lang:commons-lang:2.6'
+    implementation(libs.commons.lang)
 
-    implementation 'com.sleepycat:je:18.3.12'
-    implementation 'com.googlecode.json-simple:json-simple:1.1.1'
+    implementation(libs.com.sleepycat.je)
+    implementation(libs.com.googlecode.json.simple)
 }

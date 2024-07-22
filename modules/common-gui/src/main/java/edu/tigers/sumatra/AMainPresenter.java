@@ -115,13 +115,6 @@ public abstract class AMainPresenter implements IMainFrameObserver
 
 
 	@Override
-	public void onRefreshLayoutItems()
-	{
-		refreshLayoutItems();
-	}
-
-
-	@Override
 	public void onLoadLayout(final String filename)
 	{
 		String path = LAYOUT_CONFIG_PATH + filename;
@@ -144,7 +137,7 @@ public abstract class AMainPresenter implements IMainFrameObserver
 	public void onExit()
 	{
 		GlobalShortcuts.removeAllForFrame(getMainFrame());
-		
+
 		// ### Persist user settings
 		final Properties appProps = SumatraModel.getInstance().getUserSettings();
 

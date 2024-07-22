@@ -18,6 +18,7 @@ import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.IVector3;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.math.vector.Vector3;
+import edu.tigers.sumatra.math.vector.Vector3f;
 
 import java.util.Optional;
 
@@ -84,8 +85,12 @@ public class BotCollisionObject implements ICollisionObject
 		frontLine = Lines.segmentFromPoints(leftBotEdge, rightBotEdge);
 		frontTriangle = Triangle.fromCorners(pose.getPos(), leftBotEdge, rightBotEdge);
 
-		lineCollision = new KickerFrontLineCollisionObject(frontLine, vel, Vector2.fromAngle(pose.getOrientation()),
-				botID);
+		var connection = Vector2.fromPoints(kickCenter, pose.getPos());
+		var rotationSpeed = connection.getNormalVector().multiply(vel.z());
+		var frontLineVel = vel.addNew(Vector3.from2d(rotationSpeed, 0)); // Rotation speed unchanged for front line
+
+		lineCollision = new KickerFrontLineCollisionObject(frontLine, vel, frontLineVel,
+				Vector2.fromAngle(pose.getOrientation()), botID);
 
 		IVector3 impulse;
 		if (chip)
@@ -106,6 +111,7 @@ public class BotCollisionObject implements ICollisionObject
 		lineCollision.setImpulse(impulse);
 		lineCollision.setSticky(sticky);
 		lineCollision.setDampFactor(1);
+		lineCollision.setDampFactorOrthogonal(1);
 	}
 
 
@@ -113,6 +119,17 @@ public class BotCollisionObject implements ICollisionObject
 	public IVector3 getVel()
 	{
 		return vel;
+	}
+
+
+	@Override
+	public IVector2 getSurfaceVel(IVector2 contactPos)
+	{
+		if (isInFront(Vector3f.from2d(contactPos, 0)))
+		{
+			return lineCollision.getSurfaceVel(contactPos);
+		}
+		return circleCollisionObject.getSurfaceVel(contactPos);
 	}
 
 
@@ -142,7 +159,7 @@ public class BotCollisionObject implements ICollisionObject
 	{
 		if (isInFront(prePos))
 		{
-			double margin = lineCollision.isSticky() && lineCollision.getImpulse(prePos).getXYVector().isZeroVector() ? 10
+			double margin = lineCollision.isSticky() && lineCollision.getImpulse().getXYVector().isZeroVector() ? 10
 					: 0;
 			if (frontTriangle.withMargin(margin).isPointInShape(prePos.getXYVector()))
 			{
@@ -158,9 +175,9 @@ public class BotCollisionObject implements ICollisionObject
 
 
 	@Override
-	public IVector3 getImpulse(final IVector3 prePos)
+	public IVector3 getImpulse()
 	{
-		return lineCollision.getImpulse(prePos);
+		return lineCollision.getImpulse();
 	}
 
 

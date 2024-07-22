@@ -64,7 +64,7 @@ public class BerkeleyLogEvent
 				.setMessage(new SimpleMessage(message))
 				.setThreadName(thread)
 				.setTimeMillis(timestamp)
-				.setContextData(new JdkMapAdapterStringMap(contextData))
+				.setContextData(new JdkMapAdapterStringMap(contextData, true))
 				.build();
 	}
 

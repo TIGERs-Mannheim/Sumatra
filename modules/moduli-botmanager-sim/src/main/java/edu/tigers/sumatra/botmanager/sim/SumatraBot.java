@@ -6,6 +6,7 @@ package edu.tigers.sumatra.botmanager.sim;
 
 import edu.tigers.sumatra.bot.BotState;
 import edu.tigers.sumatra.bot.EBotType;
+import edu.tigers.sumatra.bot.EDribbleTractionState;
 import edu.tigers.sumatra.bot.State;
 import edu.tigers.sumatra.botmanager.basestation.IBaseStation;
 import edu.tigers.sumatra.botmanager.botskills.data.MatchCommand;
@@ -25,12 +26,12 @@ import java.util.Optional;
  */
 public class SumatraBot extends ASimBot
 {
-	private static final double TIME_TILL_FULL_DRIBBLE_STRENGTH = 0.5; // [s]
+	private static final double TIME_TILL_FULL_DRIBBLE_STRENGTH = 0.2; // [s]
 	private boolean barrierInterrupted;
 	private SimBotState botState;
 
 	private long firstInterruptedTime = -1;
-	private double dribblerCurrent = 0;
+	private EDribbleTractionState dribbleTraction = EDribbleTractionState.OFF;
 
 
 	/**
@@ -44,10 +45,7 @@ public class SumatraBot extends ASimBot
 
 
 	@Override
-	public double getDribblerCurrent()
-	{
-		return dribblerCurrent;
-	}
+	public EDribbleTractionState getDribbleTractionState() { return dribbleTraction; }
 
 
 	@Override
@@ -87,7 +85,17 @@ public class SumatraBot extends ASimBot
 		barrierInterrupted = botState.isBarrierInterrupted();
 		lastFeedback = botState.getLastFeedback();
 
-		if (barrierInterrupted && getMatchCtrl().getSkill().getKickerDribbler().getDribblerSpeed() > 0)
+		if(getMatchCtrl().getSkill().getKickerDribbler().getDribblerSpeed() <= 0.1)
+		{
+			dribbleTraction = EDribbleTractionState.OFF;
+			firstInterruptedTime = -1;
+		}
+		else if(!barrierInterrupted)
+		{
+			dribbleTraction = EDribbleTractionState.IDLE;
+			firstInterruptedTime = -1;
+		}
+		else
 		{
 			if (firstInterruptedTime == -1)
 			{
@@ -95,12 +103,13 @@ public class SumatraBot extends ASimBot
 			}
 			var percentage = SumatraMath.relative((timestamp - firstInterruptedTime) / 1e9, 0,
 					TIME_TILL_FULL_DRIBBLE_STRENGTH);
-			dribblerCurrent = percentage * getMatchCtrl().getSkill().getKickerDribbler().getDribblerMaxCurrent();
-		} else
-		{
-			firstInterruptedTime = -1;
-			dribblerCurrent = 0;
+
+			if(percentage > 0.75)
+				dribbleTraction = EDribbleTractionState.STRONG;
+			else
+				dribbleTraction = EDribbleTractionState.LIGHT;
 		}
+
 		return botSkillOutput.getAction();
 	}
 }

@@ -25,4 +25,9 @@ public interface ICheeringPlay
 
 
 	ECheeringPlays getType();
+
+	default int requiredNumRobots()
+	{
+		return 3;
+	}
 }

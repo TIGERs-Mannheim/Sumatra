@@ -20,22 +20,19 @@ import static edu.tigers.sumatra.drawable.ShapeMap.EShapeLayerPersistenceType.DE
 public final class EPathFinderShapesLayer
 {
 	private static final ShapeLayerFactory F = new ShapeLayerFactory(EPathFinderShapesLayer.class, 80);
-	private static final String PATH_FINDER = "PathFinder";
+	private static final String MOVEMENT = "Movement";
+	private static final String PATH_FINDER = "Path Finder";
 
 	public static final IShapeLayerIdentifier PATH_COLLISION_AREA = F.create(
-			F.layer("Path collision area").category(PATH_FINDER).persistenceType(DEBUG_PERSIST));
-
+			F.category(MOVEMENT).category(PATH_FINDER).layerName("Path collision area").persistenceType(DEBUG_PERSIST));
 	public static final IShapeLayerIdentifier PATHS_CHECKED = F.create(
-			F.layer("Paths checked").category(PATH_FINDER).persistenceType(DEBUG_PERSIST));
-
+			F.category(MOVEMENT).category(PATH_FINDER).layerName("Paths checked").persistenceType(DEBUG_PERSIST));
 	public static final IShapeLayerIdentifier SUB_DEST_TRIED = F.create(
-			F.layer("Tried sub destinations").category(PATH_FINDER).persistenceType(DEBUG_PERSIST));
-
+			F.category(MOVEMENT).category(PATH_FINDER).layerName("Tried sub destinations").persistenceType(DEBUG_PERSIST));
 	public static final IShapeLayerIdentifier COLLISION_CHECK_POINTS = F.create(
-			F.layer("Collision check points").category(PATH_FINDER).persistenceType(DEBUG_PERSIST));
-
+			F.category(MOVEMENT).category(PATH_FINDER).layerName("Collision check points").persistenceType(DEBUG_PERSIST));
 	public static final IShapeLayerIdentifier ALL_OBSTACLES = F.create(
-			F.layer("All obstacles").category(PATH_FINDER));
+			F.category(MOVEMENT).category(PATH_FINDER).layerName("All obstacles"));
 
 
 	public static IShapeLayerIdentifier obstacleCheckPoints(String obstacleId)

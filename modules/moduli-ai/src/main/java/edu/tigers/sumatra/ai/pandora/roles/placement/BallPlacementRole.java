@@ -11,10 +11,10 @@ import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
 import edu.tigers.sumatra.ai.pandora.roles.ARole;
 import edu.tigers.sumatra.ai.pandora.roles.ERole;
 import edu.tigers.sumatra.drawable.DrawableCircle;
+import edu.tigers.sumatra.drawable.IDrawableShape;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.geometry.RuleConstraints;
 import edu.tigers.sumatra.math.AngleMath;
-import edu.tigers.sumatra.math.GenericHysteresis;
 import edu.tigers.sumatra.math.circle.Circle;
 import edu.tigers.sumatra.math.line.LineMath;
 import edu.tigers.sumatra.math.vector.IVector2;
@@ -24,6 +24,7 @@ import edu.tigers.sumatra.skillsystem.skills.ApproachAndStopBallSkill;
 import edu.tigers.sumatra.skillsystem.skills.DropBallSkill;
 import edu.tigers.sumatra.skillsystem.skills.ESkillState;
 import edu.tigers.sumatra.skillsystem.skills.GetBallContactSkill;
+import edu.tigers.sumatra.skillsystem.skills.IdleSkill;
 import edu.tigers.sumatra.skillsystem.skills.MoveToSkill;
 import edu.tigers.sumatra.skillsystem.skills.MoveWithBallSkill;
 import edu.tigers.sumatra.skillsystem.skills.ReceiveBallSkill;
@@ -34,6 +35,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.awt.Color;
+import java.util.List;
 import java.util.function.Supplier;
 
 
@@ -45,9 +47,6 @@ public class BallPlacementRole extends ARole
 	@Configurable(defValue = "PULL_PUSH")
 	private static EBallHandling ballHandling = EBallHandling.PULL_PUSH;
 
-	@Configurable(defValue = "150.0", comment = "Distance [mm] to pull the ball out of the goal")
-	private static double goalPullOutDistance = 150;
-
 	@Configurable(defValue = "2.0")
 	private static double passEndSpeed = 2.0;
 
@@ -57,12 +56,20 @@ public class BallPlacementRole extends ARole
 	@Configurable(defValue = "50", comment = "Extra tolerance to subtract from the rule-defined placement tolerance")
 	private static double extraPlacementTolerance = 50;
 
+	@Configurable(defValue = "30", comment = "Angle [deg] that the robot can turn with the ball on dribbler while pulling")
+	private static double maxRotateWhilePullAngle = 30;
+
 	@Setter
 	private IVector2 ballTargetPos = Vector2.zero();
 	@Setter
 	private EPassMode passMode = EPassMode.NONE;
 	@Getter
 	private boolean ballPlacedAndCleared = false;
+	@Setter
+	private double placementTolerance = RuleConstraints.getBallPlacementTolerance() - extraPlacementTolerance;
+
+	private final PullAwayDestCalc pullAwayDestCalc = new PullAwayDestCalc();
+	private IVector2 currentBallTarget;
 
 
 	public BallPlacementRole()
@@ -73,6 +80,7 @@ public class BallPlacementRole extends ARole
 		var dropBallState = new BaseState<>(DropBallSkill::new);
 		var receiveState = new BaseState<>(ReceiveBallSkill::new);
 		var prepareState = new PrepareState();
+		var decisionState = new RoleState<>(IdleSkill::new);
 		var stopBallState = new BaseState<>(ApproachAndStopBallSkill::new);
 		var getBallContactState = new BaseState<>(GetBallContactSkill::new);
 		var moveWithBallState = new MoveWithBallState();
@@ -88,10 +96,10 @@ public class BallPlacementRole extends ARole
 		receiveState.addTransition(ESkillState.SUCCESS, prepareState);
 		receiveState.addTransition(ESkillState.FAILURE, stopBallState);
 		prepareState.addTransition("ballIsPlaced", this::ballIsPlaced, dropBallState);
-		prepareState.addTransition("success", prepareState::success, getBallContactState);
+		prepareState.addTransition("success", prepareState::success, decisionState);
 		prepareState.addTransition("ballMoving", prepareState::ballMoving, receiveState);
-		prepareState.addTransition("ballNeedsToBePassed", this::ballNeedsToBePassed, passState);
-		prepareState.addTransition("skipPrepare", prepareState::skipPrepare, getBallContactState);
+		decisionState.addTransition("ballNeedsToBePassed", this::ballNeedsToBePassed, passState);
+		decisionState.addTransition("move ball", () -> !ballNeedsToBePassed(), getBallContactState);
 		stopBallState.addTransition(ESkillState.SUCCESS, prepareState);
 		stopBallState.addTransition(ESkillState.FAILURE, prepareState);
 		getBallContactState.addTransition(ESkillState.SUCCESS, moveWithBallState);
@@ -107,17 +115,34 @@ public class BallPlacementRole extends ARole
 
 
 	@Override
+	protected void beforeUpdate()
+	{
+		if (currentBallTarget == null)
+		{
+			updateCurrentBallTarget();
+		}
+	}
+
+
+	private void updateCurrentBallTarget()
+	{
+		currentBallTarget = pullAwayDestCalc.getPullAwayBallTarget(getBall().getPos()).orElse(ballTargetPos);
+	}
+
+
+	@Override
 	protected void afterUpdate()
 	{
-		super.afterUpdate();
-		getShapes(EAiShapesLayer.AI_BALL_PLACEMENT).add(
-				new DrawableCircle(Circle.createCircle(getCurrentBallTarget(), getBallPlacementTolerance()),
+		List<IDrawableShape> shapes = getShapes(EAiShapesLayer.AI_BALL_PLACEMENT);
+		shapes.add(
+				new DrawableCircle(Circle.createCircle(currentBallTarget, placementTolerance),
 						Color.magenta)
 		);
-		getShapes(EAiShapesLayer.AI_BALL_PLACEMENT).add(
-				new DrawableCircle(Circle.createCircle(ballTargetPos, getBallPlacementTolerance()),
+		shapes.add(
+				new DrawableCircle(Circle.createCircle(ballTargetPos, placementTolerance),
 						Color.cyan)
 		);
+		shapes.addAll(pullAwayDestCalc.getShapes());
 	}
 
 
@@ -130,72 +155,25 @@ public class BallPlacementRole extends ARole
 	private boolean ballNeedsToBePassed()
 	{
 		return passMode != EPassMode.NONE
-				&& getCurrentBallTarget().equals(ballTargetPos);
+				&& currentBallTarget.equals(ballTargetPos);
 	}
 
 
 	private boolean ballNotOnTargetYet()
 	{
-		double target2BallDist = getCurrentBallTarget()
+		if (!Geometry.getField().isPointInShape(getBall().getPos()))
+		{
+			// Never when outside of field, even if within placement tolerance
+			return true;
+		}
+		double target2BallDist = currentBallTarget
 				.distanceTo(getBall().getTrajectory().getPosByVel(0.0).getXYVector());
-		return target2BallDist > getBallPlacementTolerance();
-	}
-
-
-	private IVector2 getCurrentBallTarget()
-	{
-		if (ballInGoal(0))
-		{
-			return getDestinationOutsideGoal();
-		}
-
-		var ballPos = getBall().getPos();
-		var nearestInField = Geometry.getField().withMargin(-100).nearestPointInside(ballPos);
-		if (nearestInField.distanceTo(ballPos) < getBallPlacementTolerance())
-		{
-			return ballTargetPos;
-		}
-		return Geometry.getField().withMargin(-300).nearestPointInside(ballPos);
-	}
-
-
-	private boolean ballInGoal(double margin)
-	{
-		double fullMargin = goalPullOutDistance + margin;
-		return Geometry.getGoalOur().getRectangle().withMargin(fullMargin).isPointInShape(getBall().getPos())
-				|| Geometry.getGoalTheir().getRectangle().withMargin(fullMargin).isPointInShape(getBall().getPos());
-	}
-
-
-	private IVector2 getDestinationOutsideGoal()
-	{
-		double margin = goalPullOutDistance + 100;
-		double y = 0;
-		if (Math.abs(getBall().getPos().y()) > Geometry.getGoalTheir().getWidth() / 2)
-		{
-			// outside of goal
-			y = Math.signum(getBall().getPos().y()) * (Geometry.getGoalTheir().getWidth() / 2 + 300);
-		}
-		return Vector2.fromXY(Math.signum(getBall().getPos().x()) * (Geometry.getFieldLength() / 2 - margin), y);
-	}
-
-
-	private double getBallPlacementTolerance()
-	{
-		return RuleConstraints.getBallPlacementTolerance() - extraPlacementTolerance;
+		return target2BallDist > placementTolerance;
 	}
 
 
 	private class PrepareState extends BaseState<MoveToSkill>
 	{
-		private final GenericHysteresis forcePullHysteresis = new GenericHysteresis(
-				// lower <=> ball outside or in goal <=> force pull
-				() -> !Geometry.getFieldWBorders().withMargin(-300).isPointInShape(getBall().getPos())
-						|| ballInGoal(0),
-				// upper <=> ball inside and not in goal <=> no force
-				() -> Geometry.getFieldWBorders().withMargin(-400).isPointInShape(getBall().getPos())
-						&& !ballInGoal(100)
-		);
 		private final TimestampTimer calmDownTimer = new TimestampTimer(0.0);
 		private boolean calmedDown;
 
@@ -229,11 +207,14 @@ public class BallPlacementRole extends ARole
 		@Override
 		protected void onUpdate()
 		{
+			updateCurrentBallTarget();
 			if (calmDownTimer.isTimeUp(getWFrame().getTimestamp()))
 			{
 				skill.setComeToAStop(false);
 				skill.updateDestination(getDest());
 				skill.getMoveCon().setBallObstacle(true);
+				// If goal is outside field (playing with walls), we have to move "out of field"
+				skill.getMoveCon().setFieldBorderObstacle(false);
 				calmedDown = true;
 			}
 		}
@@ -242,12 +223,6 @@ public class BallPlacementRole extends ARole
 		public boolean success()
 		{
 			return calmedDown && skill.getSkillState() == ESkillState.SUCCESS;
-		}
-
-
-		public boolean skipPrepare()
-		{
-			return ballHandling == EBallHandling.PULL_PUSH_ROTATE;
 		}
 
 
@@ -260,14 +235,18 @@ public class BallPlacementRole extends ARole
 		private IVector2 getDest()
 		{
 			double margin = 210;
-			IVector2 pushDest = LineMath.stepAlongLine(getBall().getPos(), getCurrentBallTarget(), -margin);
-			IVector2 pullDest = LineMath.stepAlongLine(getBall().getPos(), getCurrentBallTarget(), margin);
+			IVector2 pushDest = LineMath.stepAlongLine(getBall().getPos(), currentBallTarget, -margin);
+			IVector2 pullDest = LineMath.stepAlongLine(getBall().getPos(), currentBallTarget, margin);
 
-			forcePullHysteresis.update();
-			if (forcePullHysteresis.isLower())
+			if (!currentBallTarget.equals(ballTargetPos))
 			{
 				// force pull
 				return pullDest;
+			}
+
+			if (ballNeedsToBePassed())
+			{
+				return pushDest;
 			}
 
 			return switch (ballHandling)
@@ -294,7 +273,7 @@ public class BallPlacementRole extends ARole
 		protected void onInit()
 		{
 			super.onInit();
-			currentPlacementPos = getCurrentBallTarget();
+			currentPlacementPos = currentBallTarget;
 			updateTargetPose();
 		}
 
@@ -302,10 +281,18 @@ public class BallPlacementRole extends ARole
 		@Override
 		protected void onUpdate()
 		{
-			if (ballHandling == EBallHandling.PULL_PUSH_ROTATE
-					&& passMode == EPassMode.NONE)
+			if (passMode == EPassMode.NONE)
 			{
-				currentPlacementPos = getCurrentBallTarget();
+				updateCurrentBallTarget();
+
+				double turnWhilePullAngle = AngleMath.diffAbs(
+						getBall().getPos().subtractNew(currentBallTarget).getAngle(),
+						getBot().getOrientation()
+				);
+				if (turnWhilePullAngle < AngleMath.deg2rad(maxRotateWhilePullAngle))
+				{
+					currentPlacementPos = currentBallTarget;
+				}
 			}
 			if (currentPlacementPos.distanceTo(getBall().getPos()) > 300)
 			{
@@ -361,6 +348,9 @@ public class BallPlacementRole extends ARole
 		@Override
 		protected void onUpdate()
 		{
+			// refresh current ball target
+			updateCurrentBallTarget();
+
 			if (!isCalmedDown())
 			{
 				return;
@@ -374,7 +364,7 @@ public class BallPlacementRole extends ARole
 				skill.updateLookAtTarget(getBall());
 				skill.getMoveCon().setBallObstacle(true);
 
-				ballPlacedAndCleared = ballTargetPos.distanceTo(getBall().getPos()) < getBallPlacementTolerance();
+				ballPlacedAndCleared = ballTargetPos.distanceTo(getBall().getPos()) < placementTolerance;
 
 				// find a valid destination, after having sufficient distance to the ball
 				// This is required to clear the stop radius in cases where the game is not continued
@@ -415,7 +405,8 @@ public class BallPlacementRole extends ARole
 		@Override
 		protected void onUpdate()
 		{
-			skill.setReadyForKick(passMode != EPassMode.WAIT);
+			// Wait for receiver to be at target destination
+			skill.setReadyForKick(passMode == EPassMode.READY);
 			double passDistance = getBall().getPos().distanceTo(ballTargetPos);
 			double passSpeed = getBall().getStraightConsultant().getInitVelForDist(passDistance, passEndSpeed);
 			skill.setKickSpeed(passSpeed);
@@ -440,7 +431,6 @@ public class BallPlacementRole extends ARole
 
 	private enum EBallHandling
 	{
-		PULL_PUSH_ROTATE,
 		PULL_PUSH,
 		PULL,
 		PUSH,

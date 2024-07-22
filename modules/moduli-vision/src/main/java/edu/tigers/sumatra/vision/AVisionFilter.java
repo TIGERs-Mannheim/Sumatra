@@ -63,7 +63,7 @@ public abstract class AVisionFilter extends AModule implements ICamFrameObserver
 	 *
 	 * @param filteredVisionFrame the filtered and complete vision frame
 	 */
-	protected final void publishFilteredVisionFrame(final FilteredVisionFrame filteredVisionFrame)
+	public final void publishFilteredVisionFrame(final FilteredVisionFrame filteredVisionFrame)
 	{
 		Safe.forEach(observers, o -> o.onNewFilteredVisionFrame(filteredVisionFrame));
 	}

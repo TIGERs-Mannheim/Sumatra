@@ -16,6 +16,7 @@ import org.apache.commons.lang.Validate;
 import javax.swing.JComboBox;
 import java.awt.event.ActionEvent;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -103,6 +104,7 @@ public class SavedConfigPresenter implements IBotConfigObserver
 				configIds.put(config.getKey(), (String) versionedConf.getValue().get("name"));
 				versions.add(versionedConf.getKey());
 			}
+			versions.sort(Comparator.reverseOrder());
 			idVersionsMap.put(config.getKey(), versions);
 		}
 		for (Map.Entry<Integer, String> entry : configIds.entrySet())
@@ -112,8 +114,7 @@ public class SavedConfigPresenter implements IBotConfigObserver
 			setListener(id, panel);
 			savedConfigsPanel.addTab(entry.getValue(), panel);
 			panels.put(id, panel);
-			onVersionSelected(id, idVersionsMap.get(id).get(0));
-
+			onVersionSelected(id, idVersionsMap.get(id).getFirst());
 		}
 	}
 

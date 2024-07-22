@@ -5,7 +5,7 @@ plugins {
 
 dependencies {
     // Specific groovy version
-    testImplementation platform('org.apache.groovy:groovy-bom:4.0.12')
+    testImplementation(platform(libs.org.apache.groovy.groovy.bom))
 
     testImplementation 'org.apache.groovy:groovy'
     testRuntimeOnly 'org.apache.groovy:groovy-templates'
@@ -13,6 +13,6 @@ dependencies {
     testRuntimeOnly 'org.apache.groovy:groovy-json'
 
     // Spock
-    testImplementation platform('org.spockframework:spock-bom:2.3-groovy-4.0')
+    testImplementation(platform(libs.org.spockframework.spock.bom))
     testImplementation 'org.spockframework:spock-core'
 }

@@ -153,12 +153,10 @@ public class BallPlacementSucceededDetector extends AGameEventDetector
 	{
 		if (frame.getRefereeMsg().getCommand() == SslGcRefereeMessage.Referee.Command.BALL_PLACEMENT_BLUE)
 		{
-			return frame.getRefereeMsg().getNextCommand() == SslGcRefereeMessage.Referee.Command.DIRECT_FREE_BLUE
-					|| frame.getRefereeMsg().getNextCommand() == SslGcRefereeMessage.Referee.Command.INDIRECT_FREE_BLUE;
+			return frame.getRefereeMsg().getNextCommand() == SslGcRefereeMessage.Referee.Command.DIRECT_FREE_BLUE;
 		} else if (frame.getRefereeMsg().getCommand() == SslGcRefereeMessage.Referee.Command.BALL_PLACEMENT_YELLOW)
 		{
-			return frame.getRefereeMsg().getNextCommand() == SslGcRefereeMessage.Referee.Command.DIRECT_FREE_YELLOW
-					|| frame.getRefereeMsg().getNextCommand() == SslGcRefereeMessage.Referee.Command.INDIRECT_FREE_YELLOW;
+			return frame.getRefereeMsg().getNextCommand() == SslGcRefereeMessage.Referee.Command.DIRECT_FREE_YELLOW;
 		}
 		return false;
 	}

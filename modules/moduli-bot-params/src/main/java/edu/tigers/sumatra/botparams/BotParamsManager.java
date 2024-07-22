@@ -3,25 +3,31 @@
  */
 package edu.tigers.sumatra.botparams;
 
+
+import com.fasterxml.jackson.core.util.DefaultIndenter;
+import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
+import com.fasterxml.jackson.core.util.Separators;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import edu.tigers.moduli.AModule;
+import edu.tigers.sumatra.bot.params.BotParams;
+import edu.tigers.sumatra.bot.params.IBotParams;
+import edu.tigers.sumatra.botparams.BotParamsDatabase.IBotParamsDatabaseObserver;
+import edu.tigers.sumatra.model.SumatraModel;
+import edu.tigers.sumatra.referee.AReferee;
+import edu.tigers.sumatra.referee.IRefereeObserver;
+import edu.tigers.sumatra.referee.proto.SslGcRefereeMessage;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import com.fasterxml.jackson.core.util.DefaultIndenter;
-import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-
-import edu.tigers.moduli.AModule;
-import edu.tigers.sumatra.bot.params.BotParams;
-import edu.tigers.sumatra.bot.params.IBotParams;
-import edu.tigers.sumatra.botparams.BotParamsDatabase.IBotParamsDatabaseObserver;
+import static com.fasterxml.jackson.core.PrettyPrinter.DEFAULT_SEPARATORS;
 
 
 /**
@@ -33,9 +39,9 @@ public class BotParamsManager extends AModule implements IBotParamsDatabaseObser
 {
 	private static final Logger log = LogManager.getLogger(BotParamsManager.class.getName());
 	private static final String DATABASE_FILE = "config/botParamsDatabase.json";
-
-	private BotParamsDatabase database;
 	private final List<IBotParamsManagerObserver> observers = new CopyOnWriteArrayList<>();
+	private BotParamsDatabase database;
+	private RefereeObserver refObserver;
 
 
 	@Override
@@ -43,6 +49,8 @@ public class BotParamsManager extends AModule implements IBotParamsDatabaseObser
 	{
 		database = loadDatabase();
 		database.addObserver(this);
+		refObserver = new RefereeObserver();
+
 	}
 
 
@@ -50,6 +58,7 @@ public class BotParamsManager extends AModule implements IBotParamsDatabaseObser
 	public void stopModule()
 	{
 		saveDatabase();
+		refObserver.onStopModuli();
 	}
 
 
@@ -61,6 +70,17 @@ public class BotParamsManager extends AModule implements IBotParamsDatabaseObser
 	public BotParamsDatabase getDatabase()
 	{
 		return database;
+	}
+
+
+	/**
+	 * Enable choice of opponent team by referee information.
+	 *
+	 * @param enable
+	 */
+	public void activateAutomaticChoiceOfOpponent(boolean enable)
+	{
+		refObserver.enableAutomaticallySettingOpponent(enable);
 	}
 
 
@@ -78,8 +98,9 @@ public class BotParamsManager extends AModule implements IBotParamsDatabaseObser
 		ObjectMapper mapper = new ObjectMapper();
 		mapper.enable(SerializationFeature.INDENT_OUTPUT);
 		mapper.setDefaultPrettyPrinter(new DefaultPrettyPrinter()
-				.withObjectIndenter(new DefaultIndenter().withLinefeed("\n"))
-				.withoutSpacesInObjectEntries());
+				.withObjectIndenter(new DefaultIndenter().withLinefeed(System.lineSeparator()))
+				.withSeparators(DEFAULT_SEPARATORS.withObjectFieldValueSpacing(Separators.Spacing.AFTER))
+		);
 
 		try
 		{
@@ -105,7 +126,7 @@ public class BotParamsManager extends AModule implements IBotParamsDatabaseObser
 				return mapper.readValue(file, BotParamsDatabase.class);
 			} catch (IOException e)
 			{
-				log.error("Could not read from database: " + file, e);
+				log.error(String.format("Could not read from database: %s", file), e);
 			}
 		}
 		log.info("Initializing empty bot params database");
@@ -180,5 +201,65 @@ public class BotParamsManager extends AModule implements IBotParamsDatabaseObser
 		 * @param params
 		 */
 		void onBotParamsUpdated(EBotParamLabel label, IBotParams params);
+	}
+
+	private class RefereeObserver implements IRefereeObserver
+	{
+		private AReferee referee;
+		private boolean autoSetOpponent;
+
+
+		public RefereeObserver()
+		{
+			SumatraModel.getInstance().getModuleOpt(AReferee.class).ifPresent(ref -> {
+				referee = ref;
+				referee.addObserver(this);
+				onRefereeMsgSourceChanged(referee.getActiveSource());
+			});
+		}
+
+
+		public void onStopModuli()
+		{
+			if (referee != null)
+			{
+				referee.removeObserver(this);
+				referee = null;
+			}
+		}
+
+
+		public void enableAutomaticallySettingOpponent(boolean enable)
+		{
+			autoSetOpponent = enable;
+		}
+
+
+		@Override
+		public void onNewRefereeMsg(final SslGcRefereeMessage.Referee msg)
+		{
+			if (!autoSetOpponent || SumatraModel.getInstance().isSimulation())
+				return;
+			String expectedAITeam = "TIGERs";
+			String blueTeam = msg.getBlue().getName();
+			String yellowTeam = msg.getYellow().getName();
+			String opponentTeam;
+			if (blueTeam.equals(yellowTeam) || yellowTeam.contains(expectedAITeam))
+			{
+				opponentTeam = blueTeam;
+			} else
+			{
+				opponentTeam = yellowTeam;
+			}
+			if (opponentTeam.contains(expectedAITeam))
+			{
+				opponentTeam = database.getTeamStringForLabel(EBotParamLabel.TIGER_V2020);
+			}
+			if (!database.getEntries().containsKey(opponentTeam))
+				return;
+
+			database.setTeamForLabel(EBotParamLabel.OPPONENT, opponentTeam);
+
+		}
 	}
 }

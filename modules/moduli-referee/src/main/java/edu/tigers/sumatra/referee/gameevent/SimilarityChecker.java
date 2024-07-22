@@ -102,10 +102,10 @@ public class SimilarityChecker
 		register(BotInterferedPlacement.class, Objects::equals, BotInterferedPlacement::getBot);
 		register(BotInterferedPlacement.class, this::similarLocation, BotInterferedPlacement::getLocation);
 
-		register(BotKickedBallToFast.class, Objects::equals, BotKickedBallToFast::getTeam);
-		register(BotKickedBallToFast.class, Objects::equals, BotKickedBallToFast::getBot);
-		register(BotKickedBallToFast.class, this::similarLocation, BotKickedBallToFast::getLocation);
-		register(BotKickedBallToFast.class, Objects::equals, BotKickedBallToFast::getKickType);
+		register(BotKickedBallTooFast.class, Objects::equals, BotKickedBallTooFast::getTeam);
+		register(BotKickedBallTooFast.class, Objects::equals, BotKickedBallTooFast::getBot);
+		register(BotKickedBallTooFast.class, this::similarLocation, BotKickedBallTooFast::getLocation);
+		register(BotKickedBallTooFast.class, Objects::equals, BotKickedBallTooFast::getKickType);
 
 		register(BotPushedBot.class, Objects::equals, BotPushedBot::getTeam);
 		register(BotPushedBot.class, Objects::equals, BotPushedBot::getViolator);

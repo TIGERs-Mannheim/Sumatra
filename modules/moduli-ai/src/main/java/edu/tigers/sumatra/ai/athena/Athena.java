@@ -114,7 +114,7 @@ public class Athena
 
 			IVector2 pos = role.getPos();
 			IState state = role.getCurrentState();
-			String text = role.getType().name();
+			String text = role.toString();
 			if (state != null)
 			{
 				text += "\n" + state;

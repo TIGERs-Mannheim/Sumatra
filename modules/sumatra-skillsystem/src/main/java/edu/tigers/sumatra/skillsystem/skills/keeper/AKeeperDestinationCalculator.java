@@ -6,6 +6,7 @@ package edu.tigers.sumatra.skillsystem.skills.keeper;
 
 import edu.tigers.sumatra.bot.MoveConstraints;
 import edu.tigers.sumatra.drawable.ShapeMap;
+import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.wp.data.ITrackedBall;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
@@ -36,7 +37,13 @@ public abstract class AKeeperDestinationCalculator implements IKeeperDestination
 		this.shapeMap = shapeMap;
 		this.tBot = tBot;
 		this.moveConstraints = moveConstraints;
-		this.posToCover = posToCover;
+		if (posToCover != null)
+		{
+			this.posToCover = Geometry.getField().withMargin(-1).nearestPointInside(posToCover);
+		} else
+		{
+			this.posToCover = null;
+		}
 
 		return calcDestination();
 	}

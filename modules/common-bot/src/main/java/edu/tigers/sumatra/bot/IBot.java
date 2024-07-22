@@ -40,10 +40,6 @@ public interface IBot
 	 */
 	double getKickerLevel();
 
-	/**
-	 * @return
-	 */
-	double getDribblerCurrent();
 
 	/**
 	 * The absolute maximum kicker level possible for the bot (not the currently set max cap!)
@@ -91,7 +87,11 @@ public interface IBot
 	ETeamColor getColor();
 
 
-	EDribblerState getDribblerState();
+	EDribblerTemperature getDribblerTemperature();
+
+	EDribbleTractionState getDribbleTractionState();
+
+	EBallObservationState getBallObservationState();
 
 
 	/**

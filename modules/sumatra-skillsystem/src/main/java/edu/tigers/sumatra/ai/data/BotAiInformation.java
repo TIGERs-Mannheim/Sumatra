@@ -5,6 +5,7 @@
 package edu.tigers.sumatra.ai.data;
 
 import com.sleepycat.persist.model.Persistent;
+import edu.tigers.sumatra.bot.EBallObservationState;
 import edu.tigers.sumatra.bot.EDribbleTractionState;
 import edu.tigers.sumatra.bot.EFeature;
 import edu.tigers.sumatra.botmanager.botskills.data.EKickerDevice;
@@ -140,6 +141,21 @@ public class BotAiInformation
 		map.put(EBotInformation.ACCELERATION_LIMIT, vel2Str(accelerationLimit));
 	}
 
+	public void setAngularVelocity(final double angularVelocity)
+	{
+		map.put(EBotInformation.ANGULAR_VELOCITY, vel2Str(angularVelocity));
+	}
+
+	public void setMaxAngularVelocity(final double maxW)
+	{
+		map.put(EBotInformation.ANGULAR_VEL_MAX, vel2Str(maxW));
+	}
+
+	public void setAngularVelocityLimit(final double angularVelocityLimit)
+	{
+		map.put(EBotInformation.ANGULAR_VEL_LIMIT, vel2Str(angularVelocityLimit));
+	}
+
 
 	public void setPlay(final String play)
 	{
@@ -201,20 +217,19 @@ public class BotAiInformation
 		map.put(EBotInformation.AVG_PROC_TIME, String.valueOf(Math.round(avgProcTime * 1000)));
 	}
 
-
-	public void setDribbleCurrent(final double current)
+	public void setDribbleForce(final double force)
 	{
-		map.put(EBotInformation.DRIBBLE_CURRENT, DECIMAL_FORMAT.format(current));
-	}
-
-	public void setDribbleCurrentMax(final double current)
-	{
-		map.put(EBotInformation.DRIBBLE_CURRENT_MAX, DECIMAL_FORMAT.format(current));
+		map.put(EBotInformation.DRIBBLE_FORCE, DECIMAL_FORMAT.format(force));
 	}
 
 	public void setDribbleTraction(final EDribbleTractionState traction)
 	{
 		map.put(EBotInformation.DRIBBLE_TRACTION, traction.name());
+	}
+
+	public void setBallObservation(final EBallObservationState state)
+	{
+		map.put(EBotInformation.BALL_OBSERVATION, state.name());
 	}
 
 	public void setBotStats(final BaseStationWifiStats.BotStats stats)

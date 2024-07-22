@@ -5,7 +5,7 @@
 package edu.tigers.sumatra.skillsystem.skills;
 
 import com.github.g3force.configurable.Configurable;
-import edu.tigers.sumatra.drawable.DrawableAnnotation;
+import edu.tigers.sumatra.bot.EDribbleTractionState;
 import edu.tigers.sumatra.drawable.DrawableLine;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.geometry.RuleConstraints;
@@ -15,9 +15,7 @@ import edu.tigers.sumatra.math.Hysteresis;
 import edu.tigers.sumatra.math.line.ILine;
 import edu.tigers.sumatra.math.line.Lines;
 import edu.tigers.sumatra.math.vector.IVector2;
-import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.skillsystem.ESkillShapesLayer;
-import edu.tigers.sumatra.skillsystem.skills.util.DoubleChargingValue;
 import edu.tigers.sumatra.skillsystem.skills.util.EDribblerMode;
 import edu.tigers.sumatra.skillsystem.skills.util.KickParams;
 import edu.tigers.sumatra.skillsystem.skills.util.PositionValidator;
@@ -27,46 +25,41 @@ import lombok.Setter;
 
 public class ApproachAndStopBallSkill extends AMoveToSkill
 {
-	@Configurable(defValue = "0.6")
-	private static double maxLookahead = 0.6;
-
-	@Configurable(comment = "The target velocity difference between bot and ball to aim for when trying catch up ball", defValue = "0.8")
-	private static double catchUpBallTargetVelDiff = 0.8;
-
-	@Configurable(defValue = "0.1")
-	private static double contactFor = 0.1;
-
 	@Configurable(comment = "Margin to our Penalty Area", defValue = "100.0")
 	private static double marginToOurPenArea = 100.0;
 
-	@Configurable(comment = "Brake acc when stopping the ball", defValue = "2.0")
-	private static double accMaxBrake = 2.0;
+	@Configurable(comment = "Brake acc when stopping the ball", defValue = "3.0")
+	private static double accMaxBrake = 3.0;
 
-	private final Hysteresis ballSpeedHysteresis = new Hysteresis(0.1, 0.6);
+	@Configurable(comment = "Lower threshold for ball speed hysteresis", defValue = "0.1")
+	private static double ballSpeedHysteresisLower = 0.1;
+
+	@Configurable(comment = "Upper threshold for ball speed hysteresis", defValue = "0.6")
+	private static double ballSpeedHysteresisUpper = 0.6;
+
+	@Configurable(comment = "Duration [s] for stopBallTimer", defValue = "0.1")
+	private static double stopBallTimerDuration = 0.1;
+
+	@Configurable(comment = "Velocity difference [m/s] between ball speed and robot speed to aim for when hitting the ball", defValue = "1.0")
+	private static double ballSpeedTargetDiff = 1.0;
+
+	@Configurable(comment = "Velocity at which early succeed timer triggers [m/s]", defValue = "1.5")
+	private static double succeedEarlyVel = 1.5;
+
+	@Configurable(comment = "If ball is closer than this distance [mm], ignore when ball is moving away", defValue = "50")
+	private static double noSwitchDistCloseToBall = 50;
+
+	private final Hysteresis ballSpeedHysteresis = new Hysteresis(ballSpeedHysteresisLower, ballSpeedHysteresisUpper);
 	private final PositionValidator positionValidator = new PositionValidator();
-	private final TimestampTimer stopBallTimer = new TimestampTimer(0.1);
-	private final DoubleChargingValue lookaheadChargingValue = new DoubleChargingValue(
-			0,
-			1.0,
-			-0.9,
-			0,
-			maxLookahead);
+	private final TimestampTimer stopBallTimer = new TimestampTimer(stopBallTimerDuration);
 
 	@Setter
 	private double marginToTheirPenArea = 0;
 
+	@Setter
+	private boolean succeedEarly = false;
+
 	private IVector2 primaryDirection;
-
-
-	private void updateDribbler()
-	{
-		EDribblerMode dribbleMode = EDribblerMode.OFF;
-		if (getPos().distanceTo(getBallPos()) < 300 && !ballStoppedByBot())
-		{
-			dribbleMode = EDribblerMode.DEFAULT;
-		}
-		setKickParams(KickParams.disarm().withDribblerMode(dribbleMode));
-	}
 
 
 	private boolean ballStoppedByBot()
@@ -89,7 +82,7 @@ public class ApproachAndStopBallSkill extends AMoveToSkill
 
 	private boolean ballMovesTowardsMe()
 	{
-		if (getBall().getPos().distanceTo(getPos()) < 200)
+		if (getBall().getPos().distanceTo(getTBot().getBotKickerPos()) < noSwitchDistCloseToBall)
 		{
 			// Do not switch if close to ball
 			return false;
@@ -97,7 +90,7 @@ public class ApproachAndStopBallSkill extends AMoveToSkill
 		var ballDir = getBall().getVel();
 		var ballToBotDir = getPos().subtractNew(getBall().getPos());
 		var angle = ballDir.angleToAbs(ballToBotDir).orElse(0.0);
-		return angle < AngleMath.deg2rad(60);
+		return angle < AngleMath.deg2rad(90);
 	}
 
 
@@ -107,7 +100,7 @@ public class ApproachAndStopBallSkill extends AMoveToSkill
 		super.doEntryActions();
 		getMoveCon().setBallObstacle(false);
 		getMoveCon().setGameStateObstacle(false);
-		updateLookAtTarget(getBall());
+
 		primaryDirection = getBall().getPos().subtractNew(getPos());
 
 		// initially the ball is moving
@@ -130,55 +123,54 @@ public class ApproachAndStopBallSkill extends AMoveToSkill
 		if (getBall().getVel().getLength2() > 0.5)
 		{
 			primaryDirection = getBall().getVel();
+			updateTargetAngle(primaryDirection.getAngle());
+		} else {
+			updateLookAtTarget(getBall());
 		}
-		IVector2 ballPos = getBallPos();
+
 		IVector2 botPos = getTBot().getFilteredState().orElse(getTBot().getBotState()).getPos();
-		if (!Lines.halfLineFromDirection(botPos, primaryDirection).isPointInFront(ballPos))
+		if (!Lines.halfLineFromDirection(botPos, primaryDirection).isPointInFront(getBall().getPos()))
 		{
 			primaryDirection = primaryDirection.multiplyNew(-1);
+			updateLookAtTarget(getBall());
 		}
+
 		getMoveConstraints().setPrimaryDirection(primaryDirection);
 
-		updateTargetOrientation();
-
-		double botBallSpeedDiff = getTBot().getVel().subtractNew(getBall().getVel()).getLength2();
-		boolean lookingToBall =
-				Math.abs(AngleMath.difference(getBall().getPos().subtractNew(getPos()).getAngle(0), getAngle())) < 0.3;
-		double lookahead = lookingToBall ? calcLookahead(botBallSpeedDiff) : 0;
-
-		updateDestination(lookahead);
-		stayStillIfBotHasBallContact();
-
-		getShapes().get(ESkillShapesLayer.APPROACH_AND_STOP_BALL_SKILL).add(new DrawableAnnotation(getPos(),
-				String.format("%.2f|%.2f", lookahead, botBallSpeedDiff))
-				.withOffset(Vector2.fromY(300)));
+		stayStillIfBotHasBallContactOrUpdateDestination();
 
 		super.doUpdate();
 
-		updateDribbler();
+		setKickParams(KickParams.disarm().withDribblerMode(EDribblerMode.DEFAULT));
 		updateSkillState();
 
 		getShapes().get(ESkillShapesLayer.APPROACH_AND_STOP_BALL_SKILL)
-				.add(new DrawableLine(Lines.segmentFromOffset(getBallPos(), primaryDirection.scaleToNew(1000))));
+				.add(new DrawableLine(Lines.segmentFromOffset(getBall().getPos(), primaryDirection.scaleToNew(1000))));
 	}
 
 
-	private void stayStillIfBotHasBallContact()
+	private void stayStillIfBotHasBallContactOrUpdateDestination()
 	{
 		setComeToAStop(isTouchingBall());
 		if (isTouchingBall())
 		{
 			getMoveConstraints().setAccMax(accMaxBrake);
+			getMoveConstraints().setBrkMax(accMaxBrake);
+			updateTargetAngle(getAngle());
+			updateDestination(validDest(getPos()));
 		} else
 		{
 			getMoveConstraints().setAccMax(getBot().getBotParams().getMovementLimits().getAccMax());
+			updateTargetOrientation();
+			updateDestination();
 		}
 	}
 
 
 	private void updateSkillState()
 	{
-		boolean stopped = ballStoppedByBot();
+
+		boolean stopped = ballStoppedByBot() || succeedEarly();
 		if (stopped)
 		{
 			stopBallTimer.update(getWorldFrame().getTimestamp());
@@ -203,63 +195,52 @@ public class ApproachAndStopBallSkill extends AMoveToSkill
 	}
 
 
-	private void updateDestination(double lookahead)
+	private boolean succeedEarly()
 	{
-		IVector2 dest = getBallPos(lookahead).subtractNew(primaryDirection
-				.scaleToNew(getTBot().getCenter2DribblerDist() + Geometry.getBallRadius()));
+		return succeedEarly && getTBot().getRobotInfo().getDribbleTraction() == EDribbleTractionState.STRONG
+				&& getBall().getVel().getLength() < succeedEarlyVel;
+	}
 
+
+	private void updateDestination()
+	{
+		if (ballStoppedMoving())
+		{
+			return;
+		}
+		var targetSpeed = getBall().getVel().getLength2() + ballSpeedTargetDiff;
+		var ballSlideAcc = -Geometry.getBallParameters().getAccSlide() / 1000;
+		var dist = targetSpeed * targetSpeed / ballSlideAcc / 2 * 1000;
+		IVector2 dest = getBall().getPos().addNew(getBall().getVel().scaleToNew(dist));
+		updateDestination(validDest(dest));
+	}
+
+
+	private IVector2 validDest(IVector2 originalDest)
+	{
+		IVector2 dest = originalDest;
 		dest = positionValidator.movePosInFrontOfOpponent(dest);
 		dest = positionValidator.movePosInsideFieldWrtBallPos(dest);
-		dest = positionValidator.movePosOutOfPenAreaWrtBall(dest);
-		updateDestination(dest);
+		return positionValidator.movePosOutOfPenAreaWrtBall(dest);
 	}
 
 
 	private void updateTargetOrientation()
 	{
 		ILine ballLine = Lines.lineFromDirection(getBall().getPos(), getBall().getVel());
-		if (ballLine.distanceTo(getPos()) < 50)
-		{
-			updateTargetAngle(primaryDirection.getAngle());
-		} else
+		if (ballLine.distanceTo(getPos()) > 50)
 		{
 			updateLookAtTarget(getBall());
+		} else if (getBall().getPos().distanceTo(getTBot().getBotKickerPos()) > 50)
+		{
+			updateTargetAngle(primaryDirection.getAngle());
 		}
-	}
-
-
-	private double calcLookahead(final double botBallSpeedDiff)
-	{
-		var hysteresis = 0.05;
-		if (botBallSpeedDiff > catchUpBallTargetVelDiff + hysteresis || isTouchingBall())
-		{
-			lookaheadChargingValue.setChargeMode(DoubleChargingValue.ChargeMode.DECREASE);
-		} else if (botBallSpeedDiff < catchUpBallTargetVelDiff - hysteresis)
-		{
-			lookaheadChargingValue.setChargeMode(DoubleChargingValue.ChargeMode.INCREASE);
-		} else
-		{
-			lookaheadChargingValue.setChargeMode(DoubleChargingValue.ChargeMode.STALL);
-		}
-		lookaheadChargingValue.update(getWorldFrame().getTimestamp());
-		return lookaheadChargingValue.getValue();
 	}
 
 
 	private boolean isTouchingBall()
 	{
-		return getTBot().getBallContact().getContactDuration() > contactFor;
-	}
-
-
-	private IVector2 getBallPos(double lookahead)
-	{
-		return getBall().getTrajectory().getPosByTime(lookahead).getXYVector();
-	}
-
-
-	private IVector2 getBallPos()
-	{
-		return getBall().getPos();
+		return getTBot().getRobotInfo().getDribbleTraction() == EDribbleTractionState.LIGHT ||
+				getTBot().getRobotInfo().getDribbleTraction() == EDribbleTractionState.STRONG;
 	}
 }

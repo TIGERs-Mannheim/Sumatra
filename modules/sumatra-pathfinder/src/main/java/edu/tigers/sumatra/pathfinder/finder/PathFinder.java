@@ -20,7 +20,6 @@ import lombok.Setter;
 
 import java.awt.Color;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Optional;
 
 
@@ -46,11 +45,26 @@ public class PathFinder implements IPathFinder
 
 
 	@Override
-	public PathFinderResult calcPath(PathFinderInput input)
+	public Optional<PathFinderResult> calcPath(PathFinderInput input)
 	{
-		PathFinderResult result = findPath(input);
+		Optional<PathFinderResult> result = findPath(input);
 		updateTimeCorrection(input.getTimestamp());
 		return result;
+	}
+
+
+	@Override
+	public Optional<PathFinderResult> calcValidDirectPath(PathFinderInput input)
+	{
+		double timeOffset = initialTimeOffset + timeCorrection;
+		var collisionChecker = SubPathCollisionChecker.of(input, shapeMap);
+
+		Optional<PathFinderResult> validDirectPath = collisionChecker.getAcceptablePath(
+				createPath(input, input.getDest()),
+				timeOffset
+		);
+		updateTimeCorrection(input.getTimestamp());
+		return validDirectPath;
 	}
 
 
@@ -84,18 +98,18 @@ public class PathFinder implements IPathFinder
 	}
 
 
-	private PathFinderResult findPath(PathFinderInput input)
+	private Optional<PathFinderResult> findPath(PathFinderInput input)
 	{
 		double timeOffset = initialTimeOffset + timeCorrection;
 		var collisionChecker = SubPathCollisionChecker.of(input, shapeMap);
 
-		Optional<PathFinderResult> validDirectPath = collisionChecker.findDirectPath(
+		Optional<PathFinderResult> validDirectPath = collisionChecker.getAcceptablePath(
 				createPath(input, input.getDest()),
 				timeOffset
 		);
 		if (validDirectPath.isPresent())
 		{
-			return validDirectPath.get();
+			return validDirectPath;
 		}
 
 		int subDestCtr = 0;
@@ -117,14 +131,14 @@ public class PathFinder implements IPathFinder
 			}
 
 			TrajPath subPath = createPath(input, subDest);
-			Optional<PathFinderResult> validPath = collisionChecker.findValidPath(subPath, timeOffset);
+			Optional<PathFinderResult> validPath = collisionChecker.findAcceptablePath(subPath, timeOffset);
 			if (validPath.isPresent())
 			{
-				return validPath.get();
+				return validPath;
 			}
 			subDestCtr++;
 		}
 
-		return new PathFinderResult(createPath(input, input.getPos()), List.of());
+		return collisionChecker.getBestRejectedResult();
 	}
 }

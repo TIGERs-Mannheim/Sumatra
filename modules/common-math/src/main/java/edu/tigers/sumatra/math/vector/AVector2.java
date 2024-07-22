@@ -60,6 +60,13 @@ public abstract class AVector2 extends AVector implements IVector2
 
 
 	@Override
+	public double getLengthSqr()
+	{
+		return x() * x() + y() * y();
+	}
+
+
+	@Override
 	public double getAngle()
 	{
 		return VectorMath.getAngle(this);
@@ -287,5 +294,23 @@ public abstract class AVector2 extends AVector implements IVector2
 	public IVector2 farthestTo(IVector2... points)
 	{
 		return VectorMath.farthestTo(this, Arrays.asList(points));
+	}
+
+
+	@Override
+	public Vector2 projectOntoThis(IVector2 other)
+	{
+		var normalized = normalizeNew();
+		return normalized.multiply(normalized.scalarProduct(other));
+	}
+
+
+	@Override
+	public Vector2 addMagnitude(IVector2 offset)
+	{
+		return Vector2.fromXY(
+				SumatraMath.addMagnitude(x(), offset.x()),
+				SumatraMath.addMagnitude(y(), offset.y())
+		);
 	}
 }

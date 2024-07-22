@@ -17,6 +17,7 @@ import javax.swing.AbstractAction;
 import javax.swing.Action;
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
+import javax.swing.JCheckBox;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JSlider;
@@ -28,6 +29,7 @@ import java.awt.Dimension;
 import java.awt.EventQueue;
 import java.awt.FlowLayout;
 import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.io.Serial;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -54,6 +56,8 @@ public class SimulationPanel extends JPanel
 	private final JLabel lblRelativeTime;
 	@Getter
 	private final JToggleButton btnSlowmotion;
+	@Getter
+	private final JCheckBox restoreLastSnapshot = new JCheckBox("Restore on start", true);
 
 	private final SimulationBotMgrPanel botMgrPanel;
 
@@ -70,7 +74,6 @@ public class SimulationPanel extends JPanel
 		Action pauseSimulationAction = new PauseSimulationAction();
 		btnToggleSim = new JToggleButton();
 		btnToggleSim.setIcon(ImageScaler.scaleDefaultButtonImageIcon("/pause.png"));
-		btnToggleSim.setSelectedIcon(ImageScaler.scaleDefaultButtonImageIcon("/play.png"));
 		btnToggleSim.setBorder(BorderFactory.createEmptyBorder());
 		btnToggleSim.setBackground(new Color(0, 0, 0, 0));
 		btnToggleSim.setToolTipText("Pause/Play");
@@ -158,6 +161,8 @@ public class SimulationPanel extends JPanel
 		Action pasteAction = new PasteSnapAction();
 		btnPasteSnapshot.addActionListener(pasteAction);
 
+		restoreLastSnapshot.addActionListener(new RestoreLastSnapshotListener());
+
 		botMgrPanel = new SimulationBotMgrPanel();
 
 		add(btnToggleSim);
@@ -168,6 +173,7 @@ public class SimulationPanel extends JPanel
 		add(btnSaveSnapshot);
 		add(btnCopySnapshot);
 		add(btnPasteSnapshot);
+		add(restoreLastSnapshot);
 		add(sliderSpeed);
 		add(btnSlowmotion);
 		add(lblSpeed);
@@ -262,6 +268,19 @@ public class SimulationPanel extends JPanel
 	}
 
 
+	public void setRunning(boolean running)
+	{
+		btnToggleSim.setSelected(running);
+		if (running)
+		{
+			btnToggleSim.setIcon(ImageScaler.scaleDefaultButtonImageIcon("/pause.png"));
+		} else
+		{
+			btnToggleSim.setIcon(ImageScaler.scaleDefaultButtonImageIcon("/play.png"));
+		}
+	}
+
+
 	public interface ISimulationPanelObserver
 	{
 		/**
@@ -279,47 +298,52 @@ public class SimulationPanel extends JPanel
 		 */
 		void onChangeSpeed(double speed);
 
-
 		/**
 		 *
 		 */
 		void onStep();
-
 
 		/**
 		 *
 		 */
 		void onStepBwd();
 
-
 		/**
 		 * Reset the simulation
 		 */
 		void onReset();
-
 
 		/**
 		 *
 		 */
 		void onLoadSnapshot();
 
-
 		/**
 		 * Save current situation as snapshot
 		 */
 		void onSaveSnapshot();
 
+		/**
+		 * Save the current situation as the last snapshot that will be restored on next start
+		 */
+		void onSaveLastSnapshot();
 
 		/**
 		 * Copy snapshot to clipboard
 		 */
 		void onCopySnapshot();
 
-
 		/**
 		 * Paste snapshot from clipboard
 		 */
 		void onPasteSnapshot();
+
+		/**
+		 * Set if last snapshot should be restored on startup
+		 *
+		 * @param active
+		 */
+		void onSetRestoreLastSnapshot(boolean active);
 	}
 
 	private class PauseSimulationAction extends AbstractAction
@@ -420,6 +444,17 @@ public class SimulationPanel extends JPanel
 		{
 			observers.forEach(ISimulationPanelObserver::onLoadSnapshot);
 			resetBotMgrPanel();
+		}
+	}
+
+
+	private class RestoreLastSnapshotListener implements ActionListener
+	{
+		@Override
+		public void actionPerformed(final ActionEvent e)
+		{
+			JCheckBox checkBox = (JCheckBox) e.getSource();
+			observers.forEach(o -> o.onSetRestoreLastSnapshot(checkBox.isSelected()));
 		}
 	}
 }

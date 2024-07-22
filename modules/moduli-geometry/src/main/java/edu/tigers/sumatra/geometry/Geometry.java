@@ -11,7 +11,7 @@ import edu.tigers.sumatra.ball.trajectory.BallFactory;
 import edu.tigers.sumatra.cam.SSLVisionCamGeometryTranslator;
 import edu.tigers.sumatra.cam.data.CamFieldSize;
 import edu.tigers.sumatra.cam.data.CamGeometry;
-import edu.tigers.sumatra.cam.proto.MessagesRobocupSslGeometry;
+import edu.tigers.sumatra.cam.proto.SslVisionGeometry;
 import edu.tigers.sumatra.ids.ETeamColor;
 import edu.tigers.sumatra.math.circle.Circle;
 import edu.tigers.sumatra.math.circle.ICircle;
@@ -41,14 +41,13 @@ public class Geometry
 
 	@Configurable(defValue = "85.0")
 	private static double opponentCenter2DribblerDist = 85;
+	private static Geometry instance = defaultInstance();
+	private static ETeamColor negativeHalfTeam = ETeamColor.BLUE;
 
 	static
 	{
 		ConfigRegistration.registerClass("geom", Geometry.class);
 	}
-
-	private static Geometry instance = defaultInstance();
-	private static ETeamColor negativeHalfTeam = ETeamColor.BLUE;
 
 	private final IRectangle field;
 	private final IRectangle fieldWBorders;
@@ -144,31 +143,6 @@ public class Geometry
 	}
 
 
-	private BallParameters createBallParameters(CamGeometry geometry)
-	{
-		BallParameters newBallParameters = new BallParameters();
-
-		String env = SumatraModel.getInstance().getEnvironment();
-		ConfigRegistration.applySpezis(newBallParameters, "geom", "");
-		ConfigRegistration.applySpezis(newBallParameters, "geom", env);
-
-		var models = geometry.getBallModels();
-		if (models.hasStraightTwoPhase())
-		{
-			newBallParameters.setAccSlide(models.getStraightTwoPhase().getAccSlide() * 1000);
-			newBallParameters.setAccRoll(models.getStraightTwoPhase().getAccRoll() * 1000);
-			newBallParameters.setKSwitch(models.getStraightTwoPhase().getKSwitch());
-		}
-		if (models.hasChipFixedLoss())
-		{
-			newBallParameters.setChipDampingXYFirstHop(models.getChipFixedLoss().getDampingXyFirstHop());
-			newBallParameters.setChipDampingXYOtherHops(models.getChipFixedLoss().getDampingXyOtherHops());
-			newBallParameters.setChipDampingZ(models.getChipFixedLoss().getDampingZ());
-		}
-		return newBallParameters;
-	}
-
-
 	/**
 	 * Update geometry with the given data.
 	 * This will merge the geometry with the existing one.
@@ -177,6 +151,10 @@ public class Geometry
 	 */
 	public static synchronized void update(final CamGeometry geometry)
 	{
+		if (!instance.lastCamGeometry.equalBallModels(geometry))
+		{
+			log.info("New Ball Models received from SSL vision!");
+		}
 		instance = new Geometry(instance.lastCamGeometry.merge(geometry));
 	}
 
@@ -208,8 +186,8 @@ public class Geometry
 	{
 		Path path = CONFIG_PATH.resolve(id + ".txt");
 		byte[] bytes = Files.readAllBytes(path);
-		MessagesRobocupSslGeometry.SSL_GeometryData data = TextFormat.parse(new String(bytes),
-				MessagesRobocupSslGeometry.SSL_GeometryData.class);
+		SslVisionGeometry.SSL_GeometryData data = TextFormat.parse(new String(bytes),
+				SslVisionGeometry.SSL_GeometryData.class);
 		SSLVisionCamGeometryTranslator translator = new SSLVisionCamGeometryTranslator();
 		return translator.fromProtobuf(data);
 	}
@@ -483,5 +461,30 @@ public class Geometry
 	public static void setNegativeHalfTeam(ETeamColor negativeHalfTeam)
 	{
 		Geometry.negativeHalfTeam = negativeHalfTeam;
+	}
+
+
+	private BallParameters createBallParameters(CamGeometry geometry)
+	{
+		BallParameters newBallParameters = new BallParameters();
+
+		String env = SumatraModel.getInstance().getEnvironment();
+		ConfigRegistration.applySpezis(newBallParameters, "geom", "");
+		ConfigRegistration.applySpezis(newBallParameters, "geom", env);
+
+		var models = geometry.getBallModels();
+		if (models.hasStraightTwoPhase())
+		{
+			newBallParameters.setAccSlide(models.getStraightTwoPhase().getAccSlide() * 1000);
+			newBallParameters.setAccRoll(models.getStraightTwoPhase().getAccRoll() * 1000);
+			newBallParameters.setKSwitch(models.getStraightTwoPhase().getKSwitch());
+		}
+		if (models.hasChipFixedLoss())
+		{
+			newBallParameters.setChipDampingXYFirstHop(models.getChipFixedLoss().getDampingXyFirstHop());
+			newBallParameters.setChipDampingXYOtherHops(models.getChipFixedLoss().getDampingXyOtherHops());
+			newBallParameters.setChipDampingZ(models.getChipFixedLoss().getDampingZ());
+		}
+		return newBallParameters;
 	}
 }

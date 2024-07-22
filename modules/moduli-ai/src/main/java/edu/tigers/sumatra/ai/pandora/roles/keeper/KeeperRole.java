@@ -8,31 +8,41 @@ import com.github.g3force.configurable.Configurable;
 import edu.tigers.sumatra.ai.common.KeepDistanceToBall;
 import edu.tigers.sumatra.ai.common.PointChecker;
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
+import edu.tigers.sumatra.ai.metis.keeper.EKeeperActionType;
+import edu.tigers.sumatra.ai.metis.keeper.IKeeperPenAreaMarginProvider;
+import edu.tigers.sumatra.ai.metis.keeper.KeeperBehaviorCalc;
 import edu.tigers.sumatra.ai.metis.kicking.Pass;
-import edu.tigers.sumatra.ai.metis.offense.ballinterception.RatedBallInterception;
 import edu.tigers.sumatra.ai.pandora.roles.ARole;
 import edu.tigers.sumatra.ai.pandora.roles.ERole;
+import edu.tigers.sumatra.bot.EDribbleTractionState;
+import edu.tigers.sumatra.drawable.DrawableAnnotation;
+import edu.tigers.sumatra.drawable.DrawableBorderText;
+import edu.tigers.sumatra.drawable.DrawableCircle;
 import edu.tigers.sumatra.drawable.DrawableLine;
+import edu.tigers.sumatra.drawable.DrawablePoint;
 import edu.tigers.sumatra.geometry.Geometry;
-import edu.tigers.sumatra.ids.BotID;
+import edu.tigers.sumatra.geometry.RuleConstraints;
 import edu.tigers.sumatra.math.AngleMath;
-import edu.tigers.sumatra.math.line.ILine;
+import edu.tigers.sumatra.math.SumatraMath;
+import edu.tigers.sumatra.math.circle.Circle;
 import edu.tigers.sumatra.math.line.LineMath;
 import edu.tigers.sumatra.math.line.Lines;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
-import edu.tigers.sumatra.pathfinder.TrajectoryGenerator;
+import edu.tigers.sumatra.skillsystem.skills.AMoveToSkill;
 import edu.tigers.sumatra.skillsystem.skills.CriticalKeeperSkill;
 import edu.tigers.sumatra.skillsystem.skills.ESkillState;
 import edu.tigers.sumatra.skillsystem.skills.GetBallContactSkill;
 import edu.tigers.sumatra.skillsystem.skills.MoveToSkill;
 import edu.tigers.sumatra.skillsystem.skills.MoveWithBallSkill;
 import edu.tigers.sumatra.skillsystem.skills.RamboKeeperSkill;
-import edu.tigers.sumatra.skillsystem.skills.TouchKickSkill;
+import edu.tigers.sumatra.skillsystem.skills.util.EDribblerMode;
+import edu.tigers.sumatra.skillsystem.skills.util.KickParams;
+import edu.tigers.sumatra.skillsystem.skills.util.TargetAngleReachedChecker;
+import edu.tigers.sumatra.statemachine.TransitionableState;
 import edu.tigers.sumatra.time.TimestampTimer;
-import edu.tigers.sumatra.wp.data.ITrackedBot;
 
-import java.util.Map;
+import java.awt.Color;
 
 
 /**
@@ -40,161 +50,207 @@ import java.util.Map;
  */
 public class KeeperRole extends ARole
 {
+	@Configurable(comment = "[s] lock target this much time prior to panicking", defValue = "1.0")
+	private static double passTargetLockTime = 1.0;
+	@Configurable(comment = "[s] prior to held-ball foul, do not aim at all anymore", defValue = "0.5")
+	private static double passPanicTime = 0.5;
 
-	@Configurable(comment = "Lower margin [mm] applied to penalty area. If the ball is inside, no placement necessary", defValue = "-200")
-	private static double ballPlacementPAMarginLower = -200;
 
-	@Configurable(comment = "Upper negative margin [mm] applied to penalty area. The ball is placed to a position inside", defValue = "-300")
-	private static double ballPlacementPAMarginUpper = -300;
+	@Configurable(comment = "[rad/s] maximal angular velocity while handling the ball", defValue = "3")
+	private static double ballHandlingMaxVelW = 3;
+	@Configurable(comment = "[m/s] maximal velocity while handling the ball", defValue = "1")
+	private static double ballHandlingMaxVel = 1;
+	@Configurable(comment = "[rad/s2] maximal angular acceleration while handling the ball", defValue = "2")
+	private static double ballHandlingMaxAccW = 2;
+	@Configurable(comment = "[m/s^2] maximal acceleration while handling the ball", defValue = "1.5")
+	private static double ballHandlingMaxAcc = 1.5;
+	@Configurable(comment = "Dribbling Mode while receiving the ball", defValue = "DEFAULT")
+	private static EDribblerMode receiveDribblerMode = EDribblerMode.DEFAULT;
+	@Configurable(comment = "Dribbling Mode while handling the ball", defValue = "HIGH_POWER")
+	private static EDribblerMode ballHandlingDribblerMode = EDribblerMode.HIGH_POWER;
 
-	@Configurable(comment = "Opponent ball dist to chill", defValue = "1000.0")
-	private static double minOpponentBotDistToChill = 1000;
+	@Configurable(comment = "[rad] The approximate tolerance when the angle is considered to be reached", defValue = "0.15")
+	private static double roughAngleTolerance = 0.15;
 
-	@Configurable(comment = "[m/s] Max speed of ball in PenArea to consider it less dangerous.", defValue = "0.2")
-	private static double maxBallSpeedToAllowSlowApproach = 0.2;
+	@Configurable(defValue = "0.4", comment = "[s] The max time to wait until angle is considered reached while within tolerance")
+	private static double maxTimeTargetAngleReached = 0.4;
+
+	@Configurable(defValue = "100", comment = "[mm] Distance between bot and ball during MoveInFrontOfBall state")
+	private static double moveInFrontDistance = 100;
+
+
+	private final TimestampTimer heldBallTimer = new TimestampTimer(RuleConstraints.getKeeperHeldBallPeriod());
+	private final DefendState defendState;
+
+	private Pass keeperPass = null;
+	private boolean spinUpFinished = false;
+
+	private boolean movedInFront = false;
 
 
 	public KeeperRole()
 	{
 		super(ERole.KEEPER);
 
-		var defendState = new RoleState<>(CriticalKeeperSkill::new);
+		// Default States
+		defendState = new DefendState();
+		var moveToPenAreaState = new MoveToPenaltyAreaState();
+		var stopState = new KeeperStoppedState();
+
+		// One on One Penalty States
+		var prepPenaltyState = new PreparePenaltyState();
+		var ramboState = new RoleState<>(RamboKeeperSkill::new);
+
+		// Get Ball Contact States
 		var moveInFrontOfBallState = new MoveInFrontOfBallState();
 		var getBallContactState = new RoleState<>(GetBallContactSkill::new);
-		var moveWithBallState = new MoveWithBallState();
-		var passState = new PassState();
+
 		var interceptState = new InterceptRollingBallState();
-		var ramboState = new RoleState<>(RamboKeeperSkill::new);
-		var stopState = new KeeperStoppedState();
-		var preparePenaltyState = new PreparePenaltyState();
-		var moveToPenaltyAreaState = new MoveToPenaltyAreaState();
+
+		// Ball Handling States
+		var moveWithBallPrepState = new SpinUpState();
+		var moveWithBallState = new MoveWithBallState();
+		var passPrepState = new SpinUpState();
+		var passState = new PassState();
 
 		setInitialState(defendState);
 
-		stopState.addTransition(() -> !isStopped(), defendState);
+		bidirectionalTransition(defendState, stopState, EKeeperActionType.STOP);
+		bidirectionalTransition(defendState, prepPenaltyState, EKeeperActionType.PREP_PENALTY);
+		bidirectionalTransition(defendState, ramboState, EKeeperActionType.RAMBO);
+		bidirectionalTransition(defendState, moveToPenAreaState, EKeeperActionType.MOVE_TO_PEN_AREA);
 
-		preparePenaltyState.addTransition(() -> !isPreparePenalty(), defendState);
 
-		moveToPenaltyAreaState.addTransition(ESkillState.SUCCESS, defendState);
-		moveToPenaltyAreaState.addTransition(this::isKeeperWellInsidePenaltyArea, defendState);
-		moveToPenaltyAreaState.addTransition(this::isStopped, stopState);
-		moveToPenaltyAreaState.addTransition(this::isPreparePenalty, preparePenaltyState);
+		setupStandardExitTransitions(defendState);
+		transition(defendState, interceptState, EKeeperActionType.INTERCEPT_PASS);
+		transitionAtStoppedBall(defendState, moveInFrontOfBallState, EKeeperActionType.HANDLE_BALL);
+		transitionAtStoppedBall(defendState, moveInFrontOfBallState, EKeeperActionType.MOVE_BETWEEN_GOAL_AND_BALL);
 
-		defendState.addTransition(this::ballCanBePassedOutOfPenaltyArea, passState);
-		defendState.addTransition(this::canGoOut, ramboState);
-		defendState.addTransition(this::isBallBetweenGoalyAndGoal, getBallContactState);
-		defendState.addTransition("isOutsidePenaltyArea", this::isOutsidePenaltyArea, moveToPenaltyAreaState);
-		defendState.addTransition(this::isStopped, stopState);
-		defendState.addTransition(this::isPreparePenalty, preparePenaltyState);
-		defendState.addTransition(this::canInterceptSafely, interceptState);
+		bidirectionalTransition(defendState, interceptState, EKeeperActionType.INTERCEPT_PASS);
+		interceptState.addTransition("isBallDribblerContact", this::isDribblingBallOrHasContact, moveWithBallPrepState);
 
-		passState.addTransition(this::isBallMoving, defendState);
-		passState.addTransition(this::ballPlacementRequired, moveInFrontOfBallState);
-		passState.addTransition(this::isStopped, stopState);
-		passState.addTransition(this::isPreparePenalty, preparePenaltyState);
+		setupStandardExitTransitions(moveInFrontOfBallState);
+		moveInFrontOfBallState.addTransition("isBallDribblerContact", this::isDribblingBallOrHasContact,
+				moveWithBallPrepState);
+		moveInFrontOfBallState.addTransition("isBallMoving", this::isBallMoving, defendState);
+		moveInFrontOfBallState.addTransition("movedInFront", () -> movedInFront, getBallContactState);
 
-		interceptState.addTransition(this::hasInterceptionFailed, defendState);
-		interceptState.addTransition(this::ballCanBePassedOutOfPenaltyArea, passState);
-		interceptState.addTransition(this::isStopped, stopState);
-		interceptState.addTransition(this::isPreparePenalty, preparePenaltyState);
+		setupStandardExitTransitions(getBallContactState);
+		transition(getBallContactState, defendState, EKeeperActionType.MOVE_BETWEEN_GOAL_AND_BALL);
+		getBallContactState.addTransition(ESkillState.SUCCESS, moveWithBallPrepState);
+		getBallContactState.addTransition(ESkillState.FAILURE, defendState);
 
-		ramboState.addTransition(() -> isBallInPenaltyArea(0) || isGoalKick(), defendState);
-		ramboState.addTransition(this::isStopped, stopState);
-		ramboState.addTransition(this::isPreparePenalty, preparePenaltyState);
+		setupStandardExitTransitions(moveWithBallPrepState);
+		moveWithBallPrepState.addTransition("placementCanBeSkipped", this::placementCanBeSkipped, passState);
+		moveWithBallPrepState.addTransition("isReadyToMoveBall", this::isReadyToMoveBall, moveWithBallState);
+		moveWithBallPrepState.addTransition("isBallControlLost", this::isBallControlLost, defendState);
 
-		moveInFrontOfBallState.addTransition(this::isBallMoving, defendState);
-		moveInFrontOfBallState.addTransition(this::ballPlaced, defendState);
-		moveInFrontOfBallState.addTransition(ESkillState.SUCCESS, getBallContactState);
-		moveInFrontOfBallState.addTransition(this::isStopped, stopState);
-		moveInFrontOfBallState.addTransition(this::isPreparePenalty, preparePenaltyState);
 
-		getBallContactState.addTransition(ESkillState.SUCCESS, moveWithBallState);
-		getBallContactState.addTransition(ESkillState.FAILURE, moveInFrontOfBallState);
-		getBallContactState.addTransition(this::isStopped, stopState);
-		getBallContactState.addTransition(this::isPreparePenalty, preparePenaltyState);
-
-		moveWithBallState.addTransition(ESkillState.SUCCESS, defendState);
+		setupStandardExitTransitions(moveWithBallState);
+		moveWithBallState.addTransition(ESkillState.SUCCESS, passPrepState);
 		moveWithBallState.addTransition(ESkillState.FAILURE, moveInFrontOfBallState);
-		moveWithBallState.addTransition(this::isStopped, stopState);
-		moveWithBallState.addTransition(this::isPreparePenalty, preparePenaltyState);
 
+		setupStandardExitTransitions(passPrepState);
+		passPrepState.addTransition("isSpinUpFinished", () -> spinUpFinished, passState);
+		passPrepState.addTransition("isBallControlLost", this::isBallControlLost, defendState);
+
+		setupStandardExitTransitions(passState);
+		passState.addTransition("isBallControlLost", this::isBallControlLost, defendState);
 	}
 
 
-	private boolean ballMovesTowardsMe()
+	private EKeeperActionType getBehavior()
 	{
-		var ballDir = getBall().getVel();
-		var ballToBotDir = getPos().subtractNew(getBall().getPos());
-		var angle = ballDir.angleToAbs(ballToBotDir).orElse(0.0);
-		return angle < AngleMath.DEG_090_IN_RAD || getBall().getPos().distanceTo(getPos()) < 2 * Geometry.getBotRadius();
+		return getAiFrame().getTacticalField().getKeeperBehavior();
 	}
 
 
-	private boolean hasInterceptionFailed()
+	private void transition(TransitionableState from, TransitionableState to, EKeeperActionType condition)
 	{
-		return !ballMovesTowardsMe() || !isBallInPenaltyArea(Geometry.getBallRadius());
+		if (from != to)
+		{
+			from.addTransition(condition.toString(), () -> getBehavior() == condition, to);
+		}
 	}
 
 
-	private boolean isBallAimedForGoal()
+	private void transitionAtStoppedBall(TransitionableState from, TransitionableState to, EKeeperActionType condition)
 	{
-		return !Geometry.getGoalOur().getLineSegment().withMargin(4 * Geometry.getBotRadius())
-				.intersect(getBall().getTrajectory().getTravelLine()).isEmpty();
+		if (from != to)
+		{
+			from.addTransition(condition.toString(), () -> (getBehavior() == condition && !isBallMoving()), to);
+		}
 	}
 
 
-	private boolean canInterceptSafely()
+	private void bidirectionalTransition(TransitionableState from, TransitionableState to, EKeeperActionType condition)
 	{
-		var ballInterceptions = getAiFrame().getPrevFrame().getTacticalField().getRollingBallInterceptions();
-		return isBallInPenaltyArea(0) && !isBallAimedForGoal() && ballInterceptions.containsKey(getBotID())
-				&& canCatchBallInPenArea(ballInterceptions) && ballMovesTowardsMe();
+		if (from != to)
+		{
+			from.addTransition(condition.toString(), () -> getBehavior() == condition, to);
+			to.addTransition(String.format("!%s", condition), () -> getBehavior() != condition, from);
+		}
 	}
 
 
-	private boolean canCatchBallInPenArea(Map<BotID, RatedBallInterception> ballInterceptions)
+	private void setupStandardExitTransitions(TransitionableState state)
 	{
-		var botId = getBotID();
-		return (ballInterceptions.get(botId).getCorridorLength() > 0.3
-				|| ballInterceptions.get(botId).getMinCorridorSlackTime() < -0.3)
-				&& Geometry.getPenaltyAreaOur().withMargin(-2 * Geometry.getBotRadius())
-				.isPointInShape(ballInterceptions.get(botId).getBallInterception().getPos());
+		transition(state, defendState, EKeeperActionType.IMPORTANT_DEFEND);
+		transition(state, defendState, EKeeperActionType.MOVE_TO_PEN_AREA);
+		transition(state, defendState, EKeeperActionType.STOP);
+		transition(state, defendState, EKeeperActionType.PREP_PENALTY);
+		transition(state, defendState, EKeeperActionType.RAMBO);
 	}
 
 
-	private boolean isStopped()
+	@Override
+	protected void beforeUpdate()
 	{
-		return getAiFrame().getGameState().isStoppedGame();
+		if (getAiFrame().getGameState().isRunning()
+				&& Geometry.getPenaltyAreaOur().withMargin(2 * Geometry.getBallRadius()).isPointInShape(getBall().getPos()))
+		{
+			heldBallTimer.update(getWFrame().getTimestamp());
+			var remain = heldBallTimer.getRemainingTime(getWFrame().getTimestamp());
+			Color color;
+			if (remain > passTargetLockTime + passPanicTime)
+			{
+				color = Color.GREEN;
+				keeperPass = getAiFrame().getTacticalField().getKeeperPass();
+			} else if (remain > passPanicTime)
+			{
+				color = Color.YELLOW;
+			} else
+			{
+				color = Color.RED;
+			}
+			getShapes(EAiShapesLayer.KEEPER_BEHAVIOR).add(
+					new DrawableBorderText(Vector2.fromXY(1, 7), String.format("%.2f", remain)).setColor(color));
+		} else
+		{
+			keeperPass = getAiFrame().getTacticalField().getKeeperPass();
+			heldBallTimer.reset();
+		}
 	}
 
 
-	private boolean isPreparePenalty()
+	private boolean isDribblingBallOrHasContact()
 	{
-		return getAiFrame().getGameState().isPreparePenaltyForThem();
+		boolean isBallContact =
+				getBot().getBotShape().getKickerLine().distanceTo(getBall().getPos()) <= Geometry.getBallRadius() + 5;
+		boolean isBarrierInterrupted = getBot().getBallContact().hasContact();
+		return (isBallContact && isBarrierInterrupted) || isDribblingBall();
 	}
 
 
-	private boolean isBallBetweenGoalyAndGoal()
+	private boolean isDribblingBall()
 	{
-		boolean ballInPenArea = Geometry.getPenaltyAreaOur()
-				.withMargin(ballPlacementPAMarginLower).isPointInShape(getBall().getPos());
-		boolean isBallSlow = getBall().getVel().getLength() < maxBallSpeedToAllowSlowApproach;
-		boolean isBehindKeeper = getBall().getPos().x() < getBot().getPos().x();
-		boolean isStoppedGame = getAiFrame().getGameState().isStoppedGame();
-		return ballInPenArea && isBallSlow && isBehindKeeper && !isStoppedGame;
-	}
-
-
-	private boolean ballCanBePassedOutOfPenaltyArea()
-	{
-		return getAiFrame().getTacticalField().getKeeperPass() != null;
-	}
-
-
-	private boolean isGoalKick()
-	{
-		double ballVelocity = getBall().getVel().getLength();
-		return getWFrame().getKickEvent().isPresent() && ballVelocity > 1.5 &&
-				Math.abs(getBall().getVel().getAngle()) > AngleMath.deg2rad(120);
+		if (ballHandlingDribblerMode == EDribblerMode.DEFAULT)
+		{
+			return getBot().getRobotInfo().getDribbleTraction().getId() >= EDribbleTractionState.LIGHT.getId();
+		} else
+		{
+			return getBot().getRobotInfo().getDribbleTraction().getId() >= EDribbleTractionState.STRONG.getId();
+		}
 	}
 
 
@@ -204,91 +260,115 @@ public class KeeperRole extends ARole
 	}
 
 
-	private boolean isKeeperWellInsidePenaltyArea()
+	private boolean isBallControlLost()
 	{
-		return Geometry.getPenaltyAreaOur().withMargin(ballPlacementPAMarginUpper).isPointInShape(getPos());
+		return !isDribblingBallOrHasContact()
+				&& getBall().getPos().distanceTo(getPos()) > Geometry.getBallRadius() + Geometry.getBotRadius() + 50;
 	}
 
 
-	private boolean ballPlacementRequired()
+	private IVector2 getPlacementPos(IKeeperPenAreaMarginProvider marginProvider)
 	{
-		return isOtherBotCloseToBall()
-				|| !(isBallInPenaltyArea(ballPlacementPAMarginLower) || isBallDangerous());
-	}
-
-
-	private boolean ballPlaced()
-	{
-		return getPlacementPos().distanceTo(getBall().getPos()) < 1;
-	}
-
-
-	private boolean isOtherBotCloseToBall()
-	{
-		return getWFrame().getBots().values().stream()
-				.filter(bot -> !bot.getBotId().equals(getBotID()))
-				.anyMatch(bot -> bot.getPos().distanceTo(getBall().getPos()) < 200);
-	}
-
-
-	private boolean isBallInPenaltyArea(final double getBallPenaltyAreaMargin)
-	{
-		return Geometry.getPenaltyAreaOur().withMargin(getBallPenaltyAreaMargin).isPointInShape(getBall().getPos());
-	}
-
-
-	private boolean isOutsidePenaltyArea()
-	{
-		return !Geometry.getPenaltyAreaOur().withMargin(1000).isPointInShapeOrBehind(getPos());
-	}
-
-
-	private IVector2 getPlacementPos()
-	{
-		return Geometry.getPenaltyAreaOur().getRectangle()
-				.withMargin(ballPlacementPAMarginUpper)
+		var posInside = Geometry.getPenaltyAreaOur()
+				.withMargin(marginProvider.atBorder())
 				.nearestPointInside(getBall().getPos());
+
+		var goalLine = Geometry.getGoalOur().getLineSegment().withMargin(-1.5 * Geometry.getBotRadius());
+		if (goalLine.distanceTo(posInside) > Math.abs(marginProvider.atGoal()))
+		{
+			return posInside;
+		}
+		var startPoint = goalLine.closestPointOnPath(posInside);
+		return LineMath.stepAlongLine(startPoint, getBall().getPos(), Math.abs(marginProvider.atGoal()));
 	}
 
 
-	private boolean isBallDangerous()
+	private boolean placementCanBeSkipped()
 	{
-		return getAiFrame().getTacticalField().getOpponentClosestToBall().getDist() < minOpponentBotDistToChill
-				&& !Geometry.getPenaltyAreaOur().isPointInShape(getWFrame().getBall().getPos());
+		var placementPos = getPlacementPos(KeeperBehaviorCalc.ballMarginLower());
+		getShapes(EAiShapesLayer.KEEPER_BEHAVIOR).add(
+				new DrawableCircle(Circle.createCircle(placementPos, 30), Color.RED));
+		return spinUpFinished && placementPos.distanceTo(getBall().getPos()) < 1;
 	}
 
 
-	private boolean canGoOut()
+	private boolean isReadyToMoveBall()
 	{
-		if (!getAiFrame().getGameState().isPenalty() || isBallInPenaltyArea(0) || isGoalKick())
-		{
-			return false;
-		}
-
-		boolean isBallCloseToGoal = isBallInPenaltyArea(getAiFrame().getTacticalField().getKeeperRamboDistance());
-		boolean isKeeperOnLine = false;
-
-		if (getBall().getVel().getLength2() > 0.3)
-		{
-			ILine line = Lines.lineFromDirection(getBall().getPos(), getBall().getVel());
-			isKeeperOnLine = line.distanceTo(getPos()) < Geometry.getBotRadius() / 2.;
-		}
-
-		ITrackedBot opponent = getWFrame().getBot(getAiFrame().getTacticalField().getOpponentClosestToBall().getBotId());
-		if (opponent == null)
-		{
-			return false;
-		}
-		double timeOpponent = TrajectoryGenerator.generatePositionTrajectory(opponent, getBall().getPos()).getTotalTime();
-		double timeKeeper = TrajectoryGenerator.generatePositionTrajectory(getBot(), getBall().getPos()).getTotalTime();
-		boolean isKeeperFaster = timeOpponent > timeKeeper;
-		boolean isBallInFrontOfKeeper = getPos().x() < getWFrame().getBall().getPos().x();
-		boolean isBallGoingTowardsGoal = Math.abs(getBall().getVel().getAngle()) > AngleMath.PI_HALF;
-
-		boolean isRamboValid = (isBallCloseToGoal || isKeeperFaster) && isBallInFrontOfKeeper && isBallGoingTowardsGoal;
-		return isRamboValid && isKeeperOnLine;
+		var ballToBotDir = getPos().subtractNew(getBall().getPos());
+		var ballToPosDir = getPlacementPos(KeeperBehaviorCalc.ballMarginUpper()).subtractNew(getBall().getPos());
+		var needToPush = AngleMath.diffAbs(ballToBotDir.getAngle(), ballToPosDir.getAngle()) > AngleMath.PI_HALF;
+		return spinUpFinished && (!needToPush || MoveWithBallSkill.isAllowPushingTheBall());
 	}
 
+
+	private void setupBallHandlingSkill(AMoveToSkill skill)
+	{
+		skill.getMoveCon().physicalObstaclesOnly();
+		skill.getMoveCon().setBallObstacle(false);
+		skill.getMoveCon().setBotsObstacle(false);
+
+		skill.getMoveConstraints().setVelMaxW(ballHandlingMaxVelW);
+		skill.getMoveConstraints().setAccMaxW(ballHandlingMaxAccW);
+		skill.getMoveConstraints().setVelMax(ballHandlingMaxVel);
+		skill.getMoveConstraints().setAccMax(ballHandlingMaxAcc);
+	}
+
+
+	private boolean startPanicking()
+	{
+		var lookingForward = Math.abs(getBot().getAngleByTime(0)) < 1.3;
+		var distPenAreaBoundaryToGoal = (Geometry.getPenaltyAreaWidth() - Geometry.getGoalOur().getWidth()) / 2;
+		var penArea = Geometry.getPenaltyAreaOur().withMargin(-distPenAreaBoundaryToGoal);
+		var lookingDirection = Lines.halfLineFromAngle(getPos(), getBot().getAngleByTime(0));
+		var lookingOutside = penArea.intersectPerimeterPath(lookingDirection).isEmpty();
+
+		return heldBallTimer.getRemainingTime(getWFrame().getTimestamp()) < passPanicTime
+				&& (lookingForward || lookingOutside);
+	}
+
+
+	private KickParams createBallHandlingKickParams(EDribblerMode dribblerMode)
+	{
+		if (startPanicking())
+		{
+			return panicKick(dribblerMode);
+		}
+		return KickParams.disarm().withDribblerMode(dribblerMode);
+	}
+
+
+	private KickParams panicKick(EDribblerMode dribblerMode)
+	{
+		var ballTravel = Lines.halfLineFromDirection(getBot().getPos(), Vector2.fromAngle(getBot().getAngleByTime(0)));
+		var intersections = Geometry.getField().intersectPerimeterPath(ballTravel);
+		if (intersections.size() != 1)
+		{
+			// Should never happen, but if it does yeet the ball away
+			return KickParams.maxChip().withDribblerMode(dribblerMode);
+		}
+		var distance = intersections.get(0).distanceTo(getPos());
+		var kickSpeed = getBall().getChipConsultant().getInitVelForDistAtTouchdown(distance, 3);
+		return KickParams.chip(SumatraMath.min(kickSpeed, RuleConstraints.getMaxKickSpeed()))
+				.withDribblerMode(dribblerMode);
+	}
+
+
+	private class DefendState extends RoleState<CriticalKeeperSkill>
+	{
+
+		public DefendState()
+		{
+			super(CriticalKeeperSkill::new);
+		}
+
+
+		@Override
+		protected void onUpdate()
+		{
+			skill.setBallHandlingKickParams(createBallHandlingKickParams(receiveDribblerMode));
+			skill.getMoveCon().setBallObstacle(false);
+		}
+	}
 
 	private class KeeperStoppedState extends RoleState<MoveToSkill>
 	{
@@ -308,9 +388,11 @@ public class KeeperRole extends ARole
 		protected void onUpdate()
 		{
 			skill.getMoveCon().physicalObstaclesOnly();
-			var dest = keepDistanceToBall
-					.findNextFreeDest(getAiFrame(), Geometry.getPenaltyAreaOur().getRectangle().center(), getBotID());
-			skill.updateDestination(dest);
+
+			var dest = LineMath.stepAlongLine(Geometry.getGoalOur().bisection(getBall().getPos()), getBall().getPos(),
+							Geometry.getGoalOur().getWidth() / 3)
+					.addNew(Vector2.fromX(Geometry.getPenaltyAreaDepth() / 5));
+			skill.updateDestination(keepDistanceToBall.findNextFreeDest(getAiFrame(), dest, getBotID()));
 			skill.updateLookAtTarget(getWFrame().getBall());
 		}
 	}
@@ -327,13 +409,13 @@ public class KeeperRole extends ARole
 		public void onInit()
 		{
 			skill.getMoveCon().physicalObstaclesOnly();
+			skill.getMoveCon().setBallObstacle(false);
 			// if game is running, get into penArea as fast as possible (in STOP, we are limited to stop speed anyway)
 			skill.getMoveConstraints().setFastMove(true);
 			skill.updateDestination(Geometry.getPenaltyAreaOur().getRectangle().center());
 			skill.updateLookAtTarget(Geometry.getCenter());
 		}
 	}
-
 
 	private class PreparePenaltyState extends RoleState<MoveToSkill>
 	{
@@ -351,12 +433,8 @@ public class KeeperRole extends ARole
 		}
 	}
 
-
 	private class InterceptRollingBallState extends RoleState<MoveToSkill>
 	{
-		private IVector2 interceptPos = Geometry.getGoalOur().getCenter();
-
-
 		public InterceptRollingBallState()
 		{
 			super(MoveToSkill::new);
@@ -367,14 +445,10 @@ public class KeeperRole extends ARole
 		protected void onUpdate()
 		{
 			skill.updateLookAtTarget(getBall());
-			var ballInterceptions = getAiFrame().getPrevFrame().getTacticalField().getRollingBallInterceptions();
-			if (!ballInterceptions.isEmpty())
+			skill.setKickParams(createBallHandlingKickParams(receiveDribblerMode));
+			if (getBall().getPos().distanceTo(getInterceptDestination()) > 4 * Geometry.getBotRadius())
 			{
-				interceptPos = ballInterceptions.get(getBotID()).getBallInterception().getPos();
-				if (getBall().getTrajectory().getTravelLine().distanceTo(interceptPos) > Geometry.getBotRadius())
-				{
-					skill.updateDestination(interceptPos);
-				}
+				skill.updateDestination(getInterceptDestination());
 			}
 		}
 
@@ -382,17 +456,25 @@ public class KeeperRole extends ARole
 		@Override
 		protected void onInit()
 		{
-			var ballInterceptions = getAiFrame().getPrevFrame().getTacticalField().getRollingBallInterceptions();
-			interceptPos = ballInterceptions.get(getBotID()).getBallInterception().getPos();
 			skill.getMoveCon().physicalObstaclesOnly();
 			skill.getMoveCon().setBallObstacle(false);
-			skill.updateDestination(interceptPos);
+			skill.updateDestination(getInterceptDestination());
+			skill.updateLookAtTarget(getBall());
 		}
 
+
+		private IVector2 getInterceptDestination()
+		{
+			return getAiFrame().getTacticalField().getKeeperInterceptPos()
+					.addNew(getBall().getVel().scaleToNew(getBot().getCenter2DribblerDist()));
+		}
 	}
 
 	private class MoveInFrontOfBallState extends RoleState<MoveToSkill>
 	{
+		private TimestampTimer ballStoppedTimer = new TimestampTimer(0.1);
+
+
 		public MoveInFrontOfBallState()
 		{
 			super(MoveToSkill::new);
@@ -402,10 +484,213 @@ public class KeeperRole extends ARole
 		@Override
 		protected void onUpdate()
 		{
-			IVector2 placementPos = getPlacementPos();
-			skill.getMoveCon().physicalObstaclesOnly();
-			skill.updateDestination(LineMath.stepAlongLine(getBall().getPos(), placementPos, 200));
+			var placementPos = getPlacementPos(KeeperBehaviorCalc.ballMarginUpper());
+			var destination = getApproachDestination();
+			var stage = getApproachStage(destination);
+			configureMovementConstraints(stage);
+			getShapes(EAiShapesLayer.KEEPER_BEHAVIOR)
+					.add(new DrawableAnnotation(getPos().addNew(Vector2.fromY(200)), stage.toString(), true));
+
+
+			skill.updateDestination(destination);
+			getShapes(EAiShapesLayer.KEEPER_BEHAVIOR).add(new DrawableLine(destination, placementPos, Color.RED));
 			skill.updateLookAtTarget(getBall());
+
+			if (getBall().getVel().getLength2() < 0.1)
+			{
+				ballStoppedTimer.update(getWFrame().getTimestamp());
+			} else
+			{
+				ballStoppedTimer.reset();
+			}
+
+			movedInFront = skill.getSkillState() == ESkillState.SUCCESS && ballStoppedTimer.isTimeUp(
+					getWFrame().getTimestamp());
+		}
+
+
+		@Override
+		protected void onExit()
+		{
+			movedInFront = false;
+		}
+
+
+		private IVector2 getApproachDestination()
+		{
+			var target = getBall().getTrajectory().getPosByTime(0.3).getXYVector();
+			IVector2 posToBuildLine;
+			if (Geometry.getPenaltyAreaOur().withMargin(KeeperBehaviorCalc.ballMarginMiddle().atBorder())
+					.isPointInShapeOrBehind(target))
+			{
+				var pointOnGoal = Geometry.getGoalOur().getLineSegment()
+						.withMargin(-Geometry.getBotRadius())
+						.closestPointOnPath(target);
+				if (pointOnGoal.distanceTo(getBall().getPos()) > Geometry.getBotRadius())
+				{
+					posToBuildLine = pointOnGoal.addNew(Vector2.fromX(Geometry.getBotRadius()));
+				} else
+				{
+					posToBuildLine = pointOnGoal.addNew(Vector2.fromX(-2 * Geometry.getBotRadius()));
+				}
+			} else
+			{
+				posToBuildLine = Geometry.getPenaltyAreaOur().withMargin(KeeperBehaviorCalc.ballMarginUpper().atBorder())
+						.nearestPointInside(target);
+			}
+			getShapes(EAiShapesLayer.KEEPER_BEHAVIOR).add(new DrawablePoint(posToBuildLine, Color.PINK));
+			return LineMath.stepAlongLine(target, posToBuildLine, calcWantedPositionDistanceToBall());
+		}
+
+
+		private void configureMovementConstraints(EApproachStage stage)
+		{
+			skill.getMoveCon().physicalObstaclesOnly();
+			switch (stage)
+			{
+				case FAR ->
+				{
+					skill.getMoveCon().setGoalPostsObstacle(true);
+					skill.getMoveCon().setBallObstacle(true);
+					skill.getMoveCon().setDistanceToBall(moveInFrontDistance / 2);
+					skill.getMoveConstraints().setVelMax(SumatraMath.max(0.1, getBot().getMoveConstraints().getVelMax()));
+				}
+				case MEDIUM ->
+				{
+					skill.getMoveCon().setGoalPostsObstacle(false);
+					skill.getMoveCon().setBallObstacle(true);
+					skill.getMoveCon().setDistanceToBall(moveInFrontDistance / 2);
+					skill.getMoveConstraints().setVelMax(ballHandlingMaxVel / 2);
+				}
+				case CLOSE ->
+				{
+					skill.getMoveCon().setGoalPostsObstacle(false);
+					var margin = calcWantedPerimeterDistanceToBall() - (Geometry.getBotRadius()
+							- getBot().getCenter2DribblerDist());
+					skill.getMoveCon().setBallObstacle(margin > 0);
+					skill.getMoveCon().setDistanceToBall(margin > 0 ? margin / 2 : null);
+					skill.getMoveConstraints().setVelMax(ballHandlingMaxVel / 2);
+				}
+			}
+		}
+
+
+		private double calcWantedPositionDistanceToBall()
+		{
+			return calcWantedPerimeterDistanceToBall() + Geometry.getBallRadius() + getBot().getCenter2DribblerDist();
+		}
+
+
+		private double calcWantedPerimeterDistanceToBall()
+		{
+			var distToGaol = Geometry.getGoalOur().getLineSegment().distanceTo(getBall().getPos())
+					- Geometry.getBallRadius();
+			return SumatraMath.cap(distToGaol, 0, moveInFrontDistance);
+		}
+
+
+		private EApproachStage getApproachStage(IVector2 destination)
+		{
+			if (Geometry.getGoalOur().getLineSegment().distanceTo(getBall().getPos()) > 3 * Geometry.getBotRadius())
+			{
+				// Ball is rather far away from the goal -> always stay in far approach stage as the slower ones are not necessary
+				return EApproachStage.FAR;
+			}
+			var distance = calcWantedPositionDistanceToBall();
+			var ball2bot = Vector2.fromPoints(getBall().getPos(), getPos());
+			if (ball2bot.getLength() > 3 * distance)
+			{
+				return EApproachStage.FAR;
+			}
+			if (ball2bot.getLength() < 1.5 * distance || destination.distanceTo(getPos()) < Geometry.getBotRadius())
+			{
+				return EApproachStage.CLOSE;
+			} else
+			{
+				return EApproachStage.MEDIUM;
+			}
+		}
+
+
+		private enum EApproachStage
+		{
+			FAR,
+			MEDIUM,
+			CLOSE
+		}
+	}
+
+	private class SpinUpState extends RoleState<MoveToSkill>
+	{
+		IVector2 targetPos;
+		double targetAngle;
+
+		TimestampTimer stuckTimer = new TimestampTimer(0.3);
+
+
+		SpinUpState()
+		{
+			super(MoveToSkill::new);
+		}
+
+
+		@Override
+		protected void onInit()
+		{
+			targetPos = getTargetPos();
+			targetAngle = getBot().getAngleByTime(0);
+			skill.setMinTimeAtDestForSuccess(0.1);
+			stuckTimer.reset();
+		}
+
+
+		@Override
+		protected void onUpdate()
+		{
+			setupBallHandlingSkill(skill);
+			skill.updateDestination(targetPos);
+			skill.updateTargetAngle(targetAngle);
+
+			if (skill.getSkillState() != ESkillState.SUCCESS)
+			{
+				spinUpFinished = false;
+			} else
+			{
+				spinUpFinished = isDribblingBall();
+			}
+
+			if (spinUpFinished)
+			{
+				stuckTimer.update(getWFrame().getTimestamp());
+			} else
+			{
+				stuckTimer.reset();
+			}
+
+			if (stuckTimer.isTimeUp(getWFrame().getTimestamp()))
+			{
+				skill.setKickParams(panicKick(ballHandlingDribblerMode));
+			} else
+			{
+				skill.setKickParams(createBallHandlingKickParams(ballHandlingDribblerMode));
+			}
+		}
+
+
+		@Override
+		protected void onExit()
+		{
+			spinUpFinished = false;
+		}
+
+
+		private IVector2 getTargetPos()
+		{
+			var vel = getBot().getVel();
+			var velLength = vel.getLength2();
+			var breakDistance = 1000 * (0.5f * velLength * velLength / ballHandlingMaxAcc);
+
+			return Geometry.getField().nearestPointInside(getPos().addNew(vel.scaleToNew(breakDistance)));
 		}
 	}
 
@@ -420,18 +705,19 @@ public class KeeperRole extends ARole
 		@Override
 		protected void onInit()
 		{
-			updateTargetPose(getPlacementPos());
+			updateTargetPose(getPlacementPos(KeeperBehaviorCalc.ballMarginUpper()));
 		}
 
 
 		@Override
 		protected void onUpdate()
 		{
-			IVector2 placementPos = getPlacementPos();
+			IVector2 placementPos = getPlacementPos(KeeperBehaviorCalc.ballMarginUpper());
 			if (placementPos.distanceTo(getBall().getPos()) > 300)
 			{
 				updateTargetPose(placementPos);
 			}
+			skill.setForcedChipSpeed(createBallHandlingKickParams(ballHandlingDribblerMode).getKickSpeed());
 		}
 
 
@@ -442,39 +728,71 @@ public class KeeperRole extends ARole
 		}
 	}
 
-	/**
-	 * If the ball is near the penalty area, the keeper should chip it to the best pass target.
-	 */
-	private class PassState extends RoleState<TouchKickSkill>
+
+	private class PassState extends RoleState<MoveToSkill>
 	{
-		private final TimestampTimer timeoutTimer = new TimestampTimer(5);
+
+		IVector2 targetDestination;
+		private TargetAngleReachedChecker targetAngleReachedChecker;
 
 
 		PassState()
 		{
-			super(TouchKickSkill::new);
+			super(MoveToSkill::new);
 		}
 
 
 		@Override
 		protected void onInit()
 		{
-			skill.getMoveCon().physicalObstaclesOnly();
-			timeoutTimer.start(getWFrame().getTimestamp());
+			targetAngleReachedChecker = new TargetAngleReachedChecker(roughAngleTolerance, maxTimeTargetAngleReached);
+			targetDestination = getPos();
 		}
 
 
 		@Override
 		protected void onUpdate()
 		{
-			Pass pass = getAiFrame().getTacticalField().getKeeperPass();
-			if (!timeoutTimer.isTimeUp(getWFrame().getTimestamp()) && pass != null)
+			setupBallHandlingSkill(skill);
+			skill.updateDestination(targetDestination);
+			setTargetAndKickParams();
+		}
+
+
+		private void setTargetAndKickParams()
+		{
+			double tolerance;
+			IVector2 target;
+			KickParams paramsIfAimed;
+			if (keeperPass == null)
 			{
-				skill.setTarget(pass.getKick().getTarget());
-				skill.setPassRange(pass.getKick().getAimingTolerance());
-				skill.setDesiredKickParams(pass.getKick().getKickParams());
-				getAiFrame().getShapeMap().get(EAiShapesLayer.AI_KEEPER)
-						.add(new DrawableLine(getBall().getPos(), pass.getKick().getTarget()));
+				target = Geometry.getGoalTheir().getCenter();
+				tolerance = 0.1;
+				paramsIfAimed = KickParams.maxChip().withDribblerMode(ballHandlingDribblerMode);
+			} else
+			{
+				target = keeperPass.getKick().getTarget();
+				tolerance = keeperPass.getKick().getAimingTolerance();
+				paramsIfAimed = keeperPass.getKick().getKickParams().withDribblerMode(ballHandlingDribblerMode);
+			}
+
+			skill.updateLookAtTarget(target);
+			var currentAngle = getBot().getAngleByTime(0);
+			var targetAngle = Vector2.fromPoints(getPos(), target).getAngle();
+
+			var passRangeTolerance = tolerance / 2;
+			// try being a bit more precise than the pass range, but have a minimum tolerance
+			var angleTolerance = Math.max(roughAngleTolerance, passRangeTolerance - roughAngleTolerance);
+			targetAngleReachedChecker.setOuterAngleDiffTolerance(angleTolerance);
+
+			targetAngleReachedChecker.update(targetAngle, currentAngle, getWFrame().getTimestamp());
+
+			if (targetAngleReachedChecker.isReached())
+			{
+				skill.setKickParams(paramsIfAimed);
+			} else
+			{
+				skill.setKickParams(createBallHandlingKickParams(ballHandlingDribblerMode));
 			}
 		}
 	}

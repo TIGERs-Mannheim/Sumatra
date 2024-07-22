@@ -16,7 +16,6 @@ import edu.tigers.sumatra.botparams.view.BotParamsView;
 import edu.tigers.sumatra.config.ConfigEditorView;
 import edu.tigers.sumatra.kick.view.BallKickIdentView;
 import edu.tigers.sumatra.model.SumatraModel;
-import edu.tigers.sumatra.offensive.OffensiveActionTreeView;
 import edu.tigers.sumatra.offensive.OffensiveInterceptionsView;
 import edu.tigers.sumatra.offensive.OffensiveStatisticsView;
 import edu.tigers.sumatra.offensive.OffensiveStrategyView;
@@ -96,7 +95,6 @@ public class MainFrame extends AMainFrame implements IReplayLoadMenuObserver
 		addView(new LogfileView());
 		addView(new OffensiveStatisticsView());
 		addView(new BotParamsView());
-		addView(new OffensiveActionTreeView());
 		addView(new BallKickIdentView());
 		addView(new SupportBehaviorsView());
 		addView(new SkillsView());

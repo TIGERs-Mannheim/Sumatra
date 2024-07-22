@@ -4,6 +4,8 @@
 
 package edu.tigers.sumatra.teamclient;
 
+import com.github.g3force.configurable.ConfigRegistration;
+import com.github.g3force.configurable.Configurable;
 import com.google.protobuf.ByteString;
 import edu.tigers.sumatra.ai.AIInfoFrame;
 import edu.tigers.sumatra.geometry.Geometry;
@@ -37,20 +39,24 @@ public class TeamClientTask implements Runnable, GameControllerProtocol.IConnect
 	private static final String DEFAULT_HOSTNAME = "localhost";
 	private static final int DEFAULT_PORT = 10008;
 	private static final long PING_INTERVAL = 1_000_000_000;
+	@Configurable(comment = "KEEP THIS OFF AT ALL TIME - deactivates automatic requesting of a keeper ID", defValue = "false")
+	private static boolean ignoreMissingKeeper = false;
+
+	static
+	{
+		ConfigRegistration.registerClass("user", TeamClientTask.class);
+	}
 
 	private final GameControllerProtocol gameController;
 	private final ETeamColor teamColor;
+	private final BlockingQueue<AIInfoFrame> aiFrames = new LinkedBlockingQueue<>(1);
 	private String teamName;
 	private String nextToken;
 	private MessageSigner signer;
-
 	private BotID lastRequestedKeeperId = null;
 	private boolean botSubstitutionDesired = false;
-
+	private boolean prevDecision = false;
 	private boolean active = true;
-
-	private final BlockingQueue<AIInfoFrame> aiFrames = new LinkedBlockingQueue<>(1);
-
 	private long nextPing = 0;
 
 
@@ -110,22 +116,25 @@ public class TeamClientTask implements Runnable, GameControllerProtocol.IConnect
 	@Override
 	public void run()
 	{
-		Thread.currentThread().setName("TeamClient::unknown-" + teamColor.toString());
-		AIInfoFrame aiFrame;
+		Thread.currentThread().setName("TeamClient::unknown-" + teamColor);
 		while (active)
 		{
 			try
 			{
-				aiFrame = aiFrames.take();
+				var aiFrame = aiFrames.take();
 				checkAndHandleAiFrame(aiFrame);
 
 			} catch (InterruptedException e)
 			{
 				Thread.currentThread().interrupt();
+			} catch (Throwable e)
+			{
+				log.error("Uncaught exception in TeamClientTask", e);
 			}
 		}
 
 		gameController.disconnect();
+		Thread.currentThread().setName("TeamClient::unknown-" + teamColor);
 	}
 
 
@@ -267,11 +276,22 @@ public class TeamClientTask implements Runnable, GameControllerProtocol.IConnect
 		{
 			sendSubstitutionRequest();
 		}
+		if (prevDecision != aiFrame.getTacticalField()
+				.isKeepPlayingIfWeHaveAdvantage())
+		{
+			sendKeepPlayingOrStopMsg(aiFrame);
+		}
+		prevDecision = aiFrame.getTacticalField().isKeepPlayingIfWeHaveAdvantage();
 	}
 
 
 	private Optional<BotID> getDesiredNewKeeper(AIInfoFrame aiFrame)
 	{
+		if (ignoreMissingKeeper)
+		{
+			return Optional.empty();
+		}
+
 		BotID currentKeeper = aiFrame.getRefereeMsg().getKeeperBotID(teamColor);
 		if (aiFrame.getWorldFrame().getTigerBotsAvailable().containsKey(currentKeeper))
 		{
@@ -336,6 +356,36 @@ public class TeamClientTask implements Runnable, GameControllerProtocol.IConnect
 		} else
 		{
 			log.info("Keeper was changed to {}", id);
+		}
+		nextToken = reply.getControllerReply().getNextToken();
+	}
+
+
+	private void sendKeepPlayingOrStopMsg(AIInfoFrame aiFrame)
+	{
+		String decisionMade;
+		TeamToController.Builder reqBuild = TeamToController.newBuilder();
+		//Check if we want to keep playing --> if yes we sent CONTINUE to GC
+		if (aiFrame.getTacticalField().isKeepPlayingIfWeHaveAdvantage())
+		{
+			reqBuild.setAdvantageChoice(SslGcRconTeam.AdvantageChoice.CONTINUE);
+			decisionMade = "Change to AdvantagePlay";
+		} else
+		{
+			reqBuild.setAdvantageChoice(SslGcRconTeam.AdvantageChoice.STOP);
+			decisionMade = "Change to STOP";
+		}
+
+		gameController.sendMessage(reqBuild.build());
+		//Check if the GC accepted the decision.
+		SslGcRconTeam.ControllerToTeam reply = gameController
+				.receiveMessage(SslGcRconTeam.ControllerToTeam.parser());
+		if (reply.getControllerReply().getStatusCode() != SslGcRcon.ControllerReply.StatusCode.OK)
+		{
+			log.debug("GameController rejected Decision : {}, {} ", decisionMade, reply.getControllerReply());
+		} else
+		{
+			log.debug("Game Controller accepted Decision: {} ", decisionMade);
 		}
 		nextToken = reply.getControllerReply().getNextToken();
 	}

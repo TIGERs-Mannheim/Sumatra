@@ -9,7 +9,8 @@ All dependencies will be downloaded automatically, so you need an internet conne
 
 ## System Requirements
 
-* Java JDK 17
+* Java JDK (recent LTS version, exact required version can be
+  found [here](buildSrc/src/main/groovy/sumatra.java.gradle))
 * Internet connection
 * Some optional features require native libraries (like screencasting or gamepad support), so some more exotic
   architectures may not fully be supported
@@ -86,7 +87,7 @@ Make sure you disable the AIs that are not used by switching them to OFF in the 
 The simulation can only be controlled from the server. The game-controller is also running on the server. You can use
 the autoRef on the server as well. The client only provides the AI including the skill system.
 
-To simplify the setup, there is a docker-compose setup. It is
+To simplify the setup, there is a docker compose setup. It is
 described [here](./modules/moduli-statistics-saver/Readme.md).
 
 ## Further Documentation

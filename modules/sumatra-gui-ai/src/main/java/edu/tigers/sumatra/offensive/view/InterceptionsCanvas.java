@@ -4,9 +4,9 @@
 
 package edu.tigers.sumatra.offensive.view;
 
-import edu.tigers.sumatra.ai.metis.offense.ballinterception.BallInterceptionInformation;
-import edu.tigers.sumatra.ai.metis.offense.ballinterception.InterceptionIteration;
-import edu.tigers.sumatra.ai.metis.offense.ballinterception.InterceptionZeroAxisCrossing;
+import edu.tigers.sumatra.ai.metis.ballinterception.BallInterceptionInformation;
+import edu.tigers.sumatra.ai.metis.ballinterception.InterceptionIteration;
+import edu.tigers.sumatra.ai.metis.ballinterception.InterceptionZeroAxisCrossing;
 import edu.tigers.sumatra.ids.BotID;
 import lombok.Setter;
 

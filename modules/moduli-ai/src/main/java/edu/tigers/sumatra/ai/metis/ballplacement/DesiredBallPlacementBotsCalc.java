@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.ai.metis.ballplacement;
 
@@ -7,6 +7,7 @@ import edu.tigers.sumatra.ai.metis.general.ADesiredBotCalc;
 import edu.tigers.sumatra.ai.pandora.plays.EPlay;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.math.vector.Vector2;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -14,6 +15,7 @@ import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
 
@@ -61,7 +63,7 @@ public class DesiredBallPlacementBotsCalc extends ADesiredBotCalc
 
 	private IVector2 getPlacementPos()
 	{
-		return getAiFrame().getGameState().getBallPlacementPositionForUs();
+		return Optional.ofNullable(getAiFrame().getGameState().getBallPlacementPositionForUs()).orElse(Vector2.zero());
 	}
 
 

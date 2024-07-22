@@ -7,11 +7,10 @@ package edu.tigers.sumatra.data;
 import lombok.Setter;
 import lombok.Value;
 
-import java.util.ArrayList;
-import java.util.Collections;
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 
 /**
@@ -21,7 +20,7 @@ import java.util.stream.Collectors;
  */
 public class TimeLimitedBuffer<T>
 {
-	private final List<Entry<T>> data = new ArrayList<>();
+	private final Deque<Entry<T>> data = new ArrayDeque<>();
 	@Setter
 	private int maxElements;
 	@Setter
@@ -37,7 +36,6 @@ public class TimeLimitedBuffer<T>
 	public void add(long timestamp, T value)
 	{
 		data.add(new Entry<>(timestamp, value));
-		Collections.sort(data);
 		reduceBySize();
 		reduceByDuration();
 	}
@@ -48,19 +46,29 @@ public class TimeLimitedBuffer<T>
 	 */
 	public List<T> getElements()
 	{
-		return data.stream().map(Entry::getValue).collect(Collectors.toUnmodifiableList());
+		return data.stream().map(Entry::getValue).toList();
 	}
 
 
 	public Optional<T> getLatest()
 	{
-		return data.stream().skip(data.size() - 1L).map(Entry::getValue).findAny();
+		return data.isEmpty() ? Optional.empty() : Optional.of(data.getLast().value);
 	}
 
 
 	public Optional<T> getOldest()
 	{
-		return data.stream().map(Entry::getValue).findFirst();
+		return data.isEmpty() ? Optional.empty() : Optional.of(data.getFirst().value);
+	}
+
+	public T getValuePercentile(double percentile)
+	{
+		return data.stream()
+				.map(Entry::getValue)
+				.sorted()
+				.skip(Math.max(0, Math.round(data.size() * percentile) - 1))
+				.findFirst()
+				.orElseThrow();
 	}
 
 
@@ -73,42 +81,38 @@ public class TimeLimitedBuffer<T>
 		}
 		while (data.size() > maxElements)
 		{
-			data.remove(0);
+			data.removeFirst();
 		}
 	}
 
 
 	private void reduceByDuration()
 	{
-		if (maxDuration <= 0 || data.isEmpty())
+		if(data.isEmpty())
+		{
+			return;
+		}
+
+		reduceByAbsoluteDuration(data.getLast().timestamp);
+	}
+
+	public void reduceByAbsoluteDuration(long currentTimestamp)
+	{
+		if (maxDuration <= 0)
 		{
 			// no duration limit
 			return;
 		}
-		long maxTimestamp = data.get(data.size() - 1).timestamp;
-		long minTimestamp = maxTimestamp - (long) (maxDuration * 1e9);
-		while (!data.isEmpty() && data.get(0).timestamp < minTimestamp)
+
+		while (!data.isEmpty() && data.getFirst().timestamp < currentTimestamp - (long) (maxDuration * 1e9))
 		{
-			data.remove(0);
+			data.removeFirst();
 		}
 	}
 
 	public void reset()
 	{
 		data.clear();
-	}
-
-	public void reduceByAbsoluteDuration(long currentTimestamp)
-	{
-		if (maxDuration <= 0 || data.isEmpty())
-		{
-			// no duration limit
-			return;
-		}
-		while (!data.isEmpty() && data.get(0).timestamp < currentTimestamp - (long) (maxDuration * 1e9))
-		{
-			data.remove(0);
-		}
 	}
 
 	@Value

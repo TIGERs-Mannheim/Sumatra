@@ -48,6 +48,8 @@
       <IGNORE_ACCESSORS value="true" />
     </inspection_tool>
     <inspection_tool class="JavadocDeclaration" enabled="false" level="WARNING" enabled_by_default="false" />
+    <inspection_tool class="LombokGetterMayBeUsed" enabled="false" level="WARNING" enabled_by_default="false" />
+    <inspection_tool class="LombokSetterMayBeUsed" enabled="false" level="WARNING" enabled_by_default="false" />
     <inspection_tool class="MissingJavadoc" enabled="false" level="WARNING" enabled_by_default="false">
       <option name="IGNORE_ACCESSORS" value="true" />
       <option name="PACKAGE_SETTINGS">

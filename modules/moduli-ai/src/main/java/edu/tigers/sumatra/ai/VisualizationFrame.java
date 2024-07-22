@@ -7,9 +7,8 @@ package edu.tigers.sumatra.ai;
 import com.sleepycat.persist.model.Persistent;
 import edu.tigers.sumatra.ai.athena.IPlayStrategy;
 import edu.tigers.sumatra.ai.data.BotAiInformation;
+import edu.tigers.sumatra.ai.metis.ballinterception.BallInterceptionInformation;
 import edu.tigers.sumatra.ai.metis.offense.action.RatedOffensiveAction;
-import edu.tigers.sumatra.ai.metis.offense.situation.rating.OffensiveActionTreePath;
-import edu.tigers.sumatra.ai.metis.offense.ballinterception.BallInterceptionInformation;
 import edu.tigers.sumatra.ai.metis.offense.statistics.OffensiveAnalysedFrame;
 import edu.tigers.sumatra.ai.metis.offense.statistics.OffensiveStatisticsFrame;
 import edu.tigers.sumatra.ai.metis.offense.strategy.OffensiveStrategy;
@@ -19,8 +18,6 @@ import edu.tigers.sumatra.ai.metis.support.behaviors.SupportBehaviorPosition;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.ids.EAiTeam;
 import edu.tigers.sumatra.ids.ETeamColor;
-import edu.tigers.sumatra.trees.EOffensiveSituation;
-import edu.tigers.sumatra.trees.OffensiveActionTree;
 import lombok.Value;
 
 import java.util.ArrayList;
@@ -47,8 +44,6 @@ public class VisualizationFrame
 	Map<BotID, BotAiInformation> aiInfos = new HashMap<>();
 	OffensiveAnalysedFrame offensiveStatisticsFrame;
 	OffensiveStatisticsFrame offensiveStatisticsFrameRaw;
-	Map<EOffensiveSituation, OffensiveActionTree> actionTrees;
-	OffensiveActionTreePath currentPath;
 	transient IPlayStrategy playStrategy;
 	Map<BotID, BallInterceptionInformation> ballInterceptionInformationMap;
 
@@ -66,8 +61,6 @@ public class VisualizationFrame
 		offensiveStrategy = null;
 		offensiveStatisticsFrame = null;
 		offensiveStatisticsFrameRaw = null;
-		actionTrees = null;
-		currentPath = null;
 		playStrategy = null;
 		ballInterceptionInformationMap = null;
 		supportBehaviorAssignment = null;
@@ -89,8 +82,6 @@ public class VisualizationFrame
 		aiInfos.putAll(aiFrame.getAresData().getBotAiInformation());
 		offensiveStatisticsFrame = aiFrame.getTacticalField().getAnalyzedOffensiveStatisticsFrame();
 		offensiveStatisticsFrameRaw = aiFrame.getTacticalField().getOffensiveStatistics();
-		actionTrees = aiFrame.getTacticalField().getActionTrees().getActionTrees();
-		currentPath = aiFrame.getTacticalField().getCurrentPath();
 		playStrategy = aiFrame.getAthenaAiFrame().getPlayStrategy();
 		ballInterceptionInformationMap = aiFrame.getTacticalField().getBallInterceptionInformationMap().entrySet()
 				.stream().collect(Collectors.toMap(Map.Entry::getKey, e -> berkeleyFriendly(e.getValue())));
@@ -115,8 +106,6 @@ public class VisualizationFrame
 		aiInfos.putAll(aiFrame.getAiInfos());
 		offensiveStatisticsFrame = aiFrame.getOffensiveStatisticsFrame();
 		offensiveStatisticsFrameRaw = aiFrame.getOffensiveStatisticsFrameRaw();
-		actionTrees = aiFrame.getActionTrees();
-		currentPath = aiFrame.getCurrentPath();
 		playStrategy = aiFrame.getPlayStrategy();
 		ballInterceptionInformationMap = aiFrame.getBallInterceptionInformationMap();
 		supportBehaviorAssignment = aiFrame.getSupportBehaviorAssignment();

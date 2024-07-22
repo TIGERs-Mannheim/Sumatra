@@ -22,7 +22,7 @@ import java.util.List;
  * Redirect in a triangle with a specified distance and angle.
  * This repeatably tests redirects with a fixed angle.
  */
-public class RedirectTrianglePlay extends ARedirectPlay
+public class RedirectTrianglePlay extends APassingPlay
 {
 	@Setter
 	private IVector2 redirectPos;
@@ -78,7 +78,7 @@ public class RedirectTrianglePlay extends ARedirectPlay
 	{
 		super.doUpdateAfterRoles();
 
-		var shapes = getAiFrame().getShapeMap().get(EAiShapesLayer.TEST_KICK);
+		var shapes = getAiFrame().getShapeMap().get(EAiShapesLayer.TEST_PASSING);
 		shapes.add(new DrawableLine(redirectPos, getSupportPos(1), Color.green));
 		shapes.add(new DrawableLine(redirectPos, getSupportPos(-1), Color.green));
 		shapes.add(new DrawableCircle(Circle.createCircle(redirectPos, Geometry.getBotRadius() + 15), Color.red));

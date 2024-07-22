@@ -5,17 +5,17 @@
 package edu.tigers.sumatra.wp.exporter;
 
 import edu.tigers.moduli.AModule;
-import edu.tigers.sumatra.cam.proto.MessagesRobocupSslDetection;
-import edu.tigers.sumatra.cam.proto.MessagesRobocupSslDetection.SSL_DetectionBall;
-import edu.tigers.sumatra.cam.proto.MessagesRobocupSslDetection.SSL_DetectionFrame;
-import edu.tigers.sumatra.cam.proto.MessagesRobocupSslGeometry;
-import edu.tigers.sumatra.cam.proto.MessagesRobocupSslGeometry.SSL_FieldCircularArc;
-import edu.tigers.sumatra.cam.proto.MessagesRobocupSslGeometry.SSL_FieldLineSegment;
-import edu.tigers.sumatra.cam.proto.MessagesRobocupSslGeometry.SSL_FieldShapeType;
-import edu.tigers.sumatra.cam.proto.MessagesRobocupSslGeometry.SSL_GeometryData;
-import edu.tigers.sumatra.cam.proto.MessagesRobocupSslGeometry.SSL_GeometryFieldSize;
-import edu.tigers.sumatra.cam.proto.MessagesRobocupSslGeometry.Vector2f;
-import edu.tigers.sumatra.cam.proto.MessagesRobocupSslWrapper.SSL_WrapperPacket;
+import edu.tigers.sumatra.cam.proto.SslVisionDetection;
+import edu.tigers.sumatra.cam.proto.SslVisionDetection.SSL_DetectionBall;
+import edu.tigers.sumatra.cam.proto.SslVisionDetection.SSL_DetectionFrame;
+import edu.tigers.sumatra.cam.proto.SslVisionGeometry;
+import edu.tigers.sumatra.cam.proto.SslVisionGeometry.SSL_FieldCircularArc;
+import edu.tigers.sumatra.cam.proto.SslVisionGeometry.SSL_FieldLineSegment;
+import edu.tigers.sumatra.cam.proto.SslVisionGeometry.SSL_FieldShapeType;
+import edu.tigers.sumatra.cam.proto.SslVisionGeometry.SSL_GeometryData;
+import edu.tigers.sumatra.cam.proto.SslVisionGeometry.SSL_GeometryFieldSize;
+import edu.tigers.sumatra.cam.proto.SslVisionGeometry.Vector2f;
+import edu.tigers.sumatra.cam.proto.SslVisionWrapper.SSL_WrapperPacket;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.ETeamColor;
 import edu.tigers.sumatra.math.AngleMath;
@@ -100,7 +100,7 @@ public class SSLVisionSender extends AModule implements IWorldFrameObserver
 
 		for (ITrackedBot bot : wFrameWrapper.getSimpleWorldFrame().getBots().values())
 		{
-			MessagesRobocupSslDetection.SSL_DetectionRobot.Builder sslBot = MessagesRobocupSslDetection.SSL_DetectionRobot
+			SslVisionDetection.SSL_DetectionRobot.Builder sslBot = SslVisionDetection.SSL_DetectionRobot
 					.newBuilder();
 			sslBot.setConfidence(1);
 			sslBot.setRobotId(bot.getBotId().getNumber());
@@ -164,13 +164,13 @@ public class SSLVisionSender extends AModule implements IWorldFrameObserver
 
 		geometry.setField(field);
 
-		geometry.setModels(MessagesRobocupSslGeometry.SSL_GeometryModels.newBuilder()
-				.setStraightTwoPhase(MessagesRobocupSslGeometry.SSL_BallModelStraightTwoPhase.newBuilder()
+		geometry.setModels(SslVisionGeometry.SSL_GeometryModels.newBuilder()
+				.setStraightTwoPhase(SslVisionGeometry.SSL_BallModelStraightTwoPhase.newBuilder()
 						.setAccSlide(Geometry.getBallParameters().getAccSlide())
 						.setAccRoll(Geometry.getBallParameters().getAccRoll())
 						.setKSwitch(Geometry.getBallParameters().getKSwitch())
 						.build())
-				.setChipFixedLoss(MessagesRobocupSslGeometry.SSL_BallModelChipFixedLoss.newBuilder()
+				.setChipFixedLoss(SslVisionGeometry.SSL_BallModelChipFixedLoss.newBuilder()
 						.setDampingXyFirstHop(Geometry.getBallParameters().getChipDampingXYFirstHop())
 						.setDampingXyOtherHops(Geometry.getBallParameters().getChipDampingXYOtherHops())
 						.setDampingZ(Geometry.getBallParameters().getChipDampingZ())

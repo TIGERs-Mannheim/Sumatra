@@ -21,11 +21,14 @@ public class LineSegmentCollisionObject implements ICollisionObject
 	protected final ILineSegment obstacleLine;
 	private final IVector2 singleSidedNormal;
 
+	private final boolean isFieldBoundary;
 
-	public LineSegmentCollisionObject(final ILineSegment obstacleLine, final IVector2 singleSidedNormal)
+
+	public LineSegmentCollisionObject(ILineSegment obstacleLine, IVector2 singleSidedNormal, boolean isFieldBoundary)
 	{
 		this.obstacleLine = obstacleLine;
 		this.singleSidedNormal = singleSidedNormal;
+		this.isFieldBoundary = isFieldBoundary;
 	}
 
 
@@ -69,5 +72,12 @@ public class LineSegmentCollisionObject implements ICollisionObject
 
 		Collision collision = new Collision(collisionPoint.get(), normal, this);
 		return Optional.of(collision);
+	}
+
+
+	@Override
+	public boolean isFieldBoundary()
+	{
+		return isFieldBoundary;
 	}
 }

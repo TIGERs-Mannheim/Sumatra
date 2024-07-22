@@ -17,11 +17,13 @@ import edu.tigers.sumatra.skillsystem.skills.redirect.IRedirectConsultant;
 import edu.tigers.sumatra.skillsystem.skills.redirect.RedirectConsultantFactory;
 import edu.tigers.sumatra.skillsystem.skills.util.KickParams;
 import edu.tigers.sumatra.time.TimestampTimer;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.awt.Color;
 
 
+@NoArgsConstructor
 public class RedirectBallSkill extends ABallArrivalSkill
 {
 	private final TimestampTimer redirectDoneTimer = new TimestampTimer(0.1);
@@ -31,14 +33,6 @@ public class RedirectBallSkill extends ABallArrivalSkill
 	private IVector2 target;
 	@Setter
 	private KickParams desiredKickParams = KickParams.disarm();
-
-
-	public boolean ballCanBeRedirected()
-	{
-		return !isInitialized() || (ballIsMoving()
-				&& receivingPositionIsReachableByBall(ballReceivingPosition)
-				&& ballIsMovingTowardsMe());
-	}
 
 
 	@Override
@@ -74,7 +68,13 @@ public class RedirectBallSkill extends ABallArrivalSkill
 				desiredKickParams.getKickSpeed()
 		);
 
-		setKickParams(KickParams.of(desiredKickParams.getDevice(), desiredKickSpeed));
+		if (isRoughlyTargeted(desiredTargetAngle))
+		{
+			setKickParams(KickParams.of(desiredKickParams.getDevice(), desiredKickSpeed));
+		} else
+		{
+			setKickParams(KickParams.disarm());
+		}
 		setDesiredTargetAngle(desiredTargetAngle);
 
 		var bot2Target = Lines.lineFromPoints(getTBot().getPos(), target).getAngle().orElse(0.0);
@@ -97,6 +97,12 @@ public class RedirectBallSkill extends ABallArrivalSkill
 
 		super.doUpdate();
 		setSkillState(calcSkillState());
+	}
+
+
+	private boolean isRoughlyTargeted(double desiredTargetAngle)
+	{
+		return AngleMath.diffAbs(desiredTargetAngle, getTBot().getOrientation()) < AngleMath.deg2rad(20);
 	}
 
 

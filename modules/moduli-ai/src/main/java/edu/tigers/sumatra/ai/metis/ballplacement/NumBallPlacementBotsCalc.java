@@ -51,13 +51,18 @@ public class NumBallPlacementBotsCalc extends ACalculator
 	protected void reset()
 	{
 		numBallPlacementBots = 0;
+		insidePushRadiusHysteresis.setUpper(false);
 	}
 
 
 	private boolean isBallInsidePushRadius()
 	{
 		IVector2 placementPos = getAiFrame().getGameState().getBallPlacementPositionForUs();
-		insidePushRadiusHysteresis.update(placementPos.distanceTo(getBall().getPos()));
-		return insidePushRadiusHysteresis.isLower();
+		if (placementPos != null)
+		{
+			insidePushRadiusHysteresis.update(placementPos.distanceTo(getBall().getPos()));
+			return insidePushRadiusHysteresis.isLower();
+		}
+		return true;
 	}
 }

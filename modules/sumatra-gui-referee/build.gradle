@@ -14,9 +14,9 @@ dependencies {
     implementation project(':sumatra-model')
     implementation project(':moduli-referee')
 
-    implementation 'commons-lang:commons-lang:2.6'
+    implementation(libs.commons.lang)
 
-    implementation 'org.apache.logging.log4j:log4j-api:2.20.0'
+    implementation(libs.org.apache.logging.log4j.log4j.api)
 
-    implementation 'com.miglayout:miglayout-swing:11.1'
+    implementation(libs.com.miglayout.miglayout.swing)
 }

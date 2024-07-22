@@ -42,6 +42,7 @@ public class Ares
 	private final ASkillSystem skillSystem;
 	private final Map<BotID, Boolean> botIsStopped = new HashMap<>();
 	private final Map<BotID, Double> maxVels = new HashMap<>();
+	private final Map<BotID, Double> maxWs = new HashMap<>();
 
 
 	/**
@@ -63,12 +64,11 @@ public class Ares
 				BotID botId = role.getBotID();
 				if (!botId.isBot())
 				{
-					log.error("Role " + role.getType() + " has no assigned bot id!");
+					log.error("Role {} has no assigned bot id!", role);
 				}
 				if (botsAssigned.contains(botId))
 				{
-					log.error("Bot with id " + botId.getNumber() + " already has another role assigned. Can not assign "
-							+ role.getType());
+					log.error("Bot with id {} already has another role assigned. Can not assign {}.", botId, role);
 					logCurrentRoleAssignment(frame);
 					continue;
 				}
@@ -94,7 +94,7 @@ public class Ares
 		{
 			for (ARole role : play.getRoles())
 			{
-				log.warn(play.getType() + ": " + role.getType() + " -> " + role.getBotID());
+				log.warn("{}: {} -> {}", play, role, role.getBotID());
 			}
 		}
 	}
@@ -158,7 +158,7 @@ public class Ares
 			return;
 		}
 		final List<IDrawableShape> shapes = frame.getShapeMap()
-				.get(EAiShapesLayer.TEST_MULTIMEDIA);
+				.get(EAiShapesLayer.AI_MULTIMEDIA);
 		shapes.add(new DrawableCircle(
 				Circle.createCircle(bot.getPos(), Geometry.getBotRadius() + 10),
 				control.getLedColor().getColor()));
@@ -186,6 +186,11 @@ public class Ares
 			double maxVel = maxVels.compute(botId,
 					(o, curMax) -> (curMax == null || curMax < curVel) ? curVel : curMax);
 			aiInfo.setVelocityMax(maxVel);
+
+			double curW = bot.getFilteredState().orElse(bot.getBotState()).getAngularVel();
+			double maxW = maxWs.compute(botId,
+					(o, curMax) -> (curMax == null || curMax < curW) ? curW : curMax);
+			aiInfo.setMaxAngularVelocity(maxW);
 		}
 
 		for (APlay play : frame.getPrevFrame().getPlayStrategy().getActivePlays())
@@ -203,8 +208,8 @@ public class Ares
 			{
 				continue;
 			}
-			aiInfo.setPlay(play.getType().name());
-			aiInfo.setRole(role.getType().name());
+			aiInfo.setPlay(play.toString());
+			aiInfo.setRole(role.toString());
 			IState roleState = role.getCurrentState();
 			aiInfo.setRoleState(roleState);
 			return;

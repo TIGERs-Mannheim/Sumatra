@@ -28,6 +28,7 @@ public class ApproachBallLineState extends AAttackerRoleState<ApproachBallLineSk
 		skill.setMaximumReasonableRedirectAngle(OffensiveConstants.getMaximumReasonableRedirectAngle());
 		skill.setDesiredBallCatchPos(getRole().getAction().getBallContactPos());
 		skill.getMoveCon().setObstacleAvoidanceMode(EObstacleAvoidanceMode.AGGRESSIVE);
+		skill.setApproachFailedMinBallVel(OffensiveConstants.getAbortBallInterceptionVelThreshold());
 
 		getRole().getAction().getKickOpt()
 				.map(Kick::getTarget).ifPresentOrElse(skill::setTarget, () -> skill.setTarget(null));

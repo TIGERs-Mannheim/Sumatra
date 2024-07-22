@@ -11,6 +11,9 @@ import edu.tigers.sumatra.skillsystem.skills.MoveToSkill;
 import lombok.Setter;
 
 
+/**
+ * Move through a list of destinations.
+ */
 public class EnduranceRole extends ARole
 {
 	@Setter

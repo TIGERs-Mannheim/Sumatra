@@ -16,7 +16,6 @@ import edu.tigers.sumatra.ai.pandora.roles.keeper.KeeperRole;
 import edu.tigers.sumatra.ai.pandora.roles.move.MoveRole;
 import edu.tigers.sumatra.ai.pandora.roles.offense.DelayedAttackRole;
 import edu.tigers.sumatra.ai.pandora.roles.offense.DisruptOpponentRole;
-import edu.tigers.sumatra.ai.pandora.roles.offense.DribbleKickTestRole;
 import edu.tigers.sumatra.ai.pandora.roles.offense.FreeSkirmishRole;
 import edu.tigers.sumatra.ai.pandora.roles.offense.KeepDistToBallRole;
 import edu.tigers.sumatra.ai.pandora.roles.offense.OneOnOneShooterRole;
@@ -26,14 +25,7 @@ import edu.tigers.sumatra.ai.pandora.roles.offense.SupportiveAttackerRole;
 import edu.tigers.sumatra.ai.pandora.roles.offense.attacker.AttackerRole;
 import edu.tigers.sumatra.ai.pandora.roles.placement.BallPlacementRole;
 import edu.tigers.sumatra.ai.pandora.roles.support.SupportRole;
-import edu.tigers.sumatra.ai.pandora.roles.test.ContestedPossessionChallengeRole;
-import edu.tigers.sumatra.ai.pandora.roles.test.ContestedPossessionChallengeRoleV2;
-import edu.tigers.sumatra.ai.pandora.roles.test.DribbleChallenge2022Role;
-import edu.tigers.sumatra.ai.pandora.roles.test.DribbleChallenge2022SimpleRole;
-import edu.tigers.sumatra.ai.pandora.roles.test.DribbleChallengeAdvancedRole;
-import edu.tigers.sumatra.ai.pandora.roles.test.DribbleChallengeSimpleRole;
-import edu.tigers.sumatra.ai.pandora.roles.test.DribbleTestRole;
-import edu.tigers.sumatra.ai.pandora.roles.test.VisionBlackoutRole;
+import edu.tigers.sumatra.ai.pandora.roles.test.DribbleKickTestRole;
 import edu.tigers.sumatra.ai.pandora.roles.test.calibrate.CrookedKickSamplerRole;
 import edu.tigers.sumatra.ai.pandora.roles.test.calibrate.IdentifyBotModelRole;
 import edu.tigers.sumatra.ai.pandora.roles.test.calibrate.StraightChipKickSamplerRole;
@@ -69,10 +61,6 @@ public enum ERole implements IInstanceableEnum
 	DELAYED_ATTACK(ic(DelayedAttackRole.class)),
 	PASS_RECEIVER(ic(PassReceiverRole.class)),
 	DISRUPT_OPPONENT(ic(DisruptOpponentRole.class)),
-	DRIBBLE_KICK_TEST(ic(DribbleKickTestRole.class)
-			.setterParam(IVector2.class, "approachFrom", "0,0", DribbleKickTestRole::setApproachFrom)
-			.setterParam(IVector2.class, "kickTarget", "6000,0", DribbleKickTestRole::setKickTarget)
-			.setterParam(IVector2.class, "dribbleToPos", "4000,1000", DribbleKickTestRole::setDribbleToPos)),
 
 	// support
 
@@ -87,22 +75,20 @@ public enum ERole implements IInstanceableEnum
 	DEFENDER_PLACEHOLDER(ic(DefenderPlaceholderRole.class)),
 	DEFENDER_PEN_AREA(ic(DefenderPenAreaRole.class)
 			.setterParam(IVector2.class, "destination", "0.0", DefenderPenAreaRole::setDestination)
-			.setterParam(Boolean.class, "allowedToKickBall", "false", DefenderPenAreaRole::setAllowedToKickBall)
 	),
 
-	// standards
+	// standards and common match roles
 
 	ONE_ON_ONE_SHOOTER(ic(OneOnOneShooterRole.class)),
 	BALL_PLACEMENT(ic(BallPlacementRole.class)
 			.setterParam(IVector2.class, "placementPos", "0,0", BallPlacementRole::setBallTargetPos)
 	),
+	MOVE(ic(MoveRole.class)
+			.setterParam(IVector2.class, "destination", "1000,0", MoveRole::updateDestination)
+			.setterParam(Double.TYPE, "orientation", "0.0", MoveRole::updateTargetAngle)
+	),
 
 	// other non-match roles
-
-	DRIBBLE_TEST(ic(DribbleTestRole.class)
-			.setterParam(IVector2.class, "target", "0,0", DribbleTestRole::setTarget)
-			.setterParam(Double.TYPE, "velMax", "3", DribbleTestRole::setVelMax)
-	),
 
 	MOVE_TEST(ic(MoveTestRole.class,
 			new InstanceableParameter(MoveTestRole.EMoveMode.class, "mode", "TRAJ_VEL"),
@@ -157,6 +143,12 @@ public enum ERole implements IInstanceableEnum
 			new InstanceableParameter(Integer.TYPE, "iterations", "1"))
 	),
 
+	DRIBBLE_KICK_TEST(ic(DribbleKickTestRole.class)
+			.setterParam(IVector2.class, "initial look at target", "0,0", DribbleKickTestRole::setTarget)
+			.setterParam(IVector2.class, "kickTarget", "6000,0", DribbleKickTestRole::setKickTarget)
+			.setterParam(IVector2.class, "dribbleToPos", "4000,1000", DribbleKickTestRole::setDribbleToPos)),
+
+
 	KICK_TEST(ic(KickTestRole.class,
 			new InstanceableParameter(DynamicPosition.class, "passTarget", "4500,0"),
 			new InstanceableParameter(EKickerDevice.class, "device", "STRAIGHT"),
@@ -184,23 +176,6 @@ public enum ERole implements IInstanceableEnum
 			new InstanceableParameter(Boolean.TYPE, "continue", "true"))
 	),
 
-	MOVE(ic(MoveRole.class)
-			.setterParam(IVector2.class, "destination", "1000,0", MoveRole::updateDestination)
-			.setterParam(Double.TYPE, "orientation", "0.0", MoveRole::updateTargetAngle)
-	),
-
-	VISION_BLACKOUT_ROLE(ic(VisionBlackoutRole.class)
-			.ctorParam(VisionBlackoutRole.EChallengeType.class, "Challenge Type", "STATIC_BALL")
-	),
-
-	DRIBBLE_CHALLENGE_SIMPLE_ROLE(ic(DribbleChallengeSimpleRole.class)),
-	DRIBBLE_CHALLENGE_ADVANCED_ROLE(ic(DribbleChallengeAdvancedRole.class)),
-
-	CONTESTED_POSSESSION_CHALLENGE_ROLE(ic(ContestedPossessionChallengeRole.class)),
-	CONTESTED_POSSESSION_CHALLENGE_ROLE_V2(ic(ContestedPossessionChallengeRoleV2.class)),
-
-	DRIBBLE_CHALLENGE_2022_SIMPLE_ROLE(ic(DribbleChallenge2022SimpleRole.class)),
-	DRIBBLE_CHALLENGE_2022_ROLE(ic(DribbleChallenge2022Role.class)),
 
 	;
 

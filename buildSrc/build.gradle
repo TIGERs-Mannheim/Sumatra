@@ -1,7 +1,5 @@
 plugins {
     id 'groovy-gradle-plugin'
-    id("com.github.ben-manes.versions") version "0.47.0"
-    id("se.patrikerdes.use-latest-versions") version "0.2.18"
 }
 
 repositories {
@@ -9,16 +7,7 @@ repositories {
 }
 
 dependencies {
-    implementation("org.sonarsource.scanner.gradle:sonarqube-gradle-plugin:4.2.1.3168")
-    implementation("com.google.cloud.tools:jib-gradle-plugin:3.3.2")
-    implementation("com.github.ben-manes:gradle-versions-plugin:0.47.0")
-    implementation("se.patrikerdes:gradle-use-latest-versions-plugin:0.2.18")
-    implementation("ca.cutterslade.analyze:ca.cutterslade.analyze.gradle.plugin:1.9.1")
-    implementation("com.google.protobuf:protobuf-gradle-plugin:0.9.3")
-}
-
-tasks.withType(com.github.benmanes.gradle.versions.updates.DependencyUpdatesTask).configureEach {
-    rejectVersionIf {
-        !(it.candidate.version ==~ /[0-9.]+/)
-    }
+    implementation(libs.plugin.jib)
+    implementation(libs.plugin.dependency.analysis)
+    implementation(libs.plugin.protobuf)
 }

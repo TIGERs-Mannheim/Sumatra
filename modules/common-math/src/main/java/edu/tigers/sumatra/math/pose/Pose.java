@@ -10,6 +10,7 @@ import edu.tigers.sumatra.math.IMirrorable;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.IVector3;
 import edu.tigers.sumatra.math.vector.Vector2;
+import edu.tigers.sumatra.math.vector.Vector3;
 import edu.tigers.sumatra.math.vector.Vector3f;
 import lombok.Data;
 import lombok.NonNull;
@@ -63,6 +64,17 @@ public class Pose implements IMirrorable<Pose>
 	public static Pose nan()
 	{
 		return Pose.from(Vector3f.nan());
+	}
+
+
+	public static Pose valueOf(String value)
+	{
+		IVector3 pose = Vector3.valueOf(value);
+		if (pose == null)
+		{
+			return null;
+		}
+		return Pose.from(pose);
 	}
 
 

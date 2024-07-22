@@ -305,7 +305,7 @@ public class VisionAnalyserPresenter implements ISumatraViewPresenter
 				sb.append(s);
 				sb.append('\n');
 			}
-			if (sb.length() > 0)
+			if (!sb.isEmpty())
 			{
 				sb.deleteCharAt(sb.length() - 1);
 			}
@@ -331,7 +331,7 @@ public class VisionAnalyserPresenter implements ISumatraViewPresenter
 				mp = MatlabConnection.getMatlabProxy();
 				mp.eval(LEARNING);
 				mp.returningFeval("crookedKick", 1,
-						filenames.toArray(new Object[filenames.size()]));
+						filenames.toArray(new Object[0]));
 			} catch (MatlabConnectionException err)
 			{
 				log.error(err.getMessage(), err);

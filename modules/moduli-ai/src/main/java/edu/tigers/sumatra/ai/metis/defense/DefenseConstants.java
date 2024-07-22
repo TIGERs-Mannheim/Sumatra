@@ -29,8 +29,8 @@ public final class DefenseConstants
 	@Configurable(comment = "DistToPenAreaCorner + this = max distance from goal center to go out", defValue = "500.0")
 	private static double maxGoOutDistance = 500;
 
-	@Configurable(comment = "Min distance from penArea to go out", defValue = "400.0")
-	private static double minGoOutDistance = 400;
+	@Configurable(comment = "Min distance from penArea to go out", defValue = "300.0")
+	private static double minGoOutDistance = 300;
 
 	static
 	{

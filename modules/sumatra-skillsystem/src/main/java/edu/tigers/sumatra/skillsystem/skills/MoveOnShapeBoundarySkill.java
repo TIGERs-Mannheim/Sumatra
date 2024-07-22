@@ -17,6 +17,7 @@ import edu.tigers.sumatra.skillsystem.ESkillShapesLayer;
 import edu.tigers.sumatra.skillsystem.skills.util.KickParams;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
 import lombok.Setter;
+import lombok.extern.log4j.Log4j2;
 
 import java.awt.Color;
 import java.util.Optional;
@@ -29,6 +30,7 @@ import java.util.stream.Stream;
  * The skill moves along the shape boundary by setting the current destination for the bot such that it
  * moves to the desired destination without blocking others companions or cutting the shape.
  */
+@Log4j2
 public class MoveOnShapeBoundarySkill extends AMoveToSkill
 {
 	@Configurable(comment = "[mm] For destinations further away than this value, intermediate destinations will be generated", defValue = "600.0")
@@ -164,10 +166,19 @@ public class MoveOnShapeBoundarySkill extends AMoveToSkill
 	}
 
 
-	private boolean isBotWellOutsideShape(BotID companion)
+	private boolean isBotWellOutsideShape(BotID botId)
 	{
+		var bot = getWorldFrame().getBot(botId);
+		if (bot == null)
+		{
+			// This warning was implemented during the RoboCup 2023 in Bordeaux, as there were null pointer exceptions
+			// Sadly the error was not reproducible in simulation, maybe the given information will help the person reading
+			// this warning to fix the actual issue and not just applying this dirty patch.
+			log.warn("MoveOnShapeBoundarySkill has none existent companion {}", botId.toString());
+			return false;
+		}
 		return !penAreaBoundary.getShape().withMargin(innerBoundaryToConsider)
-				.isPointInShape(getWorldFrame().getBot(companion).getPos());
+				.isPointInShape(getWorldFrame().getBot(botId).getPos());
 	}
 
 

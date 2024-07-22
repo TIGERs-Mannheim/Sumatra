@@ -120,18 +120,7 @@ public class Snapshot
 	 * @return the loaded snapshot
 	 * @throws IOException on any error
 	 */
-	public static Snapshot loadFromFile(final String path) throws IOException
-	{
-		return loadFromFile(Paths.get(path));
-	}
-
-
-	/**
-	 * @param path to the snapshot file
-	 * @return the loaded snapshot
-	 * @throws IOException on any error
-	 */
-	private static Snapshot loadFromFile(final Path path) throws IOException
+	public static Snapshot loadFromFile(final Path path) throws IOException
 	{
 		byte[] encoded = Files.readAllBytes(path);
 		String json = new String(encoded, StandardCharsets.UTF_8);

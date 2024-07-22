@@ -9,10 +9,7 @@ import edu.tigers.sumatra.drawable.DrawableAnnotation;
 import edu.tigers.sumatra.drawable.IDrawableShape;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.vector.Vector2f;
-import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.NonNull;
 import lombok.Value;
 
 import java.util.ArrayList;
@@ -21,28 +18,35 @@ import java.util.List;
 
 @Persistent
 @Value
-@Builder
-@AllArgsConstructor(access = AccessLevel.PRIVATE)
+@AllArgsConstructor
 public class Pass
 {
-	@NonNull
 	Kick kick;
-	@NonNull
 	BotID receiver;
-	@NonNull
 	BotID shooter;
 	double receivingSpeed;
 	double duration;
+	double preparationTime;
+	EBallReceiveMode receiveMode;
 
 
-	@SuppressWarnings("unused") // berkeley
+	@SuppressWarnings("unused")
+		// berkeley
 	Pass()
 	{
 		kick = new Kick();
-		receiver = BotID.noBot();
-		shooter = BotID.noBot();
+		receiver = null;
+		shooter = null;
 		receivingSpeed = 0;
 		duration = 0;
+		preparationTime = 0;
+		receiveMode = EBallReceiveMode.RECEIVE;
+	}
+
+
+	public boolean isChip()
+	{
+		return kick.getKickVel().z() > 0;
 	}
 
 
@@ -51,7 +55,8 @@ public class Pass
 		List<IDrawableShape> kickDrawables = kick.createDrawables();
 		List<IDrawableShape> shapes = new ArrayList<>(kickDrawables.size() + 1);
 		shapes.addAll(kickDrawables);
-		String msg = String.format("pass: %.1fs -> %s %.1fm/s", duration, receiver, receivingSpeed);
+		String msg = String.format("pass: %.1f+%.1fs %s -> %s %.1fm/s %s", duration, preparationTime, shooter, receiver,
+				receivingSpeed, receiveMode);
 		shapes.add(new DrawableAnnotation(kick.getTarget(), msg).withOffset(Vector2f.fromX(100)));
 		return shapes;
 	}

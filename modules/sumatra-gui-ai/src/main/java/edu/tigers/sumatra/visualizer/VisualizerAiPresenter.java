@@ -28,7 +28,7 @@ public class VisualizerAiPresenter extends VisualizerPresenter
 
 	public VisualizerAiPresenter()
 	{
-		this.getViewPanel().add(robotsPresenter.getRobotsPanel(), BorderLayout.WEST);
+		this.getViewPanel().add(robotsPresenter.getRobotScrollPanel(), BorderLayout.WEST);
 	}
 
 

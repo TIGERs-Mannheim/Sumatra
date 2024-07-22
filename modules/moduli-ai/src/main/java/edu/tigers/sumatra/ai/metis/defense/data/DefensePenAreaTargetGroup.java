@@ -10,20 +10,25 @@ import java.util.List;
 
 
 public record DefensePenAreaTargetGroup(IVector2 centerDest,
+                                        IVector2 velAdaptedCenterDest,
                                         List<IVector2> moveDestinations,
+                                        List<IVector2> velAdaptedMoveDestinations,
                                         List<IDefenseThreat> threats,
                                         int priority)
 {
-	public static DefensePenAreaTargetGroup fromTargetCluster(IVector2 centerDest, List<IVector2> moveDestinations,
+	public static DefensePenAreaTargetGroup fromTargetCluster(IVector2 centerDest, IVector2 velAdaptedCenterDest,
+			List<IVector2> moveDestinations,
+			List<IVector2> velAdaptedMoveDestinations,
 			List<IDefenseThreat> threats, int priority)
 	{
-		return new DefensePenAreaTargetGroup(centerDest, moveDestinations, threats, priority);
+		return new DefensePenAreaTargetGroup(centerDest, velAdaptedCenterDest, moveDestinations,
+				velAdaptedMoveDestinations, threats, priority);
 	}
 
 
 	public static DefensePenAreaTargetGroup fromSpace(IVector2 centerDest)
 	{
-		return new DefensePenAreaTargetGroup(centerDest, List.of(centerDest), List.of(), 99);
+		return new DefensePenAreaTargetGroup(centerDest, centerDest, List.of(centerDest), List.of(centerDest), List.of(), 99);
 	}
 
 

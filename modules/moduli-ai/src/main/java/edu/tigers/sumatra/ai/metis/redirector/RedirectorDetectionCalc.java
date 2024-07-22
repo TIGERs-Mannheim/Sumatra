@@ -3,37 +3,50 @@
  */
 package edu.tigers.sumatra.ai.metis.redirector;
 
+import com.github.g3force.configurable.Configurable;
 import edu.tigers.sumatra.ai.metis.ACalculator;
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
-import edu.tigers.sumatra.ai.pandora.roles.ARole;
-import edu.tigers.sumatra.ai.pandora.roles.ERole;
+import edu.tigers.sumatra.ai.metis.pass.KickOrigin;
+import edu.tigers.sumatra.bot.MoveConstraints;
 import edu.tigers.sumatra.drawable.DrawableAnnotation;
 import edu.tigers.sumatra.drawable.DrawableCircle;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.SumatraMath;
 import edu.tigers.sumatra.math.circle.Circle;
-import edu.tigers.sumatra.math.triangle.Triangle;
+import edu.tigers.sumatra.math.line.Lines;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
-import edu.tigers.sumatra.math.vector.VectorMath;
+import edu.tigers.sumatra.pathfinder.TrajectoryGenerator;
+import edu.tigers.sumatra.trajectory.ITrajectory;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import org.apache.commons.math3.util.Pair;
 
 import java.awt.Color;
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
-import java.util.stream.Collectors;
+import java.util.function.Supplier;
 
 
 /**
  * @author MarkG
  */
+@RequiredArgsConstructor
 public class RedirectorDetectionCalc extends ACalculator
 {
+	private final Supplier<Map<BotID, KickOrigin>> kickOrigins;
+
+	@Configurable(defValue = "0.3", comment = "[s]")
+	private static double opponentRequiredSlackTime = 0.3;
+
+	@Configurable(comment = "Enable double attacker", defValue = "true")
+	private static boolean enableDoubleAttacker = true;
+
 	@Getter
 	private RedirectorDetectionInformation redirectorDetectionInformation;
 
@@ -42,7 +55,9 @@ public class RedirectorDetectionCalc extends ACalculator
 	protected boolean isCalculationNecessary()
 	{
 		// in case of slow balls this calculations are useless
-		return getWFrame().getBall().getVel().getLength() > 1.0;
+		return getWFrame().getBall().getVel().getLength() > 1.5 &&
+				getWFrame().getTigerBotsAvailable().values().stream()
+						.noneMatch(e -> e.getBallContact().hasContactFromVisionOrBarrier());
 	}
 
 
@@ -58,10 +73,99 @@ public class RedirectorDetectionCalc extends ACalculator
 	{
 		redirectorDetectionInformation = new RedirectorDetectionInformation();
 
-		detectOpponentPassReceiver();
-		detectFriendlyPassReceiver();
+		var kickOrigin = kickOrigins.get().entrySet().stream()
+				.filter(e -> Double.isFinite(e.getValue().getImpactTime()))
+				.min(Comparator.comparingDouble(e -> e.getValue().getImpactTime()))
+				.stream().findFirst();
+
+		if (kickOrigin.isEmpty() || Geometry.getPenaltyAreaTheir().withMargin(1500)
+				.isPointInShape(kickOrigin.get().getValue().getPos()))
+		{
+			return;
+		}
+
+		determineReceivers(kickOrigin.get());
 		characterizeReceiverSituation();
 		drawReceiverShapes();
+	}
+
+
+	private void determineReceivers(Map.Entry<BotID, KickOrigin> kickOrigin)
+	{
+		IVector2 receivePos = kickOrigin.getValue().getPos();
+		redirectorDetectionInformation.setFriendlyReceiver(kickOrigin.getKey());
+		redirectorDetectionInformation.setFriendlyReceiverPos(receivePos);
+		redirectorDetectionInformation.setFriendlyBotReceiving(true);
+		if (getBall().getTrajectory().closestPointTo(getWFrame().getBot(kickOrigin.getKey()).getBotKickerPos())
+				.distanceTo(getWFrame().getBot(kickOrigin.getKey()).getBotKickerPos()) > Geometry.getBotRadius() * 4)
+		{
+			redirectorDetectionInformation.setFriendlyStillApproaching(true);
+		}
+
+		List<ITrackedBot> consideredOpponentBots = getWFrame().getOpponentBots()
+				.values()
+				.stream()
+				.filter(e -> !e.getBotId().equals(getAiFrame().getKeeperOpponentId()))
+				.filter(e -> getBall().getTrajectory().getTravelLineSegment().distanceTo(e.getPos()) < 4000)
+				.toList();
+
+		IVector2 startPos = getBall().getPos();
+		IVector2 endPos = receivePos;
+		var sampleLine = Lines.segmentFromPoints(startPos, endPos);
+		List<IVector2> baseSamples = sampleLine.getSteps(300);
+		Map<BotID, Pair<IVector2, Double>> bestBotInterceptions = new HashMap<>();
+		for (var opponent : consideredOpponentBots)
+		{
+			List<IVector2> samples = new ArrayList<>(baseSamples);
+			samples.add(sampleLine.closestPointOnPath(opponent.getPos()));
+			sampleLine.intersect(Lines.halfLineFromDirection(opponent.getPos(), opponent.getVel()))
+					.asOptional()
+					.ifPresent(samples::add);
+
+			var bestOpponentInterception
+					= samples
+					.stream()
+					.map(e -> Pair.create(e, generateTrajectory(opponent, e).getTotalTime()))
+					// check that opponent is faster than ball
+					.filter(e -> opponentCanReceiveBall(opponent, e))
+					.min(Comparator.comparingDouble(Pair::getSecond));
+
+			bestOpponentInterception.ifPresent(
+					iVector2DoublePair -> bestBotInterceptions.put(opponent.getBotId(), iVector2DoublePair));
+		}
+
+		var fastestOpponentReceiver = bestBotInterceptions.entrySet().stream()
+				.min(Comparator.comparingDouble(e -> e.getValue().getSecond()))
+				.stream().findFirst();
+
+		if (fastestOpponentReceiver.isPresent())
+		{
+			redirectorDetectionInformation.setOpponentReceiverPos(fastestOpponentReceiver.get().getValue().getFirst());
+			redirectorDetectionInformation.setOpponentReceiving(true);
+			redirectorDetectionInformation.setOpponentReceiver(fastestOpponentReceiver.get().getKey());
+		}
+	}
+
+
+	private boolean opponentCanReceiveBall(ITrackedBot opponent, Pair<IVector2, Double> interception)
+	{
+		if (opponent.getPos().distanceTo(interception.getFirst()) < Geometry.getBotRadius() + Geometry.getBallRadius()
+				&& opponent.getVel().getLength() < 0.5)
+		{
+			// in this case the bot already reached its receive position. Ignore trajectory times.
+			return true;
+		}
+		return getBall().getTrajectory()
+				.getTimeByDist(getBall().getPos().distanceTo(interception.getFirst()))
+				> interception.getSecond()
+				+ opponentRequiredSlackTime; // we assume opponent needs a bit longer to avoid false positives
+	}
+
+
+	private ITrajectory<IVector2> generateTrajectory(ITrackedBot bot, IVector2 dest)
+	{
+		var moveConstraints = new MoveConstraints(bot.getMoveConstraints()).setPrimaryDirection(Vector2.zero());
+		return TrajectoryGenerator.generatePositionTrajectory(moveConstraints, bot.getPos(), bot.getVel(), dest);
 	}
 
 
@@ -98,13 +202,29 @@ public class RedirectorDetectionCalc extends ACalculator
 
 		if (distFromBallToOpponentReceivePos - Geometry.getBotRadius() < distFromBallToFriendlyReceivePos)
 		{
-			if (information.isFriendlyStillApproaching() && information.getFriendlyReceiver() != null)
+			if ((information.isFriendlyStillApproaching() || !opponentReachedPosition())
+					&& information.getFriendlyReceiver() != null)
 			{
-				return ERecommendedReceiverAction.DOUBLE_ATTACKER;
+				if (enableDoubleAttacker)
+				{
+					return ERecommendedReceiverAction.DOUBLE_ATTACKER;
+				} else
+				{
+					return ERecommendedReceiverAction.NONE;
+				}
 			}
 			return ERecommendedReceiverAction.DISRUPT_OPPONENT;
 		}
 		return ERecommendedReceiverAction.NONE;
+	}
+
+
+	private boolean opponentReachedPosition()
+	{
+		var opponent = getWFrame().getOpponentBot(redirectorDetectionInformation.getOpponentReceiver());
+		var opponentReceivePos = redirectorDetectionInformation.getOpponentReceiverPos();
+		return opponentReceivePos.distanceTo(opponent.getPos()) < Geometry.getBotRadius() * 2.0
+				&& opponent.getVel().getLength() < 0.5;
 	}
 
 
@@ -230,121 +350,5 @@ public class RedirectorDetectionCalc extends ACalculator
 			getShapes(EAiShapesLayer.AI_REDIRECTOR_DETECTION).add(dc);
 			getShapes(EAiShapesLayer.AI_REDIRECTOR_DETECTION).add(da);
 		}
-	}
-
-
-	private void detectFriendlyPassReceiver()
-	{
-		// detect friendly pass receiver
-		Optional<BotID> attacker = getAiFrame().getPrevFrame().getTacticalField().getOffensiveStrategy().getAttackerBot();
-		Optional<ARole> attackerRole = getAiFrame().getPrevFrame().getPlayStrategy()
-				.getActiveRoles(ERole.ATTACKER, ERole.DISRUPT_OPPONENT)
-				.stream()
-				.findAny();
-
-		if (attackerRole.isPresent() && attacker.isPresent() && attacker.get().equals(attackerRole.get().getBotID()))
-		{
-			// friendly pass receiver has been found
-			attackerRole.get().getBot().getRobotInfo().getTrajectory().ifPresent(
-					e -> {
-						redirectorDetectionInformation.setFriendlyReceiver(attacker.get());
-						redirectorDetectionInformation.setFriendlyReceiverPos(e.getFinalDestination().getXYVector());
-						redirectorDetectionInformation.setFriendlyBotReceiving(true);
-						if (getBall().getTrajectory().closestPointTo(attackerRole.get().getBot().getBotKickerPos())
-								.distanceTo(attackerRole.get().getBot().getBotKickerPos()) > Geometry.getBotRadius() * 4)
-						{
-							redirectorDetectionInformation.setFriendlyStillApproaching(true);
-						}
-					});
-		}
-	}
-
-
-	private void detectOpponentPassReceiver()
-	{
-		Map<BotID, ITrackedBot> opponents = getWFrame().getOpponentBots().entrySet().stream()
-				.filter(e -> e.getKey() != getAiFrame().getKeeperOpponentId())
-				.filter(e -> !Geometry.getPenaltyAreaTheir().withMargin(Geometry.getBotRadius() * 3.0)
-						.isPointInShape(e.getValue()
-								.getPos())).collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, Map.Entry::getValue));
-
-		BotID opponentReceiver = getBestRedirector(opponents);
-		ITrackedBot opponentBot = getWFrame().getOpponentBot(opponentReceiver);
-		if (opponentBot != null)
-		{
-			IVector2 opponentPos = opponentBot.getBotKickerPos();
-			IVector2 opponentReceivePos = getBall().getTrajectory().closestPointTo(opponentPos);
-
-			IVector2 velOffset = opponentReceivePos.addNew(opponentBot.getVel().multiplyNew(1000.0));
-			IVector2 helper = getBall().getTrajectory().closestPointTo(velOffset);
-			double relativeBotSpeed = helper.distanceTo(velOffset) / 1000.0;
-
-			if (opponentPos.distanceTo(opponentReceivePos) < Geometry.getBotRadius()
-					&& relativeBotSpeed < 0.5 && opponentPos.distanceTo(getBall().getPos()) > 600
-					&& getBall().getHeight() < 50)
-			{
-				redirectorDetectionInformation.setOpponentReceiverPos(opponentReceivePos);
-				redirectorDetectionInformation.setOpponentReceiving(true);
-				redirectorDetectionInformation.setOpponentReceiver(opponentReceiver);
-			}
-		}
-	}
-
-
-	public BotID getBestRedirector(Map<BotID, ITrackedBot> bots)
-	{
-		IVector2 endPos = getBall().getTrajectory().getPosByVel(0).getXYVector();
-		IVector2 ballPos = getBall().getPos();
-
-		List<BotID> filteredBots = getPotentialRedirectors(bots, endPos);
-
-		Optional<BotID> receiver = filteredBots.stream()
-				.min((e1, e2) -> (int) (bots.get(e1).getPos().distanceTo(ballPos)
-						- bots.get(e2).getPos().distanceTo(ballPos)));
-
-		return receiver.orElse(BotID.noBot());
-	}
-
-
-	private List<BotID> getPotentialRedirectors(Map<BotID, ITrackedBot> bots, IVector2 endPos)
-	{
-		final double redirectTol = 350;
-		IVector2 ballPos = getBall().getPos();
-
-		// input: endpoint, ballVel.vel = endpoint - curPos.getAngle().
-		IVector2 ballVel = endPos.subtractNew(ballPos);
-
-		if (ballVel.getLength() < 0.4)
-		{
-			// no potential redirector
-			return Collections.emptyList();
-		}
-
-		IVector2 left = Vector2.fromAngle(ballVel.getAngle() - 0.2).normalizeNew();
-		IVector2 right = Vector2.fromAngle(ballVel.getAngle() + 0.2).normalizeNew();
-
-		double dist = Math.max(VectorMath.distancePP(ballPos, endPos) - redirectTol, 10);
-
-		IVector2 normal = ballVel.getNormalVector().normalizeNew();
-		IVector2 tleft = ballPos.addNew(normal.scaleToNew(160));
-		IVector2 tright = ballPos.addNew(normal.scaleToNew(-160));
-		IVector2 uleft = tleft.addNew(left.scaleToNew(dist)).addNew(normal.scaleToNew(100));
-		IVector2 uright = tright.addNew(right.scaleToNew(dist)).addNew(normal.scaleToNew(-100));
-
-		var tri3 = Triangle.fromCorners(tleft, uleft, uright);
-		var tri4 = Triangle.fromCorners(tleft, tright, uright);
-
-		List<BotID> filteredBots = new ArrayList<>();
-		for (Map.Entry<BotID, ITrackedBot> entry : bots.entrySet())
-		{
-			var botID = entry.getKey();
-			var tBot = entry.getValue();
-			var pos = tBot.getPos();
-			if (tri3.isPointInShape(pos) || tri4.isPointInShape(pos))
-			{
-				filteredBots.add(botID);
-			}
-		}
-		return filteredBots;
 	}
 }

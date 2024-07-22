@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.visualizer.field;
@@ -33,22 +33,6 @@ public class FieldTransformation implements IDrawableTool
 	private double scale = 1.0;
 
 
-	/**
-	 * Transforms a global(field)position into a gui position.
-	 *
-	 * @param globalPoint
-	 * @return guiPosition
-	 */
-	private IVector2 transformToGuiCoordinates(IVector2 globalPoint)
-	{
-		IVector2 translation = Vector2.fromXY(fieldGlobalLength, fieldGlobalWidth)
-				.multiply(0.5)
-				.add(Vector2.fromXY(fieldGlobalBoundaryWidth, fieldGlobalBoundaryWidth));
-		IVector2 translatedPoint = globalPoint.addNew(translation);
-		return turnPoint(scaleGlobalToGui(translatedPoint));
-	}
-
-
 	@Override
 	public IVector2 transformToGuiCoordinates(IVector2 globalPoint, boolean invert)
 	{
@@ -61,10 +45,10 @@ public class FieldTransformation implements IDrawableTool
 	{
 		double offset = switch (fieldTurn)
 				{
-					case NORMAL -> AngleMath.PI;
-					case T90 -> -AngleMath.PI_HALF;
-					case T180 -> 0;
-					case T270 -> AngleMath.PI_HALF;
+					case NORMAL -> 0;
+					case T90 -> AngleMath.PI_HALF;
+					case T180 -> AngleMath.PI;
+					case T270 -> -AngleMath.PI_HALF;
 				};
 		return globalAngle + (invert ? AngleMath.PI : 0) + offset;
 	}
@@ -78,7 +62,7 @@ public class FieldTransformation implements IDrawableTool
 	 */
 	public IVector2 transformToGlobalCoordinates(IVector2 guiPoint)
 	{
-		IVector2 guiPointTurned = turnPoint(guiPoint);
+		IVector2 guiPointTurned = turnPointToGlobal(guiPoint);
 		IVector2 translation = Vector2.fromXY(fieldGlobalLength, fieldGlobalWidth)
 				.multiply(0.5)
 				.add(Vector2.fromXY(fieldGlobalBoundaryWidth, fieldGlobalBoundaryWidth));
@@ -87,16 +71,76 @@ public class FieldTransformation implements IDrawableTool
 	}
 
 
-	private IVector2 turnPoint(final IVector2 point)
+	/**
+	 * Transforms a global(field)position into a gui position.
+	 *
+	 * @param globalPoint
+	 * @return guiPosition
+	 */
+	private IVector2 transformToGuiCoordinates(IVector2 globalPoint)
+	{
+		IVector2 translation = Vector2.fromXY(fieldGlobalLength, fieldGlobalWidth)
+				.multiply(0.5)
+				.add(Vector2.fromXY(fieldGlobalBoundaryWidth, fieldGlobalBoundaryWidth));
+		IVector2 translatedPoint = globalPoint.addNew(translation);
+		return turnPointToGui(scaleGlobalToGui(translatedPoint));
+	}
+
+
+	/**
+	 * Switch orientation of coordinate system from gui to global field according to fieldPane turn angle
+	 * and transform given point coordinates accordingly. Additionally add gui offsets (width, height)
+	 * to keep the field in the center of the visualizer window
+	 *
+	 * @param point (from gui)
+	 * @return transformed point in global field coordinates
+	 */
+	private IVector2 turnPointToGlobal(final IVector2 point)
 	{
 		final int width = getFieldTotalWidth();
 		final int height = getFieldTotalHeight();
+		IVector2 turnedPoint = turnPoint(point);
 		return switch (fieldTurn)
 				{
-					case NORMAL -> Vector2.fromXY(height - point.x(), point.y());
-					case T90 -> Vector2.fromXY(point.y(), point.x());
-					case T180 -> Vector2.fromXY(point.x(), width - point.y());
-					case T270 -> Vector2.fromXY(width - point.y(), height - point.x());
+					case NORMAL -> turnedPoint.addNew(Vector2.fromY(width));
+					case T90 -> turnedPoint.addNew(Vector2.fromXY(height, width));
+					case T180 -> turnedPoint.addNew(Vector2.fromX(height));
+					case T270 -> turnedPoint;
+				};
+	}
+
+
+	/**
+	 * Switch orientation of coordinate system from global field to gui according to fieldPane turn angle
+	 * and transform given point coordinates accordingly. Additionally add gui offsets (width, height)
+	 * to keep the field in the center of the visualizer window
+	 *
+	 * @param point (from global field)
+	 * @return transformed point in gui coordinates
+	 */
+	private IVector2 turnPointToGui(final IVector2 point)
+	{
+		final int width = getFieldTotalWidth();
+		final int height = getFieldTotalHeight();
+		IVector2 turnedPoint = turnPoint(point);
+		return switch (fieldTurn)
+				{
+					case NORMAL -> turnedPoint.addNew(Vector2.fromY(width));
+					case T90 -> turnedPoint.addNew(Vector2.fromXY(width, height));
+					case T180 -> turnedPoint.addNew(Vector2.fromX(height));
+					case T270 -> turnedPoint;
+				};
+	}
+
+
+	private IVector2 turnPoint(final IVector2 point)
+	{
+		return switch (fieldTurn)
+				{
+					case NORMAL -> Vector2.fromXY(point.x(), -point.y());
+					case T90 -> Vector2.fromXY(-point.y(), -point.x());
+					case T180 -> Vector2.fromXY(-point.x(), point.y());
+					case T270 -> Vector2.fromXY(point.y(), point.x());
 				};
 	}
 

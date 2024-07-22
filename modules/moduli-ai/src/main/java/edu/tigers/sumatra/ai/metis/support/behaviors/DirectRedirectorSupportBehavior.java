@@ -5,6 +5,7 @@
 package edu.tigers.sumatra.ai.metis.support.behaviors;
 
 import com.github.g3force.configurable.Configurable;
+import edu.tigers.sumatra.ai.metis.offense.OffensiveConstants;
 import edu.tigers.sumatra.ai.metis.pass.KickOrigin;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.BotID;
@@ -16,9 +17,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
-
-import static edu.tigers.sumatra.ai.metis.offense.OffensiveConstants.getMaximumReasonableRedirectAngle;
-
 
 /**
  * Go through all supportive goal positions and calculate the redirect angle from the attacker to that pos to the goal.
@@ -57,7 +55,7 @@ public class DirectRedirectorSupportBehavior extends ASupportBehavior
 		return supportiveGoalPositions.get().stream()
 				.filter(p -> belowMaxBallTravelDistance(source, target, p))
 				.filter(p -> p.distanceTo(bot.getPos()) < maxDistance)
-				.filter(p -> redirectAngle(source, target, p) < getMaximumReasonableRedirectAngle())
+				.filter(p -> redirectAngle(source, target, p) < OffensiveConstants.getMaximumReasonableRedirectAngle())
 				.min(Comparator.comparingDouble(p -> redirectAngle(source, target, p)))
 				.map(pos -> SupportBehaviorPosition.fromDestinationAndRotationTarget(pos, target, 1))
 				.orElse(null);

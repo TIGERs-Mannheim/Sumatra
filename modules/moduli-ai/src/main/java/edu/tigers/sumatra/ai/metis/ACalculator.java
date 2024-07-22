@@ -48,27 +48,28 @@ public abstract class ACalculator
 			started = true;
 		}
 
-		if (!isCalculationNecessary())
+		if (isCalculationNecessary())
+		{
+			try
+			{
+				doCalc();
+				executionStatusLastFrame = true;
+				lastException = null;
+			} catch (Exception err)
+			{
+				if ((lastException == null) || ((err.getMessage() != null)
+						&& !err.getMessage().equals(lastException.getMessage())))
+				{
+					log.error("Error in calculator " + getClass().getSimpleName(), err);
+				}
+				lastException = err;
+				reset();
+			}
+		} else
 		{
 			reset();
-			return;
 		}
 
-		try
-		{
-			doCalc();
-			executionStatusLastFrame = true;
-			lastException = null;
-		} catch (Exception err)
-		{
-			if ((lastException == null) || ((err.getMessage() != null)
-					&& !err.getMessage().equals(lastException.getMessage())))
-			{
-				log.error("Error in calculator " + getClass().getSimpleName(), err);
-			}
-			lastException = err;
-			reset();
-		}
 		long tEnd = System.nanoTime();
 		lastProcessingTimeNs = (tEnd - tStart);
 	}
@@ -154,4 +155,5 @@ public abstract class ACalculator
 	{
 		return getAiFrame().getShapeMap().get(shapeLayer);
 	}
+
 }

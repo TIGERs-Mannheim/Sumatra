@@ -18,9 +18,11 @@ import edu.tigers.sumatra.visualizer.field.VisualizerFieldPresenter;
 import edu.tigers.sumatra.visualizer.field.components.BallInteractor;
 import edu.tigers.sumatra.visualizer.field.recorder.MediaRecorder;
 import edu.tigers.sumatra.visualizer.options.ShapeSelectionModel;
+import edu.tigers.sumatra.visualizer.options.ShapeTreeCellRenderer;
 import edu.tigers.sumatra.wp.AWorldPredictor;
 import edu.tigers.sumatra.wp.IWorldFrameObserver;
 import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang.StringUtils;
 
@@ -29,17 +31,27 @@ import javax.swing.JTextField;
 import javax.swing.JToggleButton;
 import javax.swing.KeyStroke;
 import javax.swing.SwingUtilities;
+import javax.swing.event.TreeExpansionEvent;
+import javax.swing.event.TreeExpansionListener;
 import javax.swing.event.TreeSelectionEvent;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.TreePath;
 import java.awt.event.ActionEvent;
 import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 
 /**
@@ -49,20 +61,20 @@ import java.util.function.Consumer;
 public class VisualizerPresenter implements ISumatraViewPresenter, IWorldFrameObserver
 {
 	private static final int VISUALIZATION_FPS = 24;
-
 	private final ShapeSelectionModel shapeSelectionModel = new ShapeSelectionModel();
-
 	@Getter
 	private final VisualizerPanel viewPanel = new VisualizerPanel();
-
 	@Getter
 	private final VisualizerFieldPresenter fieldPresenter = new VisualizerFieldPresenter(
 			viewPanel.getFieldPanel()
 	);
-
 	private final BallInteractor ballInteractor = new BallInteractor();
 	private final MediaRecorder mediaRecorder = new MediaRecorder();
+	private final Set<Object> defaultVisibilityObtained = new HashSet<>();
+	@Setter
+	private String propertiesPrefix = VisualizerPresenter.class.getCanonicalName() + ".";
 	private Thread updateThread;
+	private boolean firstUpdate = true;
 
 
 	public VisualizerPresenter()
@@ -105,13 +117,20 @@ public class VisualizerPresenter implements ISumatraViewPresenter, IWorldFrameOb
 				viewPanel.getToolbar().getShapeSelection(),
 				"shapeSelection.visible",
 				true,
-				b -> viewPanel.getShapeSelectionPanel().setVisible(b)
+				this::setShapeSelectionPanelVisibility
 		);
 
 		viewPanel.getShapeSelectionPanel().getTree().setModel(shapeSelectionModel);
-		viewPanel.getShapeSelectionPanel().getTree().setExpandsSelectedPaths(true);
+		viewPanel.getShapeSelectionPanel().getTree().setDigIn(false);
 		viewPanel.getShapeSelectionPanel().getTree().getCheckBoxTreeSelectionModel()
 				.addTreeSelectionListener(this::onSelectionChanged);
+		viewPanel.getShapeSelectionPanel().getTree().addTreeExpansionListener(new MyTreeExpansionListener());
+		viewPanel.getShapeSelectionPanel().getTree().setCellRenderer(new ShapeTreeCellRenderer());
+		viewPanel.getShapeSelectionPanel().getExpandAll().addActionListener(a -> expandAll());
+		viewPanel.getShapeSelectionPanel().getCollapseAll().addActionListener(a -> collapseAll());
+		viewPanel.getShapeSelectionPanel().addLayerFileSaver(this::saveLayersToFile);
+		viewPanel.getShapeSelectionPanel().addLayerFileOpener(this::openLayersFromFile);
+		viewPanel.getShapeSelectionPanel().getPresetDef().addActionListener(a -> showOnlyDefaultLayers());
 
 		viewPanel.getToolbar().getTurnCounterClockwise().addActionListener(a -> fieldPresenter.turnCounterClockwise());
 		viewPanel.getToolbar().getTurnClockwise().addActionListener(a -> fieldPresenter.turnClockwise());
@@ -123,12 +142,22 @@ public class VisualizerPresenter implements ISumatraViewPresenter, IWorldFrameOb
 	}
 
 
+	private void setShapeSelectionPanelVisibility(boolean visible)
+	{
+		viewPanel.getShapeSelectionPanel().setVisible(visible);
+		if (visible)
+		{
+			viewPanel.getSplitPane().setDividerLocation(0.8);
+		}
+	}
+
+
 	private void connect(JTextField textField, String key, String defValue, Consumer<String> consumer)
 	{
-		String value = SumatraModel.getInstance().getUserProperty(VisualizerPresenter.class, key, defValue);
+		String value = SumatraModel.getInstance().getUserProperty(propertiesPrefix + key, defValue);
 		textField.setText(value);
 		textField.getDocument().addDocumentListener((SimpleDocumentListener) e -> {
-			SumatraModel.getInstance().setUserProperty(VisualizerPresenter.class, key, textField.getText());
+			SumatraModel.getInstance().setUserProperty(propertiesPrefix + key, textField.getText());
 			consumer.accept(textField.getText());
 		});
 		consumer.accept(textField.getText());
@@ -137,11 +166,11 @@ public class VisualizerPresenter implements ISumatraViewPresenter, IWorldFrameOb
 
 	private void connect(AbstractButton button, String key, boolean defValue, Consumer<Boolean> consumer)
 	{
-		boolean value = SumatraModel.getInstance().getUserProperty(VisualizerPresenter.class, key, defValue);
+		boolean value = SumatraModel.getInstance().getUserProperty(propertiesPrefix + key, defValue);
 		button.setSelected(value);
 		button.addActionListener(e -> consumer.accept(button.isSelected()));
 		button.addActionListener(e -> SumatraModel.getInstance()
-				.setUserProperty(VisualizerPresenter.class, key, String.valueOf(button.isSelected())));
+				.setUserProperty(propertiesPrefix + key, String.valueOf(button.isSelected())));
 		consumer.accept(button.isSelected());
 	}
 
@@ -165,13 +194,13 @@ public class VisualizerPresenter implements ISumatraViewPresenter, IWorldFrameOb
 		NamedThreadFactory factory = new NamedThreadFactory("VisualizerUpdater");
 		updateThread = factory.newThread(this::updateLoop);
 		updateThread.start();
+		firstUpdate = true;
 	}
 
 
 	@Override
 	public void onStop()
 	{
-		saveVisibility();
 		if (updateThread != null)
 		{
 			updateThread.interrupt();
@@ -190,6 +219,8 @@ public class VisualizerPresenter implements ISumatraViewPresenter, IWorldFrameOb
 
 		SumatraModel.getInstance().getModule(AWorldPredictor.class).addObserver(ballInteractor);
 		SumatraModel.getInstance().getModule(AWorldPredictor.class).addObserver(fieldPresenter);
+
+		firstUpdate = true;
 	}
 
 
@@ -231,11 +262,17 @@ public class VisualizerPresenter implements ISumatraViewPresenter, IWorldFrameOb
 		try
 		{
 			HashMap<ShapeMapSource, ShapeMap> shapeMaps = new HashMap<>(fieldPresenter.getShapeMaps());
-			update(shapeMaps);
+			shapeMaps.forEach(this::newShapeMap);
 			fieldPresenter.update();
 		} catch (Exception e)
 		{
 			log.error("Exception in visualizer updater", e);
+		}
+
+		if (firstUpdate)
+		{
+			firstUpdate = false;
+			SwingUtilities.invokeLater(() -> viewPanel.getSplitPane().setDividerLocation(0.8));
 		}
 	}
 
@@ -249,36 +286,35 @@ public class VisualizerPresenter implements ISumatraViewPresenter, IWorldFrameOb
 	private void updateVisibility()
 	{
 		shapeSelectionModel.getSources().forEach((source, node) -> {
-			boolean visible = isSelected(node);
+			boolean visible = isSelected(node, true);
 			fieldPresenter.setSourceVisibility(source, visible);
 		});
 
 		shapeSelectionModel.getLayers().forEach((layer, node) -> {
-			boolean visible = isSelected(node);
+			boolean visible = isSelected(node, true);
 			fieldPresenter.setShapeLayerVisibility(layer.getId(), visible);
+			if (defaultVisibilityObtained.contains(layer))
+			{
+				var noDigIn = isSelected(node, false);
+				SumatraModel.getInstance().setUserProperty(propertiesPrefix + layer.getId(), String.valueOf(noDigIn));
+			}
 		});
-	}
 
-
-	private void saveVisibility()
-	{
-		shapeSelectionModel.getLayers().forEach((layer, node) -> {
-			boolean visible = isSelected(node);
-			SumatraModel.getInstance().setUserProperty(layer.getId(), String.valueOf(visible));
+		shapeSelectionModel.getLayerCategories().forEach((category, node) -> {
+			if (defaultVisibilityObtained.contains(category))
+			{
+				var noDigIn = isSelected(node, false);
+				SumatraModel.getInstance().setUserProperty(propertiesPrefix + category.name(), String.valueOf(noDigIn));
+			}
 		});
-	}
-
-
-	public void update(Map<ShapeMapSource, ShapeMap> shapeMaps)
-	{
-		shapeMaps.forEach(this::newShapeMap);
+		viewPanel.getShapeSelectionPanel().getTree().updateUI();
 	}
 
 
 	private void newShapeMap(final ShapeMapSource source, final ShapeMap shapeMap)
 	{
 		// select shape map sources by default
-		shapeSelectionModel.addShapeMapSource(source).ifPresent(this::selectNode);
+		shapeSelectionModel.addShapeMapSource(source).ifPresent(node -> this.selectShapeMapSource(source, node));
 
 		List<DefaultMutableTreeNode> newNodes = shapeMap.getAllShapeLayers().stream()
 				.map(ShapeMap.ShapeLayer::getIdentifier)
@@ -287,6 +323,27 @@ public class VisualizerPresenter implements ISumatraViewPresenter, IWorldFrameOb
 				.map(Optional::get)
 				.toList();
 		newNodes.forEach(this::setDefaultVisibility);
+
+		shapeSelectionModel.getLayerCategories().forEach((category, node) -> {
+			if (!defaultVisibilityObtained.contains(category))
+			{
+				var visible = SumatraModel.getInstance().getUserProperty(propertiesPrefix + category.name(), false);
+				setNodeSelection(node, visible);
+				defaultVisibilityObtained.add(category);
+			}
+		});
+	}
+
+
+	private void selectShapeMapSource(ShapeMapSource source, DefaultMutableTreeNode node)
+	{
+		if (source.getParent() != null && node.getParent() instanceof DefaultMutableTreeNode parent)
+		{
+			selectNode(parent);
+		} else
+		{
+			selectNode(node);
+		}
 	}
 
 
@@ -295,16 +352,106 @@ public class VisualizerPresenter implements ISumatraViewPresenter, IWorldFrameOb
 		if (node.getUserObject() instanceof IShapeLayerIdentifier shapeLayer)
 		{
 			boolean visible = SumatraModel.getInstance().getUserProperty(
-					shapeLayer.getId(),
+					propertiesPrefix + shapeLayer.getId(),
 					shapeLayer.isVisibleByDefault()
 			);
-			if (visible)
+			setNodeSelection(node, visible);
+			defaultVisibilityObtained.add(shapeLayer);
+			expandCollapseDependingOnUserProperty(node);
+		}
+	}
+
+
+	private void expandCollapseDependingOnUserProperty(DefaultMutableTreeNode node)
+	{
+		var tree = viewPanel.getShapeSelectionPanel().getTree();
+		var path = new TreePath(node.getPath()).getParentPath();
+		while (path != null)
+		{
+			var expanded = SumatraModel.getInstance().getUserProperty(propertiesPrefix + path, false);
+			if (expanded)
 			{
-				selectNode(node);
+				if (!tree.isExpanded(path))
+				{
+					var constPath = path;
+					SwingUtilities.invokeLater(() -> tree.expandPath(constPath));
+				}
 			} else
 			{
-				deselectNode(node);
+				if (tree.isExpanded(path))
+				{
+					var constPath = path;
+					SwingUtilities.invokeLater(() -> tree.collapsePath(constPath));
+				}
 			}
+			path = path.getParentPath();
+		}
+	}
+
+
+	private void showOnlyDefaultLayers()
+	{
+		shapeSelectionModel.getAllLayerNonLeafNodes().forEach(this::deselectNode);
+		for (var entry : shapeSelectionModel.getLayers().entrySet())
+		{
+			var layer = entry.getKey();
+			var node = entry.getValue();
+
+			var visible = layer.isVisibleByDefault();
+			SumatraModel.getInstance().setUserProperty(propertiesPrefix + layer.getId(), visible);
+			setNodeSelection(node, visible);
+		}
+
+	}
+
+
+	private void saveLayersToFile(File file)
+	{
+		var lines = shapeSelectionModel.getAllLayerNodes()
+				.filter(node -> isSelected(node, false))
+				.map(node -> new TreePath(node.getPath()).toString())
+				.toList();
+		try (BufferedWriter writer = new BufferedWriter(new FileWriter(file)))
+		{
+			for (var line : lines)
+			{
+				writer.write(line);
+				writer.newLine();
+			}
+		} catch (IOException e)
+		{
+			log.error(e);
+		}
+	}
+
+
+	private void openLayersFromFile(File file)
+	{
+		Set<String> paths;
+		try (BufferedReader reader = new BufferedReader(new FileReader(file)))
+		{
+			paths = reader.lines().collect(Collectors.toSet());
+		} catch (IOException e)
+		{
+			log.error(e);
+			return;
+		}
+		for (var node : shapeSelectionModel.getAllLayerNodes().toList())
+		{
+			var path = new TreePath(node.getPath()).toString();
+			setNodeSelection(node, paths.contains(path));
+		}
+	}
+
+
+	private void setNodeSelection(DefaultMutableTreeNode node, boolean select)
+	{
+		if (select)
+		{
+			selectNode(node);
+		} else
+		{
+			deselectNode(node);
 		}
 	}
 
@@ -325,11 +472,31 @@ public class VisualizerPresenter implements ISumatraViewPresenter, IWorldFrameOb
 	}
 
 
-	private boolean isSelected(DefaultMutableTreeNode node)
+	private void expandAll()
+	{
+		var tree = viewPanel.getShapeSelectionPanel().getTree();
+		shapeSelectionModel.getAllNonLeafPaths().forEach(path -> SwingUtilities.invokeLater(() -> tree.expandPath(path)));
+	}
+
+
+	private void collapseAll()
+	{
+		var tree = viewPanel.getShapeSelectionPanel().getTree();
+		shapeSelectionModel.getAllNonLeafNodes()
+				.filter(node -> node.getPath().length > 1)
+				.filter(node -> !(shapeSelectionModel.isLayer(node) && node.getPath().length < 3))
+				.filter(node -> !(shapeSelectionModel.isSource(node) && node.getPath().length < 2))
+				.map(DefaultMutableTreeNode::getPath)
+				.map(TreePath::new)
+				.forEach(path -> SwingUtilities.invokeLater(() -> tree.collapsePath(path)));
+	}
+
+
+	private boolean isSelected(DefaultMutableTreeNode node, boolean digIn)
 	{
 		var treePath = new TreePath(node.getPath());
 		return viewPanel.getShapeSelectionPanel().getTree().getCheckBoxTreeSelectionModel()
-				.isPathSelected(treePath, true);
+				.isPathSelected(treePath, digIn);
 	}
 
 
@@ -345,8 +512,8 @@ public class VisualizerPresenter implements ISumatraViewPresenter, IWorldFrameOb
 		int width = parseInt(viewPanel.getToolbar().getCaptureSettingsDialog().getTxtRecordingWidth().getText());
 		int height = parseInt(viewPanel.getToolbar().getCaptureSettingsDialog().getTxtRecordingHeight().getText());
 
-		SumatraModel.getInstance().setUserProperty(VisualizerPresenter.class, "recording.width", width);
-		SumatraModel.getInstance().setUserProperty(VisualizerPresenter.class, "recording.height", height);
+		SumatraModel.getInstance().setUserProperty(VisualizerPresenter.class, "recording.width", String.valueOf(width));
+		SumatraModel.getInstance().setUserProperty(VisualizerPresenter.class, "recording.height", String.valueOf(width));
 
 		mediaRecorder.getFieldPane().setAddBorderOffset(fieldPresenter.getFieldPane().isAddBorderOffset());
 
@@ -449,6 +616,41 @@ public class VisualizerPresenter implements ISumatraViewPresenter, IWorldFrameOb
 			{
 				viewPanel.getShapeSelectionPanel().getTree().requestFocus();
 			}
+		}
+	}
+
+
+	private class MyTreeExpansionListener implements TreeExpansionListener
+	{
+		@Override
+		public void treeCollapsed(TreeExpansionEvent event)
+		{
+			var obj = event.getPath().getLastPathComponent();
+			if (obj instanceof DefaultMutableTreeNode node)
+			{
+				iterateChildrenToCollapse(node);
+			}
+			SumatraModel.getInstance().setUserProperty(propertiesPrefix + event.getPath(), null);
+		}
+
+
+		private void iterateChildrenToCollapse(DefaultMutableTreeNode node)
+		{
+			var children = node.children();
+			while (children.hasMoreElements())
+			{
+				var child = (DefaultMutableTreeNode) children.nextElement();
+				var path = new TreePath(child.getPath());
+				SumatraModel.getInstance().setUserProperty(propertiesPrefix + path, null);
+				iterateChildrenToCollapse(child);
+			}
+		}
+
+
+		@Override
+		public void treeExpanded(TreeExpansionEvent event)
+		{
+			SumatraModel.getInstance().setUserProperty(propertiesPrefix + event.getPath(), true);
 		}
 	}
 }

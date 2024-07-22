@@ -4,9 +4,10 @@
 
 package edu.tigers.sumatra.ai.metis.support;
 
+import com.github.g3force.configurable.Configurable;
 import edu.tigers.sumatra.ai.common.PointChecker;
 import edu.tigers.sumatra.ai.metis.ACalculator;
-import edu.tigers.sumatra.ai.metis.support.behaviors.BreakThroughDefenseRepulsiveBehavior;
+import edu.tigers.sumatra.ai.metis.support.behaviors.BreakThroughDefenseBehavior;
 import edu.tigers.sumatra.ai.metis.support.behaviors.ESupportBehavior;
 import edu.tigers.sumatra.ai.metis.support.behaviors.SupportBehaviorPosition;
 import edu.tigers.sumatra.ai.pandora.plays.EPlay;
@@ -29,10 +30,13 @@ import java.util.function.Supplier;
 @Log4j2
 public class SupportBehaviorAssignmentCalc extends ACalculator
 {
+	@Configurable(comment = "[mm]", defValue = "-2000.0")
+	private static double xPosMidfieldSingleMidfieldSupporter = -2000;
+
 	private final Supplier<Map<EPlay, Set<BotID>>> desiredBots;
 	private final Supplier<Map<BotID, EnumMap<ESupportBehavior, SupportBehaviorPosition>>> viabilityMap;
-
 	private final PointChecker pointChecker = new PointChecker().checkConfirmWithKickOffRules();
+
 
 	@Getter
 	private Map<BotID, ESupportBehavior> behaviorAssignment = new HashMap<>();
@@ -55,11 +59,22 @@ public class SupportBehaviorAssignmentCalc extends ACalculator
 	private int getMaxRolesForBehaviour(ESupportBehavior behavior)
 	{
 		return switch (behavior)
-				{
-					case BREAKTHROUGH_DEFENSIVE -> BreakThroughDefenseRepulsiveBehavior.getMaxNumberAtPenaltyArea();
-					case PENALTY_AREA_ATTACKER, DIRECT_REDIRECTOR, MIDFIELD -> 1;
-					default -> Integer.MAX_VALUE;
-				};
+		{
+			case BREAKTHROUGH_DEFENSIVE -> BreakThroughDefenseBehavior.getMaxNumberAtPenaltyArea();
+			case PENALTY_AREA_ATTACKER, DIRECT_REDIRECTOR -> 1;
+			case MIDFIELD -> getMaxNumberMidfield();
+			default -> Integer.MAX_VALUE;
+		};
+	}
+
+
+	private int getMaxNumberMidfield()
+	{
+		if (getWFrame().getBall().getPos().x() > xPosMidfieldSingleMidfieldSupporter)
+		{
+			return 1;
+		}
+		return 2;
 	}
 
 

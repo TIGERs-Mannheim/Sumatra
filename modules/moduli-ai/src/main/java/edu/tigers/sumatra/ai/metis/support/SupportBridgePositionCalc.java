@@ -25,7 +25,8 @@ import edu.tigers.sumatra.math.line.Lines;
 import edu.tigers.sumatra.math.vector.IVector;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
-import edu.tigers.sumatra.pathfinder.obstacles.MovingRobot;
+import edu.tigers.sumatra.movingrobot.AcceleratingRobotFactory;
+import edu.tigers.sumatra.movingrobot.IMovingRobot;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -48,6 +49,9 @@ public class SupportBridgePositionCalc extends ACalculator
 	@Configurable(comment = "Max moving bot Horizon", defValue = "0.8")
 	private static double maxHorizon = 0.8;
 
+	@Configurable(defValue = "0.1", comment = "Reaction time of opponent [s] for MovingRobots. Predicts constant velocity in this time.")
+	private static double opponentBotReactionTime = 0.1;
+
 	@Configurable(comment = "[mm]", defValue = "9000.")
 	private static double maxPassDistance = 9000;
 
@@ -60,11 +64,11 @@ public class SupportBridgePositionCalc extends ACalculator
 	@Configurable(comment = "[deg]", defValue = "15.")
 	private static double minAngleToSightLine = 15;
 
-	@Configurable(comment = "[mm]", defValue = "1000.")
-	private static double minDistToOffensive = 1000;
+	@Configurable(comment = "[mm]", defValue = "1500.")
+	private static double minDistToOffensive = 1500;
 
-	@Configurable(comment = "[deg]", defValue = "12.")
-	private static double maxArcWidth = 12;
+	@Configurable(comment = "[deg]", defValue = "17.")
+	private static double maxArcWidth = 17;
 
 	private final Supplier<Map<BotID, KickOrigin>> kickOrigins;
 
@@ -123,21 +127,19 @@ public class SupportBridgePositionCalc extends ACalculator
 	private List<IVector2> findAllPositions(List<IArc> passSenderArcs,
 			List<IArc> passReceiverArcs)
 	{
-		List<IVector2> bridgePositions = new ArrayList<>();
-		for (IArc passReceiverArc : passReceiverArcs)
-		{
-			drawArcs(passSenderArcs);
-			for (IArc passSenderArc : passSenderArcs)
-			{
+		drawArcs(passSenderArcs);
+		List<IVector2> bridgePositions = passReceiverArcs
+				.parallelStream().map(
+						passReceiverArc -> new ArrayList<>(passSenderArcs
+								.stream()
+								.map(SupportBridgePositionCalc::getPassSenderMidLine)
+								.map(passSenderArc -> checkForBridgePosition(passReceiverArc, passSenderArc))
+								.filter(Optional::isPresent)
+								.map(Optional::get)
+								.toList()))
+				.flatMap(Collection::stream)
+				.toList();
 
-				ILineSegment passSenderMidLine = Lines.segmentFromPoints(passSenderArc.center(),
-						passSenderArc.center()
-								.addNew(Vector2.fromAngle(passSenderArc.getStartAngle() + passSenderArc.getRotation() / 2.)
-										.scaleTo(passSenderArc.radius())));
-				checkForBridgePosition(passReceiverArc, passSenderMidLine)
-						.ifPresent(bridgePositions::add);
-			}
-		}
 		List<IVector2> offensives = getAiFrame().getPrevFrame().getPlayStrategy().getActiveRoles(EPlay.OFFENSIVE).stream()
 				.map(ARole::getPos)
 				.toList();
@@ -149,19 +151,26 @@ public class SupportBridgePositionCalc extends ACalculator
 				.checkConfirmWithKickOffRules()
 				.checkCustom(p -> offensives.stream().noneMatch(o -> o.distanceTo(p) < minDistToOffensive));
 
-		return bridgePositions.stream()
+		return bridgePositions
+				.stream()
 				.filter(s -> checker.allMatch(getAiFrame(), s))
-				.filter(s -> s.distanceTo(passSenderArcs.get(0).center()) > minDistToOffensive)
+				.filter(s -> s.distanceTo(passSenderArcs.getFirst().center()) > minDistToOffensive)
 				.toList();
+	}
+
+
+	private static ILineSegment getPassSenderMidLine(IArc passSenderArc)
+	{
+		return Lines.segmentFromPoints(passSenderArc.center(),
+				passSenderArc.center()
+						.addNew(Vector2.fromAngle(passSenderArc.getStartAngle() + passSenderArc.getRotation() / 2.)
+								.scaleTo(passSenderArc.radius())));
 	}
 
 
 	private Optional<IVector2> checkForBridgePosition(IArc passReceiverArc, ILineSegment passSenderMidLine)
 	{
-		ILineSegment passReceiverMidLine = Lines.segmentFromPoints(passReceiverArc.center(),
-				passReceiverArc.center()
-						.addNew(Vector2.fromAngle(passReceiverArc.getStartAngle() + passReceiverArc.getRotation() / 2.)
-								.scaleTo(passReceiverArc.radius())));
+		ILineSegment passReceiverMidLine = getPassSenderMidLine(passReceiverArc);
 
 		Optional<IVector2> intersection = passReceiverMidLine.intersect(passSenderMidLine).asOptional();
 		if (intersection.isPresent())
@@ -204,14 +213,24 @@ public class SupportBridgePositionCalc extends ACalculator
 
 	private List<IArc> generateUncoveredArc(IVector2 center, double radius)
 	{
-
-		Map<BotID, MovingRobot> movingRobots = getAiFrame().getWorldFrame().getOpponentBots().values().stream()
+		Map<BotID, IMovingRobot> movingRobots = getAiFrame().getWorldFrame().getOpponentBots().values().stream()
 				.filter(b -> b.getPos().distanceTo(center) < radius)
 				.collect(Collectors.toMap(ITrackedBot::getBotId,
-						bot -> MovingRobot.fromTrackedBot(bot, maxHorizon, Geometry.getBotRadius() + Geometry.getBallRadius())));
+						bot -> AcceleratingRobotFactory.create(
+								bot.getPos(),
+								bot.getVel(),
+								bot.getRobotInfo().getBotParams().getMovementLimits().getVelMax(),
+								bot.getRobotInfo().getBotParams().getMovementLimits().getAccMax(),
+								Geometry.getBotRadius() + Geometry.getBallRadius(),
+								opponentBotReactionTime
+						)));
 
 		FullAngleRangeGenerator generator = new FullAngleRangeGenerator(
-				new ArrayList<>(movingRobots.values()), center, getWFrame().getBall().getStraightConsultant());
+				new ArrayList<>(movingRobots.values()),
+				center,
+				getWFrame().getBall().getStraightConsultant(),
+				maxHorizon
+		);
 
 		List<AngleRange> uncoveredAngleRanges = generator.getUncoveredAngleRanges();
 

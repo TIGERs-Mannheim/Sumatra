@@ -26,8 +26,12 @@ public class GuiTestPlay extends APlay
 	}
 
 
-	@Override
-	public void addRole(final ARole role)
+	/**
+	 * Add a new test role from outside.
+	 *
+	 * @param role
+	 */
+	public void addNewRole(final ARole role)
 	{
 		super.addRole(role);
 	}

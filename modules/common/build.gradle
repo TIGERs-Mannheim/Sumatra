@@ -12,23 +12,24 @@ plugins {
 dependencies {
     api project(':common-math')
 
-    implementation 'com.github.TIGERs-Mannheim.matlabcontrol:matlabcontrol:4.1.2'
-    implementation 'com.github.g3force:String2ValueConverter:2.2.1'
+    implementation(libs.com.github.TIGERs.mannheim.matlabcontrol)
+    implementation(libs.com.github.g3force.string2ValueConverter)
 
-    implementation 'commons-lang:commons-lang:2.6'
-    implementation 'org.apache.commons:commons-math3:3.6.1'
+    implementation(libs.commons.lang)
+    implementation(libs.org.apache.commons.commons.math3)
 
-    implementation 'org.apache.logging.log4j:log4j-api:2.20.0'
-    implementation 'org.apache.logging.log4j:log4j-core:2.20.0'
-    annotationProcessor 'org.apache.logging.log4j:log4j-core:2.20.0'
+    implementation(libs.org.apache.logging.log4j.log4j.api)
+    implementation(libs.org.apache.logging.log4j.log4j.core)
+    annotationProcessor(libs.org.apache.logging.log4j.log4j.core)
 
-    implementation 'com.sleepycat:je:18.3.12'
-    implementation 'gov.nist.math:jama:1.0.3'
-    implementation 'net.jafama:jafama:2.3.2'
-    implementation 'com.googlecode.json-simple:json-simple:1.1.1'
+    implementation(libs.com.sleepycat.je)
+    implementation(libs.gov.nist.math.jama)
+    implementation(libs.net.jafama)
+    implementation(libs.com.googlecode.json.simple)
 
-    testImplementation 'org.openjdk.jmh:jmh-core:1.36'
-    testAnnotationProcessor 'org.openjdk.jmh:jmh-generator-annprocess:1.36'
+    testImplementation(libs.org.hamcrest)
+    testImplementation(libs.org.openjdk.jmh.jmh.core)
+    testAnnotationProcessor(libs.org.openjdk.jmh.jmh.generator.annprocess)
 }
 
 tasks.register("runBangBangTrajectoryBenchmark", JavaExec) {

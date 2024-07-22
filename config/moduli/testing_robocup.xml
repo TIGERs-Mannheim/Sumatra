@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<centralSoftware>
+
+    <!--
+    This configuration is used on an event during testing.
+    It uses an own instance of the GC.
+    -->
+
+    <globalConfiguration>
+        <environment>ROBOCUP</environment>
+    </globalConfiguration>
+
+
+    <module id="edu.tigers.sumatra.cam.ACam">
+        <implementation>edu.tigers.sumatra.cam.SSLVisionCam</implementation>
+    </module>
+
+
+    <module id="edu.tigers.sumatra.geometry.GeometryUpdater">
+        <dependency>edu.tigers.sumatra.cam.ACam</dependency>
+    </module>
+
+
+    <module id="edu.tigers.sumatra.vision.AVisionFilter">
+        <implementation>edu.tigers.sumatra.vision.VisionFilterImpl</implementation>
+
+        <dependency>edu.tigers.sumatra.referee.AReferee</dependency>
+        <dependency>edu.tigers.sumatra.cam.ACam</dependency>
+    </module>
+
+
+    <module id="edu.tigers.sumatra.wp.AWorldPredictor">
+        <implementation>edu.tigers.sumatra.wp.WorldInfoCollector</implementation>
+
+        <dependency>edu.tigers.sumatra.referee.AReferee</dependency>
+        <dependency>edu.tigers.sumatra.vision.AVisionFilter</dependency>
+        <dependency>edu.tigers.sumatra.persistence.RecordManager</dependency>
+        <dependency>edu.tigers.sumatra.botparams.BotParamsManager</dependency>
+        <dependency>edu.tigers.sumatra.timer.ATimer</dependency>
+        <dependency>edu.tigers.sumatra.cam.ACam</dependency>
+    </module>
+
+
+    <module id="edu.tigers.sumatra.referee.AReferee">
+        <implementation>edu.tigers.sumatra.referee.Referee</implementation>
+
+        <properties>
+            <source>NETWORK</source>
+            <port>11003</port>
+            <gameController>true</gameController>
+            <publishRefereeMessages>true</publishRefereeMessages>
+        </properties>
+    </module>
+
+
+    <module id="edu.tigers.autoreferee.module.AutoRefModule">
+        <dependency>edu.tigers.sumatra.wp.AWorldPredictor</dependency>
+    </module>
+
+
+    <module id="edu.tigers.sumatra.botmanager.ABotManager">
+        <implementation>edu.tigers.sumatra.botmanager.TigersBotManager</implementation>
+
+        <properties>
+            <basestation-impl>edu.tigers.sumatra.botmanager.basestation.TigersBaseStation</basestation-impl>
+        </properties>
+
+        <dependency>edu.tigers.sumatra.botparams.BotParamsManager</dependency>
+        <dependency>edu.tigers.sumatra.vision.AVisionFilter</dependency>
+    </module>
+
+
+    <module id="edu.tigers.sumatra.botparams.BotParamsManager"/>
+
+
+    <module id="edu.tigers.sumatra.skillsystem.ASkillSystem">
+        <implementation>edu.tigers.sumatra.skillsystem.GenericSkillSystem</implementation>
+
+        <dependency>edu.tigers.sumatra.botmanager.ABotManager</dependency>
+        <dependency>edu.tigers.sumatra.wp.AWorldPredictor</dependency>
+    </module>
+
+
+    <module id="edu.tigers.sumatra.ai.AAgent">
+        <implementation>edu.tigers.sumatra.ai.Agent</implementation>
+
+        <dependency>edu.tigers.sumatra.skillsystem.ASkillSystem</dependency>
+        <dependency>edu.tigers.sumatra.wp.AWorldPredictor</dependency>
+        <dependency>edu.tigers.sumatra.timer.ATimer</dependency>
+        <dependency>edu.tigers.sumatra.statistics.StatisticsSaver</dependency>
+    </module>
+
+
+    <module id="edu.tigers.sumatra.statistics.StatisticsSaver">
+        <properties>
+            <operation-mode>OFF</operation-mode>
+            <operation-mode-fallback>OFF</operation-mode-fallback>
+        </properties>
+    </module>
+
+
+    <module id="edu.tigers.sumatra.timer.ATimer">
+        <implementation>edu.tigers.sumatra.timer.SumatraTimer</implementation>
+    </module>
+
+
+    <module id="edu.tigers.sumatra.persistence.RecordManager">
+        <implementation>edu.tigers.sumatra.ai.AiRecordManager</implementation>
+
+        <dependency>edu.tigers.sumatra.gamelog.GameLogRecorder</dependency>
+    </module>
+
+
+    <module id="edu.tigers.sumatra.gamelog.GameLogRecorder"/>
+
+
+    <module id="edu.tigers.sumatra.movementlimits.MovementObserverModule">
+        <dependency>edu.tigers.sumatra.wp.AWorldPredictor</dependency>
+        <dependency>edu.tigers.sumatra.botparams.BotParamsManager</dependency>
+    </module>
+
+    <!-- If you want to export the robot and ball coordinates to another application, activate this -->
+    <!--
+        <module id="edu.tigers.sumatra.wp.exporter.SSLVisionSender">
+            <properties>
+                <port>11006</port>
+            </properties>
+            <dependency>edu.tigers.sumatra.wp.AWorldPredictor</dependency>
+        </module>
+    -->
+
+</centralSoftware>

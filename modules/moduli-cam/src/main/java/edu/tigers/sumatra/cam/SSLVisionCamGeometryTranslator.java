@@ -8,14 +8,14 @@ import edu.tigers.sumatra.cam.data.CamFieldArc;
 import edu.tigers.sumatra.cam.data.CamFieldLine;
 import edu.tigers.sumatra.cam.data.CamFieldSize;
 import edu.tigers.sumatra.cam.data.CamGeometry;
-import edu.tigers.sumatra.cam.proto.MessagesRobocupSslGeometry;
-import edu.tigers.sumatra.cam.proto.MessagesRobocupSslGeometry.SSL_FieldCircularArc;
-import edu.tigers.sumatra.cam.proto.MessagesRobocupSslGeometry.SSL_FieldLineSegment;
-import edu.tigers.sumatra.cam.proto.MessagesRobocupSslGeometry.SSL_FieldShapeType;
-import edu.tigers.sumatra.cam.proto.MessagesRobocupSslGeometry.SSL_GeometryCameraCalibration;
-import edu.tigers.sumatra.cam.proto.MessagesRobocupSslGeometry.SSL_GeometryData;
-import edu.tigers.sumatra.cam.proto.MessagesRobocupSslGeometry.SSL_GeometryFieldSize;
-import edu.tigers.sumatra.cam.proto.MessagesRobocupSslGeometry.Vector2f;
+import edu.tigers.sumatra.cam.proto.SslVisionGeometry;
+import edu.tigers.sumatra.cam.proto.SslVisionGeometry.SSL_FieldCircularArc;
+import edu.tigers.sumatra.cam.proto.SslVisionGeometry.SSL_FieldLineSegment;
+import edu.tigers.sumatra.cam.proto.SslVisionGeometry.SSL_FieldShapeType;
+import edu.tigers.sumatra.cam.proto.SslVisionGeometry.SSL_GeometryCameraCalibration;
+import edu.tigers.sumatra.cam.proto.SslVisionGeometry.SSL_GeometryData;
+import edu.tigers.sumatra.cam.proto.SslVisionGeometry.SSL_GeometryFieldSize;
+import edu.tigers.sumatra.cam.proto.SslVisionGeometry.Vector2f;
 import edu.tigers.sumatra.math.circle.Arc;
 import edu.tigers.sumatra.math.circle.IArc;
 import edu.tigers.sumatra.math.line.ILineSegment;
@@ -278,7 +278,7 @@ public class SSLVisionCamGeometryTranslator
 	private double centerCircleRadiusFromArcs(List<CamFieldArc> arcs)
 	{
 		return arcs.stream()
-				.filter(a -> a.getType() == MessagesRobocupSslGeometry.SSL_FieldShapeType.CenterCircle)
+				.filter(a -> a.getType() == SslVisionGeometry.SSL_FieldShapeType.CenterCircle)
 				.findFirst()
 				.map(camFieldArc -> camFieldArc.getArc().radius())
 				.orElse(DEFAULT_CENTER_CIRCLE_RADIUS);

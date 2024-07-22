@@ -18,6 +18,7 @@ import net.miginfocom.swing.MigLayout;
 
 import javax.swing.Box;
 import javax.swing.JButton;
+import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
@@ -30,14 +31,17 @@ import java.awt.Dimension;
 import java.awt.EventQueue;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.ItemEvent;
 import java.io.Serial;
 import java.util.Comparator;
 import java.util.EnumMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
 
@@ -54,19 +58,30 @@ public class TeamEditor extends JPanel
 	private final ObjectMapper mapper = new ObjectMapper();
 	private final transient List<ITeamEditorObserver> observers = new CopyOnWriteArrayList<>();
 	private final JScrollPane scrollPane = new JScrollPane();
-
-	private JTreeTableJson treetable;
-
 	private final EnumMap<EBotParamLabel, JComboBox<String>> selectedLabels = new EnumMap<>(EBotParamLabel.class);
+	private JTreeTableJson treetable;
+	private Set<String> teamNames = new HashSet<>();
+	private JCheckBox enableAutoChoice;
 
 
 	public TeamEditor()
 	{
-		setLayout(new MigLayout("wrap 2", "[grow, fill]10[grow, fill]", ""));
+		setLayout(
+				new MigLayout("wrap 3", "[shrink, fill, 50:150:]10[grow, fill, 40:100:]10[grow, fill, 40:100:]"));
 
-		DescLabel desc = new DescLabel("Select different bot configurations for the teams and for curtain bots and" +
+		DescLabel desc = new DescLabel("Select different bot configurations for the teams and for certain bots and" +
 				"services. You can hover over the drop-down to get a minimal description.");
-		add(desc, "wrap, span 2");
+		add(desc, "span 3, grow");
+
+		enableAutoChoice = new JCheckBox(
+				"Enable automatic choice of opponents by referee information (no effect in simulation).");
+		enableAutoChoice.addItemListener(e -> {
+			for (ITeamEditorObserver observer : observers)
+			{
+				observer.onEnableAutoOpponentChoice(e.getStateChange() == ItemEvent.SELECTED);
+			}
+		});
+		add(enableAutoChoice, "span 3, grow");
 
 		for (EBotParamLabel paramLabel : EBotParamLabel.values())
 		{
@@ -76,14 +91,17 @@ public class TeamEditor extends JPanel
 			JComboBox<String> dropdown = new JComboBox<>();
 			dropdown.addActionListener(new SelectedLabelListener(paramLabel, dropdown));
 			dropdown.setToolTipText(paramLabel.getLabel());
-			add(dropdown);
+			add(dropdown, "span 2, grow");
 			selectedLabels.put(paramLabel, dropdown);
-
 		}
 
 		JButton addBtn = new JButton("Add Team");
 		addBtn.addActionListener(new AddButtonListener());
 		add(addBtn);
+
+		JButton copyBtn = new JButton("Copy Team");
+		copyBtn.addActionListener(new CopyButtonListener());
+		add(copyBtn);
 
 		JButton delBtn = new JButton("Delete Team");
 		delBtn.addActionListener(new DeleteButtonListener());
@@ -93,9 +111,9 @@ public class TeamEditor extends JPanel
 		scrollPane.setPreferredSize(new Dimension(400, 1000));
 		scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
 		scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
-		add(scrollPane, "span 2, pushy");
+		add(scrollPane, "span 3, pushy");
 
-		add(Box.createGlue(), "push, span 2");
+		add(Box.createGlue(), "push, span 3");
 	}
 
 
@@ -114,11 +132,10 @@ public class TeamEditor extends JPanel
 						Map.Entry::getValue,
 						(e1, e2) -> e1,
 						LinkedHashMap::new));
-
+		teamNames = teams.keySet();
 		JsonNode entries = mapper.valueToTree(teams);
 
 		ITreeTableModel model = new ConfigJSONTreeTableModel(entries);
-		model.setEditable(true);
 		treetable = new JTreeTableJson(model);
 		treetable.getModel().addTableModelListener(new TreeTableListener());
 
@@ -143,6 +160,12 @@ public class TeamEditor extends JPanel
 				}
 			}
 		});
+	}
+
+
+	public void setInitialValueAutoSelection(boolean enable)
+	{
+		enableAutoChoice.setSelected(enable);
 	}
 
 
@@ -207,6 +230,25 @@ public class TeamEditor extends JPanel
 
 
 	/**
+	 * Adding a team with the same name as an existing entry needs confirmation
+	 *
+	 * @param teamName
+	 * @return true if overwriting is denied
+	 */
+	private boolean denyOverwrite(String teamName)
+	{
+		if (teamNames.contains(teamName))
+		{
+			int confirm = JOptionPane.showConfirmDialog(null,
+					"The Team already exists! Are you sure you want to continue and overwrite the existing parameter?",
+					"Warning", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+			return confirm != 0;
+		}
+		return false;
+	}
+
+
+	/**
 	 * Observer interface.
 	 */
 	public interface ITeamEditorObserver
@@ -236,6 +278,13 @@ public class TeamEditor extends JPanel
 		 */
 		void onTeamAdded(String teamName);
 
+		/**
+		 * New team with copied parameter from existing team
+		 *
+		 * @param teamName new team
+		 * @param copyTeam team to copy parameter from
+		 */
+		void onTeamCopied(String teamName, String copyTeam);
 
 		/**
 		 * Team deleted.
@@ -243,6 +292,49 @@ public class TeamEditor extends JPanel
 		 * @param teamName
 		 */
 		void onTeamDeleted(String teamName);
+
+		/**
+		 * Automatic choice by referee info enabled.
+		 *
+		 * @param enable
+		 */
+		void onEnableAutoOpponentChoice(boolean enable);
+	}
+
+	/**
+	 * This comparator simply sorts strings but it puts preference to those containing a favor.
+	 */
+	private static class FavoredStringComparator implements Comparator<String>
+	{
+		private final String favored;
+
+
+		/**
+		 * Constructor
+		 *
+		 * @param favor
+		 */
+		public FavoredStringComparator(final String favor)
+		{
+			favored = favor;
+		}
+
+
+		@Override
+		public int compare(final String a, final String b)
+		{
+			if (a.toLowerCase().contains(favored) && !b.toLowerCase().contains(favored))
+			{
+				return -1;
+			}
+
+			if (!a.toLowerCase().contains(favored) && b.toLowerCase().contains(favored))
+			{
+				return 1;
+			}
+
+			return a.compareTo(b);
+		}
 	}
 
 	private class SelectedLabelListener implements ActionListener
@@ -326,13 +418,16 @@ public class TeamEditor extends JPanel
 		@Override
 		public void actionPerformed(final ActionEvent arg0)
 		{
-			String teamName = (String) JOptionPane.showInputDialog(null, "Team name: ", "Specify new team name",
-					JOptionPane.QUESTION_MESSAGE, null,
-					null, null);
+			String teamName = JOptionPane.showInputDialog(null, "Team name: ", "Specify new team name",
+					JOptionPane.QUESTION_MESSAGE);
 
 			if (teamName == null)
 			{
 				// user cancelled dialog
+				return;
+			}
+			if (denyOverwrite(teamName))
+			{
 				return;
 			}
 
@@ -346,6 +441,65 @@ public class TeamEditor extends JPanel
 			{
 				observer.onTeamAdded(teamName);
 			}
+		}
+	}
+
+	private class CopyButtonListener implements ActionListener
+	{
+
+		@Override
+		public void actionPerformed(final ActionEvent e)
+		{
+			if (treetable == null)
+			{
+				showInfoPane();
+				return;
+			}
+			TreeTableModelAdapter model = (TreeTableModelAdapter) treetable.getModel();
+			int selectedRow = treetable.getSelectedRow();
+			if (selectedRow < 0)
+			{
+				showInfoPane();
+				return;
+			}
+			TreeEntry entry = (TreeEntry) model.getNodeForRow(selectedRow);
+
+			// go up to the "team" node of the tree
+			while (entry.getParent().getParent() != null)
+			{
+				entry = entry.getParent();
+			}
+			String copyTeam = entry.getName();
+
+			String teamName = (String) JOptionPane.showInputDialog(null, "Team name: ", "Specify new team name",
+					JOptionPane.QUESTION_MESSAGE, null,
+					null, null);
+
+			if (teamName == null)
+			{
+				// user cancelled dialog
+				return;
+			}
+			if (denyOverwrite(teamName))
+				return;
+
+			notifyTeamCopied(teamName, copyTeam);
+		}
+
+
+		private void notifyTeamCopied(final String teamName, final String copyTeam)
+		{
+			for (ITeamEditorObserver observer : observers)
+			{
+				observer.onTeamCopied(teamName, copyTeam);
+			}
+		}
+
+
+		private void showInfoPane()
+		{
+			JOptionPane.showMessageDialog(null, "No team for copy given! Please select a team from the tree!",
+					"Selection necessary!", JOptionPane.INFORMATION_MESSAGE);
 		}
 	}
 
@@ -407,42 +561,6 @@ public class TeamEditor extends JPanel
 			{
 				observer.onTeamDeleted(teamName);
 			}
-		}
-	}
-
-	/**
-	 * This comparator simply sorts strings but it puts preference to those containing a favor.
-	 */
-	private static class FavoredStringComparator implements Comparator<String>
-	{
-		private final String favored;
-
-
-		/**
-		 * Constructor
-		 *
-		 * @param favor
-		 */
-		public FavoredStringComparator(final String favor)
-		{
-			favored = favor;
-		}
-
-
-		@Override
-		public int compare(final String a, final String b)
-		{
-			if (a.toLowerCase().contains(favored) && !b.toLowerCase().contains(favored))
-			{
-				return -1;
-			}
-
-			if (!a.toLowerCase().contains(favored) && b.toLowerCase().contains(favored))
-			{
-				return 1;
-			}
-
-			return a.compareTo(b);
 		}
 	}
 }

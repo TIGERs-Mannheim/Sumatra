@@ -4,8 +4,9 @@
 
 package edu.tigers.sumatra.botmanager.sim;
 
+import edu.tigers.sumatra.bot.EBallObservationState;
 import edu.tigers.sumatra.bot.EBotType;
-import edu.tigers.sumatra.bot.EDribblerState;
+import edu.tigers.sumatra.bot.EDribblerTemperature;
 import edu.tigers.sumatra.bot.ERobotMode;
 import edu.tigers.sumatra.botmanager.basestation.IBaseStation;
 import edu.tigers.sumatra.botmanager.bots.ABot;
@@ -50,11 +51,13 @@ public abstract class ASimBot extends ABot
 
 
 	@Override
-	public EDribblerState getDribblerState()
+	public EDribblerTemperature getDribblerTemperature()
 	{
-		return EDribblerState.COLD;
+		return EDribblerTemperature.COLD;
 	}
 
+	@Override
+	public EBallObservationState getBallObservationState() { return EBallObservationState.UNKNOWN; }
 
 	@Override
 	public boolean isBarrierInterrupted()

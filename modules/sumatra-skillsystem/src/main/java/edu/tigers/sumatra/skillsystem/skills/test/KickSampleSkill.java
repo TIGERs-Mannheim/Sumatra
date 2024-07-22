@@ -252,12 +252,15 @@ public class KickSampleSkill extends AMoveSkill implements ITimeSeriesDataCollec
 			// check if only a single ball is within range
 			IVector2 botPos = getPos();
 
-			List<IVector2> allBalls = ballCamMap.values().stream().flatMap(Collection::stream)
-					.collect(Collectors.toList());
+			if (SumatraModel.getInstance().isSimulation())
+			{
+				ballCamMap.put(0, List.of(getBall().getPos()));
+			}
+			List<IVector2> allBalls = ballCamMap.values().stream().flatMap(Collection::stream).toList();
 
 			long numBallsInKeepout = allBalls.stream().filter(
-					b -> (botPos.distanceTo(b) < freeBallRadius)
-							&& (botPos.distanceTo(b) > ballAtBotRadius))
+							b -> (botPos.distanceTo(b) < freeBallRadius)
+									&& (botPos.distanceTo(b) > ballAtBotRadius))
 					.count();
 
 			List<IVector2> closeBalls = allBalls.stream()
@@ -341,7 +344,7 @@ public class KickSampleSkill extends AMoveSkill implements ITimeSeriesDataCollec
 		{
 			MultimediaControl mmc = new MultimediaControl()
 					.setSong(ESong.CHEERING)
-					.setLedColor(ELedColor.RED);
+					.setLedColor(ELedColor.PURPLE);
 			setMultimediaControl(mmc);
 
 			ballPosFilter.update(getBall().getPos());

@@ -36,7 +36,7 @@ public class PotentialOffensiveBotsCalc extends ACalculator
 
 	private Set<BotID> getPotentialOffensiveBotMap()
 	{
-		if (ballLeavingFieldGood.get())
+		if (Boolean.TRUE.equals(ballLeavingFieldGood.get()))
 		{
 			return Collections.emptySet();
 		}

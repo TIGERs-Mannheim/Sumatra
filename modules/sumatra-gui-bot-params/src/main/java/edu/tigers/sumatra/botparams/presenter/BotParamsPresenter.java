@@ -19,9 +19,9 @@ import lombok.extern.log4j.Log4j2;
  * Presenter for bot parameter view.
  */
 @Log4j2
-public class BotParamsPresenter
-		implements ISumatraViewPresenter, ITeamEditorObserver, IBotParamsDatabaseObserver
+public class BotParamsPresenter implements ISumatraViewPresenter, ITeamEditorObserver, IBotParamsDatabaseObserver
 {
+	private final String autoSelectionKey = BotParamsPresenter.class.getCanonicalName() + ".enableAutoSelection";
 	@Getter
 	private final TeamEditor viewPanel = new TeamEditor();
 	private BotParamsManager paramsManager;
@@ -36,6 +36,8 @@ public class BotParamsPresenter
 			viewPanel.setDatabase(paramsManager.getDatabase());
 			viewPanel.addObserver(this);
 			paramsManager.getDatabase().addObserver(this);
+			viewPanel.setInitialValueAutoSelection(
+					Boolean.parseBoolean(SumatraModel.getInstance().getUserProperty(autoSelectionKey)));
 		});
 	}
 
@@ -67,6 +69,21 @@ public class BotParamsPresenter
 	public void onTeamAdded(final String teamName)
 	{
 		paramsManager.getDatabase().addEntry(teamName);
+	}
+
+
+	@Override
+	public void onTeamCopied(final String teamName, final String copyTeam)
+	{
+		paramsManager.getDatabase().copyEntry(teamName, copyTeam);
+	}
+
+
+	@Override
+	public void onEnableAutoOpponentChoice(boolean enable)
+	{
+		paramsManager.activateAutomaticChoiceOfOpponent(enable);
+		SumatraModel.getInstance().setUserProperty(autoSelectionKey, String.valueOf(enable));
 	}
 
 

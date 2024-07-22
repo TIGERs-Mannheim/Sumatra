@@ -73,6 +73,6 @@ public class ReflectorRater extends APassRater
 				.orElseGet(() -> RatedTarget.ratedPoint(Geometry.getGoalTheir().getCenter(), 0));
 
 		var improvement = ratedTarget.getScore() - ratedSource.getScore();
-		return relative(improvement, 0, bestImprovement);
+		return Math.min(relative(improvement, 0, bestImprovement), ratedTarget.getScore());
 	}
 }

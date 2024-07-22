@@ -8,7 +8,6 @@ import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
 import edu.tigers.sumatra.ids.ETeamColor;
 import edu.tigers.sumatra.math.vector.IVector2;
-import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.referee.data.EGameState;
 import edu.tigers.sumatra.referee.data.GameState;
 import edu.tigers.sumatra.referee.data.RefereeMsg;
@@ -91,8 +90,7 @@ public class GameStateCalculator
 		processBallMovement(ballPos, builder, timestamp);
 		processActionTimeRemaining(builder, refereeMsg.getCurrentActionTimeRemaining());
 
-		var placementPos = Optional.ofNullable(refereeMsg.getBallPlacementPosNeutral()).orElse(Vector2.zero());
-		builder.withBallPlacementPosition(placementPos);
+		builder.withBallPlacementPosition(refereeMsg.getBallPlacementPosNeutral());
 
 		// we build this with NEUTRAL ourTeam because we don't know our team yet
 		return builder.withOurTeam(ETeamColor.NEUTRAL).build();

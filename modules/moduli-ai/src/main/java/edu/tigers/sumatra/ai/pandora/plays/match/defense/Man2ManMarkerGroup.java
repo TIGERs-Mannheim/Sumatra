@@ -10,9 +10,6 @@ import edu.tigers.sumatra.ai.pandora.roles.ARole;
 import edu.tigers.sumatra.ai.pandora.roles.ERole;
 import edu.tigers.sumatra.ai.pandora.roles.defense.Man2ManMarkerRole;
 
-import java.util.List;
-import java.util.stream.Collectors;
-
 
 /**
  * Manage a single Man2ManMarker
@@ -51,9 +48,8 @@ public class Man2ManMarkerGroup extends ADefenseGroup
 	{
 		super.updateRoles(aiFrame);
 
-		List<Man2ManMarkerRole> allRoles = getRoles().stream()
+		getRoles().stream()
 				.map(sdr -> (Man2ManMarkerRole) sdr.getNewRole())
-				.collect(Collectors.toList());
-		allRoles.forEach(r -> r.setThreat(threat));
+				.forEach(r -> r.setThreat(threat));
 	}
 }

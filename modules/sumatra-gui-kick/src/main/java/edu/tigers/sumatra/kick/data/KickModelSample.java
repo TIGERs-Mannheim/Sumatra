@@ -13,7 +13,7 @@ public class KickModelSample
 	private final String botId;
 	// [m/s]
 	private final double kickVel;
-	// [ms]
+	// [us]
 	private final double kickDuration;
 	private final double dribbleSpeed;
 	private final boolean chip;

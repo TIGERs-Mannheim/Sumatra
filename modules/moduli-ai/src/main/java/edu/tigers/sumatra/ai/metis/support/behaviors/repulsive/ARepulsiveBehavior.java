@@ -6,7 +6,6 @@ package edu.tigers.sumatra.ai.metis.support.behaviors.repulsive;
 
 import com.github.g3force.configurable.Configurable;
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
-import edu.tigers.sumatra.ai.metis.offense.action.RatedOffensiveAction;
 import edu.tigers.sumatra.ai.metis.support.behaviors.ASupportBehavior;
 import edu.tigers.sumatra.ai.metis.support.behaviors.SupportBehaviorPosition;
 import edu.tigers.sumatra.ai.pandora.plays.EPlay;
@@ -33,7 +32,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
@@ -57,34 +55,6 @@ public abstract class ARepulsiveBehavior extends ASupportBehavior
 	@Configurable(comment = "Margin around their penalty area which robots should not move into", defValue = "270.0")
 	private static double penAreaTheirMargin = 270.0;
 
-	// Sigmas
-	@Configurable(comment = "[mm]", defValue = "1250.0")
-	private static double sigmaOpponentBot = 1250;
-	@Configurable(comment = "[mm]", defValue = "1800.0")
-	private static double sigmaTeamBot = 1800.0;
-	@Configurable(comment = "[mm]", defValue = "300.0")
-	private static double sigmaFieldBorderRepel = 300;
-	@Configurable(comment = "[mm]", defValue = "300.0")
-	private static double sigmaBallRepel = 300;
-	@Configurable(comment = "[mm]", defValue = "400.0")
-	private static double sigmaGoalSight = 400;
-	@Configurable(comment = "[mm]", defValue = "400.0")
-	private static double sigmaPassLine = 400;
-
-	// Magnitudes
-	@Configurable(comment = "[mm]", defValue = "-1500.0")
-	private static double magnitudeOpponentBot = -1500.0;
-	@Configurable(comment = "[mm]", defValue = "-1750.0")
-	private static double magnitudeTeamBot = -1750.0;
-	@Configurable(comment = "[mm]", defValue = "-3000.0")
-	private static double magnitudeFieldBorderRepel = -3000;
-	@Configurable(comment = "[mm]", defValue = "-2000.0")
-	private static double magnitudeBallRepel = -2000;
-	@Configurable(comment = "[mm]", defValue = "-2500.0")
-	private static double magnitudeGoalSight = -2500;
-	@Configurable(comment = "[mm]", defValue = "-2500.0")
-	private static double magnitudePassLine = -2500;
-
 	@Configurable(defValue = "50.0", comment = "Extra margin [mm] to add to forbidden areas")
 	private static double extraMargin = 50.0;
 
@@ -99,8 +69,6 @@ public abstract class ARepulsiveBehavior extends ASupportBehavior
 
 	private final Color color;
 	private final Supplier<Map<EPlay, Set<BotID>>> desiredBots;
-	private final Supplier<Map<BotID, RatedOffensiveAction>> offensiveActions;
-
 
 	@Override
 	public SupportBehaviorPosition calculatePositionForRobot(BotID botID)
@@ -122,11 +90,11 @@ public abstract class ARepulsiveBehavior extends ASupportBehavior
 			IVector2 force = calcResultingDirection(forces, botState).multiplyNew(1. / (i + 1));
 
 			resultingForce = resultingForce.addNew(force);
-			IVector2 destination = setPositionInsideAllowedArea(botState.getPos(), force);
+			IVector2 destination = getPositionOutsideForbiddenArea(botState.getPos(), force);
 			shapes.add(DrawableArrow.fromPositions(botState.getPos(), destination).setColor(color));
 			botState = BotState.of(tBot.getBotId(), State.of(Pose.from(destination, tBot.getOrientation())));
 		}
-		IVector2 destination = setPositionInsideAllowedArea(getWFrame().getBot(botID).getPos(), resultingForce);
+		IVector2 destination = getPositionOutsideForbiddenArea(getWFrame().getBot(botID).getPos(), resultingForce);
 		shapes.add(DrawableArrow.fromPositions(botState.getPos(), destination).setColor(color));
 
 		if (isDrawing())
@@ -148,80 +116,6 @@ public abstract class ARepulsiveBehavior extends ASupportBehavior
 			Collection<ITrackedBot> supporter,
 			Collection<ITrackedBot> opponents
 	);
-
-
-	protected List<Force> getForceRepelFromOpponentBot(Collection<ITrackedBot> opponents, BotState affectedBot)
-	{
-		return opponents.stream()
-				.filter(b -> b.getPos().distanceTo(affectedBot.getPos()) < sigmaOpponentBot * 3)
-				.map(b -> new Force(b.getPos(), sigmaOpponentBot, magnitudeOpponentBot))
-				.toList();
-	}
-
-
-	protected List<Force> getForceRepelFromTeamBot(Collection<ITrackedBot> supporter, BotState affectedBot)
-	{
-		return getForceRepelFromTeamBot(supporter, affectedBot, sigmaTeamBot, magnitudeTeamBot);
-	}
-
-
-	protected List<Force> getForceRepelFromTeamBot(
-			Collection<ITrackedBot> supporter,
-			BotState affectedBot,
-			double sigma,
-			double magnitude
-	)
-	{
-		return supporter.stream()
-				.filter(b -> !b.getBotId().equals(affectedBot.getBotId()))
-				.filter(b -> b.getPos().distanceTo(affectedBot.getPos()) < sigmaTeamBot * 3)
-				.map(b -> new Force(b.getPos(), sigma, magnitude))
-				.toList();
-	}
-
-
-	protected List<Force> getForceRepelFromPassLine(BotState affectedBot)
-	{
-		return offensiveActions.get().values().stream()
-				.map(e -> e.getAction().getPass())
-				.filter(Objects::nonNull)
-				.map(pass -> Lines.segmentFromPoints(pass.getKick().getSource(), pass.getKick().getTarget()))
-				.map(line -> line.closestPointOnPath(affectedBot.getPos()))
-				.map(referencePoint -> new Force(referencePoint, sigmaPassLine, magnitudePassLine))
-				.toList();
-	}
-
-
-	protected Force getForceStayInsideField(BotState affectedBot)
-	{
-		IVector2 referencePoint = Geometry.getField().withMargin(Geometry.getBotRadius())
-				.nearestPointOutside(affectedBot.getPos());
-		return new Force(referencePoint, sigmaFieldBorderRepel, magnitudeFieldBorderRepel);
-	}
-
-
-	protected Force getForceRepelFromBall()
-	{
-		return new Force(getWFrame().getBall().getPos(), sigmaBallRepel, magnitudeBallRepel);
-	}
-
-
-	protected List<Force> getForceRepelFromOffensiveGoalSight(BotState affectedBot)
-	{
-		return desiredBots.get().get(EPlay.OFFENSIVE).stream()
-				.map(id -> getWFrame().getBot(id))
-				.map(ITrackedBot::getPos)
-				.map(offensivePos -> getForceForOffensiveBot(affectedBot, offensivePos))
-				.toList();
-	}
-
-
-	private Force getForceForOffensiveBot(BotState affectedBot, IVector2 offensivePos)
-	{
-		ILineSegment goalLine = Lines.segmentFromPoints(offensivePos, Geometry.getGoalTheir().getCenter());
-		IVector2 referencePoint = goalLine.closestPointOnPath(affectedBot.getPos());
-		return new Force(referencePoint, sigmaGoalSight, magnitudeGoalSight);
-	}
 
 
 	private IVector2 calcResultingDirection(List<Force> forces, BotState affectedBot)
@@ -260,7 +154,7 @@ public abstract class ARepulsiveBehavior extends ASupportBehavior
 	}
 
 
-	protected IVector2 setPositionInsideAllowedArea(IVector2 currentPos, IVector2 force)
+	private IVector2 getPositionOutsideForbiddenArea(IVector2 currentPos, IVector2 force)
 	{
 		IVector2 destination = currentPos.addNew(force);
 

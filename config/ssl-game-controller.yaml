@@ -9,15 +9,12 @@ network:
 server:
   auto-ref:
     address: :11007
-    address-tls: :11107
     trusted-keys-dir: config/trusted_keys/auto_ref
   team:
     address: :11008
-    address-tls: :11108
     trusted-keys-dir: config/trusted_keys/team
   remote-control:
     address: :11011
-    address-tls: :11111
     trusted-keys-dir: config/trusted_keys/remote-control
   ci:
     address: :11009
@@ -39,6 +36,9 @@ game:
   no-progress-timeout:
     DIV_A: 5s
     DIV_B: 10s
+  keeper-held-ball-timeout:
+    DIV_A: 5s
+    DIV_B: 10s
   ball-placement-time: 30s
   ball-placement-time-top-up: 10s
   ball-placement-required-distance: 1.0
@@ -47,11 +47,16 @@ game:
   ball-placement-min-robot-distance: 0.05
   distance-to-ball-in-stop: 0.5
   auto-approve-goals: true
-  continue-from-halt: false
+  suggest-end-of-match: false
+  recommend-half-times: false
   challenge-flags: 3
   emergency-stop-grace-period: 10s
+  preparation-time-after-halt: 10s
+  preparation-time-before-resume: 2s
+  bot-substitution-budget: 5
+  bot-substitution-time: 10s
   normal:
-    half-duration: 35m # The GC will not auto continue if halftime is over, this is a quick fix. Longer times are not possible due to int overflow in the protobuf communication
+    half-duration: 5m
     half-time-duration: 5m
     timeout-duration: 5m
     timeouts: 4

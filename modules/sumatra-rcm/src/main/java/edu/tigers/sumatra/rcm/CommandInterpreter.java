@@ -6,7 +6,7 @@ package edu.tigers.sumatra.rcm;
 
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
-import edu.tigers.sumatra.bot.EDribblerState;
+import edu.tigers.sumatra.bot.EDribblerTemperature;
 import edu.tigers.sumatra.bot.EFeature;
 import edu.tigers.sumatra.bot.EFeatureState;
 import edu.tigers.sumatra.botmanager.bots.ABot;
@@ -86,18 +86,18 @@ public class CommandInterpreter implements ICommandInterpreter
 
 		final AMoveBotSkill skill = moveController.control(command, controllerState);
 
-		boolean isDribblerOverheated = controllerState.getBot().getDribblerState() == EDribblerState.OVERHEATED;
+		boolean isDribblerOverheated = controllerState.getBot().getDribblerTemperature() == EDribblerTemperature.OVERHEATED;
 
-		double maxCurrent = controllerState.getBot().getBotParams().getDribblerSpecs().getDefaultMaxCurrent();
-		double maxDribbleSpeed = controllerState.getBot().getBotParams().getDribblerSpecs().getDefaultSpeed();
+		double dribbleForce = controllerState.getBot().getBotParams().getDribblerSpecs().getDefaultForce();
+		double dribbleSpeed = controllerState.getBot().getBotParams().getDribblerSpecs().getDefaultSpeed();
 
 		if (command.hasDribble() && (command.getDribble() > 0.25) && !isDribblerOverheated)
 		{
-			final int rpm = (int) (command.getDribble() * maxDribbleSpeed);
-			kdOut.setDribbler(rpm, maxCurrent);
+			final int speed = (int) (command.getDribble() * dribbleSpeed);
+			kdOut.setDribbler(speed, dribbleForce);
 		} else
 		{
-			kdOut.setDribbler(0, maxCurrent);
+			kdOut.setDribbler(0, dribbleForce);
 		}
 
 		interpretKick(command);

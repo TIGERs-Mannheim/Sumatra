@@ -178,7 +178,7 @@ public class DefenseBotThreatDefStrategyMan2ManCalc extends ADefenseThreatCalc
 						threatLine,
 						pl,
 						threatLine.getPathEnd(),
-						getWFrame().getBall().getVel(),
+						bot.getVel(),
 						pl.getPathEnd(),
 						EDefenseBotThreatDefStrategy.MAN_2_MAN_MARKER
 				)

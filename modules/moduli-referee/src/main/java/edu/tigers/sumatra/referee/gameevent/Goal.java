@@ -122,10 +122,4 @@ public class Goal extends AGameEvent
 				kickingBot, kickingTeam, team,
 				formatVector(kickLocation), formatVector(location));
 	}
-
-
-	public ETeamColor getTeam()
-	{
-		return team;
-	}
 }

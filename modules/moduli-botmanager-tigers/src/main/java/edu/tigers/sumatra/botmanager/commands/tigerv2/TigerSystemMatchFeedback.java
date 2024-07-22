@@ -4,7 +4,9 @@
 package edu.tigers.sumatra.botmanager.commands.tigerv2;
 
 import com.sleepycat.persist.model.Persistent;
-import edu.tigers.sumatra.bot.EDribblerState;
+import edu.tigers.sumatra.bot.EBallObservationState;
+import edu.tigers.sumatra.bot.EDribbleTractionState;
+import edu.tigers.sumatra.bot.EDribblerTemperature;
 import edu.tigers.sumatra.bot.EFeature;
 import edu.tigers.sumatra.bot.ERobotMode;
 import edu.tigers.sumatra.botmanager.commands.ACommand;
@@ -110,12 +112,13 @@ public class TigerSystemMatchFeedback extends ACommand implements IExportable
 		nbrs.add(getBatteryPercentage());
 		nbrs.add(isBarrierInterrupted() ? 1 : 0);
 		nbrs.add(getKickCounter());
-		nbrs.add(getDribblerState().getId());
+		nbrs.add(getDribblerTemperature().getId());
 		nbrs.add(features);
 		nbrs.addAll(getBallPosition().getNumberList());
 		nbrs.add(isBallPositionValid() ? 1 : 0);
 		nbrs.add(getKickerPercentage());
-		nbrs.add(getDribblerCurrent());
+		nbrs.add(getDribbleTractionState().getId());
+		nbrs.add(getBallObservationState().getId());
 		return nbrs;
 	}
 
@@ -124,8 +127,8 @@ public class TigerSystemMatchFeedback extends ACommand implements IExportable
 	public List<String> getHeaders()
 	{
 		return Arrays.asList("pos_x", "pos_y", "pos_z", "vel_x", "vel_y", "vel_z", "pos_valid", "vel_valid",
-				"kickerLevel", "dribbleSpeed", "batteryPercentage", "barrierInterrupted", "kickCounter", "dribblerState",
-				"features", "ball_x", "ball_y", "ball_valid", "kickerPercentage", "dribbleCurrent");
+				"kickerLevel", "dribbleSpeed", "batteryPercentage", "barrierInterrupted", "kickCounter", "dribblerTemp",
+				"features", "ball_x", "ball_y", "ball_valid", "kickerPercentage", "dribbleTraction", "ballObservation");
 	}
 
 
@@ -272,31 +275,11 @@ public class TigerSystemMatchFeedback extends ACommand implements IExportable
 
 
 	/**
-	 * @return the dribblerSpeed in [rpm]
+	 * @return the dribblerSpeed in [m/s]
 	 */
 	public double getDribblerSpeed()
 	{
-		return (dribblerState >> 2) * 500.0;
-	}
-
-
-	/**
-	 * @return dribbler current in [A]
-	 */
-	public double getDribblerCurrent()
-	{
-		return (((flags & 0x0F) << 2) | (dribblerState & 0x03)) * 0.25;
-	}
-
-
-	public void setDribblerCurrent(final double current)
-	{
-		int bits = (int) ((current + 0.125) * 4.0);
-
-		dribblerState &= 0xFC;
-		dribblerState |= bits & 0x03;
-		flags &= 0xF0;
-		flags |= (bits >> 2) & 0x0F;
+		return (dribblerState >> 2) * 0.25;
 	}
 
 
@@ -365,13 +348,35 @@ public class TigerSystemMatchFeedback extends ACommand implements IExportable
 
 
 	/**
-	 * @return state/temperature of dribbler
+	 * @return temperature of dribbler
 	 */
-	public EDribblerState getDribblerState()
+	public EDribblerTemperature getDribblerTemperature()
 	{
 		int state = (flags & 0x60) >> 5;
 
-		return EDribblerState.getDribblerStateConstant(state);
+		return EDribblerTemperature.getDribblerTemperatureConstant(state);
+	}
+
+
+	/**
+	 * @return Observation state of the ball
+	 */
+	public EBallObservationState getBallObservationState()
+	{
+		int state = (flags & 0x07);
+
+		return EBallObservationState.getBallObservationStateConstant(state);
+	}
+
+
+	/**
+	 * @return Traction state of dribbling
+	 */
+	public EDribbleTractionState getDribbleTractionState()
+	{
+		int state = (dribblerState & 0x03);
+
+		return EDribbleTractionState.getDribbleTractionStateConstant(state);
 	}
 
 

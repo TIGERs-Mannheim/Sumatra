@@ -4,7 +4,6 @@
 
 package edu.tigers.sumatra.wp.exporter;
 
-import com.github.g3force.configurable.Configurable;
 import edu.tigers.moduli.AModule;
 import edu.tigers.sumatra.model.SumatraModel;
 import edu.tigers.sumatra.network.MulticastUDPTransmitter;
@@ -27,11 +26,9 @@ public class VisionTrackerSender extends AModule implements IWorldFrameObserver
 	private MulticastUDPTransmitter transmitter;
 	private TrackerPacketGenerator trackerPacketGenerator;
 
-	@Configurable(comment = "Custom vision port that overwrites the value from moduli")
 	@Setter
 	private static int customPort;
 
-	@Configurable(comment = "Custom vision address that overwrites the value from moduli")
 	@Setter
 	private static String customAddress;
 

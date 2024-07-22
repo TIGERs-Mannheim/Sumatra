@@ -7,10 +7,10 @@ package edu.tigers.sumatra.pathfinder.obstacles;
 import edu.tigers.sumatra.ball.trajectory.IBallTrajectory;
 import edu.tigers.sumatra.drawable.DrawableTube;
 import edu.tigers.sumatra.drawable.IDrawableShape;
-import edu.tigers.sumatra.math.circle.Circle;
-import edu.tigers.sumatra.math.circle.ICircle;
+import edu.tigers.sumatra.math.tube.ITube;
 import edu.tigers.sumatra.math.tube.Tube;
 import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.pathfinder.obstacles.input.CollisionInput;
 import lombok.RequiredArgsConstructor;
 
@@ -22,10 +22,11 @@ import java.util.Optional;
  * A time-aware obstacle for the ball that is based on a tracked ball and its trajectory
  */
 @RequiredArgsConstructor
-public class SimpleTimeAwareBallObstacle extends AObstacle
+public class SimpleTimeAwareBallObstacle extends AMovingObstacle
 {
 	private final IBallTrajectory ballTrajectory;
 	private final double radius;
+	private final double tStart;
 	private final double tEnd;
 
 
@@ -35,24 +36,27 @@ public class SimpleTimeAwareBallObstacle extends AObstacle
 	}
 
 
-	@Override
-	protected void configure()
+	public SimpleTimeAwareBallObstacle(IBallTrajectory ballTrajectory, double radius, double tEnd)
 	{
-		setMotionLess(false);
+		this(ballTrajectory, radius, 0, tEnd);
 	}
 
 
 	@Override
 	public boolean canCollide(CollisionInput input)
 	{
-		return ballTrajectory.isInterceptableByTime(input.getTimeOffset());
+		return input.getTimeOffset() >= tStart && ballTrajectory.isInterceptableByTime(input.getTimeOffset() - tStart);
 	}
 
 
 	@Override
 	public double distanceTo(CollisionInput input)
 	{
-		IVector2 pos = ballTrajectory.getPosByTime(Math.min(input.getTimeOffset(), tEnd)).getXYVector();
+		if (input.getTimeOffset() < tStart)
+		{
+			return Double.POSITIVE_INFINITY;
+		}
+		IVector2 pos = ballTrajectory.getPosByTime(Math.min(input.getTimeOffset() - tStart, tEnd)).getXYVector();
 		return pos.distanceTo(input.getRobotPos()) - radius;
 	}
 
@@ -62,7 +66,7 @@ public class SimpleTimeAwareBallObstacle extends AObstacle
 	{
 		return List.of(new DrawableTube(Tube.create(
 				ballTrajectory.getPosByTime(0).getXYVector(),
-				ballTrajectory.getPosByTime(tEnd).getXYVector(),
+				ballTrajectory.getPosByTime(tEnd - tStart).getXYVector(),
 				radius
 		)));
 	}
@@ -76,9 +80,50 @@ public class SimpleTimeAwareBallObstacle extends AObstacle
 
 
 	@Override
-	public Optional<IVector2> adaptDestination(IVector2 robotPos, IVector2 destination)
+	public Optional<IVector2> adaptDestinationForRobotPos(IVector2 robotPos)
 	{
-		ICircle circle = Circle.createCircle(ballTrajectory.getPosByTime(0).getXYVector(), radius);
-		return adaptDestination(circle, robotPos, destination);
+		return adaptDestinationForRobotPos(getObstacleShape(), robotPos);
+	}
+
+
+	@Override
+	public Optional<IVector2> adaptDestination(IVector2 destination)
+	{
+		return adaptDestination(getObstacleShape(), destination);
+	}
+
+
+	@Override
+	public boolean isCollidingAt(IVector2 pos)
+	{
+		return getObstacleShape().isPointInShape(pos);
+	}
+
+
+	private ITube getObstacleShape()
+	{
+		return Tube.create(
+				ballTrajectory.getPosByTime(0).getXYVector(),
+				ballTrajectory.getPosByTime(tEnd - tStart).getXYVector(),
+				radius
+		);
+	}
+
+
+	@Override
+	public boolean collisionLikely(double t, IVector2 pos)
+	{
+		return ballTrajectory.getVelByTime(0).getLength2() < 0.3;
+	}
+
+
+	@Override
+	public IVector2 velocity(IVector2 pos, double t)
+	{
+		if (t < tStart)
+		{
+			return Vector2.zero();
+		}
+		return ballTrajectory.getVelByTime(t - tStart).getXYVector();
 	}
 }

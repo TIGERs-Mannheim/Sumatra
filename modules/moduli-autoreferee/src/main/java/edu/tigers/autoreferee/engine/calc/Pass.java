@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.autoreferee.engine.calc;
@@ -25,6 +25,8 @@ class Pass
 	long timestamp;
 	boolean valid;
 	double distance;
+	double height;
+	boolean chipped;
 	Double directionChange;
 	BotID shooter;
 	BotID receiver;
@@ -44,9 +46,11 @@ class Pass
 				.append("id", id)
 				.append("timestamp", timestamp)
 				.append("distance", df.format(distance))
+				.append("height", df.format(height))
 				.append("direction", angleDf.format(direction))
 				.append("directionChange", directionChange == null ? null : angleDf.format(directionChange))
 				.append("valid", valid)
+				.append("chipped", chipped)
 				.append("source", df.format(source.x()) + ", " + df.format(source.y()))
 				.append("target", df.format(target.x()) + ", " + df.format(target.y()))
 				.append("shooter", shooter)

@@ -23,6 +23,6 @@ public class RotationSkill extends AMoveSkill
 	public void doEntryActions()
 	{
 		setTargetPose(getPos(), getAngle() + rotation, defaultMoveConstraints());
-		setKickParams(KickParams.disarm().withDribblerMode(EDribblerMode.DEFAULT));
+		setKickParams(KickParams.disarm().withDribblerMode(EDribblerMode.HIGH_POWER));
 	}
 }

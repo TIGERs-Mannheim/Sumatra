@@ -19,10 +19,10 @@ enum Capability {
 // A single tracked ball
 message TrackedBall {
     // The position (x, y, height) [m] in the ssl-vision coordinate system
-    required edu.tigers.sumatra.referee.proto.Vector3 pos = 1;
+    required Vector3 pos = 1;
 
     // The velocity [m/s] in the ssl-vision coordinate system
-    optional edu.tigers.sumatra.referee.proto.Vector3 vel = 2;
+    optional Vector3 vel = 2;
 
     // The visibility of the ball
     // A value between 0 (not visible) and 1 (visible)
@@ -33,32 +33,32 @@ message TrackedBall {
 // A ball kicked by a robot, including predictions when the ball will come to a stop
 message KickedBall {
     // The initial position [m] from which the ball was kicked
-    required edu.tigers.sumatra.referee.proto.Vector2 pos = 1;
+    required Vector2 pos = 1;
     // The initial velocity [m/s] with which the ball was kicked
-    required edu.tigers.sumatra.referee.proto.Vector3 vel = 2;
+    required Vector3 vel = 2;
     // The unix timestamp [s] when the kick was performed
     required double start_timestamp = 3;
 
     // The predicted unix timestamp [s] when the ball comes to a stop
     optional double stop_timestamp = 4;
     // The predicted position [m] at which the ball will come to a stop
-    optional edu.tigers.sumatra.referee.proto.Vector2 stop_pos = 5;
+    optional Vector2 stop_pos = 5;
 
     // The robot that kicked the ball
-    optional edu.tigers.sumatra.referee.proto.RobotId robot_id = 6;
+    optional RobotId robot_id = 6;
 }
 
 // A single tracked robot
 message TrackedRobot {
-    required edu.tigers.sumatra.referee.proto.RobotId robot_id = 1;
+    required RobotId robot_id = 1;
 
     // The position [m] in the ssl-vision coordinate system
-    required edu.tigers.sumatra.referee.proto.Vector2 pos = 2;
+    required Vector2 pos = 2;
     // The orientation [rad] in the ssl-vision coordinate system
     required float orientation = 3;
 
     // The velocity [m/s] in the ssl-vision coordinate system
-    optional edu.tigers.sumatra.referee.proto.Vector2 vel = 4;
+    optional Vector2 vel = 4;
     // The angular velocity [rad/s] in the ssl-vision coordinate system
     optional float vel_angular = 5;
 

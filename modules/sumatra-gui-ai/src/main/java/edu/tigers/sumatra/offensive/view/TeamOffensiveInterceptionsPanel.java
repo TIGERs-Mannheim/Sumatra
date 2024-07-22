@@ -4,7 +4,7 @@
 
 package edu.tigers.sumatra.offensive.view;
 
-import edu.tigers.sumatra.ai.metis.offense.ballinterception.BallInterceptionInformation;
+import edu.tigers.sumatra.ai.metis.ballinterception.BallInterceptionInformation;
 import edu.tigers.sumatra.ids.BotID;
 
 import javax.swing.BorderFactory;

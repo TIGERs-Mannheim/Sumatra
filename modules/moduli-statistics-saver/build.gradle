@@ -10,12 +10,12 @@ plugins {
 dependencies {
     implementation project(':sumatra-model')
 
-    implementation 'com.github.TIGERs-Mannheim:moduli:4.1'
+    implementation(libs.com.github.TIGERs.mannheim.moduli)
 
-    implementation 'org.apache.logging.log4j:log4j-api:2.20.0'
+    implementation(libs.org.apache.logging.log4j.log4j.api)
 
-    implementation 'commons-lang:commons-lang:2.6'
-    implementation 'commons-configuration:commons-configuration:1.10'
+    implementation(libs.commons.lang)
+    implementation(libs.commons.configuration)
 
-    implementation 'org.influxdb:influxdb-java:2.23'
+    implementation(libs.org.influxdb.influxdb.java)
 }

@@ -6,8 +6,11 @@ package edu.tigers.sumatra.ai.pandora.roles.offense.attacker.states;
 
 
 import edu.tigers.sumatra.ai.pandora.roles.offense.attacker.AttackerRole;
+import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.pathfinder.EObstacleAvoidanceMode;
 import edu.tigers.sumatra.skillsystem.skills.TouchKickSkill;
+
+import java.util.Optional;
 
 
 public class KickState extends AAttackerRoleState<TouchKickSkill>
@@ -29,8 +32,11 @@ public class KickState extends AAttackerRoleState<TouchKickSkill>
 	protected void doStandardUpdate()
 	{
 		skill.getMoveCon().setObstacleAvoidanceMode(EObstacleAvoidanceMode.AGGRESSIVE);
-		skill.setTarget(getRole().getAction().getKick().getTarget());
+		skill.setTarget(
+				Optional.of(getRole().getAction().getKick().getTarget()).orElse(Geometry.getGoalTheir().getCenter()));
 		skill.setPassRange(getRole().getAction().getKick().getAimingTolerance());
 		skill.setDesiredKickParams(getRole().getAction().getKick().getKickParams());
+		skill.setTurnAdvise(getRole().getTacticalField().getBallHandlingAdvise().getTurnAdvise());
+		skill.setMoveAdvise(getRole().getTacticalField().getBallHandlingAdvise().getMoveAdvise());
 	}
 }

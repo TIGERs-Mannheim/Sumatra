@@ -24,6 +24,7 @@ import lombok.RequiredArgsConstructor;
 
 import java.awt.Color;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -38,7 +39,7 @@ import java.util.Optional;
 public class OffensiveBallAccessibilityCalc extends ACalculator
 {
 	@Configurable(defValue = "1 Y")
-	private static BotID botToShowDebugShapesFor = BotID.createBotId(0, ETeamColor.YELLOW);
+	private static BotID botToShowDebugShapesFor = BotID.createBotId(1, ETeamColor.YELLOW);
 
 	@Getter
 	private Map<BotID, List<AngleRange>> inaccessibleBallAngles;
@@ -47,6 +48,17 @@ public class OffensiveBallAccessibilityCalc extends ACalculator
 	@Override
 	public void doCalc()
 	{
+		if (getBall().getVel().getLength() > OffensiveConstants.getBallIsRollingThreshold())
+		{
+			// we do only consider ball accessibility for mostly stationary balls
+			inaccessibleBallAngles = new HashMap<>();
+			for (ITrackedBot tigerBot : getWFrame().getTigerBotsVisible().values())
+			{
+				inaccessibleBallAngles.put(tigerBot.getBotId(), Collections.emptyList());
+			}
+			return;
+		}
+
 		List<AngleRange> inaccessibleAngles = new ArrayList<>();
 		inaccessibleAngles.addAll(createInaccessibleRangeForOpponentBots(getBall().getPos()));
 		inaccessibleAngles.addAll(
@@ -123,7 +135,7 @@ public class OffensiveBallAccessibilityCalc extends ACalculator
 		// minDistBotToBall should be smaller than the minimum possible distance between opponent robot and ball,
 		// when our robot is in between.
 		// Otherwise, an inaccessible angle may be generated although the robot is already within this angle range.
-		double minDistBotToBall = Geometry.getBotRadius() * 2 + Geometry.getOpponentCenter2DribblerDist() - 20;
+		double minDistBotToBall = Geometry.getBotRadius() * 2;
 		double maxCircleRadius = Geometry.getBotRadius() + 50;
 		// The offset is required for the tangential intersection below, otherwise ballPos would be on the circle
 		double tangentialIntersectionOffset = 5;
@@ -141,9 +153,9 @@ public class OffensiveBallAccessibilityCalc extends ACalculator
 
 	private AngleRange createForbiddenRangeByPositions(final IVector2 ballPos, final List<IVector2> intersections)
 	{
-		getShapes(EAiShapesLayer.OFFENSIVE_ACCESSIBILITY)
+		getShapes(EAiShapesLayer.OFFENSE_ACCESSIBILITY)
 				.add(new DrawableCircle(Circle.createCircle(intersections.get(0), 50), Color.BLACK));
-		getShapes(EAiShapesLayer.OFFENSIVE_ACCESSIBILITY)
+		getShapes(EAiShapesLayer.OFFENSE_ACCESSIBILITY)
 				.add(new DrawableCircle(Circle.createCircle(intersections.get(1), 50), Color.BLACK));
 
 		IVector2 left = intersections.get(0).subtractNew(ballPos);
@@ -172,16 +184,16 @@ public class OffensiveBallAccessibilityCalc extends ACalculator
 	private void visualizeApproachAngles(final List<AngleRange> inaccessibleAngles)
 	{
 		IVector2 ballPos = getWFrame().getBall().getPos();
-		var dc = new DrawableCircle(Circle.createCircle(ballPos, 250), new Color(42, 255, 0, 138));
+		var dc = new DrawableCircle(Circle.createCircle(ballPos, Geometry.getBotRadius() * 2), new Color(42, 255, 0, 138));
 		dc.setFill(true);
-		getShapes(EAiShapesLayer.OFFENSIVE_ACCESSIBILITY).add(dc);
+		getShapes(EAiShapesLayer.OFFENSE_ACCESSIBILITY).add(dc);
 
 		for (AngleRange range : inaccessibleAngles)
 		{
-			var da = new DrawableArc(Arc.createArc(ballPos, 250, range.getRight(),
+			var da = new DrawableArc(Arc.createArc(ballPos, Geometry.getBotRadius() * 2, range.getRight(),
 					range.getWidth()), new Color(255, 0, 0, 100));
 			da.setFill(true);
-			getShapes(EAiShapesLayer.OFFENSIVE_ACCESSIBILITY).add(da);
+			getShapes(EAiShapesLayer.OFFENSE_ACCESSIBILITY).add(da);
 		}
 	}
 }

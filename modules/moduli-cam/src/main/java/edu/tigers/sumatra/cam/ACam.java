@@ -6,24 +6,24 @@ package edu.tigers.sumatra.cam;
 import edu.tigers.moduli.AModule;
 import edu.tigers.sumatra.cam.data.CamDetectionFrame;
 import edu.tigers.sumatra.cam.data.CamGeometry;
-import edu.tigers.sumatra.cam.proto.MessagesRobocupSslDetection.SSL_DetectionFrame;
-import edu.tigers.sumatra.cam.proto.MessagesRobocupSslWrapper.SSL_WrapperPacket;
+import edu.tigers.sumatra.cam.data.CamObjectFilterParams;
+import edu.tigers.sumatra.cam.proto.SslVisionDetection.SSL_DetectionFrame;
+import edu.tigers.sumatra.cam.proto.SslVisionWrapper.SSL_WrapperPacket;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 
 /**
  * This is the base class for camera-modules which are capable of receiving data and convert them
- *
- * @author Gero
  */
 public abstract class ACam extends AModule
 {
-	private final List<ICamFrameObserver>	observers					= new CopyOnWriteArrayList<>();
+	private final List<ICamFrameObserver> observers = new CopyOnWriteArrayList<>();
 
-	private final CamDetectionConverter		camDetectionConverter	= new CamDetectionConverter();
-	private final CamObjectFilter				camObjectFilter			= new CamObjectFilter();
+	private final CamDetectionConverter camDetectionConverter = new CamDetectionConverter();
+	private final CamObjectFilter camObjectFilter = new CamObjectFilter();
 
 
 	@Override
@@ -48,6 +48,12 @@ public abstract class ACam extends AModule
 	public void removeObserver(final ICamFrameObserver observer)
 	{
 		observers.remove(observer);
+	}
+
+
+	public Optional<CamObjectFilterParams> getParams()
+	{
+		return camObjectFilter.getParams();
 	}
 
 

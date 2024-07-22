@@ -10,6 +10,7 @@ import edu.tigers.sumatra.math.SumatraMath;
 import edu.tigers.sumatra.math.circle.Arc;
 import edu.tigers.sumatra.math.circle.CircleMath;
 import edu.tigers.sumatra.math.circle.IArc;
+import edu.tigers.sumatra.math.circle.ICircle;
 import edu.tigers.sumatra.math.line.ILineSegment;
 import edu.tigers.sumatra.math.line.Lines;
 import edu.tigers.sumatra.math.quadrilateral.Quadrilateral;
@@ -18,6 +19,10 @@ import edu.tigers.sumatra.math.rectangle.Rectangle;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
 import lombok.Getter;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Stream;
 
 
 @Persistent
@@ -167,7 +172,8 @@ public class FinisherMoveShape
 
 	public IRectangle getBoundingRectangle()
 	{
-		return Rectangle.fromPoints(lineLeft.getPathStart(), lineRight.getPathStart().addNew(Vector2.fromX(-leftArc.radius())));
+		return Rectangle.fromPoints(lineLeft.getPathStart(),
+				lineRight.getPathStart().addNew(Vector2.fromX(-leftArc.radius())));
 	}
 
 
@@ -179,21 +185,21 @@ public class FinisherMoveShape
 
 		IVector2 position;
 		position = switch (getSection(step))
-				{
-					case LEFT_SIDE -> lineLeft.stepAlongPath(Math.max(0, step));
-					case LEFT_ARC -> CircleMath.stepAlongCircle(
-							lineLeft.getPathEnd(),
-							leftArc.center(),
-							SumatraMath.relative(step - lengthSide, 0, lengthOfArc) * AngleMath.PI_HALF);
-					case BOTTOM_LINE -> lineBottom.stepAlongPath(step - lengthSide - lengthOfArc);
-					case RIGHT_ARC -> CircleMath.stepAlongCircle(
-							lineBottom.getPathEnd(),
-							rightArc.center(),
-							SumatraMath.relative(step - lengthSide - lengthOfArc - lengthBottom, 0, lengthOfArc)
-									* AngleMath.PI_HALF
-					);
-					case RIGHT_SIDE -> lineRight.stepAlongPath(step - lengthSide - lengthOfArc - lengthBottom - lengthOfArc);
-				};
+		{
+			case LEFT_SIDE -> lineLeft.stepAlongPath(Math.max(0, step));
+			case LEFT_ARC -> CircleMath.stepAlongCircle(
+					lineLeft.getPathEnd(),
+					leftArc.center(),
+					SumatraMath.relative(step - lengthSide, 0, lengthOfArc) * AngleMath.PI_HALF);
+			case BOTTOM_LINE -> lineBottom.stepAlongPath(step - lengthSide - lengthOfArc);
+			case RIGHT_ARC -> CircleMath.stepAlongCircle(
+					lineBottom.getPathEnd(),
+					rightArc.center(),
+					SumatraMath.relative(step - lengthSide - lengthOfArc - lengthBottom, 0, lengthOfArc)
+							* AngleMath.PI_HALF
+			);
+			case RIGHT_SIDE -> lineRight.stepAlongPath(step - lengthSide - lengthOfArc - lengthBottom - lengthOfArc);
+		};
 		return position;
 	}
 
@@ -237,7 +243,28 @@ public class FinisherMoveShape
 				CircleMath.isPointInArc(getRightArc(), point, 0) ||
 				Quadrilateral.fromCorners(lineRight.getPathStart(), lineBottom.getPathEnd(), lineBottom.getPathStart(),
 						lineLeft.getPathEnd()).isPointInShape(point) ||
-				Quadrilateral.fromCorners(lineLeft.getPathStart(), lineLeft.getPathEnd(), lineRight.getPathStart(), lineRight.getPathEnd())
+				Quadrilateral.fromCorners(lineLeft.getPathStart(), lineLeft.getPathEnd(), lineRight.getPathStart(),
+								lineRight.getPathEnd())
 						.isPointInShape(point);
+	}
+
+
+	public List<IVector2> intersectCircle(ICircle circle)
+	{
+		var intersections = Stream.of(
+				leftArc.intersect(circle).stream(),
+				rightArc.intersect(circle).stream(),
+				lineBottom.intersect(circle).stream(),
+				lineLeft.intersect(circle).stream(),
+				lineRight.intersect(circle).stream()).flatMap(e -> e).toList();
+		List<IVector2> filteredIntersections = new ArrayList<>();
+		for (var intersection : intersections)
+		{
+			if (filteredIntersections.stream().filter(e -> e.distanceTo(intersection) < 1e-3).findAny().isEmpty())
+			{
+				filteredIntersections.add(intersection);
+			}
+		}
+		return filteredIntersections;
 	}
 }

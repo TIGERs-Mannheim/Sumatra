@@ -14,10 +14,8 @@ import lombok.Data;
 @Data
 public class BotDribblerSpecs implements IBotDribblerSpecs
 {
-	private double maxBallAcceleration = 5.0;
-	private double maxRetainingBallAngle = 0.75;
-	private double defaultSpeed = 15000;
-	private double defaultMaxCurrent = 3.0;
-	private double highPowerSpeed = 22000;
-	private double highPowerMaxCurrent = 5.0;
+	private double defaultSpeed = 4;
+	private double defaultForce = 3.0;
+	private double highPowerSpeed = 5;
+	private double highPowerForce = 5.0;
 }

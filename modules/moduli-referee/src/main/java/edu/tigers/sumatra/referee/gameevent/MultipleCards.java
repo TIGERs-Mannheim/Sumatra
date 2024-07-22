@@ -57,12 +57,6 @@ public class MultipleCards extends AGameEvent
 	}
 
 
-	public ETeamColor getTeam()
-	{
-		return team;
-	}
-
-
 	@Override
 	public String getDescription()
 	{

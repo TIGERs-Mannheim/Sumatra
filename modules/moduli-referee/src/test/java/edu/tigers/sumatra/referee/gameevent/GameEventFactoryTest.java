@@ -37,7 +37,7 @@ public class GameEventFactoryTest
 		gameEvents.add(new BotDribbledBallTooFar(botId(), location(), location()));
 		gameEvents.add(new BotHeldBallDeliberately(botId(), location(), number()));
 		gameEvents.add(new BotInterferedPlacement(botId(), location()));
-		gameEvents.add(new BotKickedBallToFast(botId(), location(), number(), BotKickedBallToFast.EKickType.STRAIGHT));
+		gameEvents.add(new BotKickedBallTooFast(botId(), location(), number(), BotKickedBallTooFast.EKickType.STRAIGHT));
 		gameEvents.add(new BotPushedBot(botId(), botId(), location(), number()));
 		gameEvents.add(new BotSubstitution(team()));
 		gameEvents.add(new BotTippedOver(botId(), location(), location()));

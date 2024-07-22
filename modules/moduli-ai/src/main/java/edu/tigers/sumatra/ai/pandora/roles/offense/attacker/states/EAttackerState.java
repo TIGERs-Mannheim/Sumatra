@@ -18,6 +18,5 @@ public enum EAttackerState implements IEvent
 	KICK,
 	PROTECT,
 	RECEIVE,
-	CHOP_TRICK,
 	REDIRECT
 }

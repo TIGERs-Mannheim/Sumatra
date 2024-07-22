@@ -14,7 +14,7 @@ import java.io.InputStreamReader;
 @Log4j2
 public class ProcessKillerWindows
 {
-	private static final String TASKLIST = "tasklist";
+	private static final String[] TASKLIST = { "tasklist" };
 
 
 	private boolean isProcessRunning(String serviceName) throws IOException

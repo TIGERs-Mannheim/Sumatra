@@ -21,16 +21,15 @@ dependencies {
     implementation project(':moduli-botmanager')
     implementation project(':moduli-geometry')
     implementation project(':moduli-wp')
-    implementation project(':moduli-offensive-tree')
 
-    implementation 'com.github.g3force:configurable:3.0'
-    implementation 'com.github.g3force:instanceables:5.2'
+    implementation(libs.com.github.g3force.configurable)
+    implementation(libs.com.github.g3force.instanceables)
 
-    implementation 'org.apache.logging.log4j:log4j-api:2.20.0'
+    implementation(libs.org.apache.logging.log4j.log4j.api)
 
-    implementation 'commons-lang:commons-lang:2.6'
+    implementation(libs.commons.lang)
 
-    implementation 'org.swinglabs.swingx:swingx-all:1.6.5-1'
-    implementation 'com.miglayout:miglayout-swing:11.1'
-    implementation 'com.miglayout:miglayout-core:11.1'
+    implementation(libs.org.swinglabs.swingx.swingx.all)
+    implementation(libs.com.miglayout.miglayout.swing)
+    implementation(libs.com.miglayout.miglayout.core)
 }

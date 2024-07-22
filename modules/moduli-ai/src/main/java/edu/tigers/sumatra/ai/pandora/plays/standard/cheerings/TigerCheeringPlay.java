@@ -4,24 +4,25 @@
 package edu.tigers.sumatra.ai.pandora.plays.standard.cheerings;
 
 import edu.tigers.sumatra.ai.pandora.plays.standard.CheeringPlay;
-import edu.tigers.sumatra.ai.pandora.roles.ARole;
-import edu.tigers.sumatra.ai.pandora.roles.move.MoveRole;
 import edu.tigers.sumatra.botmanager.botskills.data.ESong;
 import edu.tigers.sumatra.geometry.Geometry;
+import edu.tigers.sumatra.math.AngleMath;
+import edu.tigers.sumatra.math.ERotationDirection;
+import edu.tigers.sumatra.math.SumatraMath;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 
 import static edu.tigers.sumatra.math.AngleMath.PI_TWO;
 
 
-public class TigerCheeringPlay implements ICheeringPlay
+public class TigerCheeringPlay extends ASongPlayingCheeringPlay
 {
-	private static final double SECONDS_PER_FULL_TURN = 6;
+	private static final double SECONDS_PER_FULL_TURN = 7;
 	private static final double SECONDS_PER_TURN = 30;
+	private static final double SECONDS_FOR_FINAL_ROTATION = 1;
 	private static final double[][] PATH = {
 			{ 0, 0 },
 			{ 0.07, 0.07 },
@@ -38,27 +39,53 @@ public class TigerCheeringPlay implements ICheeringPlay
 			{ 0.98, 0.15 },
 			{ 1, 0.06 }
 	};
-	private static final int[] INTERVALS = {
-			0, 55, 110, 125, 151, 166, 192, 275, 330, 345, 371, 386, 412, 495, 550, 565, 591, 606, 632, 742
-	};
-	private static final int INTERVAL_LENGTH = 880;
-	private CheeringPlay play = null;
 	private double scale;
-	private int numberOfLoops = 0;
-	private int numberOfActiveLoops = -1;
+	private boolean destinationsMoving = false;
+	private boolean turn = false;
+	private double timeTurnStart = -1;
+	private double lastTimeSinceStart = -1;
+
+	private double accumulatedTimeMoving = 0;
+
+
+	public TigerCheeringPlay()
+	{
+		super(List.of(ESong.EYE_OF_THE_TIGER_LEAD, ESong.EYE_OF_THE_TIGER_FOLLOW),
+				List.of(
+						0.000,
+						0.300,
+						1.110,
+						1.410,
+						1.526,
+						1.826,
+						1.942,
+						2.242,
+						3.330,
+						3.630,
+						3.756,
+						4.046,
+						4.162,
+						4.462,
+						5.550,
+						5.850,
+						5.966,
+						6.266,
+						6.382,
+						6.907
+				),
+				2);
+	}
 
 
 	@Override
 	public void initialize(final CheeringPlay play)
 	{
-		this.play = play;
-		int totalNumberOfPositions = PATH.length * 4 - 2;
-		for (int i = 0; i < totalNumberOfPositions; i++)
-		{
-			wrapPosition(i);
-		}
+		super.initialize(play);
+		destinationsMoving = false;
+		turn = false;
+		accumulatedTimeMoving = 0;
+		lastTimeSinceStart = -1;
 		scale = Geometry.getFieldWidth() / 2 - Geometry.getBotRadius() / 2 - 300;
-
 		if (scale > 2000)
 		{
 			scale = 2000;
@@ -67,22 +94,13 @@ public class TigerCheeringPlay implements ICheeringPlay
 
 
 	@Override
-	public boolean isDone()
-	{
-		// 4-Cycles
-		return numberOfLoops == 3519;
-	}
-
-
-	@Override
 	public List<IVector2> calcPositions()
 	{
-		Collection roles = play.getRoles();
-		List<IVector2> positions = new ArrayList<>();
+		var positions = new ArrayList<IVector2>();
 
-		for (int botId = 0; botId < roles.size(); botId++)
+		for (int botIndex = 0; botIndex < getPlay().getPermutedRoles().size(); botIndex++)
 		{
-			positions.add(calculateForBot(botId, 0));
+			positions.add(calculateForBot(botIndex, 0));
 		}
 		return positions;
 	}
@@ -91,43 +109,48 @@ public class TigerCheeringPlay implements ICheeringPlay
 	@Override
 	public void doUpdate()
 	{
-		int intervalPos = numberOfLoops % INTERVAL_LENGTH;
-		int intervalIndex = 0;
-		while (intervalIndex < INTERVALS.length && INTERVALS[intervalIndex] < intervalPos)
+		super.doUpdate();
+		if (lastTimeSinceStart == -1)
 		{
-			intervalIndex += 1;
+			lastTimeSinceStart = timeSinceStart();
 		}
-
-		List<ARole> roles = play.getRoles();
-		List<IVector2> positions = calcPositions();
-
-		for (int botId = 0; botId < roles.size(); botId++)
+		if (destinationsMoving)
 		{
-			final MoveRole moveRole = (MoveRole) roles.get(botId);
+			accumulatedTimeMoving += timeSinceStart() - lastTimeSinceStart;
+		}
+		lastTimeSinceStart = timeSinceStart();
 
-			if (botId % 2 == 0)
+		var roles = getPlay().getPermutedRoles();
+
+		for (int botIndex = 0; botIndex < roles.size(); ++botIndex)
+		{
+			var role = roles.get(botIndex);
+			var moveTo = calculateForBot(botIndex, 0);
+			var moveFrom = calculateForBot(botIndex, -0.05);
+
+			var lookAt = moveFrom.subtractNew(moveTo).multiply(20).add(moveTo);
+
+			role.updateLookAtTarget(lookAt);
+			role.updateDestination(moveTo);
+
+			if (turn)
 			{
-				play.setSong(moveRole.getBotID(), ESong.EYE_OF_THE_TIGER_1);
-			} else
-			{
-				play.setSong(moveRole.getBotID(), ESong.EYE_OF_THE_TIGER_2);
+				var time = timeSinceStartOfLoop() - (timeTurnStart + 0.4);
+				var rotation = SumatraMath.cap(1, 0, time / SECONDS_FOR_FINAL_ROTATION) * PI_TWO;
+				var dir = botIndex % 2 == 0 ? ERotationDirection.CLOCKWISE : ERotationDirection.COUNTER_CLOCKWISE;
+				role.updateTargetAngle(AngleMath.rotateAngle(lookAt.getAngle(), rotation, dir));
 			}
 
-			IVector2 moveTo = positions.get(botId);
-			Vector2 moveFrom = calculateForBot(botId, -5);
-
-			Vector2 lookAt = moveTo.subtractNew(moveFrom);
-			lookAt.multiply(20);
-			lookAt = lookAt.add(moveFrom);
-			moveRole.updateLookAtTarget(lookAt);
-			moveRole.updateDestination(moveTo);
 		}
+	}
 
-		if (intervalIndex % 2 != 0)
-		{
-			numberOfActiveLoops++;
-		}
-		numberOfLoops++;
+
+	@Override
+	void handleInterrupt(int loopCount, int interruptCount)
+	{
+		turn = interruptCount == 19;
+		timeTurnStart = timeSinceStartOfLoop();
+		destinationsMoving = interruptCount % 2 == 0;
 	}
 
 
@@ -138,16 +161,16 @@ public class TigerCheeringPlay implements ICheeringPlay
 	}
 
 
-	private Vector2 calculateForBot(int botId, int timeOffset)
+	private IVector2 calculateForBot(int botIndex, double timeOffset)
 	{
-		double globalPos = (((double) (numberOfActiveLoops + timeOffset)) % (100 * SECONDS_PER_FULL_TURN))
-				/ (SECONDS_PER_FULL_TURN * 100d);
+		double globalPos =
+				((accumulatedTimeMoving - timeOffset) % (SECONDS_PER_FULL_TURN + 1)) / (SECONDS_PER_FULL_TURN + 1);
 
-		int numberOfVirtualBots = play.getRoles().size();
+		int numberOfVirtualBots = getPlay().getPermutedRoles().size();
 		if (numberOfVirtualBots % 2 == 0)
 			numberOfVirtualBots += 1;
 
-		globalPos += botId / (double) numberOfVirtualBots;
+		globalPos += botIndex / (double) numberOfVirtualBots;
 		while (globalPos > 1)
 		{
 			globalPos -= 1;
@@ -157,11 +180,11 @@ public class TigerCheeringPlay implements ICheeringPlay
 	}
 
 
-	private Vector2 universalModify(Vector2 position)
+	private IVector2 universalModify(Vector2 position)
 	{
-		double turn = (((double) numberOfActiveLoops) % (100 * SECONDS_PER_TURN)) / (SECONDS_PER_TURN * 100d);
+		double rotation = ((accumulatedTimeMoving) % SECONDS_PER_TURN) / SECONDS_PER_TURN;
 
-		return position.multiply(scale).turn(turn * PI_TWO);
+		return position.multiply(scale).turn(rotation * PI_TWO);
 	}
 
 

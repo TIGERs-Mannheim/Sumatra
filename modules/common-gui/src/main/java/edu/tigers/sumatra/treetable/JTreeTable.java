@@ -6,6 +6,7 @@ package edu.tigers.sumatra.treetable;
 import edu.tigers.sumatra.lookandfeel.ILookAndFeelStateObserver;
 import edu.tigers.sumatra.lookandfeel.LookAndFeelStateAdapter;
 import edu.tigers.sumatra.util.ScalingUtil;
+import lombok.Getter;
 import org.apache.commons.configuration.HierarchicalConfiguration.Node;
 import org.apache.commons.configuration.tree.ConfigurationNode;
 import org.apache.logging.log4j.LogManager;
@@ -68,6 +69,7 @@ public class JTreeTable extends JTable
 	private static final long serialVersionUID = -3052468144632521282L;
 
 	/** A subclass of JTree. */
+	@Getter
 	protected TreeTableCellRenderer tree;
 	private final ITreeTableModel treeTableModel;
 
@@ -336,7 +338,7 @@ public class JTreeTable extends JTable
 			return Class.forName(clazz);
 		} catch (ClassNotFoundException err)
 		{
-			log.error("Could not associate class: " + clazz, err);
+			log.error("Could not associate class: {}, {}", clazz, err);
 			return String.class;
 		}
 	}
@@ -373,9 +375,8 @@ public class JTreeTable extends JTable
 			// Make the tree's cell renderer use the table's cell selection
 			// colors.
 			final TreeCellRenderer tcr = super.getCellRenderer();
-			if (tcr instanceof DefaultTreeCellRenderer)
+			if (tcr instanceof DefaultTreeCellRenderer dtcr)
 			{
-				final DefaultTreeCellRenderer dtcr = (DefaultTreeCellRenderer) tcr;
 				// For 1.1 uncomment this, 1.2 has a bug that will cause an
 				// exception to be thrown if the border selection color is
 				// null.
@@ -484,13 +485,12 @@ public class JTreeTable extends JTable
 		@Override
 		public boolean isCellEditable(final EventObject e)
 		{
-			if (e instanceof MouseEvent)
+			if (e instanceof MouseEvent me)
 			{
 				for (int counter = getColumnCount() - 1; counter >= 0; counter--)
 				{
 					if (getColumnClass(counter) == ITreeTableModel.class)
 					{
-						final MouseEvent me = (MouseEvent) e;
 						@SuppressWarnings({ "deprecation", "squid:CallToDeprecatedMethod" }) // getModifiersEx() does not work
 						final MouseEvent newME = new MouseEvent(tree, me.getID(), me.getWhen(), me.getModifiers(),
 								me.getX() - getCellRect(0, counter, true).x, me.getY(), me.getClickCount(),

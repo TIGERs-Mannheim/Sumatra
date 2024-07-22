@@ -3,7 +3,7 @@
  */
 package edu.tigers.sumatra.cam.data;
 
-import edu.tigers.sumatra.cam.proto.MessagesRobocupSslGeometry.SSL_GeometryModels;
+import edu.tigers.sumatra.cam.proto.SslVisionGeometry.SSL_GeometryModels;
 import lombok.Builder;
 import lombok.Singular;
 import lombok.Value;
@@ -38,5 +38,17 @@ public class CamGeometry
 				.fieldSize(update.getFieldSize())
 				.ballModels(update.getBallModels())
 				.build();
+	}
+
+
+	/**
+	 * Check if ballModels have changed.
+	 *
+	 * @param compare
+	 * @return True if the models are equal
+	 */
+	public boolean equalBallModels(CamGeometry compare)
+	{
+		return ballModels.equals(compare.getBallModels());
 	}
 }

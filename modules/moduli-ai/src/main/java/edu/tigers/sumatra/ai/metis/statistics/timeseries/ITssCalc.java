@@ -12,4 +12,9 @@ public interface ITssCalc
 	TimeSeriesStatsEntry createTimeSeriesStatsEntry(
 			final BaseAiFrame aiFrame,
 			final long timestamp);
+
+	default boolean executeOnlyDuringRunning()
+	{
+		return true;
+	}
 }

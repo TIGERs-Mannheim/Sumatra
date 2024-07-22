@@ -13,12 +13,15 @@ import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.geometry.RuleConstraints;
 import edu.tigers.sumatra.math.AngleMath;
 import edu.tigers.sumatra.math.SumatraMath;
+import edu.tigers.sumatra.math.intersections.ISingleIntersection;
 import edu.tigers.sumatra.math.line.Lines;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
+import edu.tigers.sumatra.pathfinder.TrajectoryGenerator;
 import edu.tigers.sumatra.skillsystem.skills.redirect.RedirectConsultantFactory;
 import edu.tigers.sumatra.skillsystem.skills.util.EDribblerMode;
 import edu.tigers.sumatra.skillsystem.skills.util.KickParams;
+import lombok.Value;
 
 import java.awt.Color;
 
@@ -32,8 +35,12 @@ public abstract class ADefenseRole extends ARole
 	private static int nthChipTouchdownOutOfField = 3;
 	@Configurable(comment = "[mm] Activate kicker if ball is closer than this", defValue = "500.0")
 	private static double kickerToBallActivationDistance = 500.0;
-	@Configurable(defValue = "10.0", comment = "Min distance [mm] to penalty area")
+	@Configurable(defValue = "10.0", comment = "[mm] Min distance to penalty area")
 	private static double minDistToPenaltyArea = 10.0;
+	@Configurable(comment = "[mm] Margin applied to goal for goal shot detection.", defValue = "500.0")
+	private static double goalShotDetectionMargin = 500.0;
+	@Configurable(comment = "[s] Time difference between the idealBotTime and idealBallTime", defValue = "0.3")
+	private static double idealTimeToReachDest = 0.3;
 
 
 	protected ADefenseRole(final ERole type)
@@ -61,8 +68,7 @@ public abstract class ADefenseRole extends ARole
 	{
 		var redirectConsultant = RedirectConsultantFactory.createDefault();
 		var target = getPos().addNew(Vector2.fromAngle(getBot().getOrientation()));
-		var targetAngle = redirectConsultant.getTargetAngle(getBall(), getPos(), target,
-				RuleConstraints.getMaxKickSpeed());
+		var targetAngle = getBot().getOrientation();
 
 		var targetSpeed = calculateTargetKickSpeed(targetAngle);
 		if (targetSpeed > 0)
@@ -71,6 +77,36 @@ public abstract class ADefenseRole extends ARole
 			return adaptKickSpeedToBotVel(targetAngle, kickSpeed);
 		}
 		return 0;
+	}
+
+
+	protected boolean isGoalShotDetected(IVector2 idealProtectionDest)
+	{
+		var botTime = TrajectoryGenerator.generatePositionTrajectory(getBot(), idealProtectionDest).getTotalTime();
+		var ballTime = getBall().getTrajectory().getTimeByPos(idealProtectionDest);
+
+		if (botTime + idealTimeToReachDest > ballTime)
+		{
+			return false;
+		}
+
+		var ballTravelLines = getBall().getTrajectory().getTravelLineSegments();
+		var goalLine = Geometry.getGoalOur().getLineSegment().withMargin(goalShotDetectionMargin);
+
+		return ballTravelLines.stream()
+				.map(goalLine::intersect)
+				.anyMatch(ISingleIntersection::isPresent);
+	}
+
+
+	protected Destination interceptGoalShot()
+	{
+		var closestPointsToIdealPos = getBall().getTrajectory().getTravelLineSegments().stream()
+				.map(line -> line.closestPointOnPath(getPos()))
+				.toList();
+		var interceptPos = getPos().nearestTo(closestPointsToIdealPos);
+		var ballTravelTime = getBall().getTrajectory().getTimeByPos(interceptPos);
+		return new Destination(interceptPos, ballTravelTime);
 	}
 
 
@@ -84,7 +120,7 @@ public abstract class ADefenseRole extends ARole
 			shapes.add(new DrawableLine(ballTravel.toLineSegment(1000), Color.RED));
 			return 0;
 		}
-		var distance = intersections.get(0).distanceTo(getPos());
+		var distance = intersections.getFirst().distanceTo(getPos());
 		var kickSpeed = getBall().getChipConsultant().getInitVelForDistAtTouchdown(distance, nthChipTouchdownOutOfField);
 		var maxSafeDistance = getBall().getChipConsultant()
 				.getMaximumDistanceToOverChip(kickSpeed, RuleConstraints.getMaxRobotHeight());
@@ -130,4 +166,29 @@ public abstract class ADefenseRole extends ARole
 		return adaptedTargetVel.getLength2();
 	}
 
+
+	@Value
+	protected class Destination
+	{
+		IVector2 pos;
+		Double time;
+
+
+		public boolean comeToAStopIsFaster()
+		{
+			if (time == null)
+			{
+				return TrajectoryGenerator.isComeToAStopFaster(getBot(), pos);
+			} else
+			{
+				return TrajectoryGenerator.isComeToAStopFasterToReachPointInTime(getBot(), pos, time);
+			}
+		}
+
+
+		public IVector2 validPos()
+		{
+			return moveToValidDest(pos);
+		}
+	}
 }

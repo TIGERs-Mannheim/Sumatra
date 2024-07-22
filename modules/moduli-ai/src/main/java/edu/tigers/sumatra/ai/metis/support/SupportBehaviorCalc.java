@@ -7,30 +7,28 @@ package edu.tigers.sumatra.ai.metis.support;
 import com.github.g3force.configurable.ConfigRegistration;
 import edu.tigers.sumatra.ai.metis.ACalculator;
 import edu.tigers.sumatra.ai.metis.ballpossession.BallPossession;
+import edu.tigers.sumatra.ai.metis.defense.data.DefenseBallThreat;
 import edu.tigers.sumatra.ai.metis.defense.data.DefenseBotThreat;
-import edu.tigers.sumatra.ai.metis.general.SkirmishInformation;
 import edu.tigers.sumatra.ai.metis.kicking.OngoingPass;
 import edu.tigers.sumatra.ai.metis.offense.action.RatedOffensiveAction;
 import edu.tigers.sumatra.ai.metis.offense.strategy.OffensiveStrategy;
 import edu.tigers.sumatra.ai.metis.pass.KickOrigin;
 import edu.tigers.sumatra.ai.metis.support.behaviors.AggressiveMan2ManMarkerBehavior;
-import edu.tigers.sumatra.ai.metis.support.behaviors.BreakThroughDefenseRepulsiveBehavior;
+import edu.tigers.sumatra.ai.metis.support.behaviors.BreakThroughDefenseBehavior;
 import edu.tigers.sumatra.ai.metis.support.behaviors.DirectRedirectorSupportBehavior;
 import edu.tigers.sumatra.ai.metis.support.behaviors.ESupportBehavior;
 import edu.tigers.sumatra.ai.metis.support.behaviors.FakePassReceiverSupportBehavior;
 import edu.tigers.sumatra.ai.metis.support.behaviors.ISupportBehavior;
 import edu.tigers.sumatra.ai.metis.support.behaviors.KickoffSupportBehavior;
-import edu.tigers.sumatra.ai.metis.support.behaviors.MidfieldRepulsiveBehavior;
-import edu.tigers.sumatra.ai.metis.support.behaviors.MoveOnVoronoiRepulsiveBehavior;
-import edu.tigers.sumatra.ai.metis.support.behaviors.PenaltyAreaAttackerRepulsiveBehavior;
+import edu.tigers.sumatra.ai.metis.support.behaviors.PenaltyAreaAttackerBehavior;
 import edu.tigers.sumatra.ai.metis.support.behaviors.SupportBehaviorPosition;
 import edu.tigers.sumatra.ai.metis.support.behaviors.repulsive.AttackerRepulsiveBehavior;
+import edu.tigers.sumatra.ai.metis.support.behaviors.repulsive.MidfieldRepulsiveBehavior;
 import edu.tigers.sumatra.ai.metis.support.behaviors.repulsive.PassReceiverRepulsiveBehavior;
 import edu.tigers.sumatra.ai.metis.targetrater.GoalKick;
 import edu.tigers.sumatra.ai.pandora.plays.EPlay;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.circle.IArc;
-import edu.tigers.sumatra.math.circle.ICircle;
 import edu.tigers.sumatra.math.vector.IVector2;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -60,18 +58,17 @@ public class SupportBehaviorCalc extends ACalculator
 	private final Supplier<BallPossession> ballPossession;
 	private final Supplier<OffensiveStrategy> offensiveStrategy;
 	private final Supplier<List<IVector2>> supportiveGoalPositions;
-	private final Supplier<List<IVector2>> possibleSupporterMidfieldPositions;
 
 	private final Supplier<List<IVector2>> possibleSupporterKickoffPositions;
-	private final Supplier<List<ICircle>> freeSpots;
 	private final Supplier<Map<BotID, RatedOffensiveAction>> offensiveActions;
 	private final Supplier<Map<BotID, KickOrigin>> kickOrigins;
 	private final Supplier<GoalKick> bestGoalKick;
-	private final Supplier<SkirmishInformation> skirmishInformation;
 	private final Supplier<List<IArc>> offensiveShadows;
 	private final Supplier<Optional<OngoingPass>> ongoingPass;
 	private final Supplier<Map<BotID, DefenseBotThreat>> supporterToBotThreatMapping;
 	private final Supplier<Optional<Boolean>> canOngoingPassBeTrusted;
+	private final Supplier<DefenseBallThreat> defenseBallThreat;
+
 
 	@Getter
 	private final Map<BotID, EnumMap<ESupportBehavior, SupportBehaviorPosition>> supportViabilities = new HashMap<>();
@@ -100,33 +97,35 @@ public class SupportBehaviorCalc extends ACalculator
 				ongoingPass,
 				canOngoingPassBeTrusted
 		));
-		behaviors.put(ESupportBehavior.PENALTY_AREA_ATTACKER, new PenaltyAreaAttackerRepulsiveBehavior(
+		behaviors.put(ESupportBehavior.PENALTY_AREA_ATTACKER, new PenaltyAreaAttackerBehavior(
 				offensiveStrategy,
 				kickOrigins,
 				bestGoalKick,
 				ballPossession
 		));
-		behaviors.put(ESupportBehavior.BREAKTHROUGH_DEFENSIVE, new BreakThroughDefenseRepulsiveBehavior());
+		behaviors.put(ESupportBehavior.BREAKTHROUGH_DEFENSIVE, new BreakThroughDefenseBehavior());
 		behaviors.put(ESupportBehavior.MIDFIELD, new MidfieldRepulsiveBehavior(
-				possibleSupporterMidfieldPositions
+				desiredBots,
+				offensiveActions,
+				offensiveShadows
 		));
-		behaviors.put(ESupportBehavior.KICKOFF, new KickoffSupportBehavior(possibleSupporterKickoffPositions));
-		behaviors.put(ESupportBehavior.MAN_2_MAN_MARKING,
-				new AggressiveMan2ManMarkerBehavior(ballPossession, supporterToBotThreatMapping));
+		behaviors.put(ESupportBehavior.KICKOFF,
+				new KickoffSupportBehavior(possibleSupporterKickoffPositions));
+		behaviors.put(ESupportBehavior.MAN_2_MAN_MARKING, new AggressiveMan2ManMarkerBehavior(
+				ballPossession,
+				supporterToBotThreatMapping,
+				defenseBallThreat
+		));
 		behaviors.put(ESupportBehavior.REPULSIVE_PASS_RECEIVER, new PassReceiverRepulsiveBehavior(
 				desiredBots,
 				offensiveActions,
-				offensiveStrategy,
-				skirmishInformation,
 				offensiveShadows
 		));
 		behaviors.put(ESupportBehavior.REPULSIVE_ATTACKER, new AttackerRepulsiveBehavior(
+				supportiveGoalPositions,
 				desiredBots,
 				offensiveActions,
-				supportiveGoalPositions
-		));
-		behaviors.put(ESupportBehavior.MOVE_VORONOI, new MoveOnVoronoiRepulsiveBehavior(
-				freeSpots
+				offensiveShadows
 		));
 	}
 

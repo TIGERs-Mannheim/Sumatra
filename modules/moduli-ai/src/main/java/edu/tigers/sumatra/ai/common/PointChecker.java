@@ -28,7 +28,6 @@ import java.util.function.Function;
  */
 public class PointChecker
 {
-	private static final double FIELD_MARGIN = 100;
 	private final Map<String, Function<IVector2, Boolean>> functions = new LinkedHashMap<>();
 
 	private WorldFrame worldFrame;
@@ -113,6 +112,13 @@ public class PointChecker
 	public PointChecker checkPointFreeOfBots()
 	{
 		functions.put("freeOfBots", this::isPointFreeOfBots);
+		return this;
+	}
+
+
+	public PointChecker checkPointFreeOfBotsNoLookahead()
+	{
+		functions.put("freeOfBotsNoLookahead", this::isPointFreeOfBotsNoLookahead);
 		return this;
 	}
 
@@ -205,7 +211,7 @@ public class PointChecker
 
 	private boolean insideField(IVector2 point)
 	{
-		return Geometry.getField().withMargin(-FIELD_MARGIN).isPointInShape(point);
+		return Geometry.getField().isPointInShape(point);
 	}
 
 
@@ -243,11 +249,13 @@ public class PointChecker
 	private boolean isPointConformWithKickOffRules(IVector2 point)
 	{
 		SslGcRefereeMessage.Referee.Stage stage = refereeMsg.getStage();
-		boolean isPreStage = (stage == SslGcRefereeMessage.Referee.Stage.EXTRA_FIRST_HALF_PRE)
-				|| (stage == SslGcRefereeMessage.Referee.Stage.EXTRA_SECOND_HALF_PRE)
-				|| (stage == SslGcRefereeMessage.Referee.Stage.NORMAL_FIRST_HALF_PRE)
-				|| (stage == SslGcRefereeMessage.Referee.Stage.NORMAL_SECOND_HALF_PRE);
-		boolean isKickoffState = gameState.isKickoffOrPrepareKickoff() || isPreStage;
+
+		boolean isNextKickoff = gameState.isNextKickoffOrPrepareKickoff();
+		boolean isPreStage = (stage == SslGcRefereeMessage.Referee.Stage.NORMAL_FIRST_HALF_PRE)
+				|| (stage == SslGcRefereeMessage.Referee.Stage.NORMAL_SECOND_HALF_PRE)
+				|| (stage == SslGcRefereeMessage.Referee.Stage.EXTRA_FIRST_HALF_PRE)
+				|| (stage == SslGcRefereeMessage.Referee.Stage.EXTRA_SECOND_HALF_PRE);
+		boolean isKickoffState = gameState.isKickoffOrPrepareKickoff() || isPreStage || isNextKickoff;
 
 		boolean isInOurHalf = Geometry.getFieldHalfOur().withMargin(-Geometry.getBotRadius()).isPointInShape(point);
 
@@ -275,6 +283,15 @@ public class PointChecker
 		return worldFrame.getBots().values().stream()
 				.filter(bot -> !bot.getBotId().equals(botID))
 				.noneMatch(bot -> bot.getPosByTime(1).distanceTo(point) < distance);
+	}
+
+
+	private boolean isPointFreeOfBotsNoLookahead(final IVector2 point)
+	{
+		double distance = Geometry.getBotRadius() * 2 + 10;
+		return worldFrame.getBots().values().stream()
+				.filter(bot -> !bot.getBotId().equals(botID))
+				.noneMatch(bot -> bot.getPos().distanceTo(point) < distance);
 	}
 
 

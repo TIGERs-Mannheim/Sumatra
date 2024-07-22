@@ -4,6 +4,7 @@
 
 package edu.tigers.sumatra.ai.metis.general;
 
+import com.github.g3force.configurable.Configurable;
 import edu.tigers.sumatra.ai.metis.ACalculator;
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
 import edu.tigers.sumatra.ai.metis.botdistance.BotDistance;
@@ -38,6 +39,9 @@ public class SkirmishDetectorCalc extends ACalculator
 
 	private final Supplier<BotDistance> tigerClosestToBall;
 	private final Supplier<BotDistance> opponentClosestToBall;
+
+	@Configurable(defValue = "2800.0", comment = "[mm]")
+	private static double marginAroundOurPenAreaToConsiderOpponentDangerous = 2800.0;
 
 	@Getter
 	private SkirmishInformation skirmishInformation;
@@ -104,7 +108,7 @@ public class SkirmishDetectorCalc extends ACalculator
 
 	private class TransitionSkirmishState extends ASkirmishState
 	{
-		TimestampTimer timer = new TimestampTimer(1.5);
+		TimestampTimer timer = new TimestampTimer(0.5);
 
 
 		@Override
@@ -160,7 +164,8 @@ public class SkirmishDetectorCalc extends ACalculator
 			getShapes(EAiShapesLayer.AI_SKIRMISH_DETECTOR)
 					.add(new DrawableAnnotation(bot.getPos(), "score: " + score, Color.black));
 
-			if (score > 90)
+			if (score > 90 && !Geometry.getPenaltyAreaOur().withMargin(marginAroundOurPenAreaToConsiderOpponentDangerous)
+					.isPointInShape(getBall().getPos()))
 			{
 				skirmishInformation.setStrategy(ESkirmishStrategy.FREE_BALL);
 				IVector2 movePos = calcCatchMovePos(bot.getPos());

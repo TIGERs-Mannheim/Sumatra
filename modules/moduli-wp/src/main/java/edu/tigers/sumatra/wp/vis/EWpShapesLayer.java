@@ -17,53 +17,52 @@ public final class EWpShapesLayer
 {
 	private static final ShapeLayerFactory F = new ShapeLayerFactory(EWpShapesLayer.class, 10);
 	private static final String FIELD = "Field";
-	private static final String BALL_INFO = "Ball Info";
-	private static final String BOT_STATES = "Bot States";
-	private static final String BASIC = "Basic";
+	private static final String REFEREE = "Referee";
 
-	public static final IShapeLayerIdentifier FIELD_BORDERS = F.create(F.layer("Borders")
-			.category(FIELD)
-			.category(BASIC)
-			.visibleByDefault(true)
-			.orderId(-100));
-	public static final IShapeLayerIdentifier FIELD_BORDERS_ADDITIONAL = F.create(F.layer("Additional Borders")
-			.category(FIELD)
-			.orderId(-90)
-			.persistenceType(DEBUG_PERSIST));
-	public static final IShapeLayerIdentifier REFEREE = F.create(F.layer("Referee")
-			.category("Annotations")
-			.visibleByDefault(true));
-	public static final IShapeLayerIdentifier BALL_BUFFER = F.create(F.layer("Ball Buffer")
-			.category(FIELD)
-			.category("Buffers"));
-	public static final IShapeLayerIdentifier BOT_BUFFER = F.create(F.layer("Bot Buffers")
-			.category(FIELD)
-			.category("Buffers"));
-	public static final IShapeLayerIdentifier BOTS = F.create(F.layer("Bots")
-			.category(FIELD)
-			.category(BASIC)
-			.visibleByDefault(true));
-	public static final IShapeLayerIdentifier BOT_FEEDBACK = F.create(F.layer("Feedback")
-			.category(FIELD)
-			.category(BOT_STATES));
-	public static final IShapeLayerIdentifier BOT_FILTER = F.create(F.layer("Filtered")
-			.category(FIELD)
-			.category(BOT_STATES));
-	public static final IShapeLayerIdentifier BOT_PATTERNS = F.create(F.layer("Pattern")
-			.category(FIELD)
-			.category(BOT_STATES));
-	public static final IShapeLayerIdentifier BALL = F.create(F.layer("Ball")
-			.category(FIELD)
-			.category(BASIC)
-			.visibleByDefault(true));
-	public static final IShapeLayerIdentifier BALL_HIGHLIGHTER = F.create(F.layer("Ball Highlighter")
-			.category(FIELD)
-			.category(BALL_INFO));
-	public static final IShapeLayerIdentifier BALL_PREDICTION = F.create(F.layer("Prediction")
-			.category(FIELD)
-			.category(BALL_INFO));
-	public static final IShapeLayerIdentifier VELOCITY = F.create(F.layer("Velocities")
-			.category(FIELD));
-	public static final IShapeLayerIdentifier VISION = F.create(F.layer("Vision")
-			.category(FIELD));
+	private static final String FIELD_LINES = "Field Lines";
+	private static final String VISION = "Vision";
+	private static final String CAT_BOTS = "Bots";
+	private static final String CAT_BALL = "Ball";
+	private static final String BOT_STATES = "States";
+
+	public static final IShapeLayerIdentifier FIELD_LINES_REGULAR = F.create(
+			F.category(FIELD).category(FIELD_LINES).layerName("Regular").visibleByDefault(true).orderId(-100));
+	public static final IShapeLayerIdentifier FIELD_LINES_ADDITIONAL = F.create(
+			F.category(FIELD).category(FIELD_LINES).layerName("Additional").orderId(-90).persistenceType(DEBUG_PERSIST));
+
+	public static final IShapeLayerIdentifier REFEREE_HEADER = F.create(
+			F.category(REFEREE).layerName("Header").visibleByDefault(true));
+
+	public static final IShapeLayerIdentifier RAW_VISION = F.create(
+			F.category(FIELD).category(VISION).layerName("Raw Vision"));
+	public static final IShapeLayerIdentifier CAM_OBJECT_FILTER = F.create(
+			F.category(FIELD).category(VISION).layerName("CamObject Filter").visibleByDefault(true));
+
+	public static final IShapeLayerIdentifier BOTS = F.create(
+			F.category(FIELD).category(CAT_BOTS).layerName("Bots").visibleByDefault(true));
+	public static final IShapeLayerIdentifier BOT_VELOCITIES = F.create(
+			F.category(FIELD).category(CAT_BOTS).layerName("Velocities"));
+	public static final IShapeLayerIdentifier BOT_BUFFER = F.create(
+			F.category(FIELD).category(CAT_BOTS).layerName("Buffers"));
+	public static final IShapeLayerIdentifier BOT_PATTERNS = F.create(
+			F.category(FIELD).category(CAT_BOTS).layerName("Pattern"));
+
+	public static final IShapeLayerIdentifier BOT_FEEDBACK = F.create(
+			F.category(FIELD).category(CAT_BOTS).category(BOT_STATES).layerName("Feedback"));
+	public static final IShapeLayerIdentifier BOT_FILTER = F.create(
+			F.category(FIELD).category(CAT_BOTS).category(BOT_STATES).layerName("Filtered"));
+
+	public static final IShapeLayerIdentifier BALL = F.create(
+			F.category(FIELD).category(CAT_BALL).layerName("Ball").visibleByDefault(true));
+	public static final IShapeLayerIdentifier BALL_VELOCITY = F.create(
+			F.category(FIELD).category(CAT_BALL).layerName("Velocity"));
+	public static final IShapeLayerIdentifier BALL_BUFFER = F.create(
+			F.category(FIELD).category(CAT_BALL).layerName("Buffer"));
+
+	public static final IShapeLayerIdentifier BALL_HIGHLIGHTER = F.create(
+			F.category(FIELD).category(CAT_BALL).layerName("Highlighter").visibleByDefault(true));
+	public static final IShapeLayerIdentifier BALL_PREDICTION = F.create(
+			F.category(FIELD).category(CAT_BALL).layerName("Prediction"));
+	public static final IShapeLayerIdentifier BALL_MODELS = F.create(
+			F.category(FIELD).category(CAT_BALL).layerName("Models"));
 }

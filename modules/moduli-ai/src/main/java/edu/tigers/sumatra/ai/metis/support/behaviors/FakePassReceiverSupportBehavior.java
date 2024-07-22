@@ -7,7 +7,6 @@ package edu.tigers.sumatra.ai.metis.support.behaviors;
 import com.github.g3force.configurable.Configurable;
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
 import edu.tigers.sumatra.ai.metis.kicking.OngoingPass;
-import edu.tigers.sumatra.ai.metis.kicking.PassFactory;
 import edu.tigers.sumatra.ai.metis.offense.action.RatedOffensiveAction;
 import edu.tigers.sumatra.drawable.DrawableLine;
 import edu.tigers.sumatra.drawable.IDrawableShape;
@@ -57,8 +56,6 @@ public class FakePassReceiverSupportBehavior extends ASupportBehavior
 
 	private final Supplier<Optional<Boolean>> canOngoingPassBeTrusted;
 
-	private PassFactory passFactory = new PassFactory();
-
 
 	@Override
 	public SupportBehaviorPosition calculatePositionForRobot(BotID botID)
@@ -67,21 +64,29 @@ public class FakePassReceiverSupportBehavior extends ASupportBehavior
 		{
 			return SupportBehaviorPosition.notAvailable();
 		}
-		passFactory.update(getWFrame());
 		return Stream.concat(
-						offensiveActions.get().values().stream().map(e -> e.getAction().getPass()),
-						Stream.of(ongoingPass.get().stream().map(OngoingPass::getPass)
-								.filter(e -> canOngoingPassBeTrusted.get().orElse(false))
-								.findAny()
-								.orElse(passFactory.straight(getWFrame().getBall().getPos(),
-										getWFrame().getBall().getTrajectory().getTravelLineSegment().getPathEnd(),
-										BotID.noBot(), botID))))
-				.filter(Objects::nonNull)
-				.map(pass -> Lines.segmentFromPoints(pass.getKick().getSource(), pass.getKick().getTarget()))
-				.filter(lineSegment -> isFakePassReceiverReasonableOn(lineSegment, getWFrame().getBot(botID)))
+						passLines(),
+						Stream.of(Lines.segmentFromPoints(getWFrame().getBall().getPos(),
+								getWFrame().getBall().getTrajectory().getTravelLineSegment().getPathEnd()))
+				)
+				.filter(passLine -> isFakePassReceiverReasonableOn(passLine, getWFrame().getBot(botID)))
 				.map(iLineSegment -> getPositionOnPassLine(iLineSegment, getWFrame().getBot(botID)))
-				.findAny()
+				.findFirst()
 				.orElseGet(SupportBehaviorPosition::notAvailable);
+	}
+
+
+	private Stream<ILineSegment> passLines()
+	{
+		return Stream.concat(
+						offensiveActions.get().values().stream()
+								.map(e -> e.getAction().getPass())
+								.filter(Objects::nonNull),
+						ongoingPass.get().stream()
+								.map(OngoingPass::getPass)
+								.filter(e -> canOngoingPassBeTrusted.get().orElse(false))
+				)
+				.map(pass -> Lines.segmentFromPoints(pass.getKick().getSource(), pass.getKick().getTarget()));
 	}
 
 

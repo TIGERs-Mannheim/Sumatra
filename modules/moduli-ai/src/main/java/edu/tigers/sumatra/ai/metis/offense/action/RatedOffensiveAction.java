@@ -14,7 +14,6 @@ import edu.tigers.sumatra.skillsystem.skills.util.KickParams;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Getter;
 import lombok.NonNull;
 import lombok.Value;
 
@@ -65,18 +64,6 @@ public class RatedOffensiveAction
 				.move(move)
 				.viability(viability)
 				.action(OffensiveAction.buildProtect(dribbleToPos))
-				.build();
-	}
-
-
-	public static RatedOffensiveAction buildChopTrick(
-			@NonNull EOffensiveActionMove move,
-			@NonNull OffensiveActionViability viability)
-	{
-		return RatedOffensiveAction.builder()
-				.move(move)
-				.viability(viability)
-				.action(OffensiveAction.buildChopTrick())
 				.build();
 	}
 

@@ -62,12 +62,6 @@ public class UnsportingBehaviorMinor extends AGameEvent
 	}
 
 
-	public ETeamColor getTeam()
-	{
-		return team;
-	}
-
-
 	public String getReason()
 	{
 		return reason;

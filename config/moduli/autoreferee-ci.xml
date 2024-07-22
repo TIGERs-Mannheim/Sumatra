@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<centralSoftware>
+
+    <!--
+    This configuration is copied to the AutoReferee when synchronizing source code. It must not be removed or renamed!
+    -->
+
+    <globalConfiguration>
+        <environment>ROBOCUP</environment>
+        <geometry>DIV_A</geometry>
+    </globalConfiguration>
+
+
+    <module id="edu.tigers.sumatra.cam.ACam">
+        <implementation>edu.tigers.autoreferee.ci.AutoRefereeCiCamModule</implementation>
+
+        <properties>
+            <port>10013</port>
+        </properties>
+    </module>
+
+
+    <module id="edu.tigers.sumatra.geometry.GeometryUpdater">
+        <dependency>edu.tigers.sumatra.cam.ACam</dependency>
+    </module>
+
+
+    <module id="edu.tigers.sumatra.vision.AVisionFilter">
+        <implementation>edu.tigers.sumatra.vision.VisionFilterImpl</implementation>
+
+        <dependency>edu.tigers.sumatra.referee.AReferee</dependency>
+        <dependency>edu.tigers.sumatra.cam.ACam</dependency>
+    </module>
+
+
+    <module id="edu.tigers.sumatra.wp.AWorldPredictor">
+        <implementation>edu.tigers.sumatra.wp.WorldInfoCollector</implementation>
+
+        <dependency>edu.tigers.sumatra.referee.AReferee</dependency>
+        <dependency>edu.tigers.sumatra.vision.AVisionFilter</dependency>
+        <dependency>edu.tigers.sumatra.persistence.RecordManager</dependency>
+        <dependency>edu.tigers.sumatra.cam.ACam</dependency>
+    </module>
+
+
+    <module id="edu.tigers.sumatra.referee.AReferee">
+        <implementation>edu.tigers.sumatra.referee.Referee</implementation>
+
+        <properties>
+            <source>INTERNAL_FORWARDER</source>
+        </properties>
+    </module>
+
+
+    <module id="edu.tigers.autoreferee.module.AutoRefModule">
+        <properties>
+            <gameControllerPort>10007</gameControllerPort>
+        </properties>
+
+        <dependency>edu.tigers.sumatra.wp.AWorldPredictor</dependency>
+    </module>
+
+
+    <module id="edu.tigers.sumatra.persistence.RecordManager">
+        <implementation>edu.tigers.autoreferee.AutoRefRecordManager</implementation>
+    </module>
+
+</centralSoftware>

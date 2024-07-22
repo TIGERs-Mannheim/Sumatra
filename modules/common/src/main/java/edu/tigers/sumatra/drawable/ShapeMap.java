@@ -15,6 +15,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 
 /**
@@ -169,7 +170,7 @@ public class ShapeMap
 		public ShapeLayer(final IShapeLayerIdentifier identifier)
 		{
 			this.identifier = identifier;
-			shapes = new ArrayList<>();
+			shapes = new CopyOnWriteArrayList<>();
 		}
 
 

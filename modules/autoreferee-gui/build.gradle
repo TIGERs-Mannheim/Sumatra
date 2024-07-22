@@ -16,10 +16,10 @@ dependencies {
     implementation project(':moduli-wp')
     implementation project(':moduli-geometry')
 
-    implementation 'com.github.TIGERs-Mannheim:moduli:4.1'
-    implementation 'com.github.g3force:configurable:3.0'
+    implementation(libs.com.github.TIGERs.mannheim.moduli)
+    implementation(libs.com.github.g3force.configurable)
 
-    implementation 'commons-lang:commons-lang:2.6'
-    implementation 'com.miglayout:miglayout-swing:11.1'
-    implementation 'net.sf.jchart2d:jchart2d:3.3.2'
+    implementation(libs.commons.lang)
+    implementation(libs.com.miglayout.miglayout.swing)
+    implementation(libs.net.sf.jchart2d)
 }

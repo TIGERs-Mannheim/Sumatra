@@ -7,10 +7,9 @@ import com.github.g3force.configurable.Configurable;
 import edu.tigers.sumatra.geometry.RuleConstraints;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.referee.data.EGameState;
-import edu.tigers.sumatra.referee.gameevent.BotKickedBallToFast;
+import edu.tigers.sumatra.referee.gameevent.BotKickedBallTooFast;
 import edu.tigers.sumatra.referee.gameevent.IGameEvent;
-import edu.tigers.sumatra.vision.data.IKickEvent;
-import edu.tigers.sumatra.wp.data.BallKickFitState;
+import edu.tigers.sumatra.wp.data.KickedBall;
 
 import java.util.Optional;
 
@@ -30,7 +29,7 @@ public class BallSpeedingDetector extends AGameEventDetector
 	private static double minWaitingTime = 0.1;
 
 
-	private IKickEvent lastReportedKickEvent;
+	private KickedBall lastReportedKickEvent;
 
 
 	public BallSpeedingDetector()
@@ -42,25 +41,24 @@ public class BallSpeedingDetector extends AGameEventDetector
 	@Override
 	public Optional<IGameEvent> doUpdate()
 	{
-		Optional<BallKickFitState> lastKickFitState = frame.getPreviousFrame().getWorldFrame().getKickFitState();
-		Optional<IKickEvent> lastKickEvent = frame.getPreviousFrame().getWorldFrame().getKickEvent();
-		if (lastKickFitState.isEmpty() || lastKickEvent.isEmpty())
+		var lastKickedBall = frame.getPreviousFrame().getWorldFrame().getKickedBall();
+		if (lastKickedBall.isEmpty())
 		{
 			return Optional.empty();
 		}
 
-		Optional<IKickEvent> currentKickEvent = frame.getWorldFrame().getKickEvent();
-		if (kickEventHasBeenReported(currentKickEvent.orElse(lastKickEvent.get())))
+		var currentKickedBall = frame.getWorldFrame().getKickedBall();
+		if (kickEventHasBeenReported(currentKickedBall.orElse(lastKickedBall.get())))
 		{
 			return Optional.empty();
 		}
 
 		// take the last kickFitState, because if the ball hits another robot, we still want to have the original ball
 		// velocity
-		double kickSpeed = lastKickFitState.get().getKickVel().getLength();
-		if (isKickTooFast(kickSpeed) && kickEstimateIsReady(lastKickFitState.get()))
+		double kickSpeed = lastKickedBall.get().getKickVel().getLength();
+		if (isKickTooFast(kickSpeed) && kickEstimateIsReady(lastKickedBall.get()))
 		{
-			lastReportedKickEvent = lastKickEvent.get();
+			lastReportedKickEvent = lastKickedBall.get();
 			if (lastReportedKickEvent.getKickingBot().isBot())
 			{
 				return Optional.of(createViolation(lastReportedKickEvent.getKickingBot(), kickSpeed));
@@ -72,22 +70,22 @@ public class BallSpeedingDetector extends AGameEventDetector
 		if (kickFinished())
 		{
 			// reset detection for this kick event
-			lastReportedKickEvent = lastKickEvent.get();
+			lastReportedKickEvent = lastKickedBall.get();
 		}
 
 		return Optional.empty();
 	}
 
 
-	private boolean kickEventHasBeenReported(final IKickEvent currentKickEvent)
+	private boolean kickEventHasBeenReported(final KickedBall currentKickEvent)
 	{
 		return lastReportedKickEvent != null && lastReportedKickEvent.getTimestamp() == currentKickEvent.getTimestamp();
 	}
 
 
-	private boolean kickEstimateIsReady(BallKickFitState lastKickFitState)
+	private boolean kickEstimateIsReady(KickedBall lastKickedBall)
 	{
-		double kickFitEstimateAge = (frame.getTimestamp() - lastKickFitState.getKickTimestamp()) / 1e9;
+		double kickFitEstimateAge = (frame.getTimestamp() - lastKickedBall.getKickTimestamp()) / 1e9;
 		boolean kickEstimateAged = kickFitEstimateAge > minWaitingTime;
 		boolean kickEstimateIsReady = kickFitEstimateAge > maxWaitingTime;
 
@@ -98,7 +96,7 @@ public class BallSpeedingDetector extends AGameEventDetector
 
 	private boolean kickFinished()
 	{
-		var kickEvent = frame.getWorldFrame().getKickEvent();
+		var kickEvent = frame.getWorldFrame().getKickedBall();
 		return kickEvent.isEmpty() || ballIsNotInsideField() || ballTouchedAnotherRobot(kickEvent.get());
 	}
 
@@ -116,7 +114,7 @@ public class BallSpeedingDetector extends AGameEventDetector
 	}
 
 
-	private boolean ballTouchedAnotherRobot(final IKickEvent currentKickEvent)
+	private boolean ballTouchedAnotherRobot(final KickedBall currentKickEvent)
 	{
 		return frame.getBotsLastTouchedBall().stream()
 				.noneMatch(b -> b.getBotID().equals(currentKickEvent.getKickingBot()));
@@ -125,12 +123,12 @@ public class BallSpeedingDetector extends AGameEventDetector
 
 	private IGameEvent createViolation(BotID violator, double lastSpeedEstimate)
 	{
-		BotKickedBallToFast.EKickType kickType = frame.getPreviousFrame().getWorldFrame().getKickFitState()
+		BotKickedBallTooFast.EKickType kickType = frame.getPreviousFrame().getWorldFrame().getKickedBall()
 				.map(s -> s.getKickVel().z() > 0).orElse(false)
-				? BotKickedBallToFast.EKickType.CHIPPED
-				: BotKickedBallToFast.EKickType.STRAIGHT;
+				? BotKickedBallTooFast.EKickType.CHIPPED
+				: BotKickedBallTooFast.EKickType.STRAIGHT;
 
-		return new BotKickedBallToFast(violator, lastReportedKickEvent.getPosition(), lastSpeedEstimate, kickType);
+		return new BotKickedBallTooFast(violator, lastReportedKickEvent.getPosition(), lastSpeedEstimate, kickType);
 	}
 
 

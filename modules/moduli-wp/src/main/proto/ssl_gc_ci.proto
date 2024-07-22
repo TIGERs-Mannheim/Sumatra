@@ -6,7 +6,7 @@ option go_package = "github.com/RoboCup-SSL/ssl-game-controller/internal/app/ci"
 import "ssl_vision_wrapper_tracked.proto";
 import "ssl_gc_api.proto";
 import "ssl_gc_referee_message.proto";
-import "messages_robocup_ssl_geometry.proto";
+import "ssl_vision_geometry.proto";
 
 // The input format to the GC
 message CiInput {
@@ -15,7 +15,7 @@ message CiInput {
     // New tracker packet with ball and robot data
     optional TrackerWrapperPacket tracker_packet = 2;
     // (UI) API input
-    repeated edu.tigers.sumatra.referee.proto.Input api_inputs = 3;
+    repeated Input api_inputs = 3;
     // Update geometry
     optional SSL_GeometryData geometry = 4;
 }
@@ -23,5 +23,5 @@ message CiInput {
 // The output format of the GC response
 message CiOutput {
     // Latest referee message
-    optional edu.tigers.sumatra.referee.proto.Referee referee_msg = 1;
+    optional Referee referee_msg = 1;
 }

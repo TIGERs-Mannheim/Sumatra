@@ -17,7 +17,7 @@ import lombok.Value;
  */
 @Persistent
 @Value
-@Builder
+@Builder(toBuilder = true)
 @AllArgsConstructor
 public class OngoingPass
 {
@@ -28,6 +28,8 @@ public class OngoingPass
 	EOffensiveZone originatingZone;
 	EOffensiveZone targetZone;
 
+	boolean passLineBeenReachedByReceiver;
+
 	@SuppressWarnings("unused") // berkeley
 	private OngoingPass()
 	{
@@ -35,5 +37,6 @@ public class OngoingPass
 		kickStartTime = 0;
 		originatingZone = null;
 		targetZone = null;
+		passLineBeenReachedByReceiver = false;
 	}
 }

@@ -7,6 +7,7 @@ package edu.tigers.sumatra.ai.metis.offense;
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
 import lombok.AccessLevel;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 
@@ -17,44 +18,28 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class OffensiveConstants
 {
-	@Configurable(defValue = "0.3")
-	private static double minBotShouldDoGoalShotScore = 0.3;
+	@Getter
+	@Configurable(defValue = "0.2")
+	private static double minBotShouldDoGoalShotScore = 0.2;
 
+	@Getter
+	@Configurable(defValue = "0.2", comment = "[m/s] Min ball vel to still receive balls via approachBallLine")
+	private static double abortBallInterceptionVelThreshold = 0.2;
+
+	@Getter
+	@Configurable(defValue = "0.7", comment = "[m/s] Max ball vel to consider ball is received via approachBallLine")
+	private static double ballIsRollingThreshold = 0.7;
+
+	@Getter
 	@Configurable(comment = "The maximum reasonable angle [rad] for redirects", defValue = "1.2")
 	private static double maximumReasonableRedirectAngle = 1.2;
 
+	@Getter
 	@Configurable(comment = "warning, this is storing large data in the tactical field!", defValue = "false")
 	private static boolean enableOffensiveStatistics = false;
-
-	@Configurable(comment = "Ball speed at target", defValue = "1.8")
-	private static double ballSpeedAtTargetKickInsBlaue = 1.8;
 
 	static
 	{
 		ConfigRegistration.registerClass("metis", OffensiveConstants.class);
-	}
-
-
-	public static double getMaximumReasonableRedirectAngle()
-	{
-		return maximumReasonableRedirectAngle;
-	}
-
-
-	public static boolean isEnableOffensiveStatistics()
-	{
-		return enableOffensiveStatistics;
-	}
-
-
-	public static double getMinBotShouldDoGoalShotScore()
-	{
-		return minBotShouldDoGoalShotScore;
-	}
-
-
-	public static double getBallSpeedAtTargetKickInsBlaue()
-	{
-		return ballSpeedAtTargetKickInsBlaue;
 	}
 }

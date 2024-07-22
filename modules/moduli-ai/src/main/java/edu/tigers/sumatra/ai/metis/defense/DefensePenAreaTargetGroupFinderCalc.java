@@ -9,7 +9,9 @@ import edu.tigers.sumatra.ai.metis.ACalculator;
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
 import edu.tigers.sumatra.ai.metis.defense.data.DefensePenAreaTargetGroup;
 import edu.tigers.sumatra.ai.metis.defense.data.DefenseThreatAssignment;
+import edu.tigers.sumatra.ai.metis.defense.data.EDefenseThreatType;
 import edu.tigers.sumatra.ai.metis.defense.data.IDefenseThreat;
+import edu.tigers.sumatra.bot.MoveConstraints;
 import edu.tigers.sumatra.drawable.DrawableAnnotation;
 import edu.tigers.sumatra.drawable.DrawableCircle;
 import edu.tigers.sumatra.drawable.DrawableLine;
@@ -22,19 +24,23 @@ import edu.tigers.sumatra.math.line.LineMath;
 import edu.tigers.sumatra.math.line.Lines;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
+import edu.tigers.sumatra.wp.data.ITrackedBot;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.log4j.Log4j2;
 
 import java.awt.Color;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
 
 
+@Log4j2
 @RequiredArgsConstructor
 public class DefensePenAreaTargetGroupFinderCalc extends ACalculator
 {
@@ -44,6 +50,8 @@ public class DefensePenAreaTargetGroupFinderCalc extends ACalculator
 	@Configurable(comment = "Distance between the bots", defValue = "10.0")
 	private static double distBetweenBots = 10.0;
 
+	@Configurable(comment = "Gain factor for threat velocity in ProtectionState, high gain => high overshoot, low gain => defender lags behind", defValue = "0.75")
+	private static double mimicThreatVelocityGain = 0.75;
 
 	private final Supplier<List<DefenseThreatAssignment>> defensePenAreaThreatAssignments;
 	private final Supplier<Set<BotID>> penAreaDefender;
@@ -83,6 +91,7 @@ public class DefensePenAreaTargetGroupFinderCalc extends ACalculator
 			final List<DefenseThreatAssignment> threatAssignments)
 	{
 		List<DefenseThreatAssignment> reducedAssignments = new ArrayList<>(threatAssignments);
+		int count = 0;
 		do
 		{
 			var targets = sortThreatAssignments(reducedAssignments);
@@ -90,12 +99,38 @@ public class DefensePenAreaTargetGroupFinderCalc extends ACalculator
 			var reducedTargets = reduceClustersToTargets(targetClusters);
 
 			int nUsedBots = reducedTargets.stream().mapToInt(tg -> tg.moveDestinations().size()).sum();
-			if (nUsedBots <= penAreaDefender.get().size())
+			if (finishedBuildingTargetGroups(nUsedBots, reducedTargets))
 			{
 				return reducedTargets;
 			}
 			reducedAssignments.remove(reducedAssignments.size() - 1);
+			++count;
+			if (count > 50)
+			{
+				log.warn("reduceThreatAssignmentsToTargetGroups did not converge");
+				return reducedTargets;
+			}
 		} while (true);
+	}
+
+
+	private boolean finishedBuildingTargetGroups(int nUsedBots, List<DefensePenAreaTargetGroup> groups)
+	{
+		for (int i = 1; i < groups.size(); ++i)
+		{
+			var lastGroup = groups.get(i - 1);
+			var group = groups.get(i);
+			var allowedDist =
+					(Geometry.getBotRadius() + clusterDistanceOffset) * (Geometry.getBotRadius() + clusterDistanceOffset);
+			var groupOkay = group.moveDestinations().stream()
+					.noneMatch(current -> lastGroup.moveDestinations().stream()
+							.anyMatch(last -> current.distanceToSqr(last) < allowedDist));
+			if (!groupOkay)
+			{
+				return false;
+			}
+		}
+		return nUsedBots <= penAreaDefender.get().size();
 	}
 
 
@@ -135,7 +170,8 @@ public class DefensePenAreaTargetGroupFinderCalc extends ACalculator
 				IVector2 lastThreat = getTargetOnPenaltyArea(lastThreatAssignment.getThreat());
 				int nDefender = threatAssignment.getBotIds().size() + lastThreatAssignment.getBotIds().size();
 				double sameClusterDistance = (Geometry.getBotRadius() + clusterDistanceOffset) * nDefender;
-				if (target.distanceTo(lastThreat) < sameClusterDistance)
+
+				if (penAreaBoundary.get().distanceBetween(target, lastThreat) < sameClusterDistance)
 				{
 					targetCluster = lastTargetCluster;
 				} else
@@ -152,8 +188,11 @@ public class DefensePenAreaTargetGroupFinderCalc extends ACalculator
 
 	private IVector2 getTargetOnPenaltyArea(IDefenseThreat threat)
 	{
-		return penAreaBoundary.get()
-				.projectPoint(threat.getThreatLine().getPathEnd(), threat.getThreatLine().getPathStart());
+		if (threat.getType() == EDefenseThreatType.BALL && penAreaBoundary.get().isPointInShape(threat.getPos()))
+		{
+			return penAreaBoundary.get().closestPoint(threat.getPos());
+		}
+		return penAreaBoundary.get().projectPoint(threat.getThreatLine().getPathEnd(), threat.getThreatLine().getPathStart());
 	}
 
 
@@ -169,11 +208,45 @@ public class DefensePenAreaTargetGroupFinderCalc extends ACalculator
 			var target = targetOfCluster(targetCluster);
 			var subTargets = subTargetsAroundCenter(target, numBotsToUse);
 			var threats = targetCluster.stream().map(DefenseThreatAssignment::getThreat).toList();
-			var targetGroup = DefensePenAreaTargetGroup.fromTargetCluster(target, subTargets, threats, priority++);
+			var velAdaptedMoveDest = mimicThreatGroupVelocity(threats, subTargets);
+			var velAdaptedCenterDest = mimicThreatGroupVelocity(threats, List.of(target)).get(0);
+			var targetGroup = DefensePenAreaTargetGroup.fromTargetCluster(target, velAdaptedCenterDest, subTargets,
+					velAdaptedMoveDest, threats, priority++);
 			reducedTargets.add(targetGroup);
 			drawTargetGroupThreatAssignments(targetCluster, targetGroup);
 		}
 		return reducedTargets;
+	}
+
+
+	private List<IVector2> mimicThreatGroupVelocity(List<IDefenseThreat> threats, List<IVector2> moveDestinations)
+	{
+		// mimic threat velocity at protection line => no more lag of defenders
+		double smallestAcc = penAreaDefender.get().stream()
+				.map(botID -> getWFrame().getBot(botID))
+				.filter(Objects::nonNull)
+				.map(ITrackedBot::getMoveConstraints)
+				.mapToDouble(MoveConstraints::getAccMax)
+				.min().orElseThrow();
+		var ballThreats = threats.stream()
+				.filter(t -> t.getType() == EDefenseThreatType.BALL)
+				.toList();
+		var relevantThreats = ballThreats.isEmpty() ? threats : ballThreats;
+		var averageVel = relevantThreats.stream()
+				.map(IDefenseThreat::getVel)
+				.reduce(IVector2::addNew)
+				.map(vel -> vel.multiplyNew(1.0 / relevantThreats.size()))
+				.orElseThrow();
+
+		double timeToBrake = averageVel.getLength2() / smallestAcc;
+		double brakeDistance = 0.5 * smallestAcc * timeToBrake * timeToBrake * 1000.0;
+
+		var offset = averageVel.scaleTo(mimicThreatVelocityGain * brakeDistance);
+
+		return moveDestinations.stream()
+				.map(dest -> dest.addNew(offset))
+				.map(dest -> penAreaBoundary.get().closestPoint(dest))
+				.toList();
 	}
 
 

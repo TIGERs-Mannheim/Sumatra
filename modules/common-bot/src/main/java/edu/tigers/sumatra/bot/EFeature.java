@@ -20,15 +20,15 @@ public enum EFeature
 	/**  */
 	DRIBBLER("Dribbler", 0x0002),
 	/**  */
-	STRAIGHT_KICKER("Straight Kicker", 0x0004),
+	STRAIGHT_KICKER("StraightK", 0x0004),
 	/**  */
-	CHIP_KICKER("Chip Kicker", 0x0008),
+	CHIP_KICKER("Chipper", 0x0008),
 	/**  */
 	BARRIER("Barrier", 0x0010),
 	/** */
 	V2016("v2016", 0x0020),
 	/** */
-	EXT_BOARD("Ext. Board", 0x0040),
+	EXT_BOARD("Pi", 0x0040),
 	/** */
 	CHARGE_CAPS("Charge Caps", 0x0080),
 	/** */

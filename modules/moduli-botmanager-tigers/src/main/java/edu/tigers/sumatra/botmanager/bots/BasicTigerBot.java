@@ -5,8 +5,10 @@ package edu.tigers.sumatra.botmanager.bots;
 
 import edu.tigers.sumatra.bot.BotBallState;
 import edu.tigers.sumatra.bot.BotState;
+import edu.tigers.sumatra.bot.EBallObservationState;
 import edu.tigers.sumatra.bot.EBotType;
-import edu.tigers.sumatra.bot.EDribblerState;
+import edu.tigers.sumatra.bot.EDribbleTractionState;
+import edu.tigers.sumatra.bot.EDribblerTemperature;
 import edu.tigers.sumatra.bot.EFeature;
 import edu.tigers.sumatra.bot.EFeatureState;
 import edu.tigers.sumatra.bot.ERobotMode;
@@ -136,17 +138,6 @@ public class BasicTigerBot extends ABot
 
 
 	@Override
-	public double getDribblerCurrent()
-	{
-		if (latestFeedbackCmd != null)
-		{
-			return latestFeedbackCmd.getDribblerCurrent();
-		}
-		return 0;
-	}
-
-
-	@Override
 	public double getKickerLevelMax()
 	{
 		if (latestFeedbackCmd != null)
@@ -176,8 +167,10 @@ public class BasicTigerBot extends ABot
 		boolean straight = getBotFeatures().get(EFeature.STRAIGHT_KICKER) == EFeatureState.WORKING;
 		boolean chip = getBotFeatures().get(EFeature.CHIP_KICKER) == EFeatureState.WORKING;
 		boolean charge = getBotFeatures().get(EFeature.CHARGE_CAPS) == EFeatureState.WORKING;
+		boolean dribbler = getBotFeatures().get(EFeature.DRIBBLER) == EFeatureState.WORKING;
+		boolean barrier = getBotFeatures().get(EFeature.BARRIER) == EFeatureState.WORKING;
 
-		return energetic && straight && chip && charge;
+		return energetic && straight && chip && charge && dribbler && barrier;
 	}
 
 
@@ -229,9 +222,23 @@ public class BasicTigerBot extends ABot
 
 
 	@Override
-	public EDribblerState getDribblerState()
+	public EDribblerTemperature getDribblerTemperature()
 	{
-		return latestFeedbackCmd.getDribblerState();
+		return latestFeedbackCmd.getDribblerTemperature();
+	}
+
+
+	@Override
+	public EDribbleTractionState getDribbleTractionState()
+	{
+		return latestFeedbackCmd.getDribbleTractionState();
+	}
+
+
+	@Override
+	public EBallObservationState getBallObservationState()
+	{
+		return latestFeedbackCmd.getBallObservationState();
 	}
 
 

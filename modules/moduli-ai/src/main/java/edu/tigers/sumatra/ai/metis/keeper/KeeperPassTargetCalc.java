@@ -7,27 +7,28 @@ package edu.tigers.sumatra.ai.metis.keeper;
 import com.github.g3force.configurable.Configurable;
 import edu.tigers.sumatra.ai.metis.ACalculator;
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
+import edu.tigers.sumatra.ai.metis.ballresponsibility.EBallResponsibility;
 import edu.tigers.sumatra.ai.metis.botdistance.BotDistance;
+import edu.tigers.sumatra.ai.metis.kicking.EBallReceiveMode;
+import edu.tigers.sumatra.ai.metis.kicking.KickSpeedFactory;
 import edu.tigers.sumatra.ai.metis.kicking.Pass;
 import edu.tigers.sumatra.ai.metis.kicking.PassFactory;
-import edu.tigers.sumatra.ai.metis.pass.KickOrigin;
-import edu.tigers.sumatra.ai.metis.pass.rating.RatedPass;
 import edu.tigers.sumatra.drawable.DrawableAnnotation;
 import edu.tigers.sumatra.drawable.DrawableCircle;
 import edu.tigers.sumatra.drawable.DrawableLine;
 import edu.tigers.sumatra.drawable.IDrawableShape;
 import edu.tigers.sumatra.geometry.Geometry;
-import edu.tigers.sumatra.ids.BotID;
+import edu.tigers.sumatra.geometry.RuleConstraints;
 import edu.tigers.sumatra.math.AngleMath;
+import edu.tigers.sumatra.math.SumatraMath;
 import edu.tigers.sumatra.math.circle.Circle;
 import edu.tigers.sumatra.math.circle.ICircle;
-import edu.tigers.sumatra.math.line.ILineSegment;
-import edu.tigers.sumatra.math.line.LineMath;
 import edu.tigers.sumatra.math.line.Lines;
+import edu.tigers.sumatra.math.vector.IVector;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
+import edu.tigers.sumatra.time.TimestampTimer;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
-import edu.tigers.sumatra.wp.data.ITrackedObject;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.Getter;
@@ -37,7 +38,6 @@ import java.awt.Color;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Random;
@@ -52,34 +52,25 @@ import static edu.tigers.sumatra.pathfinder.TrajectoryGenerator.generatePosition
 @RequiredArgsConstructor
 public class KeeperPassTargetCalc extends ACalculator
 {
-	@Configurable(comment = "Distance to pass targets", defValue = "5000.0")
-	private static double passDistance = 5000.0;
-
 	@Configurable(comment = "Number of targets to generate per frame", defValue = "10")
 	private static int targetsPerFrame = 10;
 
-	@Configurable(comment = "Hysteresis [s] for choosing better target", defValue = "0.2")
-	private static double hysteresis = 0.2;
+	@Configurable(comment = "Hysteresis [s] for choosing better target", defValue = "0.1")
+	private static double hysteresis = 0.1;
 
 	@Configurable(comment = "Angle [deg] for possible pass target generation", defValue = "90")
 	private static double angleRangeDeg = 90;
 
 	@Configurable(comment = "Opponent ball dist to chill", defValue = "1000.0")
 	private static double minOpponentBotDistToChill = 1000;
-
-	@Configurable(comment = "Distance [mm] from opponent kicker to ball where it gets safe for the keeper to get the ball", defValue = "450")
-	private static double opponentBotBallPossessionDistance = 450;
-
-	@Configurable(comment = "Margin [mm] on penalty Area where keeper can still get the ball", defValue = "200")
-	private static double getBallPenaltyAreaMargin = 200;
-
-	@Configurable(comment = "Margin [mm] on penalty Area where keeper can safely get the ball", defValue = "-50")
-	private static double safeBallPenaltyAreaMargin = -50;
+	@Configurable(comment = "[mm] Roll distance after last touchdown of keeper chip", defValue = "500.0")
+	private static double minRollDistanceAfterChip = 500;
 
 
 	private final PassFactory passFactory = new PassFactory();
-	private final Supplier<Map<KickOrigin, RatedPass>> selectedPasses;
+	private final Supplier<EBallResponsibility> ballResponsibility;
 	private final Supplier<BotDistance> opponentClosestToBall;
+	private final TimestampTimer heldBallTimer = new TimestampTimer(RuleConstraints.getKeeperHeldBallPeriod());
 	private SlackBot lastPassTarget;
 	@Getter
 	private Pass keeperPass;
@@ -88,9 +79,8 @@ public class KeeperPassTargetCalc extends ACalculator
 	@Override
 	protected boolean isCalculationNecessary()
 	{
-		return Geometry.getPenaltyAreaOur().isPointInShape(getBall().getPos())
-				&& getWFrame().getBot(getAiFrame().getKeeperId()) != null
-				&& ballCanBePassedOutOfPenaltyArea();
+		return getAiFrame().getGameState().isRunning() && getWFrame().getBot(getAiFrame().getKeeperId()) != null
+				&& ballResponsibility.get() == EBallResponsibility.KEEPER;
 	}
 
 
@@ -98,6 +88,7 @@ public class KeeperPassTargetCalc extends ACalculator
 	protected void reset()
 	{
 		keeperPass = null;
+		heldBallTimer.reset();
 	}
 
 
@@ -105,64 +96,92 @@ public class KeeperPassTargetCalc extends ACalculator
 	public void doCalc()
 	{
 		passFactory.update(getWFrame());
-
+		heldBallTimer.update(getWFrame().getTimestamp());
+		double kept =
+				RuleConstraints.getKeeperHeldBallPeriod() - heldBallTimer.getRemainingTime(getWFrame().getTimestamp());
 		var lastBestTarget = Optional.ofNullable(lastPassTarget)
 				.map(SlackBot::getTarget)
 				.map(this::findFastestTiger);
-		var ratedTargets = generateTargets().stream()
+		var searchCircle = createSearchCircle();
+		var searchAngles = calculateSearchAngles();
+		var ratedTargets = generateTargets(searchCircle, searchAngles).stream()
 				.map(this::findFastestTiger)
 				.filter(Objects::nonNull)
 				.toList();
 		lastPassTarget = ratedTargets.stream()
 				.max(Comparator.comparing(s -> s.slackTime))
-				.filter(p -> lastBestTarget.map(t -> p.slackTime > t.slackTime + hysteresis).orElse(true))
+				.filter(p -> lastBestTarget.map(t -> p.slackTime > t.slackTime + hysteresis * kept).orElse(true))
 				.orElse(lastBestTarget.orElse(null));
 
 		if (isBallDangerous())
 		{
 			passFactory.setAimingTolerance(0.6);
-			keeperPass = passFactory.chip(
-					getBall().getPos(),
-					getChipPosForDangerousSituation(),
-					getAiFrame().getKeeperId(),
-					BotID.noBot());
 		} else
 		{
 			passFactory.setAimingTolerance(0.0);
-			keeperPass = findBestPassTargetForKeeper()
-					.orElse(Optional.ofNullable(lastPassTarget)
-							.map(s -> passFactory
-									.chip(getBall().getPos(), s.target, getAiFrame().getKeeperId(), s.bot.getBotId()))
-							.orElse(null));
 		}
+		keeperPass = Optional.ofNullable(lastPassTarget).map(this::createKeeperPass).orElse(null);
 
-		drawShapes(ratedTargets);
+		drawShapes(ratedTargets, searchCircle, searchAngles);
 	}
 
 
-	/**
-	 * Go through the normal pass target and find one that is far away enough to be eligible.
-	 *
-	 * @return
-	 */
-	private Optional<Pass> findBestPassTargetForKeeper()
+	private Pass createKeeperPass(SlackBot passTarget)
 	{
-		ICircle passCircle = Circle.createCircle(Geometry.getGoalOur().getCenter(), passDistance);
-		return selectedPasses.get().values().stream()
-				.map(RatedPass::getPass)
-				.filter(pass -> !passCircle.isPointInShape(pass.getKick().getTarget()))
-				.findFirst();
+		passFactory.setMaxReceivingBallSpeed(Double.POSITIVE_INFINITY);
+		return passFactory.chip(
+				getBall().getPos(),
+				passTarget.target,
+				getAiFrame().getKeeperId(),
+				passTarget.bot.getBotId(),
+				EBallReceiveMode.RECEIVE
+		);
 	}
 
 
-	private List<IVector2> generateTargets()
+	private ICircle createSearchCircle()
+	{
+		var keeper = getWFrame().getBot(getAiFrame().getKeeperId());
+		var chipTrajectory = getBall().getChipConsultant().getChipTrajectory(new KickSpeedFactory().maxChip(keeper));
+		var distanceChip = chipTrajectory.getTouchdownLocations().stream()
+				.mapToDouble(IVector::getLength).max()
+				.orElseThrow();
+		return Circle.createCircle(getBall().getPos(),
+				SumatraMath.min(Geometry.getFieldLength() * 2. / 3., distanceChip + minRollDistanceAfterChip));
+	}
+
+
+	private AngleRangeLimited calculateSearchAngles()
+	{
+		IVector2 ballPos = getBall().getPos();
+		double yLimit = Geometry.getGoalOur().getWidth() / 4.0;
+		double xLimit = Geometry.getFieldHalfOur().minX() + Geometry.getPenaltyAreaDepth() * 2. / 3.;
+		if (ballPos.x() > xLimit || Math.abs(ballPos.y()) < yLimit)
+		{
+			return new AngleRangeLimited(angleRangeDeg, angleRangeDeg / 2.);
+		} else if (ballPos.y() > 0)
+		{
+			return new AngleRangeLimited(angleRangeDeg / 2., 0.0);
+		} else
+		{
+			return new AngleRangeLimited(-angleRangeDeg / 2., 0.0);
+		}
+	}
+
+
+	private List<IVector2> generateTargets(ICircle searchCircle, AngleRangeLimited searchAngles)
 	{
 		List<IVector2> targets = new ArrayList<>(targetsPerFrame);
 		Random rnd = new Random(getWFrame().getTimestamp());
+
 		for (int i = 0; i < targetsPerFrame; i++)
 		{
-			var angle = AngleMath.deg2rad(rnd.nextDouble() * angleRangeDeg - angleRangeDeg / 2);
-			targets.add(Geometry.getGoalOur().getCenter().addNew(Vector2.fromAngleLength(angle, passDistance)));
+			var angle = AngleMath.deg2rad(rnd.nextDouble() * searchAngles.angleFactor() - searchAngles.angleShift());
+			var target = searchCircle.center().addNew(Vector2.fromAngleLength(angle, searchCircle.radius()));
+			if (Geometry.getField().withMargin(-2 * Geometry.getBotRadius()).isPointInShape(target))
+			{
+				targets.add(target);
+			}
 		}
 		return targets;
 	}
@@ -184,15 +203,16 @@ public class KeeperPassTargetCalc extends ACalculator
 	}
 
 
-	private void drawShapes(final List<SlackBot> targetPoints)
+	private void drawShapes(final List<SlackBot> targetPoints, ICircle searchCircle, AngleRangeLimited searchAngles)
 	{
-		List<IDrawableShape> shapes = getShapes(EAiShapesLayer.AI_KEEPER);
+		List<IDrawableShape> shapes = getShapes(EAiShapesLayer.KEEPER_BEHAVIOR);
 
-		shapes.add(new DrawableCircle(Circle.createCircle(Geometry.getGoalOur().getCenter(), passDistance)));
-		shapes.add(new DrawableLine(Lines.segmentFromOffset(Geometry.getGoalOur().getCenter(),
-				Vector2.fromAngleLength(AngleMath.deg2rad(angleRangeDeg / 2), passDistance))));
-		shapes.add(new DrawableLine(Lines.segmentFromOffset(Geometry.getGoalOur().getCenter(),
-				Vector2.fromAngleLength(AngleMath.deg2rad(-angleRangeDeg / 2), passDistance))));
+		shapes.add(new DrawableCircle(searchCircle));
+		shapes.add(new DrawableLine(Lines.segmentFromOffset(searchCircle.center(),
+				Vector2.fromAngleLength(AngleMath.deg2rad(searchAngles.angleFactor - searchAngles.angleShift),
+						searchCircle.radius()))));
+		shapes.add(new DrawableLine(Lines.segmentFromOffset(searchCircle.center(),
+				Vector2.fromAngleLength(AngleMath.deg2rad(-searchAngles.angleShift), searchCircle.radius()))));
 
 		if (lastPassTarget != null)
 		{
@@ -215,99 +235,9 @@ public class KeeperPassTargetCalc extends ACalculator
 				&& !Geometry.getPenaltyAreaOur().isPointInShape(getWFrame().getBall().getPos());
 	}
 
-
-	private IVector2 getChipPosForDangerousSituation()
+	private record AngleRangeLimited(double angleFactor, double angleShift)
 	{
-		IVector2 ballPos = getWFrame().getBall().getPos();
-		var bot = getWFrame().getBot(getAiFrame().getKeeperId());
-		if (ballPos.x() <= bot.getPos().x())
-		{
-			return ballPos.addNew(Vector2.fromX(4000));
-		}
-		return LineMath.stepAlongLine(ballPos, bot.getPos(), -3000);
 	}
-
-
-	private boolean ballCanBePassedOutOfPenaltyArea()
-	{
-		return isBallInPenaltyArea(getBallPenaltyAreaMargin)
-				&& isOpponentSafe()
-				&& isBallStill()
-				&& isBotNotBetweenBallAndKeeper();
-	}
-
-
-	private boolean isBallSafe()
-	{
-		return isBallStill() && isBallInPenaltyArea(safeBallPenaltyAreaMargin);
-	}
-
-
-	private boolean isBallInPenaltyArea(final double getBallPenaltyAreaMargin)
-	{
-		return Geometry.getPenaltyAreaOur().getRectangle().withMargin(getBallPenaltyAreaMargin)
-				.isPointInShape(getBall().getPos());
-	}
-
-
-	private boolean isBallStill()
-	{
-		return getBall().getVel().getLength() < 0.1;
-	}
-
-
-	private boolean isBotNotBetweenBallAndKeeper()
-	{
-		var keeperBot = getWFrame().getBot(getAiFrame().getKeeperId());
-		ILineSegment keeperBallLine = Lines.segmentFromPoints(keeperBot.getPos(), getBall().getPos());
-		return getWFrame().getBots().values().stream()
-				.filter(bot -> !bot.getBotId().equals(keeperBot.getBotId()))
-				.map(ITrackedObject::getPos)
-				.noneMatch(pos -> keeperBallLine.distanceTo(pos) < Geometry.getBotRadius());
-	}
-
-
-	private boolean isOpponentSafe()
-	{
-		return isBallSafeFromOpponent() || isOpponentBlockedByDefenders();
-	}
-
-
-	private boolean isBallSafeFromOpponent()
-	{
-		return isBallSafe() || opponentClosestToBall.get().getDist() > opponentBotBallPossessionDistance;
-	}
-
-
-	private boolean isOpponentBlockedByDefenders()
-	{
-		var opponentBot = opponentClosestToBall.get().getBotId();
-		if (!opponentBot.isBot())
-		{
-			return false;
-		}
-
-		IVector2 closestOpponentKicker = getWFrame().getBot(opponentBot).getBotKickerPos();
-
-		for (IVector2 goalLinePos : Geometry.getGoalOur().getLineSegment().getSteps(Geometry.getBallRadius() * 2))
-		{
-			ILineSegment testLine = Lines.segmentFromPoints(goalLinePos, closestOpponentKicker);
-			boolean lineBlocked = getWFrame().getTigerBotsAvailable().values().stream()
-					.filter(bot -> !bot.getBotId().equals(getAiFrame().getKeeperId()))
-					.anyMatch(bot -> Circle.createCircle(bot.getPos(), Geometry.getBotRadius() + 5)
-							.isIntersectingWithPath(testLine));
-
-			getAiFrame().getShapeMap().get(EAiShapesLayer.AI_KEEPER)
-					.add(new DrawableLine(testLine, lineBlocked ? Color.GREEN : Color.RED).setStrokeWidth(1));
-			if (!lineBlocked)
-			{
-				return false;
-			}
-		}
-
-		return true;
-	}
-
 
 	@AllArgsConstructor
 	@Data

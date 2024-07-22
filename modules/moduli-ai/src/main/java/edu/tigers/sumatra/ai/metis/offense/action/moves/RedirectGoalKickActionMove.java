@@ -23,14 +23,14 @@ import java.util.function.Supplier;
 @RequiredArgsConstructor
 public class RedirectGoalKickActionMove extends AOffensiveActionMove
 {
-	@Configurable(defValue = "0.2")
-	private static double minGoalShotChanceForTrueViability = 0.2;
+	@Configurable(defValue = "0.15")
+	private static double minGoalShotChanceForTrueViability = 0.15;
 
 	@Configurable(defValue = "0.05")
 	private static double minGoalShotChanceForPartiallyViability = 0.05;
 
-	@Configurable(defValue = "1.25")
-	private static double bonusMultiplierForRedirectsOverDirectKicks = 1.25;
+	@Configurable(defValue = "1.45")
+	private static double bonusMultiplierForRedirectsOverDirectKicks = 1.45;
 
 	private final Supplier<Map<BotID, GoalKick>> bestGoalKickTargets;
 

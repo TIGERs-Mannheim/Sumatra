@@ -27,6 +27,7 @@ public class UnsportingBehaviorMajor extends AGameEvent
 		team = null;
 	}
 
+
 	/**
 	 * Default conversion constructor. Note: Called by reflection!
 	 *
@@ -58,12 +59,6 @@ public class UnsportingBehaviorMajor extends AGameEvent
 				.setReason(reason);
 
 		return builder.build();
-	}
-
-
-	public ETeamColor getTeam()
-	{
-		return team;
 	}
 
 

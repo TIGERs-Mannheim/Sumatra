@@ -52,7 +52,9 @@ public class SupportKickoffPositionsCalc extends ACalculator
 	@Override
 	protected boolean isCalculationNecessary()
 	{
-		return getAiFrame().getGameState().isKickoffOrPrepareKickoff();
+		boolean isPreKickoff = getAiFrame().getGameState().isNextKickoffOrPrepareKickoff();
+
+		return getAiFrame().getGameState().isKickoffOrPrepareKickoff() || isPreKickoff;
 	}
 
 

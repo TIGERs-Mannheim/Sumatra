@@ -4,7 +4,6 @@ plugins {
 
 application {
     applicationDefaultJvmArgs = [
-            '-server',
             '-Dsun.java2d.d3d=false',
             '-Djava.net.preferIPv4Stack=true',
     ]

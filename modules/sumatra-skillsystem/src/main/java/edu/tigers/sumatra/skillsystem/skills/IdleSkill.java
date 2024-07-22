@@ -13,8 +13,8 @@ import edu.tigers.sumatra.math.vector.Vector2;
  */
 public class IdleSkill extends AMoveSkill
 {
-	@Configurable(defValue = "false", comment = "true: Brake fast, false: Slow down smoothly")
-	private static boolean emergencyBrake = false;
+	@Configurable(defValue = "true", comment = "true: Brake fast, false: Slow down smoothly")
+	private static boolean emergencyBrake = true;
 
 
 	@Override

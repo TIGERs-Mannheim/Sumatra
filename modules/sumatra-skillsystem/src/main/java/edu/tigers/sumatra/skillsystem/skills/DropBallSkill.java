@@ -5,9 +5,11 @@
 package edu.tigers.sumatra.skillsystem.skills;
 
 import com.github.g3force.configurable.Configurable;
+import edu.tigers.sumatra.bot.EDribbleTractionState;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.skillsystem.skills.util.KickParams;
+import edu.tigers.sumatra.time.TimestampTimer;
 
 
 /**
@@ -15,30 +17,34 @@ import edu.tigers.sumatra.skillsystem.skills.util.KickParams;
  */
 public class DropBallSkill extends AMoveToSkill
 {
-	@Configurable(comment = "Dribble current reduction rate [A/s]", defValue = "4.0")
-	private static double dribbleCurrentReductionRate = 4.0;
-
-	@Configurable(comment = "Min dribble current [A] ", defValue = "1.0")
-	private static double dribbleCurrentMin = 1.0;
-
 	@Configurable(comment = "Move back during drop.", defValue = "true")
 	private static boolean moveBack = true;
 
-	@Configurable(comment = "Velocity for move back.", defValue = "0.1")
-	private static double moveBackVelocity = 0.1;
+	@Configurable(comment = "Velocity for move back.", defValue = "2")
+	private static double moveBackVelocity = 2;
 
-	private double maxDribbleCurrent;
-	private long tStart;
+	@Configurable(comment = "Acceleration for move back.", defValue = "5")
+	private static double moveBackAcceleration = 5;
+
+	@Configurable(comment = "Time to calm down after dribble traction is OFF", defValue = "0.5")
+	private static double calmDownBeforeTime = 0.5;
+
+	@Configurable(comment = "Time to calm down after moving away from ball", defValue = "0.5")
+	private static double calmDownAfterTime = 0.5;
+
+	@Configurable(comment = "Distance to move away from ball", defValue = "15")
+	private static double moveAwayDistance = 15;
+
 	private IVector2 moveBackTarget;
+	private final TimestampTimer calmDownBeforeTimer = new TimestampTimer(calmDownBeforeTime);
+	private final TimestampTimer calmDownAfterTimer = new TimestampTimer(calmDownAfterTime);
 
 
 	@Override
 	public void doEntryActions()
 	{
 		super.doEntryActions();
-		maxDribbleCurrent = getBot().getBotParams().getDribblerSpecs().getDefaultMaxCurrent();
-		tStart = getWorldFrame().getTimestamp();
-		moveBackTarget = Vector2.fromAngleLength(getAngle(), -50).add(getPos());
+		moveBackTarget = Vector2.fromAngleLength(getAngle(), -moveAwayDistance).add(getPos());
 	}
 
 
@@ -47,33 +53,48 @@ public class DropBallSkill extends AMoveToSkill
 	{
 		super.doUpdate();
 
-		if (!getTBot().getBallContact().hadContact(0.2))
+		// We won't move that much, just ignore all obstacles to make sure we correctly drop the ball
+		getMoveCon().noObstacles();
+
+		if (!getTBot().getBallContact().hadContact(calmDownAfterTime + 0.1))
 		{
 			setSkillState(ESkillState.FAILURE);
 			return;
 		}
 
-		double timePast = (getWorldFrame().getTimestamp() - tStart) / 1e9;
-		double defDribbleCurrent = getBot().getBotParams().getDribblerSpecs().getDefaultMaxCurrent();
-		double scaledDribbleCurrent = defDribbleCurrent - timePast * dribbleCurrentReductionRate;
-		if (moveBack && scaledDribbleCurrent < (defDribbleCurrent + dribbleCurrentMin) / 2)
+		if (getBot().getDribbleTractionState() == EDribbleTractionState.OFF)
 		{
-			updateDestination(moveBackTarget);
-			getMoveConstraints().setVelMax(moveBackVelocity);
-		}
-		if (scaledDribbleCurrent < dribbleCurrentMin)
-		{
-			maxDribbleCurrent = dribbleCurrentMin;
-			setSkillState(ESkillState.SUCCESS);
+			calmDownBeforeTimer.update(getWorldFrame().getTimestamp());
+			if (!calmDownBeforeTimer.isTimeUp(getWorldFrame().getTimestamp()))
+			{
+				setSkillState(ESkillState.IN_PROGRESS);
+			} else if (moveBack)
+			{
+				updateDestination(moveBackTarget);
+				getMoveConstraints().setVelMax(moveBackVelocity);
+				getMoveConstraints().setAccMax(moveBackAcceleration);
+
+				if (getTBot().getPos().distanceTo(moveBackTarget) < 10)
+				{
+					calmDownAfterTimer.update(getWorldFrame().getTimestamp());
+					if (calmDownAfterTimer.isTimeUp(getWorldFrame().getTimestamp()))
+					{
+						setSkillState(ESkillState.SUCCESS);
+					}
+				} else {
+					calmDownAfterTimer.reset();
+				}
+			} else
+			{
+				setSkillState(ESkillState.SUCCESS);
+			}
 		} else
 		{
-			maxDribbleCurrent = scaledDribbleCurrent;
+			calmDownBeforeTimer.reset();
+			calmDownAfterTimer.reset();
 			setSkillState(ESkillState.IN_PROGRESS);
 		}
 
-		setKickParams(KickParams.disarm().withDribbleSpeedRpm(
-				getBot().getBotParams().getDribblerSpecs().getDefaultSpeed(),
-				maxDribbleCurrent
-		));
+		setKickParams(KickParams.disarm().withDribbleSpeed(0, 0));
 	}
 }

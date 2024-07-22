@@ -5,8 +5,10 @@
 package edu.tigers.sumatra.ai.pandora.roles.offense.attacker.states;
 
 
+import edu.tigers.sumatra.ai.metis.offense.OffensiveConstants;
 import edu.tigers.sumatra.ai.pandora.roles.offense.attacker.AttackerRole;
 import edu.tigers.sumatra.geometry.Geometry;
+import edu.tigers.sumatra.math.Hysteresis;
 import edu.tigers.sumatra.pathfinder.EObstacleAvoidanceMode;
 import edu.tigers.sumatra.skillsystem.skills.RedirectBallSkill;
 import edu.tigers.sumatra.skillsystem.skills.util.KickParams;
@@ -21,10 +23,21 @@ public class RedirectState extends AAttackerRoleState<RedirectBallSkill>
 
 
 	@Override
+	protected void onInit()
+	{
+		super.onInit();
+		skill.setBallSpeedHysteresis(new Hysteresis(
+				OffensiveConstants.getAbortBallInterceptionVelThreshold(),
+				OffensiveConstants.getBallIsRollingThreshold()));
+	}
+
+
+	@Override
 	protected boolean isNecessaryDataAvailable()
 	{
 		return getRole().getBall() != null && getRole().getAction().getKick() != null;
 	}
+
 
 	@Override
 	protected void doStandardUpdate()

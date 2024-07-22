@@ -46,6 +46,9 @@ public class RuleConstraints
 	@Getter
 	@Configurable(comment = "[s] The amount of time before a violation is reported again", defValue = "2.0")
 	private static double gracePeriod = 2.0;
+	@Getter
+	@Configurable(comment = "[s] The maximum time allowed for the keeper to hold the ball inside the PenArea", defValue = "5.0")
+	private static double keeperHeldBallPeriod = 5.0;
 
 	static
 	{

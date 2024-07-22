@@ -88,9 +88,6 @@
     </module>
 
 
-    <module id="edu.tigers.sumatra.trees.OffensiveTreeProvider"/>
-
-
     <module id="edu.tigers.sumatra.statistics.StatisticsSaver">
         <properties>
             <operation-mode>INFLUX_DB</operation-mode>

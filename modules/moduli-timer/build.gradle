@@ -10,7 +10,7 @@ plugins {
 dependencies {
     implementation project(':common')
 
-    implementation 'com.github.TIGERs-Mannheim:moduli:4.1'
+    implementation(libs.com.github.TIGERs.mannheim.moduli)
 
-    implementation 'org.apache.logging.log4j:log4j-api:2.20.0'
+    implementation(libs.org.apache.logging.log4j.log4j.api)
 }

@@ -8,8 +8,9 @@ import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.line.ILineSegment;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.IVector3;
-import edu.tigers.sumatra.math.vector.Vector3;
+import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.math.vector.Vector3f;
+import lombok.Setter;
 
 
 /**
@@ -17,31 +18,37 @@ import edu.tigers.sumatra.math.vector.Vector3f;
  */
 public class KickerFrontLineCollisionObject extends LineSegmentCollisionObject
 {
-	private final IVector3 vel;
+	private final IVector3 botVel;
+	private final IVector3 lineVel;
 	private final BotID botID;
+	@Setter
 	private IVector3 impulse = Vector3f.ZERO_VECTOR;
+	@Setter
 	private IVector3 acc = Vector3f.ZERO_VECTOR;
+	@Setter
 	private boolean sticky;
+	@Setter
 	private double dampFactor;
+	@Setter
+	private double dampFactorOrthogonal;
 
 
-	public KickerFrontLineCollisionObject(final ILineSegment obstacleLine, final IVector3 vel, final IVector2 normal,
-			final BotID botID)
+	public KickerFrontLineCollisionObject(final ILineSegment obstacleLine, final IVector3 botVel, final IVector3 lineVel,
+			final IVector2 normal, final BotID botID)
 	{
-		super(obstacleLine, normal);
-		this.vel = vel;
+		super(obstacleLine, normal, false);
+		this.botVel = botVel;
+		this.lineVel = lineVel;
 		this.botID = botID;
+		this.dampFactor = 0.5;
+		this.dampFactorOrthogonal = 0;
 	}
 
 
 	@Override
-	public IVector3 getImpulse(final IVector3 prePos)
+	public IVector3 getImpulse()
 	{
-		if (prePos.z() < 0.001)
-		{
-			return impulse;
-		}
-		return Vector3.from2d(impulse.getXYVector(), 0);
+		return impulse;
 	}
 
 
@@ -49,12 +56,6 @@ public class KickerFrontLineCollisionObject extends LineSegmentCollisionObject
 	public IVector2 stick(IVector2 pos)
 	{
 		return obstacleLine.getPathCenter();
-	}
-
-
-	public void setImpulse(final IVector3 impulse)
-	{
-		this.impulse = impulse;
 	}
 
 
@@ -72,15 +73,10 @@ public class KickerFrontLineCollisionObject extends LineSegmentCollisionObject
 	}
 
 
-	public void setSticky(final boolean sticky)
+	@Override
+	public double getDampFactorOrthogonal()
 	{
-		this.sticky = sticky;
-	}
-
-
-	public void setDampFactor(final double dampFactor)
-	{
-		this.dampFactor = dampFactor;
+		return dampFactorOrthogonal;
 	}
 
 
@@ -91,16 +87,19 @@ public class KickerFrontLineCollisionObject extends LineSegmentCollisionObject
 	}
 
 
-	public void setAcc(final IVector3 acc)
+	@Override
+	public IVector3 getVel()
 	{
-		this.acc = acc;
+		return botVel;
 	}
 
 
 	@Override
-	public IVector3 getVel()
+	public IVector2 getSurfaceVel(IVector2 collisionPos)
 	{
-		return vel;
+		var connection = Vector2.fromPoints(obstacleLine.closestPointOnPath(collisionPos), obstacleLine.getPathCenter());
+		var rotationSpeed = connection.getNormalVector().multiply(lineVel.z());
+		return lineVel.getXYVector().addNew(rotationSpeed);
 	}
 
 

@@ -4,7 +4,6 @@
 package edu.tigers.sumatra.ai.pandora.plays.standard.cheerings;
 
 import edu.tigers.sumatra.ai.pandora.plays.standard.CheeringPlay;
-import edu.tigers.sumatra.ai.pandora.roles.ARole;
 import edu.tigers.sumatra.ai.pandora.roles.move.MoveRole;
 import edu.tigers.sumatra.botmanager.botskills.data.ESong;
 import edu.tigers.sumatra.geometry.Geometry;
@@ -64,11 +63,10 @@ public class CircleCheeringPlay implements ICheeringPlay
 	@Override
 	public void doUpdate()
 	{
-		for (ARole role : this.play.getRoles())
+		for (var role : play.getPermutedRoles())
 		{
-			play.setSong(role.getBotID(), ESong.ELEVATOR);
+			play.setSong(role.getBotID(), ESong.CANTINA_BAND);
 		}
-
 		if (!onPosition())
 		{
 			return;
@@ -98,12 +96,12 @@ public class CircleCheeringPlay implements ICheeringPlay
 
 	private void updatePositions()
 	{
-		List<ARole> roles = play.getRoles();
-		List<IVector2> positions = calcPositions();
+		var roles = play.getPermutedRoles();
+		var positions = calcPositions();
 
 		for (int botId = 0; botId < roles.size(); botId++)
 		{
-			final MoveRole moveRole = (MoveRole) roles.get(botId);
+			final MoveRole moveRole = roles.get(botId);
 			moveRole.updateDestination(positions.get(botId));
 		}
 	}
@@ -111,10 +109,9 @@ public class CircleCheeringPlay implements ICheeringPlay
 
 	private boolean onPosition()
 	{
-		List<ARole> roles = play.getRoles();
-		for (ARole aRole : roles)
+		var roles = play.getPermutedRoles();
+		for (var role : roles)
 		{
-			MoveRole role = (MoveRole) aRole;
 			if (!role.isDestinationReached())
 				return false;
 		}
@@ -124,8 +121,8 @@ public class CircleCheeringPlay implements ICheeringPlay
 
 	private List<IVector2> setRadius(double param, final double factor, int n)
 	{
-		List<ARole> roles = play.getRoles();
-		List<IVector2> positions = new ArrayList<>();
+		var roles = play.getPermutedRoles();
+		var positions = new ArrayList<IVector2>();
 		if (roles.size() % 2 == 1)
 		{
 			positions.add(Vector2.zero());
@@ -139,7 +136,7 @@ public class CircleCheeringPlay implements ICheeringPlay
 			{
 				factor1 = factor2;
 			}
-			final MoveRole moveRole = (MoveRole) roles.get(i);
+			final MoveRole moveRole = roles.get(i);
 			positions.add(moveRole.getDestination()
 					.multiplyNew((factor1 * radius) / moveRole.getDestination().getLength()));
 			n++;
@@ -151,12 +148,12 @@ public class CircleCheeringPlay implements ICheeringPlay
 
 	private List<IVector2> move(final double n)
 	{
-		List<ARole> roles = play.getRoles();
-		List<IVector2> positions = new ArrayList<>();
+		var roles = play.getPermutedRoles();
+		var positions = new ArrayList<IVector2>();
 
-		for (ARole role : roles)
+		for (MoveRole role : roles)
 		{
-			final MoveRole moveRole = (MoveRole) role;
+			final MoveRole moveRole = role;
 			positions.add(LineMath.stepAlongLine(moveRole.getDestination(),
 					Vector2.fromXY(5000, moveRole.getPos().y()), n));
 		}
@@ -166,22 +163,22 @@ public class CircleCheeringPlay implements ICheeringPlay
 
 	private List<IVector2> rotate()
 	{
-		List<ARole> roles = play.getRoles();
-		List<IVector2> positions = new ArrayList<>();
+		var roles = play.getPermutedRoles();
+		var positions = new ArrayList<IVector2>();
 		if (roles.size() % 2 == 1)
 		{
 			positions.add(Vector2.zero());
 		}
 
 		int n = 1;
-		int c = play.getRoles().size();
+		int c = play.getPermutedRoles().size();
 		if (c % 2 != 0)
-			c = play.getRoles().size() - 1;
+			c = play.getPermutedRoles().size() - 1;
 		double angle1 = 1 * AngleMath.PI_TWO / c;
 		double angle2 = -angle1;
 		for (int i = roles.size() % 2; i < roles.size(); i++)
 		{
-			final MoveRole moveRole = (MoveRole) roles.get(i);
+			final MoveRole moveRole = roles.get(i);
 			if (n % 2 == 0)
 			{
 				angle1 = angle2;
@@ -196,8 +193,8 @@ public class CircleCheeringPlay implements ICheeringPlay
 
 	private List<IVector2> setup()
 	{
-		List<ARole> roles = play.getRoles();
-		List<IVector2> positions = new ArrayList<>();
+		var roles = play.getPermutedRoles();
+		var positions = new ArrayList<IVector2>();
 
 		double angleStep = AngleMath.PI_TWO / (roles.size() - roles.size() % 2);
 		if (roles.size() % 2 == 1)
@@ -209,7 +206,7 @@ public class CircleCheeringPlay implements ICheeringPlay
 		double param = -PI_HALF;
 		for (int i = roles.size() % 2; i < roles.size(); i++)
 		{
-			MoveRole moveRole = (MoveRole) roles.get(i);
+			MoveRole moveRole = roles.get(i);
 			positions.add(startOnCircle.turnNew(angleStep * i + param));
 			moveRole.updateLookAtTarget(center);
 		}

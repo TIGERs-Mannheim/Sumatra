@@ -19,7 +19,7 @@ import java.util.Optional;
  * An obstacle in a tube shape
  */
 @RequiredArgsConstructor
-public class TubeObstacle extends AObstacle
+public class TubeObstacle extends AMotionlessObstacle
 {
 	private final String qualifier;
 	private final Tube tube;
@@ -49,8 +49,22 @@ public class TubeObstacle extends AObstacle
 
 
 	@Override
-	public Optional<IVector2> adaptDestination(IVector2 robotPos, IVector2 destination)
+	public Optional<IVector2> adaptDestinationForRobotPos(IVector2 robotPos)
 	{
-		return adaptDestination(tube, robotPos, destination);
+		return adaptDestinationForRobotPos(tube, robotPos);
+	}
+
+
+	@Override
+	public Optional<IVector2> adaptDestination(IVector2 destination)
+	{
+		return adaptDestination(tube, destination);
+	}
+
+
+	@Override
+	public boolean isCollidingAt(IVector2 pos)
+	{
+		return tube.isPointInShape(pos);
 	}
 }

@@ -14,6 +14,8 @@ import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.math.vector.Vector2f;
 
+import java.util.List;
+
 
 /**
  * This is an immutable representation of a goal.
@@ -94,6 +96,15 @@ public class Goal
 	}
 
 
+	public List<IVector2> getGoalPosts()
+	{
+		return List.of(
+				getLeftPost(),
+				getRightPost()
+		);
+	}
+
+
 	/**
 	 * @return the unbound goal line
 	 */
@@ -124,6 +135,15 @@ public class Goal
 	public IRectangle getRectangle()
 	{
 		return rectangle;
+	}
+
+
+	public List<IVector2> getCorners()
+	{
+		return List.of(
+				leftPost.addMagnitude(Vector2.fromXY(depth, 0)),
+				rightPost.addMagnitude(Vector2.fromXY(depth, 0))
+		);
 	}
 
 

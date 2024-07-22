@@ -19,7 +19,7 @@ import java.util.Optional;
  * A simple circle-based obstacle
  */
 @RequiredArgsConstructor
-public class GenericCircleObstacle extends AObstacle
+public class GenericCircleObstacle extends AMotionlessObstacle
 {
 	private final String qualifier;
 	private final ICircle circle;
@@ -49,8 +49,22 @@ public class GenericCircleObstacle extends AObstacle
 
 
 	@Override
-	public Optional<IVector2> adaptDestination(IVector2 robotPos, IVector2 destination)
+	public Optional<IVector2> adaptDestinationForRobotPos(IVector2 robotPos)
 	{
-		return adaptDestination(circle, robotPos, destination);
+		return adaptDestinationForRobotPos(circle, robotPos);
+	}
+
+
+	@Override
+	public Optional<IVector2> adaptDestination(IVector2 destination)
+	{
+		return adaptDestination(circle, destination);
+	}
+
+
+	@Override
+	public boolean isCollidingAt(IVector2 pos)
+	{
+		return circle.isPointInShape(pos);
 	}
 }

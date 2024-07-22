@@ -15,7 +15,7 @@ import org.apache.commons.lang.builder.HashCodeBuilder;
 
 /**
  * Immutable implementation of {@link IRectangle}.
- * 
+ *
  * @author Malte
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  */
@@ -25,8 +25,8 @@ public class Rectangle extends ARectangle
 	private final Vector2f center;
 	private final double xExtent;
 	private final double yExtent;
-	
-	
+
+
 	@SuppressWarnings("unused")
 	protected Rectangle()
 	{
@@ -34,8 +34,8 @@ public class Rectangle extends ARectangle
 		xExtent = 0;
 		yExtent = 0;
 	}
-	
-	
+
+
 	private Rectangle(final IVector2 center, final double xExtent, final double yExtent)
 	{
 		assert center != null;
@@ -45,8 +45,8 @@ public class Rectangle extends ARectangle
 		this.xExtent = xExtent;
 		this.yExtent = yExtent;
 	}
-	
-	
+
+
 	/**
 	 * @param rec
 	 */
@@ -56,13 +56,13 @@ public class Rectangle extends ARectangle
 		xExtent = rec.xExtent();
 		yExtent = rec.yExtent();
 	}
-	
-	
+
+
 	/**
 	 * Span the rectangle around given line.
 	 *
-	 * @param p0 of the line
-	 * @param p1 of the line
+	 * @param p0     of the line
+	 * @param p1     of the line
 	 * @param radius distance from line to rectangle border in orthogonal and parallel direction
 	 * @return
 	 */
@@ -81,8 +81,21 @@ public class Rectangle extends ARectangle
 		IVector2 p3 = p0.addNew(dir.scaleToNew(radius));
 		return fromPoints(p3.addNew(orthDir), p2.addNew(orthDir.turnNew(AngleMath.PI)));
 	}
-	
-	
+
+
+	/**
+	 * Span the rectangle around given line.
+	 *
+	 * @param line   the line
+	 * @param radius distance from line to rectangle border in orthogonal and parallel direction
+	 * @return
+	 */
+	public static Rectangle aroundLine(final ILineSegment line, final double radius)
+	{
+		return aroundLine(line.getPathStart(), line.getPathEnd(), radius);
+	}
+
+
 	/**
 	 * Create a rectangle based on a line segment
 	 *
@@ -93,8 +106,8 @@ public class Rectangle extends ARectangle
 	{
 		return fromPoints(lineSegment.getPathStart(), lineSegment.getPathEnd());
 	}
-	
-	
+
+
 	/**
 	 * Creates new Rectangle from two points. Have to be counter side corners.
 	 *
@@ -111,12 +124,12 @@ public class Rectangle extends ARectangle
 				Math.min(p1.y(), p2.y()) + yExtent / 2.0);
 		return new Rectangle(center, xExtent, yExtent);
 	}
-	
-	
+
+
 	/**
 	 * Creates a new Rectangle. xExtent and yExtent must be positive (may be zero).
 	 *
-	 * @param center which is used to define the position of the rectangle on the field
+	 * @param center  which is used to define the position of the rectangle on the field
 	 * @param xExtent the width on the x-axis
 	 * @param yExtent the width on the y-axis
 	 * @return new rectangle
@@ -125,15 +138,15 @@ public class Rectangle extends ARectangle
 	{
 		return new Rectangle(center, xExtent, yExtent);
 	}
-	
-	
+
+
 	@Override
 	public IRectangle withMargin(final double margin)
 	{
 		return withMarginXy(margin, margin);
 	}
-	
-	
+
+
 	@Override
 	public IRectangle withMarginXy(double xMargin, double yMargin)
 	{
@@ -141,36 +154,36 @@ public class Rectangle extends ARectangle
 				Math.max(0, xExtent + 2 * xMargin),
 				Math.max(0, yExtent + 2 * yMargin));
 	}
-	
-	
+
+
 	@Override
 	public IRectangle mirror()
 	{
 		return fromCenter(center.multiplyNew(-1), xExtent, yExtent);
 	}
-	
-	
+
+
 	@Override
 	public double yExtent()
 	{
 		return yExtent;
 	}
-	
-	
+
+
 	@Override
 	public double xExtent()
 	{
 		return xExtent;
 	}
-	
-	
+
+
 	@Override
 	public IVector2 center()
 	{
 		return center;
 	}
-	
-	
+
+
 	@Override
 	public final boolean equals(final Object o)
 	{
@@ -178,12 +191,12 @@ public class Rectangle extends ARectangle
 		{
 			return true;
 		}
-		
+
 		if (o == null)
 		{
 			return false;
 		}
-		
+
 		if (!(o instanceof ARectangle rectangle))
 		{
 			return false;
@@ -193,8 +206,8 @@ public class Rectangle extends ARectangle
 				&& SumatraMath.isEqual(yExtent, rectangle.yExtent())
 				&& center.equals(rectangle.center());
 	}
-	
-	
+
+
 	@Override
 	public final int hashCode()
 	{
@@ -204,8 +217,8 @@ public class Rectangle extends ARectangle
 				.append(yExtent)
 				.toHashCode();
 	}
-	
-	
+
+
 	@Override
 	public String toString()
 	{

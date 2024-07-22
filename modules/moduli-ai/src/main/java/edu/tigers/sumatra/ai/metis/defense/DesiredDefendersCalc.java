@@ -9,7 +9,6 @@ import edu.tigers.sumatra.ai.metis.defense.data.DefenseBallThreat;
 import edu.tigers.sumatra.ai.metis.defense.data.DefenseBotThreat;
 import edu.tigers.sumatra.ai.metis.defense.data.DefensePassDisruptionAssignment;
 import edu.tigers.sumatra.ai.metis.defense.data.DefenseThreatAssignment;
-import edu.tigers.sumatra.ai.metis.defense.data.EDefenseThreatAssignment;
 import edu.tigers.sumatra.ai.metis.defense.data.IDefenseThreat;
 import edu.tigers.sumatra.ai.metis.general.ADesiredBotCalc;
 import edu.tigers.sumatra.ai.pandora.plays.EPlay;
@@ -28,6 +27,7 @@ import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -41,7 +41,8 @@ public class DesiredDefendersCalc extends ADesiredBotCalc
 	private final DesiredDefendersCalcUtil util = new DesiredDefendersCalcUtil();
 
 	private final Supplier<Map<EPlay, Integer>> playNumbers;
-	private final Supplier<DefenseBallThreat> defenseBallThreat;
+	private final Supplier<DefenseBallThreat> ballThreat;
+	private final Supplier<Optional<DefenseBallThreat>> secondaryBallThreat;
 	private final Supplier<List<DefenseBotThreat>> defenseBotThreats;
 	private final Supplier<Set<BotID>> crucialDefender;
 	private final Supplier<Integer> numDefenderForBall;
@@ -56,7 +57,8 @@ public class DesiredDefendersCalc extends ADesiredBotCalc
 	public DesiredDefendersCalc(
 			Supplier<Map<EPlay, Set<BotID>>> desiredBotMap,
 			Supplier<Map<EPlay, Integer>> playNumbers,
-			Supplier<DefenseBallThreat> defenseBallThreat,
+			Supplier<DefenseBallThreat> ballThreat,
+			Supplier<Optional<DefenseBallThreat>> secondaryBallThreat,
 			Supplier<List<DefenseBotThreat>> defenseBotThreats,
 			Supplier<Set<BotID>> crucialDefender,
 			Supplier<Integer> numDefenderForBall,
@@ -64,7 +66,8 @@ public class DesiredDefendersCalc extends ADesiredBotCalc
 	{
 		super(desiredBotMap);
 		this.playNumbers = playNumbers;
-		this.defenseBallThreat = defenseBallThreat;
+		this.ballThreat = ballThreat;
+		this.secondaryBallThreat = secondaryBallThreat;
 		this.defenseBotThreats = defenseBotThreats;
 		this.crucialDefender = crucialDefender;
 		this.numDefenderForBall = numDefenderForBall;
@@ -87,6 +90,8 @@ public class DesiredDefendersCalc extends ADesiredBotCalc
 		put(selectedBots, EDefenseThreatAssignment.PASS_DISRUPTION, getPassDisruptorIDs(defender), defender);
 		put(selectedBots, EDefenseThreatAssignment.BLOCKING_BALL, createBallThreatAssignment(defender, assignments),
 				defender);
+		put(selectedBots, EDefenseThreatAssignment.BLOCKING_SECONDARY_BALL,
+				createSecondaryBallThreatAssignment(defender, assignments), defender);
 		put(selectedBots, EDefenseThreatAssignment.BLOCKING_BOT, createBotThreatAssignments(defender, assignments),
 				defender);
 
@@ -100,6 +105,7 @@ public class DesiredDefendersCalc extends ADesiredBotCalc
 		// Note the different ordering of EAssignmentType
 		desiredDefenders.addAll(selectedBots.get(EDefenseThreatAssignment.BLOCKING_BALL));
 		desiredDefenders.addAll(selectedBots.get(EDefenseThreatAssignment.PASS_DISRUPTION));
+		desiredDefenders.addAll(selectedBots.get(EDefenseThreatAssignment.BLOCKING_SECONDARY_BALL));
 		desiredDefenders.addAll(selectedBots.get(EDefenseThreatAssignment.BLOCKING_BOT));
 		desiredDefenders.addAll(defender);
 
@@ -111,7 +117,8 @@ public class DesiredDefendersCalc extends ADesiredBotCalc
 	}
 
 
-	private void put(EnumMap<EDefenseThreatAssignment, List<BotID>> selectedBotsPerAssignmentType,
+	private void put(
+			EnumMap<EDefenseThreatAssignment, List<BotID>> selectedBotsPerAssignmentType,
 			EDefenseThreatAssignment type,
 			List<BotID> selectedDefenders, List<BotID> availableBots)
 	{
@@ -146,14 +153,40 @@ public class DesiredDefendersCalc extends ADesiredBotCalc
 
 	private List<BotID> createBallThreatAssignment(List<BotID> availableBots, List<DefenseThreatAssignment> assignments)
 	{
-		var bestDefenders = crucialDefender.get().stream()
-				.filter(availableBots::contains)
-				.collect(Collectors.toSet());
+		Set<BotID> bestDefenders;
+		if (defensePassDisruptionAssignment.get() == null)
+		{
+			bestDefenders = crucialDefender.get().stream()
+					.filter(availableBots::contains)
+					.collect(Collectors.toSet());
+		} else
+		{
+			bestDefenders = crucialDefender.get().stream()
+					.filter(availableBots::contains)
+					.filter(bot -> defensePassDisruptionAssignment.get().getDefenderId() != bot)
+					.collect(Collectors.toSet());
+		}
 
-		var numMissingDefender = numDefenderForBall.get() - crucialDefender.get().size();
-		bestDefenders.addAll(util.nextBestDefenders(defenseBallThreat.get(), availableBots, numMissingDefender));
-		assignments.add(createSingleThreatAssignment(defenseBallThreat.get(), availableBots, bestDefenders));
+		var numMissingDefender = numDefenderForBall.get() - bestDefenders.size();
+		bestDefenders.addAll(util.nextBestDefenders(ballThreat.get(), availableBots, numMissingDefender));
+		assignments.add(createSingleThreatAssignment(ballThreat.get(), availableBots, bestDefenders));
 		return bestDefenders.stream().toList();
+	}
+
+
+	private List<BotID> createSecondaryBallThreatAssignment(
+			List<BotID> availableBots,
+			List<DefenseThreatAssignment> assignments
+	)
+	{
+		return secondaryBallThreat.get().map(
+						secondary -> {
+							var bestDefenders = util.nextBestDefenders(secondary, availableBots, numDefenderForBall.get());
+							assignments.add(createSingleThreatAssignment(secondary, availableBots, bestDefenders));
+							return bestDefenders.stream().toList();
+						}
+				)
+				.orElseGet(List::of);
 	}
 
 
@@ -200,6 +233,15 @@ public class DesiredDefendersCalc extends ADesiredBotCalc
 					threatAssignment.getThreat().getPos());
 			shapes.add(new DrawableLine(assignmentLine, Color.MAGENTA));
 		}
+	}
+
+
+	public enum EDefenseThreatAssignment
+	{
+		PASS_DISRUPTION,
+		BLOCKING_BALL,
+		BLOCKING_BOT,
+		BLOCKING_SECONDARY_BALL
 	}
 
 

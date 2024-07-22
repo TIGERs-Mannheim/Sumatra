@@ -14,7 +14,7 @@ import edu.tigers.sumatra.ids.ETeamColor;
 import edu.tigers.sumatra.math.line.ILineSegment;
 import edu.tigers.sumatra.math.line.Lines;
 import edu.tigers.sumatra.math.vector.IVector2;
-import edu.tigers.sumatra.vision.data.IKickEvent;
+import edu.tigers.sumatra.wp.data.KickedBall;
 import lombok.Getter;
 
 import java.awt.Color;
@@ -27,9 +27,9 @@ import java.util.Optional;
 public class DirectShotDetectionCalc extends ACalculator
 {
 	@Getter
-	private IKickEvent detectedGoalKickTigers;
+	private KickedBall detectedGoalKickTigers;
 	@Getter
-	private IKickEvent detectedGoalKickOpponents;
+	private KickedBall detectedGoalKickOpponents;
 
 
 	@Override
@@ -55,7 +55,7 @@ public class DirectShotDetectionCalc extends ACalculator
 	}
 
 
-	private IKickEvent detectGoalKick(ETeam attackingTeam)
+	private KickedBall detectGoalKick(ETeam attackingTeam)
 	{
 		ETeamColor attackingTeamColor = getAiFrame().getTeamColor();
 		Goal attackedGoal = Geometry.getGoalTheir();
@@ -65,7 +65,7 @@ public class DirectShotDetectionCalc extends ACalculator
 			attackedGoal = Geometry.getGoalOur();
 		}
 
-		Optional<IKickEvent> kickEvent = getWFrame().getKickEvent();
+		Optional<KickedBall> kickEvent = getWFrame().getKickedBall();
 		if (kickEvent.isPresent() && kickEvent.get().getKickingBot().getTeamColor() == attackingTeamColor)
 		{
 			ILineSegment ballLine = Lines.segmentFromOffset(getBall().getPos(),

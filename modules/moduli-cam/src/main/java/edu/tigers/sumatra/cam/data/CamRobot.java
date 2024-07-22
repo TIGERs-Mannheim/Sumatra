@@ -64,6 +64,8 @@ public class CamRobot extends ACamObject
 	public CamRobot(final double confidence,
 			final IVector2 pixel,
 			final long tCapture,
+			final Long tCaptureCamera,
+			final long tSent,
 			final int camId,
 			final long frameId,
 			final IVector2 pos,
@@ -71,7 +73,7 @@ public class CamRobot extends ACamObject
 			final double height,
 			final BotID botId)
 	{
-		super(confidence, pixel, tCapture, camId, frameId);
+		super(confidence, pixel, tCapture, tCaptureCamera, tSent, camId, frameId);
 		this.pos = pos.copy();
 		this.orientation = orientation;
 		this.height = height;
@@ -87,7 +89,8 @@ public class CamRobot extends ACamObject
 	 */
 	public CamRobot(final CamRobot orig, final long tCapture)
 	{
-		super(orig.getConfidence(), orig.getPixel(), tCapture, orig.getCameraId(), orig.getFrameId());
+		super(orig.getConfidence(), orig.getPixel(), tCapture, orig.getTCaptureCamera(), orig.getTSent(),
+				orig.getCameraId(), orig.getFrameId());
 		pos = orig.pos.copy();
 		orientation = orig.orientation;
 		height = orig.height;

@@ -7,7 +7,7 @@ jib {
         tags = [rootProject.version]
     }
     from {
-        image = "ghcr.io/graalvm/jdk@sha256:baa525245fe29647d396c6a2e14caca6305b7800513da0aae47b2d4965894d62"
+        image = "ghcr.io/graalvm/jdk-community@sha256:57e5c4cf8536dac4346611691c31ea4828f3ff7bbb0d3695902b234f69ed99b5"
     }
     container.jvmFlags = [
             '-Djava.net.preferIPv4Stack=true',

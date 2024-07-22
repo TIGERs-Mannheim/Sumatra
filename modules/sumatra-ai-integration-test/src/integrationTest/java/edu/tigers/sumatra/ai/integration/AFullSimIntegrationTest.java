@@ -14,6 +14,7 @@ import edu.tigers.sumatra.ai.BerkeleyAiFrame;
 import edu.tigers.sumatra.ai.IAIObserver;
 import edu.tigers.sumatra.ai.athena.EAIControlState;
 import edu.tigers.sumatra.ai.integration.blocker.AiSimTimeBlocker;
+import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.ids.EAiTeam;
 import edu.tigers.sumatra.log.LogEventWatcher;
 import edu.tigers.sumatra.math.vector.IVector2;
@@ -38,6 +39,7 @@ import edu.tigers.sumatra.wp.BerkeleyShapeMapFrame;
 import edu.tigers.sumatra.wp.IWorldFrameObserver;
 import edu.tigers.sumatra.wp.ShapeMapBerkeleyRecorder;
 import edu.tigers.sumatra.wp.WfwBerkeleyRecorder;
+import edu.tigers.sumatra.wp.data.ITrackedBot;
 import edu.tigers.sumatra.wp.data.WorldFrameWrapper;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
@@ -58,10 +60,14 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -70,20 +76,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 public abstract class AFullSimIntegrationTest implements IWorldFrameObserver, IAIObserver
 {
 	private static final String MODULI_CONFIG = "integration_test.xml";
-
-	@Rule
-	public TestName testName = new TestName();
-
-	private BerkeleyAsyncRecorder recorder;
 	private final LogEventWatcher logEventWatcher = new LogEventWatcher(Level.WARN, Level.ERROR);
 	private final List<IGameEvent> gameEvents = new CopyOnWriteArrayList<>();
-
+	@Rule
+	public TestName testName = new TestName();
 	protected WorldFrameWrapper lastWorldFrameWrapper;
-	private RefereeMsg lastRefereeMsg = null;
 	protected boolean testCaseSucceeded;
-
 	protected boolean stuck;
+	private BerkeleyAsyncRecorder recorder;
+	private RefereeMsg lastRefereeMsg = null;
 	private boolean botMoved;
+
+	private Map<EAiTeam, InformationPerTeam> informationPerTeam;
 
 
 	@SneakyThrows
@@ -105,6 +109,13 @@ public abstract class AFullSimIntegrationTest implements IWorldFrameObserver, IA
 	}
 
 
+	@AfterClass
+	public static void afterClass()
+	{
+		SumatraModel.getInstance().stopModules();
+	}
+
+
 	@SneakyThrows
 	@Before
 	public void before()
@@ -115,6 +126,8 @@ public abstract class AFullSimIntegrationTest implements IWorldFrameObserver, IA
 		stuck = false;
 		botMoved = false;
 		testCaseSucceeded = false;
+		informationPerTeam = Arrays.stream(EAiTeam.values())
+				.collect(Collectors.toMap(t -> t, t -> new InformationPerTeam(false, false, BotID.noBot())));
 		logEventWatcher.clear();
 		logEventWatcher.start();
 		gameEvents.clear();
@@ -122,7 +135,8 @@ public abstract class AFullSimIntegrationTest implements IWorldFrameObserver, IA
 		SimulationHelper.resetSimulation();
 
 		BerkeleyDb db = BerkeleyDb.withCustomLocation(Paths.get("../../" + BerkeleyDb.getDefaultBasePath(),
-				BerkeleyDb.getDefaultName() + "_" + testName.getMethodName()));
+				BerkeleyDb.getDefaultName("FRIENDLY", "NORMAL_FIRST_HALF", "yellow", "blue") + "_"
+						+ testName.getMethodName()));
 		db.add(BerkeleyAiFrame.class, new BerkeleyAccessor<>(BerkeleyAiFrame.class, true));
 		db.add(BerkeleyLogEvent.class, new BerkeleyAccessor<>(BerkeleyLogEvent.class, false));
 		db.add(BerkeleyShapeMapFrame.class, new BerkeleyAccessor<>(BerkeleyShapeMapFrame.class, true));
@@ -171,13 +185,6 @@ public abstract class AFullSimIntegrationTest implements IWorldFrameObserver, IA
 	}
 
 
-	@AfterClass
-	public static void afterClass()
-	{
-		SumatraModel.getInstance().stopModules();
-	}
-
-
 	@Override
 	public void onNewWorldFrame(final WorldFrameWrapper wFrameWrapper)
 	{
@@ -198,8 +205,39 @@ public abstract class AFullSimIntegrationTest implements IWorldFrameObserver, IA
 		botMoved = botMoved || wFrameWrapper.getSimpleWorldFrame().getBots().values().stream()
 				.anyMatch(bot -> bot.getVel().getLength2() > 0.1);
 
+		informationPerTeam.keySet().forEach(team -> updateInformationPerTeam(wFrameWrapper, team));
+
 		lastWorldFrameWrapper = wFrameWrapper;
 		lastRefereeMsg = wFrameWrapper.getRefereeMsg();
+	}
+
+
+	private void updateInformationPerTeam(WorldFrameWrapper wFrameWrapper, EAiTeam team)
+	{
+		var lastInformation = informationPerTeam.get(team);
+		var wFrane = wFrameWrapper.getWorldFrame(team);
+		var robotsTouching = wFrane.getTigerBotsAvailable().values().stream()
+				.filter(bot -> bot.getBallContact().hadRecentContact() || bot.getBallContact().hadRecentContactFromVision())
+				.toList();
+
+		var ballTouched = lastInformation.ballTouched || !robotsTouching.isEmpty();
+		BotID firstRobotWithContact;
+		if (lastInformation.firstRobotWithContact.equals(BotID.noBot()))
+		{
+			firstRobotWithContact = robotsTouching.stream()
+					.min(Comparator.comparingDouble(bot -> wFrane.getBall().getPos().distanceToSqr(bot.getPos())))
+					.map(ITrackedBot::getBotId)
+					.orElseGet(BotID::noBot);
+		} else
+		{
+			firstRobotWithContact = lastInformation.firstRobotWithContact;
+		}
+		var firstPassSuccess = lastInformation.firstPassSuccess || (
+				!informationPerTeam.get(team.opposite()).ballTouched
+						&& robotsTouching.stream().noneMatch(bot -> firstRobotWithContact.equals(bot.getBotId()))
+						&& robotsTouching.stream().anyMatch(bot -> !firstRobotWithContact.equals(bot.getBotId()))
+		);
+		informationPerTeam.put(team, new InformationPerTeam(firstPassSuccess, ballTouched, firstRobotWithContact));
 	}
 
 
@@ -249,6 +287,20 @@ public abstract class AFullSimIntegrationTest implements IWorldFrameObserver, IA
 	protected void assertBotsHaveMoved()
 	{
 		assertThat(botMoved).withFailMessage("No robot moved during test").isTrue();
+	}
+
+
+	protected void assertSuccessfulFirstPass(EAiTeam team)
+	{
+		assertThat(informationPerTeam.get(team).firstPassSuccess)
+				.withFailMessage("First pass was not successful").isTrue();
+	}
+
+
+	protected void assertBallUntouchedByOpponent(EAiTeam team)
+	{
+		assertThat(informationPerTeam.get(team.opposite()).ballTouched)
+				.withFailMessage("Opponent team touched ball").isFalse();
 	}
 
 
@@ -333,6 +385,10 @@ public abstract class AFullSimIntegrationTest implements IWorldFrameObserver, IA
 		return frame.getGameState().getState() == EGameState.BALL_PLACEMENT;
 	}
 
+
+	private record InformationPerTeam(boolean firstPassSuccess, boolean ballTouched, BotID firstRobotWithContact)
+	{
+	}
 
 	@RequiredArgsConstructor
 	protected static class BallMovedStopCondition implements AiSimTimeBlocker.IStopCondition

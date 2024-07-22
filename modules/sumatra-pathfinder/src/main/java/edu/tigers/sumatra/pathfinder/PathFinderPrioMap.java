@@ -22,8 +22,7 @@ public class PathFinderPrioMap
 
 
 	/**
-	 * Other team is preferred (we circumvent other bots).
-	 * Higher botIds are preferred
+	 * Higher botIds are preferred.
 	 *
 	 * @param myTeam
 	 * @return

@@ -127,7 +127,7 @@ public class StraightKickSolverNonLin3Direct implements IKickSolver
 		@Override
 		public double value(final double[] point)
 		{
-			final long tZero = records.get(0).gettCapture();
+			final long tZero = records.get(0).getCameraCaptureTimestamp();
 			final IVector2 kickPos = Vector2.fromXY(point[0], point[1]);
 			final IVector2 kickVel = kickDir.scaleToNew(point[2]);
 
@@ -137,7 +137,8 @@ public class StraightKickSolverNonLin3Direct implements IKickSolver
 			double error = 0;
 			for (CamBall ball : records)
 			{
-				IVector2 modelPos = traj.getMilliStateAtTime((ball.gettCapture() - tZero) * 1e-9).getPos().getXYVector();
+				IVector2 modelPos = traj.getMilliStateAtTime((ball.getCameraCaptureTimestamp() - tZero) * 1e-9).getPos()
+						.getXYVector();
 
 				error += modelPos.distanceTo(ball.getFlatPos());
 			}

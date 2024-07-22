@@ -145,15 +145,32 @@ public class MoveConstraints implements IExportable, IMoveConstraints
 
 	public MoveConstraints setVelMax(final double velMax)
 	{
-		assert velMax >= 0 : "vel: " + velMax;
+		if (velMax < 0)
+		{
+			throw new IllegalArgumentException("velMax must be >= 0");
+		}
 		this.velMax = velMax;
+		return this;
+	}
+
+
+	public MoveConstraints setVelMaxFast(final double velMaxFast)
+	{
+		if (velMaxFast < 0)
+		{
+			throw new IllegalArgumentException("velMaxFast must be >= 0");
+		}
+		this.velMaxFast = velMaxFast;
 		return this;
 	}
 
 
 	public MoveConstraints setVelMaxW(final double velMaxW)
 	{
-		assert velMaxW >= 0;
+		if (velMaxW < 0)
+		{
+			throw new IllegalArgumentException("velMaxW must be >= 0");
+		}
 		this.velMaxW = velMaxW;
 		return this;
 	}
@@ -161,7 +178,10 @@ public class MoveConstraints implements IExportable, IMoveConstraints
 
 	public MoveConstraints setAccMax(final double accMax)
 	{
-		assert accMax >= 0;
+		if (accMax < 0)
+		{
+			throw new IllegalArgumentException("accMax must be >= 0");
+		}
 		this.accMax = accMax;
 		return this;
 	}
@@ -169,7 +189,10 @@ public class MoveConstraints implements IExportable, IMoveConstraints
 
 	public MoveConstraints setAccMaxW(final double accMaxW)
 	{
-		assert accMaxW >= 0;
+		if (accMaxW < 0)
+		{
+			throw new IllegalArgumentException("accMaxW must be >= 0");
+		}
 		this.accMaxW = accMaxW;
 		return this;
 	}
@@ -177,7 +200,10 @@ public class MoveConstraints implements IExportable, IMoveConstraints
 
 	public MoveConstraints setJerkMax(final double jerkMax)
 	{
-		assert jerkMax >= 0;
+		if (jerkMax < 0)
+		{
+			throw new IllegalArgumentException("jerkMax must be >= 0");
+		}
 		this.jerkMax = jerkMax;
 		return this;
 	}
@@ -185,7 +211,10 @@ public class MoveConstraints implements IExportable, IMoveConstraints
 
 	public MoveConstraints setJerkMaxW(final double jerkMaxW)
 	{
-		assert jerkMaxW >= 0;
+		if (jerkMaxW < 0)
+		{
+			throw new IllegalArgumentException("jerkMaxW must be >= 0");
+		}
 		this.jerkMaxW = jerkMaxW;
 		return this;
 	}

@@ -4,9 +4,6 @@
 
 package edu.tigers.sumatra.botmanager;
 
-import com.github.g3force.configurable.ConfigRegistration;
-import com.github.g3force.configurable.Configurable;
-import edu.tigers.sumatra.bot.EDribbleTractionState;
 import edu.tigers.sumatra.bot.ERobotMode;
 import edu.tigers.sumatra.bot.RobotInfo;
 import edu.tigers.sumatra.botmanager.bots.ABot;
@@ -20,30 +17,16 @@ import edu.tigers.sumatra.math.vector.IVector3;
 import edu.tigers.sumatra.trajectory.ITrajectory;
 import edu.tigers.sumatra.wp.util.IRobotInfoProvider;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 
 public class RobotInfoProvider implements IRobotInfoProvider
 {
-	@Configurable(defValue = "0.7")
-	private static double dribbleCurrentPercentageConsideredStrong = 0.7;
-
-	@Configurable(defValue = "0.15")
-	private static double dribbleCurrentPercentageConsideredStrongMinTime = 0.15;
-
-	static
-	{
-		ConfigRegistration.registerClass("botmgr", RobotInfoProvider.class);
-	}
-
 	private final IBotProvider botProvider;
 	private final BotParamsProvider botParamsProvider;
 
 	private long lastWFTimestamp = -1;
-	private Map<BotID, Long> lastStrongDribblingTimestampMap = new HashMap<>();
 
 
 	public RobotInfoProvider(final IBotProvider botProvider, final BotParamsProvider botParamsProvider)
@@ -95,14 +78,14 @@ public class RobotInfoProvider implements IRobotInfoProvider
 		return RobotInfo.newBuilder()
 				.withTimestamp(lastWFTimestamp)
 				.withBotId(bot.getBotId())
-				.withDribbleTraction(getDribbleTractionState(bot))
+				.withDribbleTraction(bot.getDribbleTractionState())
 				.withBarrierInterrupted(bot.isBarrierInterrupted())
 				.withBatteryRelative((float) bot.getBatteryRelative())
 				.withBotFeatures(bot.getBotFeatures())
 				.withBotParams(bot.getBotParams())
 				.withChip(bot.getMatchCtrl().getSkill().getDevice().equals(EKickerDevice.CHIP))
 				.withArmed(bot.getMatchCtrl().getSkill().getMode().equals(EKickerMode.ARM))
-				.withDribbleRpm((float) bot.getMatchCtrl().getSkill().getDribbleSpeed())
+				.withDribbleSpeed((float) bot.getMatchCtrl().getSkill().getDribbleSpeed())
 				.withHardwareId(bot.getHardwareId())
 				.withInternalState(bot.getSensoryState().orElse(null))
 				.withKickerLevelRelative((float) (bot.getKickerLevel() / bot.getKickerLevelMax()))
@@ -114,25 +97,6 @@ public class RobotInfoProvider implements IRobotInfoProvider
 				.withTrajectory(trajectoryOfBot(bot))
 				.withBallState(bot.getBallState().orElse(null))
 				.build();
-	}
-
-
-	private EDribbleTractionState getDribbleTractionState(ABot bot)
-	{
-		double percent =
-				bot.getDribblerCurrent() / bot.getMatchCtrl().getSkill().getKickerDribbler().getDribblerMaxCurrent();
-		if (percent > dribbleCurrentPercentageConsideredStrong)
-		{
-			long lastStrongDribblingTimestamp = lastStrongDribblingTimestampMap.computeIfAbsent(bot.getBotId(), b -> lastWFTimestamp);
-			if ((lastWFTimestamp - lastStrongDribblingTimestamp) / 1e9 > dribbleCurrentPercentageConsideredStrongMinTime)
-			{
-				return EDribbleTractionState.STRONG;
-			}
-		} else
-		{
-			lastStrongDribblingTimestampMap.remove(bot.getBotId());
-		}
-		return EDribbleTractionState.NONE_OR_LIGHT;
 	}
 
 

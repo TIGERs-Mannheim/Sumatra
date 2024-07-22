@@ -18,4 +18,8 @@ public enum EBallResponsibility
 	 * Defense should handle ball
 	 */
 	DEFENSE,
+	/**
+	 * Defense should handle ball
+	 */
+	KEEPER,
 }

@@ -9,6 +9,7 @@ import com.github.g3force.configurable.Configurable;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.wp.data.WorldFrame;
+import lombok.Getter;
 import lombok.Setter;
 
 import java.util.List;
@@ -16,8 +17,13 @@ import java.util.List;
 
 public class PassFactory
 {
+	@Getter
+	@Configurable(defValue = "3.2", comment = "Default maximum ball speed when receiving the ball")
+	private static double defaultMaxReceivingBallSpeedStraight = 3.2;
+
+	@Getter
 	@Configurable(defValue = "2.5", comment = "Default maximum ball speed when receiving the ball")
-	private static double defaultMaxReceivingBallSpeed = 2.5;
+	private static double defaultMaxReceivingBallSpeedChip = 2.5;
 
 	static
 	{
@@ -39,9 +45,14 @@ public class PassFactory
 	}
 
 
-	private double getMaxReceivingBallSpeed()
+	private double getMaxReceivingBallSpeedStraight()
 	{
-		return maxReceivingBallSpeed == null ? defaultMaxReceivingBallSpeed : maxReceivingBallSpeed;
+		return maxReceivingBallSpeed == null ? defaultMaxReceivingBallSpeedStraight : maxReceivingBallSpeed;
+	}
+
+	private double getMaxReceivingBallSpeedChip()
+	{
+		return maxReceivingBallSpeed == null ? defaultMaxReceivingBallSpeedChip : maxReceivingBallSpeed;
 	}
 
 
@@ -54,17 +65,26 @@ public class PassFactory
 	/**
 	 * Get chip and straight passes.
 	 *
-	 * @param source   the pass origin, e.g. the ball position
-	 * @param target   the location where the ball is passed to
-	 * @param shooter  the robot that performs the pass (to determine max kick speed, can be {@link BotID#noBot()})
-	 * @param receiver the robot that receives the pass (stored in pass target, can be {@link BotID#noBot()})
+	 * @param source          the pass origin, e.g. the ball position
+	 * @param target          the location where the ball is passed to
+	 * @param shooter         the robot that performs the pass
+	 * @param receiver        the robot that receives the pass
+	 * @param minPassDuration the minimum duration that the ball must travel till it reaches the target
+	 * @param preparationTime the time that the shooter will need to prepare the pass
 	 * @return
 	 */
-	public List<Pass> passes(IVector2 source, IVector2 target, BotID shooter, BotID receiver,
-			double minPassDuration)
+	public List<Pass> passes(
+			IVector2 source,
+			IVector2 target,
+			BotID shooter,
+			BotID receiver,
+			double minPassDuration,
+			double preparationTime,
+			EBallReceiveMode receiveMode
+	)
 	{
-		Pass straightPass = straight(source, target, shooter, receiver, minPassDuration);
-		Pass chipPass = chip(source, target, shooter, receiver, minPassDuration);
+		Pass straightPass = straight(source, target, shooter, receiver, minPassDuration, preparationTime, receiveMode);
+		Pass chipPass = chip(source, target, shooter, receiver, minPassDuration, preparationTime, receiveMode);
 		return List.of(straightPass, chipPass);
 	}
 
@@ -74,13 +94,13 @@ public class PassFactory
 	 *
 	 * @param source   the pass origin, e.g. the ball position
 	 * @param target   the location where the ball is passed to
-	 * @param shooter  the robot that performs the pass (to determine max kick speed, can be {@link BotID#noBot()})
-	 * @param receiver the robot that receives the pass (stored in pass target, can be {@link BotID#noBot()})
+	 * @param shooter  the robot that performs the pass
+	 * @param receiver the robot that receives the pass
 	 * @return
 	 */
-	public Pass chip(IVector2 source, IVector2 target, BotID shooter, BotID receiver)
+	public Pass chip(IVector2 source, IVector2 target, BotID shooter, BotID receiver, EBallReceiveMode receiveMode)
 	{
-		return chip(source, target, shooter, receiver, 0.0);
+		return chip(source, target, shooter, receiver, 0.0, 0.0, receiveMode);
 	}
 
 
@@ -89,30 +109,41 @@ public class PassFactory
 	 *
 	 * @param source          the pass origin, e.g. the ball position
 	 * @param target          the location where the ball is passed to
-	 * @param shooter         the robot that performs the pass (to determine max kick speed, can be {@link BotID#noBot()})
-	 * @param receiver        the robot that receives the pass (stored in pass target, can be {@link BotID#noBot()})
+	 * @param shooter         the robot that performs the pass
+	 * @param receiver        the robot that receives the pass
 	 * @param minPassDuration the minimum duration that the ball must travel till it reaches the target
+	 * @param preparationTime the time that the shooter will need to prepare the pass
 	 * @return
 	 */
-	public Pass chip(IVector2 source, IVector2 target, BotID shooter, BotID receiver, double minPassDuration)
+	public Pass chip(
+			IVector2 source,
+			IVector2 target,
+			BotID shooter,
+			BotID receiver,
+			double minPassDuration,
+			double preparationTime,
+			EBallReceiveMode receiveMode
+	)
 	{
 		var distance = source.distanceTo(target);
 		var shooterBot = worldFrame.getBot(shooter);
 		var maxSpeed = kickSpeedFactory.maxChip(shooterBot);
-		var speed = kickSpeedFactory.chip(distance, getMaxReceivingBallSpeed(), maxSpeed, minPassDuration);
+		var speed = kickSpeedFactory.chip(distance, getMaxReceivingBallSpeedChip(), maxSpeed, minPassDuration);
 		var consultant = worldFrame.getBall().getChipConsultant();
 		var duration = consultant.getTimeForKick(distance, speed);
 		var receivingSpeed = consultant.getVelForKickByTime(speed, duration);
 
 		var kick = kickFactory.chip(source, target, speed);
 
-		return Pass.builder()
-				.kick(kick)
-				.receiver(receiver)
-				.receivingSpeed(receivingSpeed)
-				.duration(duration)
-				.shooter(shooter)
-				.build();
+		return new Pass(
+				kick,
+				receiver,
+				shooter,
+				receivingSpeed,
+				duration,
+				preparationTime,
+				receiveMode
+		);
 	}
 
 
@@ -121,13 +152,13 @@ public class PassFactory
 	 *
 	 * @param source   the pass origin, e.g. the ball position
 	 * @param target   the location where the ball is passed to
-	 * @param shooter  the robot that performs the pass (to determine max kick speed, can be {@link BotID#noBot()})
-	 * @param receiver the robot that receives the pass (stored in pass target, can be {@link BotID#noBot()})
+	 * @param shooter  the robot that performs the pass
+	 * @param receiver the robot that receives the pass
 	 * @return
 	 */
-	public Pass straight(IVector2 source, IVector2 target, BotID shooter, BotID receiver)
+	public Pass straight(IVector2 source, IVector2 target, BotID shooter, BotID receiver, EBallReceiveMode receiveMode)
 	{
-		return straight(source, target, shooter, receiver, 0.0);
+		return straight(source, target, shooter, receiver, 0.0, 0.0, receiveMode);
 	}
 
 
@@ -136,28 +167,39 @@ public class PassFactory
 	 *
 	 * @param source          the pass origin, e.g. the ball position
 	 * @param target          the location where the ball is passed to
-	 * @param shooter         the robot that performs the pass (to determine max kick speed, can be {@link BotID#noBot()})
-	 * @param receiver        the robot that receives the pass (stored in pass target, can be {@link BotID#noBot()})
+	 * @param shooter         the robot that performs the pass
+	 * @param receiver        the robot that receives the pass
 	 * @param minPassDuration the minimum duration that the ball must travel till it reaches the target
+	 * @param preparationTime the time that the shooter will need to prepare the pass
 	 * @return
 	 */
-	public Pass straight(IVector2 source, IVector2 target, BotID shooter, BotID receiver, double minPassDuration)
+	public Pass straight(
+			IVector2 source,
+			IVector2 target,
+			BotID shooter,
+			BotID receiver,
+			double minPassDuration,
+			double preparationTime,
+			EBallReceiveMode receiveMode
+	)
 	{
 		var distance = source.distanceTo(target);
 		var shooterBot = worldFrame.getBot(shooter);
 		var maxSpeed = kickSpeedFactory.maxStraight(shooterBot);
-		var speed = kickSpeedFactory.straight(distance, getMaxReceivingBallSpeed(), maxSpeed, minPassDuration);
+		var speed = kickSpeedFactory.straight(distance, getMaxReceivingBallSpeedStraight(), maxSpeed, minPassDuration);
 		var duration = worldFrame.getBall().getStraightConsultant().getTimeForKick(distance, speed);
 		var receivingSpeed = worldFrame.getBall().getStraightConsultant().getVelForKickByTime(speed, duration);
 
 		var kick = kickFactory.straight(source, target, speed);
 
-		return Pass.builder()
-				.kick(kick)
-				.receiver(receiver)
-				.receivingSpeed(receivingSpeed)
-				.duration(duration)
-				.shooter(shooter)
-				.build();
+		return new Pass(
+				kick,
+				receiver,
+				shooter,
+				receivingSpeed,
+				duration,
+				preparationTime,
+				receiveMode
+		);
 	}
 }

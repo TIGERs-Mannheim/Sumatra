@@ -11,6 +11,7 @@ import edu.tigers.sumatra.pathfinder.MovementCon;
 import edu.tigers.sumatra.skillsystem.skills.ESkillState;
 import edu.tigers.sumatra.skillsystem.skills.IdleSkill;
 import edu.tigers.sumatra.skillsystem.skills.MoveToSkill;
+import edu.tigers.sumatra.skillsystem.skills.util.KickParams;
 import edu.tigers.sumatra.statemachine.AState;
 import edu.tigers.sumatra.wp.data.DynamicPosition;
 import edu.tigers.sumatra.wp.data.ITrackedObject;
@@ -43,6 +44,12 @@ public class MoveRole extends ARole
 	public final MovementCon getMoveCon()
 	{
 		return skill.getMoveCon();
+	}
+
+
+	public final void setKickParams(KickParams kickParams)
+	{
+		skill.setKickParams(kickParams);
 	}
 
 
@@ -119,6 +126,17 @@ public class MoveRole extends ARole
 		return skill.getDestination();
 	}
 
+
+	public void setVelMax(final double maxVel)
+	{
+		skill.setVelMax(maxVel);
+	}
+
+
+	public void setAccMax(final double maxAcc)
+	{
+		skill.setAccMax(maxAcc);
+	}
 
 	public void setVelMaxW(final double maxVelW)
 	{

@@ -16,15 +16,15 @@ dependencies {
     implementation project(':moduli-vision')
     implementation project(':moduli-geometry')
 
-    api 'com.github.g3force:configurable:3.0'
+    api(libs.com.github.g3force.configurable)
 
-    implementation 'org.apache.logging.log4j:log4j-api:2.20.0'
+    implementation(libs.org.apache.logging.log4j.log4j.api)
 
-    implementation 'io.humble:humble-video-noarch:0.3.0'
-    implementation 'com.jidesoft:jide-oss:3.6.18'
-    implementation 'commons-lang:commons-lang:2.6'
+    implementation(libs.io.humble.humble.video.noarch)
+    implementation(libs.com.jidesoft.jide.oss)
+    implementation(libs.commons.lang)
 
     if (!project.property("compactBuild").toBoolean()) {
-        runtimeOnly 'io.humble:humble-video-all:0.3.0'
+        runtimeOnly(libs.io.humble.humble.video.all)
     }
 }

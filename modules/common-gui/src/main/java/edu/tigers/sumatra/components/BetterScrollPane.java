@@ -4,9 +4,8 @@
 
 package edu.tigers.sumatra.components;
 
-import java.awt.Component;
-
 import javax.swing.JScrollPane;
+import java.awt.Component;
 
 
 /**
@@ -18,36 +17,15 @@ import javax.swing.JScrollPane;
 public class BetterScrollPane extends JScrollPane
 {
 	private static final int SCROLL_INCREMENT = 16;
-	
-	
-	public BetterScrollPane()
-	{
-		super();
-		changeDefaults();
-	}
-	
-	
+
+
 	public BetterScrollPane(Component component)
 	{
 		super(component);
 		changeDefaults();
 	}
-	
-	
-	public BetterScrollPane(int var1, int var2)
-	{
-		super(var1, var2);
-		changeDefaults();
-	}
-	
-	
-	public BetterScrollPane(Component component, int var2, int var3)
-	{
-		super(component, var2, var3);
-		changeDefaults();
-	}
-	
-	
+
+
 	private void changeDefaults()
 	{
 		this.getVerticalScrollBar().setUnitIncrement(SCROLL_INCREMENT); // change vertical scroll speed

@@ -18,6 +18,7 @@ import javax.swing.table.DefaultTableModel;
 import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.Dimension;
+import java.util.Objects;
 
 
 /**
@@ -159,13 +160,12 @@ public class MetisPanel extends JPanel
 				int row, int column)
 		{
 			super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
-			Class<?> clazz = (Class<?>) value;
-			if (clazz == null)
+			if (value == null)
 			{
 				setText("");
 			} else
 			{
-				setText(clazz.getSimpleName());
+				setText(Objects.toString(value));
 			}
 			return this;
 		}

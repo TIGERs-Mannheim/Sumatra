@@ -12,21 +12,32 @@ import java.util.function.Function;
  */
 abstract class AVectorN extends AVector implements IVectorN
 {
-	
+	@Override
+	public double getLengthSqr()
+	{
+		double sum = 0;
+		for (int d = 0; d < getNumDimensions(); d++)
+		{
+			sum += get(d) * get(d);
+		}
+		return sum;
+	}
+
+
 	@Override
 	public Vector2 getXYVector()
 	{
 		return Vector2.fromXY(x(), y());
 	}
-	
-	
+
+
 	@Override
 	public Vector3 getXYZVector()
 	{
 		return Vector3.fromXYZ(x(), y(), get(2));
 	}
-	
-	
+
+
 	@Override
 	public VectorN addNew(final IVectorN vector)
 	{
@@ -37,8 +48,8 @@ abstract class AVectorN extends AVector implements IVectorN
 		}
 		return vec;
 	}
-	
-	
+
+
 	@Override
 	public VectorN subtractNew(final IVectorN vector)
 	{
@@ -49,8 +60,8 @@ abstract class AVectorN extends AVector implements IVectorN
 		}
 		return vec;
 	}
-	
-	
+
+
 	@Override
 	public VectorN multiplyNew(final IVectorN vector)
 	{
@@ -61,8 +72,8 @@ abstract class AVectorN extends AVector implements IVectorN
 		}
 		return vec;
 	}
-	
-	
+
+
 	@Override
 	public VectorN multiplyNew(final double f)
 	{
@@ -73,8 +84,8 @@ abstract class AVectorN extends AVector implements IVectorN
 		}
 		return vec;
 	}
-	
-	
+
+
 	@Override
 	public VectorN normalizeNew()
 	{
@@ -85,15 +96,15 @@ abstract class AVectorN extends AVector implements IVectorN
 		final double length = getLength();
 		return applyNew(f -> f / length);
 	}
-	
-	
+
+
 	@Override
 	public VectorN absNew()
 	{
 		return applyNew(Math::abs);
 	}
-	
-	
+
+
 	@Override
 	public VectorN applyNew(final Function<Double, Double> function)
 	{

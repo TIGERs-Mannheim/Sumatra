@@ -46,7 +46,7 @@ public class InterceptBallLineDestinationCalculator extends AInterceptBallDestin
 			return fallbackPoint;
 		}
 
-		final IVector2 pointA = pointACandidates.get(0);
+		final IVector2 pointA = pointACandidates.getFirst();
 		final IVector2 pointB = pointBCandidate.get();
 
 		var searchDist = pointA.distanceTo(pointB);
@@ -57,9 +57,9 @@ public class InterceptBallLineDestinationCalculator extends AInterceptBallDestin
 				.map(dist -> buildDestWithTrajectory(getBall().getVel().scaleToNew(dist), pointA, distBallToA))
 				.max(DestWithTrajectory::compareTo).map(DestWithTrajectory::dest).orElse(fallbackPoint);
 
-		getShapes().get(ESkillShapesLayer.KEEPER)
+		getShapes().get(ESkillShapesLayer.KEEPER_POSITIONING_CALCULATORS)
 				.add(new DrawableLine(pointA, pointB, Color.WHITE));
-		getShapes().get(ESkillShapesLayer.KEEPER)
+		getShapes().get(ESkillShapesLayer.KEEPER_POSITIONING_CALCULATORS)
 				.add(new DrawableCircle(Circle.createCircle(bestPoint, 35), Color.GREEN));
 		return bestPoint;
 	}
@@ -98,6 +98,7 @@ public class InterceptBallLineDestinationCalculator extends AInterceptBallDestin
 		return getWorldFrame().getBall().getTrajectory().getTouchdownLocations().stream()
 				.filter(td -> td.x() > Geometry.getGoalOur().getCenter().x())
 				.filter(td -> td.distanceTo(getPos()) < maxChipInterceptDist)
+				.filter(td -> td.x() < destination.x())
 				.min(Comparator.comparingDouble(goalLine::distanceToSqr)).orElse(destination);
 	}
 
@@ -119,7 +120,6 @@ public class InterceptBallLineDestinationCalculator extends AInterceptBallDestin
 		{
 			targetTime = 0.0;
 		}
-		return TrajectoryGenerator.generateVirtualPositionToReachPointInTime(getTBot(), getMoveConstraints(), destination,
-				targetTime);
+		return TrajectoryGenerator.generateVirtualPositionToReachPointInTime(getTBot(), destination, targetTime);
 	}
 }

@@ -119,6 +119,10 @@ public final class JsonConverter
 	 */
 	static Map<BotID, SnapObject> decodeBots(final JSONArray array)
 	{
+		if (array == null)
+		{
+			return Map.of();
+		}
 		Map<BotID, SnapObject> bots = new LinkedHashMap<>();
 		for (Object obj : array)
 		{

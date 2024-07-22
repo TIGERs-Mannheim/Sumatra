@@ -88,6 +88,21 @@ public final class MovementCon implements IMovementCon
 	}
 
 
+	/**
+	 * Disable all obstacles.
+	 */
+	public void noObstacles()
+	{
+		setFieldBorderObstacle(false);
+		setPenaltyAreaTheirObstacle(false);
+		setPenaltyAreaOurObstacle(false);
+		setGoalPostsObstacle(false);
+		setGameStateObstacle(false);
+		setBotsObstacle(false);
+		setBallObstacle(false);
+	}
+
+
 	public ETeam getConsideredPenAreas()
 	{
 		if (penaltyAreaOurObstacle && penaltyAreaTheirObstacle)

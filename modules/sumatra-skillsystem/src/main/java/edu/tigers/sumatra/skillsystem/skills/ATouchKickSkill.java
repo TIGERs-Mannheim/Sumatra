@@ -6,36 +6,22 @@ package edu.tigers.sumatra.skillsystem.skills;
 
 import com.github.g3force.configurable.Configurable;
 import edu.tigers.sumatra.botmanager.botskills.data.EKickerDevice;
-import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.skillsystem.skills.util.KickParams;
-import edu.tigers.sumatra.skillsystem.skills.util.PositionValidator;
 import lombok.Setter;
 
 
 /**
  * Abstract base class for touch kick skills.
  */
-public abstract class ATouchKickSkill extends AMoveToSkill
+public abstract class ATouchKickSkill extends ABallHandlingSkill
 {
-	@Configurable(defValue = "0.7")
-	protected static double maxBallSpeed = 0.7;
+	@Configurable(defValue = "1.2")
+	protected static double maxBallSpeed = 1.2;
 
-	protected final PositionValidator positionValidator = new PositionValidator();
-
-	@Setter
-	protected IVector2 target;
-	@Setter
-	protected double passRange;
 	@Setter
 	protected KickParams desiredKickParams = KickParams.disarm();
 	@Setter
 	protected boolean adaptKickSpeedToRobotSpeed = true;
-
-
-	protected IVector2 getBallPos()
-	{
-		return getBall().getPos();
-	}
 
 
 	/**
@@ -64,10 +50,11 @@ public abstract class ATouchKickSkill extends AMoveToSkill
 
 	protected double getKickSpeed()
 	{
+		double kickSpeed = desiredKickParams.getKickSpeed();
 		if (adaptKickSpeedToRobotSpeed)
 		{
-			return adaptKickSpeedToBotVel(target, desiredKickParams.getKickSpeed());
+			kickSpeed = adaptKickSpeedToBotVel(target, kickSpeed);
 		}
-		return desiredKickParams.getKickSpeed();
+		return kickSpeed;
 	}
 }

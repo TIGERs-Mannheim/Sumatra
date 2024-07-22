@@ -8,6 +8,7 @@ import edu.tigers.sumatra.ai.integration.blocker.AiSimTimeBlocker;
 import edu.tigers.sumatra.ai.integration.stopcondition.BotsNotMovingStopCondition;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.geometry.RuleConstraints;
+import edu.tigers.sumatra.ids.EAiTeam;
 import edu.tigers.sumatra.ids.ETeamColor;
 import edu.tigers.sumatra.math.circle.Circle;
 import edu.tigers.sumatra.math.circle.ICircle;
@@ -116,10 +117,11 @@ public class FullSimIntegrationTest extends AFullSimIntegrationTest
 
 		assertGameState(EGameState.RUNNING);
 
-		defaultSimTimeBlocker(2)
+		defaultSimTimeBlocker(5)
 				.addStopCondition(this::ballLeftField)
 				.await();
 
+		assertSuccessfulFirstPass(EAiTeam.BLUE); // Blue is team that has the kickoff
 		assertNoWarningsOrErrors();
 		assertNoAvoidableViolations();
 		assertBotsHaveMoved();
@@ -145,7 +147,7 @@ public class FullSimIntegrationTest extends AFullSimIntegrationTest
 
 		assertGameState(EGameState.RUNNING);
 
-		defaultSimTimeBlocker(2)
+		defaultSimTimeBlocker(5)
 				.addStopCondition(this::ballLeftField)
 				.await();
 
@@ -287,6 +289,56 @@ public class FullSimIntegrationTest extends AFullSimIntegrationTest
 	}
 
 
+	/**
+	 * Perform ball placement when many bots are close to penalty area.
+	 * Path planning gets complicated for multiple robots.
+	 */
+	@Test
+	public void ballPlacementCrowded()
+	{
+		initSimulation("snapshots/ballPlacementCrowded.json");
+		defaultSimTimeBlocker(1)
+				.await();
+		defaultSimTimeBlocker(30)
+				.addStopCondition(this::gameStopped)
+				.await();
+
+		// game should be either halted (goal) or in ball_placement (failed penalty)
+		assertThat(lastWorldFrameWrapper.getGameState().getState())
+				.isNotEqualTo(EGameState.BALL_PLACEMENT);
+
+		assertNoWarningsOrErrors();
+		assertNoAvoidableViolations();
+		assertBotsHaveMoved();
+		success();
+	}
+
+
+	/**
+	 * Perform ball placement when many bots are close to penalty area.
+	 * Path planning gets complicated for multiple robots.
+	 */
+	@Test
+	public void ballPlacementAtBorder()
+	{
+		initSimulation("snapshots/ballPlacementAtBorder.json");
+		defaultSimTimeBlocker(1)
+				.await();
+		defaultSimTimeBlocker(30)
+				.addStopCondition(this::gameStopped)
+				.await();
+
+		// game should be either halted (goal) or in ball_placement (failed penalty)
+		assertThat(lastWorldFrameWrapper.getGameState().getState())
+				.isNotEqualTo(EGameState.BALL_PLACEMENT);
+
+		assertNoWarningsOrErrors();
+		assertNoAvoidableViolations();
+		assertBotsHaveMoved();
+		success();
+	}
+
+
 	private void runBallPlacement(IVector2 source, IVector2 target)
 	{
 		initSimulation(new SnapshotGenerator()
@@ -304,7 +356,8 @@ public class FullSimIntegrationTest extends AFullSimIntegrationTest
 		sendRefereeCommand(Command.BALL_PLACEMENT_BLUE);
 		defaultSimTimeBlocker(5)
 				.await();
-		defaultSimTimeBlocker(30)
+		// 30s is allowed in the real game, but this is only simulated we really should not need the full 30s
+		defaultSimTimeBlocker(15)
 				.addStopCondition(this::gameStopped)
 				.await();
 

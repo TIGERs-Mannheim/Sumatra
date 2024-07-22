@@ -107,7 +107,7 @@ public class AutoRefIntegrationTest
 		SumatraModel.getInstance().getModule(AutoRefModule.class).changeMode(EAutoRefMode.PASSIVE);
 
 		BerkeleyDb db = BerkeleyDb.withCustomLocation(Paths.get("../../" + BerkeleyDb.getDefaultBasePath(),
-				BerkeleyDb.getDefaultName() + "_" + name));
+				BerkeleyDb.getDefaultName("FRIENDLY", "NORMAL_FIRST_HALF","yellow", "blue") + "_" + name));
 		db.add(BerkeleyLogEvent.class, new BerkeleyAccessor<>(BerkeleyLogEvent.class, false));
 		db.add(BerkeleyShapeMapFrame.class, new BerkeleyAccessor<>(BerkeleyShapeMapFrame.class, true));
 		db.add(WorldFrameWrapper.class, new BerkeleyAccessor<>(WorldFrameWrapper.class, true));

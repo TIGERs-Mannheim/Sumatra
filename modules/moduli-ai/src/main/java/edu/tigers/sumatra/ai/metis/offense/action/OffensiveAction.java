@@ -7,17 +7,13 @@ package edu.tigers.sumatra.ai.metis.offense.action;
 import com.sleepycat.persist.model.Persistent;
 import edu.tigers.sumatra.ai.metis.kicking.Kick;
 import edu.tigers.sumatra.ai.metis.kicking.Pass;
-import edu.tigers.sumatra.ai.metis.offense.action.moves.EOffensiveActionMove;
 import edu.tigers.sumatra.ai.metis.offense.dribble.DribbleToPos;
 import edu.tigers.sumatra.ai.metis.pass.target.IPassTarget;
 import edu.tigers.sumatra.ai.metis.pass.target.PassTarget;
 import edu.tigers.sumatra.math.vector.IVector2;
-import edu.tigers.sumatra.skillsystem.skills.util.KickParams;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import lombok.Value;
 
@@ -75,12 +71,6 @@ public class OffensiveAction
 	}
 
 
-	public Optional<KickParams> getKickParams()
-	{
-		return getKickOpt().map(Kick::getKickParams);
-	}
-
-
 	public Optional<IPassTarget> getPassTarget()
 	{
 		return Optional.ofNullable(pass).map(p -> new PassTarget(p.getKick().getTarget(), p.getReceiver()));
@@ -93,14 +83,6 @@ public class OffensiveAction
 		return OffensiveAction.builder()
 				.type(EOffensiveActionType.PROTECT)
 				.dribbleToPos(dribbleToPos)
-				.build();
-	}
-
-
-	public static OffensiveAction buildChopTrick()
-	{
-		return OffensiveAction.builder()
-				.type(EOffensiveActionType.CHOP_TRICK)
 				.build();
 	}
 

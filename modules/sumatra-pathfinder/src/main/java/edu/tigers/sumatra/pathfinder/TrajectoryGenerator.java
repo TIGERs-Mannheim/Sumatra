@@ -6,6 +6,7 @@ package edu.tigers.sumatra.pathfinder;
 
 import edu.tigers.sumatra.bot.IMoveConstraints;
 import edu.tigers.sumatra.bot.MoveConstraints;
+import edu.tigers.sumatra.math.SumatraMath;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.trajectory.BangBangTrajectoryFactory;
 import edu.tigers.sumatra.trajectory.DestinationForTimedPositionCalc;
@@ -24,16 +25,20 @@ public final class TrajectoryGenerator
 	private static final BangBangTrajectoryFactory TRAJECTORY_FACTORY = new BangBangTrajectoryFactory();
 	private static final DestinationForTimedPositionCalc OFFSET_CALC = new DestinationForTimedPositionCalc();
 
+	//************************************************************************
+	// Position Trajectory
+	//************************************************************************
 
-	public static ITrajectory<IVector2> generatePositionTrajectory(final ITrackedBot bot, final IVector2 dest)
+
+	public static ITrajectory<IVector2> generatePositionTrajectory(ITrackedBot bot, IVector2 dest)
 	{
 		IMoveConstraints mc = new MoveConstraints(bot.getRobotInfo().getBotParams().getMovementLimits());
 		return generatePositionTrajectory(mc, bot.getPos(), bot.getVel(), dest);
 	}
 
 
-	public static ITrajectory<IVector2> generatePositionTrajectory(final ITrackedBot bot, final IVector2 dest,
-			final IMoveConstraints mc)
+	public static ITrajectory<IVector2> generatePositionTrajectory(ITrackedBot bot, IVector2 dest,
+			IMoveConstraints mc)
 	{
 		return generatePositionTrajectory(mc, bot.getPos(), bot.getVel(), dest);
 	}
@@ -46,10 +51,12 @@ public final class TrajectoryGenerator
 	 * @param dest   [mm]
 	 * @return
 	 */
-	public static ITrajectory<IVector2> generatePositionTrajectory(final IMoveConstraints mc,
-			final IVector2 curPos,
-			final IVector2 curVel,
-			final IVector2 dest)
+	public static ITrajectory<IVector2> generatePositionTrajectory(
+			IMoveConstraints mc,
+			IVector2 curPos,
+			IVector2 curVel,
+			IVector2 dest
+	)
 	{
 		IVector2 curPosM = curPos.multiplyNew(1e-3f);
 		IVector2 destM = dest.multiplyNew(1e-3f);
@@ -73,19 +80,25 @@ public final class TrajectoryGenerator
 				mc.getPrimaryDirection());
 	}
 
+	//************************************************************************
+	// Rotation Trajectory
+	//************************************************************************
+
 
 	public static ITrajectory<Double> generateRotationTrajectory(
-			final ITrackedBot bot,
-			final double targetAngle,
-			final IMoveConstraints mc)
+			ITrackedBot bot,
+			double targetAngle,
+			IMoveConstraints mc
+	)
 	{
 		return generateRotationTrajectory(bot.getOrientation(), bot.getAngularVel(), targetAngle, mc);
 	}
 
 
 	public static ITrajectory<Double> generateRotationTrajectory(
-			final ITrackedBot bot,
-			final double targetAngle)
+			ITrackedBot bot,
+			double targetAngle
+	)
 	{
 		IMoveConstraints mc = new MoveConstraints(bot.getRobotInfo().getBotParams().getMovementLimits());
 		return generateRotationTrajectory(bot.getOrientation(), bot.getAngularVel(), targetAngle, mc);
@@ -93,10 +106,11 @@ public final class TrajectoryGenerator
 
 
 	private static ITrajectory<Double> generateRotationTrajectory(
-			final double curOrientation,
-			final double curAVel,
-			final double targetAngle,
-			final IMoveConstraints mc)
+			double curOrientation,
+			double curAVel,
+			double targetAngle,
+			IMoveConstraints mc
+	)
 	{
 		return TRAJECTORY_FACTORY.orientation((float) curOrientation, (float) targetAngle, (float) curAVel,
 				(float) mc.getVelMaxW(),
@@ -104,48 +118,164 @@ public final class TrajectoryGenerator
 	}
 
 
+	public static boolean isComeToAStopFaster(ITrackedBot bot, IVector2 dest)
+	{
+		var trajWithoutComeToAStop = generatePositionTrajectory(bot, dest);
+		var stateAfterComeToAStop = stateAfterComeToAStop(
+				bot.getMoveConstraints(),
+				trajWithoutComeToAStop.getPosition(0),
+				trajWithoutComeToAStop.getVelocity(0)
+		);
+
+		var end = trajWithoutComeToAStop.getPosition(trajWithoutComeToAStop.getTotalTime()).multiplyNew(1e3);
+
+		var trajAfterBrk = generatePositionTrajectory(
+				bot.getMoveConstraints(),
+				stateAfterComeToAStop.pos,
+				stateAfterComeToAStop.vel,
+				end
+		);
+
+		return trajAfterBrk.getTotalTime() + stateAfterComeToAStop.lookAhead + 0.01
+				< trajWithoutComeToAStop.getTotalTime();
+	}
+
+	//************************************************************************
+	// Overshoot Trajectory
+	//************************************************************************
+
+
 	public static IVector2 generateVirtualPositionToReachPointInTime(
-			final ITrackedBot bot,
-			final MoveConstraints moveConstraints,
-			final IVector2 dest,
-			final double targetTime
+			ITrackedBot bot,
+			IVector2 dest,
+			double targetTime
 	)
 	{
-		var posInM = bot.getPos().multiplyNew(1e-3);
+		return generateVirtualPositionToReachPointInTime(
+				bot.getMoveConstraints(),
+				bot.getPos(),
+				bot.getVel(),
+				dest,
+				targetTime
+		);
+	}
+
+
+	/**
+	 * @param mc
+	 * @param curPos [mm]
+	 * @param curVel [m/s]
+	 * @param dest   [mm]
+	 * @return
+	 */
+	public static IVector2 generateVirtualPositionToReachPointInTime(
+			MoveConstraints mc,
+			IVector2 curPos,
+			IVector2 curVel,
+			IVector2 dest,
+			double targetTime
+	)
+	{
+		var posInM = curPos.multiplyNew(1e-3);
 		var destInM = dest.multiplyNew(1e-3);
-		if (moveConstraints.getPrimaryDirection().isZeroVector())
+		if (mc.getPrimaryDirection().isZeroVector())
 		{
 			return OFFSET_CALC.destinationForBangBang2dSync(
 					posInM,
 					destInM,
-					bot.getVel(),
-					moveConstraints.getVelMax(),
-					moveConstraints.getAccMax(),
+					curVel,
+					mc.getVelMax(),
+					mc.getAccMax(),
 					targetTime
 			).multiplyNew(1e3);
 		}
 		return OFFSET_CALC.destinationForBangBang2dAsync(
 				posInM,
 				destInM,
-				bot.getVel(),
-				moveConstraints.getVelMax(),
-				moveConstraints.getAccMax(),
+				curVel,
+				mc.getVelMax(),
+				mc.getAccMax(),
 				targetTime,
-				moveConstraints.getPrimaryDirection()
+				mc.getPrimaryDirection()
 		).multiplyNew(1e3);
 	}
 
 
 	public static ITrajectory<IVector2> generatePositionTrajectoryToReachPointInTime(
-			final ITrackedBot bot,
+			ITrackedBot bot,
+			IVector2 dest,
+			double targetTime
+	)
+	{
+		return generatePositionTrajectoryToReachPointInTime(
+				bot.getMoveConstraints(),
+				bot.getPos(),
+				bot.getVel(),
+				dest,
+				targetTime
+		);
+	}
+
+
+	public static ITrajectory<IVector2> generatePositionTrajectoryToReachPointInTime(
 			final MoveConstraints moveConstraints,
+			final IVector2 curPos,
+			final IVector2 curVel,
 			final IVector2 dest,
 			final double targetTime
 	)
 	{
 		// This can get optimized as an addition to the generateVirtualPositionToReachPointInTime could directly create
 		// full trajectories and not only a position.
-		var virtualDest = generateVirtualPositionToReachPointInTime(bot, moveConstraints, dest, targetTime);
-		return generatePositionTrajectory(bot, virtualDest, moveConstraints);
+		var virtualDest = generateVirtualPositionToReachPointInTime(moveConstraints, curPos, curVel, dest, targetTime);
+		return generatePositionTrajectory(moveConstraints, curPos, curVel, virtualDest);
 	}
+
+
+	public static boolean isComeToAStopFasterToReachPointInTime(ITrackedBot bot, IVector2 dest, double targetTime)
+	{
+		var trajWithoutComeToAStop = generatePositionTrajectoryToReachPointInTime(bot, dest, targetTime);
+		var stateAfterComeToAStop = stateAfterComeToAStop(
+				bot.getMoveConstraints(),
+				trajWithoutComeToAStop.getPosition(0),
+				trajWithoutComeToAStop.getVelocity(0)
+		);
+
+		var trajAfterBrk = generatePositionTrajectoryToReachPointInTime(
+				bot.getMoveConstraints(),
+				stateAfterComeToAStop.pos.multiplyNew(1e3),
+				stateAfterComeToAStop.vel,
+				dest,
+				targetTime - stateAfterComeToAStop.lookAhead
+		);
+
+		return trajAfterBrk.getTotalTime() + stateAfterComeToAStop.lookAhead + 0.01
+				< trajWithoutComeToAStop.getTotalTime();
+	}
+
+
+	//************************************************************************
+	// Private Helper
+	//************************************************************************
+
+
+	private static StateAfterComeToAStop stateAfterComeToAStop(MoveConstraints mc, IVector2 s0, IVector2 v0)
+	{
+
+		var lookAhead = 0.05; // 5 AI iterations
+		var acc = mc.getBrkMax() * 0.9;
+
+		var tBreak = SumatraMath.min(v0.getLength() / acc, lookAhead);
+		var a0 = v0.scaleToNew(-acc);
+		var v1 = a0.multiplyNew(tBreak).add(v0);
+		var s1 = s0.addNew(v0.multiplyNew(tBreak)).add(a0.multiplyNew(0.5 * tBreak * tBreak)).multiply(1e3);
+
+		return new StateAfterComeToAStop(s1, v1, lookAhead);
+	}
+
+
+	private record StateAfterComeToAStop(IVector2 pos, IVector2 vel, double lookAhead)
+	{
+	}
+
 }

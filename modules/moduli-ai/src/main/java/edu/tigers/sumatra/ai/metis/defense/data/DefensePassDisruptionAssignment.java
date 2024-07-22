@@ -10,15 +10,16 @@ import lombok.NonNull;
 import lombok.Value;
 
 
+@NonNull
 @Value
 public class DefensePassDisruptionAssignment implements Comparable<DefensePassDisruptionAssignment>
 {
-	@NonNull
 	BotID threatId;
-	@NonNull
 	BotID defenderId;
-	@NonNull
 	IVector2 interceptionPoint;
+	IVector2 movementDestination;
+	boolean crucialMightMakeSense;
+	boolean ignoreOpponentPassReceiverInPathPlanning;
 
 
 	@Override

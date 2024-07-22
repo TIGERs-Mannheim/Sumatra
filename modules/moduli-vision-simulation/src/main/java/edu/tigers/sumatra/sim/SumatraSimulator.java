@@ -64,28 +64,31 @@ public class SumatraSimulator extends ASumatraSimulator implements IRefereeObser
 	private static final long CAM_DT = 10_000_000;
 	private static final long SIM_DT = 1_000_000;
 	private static final double SIMULATION_BUFFER_TIME = 5;
-
+	private static boolean waitForRemoteAis = false;
+	private final BotCollisionHandler botCollisionHandler = new BotCollisionHandler();
+	private final Deque<FilteredVisionFrame> stateBuffer = new ArrayDeque<>();
+	private final SimNetServer simNetServer = new SimNetServer();
+	private final Object simSync = new Object();
+	private final Object ctrlSync = new Object();
 	private SimState simState = new SimState();
 	private ExecutorService service = null;
 	private Future<?> future = null;
-
-	private final BotCollisionHandler botCollisionHandler = new BotCollisionHandler();
-
 	private boolean running;
 	private double simSpeed;
 	private boolean manageBotCount;
-
-	private final Deque<FilteredVisionFrame> stateBuffer = new ArrayDeque<>();
-
-	private final SimNetServer simNetServer = new SimNetServer();
-
-	private static boolean waitForRemoteAis = false;
-
-	private final Object simSync = new Object();
-	private final Object ctrlSync = new Object();
-
 	private IVector3 ballTargetPos = null;
 	private long tHaltStart;
+
+
+	/**
+	 * Should the simulator wait for all remote AIs to connect, before the simulation is started?
+	 *
+	 * @param waitForRemoteAis
+	 */
+	public static void setWaitForRemoteAis(final boolean waitForRemoteAis)
+	{
+		SumatraSimulator.waitForRemoteAis = waitForRemoteAis;
+	}
 
 
 	@Override
@@ -397,13 +400,20 @@ public class SumatraSimulator extends ASumatraSimulator implements IRefereeObser
 			IVector2 pos = lastCollision.get().getPos();
 			BotID botID = lastCollision.get().getObject().getBotID();
 			SimulatedBot simulatedBot = simState.getSimulatedBots().get(botID);
-			if (botID.isBot() && simulatedBot != null
+			if (simulatedBot != null
+					&& !lastCollision.get().getObject().getImpulse().isZeroVector()
 					&& (simState.getLastKickEvent() == null || !pos.equals(simState.getLastKickEvent().getPosition())))
 			{
-				Pose botPose = simulatedBot.getState().getPose();
 				simState.setLastKickEvent(
-						new SimKickEvent(pos, botID, simState.getSimTime(), botPose.getPos(), botPose.getOrientation(),
-								simState.getSimulatedBall().getState()));
+						new SimKickEvent(
+								pos,
+								botID,
+								simState.getSimTime(),
+								simulatedBot.getState().getPose().getPos(),
+								simulatedBot.getState().getPose().getOrientation(),
+								simState.getSimulatedBall().getState()
+						)
+				);
 			}
 		}
 	}
@@ -729,14 +739,15 @@ public class SumatraSimulator extends ASumatraSimulator implements IRefereeObser
 		{
 			return true;
 		}
-		if (Math.abs(simState.getSimulatedBall().getState().getPos().x()) < 2000)
-		{
-			return false;
-		}
+		IVector2 ballPos = simState.getSimulatedBall().getState().getPos().getXYVector();
+		IVector2 botPos = bot.getState().getPose().getPos();
 
-		IVector2 pos = bot.getState().getPose().getPos();
-		return Geometry.getField().withMargin(Geometry.getBotRadius()).isPointInShape(pos)
-				&& Math.abs(pos.x()) <= 1000;
+		// The ball must be at least 0.5 meters away from the robot.
+		return ballPos.distanceTo(botPos) >= 500
+				// The robot is at least partially inside the field margin.
+				&& !Geometry.getField().withMargin(-Geometry.getBotRadius()).isPointInShape(botPos)
+				// The robot is at a distance from the halfway line that must not exceed 1 meter.
+				&& Math.abs(botPos.x()) <= 1000;
 	}
 
 
@@ -802,14 +813,9 @@ public class SumatraSimulator extends ASumatraSimulator implements IRefereeObser
 	}
 
 
-	/**
-	 * Should the simulator wait for all remote AIs to connect, before the simulation is started?
-	 *
-	 * @param waitForRemoteAis
-	 */
-	public static void setWaitForRemoteAis(final boolean waitForRemoteAis)
+	public boolean getManageBotCount()
 	{
-		SumatraSimulator.waitForRemoteAis = waitForRemoteAis;
+		return this.manageBotCount;
 	}
 
 
@@ -819,19 +825,18 @@ public class SumatraSimulator extends ASumatraSimulator implements IRefereeObser
 	}
 
 
-	public boolean getManageBotCount()
-	{
-		return this.manageBotCount;
-	}
-
-
 	private class BallPlacer implements IBallPlacer
 	{
 		@Override
 		public void placeBall(final IVector3 pos, final IVector3 vel)
 		{
-			IBallTrajectory traj = Geometry.getBallFactory()
-					.createTrajectoryFromKickedBallWithoutSpin(pos.getXYVector(), vel);
+			var state = BallState.builder()
+					.withVel(vel)
+					.withPos(pos)
+					.withAcc(Vector3.zero())
+					.withSpin(Vector2.zero())
+					.build();
+			IBallTrajectory traj = Geometry.getBallFactory().createTrajectoryFromState(state);
 
 			var botId = simState.getSimulatedBots().values().stream()
 					.min(Comparator.comparing(bot -> bot.getState().getPose().getPos().distanceToSqr(pos.getXYVector())))

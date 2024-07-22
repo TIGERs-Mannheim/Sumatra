@@ -2,12 +2,12 @@ package edu.tigers.sumatra.botmanager.serial;
 
 public final class SerialByteConverter
 {
-	
+
 	private SerialByteConverter()
 	{
 	}
-	
-	
+
+
 	/**
 	 * @param b
 	 * @return
@@ -17,8 +17,8 @@ public final class SerialByteConverter
 		// & 0xFFFFFFFF); <-- Has no effect
 		return b;
 	}
-	
-	
+
+
 	/**
 	 * @param v
 	 * @param offset
@@ -28,11 +28,11 @@ public final class SerialByteConverter
 	{
 		int res = 0;
 		res |= v[offset] & 0xFF;
-		
+
 		return res;
 	}
-	
-	
+
+
 	/**
 	 * @param v
 	 * @param offset
@@ -45,11 +45,11 @@ public final class SerialByteConverter
 		res |= (v[offset + 1] & 0xFF) << 8;
 		res |= (v[offset + 2] & 0xFF) << 16;
 		res |= (v[offset + 3] & 0xFF) << 24;
-		
+
 		return res;
 	}
-	
-	
+
+
 	/**
 	 * @param v
 	 * @param offset
@@ -62,11 +62,11 @@ public final class SerialByteConverter
 		res |= (v[offset + 1] & 0xFF) << 8;
 		res |= (v[offset + 2] & 0xFF) << 16;
 		res |= ((long) (v[offset + 3] & 0xFF)) << 24;
-		
+
 		return res;
 	}
-	
-	
+
+
 	/**
 	 * @param v
 	 * @param offset
@@ -75,13 +75,13 @@ public final class SerialByteConverter
 	public static int byteArray2Short(final byte[] v, final int offset)
 	{
 		short res = 0;
-		res |= v[offset] & 0xFF;
-		res |= (v[offset + 1] & 0xFF) << 8;
-		
+		res |= (short) (v[offset] & 0xFF);
+		res |= (short) ((v[offset + 1] & 0xFF) << 8);
+
 		return res;
 	}
-	
-	
+
+
 	/**
 	 * @param v
 	 * @param offset
@@ -92,11 +92,11 @@ public final class SerialByteConverter
 		int res = 0;
 		res |= v[offset] & 0xFF;
 		res |= (v[offset + 1] & 0xFF) << 8;
-		
+
 		return res;
 	}
-	
-	
+
+
 	/**
 	 * @param v
 	 * @param offset
@@ -106,8 +106,8 @@ public final class SerialByteConverter
 	{
 		return Float.intBitsToFloat(byteArray2Int(v, offset));
 	}
-	
-	
+
+
 	/**
 	 * @param v
 	 * @param offset
@@ -117,8 +117,8 @@ public final class SerialByteConverter
 	{
 		return halfFloatBitsToFloat(byteArray2Short(v, offset));
 	}
-	
-	
+
+
 	/**
 	 * @param v
 	 * @param offset
@@ -128,8 +128,8 @@ public final class SerialByteConverter
 	{
 		v[offset] = (byte) (value & 0xFF);
 	}
-	
-	
+
+
 	/**
 	 * @param v
 	 * @param offset
@@ -140,8 +140,8 @@ public final class SerialByteConverter
 		v[offset] = (byte) (value & 0xFF);
 		v[offset + 1] = (byte) ((value & 0xFF00) >> 8);
 	}
-	
-	
+
+
 	/**
 	 * @param v
 	 * @param offset
@@ -154,8 +154,8 @@ public final class SerialByteConverter
 		v[offset + 2] = (byte) ((value & 0xFF0000) >> 16);
 		v[offset + 3] = (byte) ((value & 0xFF000000) >> 24);
 	}
-	
-	
+
+
 	/**
 	 * @param v
 	 * @param offset
@@ -165,8 +165,8 @@ public final class SerialByteConverter
 	{
 		int2ByteArray(v, offset, Float.floatToRawIntBits((float) value));
 	}
-	
-	
+
+
 	/**
 	 * @param v
 	 * @param offset
@@ -176,16 +176,16 @@ public final class SerialByteConverter
 	{
 		short2ByteArray(v, offset, floatToHalfFloatBits((float) value));
 	}
-	
-	
+
+
 	/**
 	 * Converts two bytes representing a half float to a float.
-	 * Source from: http://stackoverflow.com/questions/6162651/half-precision-floating-point-in-java
+	 * Source from: <a href="http://stackoverflow.com/questions/6162651/half-precision-floating-point-in-java">...</a>
 	 *
 	 * @param hbits 16 Bits of a half float
 	 * @return 32Bit float
 	 */
-	public static float halfFloatBitsToFloat(final int hbits)
+	private static float halfFloatBitsToFloat(final int hbits)
 	{
 		int mant = hbits & 0x03ff; // 10.0 bits mantissa
 		int exp = hbits & 0x7c00; // 5.0 bits exponent
@@ -214,22 +214,22 @@ public final class SerialByteConverter
 				)
 						| ((exp | mant) << 13)); // value << ( 23 - 10 )
 	}
-	
-	
+
+
 	/**
 	 * Converts a float to half float bits.
 	 * Higher bits are set to 0.
-	 * Source from: http://stackoverflow.com/questions/6162651/half-precision-floating-point-in-java
+	 * Source from: <a href="http://stackoverflow.com/questions/6162651/half-precision-floating-point-in-java">...</a>
 	 *
 	 * @param fval Float to convert.
 	 * @return 16Bits of a half float.
 	 */
-	public static int floatToHalfFloatBits(final float fval)
+	private static int floatToHalfFloatBits(final float fval)
 	{
 		int fbits = Float.floatToIntBits(fval);
 		int sign = (fbits >>> 16) & 0x8000; // sign only
 		int val = (fbits & 0x7fffffff) + 0x1000; // rounded value
-		
+
 		if (val >= 0x47800000) // might be or become NaN/Inf
 		{ // avoid Inf due to rounding
 			if ((fbits & 0x7fffffff) >= 0x47800000)

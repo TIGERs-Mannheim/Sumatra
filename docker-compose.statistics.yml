@@ -1,4 +1,3 @@
-version: '3.5'
 # Note: Use scripts/runDockerSimulation.sh to make sure all environment variables are set
 
 services:

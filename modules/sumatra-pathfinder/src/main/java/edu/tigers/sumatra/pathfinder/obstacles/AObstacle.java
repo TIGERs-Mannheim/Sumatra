@@ -7,7 +7,6 @@ package edu.tigers.sumatra.pathfinder.obstacles;
 import edu.tigers.sumatra.drawable.IDrawableShape;
 import edu.tigers.sumatra.math.I2DShape;
 import edu.tigers.sumatra.math.vector.IVector2;
-import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 
@@ -21,18 +20,16 @@ import java.util.Optional;
  */
 public abstract class AObstacle implements IObstacle
 {
-	@Getter
-	@Setter
-	@Accessors(chain = true)
-	private boolean motionLess = true;
-
-	@Getter
-	@Setter
-	@Accessors(chain = true)
-	private double maxSpeed;
-
 	@Setter
 	private Color color;
+
+	@Setter
+	@Accessors(chain = true)
+	private int orderId = 50;
+
+	@Setter
+	@Accessors(chain = true)
+	private boolean useDynamicMargin = true;
 
 	private List<IDrawableShape> shapes;
 
@@ -43,39 +40,50 @@ public abstract class AObstacle implements IObstacle
 	}
 
 
-	protected AObstacle()
-	{
-		configure();
-	}
-
-
-	protected void configure()
-	{
-		// can be overwritten to configure the numerous attributes above
-	}
-
-
 	@Override
 	public final List<IDrawableShape> getShapes()
 	{
 		if (shapes == null)
 		{
 			shapes = initializeShapes();
-			shapes.forEach(s -> s.setColor(color));
+			if (color != null)
+			{
+				shapes.forEach(s -> s.setColor(color));
+			}
 		}
 		return shapes;
 	}
 
 
-	protected final Optional<IVector2> adaptDestination(I2DShape shape, IVector2 robotPos, IVector2 destination)
+	@Override
+	public int orderId()
 	{
-		if (shape.withMargin(-10).isPointInShape(robotPos))
-		{
-			return Optional.of(shape.withMargin(10).nearestPointOutside(robotPos));
-		}
+		return orderId;
+	}
+
+
+	@Override
+	public boolean useDynamicMargin()
+	{
+		return useDynamicMargin;
+	}
+
+
+	protected final Optional<IVector2> adaptDestination(I2DShape shape, IVector2 destination)
+	{
 		if (shape.isPointInShape(destination))
 		{
 			return Optional.of(shape.withMargin(1).nearestPointOutside(destination));
+		}
+		return Optional.empty();
+	}
+
+
+	protected final Optional<IVector2> adaptDestinationForRobotPos(I2DShape shape, IVector2 robotPos)
+	{
+		if (shape.isPointInShape(robotPos))
+		{
+			return Optional.of(shape.withMargin(100).nearestPointOutside(robotPos));
 		}
 		return Optional.empty();
 	}

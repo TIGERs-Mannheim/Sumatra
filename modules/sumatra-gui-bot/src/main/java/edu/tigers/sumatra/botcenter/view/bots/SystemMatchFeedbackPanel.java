@@ -249,8 +249,8 @@ public class SystemMatchFeedbackPanel extends JPanel
 		batteryLevel.setValue((int) (status.getBatteryPercentage() * 1000));
 		kickerLevel.setString(String.format(Locale.ENGLISH, "%d V", (int) status.getKickerLevel()));
 		kickerLevel.setValue((int) (status.getKickerPercentage() * 1000));
-		dribblerSpeed.setText(String.format(Locale.ENGLISH, "%d RPM (%.2fA)", (int) status.getDribblerSpeed(), status.getDribblerCurrent()));
-		dribblerTemp.setText(status.getDribblerState().toString());
+		dribblerSpeed.setText(String.format(Locale.ENGLISH, "%.2f m/s (%s)", status.getDribblerSpeed(), status.getDribbleTractionState().name()));
+		dribblerTemp.setText(status.getDribblerTemperature().toString());
 		kickCounter.setText(String.format("%d", status.getKickCounter()));
 		hardwareId.setText(String.format("%d", status.getHardwareId()));
 		barrierInterrupted.setSelected(status.isBarrierInterrupted());

@@ -81,7 +81,7 @@ public class WorldFrameFactory
 			bots.put(idT, createBot(timestamp, idT));
 		}
 
-		return new SimpleWorldFrame(frameNumber, timestamp, bots, TrackedBall.createStub(), null, null);
+		return new SimpleWorldFrame(frameNumber, timestamp, bots, TrackedBall.createStub(), null);
 	}
 
 

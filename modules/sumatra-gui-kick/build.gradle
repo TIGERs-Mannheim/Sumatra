@@ -16,13 +16,14 @@ dependencies {
     implementation project(':moduli-botmanager')
     implementation project(':moduli-vision')
 
-    implementation 'com.github.TIGERs-Mannheim:moduli:4.1'
+    implementation(libs.com.github.TIGERs.mannheim.moduli)
 
-    implementation 'org.apache.logging.log4j:log4j-api:2.20.0'
+    implementation(libs.org.apache.logging.log4j.log4j.api)
 
-    implementation 'com.fasterxml.jackson.core:jackson-databind:2.15.2'
-    implementation 'com.fasterxml.jackson.core:jackson-core:2.15.2'
-    implementation 'com.fasterxml.jackson.core:jackson-annotations:2.15.2'
-    implementation 'com.miglayout:miglayout-swing:11.1'
-    implementation 'net.sf.jchart2d:jchart2d:3.3.2'
+    implementation(libs.com.fasterxml.jackson.core.jackson.databind)
+    implementation(libs.com.fasterxml.jackson.core.jackson.core)
+    implementation(libs.com.fasterxml.jackson.core.jackson.annotations)
+    implementation(libs.com.miglayout.miglayout.swing)
+    implementation(libs.net.sf.jchart2d)
+    implementation(libs.org.apache.commons.commons.math3)
 }

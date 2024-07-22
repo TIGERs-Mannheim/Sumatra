@@ -4,13 +4,12 @@
 
 package edu.tigers.sumatra.math.vector;
 
-import java.util.function.Function;
-
+import edu.tigers.sumatra.export.IJsonString;
+import edu.tigers.sumatra.export.INumberListable;
 import org.apache.commons.math3.linear.RealVector;
 import org.json.simple.JSONArray;
 
-import edu.tigers.sumatra.export.IJsonString;
-import edu.tigers.sumatra.export.INumberListable;
+import java.util.function.Function;
 
 
 /**
@@ -83,13 +82,18 @@ public interface IVector extends IJsonString, INumberListable
 	 */
 	double getLength();
 	
-	
+
 	/**
 	 * @return The 2dim-length of the vector.
 	 */
 	double getLength2();
-	
-	
+
+	/**
+	 * @return The squared length of the vector.
+	 */
+	double getLengthSqr();
+
+
 	/**
 	 * @return The L1 norm of the vector, i.e. the sum ob absolute values.
 	 */

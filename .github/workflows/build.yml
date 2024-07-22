@@ -1,0 +1,22 @@
+name: Build
+
+on: push
+
+jobs:
+  build:
+
+    runs-on: ubuntu-22.04
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Set up JDK
+        uses: actions/setup-java@v2
+        with:
+          java-version: 21
+          distribution: temurin
+      - name: Build
+        run: ./gradlew build
+      - name: IntegrationTest
+        run: ./gradlew integrationTest

@@ -9,7 +9,6 @@ import edu.tigers.sumatra.ai.pandora.roles.ARole;
 import edu.tigers.sumatra.ai.pandora.roles.move.MoveRole;
 import edu.tigers.sumatra.drawable.IDrawableShape;
 import edu.tigers.sumatra.drawable.IShapeLayerIdentifier;
-import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.wp.data.ITrackedBall;
 import edu.tigers.sumatra.wp.data.WorldFrame;
 import lombok.extern.log4j.Log4j2;
@@ -17,7 +16,6 @@ import lombok.extern.log4j.Log4j2;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Supplier;
@@ -31,7 +29,7 @@ import java.util.stream.Collectors;
 @Log4j2
 public abstract class APlay
 {
-	private final List<ARole> roles;
+	private final List<ARole> roles = new CopyOnWriteArrayList<>();
 	private final EPlay type;
 	private AthenaAiFrame aiFrame;
 
@@ -41,7 +39,6 @@ public abstract class APlay
 	 */
 	public APlay(final EPlay type)
 	{
-		roles = new CopyOnWriteArrayList<>();
 		this.type = type;
 	}
 
@@ -54,13 +51,13 @@ public abstract class APlay
 	 *
 	 * @param oldRole the currently assigned role
 	 * @param newRole the new (not assigned) role
-	 * @return new new role, if switch was successful
+	 * @return new role, if switch was successful
 	 */
 	protected final <T extends ARole> T switchRoles(final ARole oldRole, final T newRole)
 	{
 		if (newRole.isCompleted())
 		{
-			throw new IllegalStateException("Role is already completed. Can not switch to new role: " + newRole.getType());
+			throw new IllegalStateException("Role is already completed. Can not switch to new role: " + newRole);
 		}
 
 		boolean removed = roles.remove(oldRole);
@@ -96,9 +93,10 @@ public abstract class APlay
 	 *
 	 * @param role to be added
 	 */
-	protected void addRole(final ARole role)
+	protected final void addRole(final ARole role)
 	{
 		roles.add(role);
+		onNumberOfBotsChanged();
 	}
 
 
@@ -111,15 +109,21 @@ public abstract class APlay
 	{
 		roles.remove(role);
 		role.setCompleted();
+		onNumberOfBotsChanged();
+	}
+
+
+	protected void onNumberOfBotsChanged()
+	{
 	}
 
 
 	/**
 	 * @return the last role in the internal list
 	 */
-	protected final ARole getLastRole()
+	private ARole getLastRole()
 	{
-		return getRoles().get(getRoles().size() - 1);
+		return getRoles().getLast();
 	}
 
 
@@ -163,7 +167,7 @@ public abstract class APlay
 	 *
 	 * @return the removed role
 	 */
-	protected ARole onRemoveRole()
+	private ARole onRemoveRole()
 	{
 		return getLastRole();
 	}
@@ -248,12 +252,25 @@ public abstract class APlay
 				.collect(Collectors.toList());
 	}
 
+
+	protected final <T extends ARole> T findRole(Class<T> clazz)
+	{
+		var classRoles = findRoles(clazz);
+		if (classRoles.size() != 1)
+		{
+			throw new IllegalStateException("Expected exactly one role: " + classRoles);
+		}
+		return classRoles.getFirst();
+	}
+
+
 	protected final List<ARole> findOtherRoles(Class<?> clazz)
 	{
 		return roles.stream()
 				.filter(r -> !r.getClass().equals(clazz))
 				.collect(Collectors.toList());
 	}
+
 
 	protected final List<ARole> allRolesExcept(ARole... except)
 	{
@@ -270,26 +287,6 @@ public abstract class APlay
 	public final EPlay getType()
 	{
 		return type;
-	}
-
-
-	/**
-	 * Roles will be reordered so that first role in list is nearest to first destination and so on
-	 *
-	 * @param destinations list of new desired destinations
-	 */
-	protected final List<IVector2> reorderDestinationsToRoles(final List<IVector2> destinations)
-	{
-		List<IVector2> currentDestinations = new ArrayList<>(destinations);
-		List<IVector2> sortedDestinations = new ArrayList<>(destinations.size());
-		for (ARole role : getRoles())
-		{
-			currentDestinations.stream()
-					.min(Comparator.comparing(dest -> dest.distanceTo(role.getPos())))
-					.ifPresent(sortedDestinations::add);
-			currentDestinations.removeAll(sortedDestinations);
-		}
-		return sortedDestinations;
 	}
 
 

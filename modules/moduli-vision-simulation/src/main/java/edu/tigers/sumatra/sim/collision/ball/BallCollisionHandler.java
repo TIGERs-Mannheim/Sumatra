@@ -7,7 +7,9 @@ package edu.tigers.sumatra.sim.collision.ball;
 import com.github.g3force.configurable.Configurable;
 import edu.tigers.sumatra.ball.BallState;
 import edu.tigers.sumatra.geometry.Geometry;
+import edu.tigers.sumatra.geometry.Goal;
 import edu.tigers.sumatra.math.AngleMath;
+import edu.tigers.sumatra.math.SumatraMath;
 import edu.tigers.sumatra.math.line.Lines;
 import edu.tigers.sumatra.math.rectangle.Rectangle;
 import edu.tigers.sumatra.math.vector.IVector2;
@@ -21,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 
 /**
@@ -28,31 +31,40 @@ import java.util.Optional;
  */
 public class BallCollisionHandler
 {
-	@Configurable(defValue = "false")
-	private static boolean enableSpin = false;
-	
+	private static final double GOAL_BORDER_WIDTH_MM = 20;
+	@Configurable(defValue = "false", comment = "Set spin after reflecting the ball on a collision")
+	private static boolean reflectSpin = false;
+	@Configurable(defValue = "0", comment = "[RPM] spin speed applied if sth is sticky to the ball")
+	private static double dribblingSpeed = 0.0;
+
+
 	public ICollisionState process(final BallState preState, final double dt, final Collection<? extends ISimBot> bots)
 	{
-		final List<ICollisionObject> collisionObjects = generateCollisionObjects(bots);
-		final BallCollisionState state = new BallCollisionState(preState);
-		if (preState.getPos().z() > Geometry.getBallParameters().getMaxInterceptableHeight())
-		{
-			return state;
-		}
+		var collisionObjects = generateCollisionObjects(bots);
+		var state = new BallCollisionState(preState);
+		var isBelowRobotHeight = preState.getPos().z() <= Geometry.getBallParameters().getMaxInterceptableHeight();
+
 		Optional<ICollision> collision = getFirstCollision(preState, dt, collisionObjects);
-		if (collision.isPresent())
+		if (collision.isPresent() && (isBelowRobotHeight || collision.get().getObject().isFieldBoundary()))
 		{
-			state.setCollision(collision.orElse(null));
+			state.setCollision(collision.get());
 			reflect(state);
-		} else
-		{
-			Optional<ICollision> insideCollision = getFirstInsideCollision(preState.getPos(), collisionObjects);
-			if (insideCollision.isPresent())
-			{
-				state.setCollision(insideCollision.orElse(null));
-				moveOutside(state);
-			}
 		}
+
+		// Note on a special case:
+		// If the ball touches the boundary and the robot touches the ball, there is a conflict.
+		// Currently, the robots are not stopped/blocked by a ball lying next to the boundary wall.
+		// If the ball is not moved, the robot will move inside the ball. This breaks the collision detection.
+		// So we check for an inside collision here, after normal reflection was handled.
+		// The ball is pushed inside the boundary, but can therefore be handled correctly on the robot's dribbler.
+		Optional<ICollision> insideCollision = getFirstInsideCollision(preState.getPos(), collisionObjects);
+		if (insideCollision.isPresent() && (isBelowRobotHeight || insideCollision.get().getObject().isFieldBoundary()))
+		{
+			state.setCollision(insideCollision.get());
+			moveOutside(state);
+			reflect(state);
+		}
+
 		impulse(state);
 
 		return state;
@@ -65,9 +77,8 @@ public class BallCollisionHandler
 
 		addBots(bots, objects);
 
-		addOurGoal(objects);
-
-		addTheirGoal(objects);
+		objects.addAll(objectsFromGoal(Geometry.getGoalOur()));
+		objects.addAll(objectsFromGoal(Geometry.getGoalTheir()));
 
 		addFieldBoundary(objects);
 
@@ -84,71 +95,64 @@ public class BallCollisionHandler
 				Lines.segmentFromPoints(
 						Vector2f.fromXY(maxX, maxY),
 						Vector2f.fromXY(-maxX, maxY)),
-				Vector2f.fromY(-1)));
+				Vector2f.fromY(-1),
+				true));
 		objects.add(new LineSegmentCollisionObject(
 				Lines.segmentFromPoints(
 						Vector2f.fromXY(maxX, -maxY),
 						Vector2f.fromXY(-maxX, -maxY)),
-				Vector2f.fromY(1)));
+				Vector2f.fromY(1),
+				true));
 
 		objects.add(new LineSegmentCollisionObject(
 				Lines.segmentFromPoints(
 						Vector2f.fromXY(maxX, maxY),
 						Vector2f.fromXY(maxX, -maxY)),
-				Vector2f.fromX(-1)));
+				Vector2f.fromX(-1),
+				true));
 		objects.add(new LineSegmentCollisionObject(
 				Lines.segmentFromPoints(
 						Vector2f.fromXY(-maxX, maxY),
 						Vector2f.fromXY(-maxX, -maxY)),
-				Vector2f.fromX(1)));
+				Vector2f.fromX(1),
+				true));
 	}
 
 
-	private void addTheirGoal(final List<ICollisionObject> objects)
+	private List<ICollisionObject> objectsFromGoal(Goal goal)
 	{
-		objects.add(new LineSegmentCollisionObject(
-				Lines.segmentFromPoints(
-						Geometry.getGoalTheir().getLeftPost()
-								.addNew(Vector2.fromXY(Geometry.getGoalOur().getDepth() - Geometry.getBallRadius(), 0)),
-						Geometry.getGoalTheir().getRightPost()
-								.addNew(Vector2.fromXY(Geometry.getGoalOur().getDepth() - Geometry.getBallRadius(), 0))),
-				Vector2f.fromX(-1)));
-		objects.add(new RectCollisionObject(
-				Rectangle.aroundLine(
-						Geometry.getGoalTheir().getLeftPost(),
-						Geometry.getGoalTheir().getLeftPost()
-								.addNew(Vector2f.fromX(Geometry.getGoalTheir().getDepth())),
-						Geometry.getBallRadius())));
-		objects.add(new RectCollisionObject(
-				Rectangle.aroundLine(
-						Geometry.getGoalTheir().getRightPost(),
-						Geometry.getGoalTheir().getRightPost()
-								.addNew(Vector2f.fromX(Geometry.getGoalTheir().getDepth())),
-						Geometry.getBallRadius())));
-	}
+		var sign = Math.signum(goal.getCenter().x());
+		var x = Math.abs(goal.getCenter().x());
+		var width = goal.getWidth();
 
+		var positiveFront = Vector2.fromXY(x + Geometry.getLineWidth() / 2 + GOAL_BORDER_WIDTH_MM / 2,
+				width / 2 + GOAL_BORDER_WIDTH_MM / 2).multiply(sign);
+		var negativeFront = Vector2.fromXY(x + Geometry.getLineWidth() / 2 + GOAL_BORDER_WIDTH_MM / 2,
+				-width / 2 - GOAL_BORDER_WIDTH_MM / 2).multiply(sign);
 
-	private void addOurGoal(final List<ICollisionObject> objects)
-	{
-		objects.add(new LineSegmentCollisionObject(
-				Lines.segmentFromPoints(
-						Geometry.getGoalOur().getLeftPost()
-								.addNew(Vector2.fromXY(-Geometry.getGoalOur().getDepth() + Geometry.getBallRadius(), 0)),
-						Geometry.getGoalOur().getRightPost()
-								.addNew(Vector2.fromXY(-Geometry.getGoalOur().getDepth() + Geometry.getBallRadius(), 0))),
-				Vector2f.fromX(1)));
-		objects.add(new RectCollisionObject(
-				Rectangle.aroundLine(
-						Geometry.getGoalOur().getLeftPost(),
-						Geometry.getGoalOur().getLeftPost()
-								.addNew(Vector2f.fromX(-Geometry.getGoalOur().getDepth())),
-						Geometry.getBallRadius())));
-		objects.add(new RectCollisionObject(
-				Rectangle.aroundLine(
-						Geometry.getGoalOur().getRightPost(),
-						Geometry.getGoalOur().getRightPost()
-								.addNew(Vector2f.fromX(-Geometry.getGoalOur().getDepth())),
-						Geometry.getBallRadius())));
+		var backDistance = SumatraMath.max(
+				Geometry.getBoundaryWidth() - GOAL_BORDER_WIDTH_MM - Geometry.getLineWidth() / 2,
+				goal.getDepth()
+		);
+
+		var backOffset = Vector2.fromX(backDistance).multiply(sign);
+		var middleOffset = Vector2.fromX(goal.getDepth()).multiply(sign);
+
+		var positiveBack = positiveFront.addNew(backOffset);
+		var negativeBack = negativeFront.addNew(backOffset);
+
+		var positiveMiddle = positiveFront.addNew(middleOffset);
+		var negativeMiddle = negativeFront.addNew(middleOffset);
+
+		return Stream.of(
+						Lines.segmentFromPoints(positiveFront, positiveBack),
+						Lines.segmentFromPoints(negativeFront, negativeBack),
+						Lines.segmentFromPoints(positiveMiddle, negativeMiddle)
+				)
+				.map(segment -> Rectangle.aroundLine(segment, GOAL_BORDER_WIDTH_MM / 2))
+				.map(rectangle -> new RectCollisionObject(rectangle, true))
+				.map(ICollisionObject.class::cast)
+				.toList();
 	}
 
 
@@ -204,7 +208,7 @@ public class BallCollisionHandler
 		final Optional<ICollision> collision = state.getCollision();
 		if (collision.isPresent())
 		{
-			IVector3 impulse = collision.get().getObject().getImpulse(state.getPos());
+			IVector3 impulse = collision.get().getObject().getImpulse();
 			state.setVel(state.getVel().addNew(impulse));
 		}
 	}
@@ -212,66 +216,85 @@ public class BallCollisionHandler
 
 	private void reflect(final BallCollisionState colState)
 	{
-		ICollision collision = colState.getCollision().orElseThrow(IllegalStateException::new);
-		IVector2 curVel = colState.getVel().getXYVector();
-		IVector2 colNormal = collision.getNormal();
+		var collision = colState.getCollision().orElseThrow(IllegalStateException::new);
 
 		double dampFactor = collision.getObject().getDampFactor();
+		double dampFactorOrtho = collision.getObject().getDampFactorOrthogonal();
 		if (collision.getObject().isSticky())
 		{
 			dampFactor = 1;
+			dampFactorOrtho = 1;
 		}
-		IVector2 relativeVel = curVel.multiplyNew(1 - dampFactor);
-		IVector2 outVel = ballCollision(relativeVel, colNormal);
-		colState.setVel(Vector3.from2d(outVel, colState.getVel().z()));
 
-		dampFactor = 0.4;
-		relativeVel = colState.getSpin().multiplyNew(1 - dampFactor);
-		outVel = ballCollision(relativeVel, colNormal);
-		colState.setSpin(enableSpin ? outVel : Vector2f.ZERO_VECTOR);
+		if (dampFactorOrtho >= 1)
+		{
+			colState.setPos(Vector3.from2d(colState.getPos().getXYVector(), 0));
+		}
+
+		var ballVel = ballCollision(collision, colState.getVel(), dampFactor, dampFactorOrtho);
+		colState.setVel(ballVel);
+
+		var ballSpin = ballCollision(collision, Vector3.from2d(colState.getSpin(), 0), 0.4, 0.4);
+		colState.setSpin(reflectSpin ? ballSpin.getXYVector() : Vector2f.ZERO_VECTOR);
 	}
 
 
 	private void moveOutside(final BallCollisionState colState)
 	{
-		ICollision collision = colState.getCollision().orElseThrow(IllegalStateException::new);
-		IVector2 objectVel = collision.getObjectVel().getXYVector();
-		IVector2 normal = collision.getNormal();
-		boolean sticky = collision.getObject().isSticky();
+		var collision = colState.getCollision().orElseThrow(IllegalStateException::new);
+		var normal = collision.getNormal();
+		var sticky = collision.getObject().isSticky();
 
-		// move ball 1mm outside of obstacle
-		IVector2 newPos = collision.getObject().stick(collision.getPos())
-				.addNew(collision.getNormal().scaleToNew(sticky ? -1 : 1));
-		colState.setPos(Vector3.from2d(newPos, colState.getPos().z()));
-
-		// set ball vel to object vel (e.g. robot pushes ball)
-		double newAbsVel = objectVel.getLength2();
-		double colAngle = objectVel.angleToAbs(normal).orElse(0.0);
-		double relVel = colAngle / AngleMath.PI_HALF;
-		newAbsVel *= 1 - Math.min(1, relVel);
-		colState.setVel(Vector3.from2d(normal.scaleToNew(newAbsVel),
-				colState.getVel().z()));
-		colState.setSpin(colState.getVel().getXYVector().multiplyNew(1.0 / Geometry.getBallRadius()));
+		if (sticky)
+		{
+			// move ball 1mm inside of obstacle
+			IVector2 newPos = collision.getObject().stick(collision.getPos())
+					.addNew(normal.scaleToNew(-1));
+			colState.setPos(Vector3.from2d(newPos, colState.getPos().z()));
+			colState.setVel(Vector3.from2d(collision.getObjectSurfaceVel(), 0));
+			colState.setSpin(collision.getNormal().scaleToNew(-dribblingSpeed * AngleMath.PI_TWO / 60.0)); // RPM to rad/s
+		} else
+		{
+			// move ball 1mm outside of obstacle
+			IVector2 newPos = collision.getObject().stick(collision.getPos())
+					.addNew(normal.scaleToNew(1));
+			colState.setPos(Vector3.from2d(newPos, colState.getPos().z()));
+			// Spin is set to be simply rolling
+			colState.setSpin(colState.getVel().getXYVector().multiplyNew(1.0 / Geometry.getBallRadius()));
+		}
 	}
 
 
-	private IVector2 ballCollision(final IVector2 ballVel, final IVector2 collisionNormal)
+	private IVector3 ballCollision(ICollision collision, IVector3 ballVel, double dampFactor, double dampFactorOrtho)
 	{
-		if (ballVel.isZeroVector())
+		var ballVelFlat = ballVel.getXYVector();
+		var objVel = collision.getObjectSurfaceVel();
+		var normal = collision.getNormal().normalizeNew();
+
+		// Flat collision, in direction of the collision Normal
+		var objVelProjected = normal.scalarProduct(objVel);
+		var ballVelProjected = normal.scalarProduct(ballVelFlat);
+
+		if (objVelProjected <= ballVelProjected)
 		{
+			// Untouched
 			return ballVel;
 		}
-		double angleNormalColl = ballVel.angleToAbs(collisionNormal).orElse(0.0);
-		if (angleNormalColl < AngleMath.PI_HALF)
-		{
-			return ballVel;
-		}
-		double velInfAngle = ballVel.getAngle();
-		if (angleNormalColl > AngleMath.PI_HALF)
-		{
-			velInfAngle = AngleMath.normalizeAngle(ballVel.getAngle() + AngleMath.PI);
-		}
-		double velAngleDiff = AngleMath.difference(collisionNormal.getAngle(), velInfAngle);
-		return collisionNormal.turnNew(velAngleDiff).scaleTo(ballVel.getLength2());
+		// Assuming m_object >> m_ball
+		// With dampFactor = 1 -> perfect inelastic collision
+		//      dampFactor = 0 -> perfect elastic collision
+		var finalVelProjected = objVelProjected + (objVelProjected - ballVelProjected) * (1 - dampFactor);
+		var finalVel = normal.multiplyNew(finalVelProjected);
+
+		// Flat collision, orthogonal to the collision normal
+		var normalOrtho = normal.getNormalVector();
+		var surfaceVelOrtho = normalOrtho.multiplyNew(dampFactorOrtho * normalOrtho.scalarProduct(objVel));
+		var ballVelOrtho = normalOrtho.multiplyNew((1 - dampFactorOrtho) * normalOrtho.scalarProduct(ballVelFlat));
+		var finalVelOrtho = surfaceVelOrtho.add(ballVelOrtho);
+
+		// Collision in z direction
+		var finalVelZ = (1 - dampFactorOrtho) * ballVel.z();
+
+		return Vector3.from2d(finalVel.add(finalVelOrtho), finalVelZ);
 	}
 }

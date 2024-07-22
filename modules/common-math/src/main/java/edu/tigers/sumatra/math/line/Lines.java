@@ -5,6 +5,7 @@
 package edu.tigers.sumatra.math.line;
 
 import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.math.vector.Vector2f;
 import org.apache.commons.math3.linear.Array2DRowRealMatrix;
 import org.apache.commons.math3.linear.ArrayRealVector;
@@ -78,6 +79,22 @@ public final class Lines
 	public static IHalfLine halfLineFromDirection(final IVector2 supportVector, final IVector2 directionVector)
 	{
 		return HalfLine.fromDirection(supportVector, directionVector);
+	}
+
+
+	/**
+	 * Create a new {@link IHalfLine} instance which extends from the specified {@code supportVector} in the direction of
+	 * {@code directionVector} indefinitely.
+	 *
+	 * @param supportVector The support vector which defines the starting point of the created half-line
+	 * @param angle         The angle of the direction vector which defines the direction in which the half-line extends
+	 * @return A new {@code IHalfLine} instance
+	 * @throws IllegalArgumentException If the {@code directionVector} has a length of zero. Please perform a check in your code before you
+	 *                                  call this method!
+	 */
+	public static IHalfLine halfLineFromAngle(final IVector2 supportVector, final double angle)
+	{
+		return HalfLine.fromDirection(supportVector, Vector2.fromAngle(angle));
 	}
 
 

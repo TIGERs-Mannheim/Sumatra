@@ -5,8 +5,6 @@
 package edu.tigers.sumatra.skillsystem.skills;
 
 import edu.tigers.sumatra.geometry.Geometry;
-import edu.tigers.sumatra.geometry.Goal;
-import edu.tigers.sumatra.math.triangle.TriangleMath;
 import edu.tigers.sumatra.pathfinder.TrajectoryGenerator;
 
 
@@ -27,14 +25,12 @@ public class RamboKeeperSkill extends AMoveToSkill
 	@Override
 	public void doUpdate()
 	{
-		Goal goal = Geometry.getGoalOur();
 		var ballPosition = getBall().getPos();
-		var defPoint = TriangleMath.bisector(ballPosition, goal.getLeftPost(), goal.getRightPost());
+		var defPoint = Geometry.getGoalOur().bisection(ballPosition);
 		var direction = ballPosition.subtractNew(defPoint);
 
 		var destination = TrajectoryGenerator.generateVirtualPositionToReachPointInTime(
 				getTBot(),
-				getMoveConstraints(),
 				ballPosition,
 				0.0
 		);

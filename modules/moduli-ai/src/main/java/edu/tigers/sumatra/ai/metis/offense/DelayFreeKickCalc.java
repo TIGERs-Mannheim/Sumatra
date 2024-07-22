@@ -67,7 +67,7 @@ public class DelayFreeKickCalc extends ACalculator
 		double timeRemaining = getAiFrame().getRefereeMsg().getCurrentActionTimeRemaining();
 		double timeLeft = timeRemaining - timeUntilKickOffset;
 
-		getShapes(EAiShapesLayer.OFFENSIVE_ATTACKER)
+		getShapes(EAiShapesLayer.OFFENSE_ATTACKER)
 				.add(new DrawableAnnotation(getBall().getPos(), String.format("time left: %.2f", timeLeft),
 						Vector2f.fromY(-200)));
 		if (performDirectGoalKickNow() || timeLeft <= 0 || timeElapsed >= maxDelayWaitTime)

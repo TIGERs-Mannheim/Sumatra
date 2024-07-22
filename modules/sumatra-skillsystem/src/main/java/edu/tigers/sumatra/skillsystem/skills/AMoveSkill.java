@@ -73,6 +73,7 @@ public abstract class AMoveSkill extends ASkill
 	private ITrackedBot tBot;
 
 	@Setter(AccessLevel.PROTECTED)
+	@Getter
 	private KickParams kickParams = KickParams.disarm();
 
 
@@ -281,33 +282,33 @@ public abstract class AMoveSkill extends ASkill
 		var dribblerSpecs = getBot().getBotParams().getDribblerSpecs();
 
 		double dribbleSpeed;
-		double maxDribbleCurrent;
+		double dribbleForce;
 
 		switch (kickParams.getDribblerMode())
 		{
 			case OFF ->
 			{
 				dribbleSpeed = 0;
-				maxDribbleCurrent = 0;
+				dribbleForce = 0;
 			}
 			case HIGH_POWER ->
 			{
 				dribbleSpeed = dribblerSpecs.getHighPowerSpeed();
-				maxDribbleCurrent = dribblerSpecs.getHighPowerMaxCurrent();
+				dribbleForce = dribblerSpecs.getHighPowerForce();
 			}
 			case MANUAL ->
 			{
-				dribbleSpeed = kickParams.getDribbleSpeedRpm();
-				maxDribbleCurrent = kickParams.getDribbleMaxCurrent();
+				dribbleSpeed = kickParams.getDribbleSpeed();
+				dribbleForce = kickParams.getDribbleForce();
 			}
 			default ->
 			{
 				dribbleSpeed = dribblerSpecs.getDefaultSpeed();
-				maxDribbleCurrent = dribblerSpecs.getDefaultMaxCurrent();
+				dribbleForce = dribblerSpecs.getDefaultForce();
 			}
 		}
 
-		kickerDribblerOutput.setDribbler(dribbleSpeed, maxDribbleCurrent);
+		kickerDribblerOutput.setDribbler(dribbleSpeed, dribbleForce);
 	}
 
 
@@ -350,13 +351,12 @@ public abstract class AMoveSkill extends ASkill
 		BotAiInformation aiInfo = super.getBotAiInfo();
 
 		String ballContact = getTBot().getRobotInfo().isBarrierInterrupted() ? "BARRIER" : "NO BARRIER";
-		ballContact = getTBot().getBallContact().isBallContactFromVision() ? "CONTACT|" + ballContact : ballContact;
+		ballContact = getTBot().getBallContact().hasContactFromVision() ? "CONTACT|" + ballContact : ballContact;
 		aiInfo.setBallContact(ballContact);
 
 		double curVel = getVel().getLength2();
 		aiInfo.setVelocityCurrent(curVel);
-		aiInfo.setDribbleTraction(getTBot().getRobotInfo().getDribbleTraction());
-
+		aiInfo.setAngularVelocity(getTBot().getAngularVel());
 		return aiInfo;
 	}
 

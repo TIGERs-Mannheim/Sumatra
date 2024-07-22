@@ -16,24 +16,17 @@ import edu.tigers.sumatra.skillsystem.skills.ATouchKickSkill;
 import edu.tigers.sumatra.skillsystem.skills.ApproachAndStopBallSkill;
 import edu.tigers.sumatra.skillsystem.skills.ApproachBallLineSkill;
 import edu.tigers.sumatra.skillsystem.skills.BotSkillWrapperSkill;
-import edu.tigers.sumatra.skillsystem.skills.CommandListSkill;
 import edu.tigers.sumatra.skillsystem.skills.CriticalKeeperSkill;
 import edu.tigers.sumatra.skillsystem.skills.DropBallSkill;
 import edu.tigers.sumatra.skillsystem.skills.GetBallContactSkill;
 import edu.tigers.sumatra.skillsystem.skills.IdleSkill;
 import edu.tigers.sumatra.skillsystem.skills.InterceptionSkill;
-import edu.tigers.sumatra.skillsystem.skills.KeeperSkill;
 import edu.tigers.sumatra.skillsystem.skills.ManualControlSkill;
 import edu.tigers.sumatra.skillsystem.skills.MoveOnShapeBoundarySkill;
 import edu.tigers.sumatra.skillsystem.skills.MoveToSkill;
 import edu.tigers.sumatra.skillsystem.skills.MoveWithBallSkill;
-import edu.tigers.sumatra.skillsystem.skills.PenaltyKeeperSkill;
-import edu.tigers.sumatra.skillsystem.skills.PenaltyShootSkill;
-import edu.tigers.sumatra.skillsystem.skills.PenaltyShootSkill.ERotateDirection;
-import edu.tigers.sumatra.skillsystem.skills.ProtectAndMoveWithBallSkill;
 import edu.tigers.sumatra.skillsystem.skills.ProtectBallSkill;
 import edu.tigers.sumatra.skillsystem.skills.ProtectiveGetBallSkill;
-import edu.tigers.sumatra.skillsystem.skills.PushAroundObstacleSkill;
 import edu.tigers.sumatra.skillsystem.skills.RamboKeeperSkill;
 import edu.tigers.sumatra.skillsystem.skills.ReceiveBallSkill;
 import edu.tigers.sumatra.skillsystem.skills.RedirectBallSkill;
@@ -43,13 +36,9 @@ import edu.tigers.sumatra.skillsystem.skills.SingleTouchKickSkill;
 import edu.tigers.sumatra.skillsystem.skills.TouchKickSkill;
 import edu.tigers.sumatra.skillsystem.skills.dribbling.DragBallSkill;
 import edu.tigers.sumatra.skillsystem.skills.dribbling.DribbleKickSkill;
-import edu.tigers.sumatra.skillsystem.skills.dribbling.DribbleSkill;
-import edu.tigers.sumatra.skillsystem.skills.test.AutoKickSampleSkill;
+import edu.tigers.sumatra.skillsystem.skills.test.BotLocalKickBallSkill;
 import edu.tigers.sumatra.skillsystem.skills.test.IdentDelaysSkill;
-import edu.tigers.sumatra.skillsystem.skills.test.IdentMotorSkill;
 import edu.tigers.sumatra.skillsystem.skills.test.KickSampleSkill;
-import edu.tigers.sumatra.skillsystem.skills.test.LatencyIdentSkill;
-import edu.tigers.sumatra.skillsystem.skills.test.LatencyTestSkill;
 import edu.tigers.sumatra.skillsystem.skills.test.LocalForceSequenceSkill;
 import edu.tigers.sumatra.skillsystem.skills.test.MoveBangBangSkill;
 import edu.tigers.sumatra.wp.data.DynamicPosition;
@@ -97,26 +86,14 @@ public enum ESkill implements IInstanceableEnum
 	PROTECT_BALL(ic(ProtectBallSkill.class)
 			.setterParam(DynamicPosition.class, "protectionTarget", "0,0", ProtectBallSkill::setProtectionTarget)
 	),
-	PUSH_AROUND_OBSTACLE(ic(PushAroundObstacleSkill.class)
-			.setterParam(DynamicPosition.class, "obstacle", "0 Y", PushAroundObstacleSkill::setObstacle)
-			.setterParam(DynamicPosition.class, "target", "0,0", PushAroundObstacleSkill::setTarget)
-	),
 	ROTATION(ic(RotationSkill.class)
 			.ctorParam(Double.TYPE, "angle", "3.0")
-	),
-	COMMAND_LIST(ic(CommandListSkill.class)
-			.setterParam(String.class, "commandSequence", "0 vy 0.5|0 kd c|1.0 k 5|1.1 noop",
-					CommandListSkill::setCommandList)
 	),
 	MOVE_WITH_BALL(ic(MoveWithBallSkill.class)
 			.setterParam(IVector2.class, "dest", "0,0", MoveWithBallSkill::setFinalDest)
 			.setterParam(Double.class, "orientation", "0", MoveWithBallSkill::setFinalOrientation)
 	),
 	GET_BALL_CONTACT(ic(GetBallContactSkill.class)),
-
-	PROTECT_AND_MOVE_WITH_BALL(ic(ProtectAndMoveWithBallSkill.class)
-			.setterParam(IVector2.class, "protectionTarget", "0,0", ProtectAndMoveWithBallSkill::setProtectionTarget)
-	),
 
 	ROTATE_WITH_BALL(ic(RotateWithBallSkill.class)
 			.setterParam(IVector2.class, "protectionTarget", "0,0", RotateWithBallSkill::setProtectionTarget)
@@ -128,47 +105,27 @@ public enum ESkill implements IInstanceableEnum
 	),
 
 	PROTECTIVE_GET_BALL(ic(ProtectiveGetBallSkill.class)
-			.setterParam(IVector2.class, "protectionTarget", "0,0", ProtectiveGetBallSkill::setProtectionTarget)
+			.setterParam(IVector2.class, "protectionTarget", "0,0", ProtectiveGetBallSkill::setTarget)
 			.setterParam(Boolean.TYPE, "strongDribblerContactNeeded", "false",
 					ProtectiveGetBallSkill::setStrongDribblerContactNeeded)
 	),
-	// Skills for standards
 
-	DRIBBLE_BALL(ic(DribbleSkill.class)
-			.setterParam(new InstanceableSetter<>(DynamicPosition.class, "target", "4050,0", DribbleSkill::setTargetPos))
-			.setterParam(new InstanceableSetter<>(Double.TYPE, "safeDistance", "0", DribbleSkill::setSafeDistance))
-	),
+	// ************************
+	// *** standard skills
+	// ************************
+
 	DROP_BALL(ic(DropBallSkill.class)),
 	INTERCEPTION(ic(InterceptionSkill.class)),
-	PENALTY_SHOOT(ic(PenaltyShootSkill.class)
-			.setterParam(ERotateDirection.class, "shootDirection", "CW", PenaltyShootSkill::setShootDirection)
-	),
-	PENALTY_KEEPER(ic(PenaltyKeeperSkill.class)
-			.setterParam(DynamicPosition.class, "shooterID", "3,YELLOW", PenaltyKeeperSkill::setShooterPos)
-	),
 	MOVE_ON_PENALTY_AREA(ic(MoveOnShapeBoundarySkill.class)
 			.setterParam(IVector2.class, "destination", "0,0", MoveOnShapeBoundarySkill::setDestination)
 	),
 	CRITICAL_KEEPER(ic(CriticalKeeperSkill.class)),
 	RAMBO_KEEPER(ic(RamboKeeperSkill.class)),
-	KEEPER(ic(KeeperSkill.class)),
 
 	// ************************
 	// *** utility skills
 	// ************************
 
-
-	LATENCY_TEST(ic(LatencyTestSkill.class)),
-
-	LATENCY_IDENT(ic(LatencyIdentSkill.class)
-			.setterParam(Double.TYPE, "amplitude", "1.0", LatencyIdentSkill::setAmplitude)
-			.setterParam(Double.TYPE, "frequency", "0.3", LatencyIdentSkill::setFrequency)
-			.setterParam(Double.TYPE, "duration", "10.0", LatencyIdentSkill::setDuration)),
-
-	IDENT_MOTOR(ic(IdentMotorSkill.class)
-			.ctorParam(Double.TYPE, "maxSpeedW", "25.1")
-			.ctorParam(Integer.TYPE, "numSteps", "10")
-	),
 
 	IDENT_DELAYS(ic(IdentDelaysSkill.class)
 			.ctorParam(Double.TYPE, "amplitude", "0.5")
@@ -191,17 +148,17 @@ public enum ESkill implements IInstanceableEnum
 			.ctorParam(Double.TYPE, "rightOffset", "0.0")
 	),
 
-	AUTO_KICK_SAMPLE(ic(AutoKickSampleSkill.class)
-			.ctorParam(DynamicPosition.class, "target", "0,0")
-			.ctorParam(EKickerDevice.class, "device", "STRAIGHT")
-			.ctorParam(Double.TYPE, "kickDuration", "0")
-	),
-
 	LOCAL_FORCE_SEQUENCE(ic(LocalForceSequenceSkill.class)
 			.ctorParam(Double[].class, "durations", "1; 2")
 			.ctorParam(Double[].class, "forces", "8; 0")
 			.ctorParam(Double[].class, "directions", "1.57; 0")
 			.ctorParam(Double[].class, "torques", "0; 0")
+	),
+
+	BOT_LOCAL_KICK(ic(BotLocalKickBallSkill.class)
+			.setterParam(IVector2.class, "targetPos", "0,0", BotLocalKickBallSkill::setTargetPos)
+			.setterParam(Double.TYPE, "kickSpeed", "0.0", BotLocalKickBallSkill::setKickSpeed)
+			.setterParam(Boolean.TYPE, "enableDribbler", "false", BotLocalKickBallSkill::setDribbler)
 	),
 
 	// ************************

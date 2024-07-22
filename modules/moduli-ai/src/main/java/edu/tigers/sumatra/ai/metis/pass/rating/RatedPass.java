@@ -16,7 +16,7 @@ import java.util.Objects;
 
 
 @Value
-@Builder
+@Builder(toBuilder = true)
 public class RatedPass
 {
 	@NonNull

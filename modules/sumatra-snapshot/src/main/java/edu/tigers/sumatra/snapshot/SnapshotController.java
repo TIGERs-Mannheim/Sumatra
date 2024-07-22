@@ -43,7 +43,7 @@ public class SnapshotController
 	}
 
 
-	private Snapshot createSnapshot()
+	public Snapshot createSnapshot()
 	{
 		Map<BotID, SnapObject> snapBots = new HashMap<>();
 		Map<BotID, IVector3> moveDestinations = new HashMap<>();

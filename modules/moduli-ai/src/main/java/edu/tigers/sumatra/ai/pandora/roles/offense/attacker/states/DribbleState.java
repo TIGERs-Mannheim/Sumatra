@@ -5,6 +5,7 @@
 package edu.tigers.sumatra.ai.pandora.roles.offense.attacker.states;
 
 import edu.tigers.sumatra.ai.pandora.roles.offense.attacker.AttackerRole;
+import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.pathfinder.EObstacleAvoidanceMode;
 import edu.tigers.sumatra.skillsystem.skills.dribbling.DragBallSkill;
 
@@ -26,7 +27,20 @@ public class DribbleState extends AAttackerRoleState<DragBallSkill>
 		if (dribbleToPos != null && dribbleToPos.getDribbleToDestination() != null)
 		{
 			skill.setDestination(dribbleToPos.getDribbleToDestination());
+			if (dribbleToPos.getDribbleToDestination().distanceTo(getRole().getPos()) < Geometry.getBotRadius() * 2.5)
+			{
+				// hold your ground!
+				skill.getMoveCon().setObstacleAvoidanceMode(EObstacleAvoidanceMode.AGGRESSIVE);
+				skill.getMoveCon().setTheirBotsObstacle(false);
+			} else {
+				skill.getMoveCon().setObstacleAvoidanceMode(EObstacleAvoidanceMode.NORMAL);
+				skill.getMoveCon().setTheirBotsObstacle(true);
+			}
 		}
+
+		var dribblingInformation = getRole().getAiFrame().getTacticalField().getDribblingInformation();
+		boolean needToKick = dribblingInformation.isDribblingInProgress() && dribblingInformation.isViolationImminent();
+		skill.setForceKick(needToKick);
 
 		skill.setTargetOrientation(getProtectionTarget().subtractNew(getRole().getPos()).multiplyNew(-1).getAngle());
 	}

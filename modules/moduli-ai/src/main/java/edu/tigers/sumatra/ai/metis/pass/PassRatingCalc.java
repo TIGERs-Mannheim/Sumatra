@@ -12,21 +12,16 @@ import edu.tigers.sumatra.ai.metis.offense.situation.zone.OffensiveZones;
 import edu.tigers.sumatra.ai.metis.pass.rating.EPassRating;
 import edu.tigers.sumatra.ai.metis.pass.rating.RatedPass;
 import edu.tigers.sumatra.ai.metis.pass.rating.RatedPassFactory;
-import edu.tigers.sumatra.botmanager.botskills.data.EKickerDevice;
-import edu.tigers.sumatra.drawable.DrawableAnnotation;
-import edu.tigers.sumatra.drawable.DrawableCircle;
 import edu.tigers.sumatra.drawable.DrawableLine;
-import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.math.vector.IVector2;
-import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
+import edu.tigers.sumatra.wp.util.BotDistanceComparator;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 import java.awt.Color;
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.Comparator;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
@@ -40,17 +35,23 @@ import java.util.stream.Collectors;
 public class PassRatingCalc extends ACalculator
 {
 
-	@Configurable(defValue = "true")
+	@Configurable(defValue = "true", comment = "Use dynamic pass interception rating based on pass stats")
 	private static boolean useDynamicInterceptionRating = true;
 
+	@Configurable(defValue = "0.1", comment = "Hysteresis bonus multiplier for same receiver")
+	private static double hystBonusMultiplierBot = 0.1;
+
+	@Configurable(defValue = "0.15", comment = "Hysteresis bonus multiplier for same target")
+	private static double hystBonusMultiplierTarget = 0.15;
+
+	@Configurable(defValue = "false", comment = "Draw debug shapes")
+	private static boolean debugShapes = false;
+
 	private final Supplier<Map<KickOrigin, List<Pass>>> generatedPasses;
-
 	private final Supplier<PassStats> passStats;
-
 	private final Supplier<OffensiveZones> offensiveZones;
 
 	private final RatedPassFactory ratingFactory = new RatedPassFactory();
-
 
 	@Getter
 	private Map<KickOrigin, List<RatedPass>> passesRated;
@@ -59,27 +60,38 @@ public class PassRatingCalc extends ACalculator
 	@Override
 	public void doCalc()
 	{
-		// all opponents except those which are in a skirmish
-		var consideredBots = getWFrame().getOpponentBots().values().stream()
-				.filter(p -> p.getPos().distanceTo(getBall().getPos()) > Geometry.getBotRadius() + 100)
+		var consideredBots = getWFrame().getBots().values().stream()
+				// Ignore the keeper
+				.filter(e -> e.getBotId() != getAiFrame().getKeeperId())
+				// Sort by distance to ball as rough estimate to get the closest bots first
+				.sorted(new BotDistanceComparator(getBall().getPos()))
 				.toList();
-
 		if (useDynamicInterceptionRating)
 		{
-			ratingFactory.updateDynamic(consideredBots, passStats.get(), offensiveZones.get());
+			ratingFactory.updateDynamic(consideredBots,
+					consideredBots.stream().filter(e -> e.getBotId() != getAiFrame().getKeeperOpponentId()).toList(),
+					passStats.get(), offensiveZones.get());
 		} else
 		{
-			ratingFactory.update(consideredBots);
+			ratingFactory.update(consideredBots,
+					consideredBots.stream().filter(e -> e.getBotId() != getAiFrame().getKeeperOpponentId()).toList());
+		}
+		if (debugShapes)
+		{
+			ratingFactory.setShapes(getShapes(EAiShapesLayer.PASS_RATING_DEBUG));
+			ratingFactory.drawShapes(getShapes(EAiShapesLayer.PASS_RATING_DEBUG));
+		} else
+		{
+			ratingFactory.setShapes(null);
 		}
 
-		passesRated = generatedPasses.get().entrySet().stream()
-				.collect(Collectors.toUnmodifiableMap(
+		passesRated = generatedPasses.get().entrySet().stream().collect(Collectors.toUnmodifiableMap(
 						Map.Entry::getKey,
-						e -> ratePasses(e.getValue()))
-				);
+						e -> ratePasses(e.getValue())
+				)
+		);
 
 		passesRated.values().stream().flatMap(Collection::stream).forEach(this::drawLinesToPassTargets);
-		passesRated.values().stream().flatMap(Collection::stream).forEach(this::drawRatedPass);
 	}
 
 
@@ -87,16 +99,44 @@ public class PassRatingCalc extends ACalculator
 	{
 		return passes.parallelStream()
 				.map(ratingFactory::rate)
-				.sorted(Comparator.comparing(this::compareRatedPasses))
+				.map(this::addHysteresis)
 				.toList();
 	}
 
 
-	private double compareRatedPasses(RatedPass p)
+	private RatedPass addHysteresis(RatedPass ratedPass)
 	{
-		return p.getScore(EPassRating.REFLECT_GOAL_KICK) * 100 +
-				p.getScore(EPassRating.GOAL_KICK) * 10 +
-				p.getScore(EPassRating.PRESSURE) * 1;
+		RatedPass oldSelectedPass = getAiFrame().getPrevFrame().getTacticalField().getSelectedPasses().values().stream()
+				.findFirst()
+				.orElse(null);
+		if (oldSelectedPass == null)
+		{
+			return ratedPass;
+		}
+
+		var oldReceiver = oldSelectedPass.getPass().getReceiver();
+		var newReceiver = ratedPass.getPass().getReceiver();
+		double hystBonus = 1.0;
+		if (oldReceiver.equals(newReceiver))
+		{
+			// give bot base bonus
+			hystBonus += hystBonusMultiplierBot;
+		}
+
+		if (oldSelectedPass.getPass().getKick().getTarget().distanceTo(ratedPass.getPass().getKick().getTarget())
+				< 5)
+		{
+			// give target location based bonus
+			hystBonus += hystBonusMultiplierTarget;
+		}
+
+		Map<EPassRating, Double> scores = new EnumMap<>(EPassRating.class);
+		for (var rating : EPassRating.values())
+		{
+			scores.put(rating, ratedPass.getScore(rating) * hystBonus);
+		}
+
+		return ratedPass.toBuilder().scores(scores).build();
 	}
 
 
@@ -110,38 +150,5 @@ public class PassRatingCalc extends ACalculator
 		{
 			getShapes(EAiShapesLayer.PASS_SELECTION).add(new DrawableLine(kickerPos, target, new Color(55, 55, 55, 70)));
 		}
-	}
-
-
-	private void drawRatedPass(final RatedPass ratedPass)
-	{
-		var color = new Color(0, 120, 100, 150);
-		var target = ratedPass.getPass().getKick().getTarget();
-		getShapes(EAiShapesLayer.PASS_SELECTION).add(new DrawableCircle(target, 30, color).setFill(true));
-
-		boolean chip = ratedPass.getPass().getKick().getKickParams().getDevice() == EKickerDevice.CHIP;
-		var text = (chip ? "ch: " : "st: ") +
-				Arrays.stream(EPassRating.values()).map(p -> passRatingToStr(ratedPass, p))
-						.collect(Collectors.joining(" | "));
-
-		var chipOffset = chip ? 6.0 : 0.0;
-		getShapes(EAiShapesLayer.PASS_RATING)
-				.add(new DrawableAnnotation(target, text)
-						.setColor(Color.black)
-						.withFontHeight(6)
-						.withCenterHorizontally(true)
-						.withOffset(Vector2.fromXY(0, 33 + chipOffset)));
-	}
-
-
-	private String passRatingToStr(RatedPass ratedPass, EPassRating passRating)
-	{
-		return passRating.getAbbreviation() + ":" + scoreToStr(ratedPass.getScore(passRating));
-	}
-
-
-	private String scoreToStr(final double passScore)
-	{
-		return Long.toString(Math.round(passScore * 100));
 	}
 }

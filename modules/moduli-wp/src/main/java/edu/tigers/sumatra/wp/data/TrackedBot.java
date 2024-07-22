@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.wp.data;
@@ -41,6 +41,7 @@ public final class TrackedBot implements ITrackedBot
 	private final BallContact ballContact;
 	private final RobotInfo robotInfo;
 	private final double quality;
+	private final boolean malFunctioning;
 
 
 	@SuppressWarnings("unused")
@@ -54,6 +55,7 @@ public final class TrackedBot implements ITrackedBot
 		robotInfo = null;
 		tAssembly = 0;
 		quality = 0;
+		malFunctioning = false;
 	}
 
 
@@ -66,6 +68,7 @@ public final class TrackedBot implements ITrackedBot
 		ballContact = builder.ballContact;
 		robotInfo = builder.robotInfo;
 		quality = builder.quality;
+		malFunctioning = builder.malFunctioning;
 		tAssembly = System.nanoTime();
 	}
 
@@ -93,6 +96,7 @@ public final class TrackedBot implements ITrackedBot
 		builder.robotInfo = copy.getRobotInfo();
 		builder.ballContact = copy.getBallContact();
 		builder.quality = copy.getQuality();
+		builder.malFunctioning = copy.isMalFunctioning();
 		return builder;
 	}
 
@@ -111,7 +115,8 @@ public final class TrackedBot implements ITrackedBot
 				.withTimestamp(timestamp)
 				.withState(State.zero())
 				.withLastBallContact(BallContact.def(timestamp))
-				.withBotInfo(RobotInfo.stub(botID, timestamp));
+				.withBotInfo(RobotInfo.stub(botID, timestamp))
+				.withMalFunctioning(false);
 	}
 
 
@@ -135,6 +140,7 @@ public final class TrackedBot implements ITrackedBot
 				.withState(botState.mirrored())
 				.withFilteredState(filteredState == null ? null : filteredState.mirrored())
 				.withBotInfo(robotInfo.mirrored())
+				.withMalFunctioning(malFunctioning)
 				.build();
 	}
 
@@ -240,6 +246,13 @@ public final class TrackedBot implements ITrackedBot
 
 
 	@Override
+	public boolean isMalFunctioning()
+	{
+		return malFunctioning;
+	}
+
+
+	@Override
 	public IVector2 getPos()
 	{
 		return botState.getPos();
@@ -285,20 +298,6 @@ public final class TrackedBot implements ITrackedBot
 	public double getAngularVel()
 	{
 		return botState.getAngularVel();
-	}
-
-
-	@Override
-	public boolean hasBallContact()
-	{
-		return hadBallContact(0.2);
-	}
-
-
-	@Override
-	public boolean hadBallContact(double horizon)
-	{
-		return ballContact.hadContact(horizon);
 	}
 
 
@@ -374,7 +373,7 @@ public final class TrackedBot implements ITrackedBot
 		numbers.add(filteredState == null ? 0 : 1);
 		numbers.add(robotInfo.getKickSpeed());
 		numbers.add(robotInfo.isChip() ? 1 : 0);
-		numbers.add(robotInfo.getDribbleRpm());
+		numbers.add(robotInfo.getDribbleSpeed());
 		numbers.add(robotInfo.isBarrierInterrupted() ? 1 : 0);
 		numbers.add(tAssembly);
 		numbers.addAll(Vector3.zero().getNumberList()); // buffered_pos
@@ -411,6 +410,7 @@ public final class TrackedBot implements ITrackedBot
 		private BallContact ballContact;
 		private RobotInfo robotInfo;
 		private double quality;
+		private boolean malFunctioning;
 
 
 		private Builder()
@@ -586,6 +586,19 @@ public final class TrackedBot implements ITrackedBot
 		public Builder withQuality(final double quality)
 		{
 			this.quality = quality;
+			return this;
+		}
+
+
+		/**
+		 * Sets the {@code malFunctioning} and returns a reference to this Builder so that the methods can be chained together.
+		 *
+		 * @param malFunctioning the {@code malFunctioning} to set
+		 * @return a reference to this Builder
+		 */
+		public Builder withMalFunctioning(final boolean malFunctioning)
+		{
+			this.malFunctioning = malFunctioning;
 			return this;
 		}
 

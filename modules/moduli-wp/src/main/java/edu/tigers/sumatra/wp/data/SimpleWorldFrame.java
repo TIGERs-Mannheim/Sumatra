@@ -7,15 +7,16 @@ package edu.tigers.sumatra.wp.data;
 import com.sleepycat.persist.model.Persistent;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.IMirrorable;
-import edu.tigers.sumatra.vision.data.IKickEvent;
+import lombok.AccessLevel;
 import lombok.Data;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 
-import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 
 /**
@@ -30,8 +31,9 @@ public class SimpleWorldFrame implements IMirrorable<SimpleWorldFrame>
 	private final long timestamp;
 	private final Map<BotID, ITrackedBot> bots;
 	private final ITrackedBall ball;
-	private final IKickEvent kickEvent;
-	private final BallKickFitState kickFitState;
+	private final KickedBall kickedBall;
+	@Getter(AccessLevel.NONE)
+	@Setter(AccessLevel.NONE)
 	private transient Map<BotID, ITrackedBot> botsReadOnly;
 
 
@@ -42,8 +44,7 @@ public class SimpleWorldFrame implements IMirrorable<SimpleWorldFrame>
 		timestamp = 0;
 		bots = null;
 		ball = null;
-		kickEvent = null;
-		kickFitState = null;
+		kickedBall = null;
 	}
 
 
@@ -58,8 +59,7 @@ public class SimpleWorldFrame implements IMirrorable<SimpleWorldFrame>
 		timestamp = swf.timestamp;
 		frameNumber = swf.frameNumber;
 		bots = swf.bots;
-		kickEvent = swf.kickEvent;
-		kickFitState = swf.kickFitState;
+		kickedBall = swf.kickedBall;
 	}
 
 
@@ -71,16 +71,11 @@ public class SimpleWorldFrame implements IMirrorable<SimpleWorldFrame>
 	@Override
 	public SimpleWorldFrame mirrored()
 	{
-		Map<BotID, ITrackedBot> newBots = new HashMap<>();
-		for (ITrackedBot bot : bots.values())
-		{
-			ITrackedBot mBot = bot.mirrored();
-			newBots.put(bot.getBotId(), mBot);
-		}
-		ITrackedBall mBall = getBall().mirrored();
-		IKickEvent mKickEvent = Optional.ofNullable(kickEvent).map(IKickEvent::mirrored).orElse(null);
-		BallKickFitState mKickFitState = Optional.ofNullable(kickFitState).map(BallKickFitState::mirrored).orElse(null);
-		return new SimpleWorldFrame(frameNumber, timestamp, newBots, mBall, mKickEvent, mKickFitState);
+		var mBots = bots.entrySet().stream()
+				.collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().mirrored()));
+		var mBall = getBall().mirrored();
+		var mKickedBall = kickedBall == null ? null : kickedBall.mirrored();
+		return new SimpleWorldFrame(frameNumber, timestamp, mBots, mBall, mKickedBall);
 	}
 
 
@@ -94,21 +89,9 @@ public class SimpleWorldFrame implements IMirrorable<SimpleWorldFrame>
 	}
 
 
-	/**
-	 * @return the last kick event
-	 */
-	public Optional<IKickEvent> getKickEvent()
+	public Optional<KickedBall> getKickedBall()
 	{
-		return Optional.ofNullable(kickEvent);
-	}
-
-
-	/**
-	 * @return the last kick fit state
-	 */
-	public Optional<BallKickFitState> getKickFitState()
-	{
-		return Optional.ofNullable(kickFitState);
+		return Optional.ofNullable(kickedBall);
 	}
 
 
@@ -119,17 +102,5 @@ public class SimpleWorldFrame implements IMirrorable<SimpleWorldFrame>
 			botsReadOnly = Collections.unmodifiableMap(bots);
 		}
 		return botsReadOnly;
-	}
-
-
-	/**
-	 * @param botID
-	 * @return a new map containing all bots except for the given ones
-	 */
-	public Map<BotID, ITrackedBot> getAllBotsBut(BotID... botID)
-	{
-		var allBots = new HashMap<>(bots);
-		Arrays.asList(botID).forEach(allBots.keySet()::remove);
-		return allBots;
 	}
 }

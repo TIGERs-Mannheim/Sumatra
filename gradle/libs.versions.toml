@@ -1,0 +1,78 @@
+[versions]
+com-fasterxml-jackson-core = "2.17.0"
+com-google-protobuf = "4.26.1"
+com-miglayout = "11.3"
+io-humble = "0.3.0"
+org-apache-groovy = "4.0.21"
+org-apache-logging-log4j = "2.23.1"
+org-jacoco = "0.8.9"
+org-openjdk-jmh = "1.37"
+org-spockframework = "2.3-groovy-4.0"
+
+plugin-dependency-analysis = "1.9.1"
+plugin-jib = "3.4.2"
+plugin-protobuf = "0.9.4"
+plugin-sonar = "5.0.0.4638"
+plugin-version-catalog-update = "0.8.4"
+
+[libraries]
+com-fasterxml-jackson-core-jackson-annotations = { module = "com.fasterxml.jackson.core:jackson-annotations", version.ref = "com-fasterxml-jackson-core" }
+com-fasterxml-jackson-core-jackson-core = { module = "com.fasterxml.jackson.core:jackson-core", version.ref = "com-fasterxml-jackson-core" }
+com-fasterxml-jackson-core-jackson-databind = { module = "com.fasterxml.jackson.core:jackson-databind", version.ref = "com-fasterxml-jackson-core" }
+com-github-TIGERs-Mannheim-infonode = "com.github.TIGERs-Mannheim:infonode:1.7.0"
+com-github-TIGERs-Mannheim-jinput = "com.github.TIGERs-Mannheim.jinput:jinput:2.0.9.4"
+com-github-TIGERs-Mannheim-matlabcontrol = "com.github.TIGERs-Mannheim.matlabcontrol:matlabcontrol:4.1.2"
+com-github-TIGERs-Mannheim-moduli = "com.github.TIGERs-Mannheim:moduli:4.1"
+com-github-TIGERs-Mannheim-ssl-game-controller-maven = "com.github.TIGERs-Mannheim:ssl-game-controller-maven:3.11.0.0"
+com-github-g3force-string2ValueConverter = "com.github.g3force:String2ValueConverter:2.2.1"
+com-github-g3force-configurable = "com.github.g3force:configurable:3.0"
+com-github-g3force-instanceables = "com.github.g3force:instanceables:5.2"
+com-google-guava = "com.google.guava:guava:33.1.0-jre"
+com-google-protobuf-protobuf-java = { module = "com.google.protobuf:protobuf-java", version.ref = "com-google-protobuf" }
+com-google-protobuf-protobuf-java-util = { module = "com.google.protobuf:protobuf-java-util", version.ref = "com-google-protobuf" }
+com-google-protobuf-protoc = { module = "com.google.protobuf:protoc", version.ref = "com-google-protobuf" }
+com-googlecode-json-simple = "com.googlecode.json-simple:json-simple:1.1.1"
+com-jidesoft-jide-oss = "com.jidesoft:jide-oss:3.6.18"
+com-miglayout-miglayout-core = { module = "com.miglayout:miglayout-core", version.ref = "com-miglayout" }
+com-miglayout-miglayout-swing = { module = "com.miglayout:miglayout-swing", version.ref = "com-miglayout" }
+com-sleepycat-je = "com.sleepycat:je:18.3.12"
+commons-cli = "commons-cli:commons-cli:1.7.0"
+commons-codec = "commons-codec:commons-codec:1.16.1"
+commons-configuration = "commons-configuration:commons-configuration:1.10"
+commons-io = "commons-io:commons-io:2.16.1"
+commons-lang = "commons-lang:commons-lang:2.6"
+gov-nist-math-jama = "gov.nist.math:jama:1.0.3"
+io-humble-humble-video-all = { module = "io.humble:humble-video-all", version.ref = "io-humble" }
+io-humble-humble-video-noarch = { module = "io.humble:humble-video-noarch", version.ref = "io-humble" }
+junit = "junit:junit:4.13.2"
+net-jafama = "net.jafama:jafama:2.3.2"
+net-java-jinput = "net.java.jinput:jinput:2.0.10"
+net-lingala-zip4j = "net.lingala.zip4j:zip4j:2.11.5"
+net-sf-jchart2d = "net.sf.jchart2d:jchart2d:3.3.2"
+nl-jqno-equalsverifier = "nl.jqno.equalsverifier:equalsverifier:3.16.1"
+org-apache-commons-commons-collections4 = "org.apache.commons:commons-collections4:4.4"
+org-apache-commons-commons-math3 = "org.apache.commons:commons-math3:3.6.1"
+org-apache-groovy-groovy-bom = { module = "org.apache.groovy:groovy-bom", version.ref = "org-apache-groovy" }
+org-apache-logging-log4j-log4j-api = { module = "org.apache.logging.log4j:log4j-api", version.ref = "org-apache-logging-log4j" }
+org-apache-logging-log4j-log4j-core = { module = "org.apache.logging.log4j:log4j-core", version.ref = "org-apache-logging-log4j" }
+org-assertj-assertj-core = "org.assertj:assertj-core:3.25.3"
+org-hamcrest = "org.hamcrest:hamcrest:2.2"
+org-influxdb-influxdb-java = "org.influxdb:influxdb-java:2.24"
+org-junit-jupiter-junit-jupiter = "org.junit.jupiter:junit-jupiter:5.10.2"
+org-junit-platform-junit-platform-launcher = "org.junit.platform:junit-platform-launcher:1.10.2"
+org-junit-vintage-junit-vintage-engine = "org.junit.vintage:junit-vintage-engine:5.10.2"
+org-mockito-mockito-all = "org.mockito:mockito-all:1.10.19"
+org-openjdk-jmh-jmh-core = { module = "org.openjdk.jmh:jmh-core", version.ref = "org-openjdk-jmh" }
+org-openjdk-jmh-jmh-generator-annprocess = { module = "org.openjdk.jmh:jmh-generator-annprocess", version.ref = "org-openjdk-jmh" }
+org-openjdk-jol-jol-core = "org.openjdk.jol:jol-core:0.17"
+org-projectlombok-lombok = "org.projectlombok:lombok:1.18.32"
+org-spockframework-spock-bom = { module = "org.spockframework:spock-bom", version.ref = "org-spockframework" }
+org-swinglabs-swingx-swingx-all = "org.swinglabs.swingx:swingx-all:1.6.5-1"
+
+plugin-dependency-analysis = { module = "ca.cutterslade.analyze:ca.cutterslade.analyze.gradle.plugin", version.ref = "plugin-dependency-analysis" }
+plugin-jib = { module = "com.google.cloud.tools:jib-gradle-plugin", version.ref = "plugin-jib" }
+plugin-protobuf = { module = "com.google.protobuf:protobuf-gradle-plugin", version.ref = "plugin-protobuf" }
+
+[plugins]
+sonar = { id = "org.sonarqube", version.ref = "plugin-sonar" }
+versionCatalogUpdate = { id = "nl.littlerobots.version-catalog-update", version.ref = "plugin-version-catalog-update" }

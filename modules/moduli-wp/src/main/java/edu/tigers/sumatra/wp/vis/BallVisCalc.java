@@ -6,13 +6,14 @@ package edu.tigers.sumatra.wp.vis;
 
 import edu.tigers.sumatra.drawable.DrawableAnnotation;
 import edu.tigers.sumatra.drawable.DrawableArrow;
+import edu.tigers.sumatra.drawable.DrawableBorderText;
 import edu.tigers.sumatra.drawable.DrawableCircle;
 import edu.tigers.sumatra.drawable.DrawableLine;
 import edu.tigers.sumatra.drawable.DrawablePlanarCurve;
-import edu.tigers.sumatra.drawable.DrawablePoint;
 import edu.tigers.sumatra.drawable.IDrawableShape;
 import edu.tigers.sumatra.drawable.ShapeMap;
 import edu.tigers.sumatra.drawable.animated.AnimatedCrosshair;
+import edu.tigers.sumatra.geometry.BallParameters;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.geometry.RuleConstraints;
 import edu.tigers.sumatra.math.circle.Circle;
@@ -24,6 +25,9 @@ import edu.tigers.sumatra.wp.data.ITrackedBall;
 import edu.tigers.sumatra.wp.data.WorldFrameWrapper;
 
 import java.awt.Color;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
 
 
 /**
@@ -82,9 +86,6 @@ public class BallVisCalc implements IWpCalc
 			ballCurve.setColor(Color.PINK);
 			shapeMap.get(EWpShapesLayer.BALL_PREDICTION).add(ballCurve);
 
-			wfw.getSimpleWorldFrame().getKickFitState().ifPresent(state -> shapeMap.get(EWpShapesLayer.BALL_PREDICTION)
-					.add(new DrawableArrow(state.getKickPos(), state.getKickVel().getXYVector().multiplyNew(100))
-							.setColor(Color.magenta)));
 		}
 
 		ball.getTrajectory().getTravelLinesRolling().forEach(rollLine -> {
@@ -96,8 +97,40 @@ public class BallVisCalc implements IWpCalc
 			}
 		});
 
-		wfw.getSimpleWorldFrame().getKickEvent().ifPresent(event -> shapeMap.get(EWpShapesLayer.BALL_PREDICTION)
-				.add(new DrawablePoint(event.getPosition(), Color.red)
-						.withSize(50)));
+		wfw.getSimpleWorldFrame().getKickedBall().ifPresent(kickedBall -> shapeMap.get(EWpShapesLayer.BALL_PREDICTION)
+				.add(new DrawableArrow(kickedBall.getKickPos(), kickedBall.getKickVel().getXYVector().multiplyNew(100))
+						.setColor(Color.magenta)));
+
+		createBallParameterShapes(shapeMap);
+	}
+
+
+	private void createBallParameterShapes(ShapeMap shapeMap)
+	{
+		BallParameters params = Geometry.getBallParameters();
+		String chip = "Chip";
+		List<String> textLines = new ArrayList<>();
+		textLines.add("Straight");
+		textLines.add("AccSlide: " + params.getAccSlide());
+		textLines.add("AccRoll: " + params.getAccRoll());
+		textLines.add("KSwitch: " + params.getKSwitch());
+		textLines.add(chip);
+		textLines.add("DampingXY 1. Hop: " + params.getChipDampingXYFirstHop());
+		textLines.add("DampingXY n. Hops: " + params.getChipDampingXYOtherHops());
+		textLines.add("DampingZ: " + params.getChipDampingZ());
+		double posXStraight = 1.0;
+		double posY = 8.0;
+		for (int i = 0; i < textLines.size(); i++)
+		{
+			if (Objects.equals(textLines.get(i), chip))
+			{
+				posY = posY + 0.3;
+			}
+			DrawableBorderText sText = new DrawableBorderText(Vector2.fromXY(posXStraight, posY),
+					textLines.get(i));
+			shapeMap.get(EWpShapesLayer.BALL_MODELS)
+					.add(sText.setColor(i < textLines.size() / 2 ? Color.CYAN : Color.ORANGE));
+			posY = posY + 1.1;
+		}
 	}
 }

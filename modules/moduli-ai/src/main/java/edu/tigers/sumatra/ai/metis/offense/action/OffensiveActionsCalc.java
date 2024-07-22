@@ -8,11 +8,11 @@ import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
 import edu.tigers.sumatra.ai.metis.ACalculator;
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
+import edu.tigers.sumatra.ai.metis.ballpossession.BallPossession;
 import edu.tigers.sumatra.ai.metis.botdistance.BotDistance;
+import edu.tigers.sumatra.ai.metis.kicking.Pass;
 import edu.tigers.sumatra.ai.metis.offense.OffensiveConstants;
 import edu.tigers.sumatra.ai.metis.offense.action.moves.AOffensiveActionMove;
-import edu.tigers.sumatra.ai.metis.offense.action.moves.ChopTrickActionMove;
-import edu.tigers.sumatra.ai.metis.offense.action.moves.ClearingKickActionMove;
 import edu.tigers.sumatra.ai.metis.offense.action.moves.EOffensiveActionMove;
 import edu.tigers.sumatra.ai.metis.offense.action.moves.FinisherActionMove;
 import edu.tigers.sumatra.ai.metis.offense.action.moves.ForcedPassActionMove;
@@ -33,8 +33,6 @@ import edu.tigers.sumatra.ai.metis.targetrater.GoalKick;
 import edu.tigers.sumatra.drawable.DrawableAnnotation;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.vector.Vector2f;
-import edu.tigers.sumatra.trees.EOffensiveSituation;
-import edu.tigers.sumatra.trees.OffensiveActionTree;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
@@ -63,23 +61,17 @@ public class OffensiveActionsCalc extends ACalculator
 	private static final DecimalFormat DF = new DecimalFormat("0.00");
 	private static final Color COLOR = Color.magenta;
 
-	@Configurable(defValue = "0.25")
-	private static double viabilityMultiplierClearingKick = 0.25;
-
 	@Configurable(defValue = "1.0")
 	private static double viabilityMultiplierDirectKick = 1.0;
 
-	@Configurable(defValue = "1.0")
-	private static double viabilityMultiplierChopTrick = 1.0;
-
-	@Configurable(defValue = "0.7")
-	private static double viabilityMultiplierStandardPass = 0.7;
+	@Configurable(defValue = "0.8")
+	private static double viabilityMultiplierStandardPass = 0.8;
 
 	@Configurable(defValue = "1.0")
 	private static double viabilityMultiplierGoToOtherHalf = 1.0;
 
-	@Configurable(defValue = "0.4")
-	private static double impactTimeActionLockThreshold = 0.4;
+	@Configurable(defValue = "0.35")
+	private static double impactTimeActionLockThreshold = 0.35;
 
 	@Configurable(defValue = "PROTECT_MOVE")
 	private static EOffensiveActionMove forcedOffensiveActionMove = EOffensiveActionMove.PROTECT_MOVE;
@@ -102,12 +94,15 @@ public class OffensiveActionsCalc extends ACalculator
 	private final Supplier<BotDistance> opponentClosestToBall;
 	private final Supplier<OffensiveStatisticsFrame> offensiveStatisticsFrameSupplier;
 	private final Supplier<Map<BotID, GoalKick>> bestGoalKickPerBot;
+	private final Supplier<GoalKick> bestGoalKick;
 	private final Supplier<DribblingInformation> dribblingInformation;
 	private final Map<EOffensiveActionMove, AOffensiveActionMove> actionMoves = new EnumMap<>(
 			EOffensiveActionMove.class);
 	private final Supplier<DribbleToPos> dribbleToPos;
-	private final Supplier<Boolean> ballStopped;
-	private final Supplier<Boolean> ballDefenseIsReady;
+	private final Supplier<Boolean> tigerDribblingBall;
+	private final Supplier<BallPossession> ballPossession;
+	private final Supplier<Pass> protectPass;
+
 	@Getter
 	private Map<BotID, RatedOffensiveAction> offensiveActions;
 
@@ -115,43 +110,17 @@ public class OffensiveActionsCalc extends ACalculator
 	@Override
 	protected void start()
 	{
-		register(EOffensiveActionMove.FORCED_PASS, new ForcedPassActionMove(
-				selectedPasses
-		));
-		register(EOffensiveActionMove.REDIRECT_GOAL_KICK, new RedirectGoalKickActionMove(
-				bestGoalKickPerBot
-		));
-		register(EOffensiveActionMove.CHOP_TRICK, new ChopTrickActionMove());
-		register(EOffensiveActionMove.FINISHER, new FinisherActionMove(
-				opponentClosestToBall,
-				dribblingInformation,
-				ballStopped
-		));
-		register(EOffensiveActionMove.GOAL_KICK, new GoalKickActionMove(
-				bestGoalKickPerBot
-		));
-		register(EOffensiveActionMove.CLEARING_KICK, new ClearingKickActionMove(
-				opponentClosestToBall,
-				kickOrigins,
-				ballDefenseIsReady
-		));
-		register(EOffensiveActionMove.STANDARD_PASS, new StandardPassActionMove(
-				selectedPasses
-		));
-		register(EOffensiveActionMove.LOW_CHANCE_GOAL_KICK, new LowChanceGoalKickActionMove(
-				bestGoalKickPerBot
-		));
-		register(EOffensiveActionMove.MOVE_BALL_TO_OPPONENT_HALF, new MoveBallToOpponentHalfActionMove(
-				opponentClosestToBall
-		));
-		register(EOffensiveActionMove.RECEIVE_BALL, new ReceiveBallActionMove(
-				selectedPasses,
-				kickOrigins
-		));
-		register(EOffensiveActionMove.PROTECT_MOVE, new ProtectActionMove(
-				kickOrigins,
-				dribbleToPos
-		));
+		register(EOffensiveActionMove.FORCED_PASS, new ForcedPassActionMove(selectedPasses));
+		register(EOffensiveActionMove.REDIRECT_GOAL_KICK, new RedirectGoalKickActionMove(bestGoalKickPerBot));
+		register(EOffensiveActionMove.FINISHER,
+				new FinisherActionMove(opponentClosestToBall, dribblingInformation, tigerDribblingBall));
+		register(EOffensiveActionMove.GOAL_KICK, new GoalKickActionMove(bestGoalKick));
+		register(EOffensiveActionMove.STANDARD_PASS, new StandardPassActionMove(selectedPasses, kickOrigins));
+		register(EOffensiveActionMove.LOW_CHANCE_GOAL_KICK, new LowChanceGoalKickActionMove(bestGoalKickPerBot));
+		register(EOffensiveActionMove.MOVE_BALL_TO_OPPONENT_HALF,
+				new MoveBallToOpponentHalfActionMove(opponentClosestToBall, kickOrigins, ballPossession));
+		register(EOffensiveActionMove.RECEIVE_BALL, new ReceiveBallActionMove(selectedPasses, kickOrigins));
+		register(EOffensiveActionMove.PROTECT_MOVE, new ProtectActionMove(kickOrigins, dribbleToPos, protectPass));
 	}
 
 
@@ -185,8 +154,7 @@ public class OffensiveActionsCalc extends ACalculator
 	@Override
 	public void doCalc()
 	{
-		var adjustedScores = calcAdjustedOffensiveViabilityScores();
-		var scoreMultipliers = calcScoreMultipliers(adjustedScores);
+		var scoreMultipliers = calcScoreMultipliers();
 		actionMoves.values().forEach(m -> m.update(getAiFrame()));
 		actionMoves.forEach((moveType, actionMove) -> actionMove.setScoreMultiplier(scoreMultipliers.get(moveType)));
 
@@ -212,15 +180,14 @@ public class OffensiveActionsCalc extends ACalculator
 		var kickOrigin = kickOrigins.get().get(botId);
 		if (kickOrigin != null)
 		{
-			if (kickOrigin.getImpactTime() < impactTimeActionLockThreshold
-					&& offensiveActions.containsKey(botId)
+			if (kickOrigin.getImpactTime() < impactTimeActionLockThreshold && offensiveActions.containsKey(botId)
 					&& offensiveActions.get(botId).getMove() != EOffensiveActionMove.PROTECT_MOVE)
 			{
 				return getStableOffensiveAction(botId);
 			}
 
-			getShapes(EAiShapesLayer.OFFENSIVE_ACTION_DEBUG)
-					.add(getActionUpdateDebugAnnotation(botId, "accepting new action"));
+			getShapes(EAiShapesLayer.OFFENSE_ACTION_DEBUG).add(
+					getActionUpdateDebugAnnotation(botId, "accepting new action"));
 
 			if (activatedForcedOffensiveMove)
 			{
@@ -228,10 +195,8 @@ public class OffensiveActionsCalc extends ACalculator
 						.orElse(actionMoves.get(EOffensiveActionMove.PROTECT_MOVE).calcAction(botId).orElse(null));
 			}
 
-			var actions = actionMoves.values().stream().map(m -> m.calcAction(botId))
-					.filter(Optional::isPresent)
-					.map(Optional::get)
-					.toList();
+			var actions = actionMoves.values().parallelStream().map(m -> m.calcAction(botId)).filter(Optional::isPresent)
+					.map(Optional::get).toList();
 			drawViabilityMap(botId, actions);
 
 			var bestAction = firstFullyViableAction(actions).or(() -> bestPartiallyViableAction(actions)).orElse(null);
@@ -268,37 +233,34 @@ public class OffensiveActionsCalc extends ACalculator
 	private RatedOffensiveAction getStableOffensiveAction(BotID botId)
 	{
 		var lastActionMove = offensiveActions.get(botId).getMove();
-		var updatedAction = actionMoves.get(lastActionMove).calcAction(botId);
+		var updatedAction = actionMoves.get(lastActionMove).calcAction(botId, true);
 		if (updatedAction.isEmpty() || updatedAction.get().getViability().getType() == EActionViability.FALSE)
 		{
 			// keep old action, since an update is not possible
-			getShapes(EAiShapesLayer.OFFENSIVE_ACTION_DEBUG)
-					.add(getActionUpdateDebugAnnotation(botId, "keeping old action"));
+			getShapes(EAiShapesLayer.OFFENSE_ACTION_DEBUG).add(
+					getActionUpdateDebugAnnotation(botId, "keeping old action"));
 			return offensiveActions.get(botId);
 		}
 
 		// keep the current action, but keep updating it
-		getShapes(EAiShapesLayer.OFFENSIVE_ACTION_DEBUG)
-				.add(getActionUpdateDebugAnnotation(botId, "updating old action"));
+		getShapes(EAiShapesLayer.OFFENSE_ACTION_DEBUG).add(getActionUpdateDebugAnnotation(botId, "updating old action"));
 		return updatedAction.get();
 	}
 
 
 	private DrawableAnnotation getActionUpdateDebugAnnotation(BotID botId, String text)
 	{
-		return new DrawableAnnotation(getWFrame().getBot(botId).getPos(), text)
-				.withOffset(Vector2f.fromXY(-100, 350)).setColor(COLOR);
+		return new DrawableAnnotation(getWFrame().getBot(botId).getPos(), text).withOffset(Vector2f.fromXY(-100, 350))
+				.setColor(COLOR);
 	}
 
 
 	private void drawViabilityMap(BotID botID, List<RatedOffensiveAction> actions)
 	{
 		var pos = getWFrame().getBot(botID).getPos();
-		var text = actions.stream()
-				.map(this::drawViability)
-				.collect(Collectors.joining("\n"));
-		getShapes(EAiShapesLayer.OFFENSIVE_ACTION_DEBUG)
-				.add(new DrawableAnnotation(pos, text).withOffset(Vector2f.fromX(250)).setColor(COLOR));
+		var text = actions.stream().map(this::drawViability).collect(Collectors.joining("\n"));
+		getShapes(EAiShapesLayer.OFFENSE_ACTION_DEBUG).add(
+				new DrawableAnnotation(pos, text).withOffset(Vector2f.fromX(250)).setColor(COLOR));
 	}
 
 
@@ -310,23 +272,19 @@ public class OffensiveActionsCalc extends ACalculator
 	}
 
 
-	private Map<EOffensiveActionMove, Double> calcScoreMultipliers(Map<String, Double> adjustedScores)
+	private Map<EOffensiveActionMove, Double> calcScoreMultipliers()
 	{
 		Map<EOffensiveActionMove, Double> multiplierMap = new EnumMap<>(EOffensiveActionMove.class);
 		// Fixed default multipliers
-		multiplierMap.put(EOffensiveActionMove.CLEARING_KICK, viabilityMultiplierClearingKick);
 		multiplierMap.put(EOffensiveActionMove.GOAL_KICK, viabilityMultiplierDirectKick);
 		multiplierMap.put(EOffensiveActionMove.FINISHER, viabilityMultiplierDirectKick);
 		multiplierMap.put(EOffensiveActionMove.LOW_CHANCE_GOAL_KICK, viabilityMultiplierDirectKick);
-		multiplierMap.put(EOffensiveActionMove.CHOP_TRICK, viabilityMultiplierChopTrick);
 		multiplierMap.put(EOffensiveActionMove.STANDARD_PASS, viabilityMultiplierStandardPass);
 		multiplierMap.put(EOffensiveActionMove.MOVE_BALL_TO_OPPONENT_HALF, viabilityMultiplierGoToOtherHalf);
 
 		Arrays.stream(EOffensiveActionMove.values()).forEach(v -> {
 			// Set remaining values to 1.0
 			multiplierMap.putIfAbsent(v, 1.0);
-			// Apply the adjusted score to each action move
-			multiplierMap.computeIfPresent(v, (move, score) -> score * adjustedScores.getOrDefault(v.name(), 1.0));
 		});
 		return multiplierMap;
 	}
@@ -336,41 +294,15 @@ public class OffensiveActionsCalc extends ACalculator
 	{
 		var bot = getWFrame().getBot(botID);
 		final String actionMetadata = action.getMove() + "\n";
-		getShapes(EAiShapesLayer.OFFENSIVE_ACTION).add(
-				new DrawableAnnotation(bot.getPos(), actionMetadata, COLOR)
-						.withOffset(Vector2f.fromY(150))
+		getShapes(EAiShapesLayer.OFFENSE_ACTION).add(
+				new DrawableAnnotation(bot.getPos(), actionMetadata, COLOR).withOffset(Vector2f.fromY(150))
 						.withCenterHorizontally(true));
-	}
-
-
-	private Map<String, Double> calcAdjustedOffensiveViabilityScores()
-	{
-		var currentPath = getAiFrame().getPrevFrame().getTacticalField().getCurrentPath().getCurrentPath();
-		Map<EOffensiveSituation, OffensiveActionTree> trees = getAiFrame().getPrevFrame().getTacticalField()
-				.getActionTrees()
-				.getActionTrees();
-		var currentSituation = getAiFrame().getPrevFrame().getTacticalField().getCurrentSituation();
-
-		Map<String, Double> adjustedScores = new HashMap<>();
-		if (trees.containsKey(currentSituation))
-		{
-			var scoresFromTree = trees.get(currentSituation)
-					.getAdjustedScoresForCurrentPath(
-							currentPath.stream().map(Enum::name).toArray(String[]::new));
-			adjustedScores.putAll(scoresFromTree);
-		}
-		for (EOffensiveActionMove key : EOffensiveActionMove.values())
-		{
-			adjustedScores.putIfAbsent(key.name(), 1.0);
-		}
-		return adjustedScores;
 	}
 
 
 	private Optional<RatedOffensiveAction> firstFullyViableAction(List<RatedOffensiveAction> actions)
 	{
-		return actions.stream()
-				.filter(v -> v.getViability().getType() == EActionViability.TRUE)
+		return actions.stream().filter(v -> v.getViability().getType() == EActionViability.TRUE)
 				// this works because the EnumMap uses the natural ordering of the underlying Enum
 				.findFirst();
 	}
@@ -378,8 +310,7 @@ public class OffensiveActionsCalc extends ACalculator
 
 	private Optional<RatedOffensiveAction> bestPartiallyViableAction(List<RatedOffensiveAction> actions)
 	{
-		return actions.stream()
-				.filter(v -> v.getViability().getType() == EActionViability.PARTIALLY)
+		return actions.stream().filter(v -> v.getViability().getType() == EActionViability.PARTIALLY)
 				.max(Comparator.comparingDouble(m -> m.getViability().getScore()));
 	}
 }

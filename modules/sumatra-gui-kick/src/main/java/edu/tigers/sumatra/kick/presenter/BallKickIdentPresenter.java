@@ -5,6 +5,7 @@ package edu.tigers.sumatra.kick.presenter;
 
 import com.fasterxml.jackson.core.util.DefaultIndenter;
 import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
+import com.fasterxml.jackson.core.util.Separators;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
@@ -44,6 +45,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+
+import static com.fasterxml.jackson.core.PrettyPrinter.DEFAULT_SEPARATORS;
 
 
 /**
@@ -238,8 +241,9 @@ public class BallKickIdentPresenter
 		ObjectMapper mapper = new ObjectMapper();
 		mapper.enable(SerializationFeature.INDENT_OUTPUT);
 		mapper.setDefaultPrettyPrinter(new DefaultPrettyPrinter()
-				.withObjectIndenter(new DefaultIndenter().withLinefeed("\n"))
-				.withoutSpacesInObjectEntries());
+				.withObjectIndenter(new DefaultIndenter().withLinefeed(System.lineSeparator()))
+				.withSeparators(DEFAULT_SEPARATORS.withObjectFieldValueSpacing(Separators.Spacing.AFTER))
+		);
 
 		try
 		{

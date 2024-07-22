@@ -5,7 +5,9 @@
 package edu.tigers.sumatra.ai.pandora.roles.offense.attacker.states;
 
 
+import edu.tigers.sumatra.ai.metis.offense.OffensiveConstants;
 import edu.tigers.sumatra.ai.pandora.roles.offense.attacker.AttackerRole;
+import edu.tigers.sumatra.math.Hysteresis;
 import edu.tigers.sumatra.pathfinder.EObstacleAvoidanceMode;
 import edu.tigers.sumatra.skillsystem.skills.ReceiveBallSkill;
 
@@ -15,6 +17,16 @@ public class ReceiveState extends AAttackerRoleState<ReceiveBallSkill>
 	public ReceiveState(AttackerRole role)
 	{
 		super(ReceiveBallSkill::new, role, EAttackerState.RECEIVE);
+	}
+
+
+	@Override
+	protected void onInit()
+	{
+		super.onInit();
+		skill.setBallSpeedHysteresis(new Hysteresis(
+				OffensiveConstants.getAbortBallInterceptionVelThreshold(),
+				OffensiveConstants.getBallIsRollingThreshold()));
 	}
 
 

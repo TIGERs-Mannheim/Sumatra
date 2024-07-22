@@ -12,11 +12,9 @@ import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.referee.data.EGameState;
 import edu.tigers.sumatra.referee.gameevent.IGameEvent;
 import edu.tigers.sumatra.referee.gameevent.PossibleGoal;
-import edu.tigers.sumatra.vision.data.IKickEvent;
 import edu.tigers.sumatra.wp.data.BallLeftFieldPosition;
+import edu.tigers.sumatra.wp.data.KickedBall;
 import edu.tigers.sumatra.wp.data.TimedPosition;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.util.EnumMap;
 import java.util.Map;
@@ -29,11 +27,10 @@ import java.util.Set;
  */
 public class GoalDetector extends AGameEventDetector
 {
-	private final Logger log = LogManager.getLogger(GoalDetector.class.getName());
-
 	private TimedPosition lastBallLeftFieldPos = null;
 	private final Map<ETeamColor, Long> lastTouchedMap = new EnumMap<>(ETeamColor.class);
 	private final Map<ETeamColor, Double> maxBallHeightMap = new EnumMap<>(ETeamColor.class);
+	private KickedBall lastKickedball;
 
 	public GoalDetector()
 	{
@@ -48,6 +45,7 @@ public class GoalDetector extends AGameEventDetector
 	@Override
 	protected Optional<IGameEvent> doUpdate()
 	{
+		lastKickedball = frame.getWorldFrame().getKickedBall().orElse(lastKickedball);
 		for (ETeamColor team : ETeamColor.yellowBlueValues())
 		{
 			if (frame.getBotsTouchingBall().stream().anyMatch(b -> b.getBotID().getTeamColor() == team))
@@ -70,6 +68,7 @@ public class GoalDetector extends AGameEventDetector
 	protected void doReset()
 	{
 		lastBallLeftFieldPos = null;
+		lastKickedball = null;
 	}
 
 
@@ -82,22 +81,11 @@ public class GoalDetector extends AGameEventDetector
 			return null;
 		}
 
-		final Optional<IKickEvent> kickEvent = frame.getWorldFrame().getKickEvent();
-		final IVector2 kickLocation = kickEvent.map(IKickEvent::getPosition).orElse(null);
-		final BotID kickingBot = kickEvent.map(IKickEvent::getKickingBot).filter(AObjectID::isBot).orElse(null);
-
-		warnIfNoKickEventPresent();
+		final IVector2 kickLocation = Optional.ofNullable(lastKickedball).map(KickedBall::getPosition).orElse(null);
+		final BotID kickingBot = Optional.ofNullable(lastKickedball).map(KickedBall::getKickingBot)
+				.filter(AObjectID::isBot).orElse(null);
 
 		return createEvent(ballLeftFieldPosition, kickLocation, kickingBot);
-	}
-
-
-	private void warnIfNoKickEventPresent()
-	{
-		if (frame.getWorldFrame().getKickEvent().isEmpty())
-		{
-			log.warn("Goal detected, but no kick event found.");
-		}
 	}
 
 

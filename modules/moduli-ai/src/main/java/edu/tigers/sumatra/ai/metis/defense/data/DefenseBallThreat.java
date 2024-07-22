@@ -26,6 +26,7 @@ public class DefenseBallThreat implements IDefenseThreat
 	ILineSegment threatLine;
 	ILineSegment protectionLine;
 	ITrackedBot passReceiver;
+	EDefenseBallThreatSourceType sourceType;
 
 
 	@Override

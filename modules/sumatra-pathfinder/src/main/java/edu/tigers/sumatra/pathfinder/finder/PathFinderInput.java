@@ -7,9 +7,7 @@ package edu.tigers.sumatra.pathfinder.finder;
 import edu.tigers.sumatra.bot.IMoveConstraints;
 import edu.tigers.sumatra.bot.State;
 import edu.tigers.sumatra.math.vector.IVector2;
-import edu.tigers.sumatra.math.vector.IVector3;
 import edu.tigers.sumatra.pathfinder.obstacles.IObstacle;
-import edu.tigers.sumatra.trajectory.ITrajectory;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.RequiredArgsConstructor;
@@ -45,19 +43,5 @@ public class PathFinderInput
 		return PathFinderInput.builder()
 				.pos(state.getPos())
 				.vel(state.getVel2());
-	}
-
-
-	/**
-	 * Create the input from the current trajectory
-	 *
-	 * @param trajectory
-	 * @return
-	 */
-	public static PathFinderInput.PathFinderInputBuilder fromTrajectory(ITrajectory<IVector3> trajectory)
-	{
-		return PathFinderInput.builder()
-				.pos(trajectory.getPositionMM(0).getXYVector())
-				.vel(trajectory.getVelocity(0).getXYVector());
 	}
 }

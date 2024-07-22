@@ -28,13 +28,19 @@ import java.util.Objects;
 public class RobotInteractor
 {
 	@Configurable(comment = "Consider physical obstacles only", defValue = "true")
-	private static boolean physicalObstaclesOnly = true;
+	private static boolean physicalObstacles = true;
 
 	@Configurable(comment = "Use fastPosMove for point'n click", defValue = "false")
 	private static boolean useFastPosMove = false;
 
 	@Configurable(comment = "Ball is obstacle for point'n click", defValue = "true")
 	private static boolean ballObstacle = true;
+
+	@Configurable(comment = "Bots are obstacle for point'n click", defValue = "true")
+	private static boolean botsObstacle = true;
+
+	@Configurable(comment = "Ball is obstacle for point'n click", defValue = "false")
+	private static boolean penaltyAreaObstacle = false;
 
 	static
 	{
@@ -102,11 +108,14 @@ public class RobotInteractor
 	{
 		MoveToSkill moveToSkill = MoveToSkill.createMoveToSkill();
 		MovementCon moveCon = moveToSkill.getMoveCon();
-		if (physicalObstaclesOnly)
+		if (physicalObstacles)
 		{
 			moveCon.physicalObstaclesOnly();
 		}
+		moveCon.setPenaltyAreaOurObstacle(penaltyAreaObstacle);
+		moveCon.setPenaltyAreaTheirObstacle(penaltyAreaObstacle);
 		moveCon.setBallObstacle(ballObstacle);
+		moveCon.setBotsObstacle(botsObstacle);
 		moveToSkill.getMoveConstraints().setFastMove(useFastPosMove);
 		return moveToSkill;
 	}

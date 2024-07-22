@@ -90,11 +90,15 @@ public class BerkeleyDb
 
 
 	/**
+	 * @param matchType
+	 * @param stage
+	 * @param teamYellow name of yellow team
+	 * @param teamBlue   name of blue team
 	 * @return a new empty unopened database at the default location
 	 */
-	public static BerkeleyDb withDefaultLocation()
+	public static BerkeleyDb withDefaultLocation(String matchType, String stage, String teamYellow, String teamBlue)
 	{
-		return new BerkeleyDb(Paths.get(getDefaultBasePath(), getDefaultName()));
+		return new BerkeleyDb(Paths.get(getDefaultBasePath(), getDefaultName(matchType, stage, teamYellow, teamBlue)));
 	}
 
 
@@ -109,13 +113,17 @@ public class BerkeleyDb
 
 
 	/**
+	 * @param matchType  type of match
+	 * @param stage      stage of game
+	 * @param teamYellow name of yellow team
+	 * @param teamBlue   name of blue team
 	 * @return the default name for a new database
 	 */
-	public static String getDefaultName()
+	public static String getDefaultName(String matchType, String stage, String teamYellow, String teamBlue)
 	{
 		SimpleDateFormat dt = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss");
 		dt.setTimeZone(TimeZone.getDefault());
-		return dt.format(new Date());
+		return dt.format(new Date()) + String.format("-%s-%s-%s-vs-%s", matchType, stage, teamYellow, teamBlue);
 	}
 
 

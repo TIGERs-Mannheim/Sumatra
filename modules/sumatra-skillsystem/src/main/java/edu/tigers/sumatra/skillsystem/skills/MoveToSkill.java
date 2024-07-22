@@ -17,8 +17,8 @@ import lombok.Setter;
  */
 public final class MoveToSkill extends AMoveToSkill
 {
-	@Configurable(defValue = "5.0", comment = "Position tolerance for skill state")
-	private static double positionTolerance = 5;
+	@Configurable(defValue = "10.0", comment = "Position tolerance for skill state")
+	private static double positionTolerance = 10;
 
 	@Configurable(defValue = "0.1", comment = "Orientation tolerance for skill state")
 	private static double orientationTolerance = 0.1;

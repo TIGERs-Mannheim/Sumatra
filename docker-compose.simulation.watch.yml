@@ -1,4 +1,3 @@
-version: '3.5'
 # Note: Use scripts/runDockerSimulation.sh to make sure all environment variables are set
 
 services:
@@ -19,16 +18,12 @@ services:
       - simulation
 
   ssl-game-controller:
-    image: bobrik/socat:latest
-    command: 'TCP4-LISTEN:8083,fork TCP4:simulator:50543'
+    image: alpine/socat:latest
+    command: 'TCP4-LISTEN:8083,fork TCP4:simulator:11000'
     ports:
       - "8083:8083"
     networks:
       - simulation
-
-volumes:
-  grafana_data:
-  influxdb_data:
 
 networks:
   simulation:

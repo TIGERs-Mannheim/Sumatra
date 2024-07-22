@@ -4,25 +4,24 @@
 
 package edu.tigers.sumatra.math.vector;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.assertj.core.api.Assertions.within;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import edu.tigers.sumatra.math.AngleMath;
+import edu.tigers.sumatra.math.StatisticsMath;
+import nl.jqno.equalsverifier.EqualsVerifier;
+import nl.jqno.equalsverifier.Warning;
+import org.apache.commons.math3.linear.ArrayRealVector;
+import org.apache.commons.math3.linear.RealVector;
+import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.apache.commons.math3.linear.ArrayRealVector;
-import org.apache.commons.math3.linear.RealVector;
-import org.junit.Test;
-
-import edu.tigers.sumatra.math.AngleMath;
-import edu.tigers.sumatra.math.StatisticsMath;
-import nl.jqno.equalsverifier.EqualsVerifier;
-import nl.jqno.equalsverifier.Warning;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.within;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 
 /**
@@ -668,5 +667,35 @@ public class Vector2Test
 				.isEqualTo(Vector2.fromX(1));
 		assertThat(Vector2.zero().nearestToOpt(Collections.emptyList()).isPresent()).isFalse();
 		assertThat(Vector2.zero().nearestTo(Vector2.fromX(1), Vector2.fromX(2))).isEqualTo(Vector2.fromX(1));
+	}
+
+
+	@Test
+	public void testProjectOntoThis()
+	{
+		var nonZeroVector = Vector2.fromX(10);
+		var zeroVector = Vector2.zero();
+
+		var test = Vector2.fromY(2);
+		assertThat(nonZeroVector.projectOntoThis(test)).isEqualTo(Vector2.zero());
+		assertThat(zeroVector.projectOntoThis(test)).isEqualTo(Vector2.zero());
+
+		test = Vector2.fromX(2);
+		assertThat(nonZeroVector.projectOntoThis(test)).isEqualTo(Vector2.fromX(2));
+		assertThat(zeroVector.projectOntoThis(test)).isEqualTo(Vector2.zero());
+
+		test = Vector2.fromXY(2, 3);
+		assertThat(nonZeroVector.projectOntoThis(test)).isEqualTo(Vector2.fromX(2));
+		assertThat(zeroVector.projectOntoThis(test)).isEqualTo(Vector2.zero());
+
+		nonZeroVector = Vector2.fromXY(10, 10);
+
+		test = Vector2.fromXY(2, -2);
+		assertThat(nonZeroVector.projectOntoThis(test)).isEqualTo(Vector2.zero());
+		assertThat(zeroVector.projectOntoThis(test)).isEqualTo(Vector2.zero());
+
+		test = Vector2.fromXY(2, 2);
+		assertThat(nonZeroVector.projectOntoThis(test)).isEqualTo(Vector2.fromXY(2, 2));
+		assertThat(zeroVector.projectOntoThis(test)).isEqualTo(Vector2.zero());
 	}
 }

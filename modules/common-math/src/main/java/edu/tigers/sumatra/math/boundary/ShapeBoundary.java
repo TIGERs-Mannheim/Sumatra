@@ -217,19 +217,20 @@ public class ShapeBoundary implements IShapeBoundary
 			return Optional.empty();
 		}
 		var edge = edgeOf(start);
-		return stepAlongBoundary(start, edge, distance);
+		var distanceFromStart = edge.distanceFromStart(start);
+		return stepAlongBoundary(edge, distance + distanceFromStart);
 	}
 
 
-	private Optional<IVector2> stepAlongBoundary(final IVector2 start, final IBoundedPath edge, final double distance)
+	private Optional<IVector2> stepAlongBoundary(final IBoundedPath edge, final double distance)
 	{
-		double remainingDist = edge.getLength();
-		if (remainingDist + 1e-6 >= distance)
+		double edgeDist = edge.getLength();
+		if (edgeDist + 1e-6 >= distance)
 		{
-			return Optional.of(edge.stepAlongPath(distance + edge.distanceFromStart(start)));
+			return Optional.of(edge.stepAlongPath(distance));
 		}
 		return nextEdge(edge)
-				.map(e -> stepAlongBoundary(e.getPathStart(), e, distance - remainingDist))
+				.map(e -> stepAlongBoundary(e, distance - edgeDist))
 				.filter(Optional::isPresent)
 				.map(Optional::get);
 	}

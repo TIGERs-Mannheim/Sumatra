@@ -81,7 +81,7 @@ public class MetisPresenter
 		{
 			var eCalc = entry.getKey();
 			var execution = entry.getValue();
-			table.getModel().setValueAt(eCalc, row, COL_CALCULATOR);
+			table.getModel().setValueAt(eCalc.getSimpleName(), row, COL_CALCULATOR);
 			table.getModel().setValueAt(execution.isExecuted(), row, COL_EXECUTED);
 
 			table.getModel().setValueAt(100.0 * averageValueMap.get(eCalc).getState() / sum, row, COL_TIME_REL);

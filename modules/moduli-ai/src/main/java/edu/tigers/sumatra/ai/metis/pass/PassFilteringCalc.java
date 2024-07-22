@@ -6,22 +6,29 @@ package edu.tigers.sumatra.ai.metis.pass;
 
 import com.github.g3force.configurable.Configurable;
 import edu.tigers.sumatra.ai.metis.ACalculator;
-import edu.tigers.sumatra.ai.metis.kicking.Kick;
+import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
+import edu.tigers.sumatra.ai.metis.kicking.EBallReceiveMode;
 import edu.tigers.sumatra.ai.metis.pass.rating.EPassRating;
 import edu.tigers.sumatra.ai.metis.pass.rating.RatedPass;
-import edu.tigers.sumatra.math.AngleMath;
+import edu.tigers.sumatra.ai.metis.targetrater.RotationTimeHelper;
+import edu.tigers.sumatra.botmanager.botskills.data.EKickerDevice;
+import edu.tigers.sumatra.drawable.DrawableAnnotation;
+import edu.tigers.sumatra.drawable.DrawableCircle;
+import edu.tigers.sumatra.drawable.DrawableLine;
+import edu.tigers.sumatra.math.vector.Vector2;
+import edu.tigers.sumatra.skillsystem.skills.redirect.RedirectConsultantFactory;
+import edu.tigers.sumatra.wp.data.ITrackedBot;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
+import java.awt.Color;
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Comparator;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 
 /**
@@ -30,16 +37,13 @@ import java.util.stream.IntStream;
 @RequiredArgsConstructor
 public class PassFilteringCalc extends ACalculator
 {
-	@Configurable(defValue = "10", comment = "How many passes to select")
-	private static int maxPasses = 10;
-
-	@Configurable(defValue = "0.1")
-	private static double minAngleBetweenPassTargets = 0.1;
-
-	@Configurable(defValue = "3")
-	private static int numBins = 3;
-
 	private final Supplier<Map<KickOrigin, List<RatedPass>>> ratedPasses;
+
+	@Configurable(defValue = "0.08", comment = "[s]")
+	private static double alwaysAllowSmallRotationTimeThreshold = 0.08;
+
+	@Configurable(defValue = "0.15", comment = "[s]")
+	private static double rotationTimeSafetyMargin = 0.15;
 
 	@Getter
 	private Map<KickOrigin, List<RatedPass>> filteredAndRatedPasses;
@@ -51,18 +55,19 @@ public class PassFilteringCalc extends ACalculator
 		filteredAndRatedPasses = new HashMap<>();
 		for (var entry : ratedPasses.get().entrySet())
 		{
-			var filtered = filterPasses(groupPasses(entry.getValue()));
+			var filtered = filterPasses(entry.getKey(), entry.getValue());
+			filtered.forEach(this::drawRatedPass);
 			filteredAndRatedPasses.put(entry.getKey(), filtered);
 		}
 	}
 
 
-	private List<RatedPass> filterPasses(List<RatedPass> sortedPasses)
+	private List<RatedPass> filterPasses(KickOrigin kickOrigin, List<RatedPass> sortedPasses)
 	{
 		List<RatedPass> filteredPasses = new ArrayList<>(sortedPasses.size());
 		for (var pass : sortedPasses)
 		{
-			if (filteredPasses.size() < maxPasses && isDistinctPassAngle(pass, filteredPasses))
+			if (isOrientationReachableOnTime(kickOrigin, pass))
 			{
 				filteredPasses.add(pass);
 			}
@@ -71,65 +76,93 @@ public class PassFilteringCalc extends ACalculator
 	}
 
 
-	private boolean isDistinctPassAngle(RatedPass pass, List<RatedPass> passes)
+	private boolean isOrientationReachableOnTime(KickOrigin kickOrigin, RatedPass pass)
 	{
-		double passAngle = getPassAngle(pass);
-		for (var filteredPass : passes)
+		if (kickOrigin.getShooter().isUninitializedID() || Double.isInfinite(kickOrigin.getImpactTime()))
 		{
-			double filteredPassAngle = getPassAngle(filteredPass);
-			if (AngleMath.diffAbs(passAngle, filteredPassAngle) < minAngleBetweenPassTargets)
-			{
-				return false;
-			}
+			return true;
 		}
+
+		var kickSource = pass.getPass().getKick().getSource();
+
+		double targetAngle;
+		if (pass.getPass().getReceiveMode() == EBallReceiveMode.RECEIVE)
+		{
+			targetAngle = getBall().getPos().subtractNew(kickSource).getAngle();
+		} else
+		{
+			targetAngle = RedirectConsultantFactory.createDefault()
+					.getTargetAngle(getBall(), kickSource, pass.getPass().getKick().getTarget(),
+							pass.getPass().getKick().getKickVel().getLength2());
+		}
+
+		double rotationTime = calcRotationTime(getWFrame().getTiger(kickOrigin.getShooter()), targetAngle);
+		if (rotationTime < alwaysAllowSmallRotationTimeThreshold)
+		{
+			// micro movements are allowed since bot rotate slowly.
+			// this is also needed so that a switch to chip kick to the same target is still possible even if the
+			// impact time is already very small.
+			return true;
+		}
+
+		double impactTime = kickOrigin.getImpactTime();
+		if (rotationTime + rotationTimeSafetyMargin > impactTime)
+		{
+			getShapes(EAiShapesLayer.PASS_RATING)
+					.add(new DrawableLine(kickSource, kickSource.addNew(Vector2.fromAngle(targetAngle).scaleToNew(300)),
+							new Color(255, 0, 0, 180)));
+			return false;
+		}
+		getShapes(EAiShapesLayer.PASS_RATING)
+				.add(new DrawableLine(kickSource, kickSource.addNew(Vector2.fromAngle(targetAngle).scaleToNew(300)),
+						new Color(71, 255, 0, 180)));
+
 		return true;
 	}
 
 
-	private double getPassAngle(RatedPass ratedPass)
+	private double calcRotationTime(ITrackedBot bot, final double angle)
 	{
-		Kick kick = ratedPass.getPass().getKick();
-		return kick.getTarget().subtractNew(kick.getSource()).getAngle();
+		return RotationTimeHelper.calcRotationTime(
+				bot.getAngularVel(),
+				bot.getAngleByTime(0),
+				angle,
+				bot.getMoveConstraints().getVelMaxW(),
+				bot.getMoveConstraints().getAccMaxW()
+		);
 	}
 
 
-	private List<RatedPass> groupPasses(List<RatedPass> passes)
+	private void drawRatedPass(final RatedPass ratedPass)
 	{
-		List<List<RatedPass>> ratedPassGroups = new ArrayList<>();
-		ratedPassGroups.add(passes);
-		for (var rating : EPassRating.values())
-		{
-			List<List<RatedPass>> newPassGroups = new ArrayList<>();
-			for (var passGroup : ratedPassGroups)
-			{
-				var passGroupsForGroup = groupPasses(passGroup, rating);
-				newPassGroups.addAll(passGroupsForGroup);
-			}
-			ratedPassGroups = newPassGroups;
-		}
-		return ratedPassGroups.stream().flatMap(Collection::stream).collect(Collectors.toUnmodifiableList());
+		var color = new Color(0, 120, 100, 150);
+		var target = ratedPass.getPass().getKick().getTarget();
+		getShapes(EAiShapesLayer.PASS_SELECTION).add(new DrawableCircle(target, 30, color).setFill(true));
+
+		boolean chip = ratedPass.getPass().getKick().getKickParams().getDevice() == EKickerDevice.CHIP;
+		var text = (chip ? "ch: " : "st: ") +
+				Arrays.stream(EPassRating.values()).map(p -> passRatingToStr(ratedPass, p))
+						.collect(Collectors.joining(" | "));
+
+		var chipOffset = chip ? 6.0 : 0.0;
+		getShapes(EAiShapesLayer.PASS_RATING)
+				.add(new DrawableAnnotation(target, text)
+						.setColor(Color.black)
+						.withFontHeight(6)
+						.withCenterHorizontally(true)
+						.withOffset(Vector2.fromXY(0, 33 + chipOffset)));
 	}
 
 
-	private List<List<RatedPass>> groupPasses(List<RatedPass> passes, EPassRating rating)
+	private String passRatingToStr(RatedPass ratedPass, EPassRating passRating)
 	{
-		List<List<RatedPass>> ratedPassGroups = new ArrayList<>();
-		IntStream.range(0, numBins).forEach(i -> ratedPassGroups.add(new ArrayList<>(0)));
-		for (var ratedPass : passes.stream().sorted(byScore(rating)).collect(Collectors.toList()))
-		{
-			var score = ratedPass.getScore(rating);
-			var i = Math.min((int) ((1 - score) * numBins), numBins - 1);
-			var group = ratedPassGroups.get(i);
-			group.add(ratedPass);
-		}
-		return ratedPassGroups.stream().filter(l -> !l.isEmpty()).collect(Collectors.toList());
+		return passRating.getAbbreviation() + ":" + scoreToStr(ratedPass.getScore(passRating));
 	}
 
 
-	private Comparator<RatedPass> byScore(EPassRating rating)
+	private String scoreToStr(final double passScore)
 	{
-		return Comparator.comparingDouble((RatedPass rt) -> rt.getScore(rating)).reversed();
+		return Long.toString(Math.round(passScore * 100));
 	}
-
 
 }

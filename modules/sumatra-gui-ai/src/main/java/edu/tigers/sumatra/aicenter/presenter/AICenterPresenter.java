@@ -227,7 +227,6 @@ public class AICenterPresenter implements ISumatraViewPresenter, ILookAndFeelSta
 			final RoleControlPanel rolePanel = viewPanel.getTeamPanel(lastFrame.getAiTeam()).getRolePanel();
 			rolePanel.setActiveRoles(lastFrame.getPlayStrategy().getActiveRoles(EPlay.GUI_TEST));
 
-			teamPresenters.get(lastFrame.getAiTeam()).getTeamPanel().getStatemachinePanel().onUpdate(lastFrame);
 			teamPresenters.get(lastFrame.getAiTeam()).getMetisPresenter().updateAIInfoFrame(lastFrame);
 			teamPresenters.get(lastFrame.getAiTeam()).getAthenaPresenter().update();
 		}

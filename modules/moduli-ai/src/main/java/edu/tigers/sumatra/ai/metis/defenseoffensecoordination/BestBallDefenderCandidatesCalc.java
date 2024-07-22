@@ -20,6 +20,10 @@ import java.util.Set;
 import java.util.function.Supplier;
 
 
+/**
+ * This calculator creates a list of potential ball defenders which is one larger than the wanted amount of ball defender
+ * The offense is only allowed to take one of those robots for it's purposes
+ */
 @RequiredArgsConstructor
 public class BestBallDefenderCandidatesCalc extends ACalculator
 {
@@ -41,7 +45,7 @@ public class BestBallDefenderCandidatesCalc extends ACalculator
 				.toList();
 		bestBallDefenderCandidates = util.nextBestDefenders(ballThreat.get(), remainingDefenders,
 				numDefenderForBall.get() + 1);
-		var shapes = getShapes(EAiShapesLayer.BEST_BALL_DEFENDER_CANDIDATES);
+		var shapes = getShapes(EAiShapesLayer.DO_COORD_BEST_BALL_DEFENDER_CANDIDATES);
 		bestBallDefenderCandidates.stream()
 				.map(botID -> getWFrame().getBot(botID))
 				.map(ITrackedBot::getPos)

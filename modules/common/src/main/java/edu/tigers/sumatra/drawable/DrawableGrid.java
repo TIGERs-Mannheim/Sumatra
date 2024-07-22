@@ -49,21 +49,23 @@ public class DrawableGrid implements IDrawableShape
 			ToDoubleFunction<IVector2> ratingFn
 	)
 	{
-		List<IVector3> points = new ArrayList<>();
+		List<IVector2> points = new ArrayList<>();
 		for (int iy = 0; iy < numY; iy++)
 		{
 			for (int ix = 0; ix < numX; ix++)
 			{
 				double x = (-height / 2) + (ix * (height / (numX - 1)));
 				double y = (-width / 2) + (iy * (width / (numY - 1)));
-				Vector2 point = Vector2.fromXY(x, y);
-				double score = ratingFn.applyAsDouble(point);
-				points.add(Vector3.from2d(point, score));
+				points.add(Vector2.fromXY(x, y));
 			}
 		}
+
+		List<IVector3> ratedPoints = points.parallelStream()
+				.map(p -> (IVector3) Vector3.from2d(p, ratingFn.applyAsDouble(p)))
+				.toList();
 		double cellExtentX = height / numX;
 		double cellExtentY = width / numY;
-		return new DrawableGrid(points, cellExtentX, cellExtentY);
+		return new DrawableGrid(ratedPoints, cellExtentX, cellExtentY);
 	}
 
 

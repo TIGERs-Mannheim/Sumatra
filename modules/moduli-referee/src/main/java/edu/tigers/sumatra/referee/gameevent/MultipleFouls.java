@@ -57,12 +57,6 @@ public class MultipleFouls extends AGameEvent
 	}
 
 
-	public ETeamColor getTeam()
-	{
-		return team;
-	}
-
-
 	@Override
 	public String getDescription()
 	{

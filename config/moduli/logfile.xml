@@ -91,9 +91,6 @@
     </module>
 
 
-    <module id="edu.tigers.sumatra.trees.OffensiveTreeProvider"/>
-
-
     <module id="edu.tigers.sumatra.timer.ATimer">
         <implementation>edu.tigers.sumatra.timer.SumatraTimer</implementation>
     </module>
@@ -108,8 +105,6 @@
 
     <module id="edu.tigers.sumatra.gamelog.GameLogRecorder"/>
 
-
-    <module id="edu.tigers.sumatra.loganalysis.LogAnalysis" />
 
     <module id="edu.tigers.sumatra.botparams.BotParamsManager"/>
 </centralSoftware>

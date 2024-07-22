@@ -20,59 +20,42 @@ public final class ESkillShapesLayer
 	private static final String MOVEMENT = "Movement";
 
 	public static final IShapeLayerIdentifier SKILL_NAMES = F.create(
-			F.layer("Skill names").category(SKILLS));
-
+			F.category(SKILLS).layerName("Skill names"));
 	public static final IShapeLayerIdentifier KICK_SKILL = F.create(
-			F.layer("Kick").category(SKILLS));
-
-	public static final IShapeLayerIdentifier KICK_SKILL_DEBUG = F.create(F.layer("Kick Debug")
-			.category(SKILLS));
-
-	public static final IShapeLayerIdentifier DRIBBLE_SKILL = F.create(
-			F.layer("Dribble").category(SKILLS));
-
-	public static final IShapeLayerIdentifier PROTECT_AND_MOVE_WITH_BALL_SKILL = F.create(
-			F.layer("Protect + Move").category(SKILLS));
-
+			F.category(SKILLS).layerName("Kick"));
+	public static final IShapeLayerIdentifier KICK_SKILL_COMP = F.create(
+			F.category(SKILLS).layerName("Kick Comp"));
+	public static final IShapeLayerIdentifier KICK_SKILL_DEBUG = F.create(
+			F.category(SKILLS).layerName("Kick Debug"));
 	public static final IShapeLayerIdentifier BALL_ARRIVAL_SKILL = F.create(
-			F.layer("Ball Arrival").category(SKILLS));
-
+			F.category(SKILLS).layerName("Ball Arrival"));
 	public static final IShapeLayerIdentifier APPROACH_AND_STOP_BALL_SKILL = F.create(
-			F.layer("Approach + Stop").category(SKILLS));
-
-	public static final IShapeLayerIdentifier PUSH_AROUND_OBSTACLE_SKILL = F.create(
-			F.layer("Push").category(SKILLS));
-
+			F.category(SKILLS).layerName("Approach + Stop"));
 	public static final IShapeLayerIdentifier APPROACH_BALL_LINE_SKILL = F.create(
-			F.layer("Approach Ball").category(SKILLS));
-
+			F.category(SKILLS).layerName("Approach Ball"));
 	public static final IShapeLayerIdentifier MOVE_WITH_BALL = F.create(
-			F.layer("Move With Ball").category(SKILLS));
-
+			F.category(SKILLS).layerName("Move With Ball"));
 	public static final IShapeLayerIdentifier DRIBBLING_KICK = F.create(
-			F.layer("Dribbling Kick").category(SKILLS));
-
+			F.category(SKILLS).layerName("Dribbling Kick"));
 	public static final IShapeLayerIdentifier KEEPER = F.create(
-			F.layer("Keeper").category(SKILLS));
-
+			F.category(SKILLS).layerName("Keeper"));
+	public static final IShapeLayerIdentifier KEEPER_POSITIONING_CALCULATORS = F.create(
+			F.category(SKILLS).layerName("Keeper Positioning").persistenceType(NEVER_PERSIST));
 	public static final IShapeLayerIdentifier KEEPER_DEFLECTION_ADAPTION = F.create(
-			F.layer("Keeper Deflection Adaption").category(SKILLS).persistenceType(NEVER_PERSIST));
+			F.category(SKILLS).layerName("Keeper Deflection Adaption").persistenceType(NEVER_PERSIST));
+	public static final IShapeLayerIdentifier GET_BALL_CONTACT = F.create(
+			F.category(SKILLS).layerName("Get Ball Contact"));
+	public static final IShapeLayerIdentifier CALIBRATION = F.create(
+			F.category(SKILLS).layerName("Calibration"));
+	public static final IShapeLayerIdentifier MOVE_ON_PENALTY_AREA_SKILL = F.create(
+			F.category(SKILLS).layerName("Move on PenaltyArea").persistenceType(NEVER_PERSIST));
 
 	public static final IShapeLayerIdentifier MOVE_TO_DEST = F.create(
-			F.layer("MoveTo destination").category(MOVEMENT));
-
+			F.category(MOVEMENT).layerName("MoveTo destination"));
 	public static final IShapeLayerIdentifier PATH = F.create(
-			F.layer("Path").category(MOVEMENT));
-
+			F.category(MOVEMENT).layerName("Path"));
 	public static final IShapeLayerIdentifier PATH_DEBUG = F.create(
-			F.layer("Path Debug").category(MOVEMENT));
-
-	public static final IShapeLayerIdentifier GET_BALL_CONTACT = F.create(
-			F.layer("Get Ball Contact").category(SKILLS));
-
-	public static final IShapeLayerIdentifier CALIBRATION = F.create(
-			F.layer("Calibration").category(SKILLS));
-
-	public static final IShapeLayerIdentifier MOVE_ON_PENALTY_AREA_SKILL = F.create(
-			F.layer("Move on PenaltyArea").category(SKILLS).persistenceType(NEVER_PERSIST));
+			F.category(MOVEMENT).layerName("Path Debug"));
+	public static final IShapeLayerIdentifier PATH_LIMITED_VEL = F.create(
+			F.category(MOVEMENT).layerName("Limited Vel"));
 }

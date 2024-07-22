@@ -15,6 +15,7 @@ import edu.tigers.sumatra.drawable.DrawableTube;
 import edu.tigers.sumatra.drawable.IDrawableShape;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.BotID;
+import edu.tigers.sumatra.math.AngleMath;
 import edu.tigers.sumatra.math.BotMath;
 import edu.tigers.sumatra.math.botshape.BotShape;
 import edu.tigers.sumatra.math.line.LineMath;
@@ -86,6 +87,9 @@ public class VirtualBallProducer
 
 	@Configurable(defValue = "0.05", comment = "How long to treat barrier as interrupted after loosing contact in [s]. Only applies if not on bot cam")
 	private static double keepBarrierInterruptedTime = 0.05;
+
+	@Configurable(defValue = "90.0", comment = "Camera field of view")
+	private static double fieldOfViewDeg = 90.0;
 
 	static
 	{
@@ -231,8 +235,11 @@ public class VirtualBallProducer
 		boolean isInShadow = shadows.stream().anyMatch(s -> s.isPointInShape(candidate.getPosition().getXYVector()));
 		boolean isCloseToObserver = candidate.getPosition().getXYVector().distanceTo(candidate.getObservedFromPosition().getXYVector()) < maxDistanceToObserver;
 		boolean isCloseToLastKnownPosition = lastKnownBallPosition.distanceTo(candidate.getPosition().getXYVector()) < maxDistanceToLastKnownPos;
+		boolean isInFieldOfView = AngleMath.diffAbs(
+				Vector2.fromPoints(candidate.getObservingBotPose().getPos(), candidate.getPosition().getXYVector()).getAngle(0),
+						candidate.getObservingBotPose().getOrientation()) < AngleMath.deg2rad(fieldOfViewDeg/2);
 
-		if (!isCloseToLastKnownPosition)
+		if (!isCloseToLastKnownPosition || !isInFieldOfView)
 			return false;
 
 		return (isInShadow && useBallsInShadows) || (isCloseToObserver && useBallsNearby);
@@ -265,6 +272,7 @@ public class VirtualBallProducer
 				var ball = VirtualBall.builder()
 						.withTimestamp(timestamp)
 						.withObservingBot(info.getBotId())
+						.withObservingBotPose(curBotPose)
 						.withObservedFromPosition(centerDribblerPos)
 						.withFromBarrier(true)
 						.withPosition(Vector3.from2d(ballAtDribblerPos, 0))
@@ -313,6 +321,7 @@ public class VirtualBallProducer
 		var ball = VirtualBall.builder()
 				.withTimestamp(timestamp)
 				.withObservingBot(info.getBotId())
+				.withObservingBotPose(curBotPose)
 				.withObservedFromPosition(centerDribblerPos)
 				.withFromBarrier(barrierInterrupted)
 				.withPosition(Vector3.from2d(ballPos, 0))

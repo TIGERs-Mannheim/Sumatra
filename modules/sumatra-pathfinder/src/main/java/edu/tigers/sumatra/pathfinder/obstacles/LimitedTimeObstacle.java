@@ -6,6 +6,7 @@ package edu.tigers.sumatra.pathfinder.obstacles;
 
 import edu.tigers.sumatra.drawable.IDrawableShape;
 import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.pathfinder.obstacles.input.CollisionInput;
 import lombok.RequiredArgsConstructor;
 
@@ -61,9 +62,23 @@ public class LimitedTimeObstacle implements IObstacle
 
 
 	@Override
-	public Optional<IVector2> adaptDestination(IVector2 robotPos, IVector2 destination)
+	public Optional<IVector2> adaptDestinationForRobotPos(IVector2 robotPos)
 	{
-		return obstacle.adaptDestination(robotPos, destination);
+		return obstacle.adaptDestinationForRobotPos(robotPos);
+	}
+
+
+	@Override
+	public Optional<IVector2> adaptDestination(IVector2 destination)
+	{
+		return obstacle.adaptDestination(destination);
+	}
+
+
+	@Override
+	public boolean collisionLikely(double t, IVector2 pos)
+	{
+		return obstacle.collisionLikely(t, pos);
 	}
 
 
@@ -78,5 +93,44 @@ public class LimitedTimeObstacle implements IObstacle
 	public String getIdentifier()
 	{
 		return this.getClass().getSimpleName() + ":" + obstacle.getIdentifier();
+	}
+
+
+	@Override
+	public boolean hasPriority()
+	{
+		return obstacle.hasPriority();
+	}
+
+
+	@Override
+	public IVector2 velocity(IVector2 pos, double t)
+	{
+		if (t > tMax)
+		{
+			return Vector2.zero();
+		}
+		return obstacle.velocity(pos, t);
+	}
+
+
+	@Override
+	public boolean isCollidingAt(IVector2 pos)
+	{
+		return obstacle.isCollidingAt(pos);
+	}
+
+
+	@Override
+	public int orderId()
+	{
+		return obstacle.orderId();
+	}
+
+
+	@Override
+	public boolean useDynamicMargin()
+	{
+		return obstacle.useDynamicMargin();
 	}
 }

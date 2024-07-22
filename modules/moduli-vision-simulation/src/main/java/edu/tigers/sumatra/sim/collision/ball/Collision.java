@@ -5,18 +5,18 @@
 package edu.tigers.sumatra.sim.collision.ball;
 
 import edu.tigers.sumatra.math.vector.IVector2;
-import edu.tigers.sumatra.math.vector.IVector3;
 
 
 /**
+ *
  */
 public class Collision implements ICollision
 {
 	private final IVector2 pos;
 	private final IVector2 normal;
 	private final ICollisionObject object;
-	
-	
+
+
 	public Collision(final IVector2 pos, final IVector2 normal, final ICollisionObject object)
 	{
 		super();
@@ -24,29 +24,29 @@ public class Collision implements ICollision
 		this.normal = normal;
 		this.object = object;
 	}
-	
-	
+
+
 	@Override
 	public IVector2 getPos()
 	{
 		return pos;
 	}
-	
-	
+
+
 	@Override
 	public IVector2 getNormal()
 	{
 		return normal;
 	}
-	
-	
+
+
 	@Override
-	public IVector3 getObjectVel()
+	public IVector2 getObjectSurfaceVel()
 	{
-		return object.getVel();
+		return object.getSurfaceVel(getPos());
 	}
-	
-	
+
+
 	@Override
 	public ICollisionObject getObject()
 	{

@@ -31,8 +31,8 @@ public enum ESumatraViewType
 	REPLAY_CONTROL(38, "Replay"),
 	VISION_ANALYSER(39, "Vision"),
 	AUTOREFEREE(40, "AutoReferee"),
-	AUTOREFEREE_GAME_LOG(41, "Game Log", true),
-	BALL_SPEED(42, "Ball Speed", true),
+	AUTOREFEREE_GAME_LOG(41, "Game Log"),
+	BALL_SPEED(42, "Ball Speed"),
 	LOGFILE(44, "SSL Logfile"),
 	OFFENSIVE_STATISTICS(46, "Offensive Stats"),
 	BOT_PARAMS(48, "Bot Params"),
@@ -42,31 +42,31 @@ public enum ESumatraViewType
 	SUPPORT_BEHAVIORS(52, "Support Behaviors"),
 	SKILLS(53, "Skills"),
 	OFFENSIVE_INTERCEPTIONS(54, "Offensive Interceptions"),
-	
+
 	;
 
 	private final int id;
 	private final String title;
 	private final boolean forceLoad;
-	
-	
+
+
 	ESumatraViewType(final int id, final String title)
 	{
 		this(id, title, false);
 	}
-	
-	
+
+
 	ESumatraViewType(final int id, final String title, final boolean forceLoad)
 	{
 		this.id = id;
 		this.title = title;
 		this.forceLoad = forceLoad;
 	}
-	
-	
+
+
 	/**
 	 * Get type by id
-	 * 
+	 *
 	 * @param id
 	 * @return
 	 */

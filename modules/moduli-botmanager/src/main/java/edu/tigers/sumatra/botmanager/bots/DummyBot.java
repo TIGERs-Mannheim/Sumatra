@@ -3,8 +3,10 @@
  */
 package edu.tigers.sumatra.botmanager.bots;
 
+import edu.tigers.sumatra.bot.EBallObservationState;
 import edu.tigers.sumatra.bot.EBotType;
-import edu.tigers.sumatra.bot.EDribblerState;
+import edu.tigers.sumatra.bot.EDribbleTractionState;
+import edu.tigers.sumatra.bot.EDribblerTemperature;
 import edu.tigers.sumatra.bot.ERobotMode;
 import edu.tigers.sumatra.botmanager.basestation.DummyBaseStation;
 import edu.tigers.sumatra.botparams.EBotParamLabel;
@@ -57,21 +59,19 @@ public class DummyBot extends ABot
 
 
 	@Override
-	public EDribblerState getDribblerState()
+	public EDribblerTemperature getDribblerTemperature()
 	{
-		return EDribblerState.COLD;
+		return EDribblerTemperature.COLD;
 	}
 
+	@Override
+	public EDribbleTractionState getDribbleTractionState() { return EDribbleTractionState.OFF; }
+
+	@Override
+	public EBallObservationState getBallObservationState() { return EBallObservationState.UNKNOWN; }
 
 	@Override
 	public double getKickerLevel()
-	{
-		return 0;
-	}
-
-
-	@Override
-	public double getDribblerCurrent()
 	{
 		return 0;
 	}

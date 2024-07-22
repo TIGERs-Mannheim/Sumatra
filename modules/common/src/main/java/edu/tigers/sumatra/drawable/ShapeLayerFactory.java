@@ -14,10 +14,10 @@ public class ShapeLayerFactory
 	private int order;
 
 
-	public ShapeLayerIdentifier.ShapeLayerIdentifierBuilder layer(String name)
+	public ShapeLayerIdentifier.ShapeLayerIdentifierBuilder category(String name)
 	{
 		return ShapeLayerIdentifier.builder()
-				.layerName(name)
+				.category(name)
 				.orderId(order++);
 	}
 

@@ -9,96 +9,140 @@
 package edu.tigers.sumatra.treetable;
 
 
+import lombok.Setter;
+
 import javax.swing.event.EventListenerList;
 import javax.swing.event.TreeModelEvent;
 import javax.swing.event.TreeModelListener;
 import javax.swing.tree.TreePath;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 
 /**
  * Base implementation of {@link ITreeTableModel}. Provides an implementation of the necessary change-propagation.
- * 
+ *
  * @author Gero
  * @see JTreeTable
  */
 public abstract class ATreeTableModel implements ITreeTableModel
 {
-	protected Object					root;
-	protected EventListenerList	listenerList	= new EventListenerList();
-	
-	private boolean					editable			= true;
-	
-	
+	private Object root;
+	private EventListenerList listenerList = new EventListenerList();
+
+	@Setter
+	private List<String> searchWords;
+
+
 	/**
 	 * @param root
 	 */
-	public ATreeTableModel(final Object root)
+	protected ATreeTableModel(final Object root)
 	{
 		this.root = root;
 	}
-	
-	
+
+
 	@Override
 	public Object getRoot()
 	{
 		return root;
 	}
-	
-	
+
+
 	@Override
 	public boolean isLeaf(final Object obj)
 	{
 		return getChildCount(obj) == 0;
 	}
-	
-	
+
+
 	@Override
 	public void valueForPathChanged(final TreePath paramTreePath, final Object paramObject)
 	{
-		
+
 	}
-	
-	
-	/**
-	 * By default, make the column with the Tree in it the only editable one.
-	 * Making this column editable causes the JTable to forward mouse
-	 * and keyboard events in the Tree column to the underlying JTree.
-	 */
-	@Override
-	public boolean isCellEditable(final Object node, final int column)
-	{
-		return getColumnClass(column) == ITreeTableModel.class;
-	}
-	
-	
-	@Override
-	public void setEditable(final boolean editable)
-	{
-		this.editable = editable;
-	}
-	
-	
-	@Override
-	public boolean isEditable()
-	{
-		return editable;
-	}
-	
-	
+
+
 	@Override
 	public void addTreeModelListener(final TreeModelListener l)
 	{
 		listenerList.add(TreeModelListener.class, l);
 	}
-	
-	
+
+
 	@Override
 	public void removeTreeModelListener(final TreeModelListener l)
 	{
 		listenerList.remove(TreeModelListener.class, l);
 	}
-	
-	
+
+
+	@Override
+	public Stream<NodeNameAndObjectTreePath> getAllTreePaths()
+	{
+		return getAllTreePaths(getRoot(), List.of())
+				.map(this::buildTreePathPair)
+				.flatMap(Optional::stream)
+				.sorted(Comparator.comparingInt(pair -> -pair.nodeNamePath().getPathCount()));
+	}
+
+
+	@Override
+	public Optional<TreePath> getNodeNameTreePathToRoot(Object node)
+	{
+		return getAllTreePaths(getRoot(), List.of())
+				.filter(path -> path.getLastPathComponent().equals(node))
+				.map(this::getNodeNameTreePathFromObjectTreePath)
+				.flatMap(Optional::stream)
+				.findAny();
+	}
+
+
+	@Override
+	public Optional<TreePath> getNodeNameTreePathFromObjectTreePath(TreePath path)
+	{
+		var objectNames = new ArrayList<String>(path.getPathCount());
+		for (var p : path.getPath())
+		{
+			var name = nodeToString(p);
+			if (name.isEmpty())
+			{
+				return Optional.empty();
+			}
+			objectNames.add(name.get());
+		}
+		return Optional.of(new TreePath(objectNames.toArray()));
+	}
+
+
+	protected abstract Optional<String> nodeToString(Object node);
+
+
+	private Optional<NodeNameAndObjectTreePath> buildTreePathPair(TreePath objectPath)
+	{
+		return getNodeNameTreePathFromObjectTreePath(objectPath).map(
+				namPath -> new NodeNameAndObjectTreePath(namPath, objectPath));
+	}
+
+
+	protected Stream<TreePath> getAllTreePaths(Object node, List<Object> parentPath)
+	{
+		var currentPath = new ArrayList<>(parentPath);
+		currentPath.add(node);
+		return Stream.concat(
+				IntStream.range(0, getChildCount(node))
+						.mapToObj(i -> getChild(node, i))
+						.flatMap(child -> getAllTreePaths(child, currentPath)),
+				Stream.of(new TreePath(currentPath.toArray()))
+		);
+	}
+
+
 	/*
 	 * Notify all listeners that have registered interest for
 	 * notification on this event type. The event instance
@@ -127,8 +171,8 @@ public abstract class ATreeTableModel implements ITreeTableModel
 			}
 		}
 	}
-	
-	
+
+
 	/*
 	 * Notify all listeners that have registered interest for
 	 * notification on this event type. The event instance
@@ -157,8 +201,8 @@ public abstract class ATreeTableModel implements ITreeTableModel
 			}
 		}
 	}
-	
-	
+
+
 	/*
 	 * Notify all listeners that have registered interest for
 	 * notification on this event type. The event instance
@@ -187,8 +231,8 @@ public abstract class ATreeTableModel implements ITreeTableModel
 			}
 		}
 	}
-	
-	
+
+
 	/*
 	 * Notify all listeners that have registered interest for
 	 * notification on this event type. The event instance

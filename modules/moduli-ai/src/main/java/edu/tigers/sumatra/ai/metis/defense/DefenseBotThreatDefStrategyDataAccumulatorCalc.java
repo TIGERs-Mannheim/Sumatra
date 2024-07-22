@@ -4,6 +4,7 @@
 
 package edu.tigers.sumatra.ai.metis.defense;
 
+import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
 import edu.tigers.sumatra.ai.metis.defense.data.DefenseBallThreat;
 import edu.tigers.sumatra.ai.metis.defense.data.DefenseBotThreatDefData;
 import edu.tigers.sumatra.ai.metis.defense.data.DefenseBotThreatDefStrategyData;
@@ -44,8 +45,8 @@ public class DefenseBotThreatDefStrategyDataAccumulatorCalc extends ADefenseThre
 		var m2mData = man2ManDefData.get().stream()
 				.filter(m2m -> m2m.threatID() == centerBackData.threatID())
 				.findAny();
-		var threatRating = defenseThreatRater
-				.getThreatRating(defenseBallThreat.get().getPos(), predictedOpponentPos(bot));
+		var threatRating = defenseThreatRater.getThreatRatingOfRobot(defenseBallThreat.get().getPos(), bot);
+		getShapes(EAiShapesLayer.DEFENSE_THREAT_RATING).addAll(defenseThreatRater.drawShapes());
 		return new DefenseBotThreatDefData(bot, centerBackData, m2mData.orElse(null), threatRating);
 	}
 }

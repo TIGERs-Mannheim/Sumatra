@@ -26,13 +26,13 @@ public class SavedConfigFilePanel extends JPanel
 	private static final long serialVersionUID = 3052423100929562899L;
 	@Getter
 	private final JComboBox<Integer> configVersion = new JComboBox<>();
-	@Getter
-	private JCheckBox autoUpdate = new JCheckBox("Auto-Update");
 	private final List<JTextField> fields = new ArrayList<>();
 	@Getter
 	private final JButton delete = new JButton("Delete Config");
 	@Getter
 	private final JButton save = new JButton("Save Changes");
+	@Getter
+	private JCheckBox autoUpdate = new JCheckBox("Auto-Update");
 	@Getter
 	private transient ConfigFile file;
 
@@ -41,7 +41,7 @@ public class SavedConfigFilePanel extends JPanel
 
 	public SavedConfigFilePanel(List<Integer> versions)
 	{
-		setLayout(new MigLayout("wrap 2", "[250][250,fill]"));
+		setLayout(new MigLayout("wrap 2", "[500][500,fill]"));
 
 		configVersion.setPreferredSize(new Dimension(80, 25));
 		for (int version : versions)
@@ -61,6 +61,7 @@ public class SavedConfigFilePanel extends JPanel
 	{
 		this.file = file;
 		remove(fieldsPanel);
+		updateUI();
 		fields.clear();
 		fieldsPanel = new JPanel();
 		fieldsPanel.setLayout(new MigLayout("wrap 2", "[150][100, fill]"));
@@ -70,7 +71,7 @@ public class SavedConfigFilePanel extends JPanel
 			JTextField field = new JTextField(file.getValues().get(i));
 
 			fieldsPanel.add(label);
-			fieldsPanel.add(field);
+			fieldsPanel.add(field, "width 80:100:150");
 
 			fields.add(field);
 		}

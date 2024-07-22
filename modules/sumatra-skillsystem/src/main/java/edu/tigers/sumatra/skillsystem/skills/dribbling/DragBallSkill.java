@@ -7,9 +7,9 @@ package edu.tigers.sumatra.skillsystem.skills.dribbling;
 import com.github.g3force.configurable.Configurable;
 import edu.tigers.sumatra.bot.EDribbleTractionState;
 import edu.tigers.sumatra.math.vector.IVector2;
-import edu.tigers.sumatra.skillsystem.skills.util.EDribblerMode;
 import edu.tigers.sumatra.skillsystem.skills.AMoveToSkill;
 import edu.tigers.sumatra.skillsystem.skills.ESkillState;
+import edu.tigers.sumatra.skillsystem.skills.util.EDribblerMode;
 import edu.tigers.sumatra.skillsystem.skills.util.KickParams;
 import edu.tigers.sumatra.time.TimestampTimer;
 import lombok.Setter;
@@ -26,20 +26,23 @@ public class DragBallSkill extends AMoveToSkill
 	@Configurable(defValue = "1.0")
 	private static double initialAccMax = 1.0;
 
-	@Configurable(defValue = "5.0")
-	private static double accMaxW = 5.0;
+	@Configurable(defValue = "14.0")
+	private static double accMaxW = 14.0;
 
 	@Configurable(defValue = "1.2")
 	private static double velMax = 1.2;
 
-	@Configurable(defValue = "5.0")
-	private static double velMaxW = 5.0;
+	@Configurable(defValue = "3.5")
+	private static double velMaxW = 3.5;
 
 	@Setter
 	IVector2 destination;
 
 	@Setter
 	double targetOrientation;
+
+	@Setter
+	private boolean forceKick = false;
 
 	private TimestampTimer changeStateTimer = new TimestampTimer(0.10);
 
@@ -73,7 +76,7 @@ public class DragBallSkill extends AMoveToSkill
 			getMoveConstraints().setAccMax(initialAccMax);
 		}
 
-		if (!getTBot().hasBallContact())
+		if (!getTBot().getBallContact().hadRecentContact())
 		{
 			if (!changeStateTimer.isRunning())
 			{
@@ -88,7 +91,15 @@ public class DragBallSkill extends AMoveToSkill
 			changeStateTimer.reset();
 		}
 
-		setKickParams(KickParams.disarm().withDribblerMode(EDribblerMode.HIGH_POWER));
+		if (forceKick)
+		{
+			// dribbling violation is imminent, so saving chip kick
+			setKickParams(KickParams.chip(1.7).withDribblerMode(EDribblerMode.HIGH_POWER));
+		} else
+		{
+			setKickParams(KickParams.disarm().withDribblerMode(EDribblerMode.HIGH_POWER));
+		}
+
 		super.doUpdate();
 	}
 }

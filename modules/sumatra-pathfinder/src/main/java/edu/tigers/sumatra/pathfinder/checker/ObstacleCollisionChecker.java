@@ -4,7 +4,6 @@
 
 package edu.tigers.sumatra.pathfinder.checker;
 
-import com.github.g3force.configurable.ConfigRegistration;
 import edu.tigers.sumatra.drawable.DrawableAnnotation;
 import edu.tigers.sumatra.drawable.DrawablePoint;
 import edu.tigers.sumatra.drawable.ShapeMap;
@@ -23,11 +22,6 @@ import java.awt.Color;
 @RequiredArgsConstructor
 class ObstacleCollisionChecker
 {
-	static
-	{
-		ConfigRegistration.registerClass("sisyphus", ObstacleCollisionChecker.class);
-	}
-
 	@Getter
 	private final IObstacle obstacle;
 	private final double maxSpeed;
@@ -118,6 +112,10 @@ class ObstacleCollisionChecker
 	private double distanceToObstacle(CollisionInput collisionInput, IObstacle obstacle)
 	{
 		double distance = obstacle.distanceTo(collisionInput);
-		return distance - collisionInput.getExtraMargin();
+		if (obstacle.useDynamicMargin())
+		{
+			return distance - collisionInput.getExtraMargin();
+		}
+		return distance;
 	}
 }

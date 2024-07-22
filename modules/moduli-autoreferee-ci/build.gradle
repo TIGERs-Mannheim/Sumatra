@@ -1,0 +1,27 @@
+/*
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ */
+
+plugins {
+    id 'sumatra.java'
+    id 'java-library'
+    id 'sumatra.protobuf'
+}
+
+dependencies {
+    implementation project(':common')
+    implementation project(':common-math')
+    implementation project(':sumatra-model')
+    implementation project(':moduli-wp')
+    implementation project(':moduli-vision')
+    implementation project(':moduli-geometry')
+    implementation project(':moduli-referee')
+    implementation project(':moduli-cam')
+
+    implementation(libs.com.github.TIGERs.mannheim.moduli)
+
+    implementation(libs.org.apache.logging.log4j.log4j.api)
+    implementation(libs.commons.configuration)
+
+    implementation(libs.com.google.protobuf.protobuf.java)
+}

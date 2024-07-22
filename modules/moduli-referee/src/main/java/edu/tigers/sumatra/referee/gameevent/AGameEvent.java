@@ -25,18 +25,22 @@ public abstract class AGameEvent implements IGameEvent
 {
 	private final EGameEvent type;
 	private final List<String> origins;
+	private final long createdTimestamp;
 
 
 	@SuppressWarnings("unsued") // used by berkeley
 	protected AGameEvent()
 	{
+		createdTimestamp = -1;
 		type = null;
 		origins = List.of();
+
 	}
 
 
 	protected AGameEvent(final EGameEvent type)
 	{
+		this.createdTimestamp = -1;
 		this.type = type;
 		this.origins = List.of();
 	}
@@ -44,6 +48,7 @@ public abstract class AGameEvent implements IGameEvent
 
 	protected AGameEvent(final SslGcGameEvent.GameEvent gameEvent)
 	{
+		this.createdTimestamp = gameEvent.getCreatedTimestamp() * 1_000;
 		this.type = EGameEvent.fromProto(gameEvent.getType());
 		this.origins = new ArrayList<>(gameEvent.getOriginList());
 	}
@@ -94,7 +99,7 @@ public abstract class AGameEvent implements IGameEvent
 
 	protected String formatVector(IVector2 vec)
 	{
-		if(vec == null)
+		if (vec == null)
 			return "null";
 
 		return String.format("(%.3f | %.3f)", vec.x(), vec.y());
@@ -155,5 +160,12 @@ public abstract class AGameEvent implements IGameEvent
 		return new HashCodeBuilder(17, 37)
 				.append(type)
 				.toHashCode();
+	}
+
+
+	@Override
+	public long getCreatedTimestamp()
+	{
+		return createdTimestamp;
 	}
 }

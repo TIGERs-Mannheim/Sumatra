@@ -265,6 +265,7 @@ public abstract class ASkill implements ISkill
 		aiInfo.setBrokenFeatures(brokenFeatures);
 
 		aiInfo.setVelocityLimit(getMatchCtrl().getSkill().getMoveConstraints().getVelMax());
+		aiInfo.setAngularVelocityLimit(getMatchCtrl().getSkill().getMoveConstraints().getVelMaxW());
 		aiInfo.setAccelerationLimit(getMatchCtrl().getSkill().getMoveConstraints().getAccMaxDerived());
 		aiInfo.setDribblerSpeed(getMatchCtrl().getSkill().getDribbleSpeed());
 		aiInfo.setKickerSpeed(
@@ -276,8 +277,9 @@ public abstract class ASkill implements ISkill
 		aiInfo.setSkillState(getCurrentState());
 		aiInfo.setMaxProcTime(averageTimeMeasure.getMaxTime());
 		aiInfo.setAvgProcTime(averageTimeMeasure.getAverageTime());
-		aiInfo.setDribbleCurrent(bot.getDribblerCurrent());
-		aiInfo.setDribbleCurrentMax(getMatchCtrl().getSkill().getKickerDribbler().getDribblerMaxCurrent());
+		aiInfo.setDribbleForce(getMatchCtrl().getSkill().getKickerDribbler().getDribblerForce());
+		aiInfo.setDribbleTraction(bot.getDribbleTractionState());
+		aiInfo.setBallObservation(bot.getBallObservationState());
 
 		if (bot.getClass().equals(TigerBot.class))
 		{

@@ -9,6 +9,8 @@ import edu.tigers.sumatra.drawable.DrawableAnnotation;
 import edu.tigers.sumatra.drawable.DrawableCircle;
 import edu.tigers.sumatra.drawable.DrawableLine;
 import edu.tigers.sumatra.geometry.Geometry;
+import edu.tigers.sumatra.math.SumatraMath;
+import edu.tigers.sumatra.math.circle.Circle;
 import edu.tigers.sumatra.math.line.Lines;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
@@ -23,8 +25,12 @@ import edu.tigers.sumatra.skillsystem.skills.keeper.IKeeperDestinationCalculator
 import edu.tigers.sumatra.skillsystem.skills.keeper.InterceptBallCurveDestinationCalculator;
 import edu.tigers.sumatra.skillsystem.skills.keeper.InterceptBallLineDestinationCalculator;
 import edu.tigers.sumatra.skillsystem.skills.keeper.NormalBlockDestinationCalculator;
+import edu.tigers.sumatra.skillsystem.skills.util.EDribblerMode;
+import edu.tigers.sumatra.skillsystem.skills.util.KickParams;
 import edu.tigers.sumatra.statemachine.AState;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
+import lombok.NonNull;
+import lombok.Setter;
 
 import java.awt.Color;
 
@@ -39,12 +45,21 @@ public class CriticalKeeperSkill extends AMoveToSkill
 
 	@Configurable(comment = "Use ball curve for intercepts", defValue = "false")
 	private static boolean useBallCurveForIntercept = false;
+	@Configurable(comment = "Stay in normal blocking in the intercept if spare time is great enough", defValue = "true")
+	private static boolean useSpareTimeInIntercept = true;
 
-	@Configurable(comment = "[s] Necessary spare time to delay the catch redirect of the keeper", defValue = "0.3")
-	private static double necessarySpareTimeToDelayRedirect = 0.3;
+	@Configurable(comment = "[s] Necessary spare time to delay the movement of the keeper", defValue = "0.3")
+	private static double necessarySpareTimeToDelayMovement = 0.3;
+
+	@Configurable(comment = "[s] Time we project the ball position into the future", defValue = "0.3")
+	private static double ballLookaheadTime = 0.3;
 
 	private ECriticalKeeperStates currentState = ECriticalKeeperStates.NORMAL;
 	private DefendingKeeper defendingKeeper = new DefendingKeeper(this);
+
+	@Setter
+	@NonNull
+	private KickParams ballHandlingKickParams = KickParams.disarm();
 
 
 	public CriticalKeeperSkill()
@@ -52,6 +67,7 @@ public class CriticalKeeperSkill extends AMoveToSkill
 		var blockState = new NormalBlock();
 		setInitialState(blockState);
 
+		addTransition(ECriticalKeeperStates.HAS_CONTACT, new ComeToAStop());
 		addTransition(ECriticalKeeperStates.INTERCEPT_BALL, new InterceptBall());
 		addTransition(ECriticalKeeperStates.DEFEND_REDIRECT, new CatchRedirect());
 		addTransition(ECriticalKeeperStates.GO_OUT, new GoOut());
@@ -63,13 +79,20 @@ public class CriticalKeeperSkill extends AMoveToSkill
 	protected void beforeStateUpdate()
 	{
 		super.beforeStateUpdate();
-		defendingKeeper.update(getWorldFrame());
+		defendingKeeper.update(getWorldFrame(), getBot().getBotId());
 
 		ECriticalKeeperStates nextState = defendingKeeper.calcNextKeeperState();
 		if (nextState != currentState)
 		{
 			currentState = nextState;
 			triggerEvent(nextState);
+		}
+		if (getPos().distanceTo(getBall().getPos()) < Geometry.getBallRadius() + Geometry.getBotRadius() + 500)
+		{
+			setKickParams(ballHandlingKickParams);
+		} else
+		{
+			setKickParams(KickParams.disarm().withDribblerMode(EDribblerMode.OFF));
 		}
 	}
 
@@ -91,22 +114,32 @@ public class CriticalKeeperSkill extends AMoveToSkill
 
 	private IVector2 getBallPosWithLookahead()
 	{
-		return getWorldFrame().getBall().getTrajectory().getPosByTime(0.1).getXYVector();
+		return getWorldFrame().getBall().getTrajectory().getPosByTime(ballLookaheadTime).getXYVector();
 	}
 
 
-	private IVector2 getPrimaryDirectionOuterBlockingStates(final IVector2 threatPosition,
-			final IVector2 defensePosition)
+	private IVector2 getPrimaryDirectionOuterBlockingStates(
+			IVector2 threatPos,
+			IVector2 normalBlockingPos,
+			IVector2 wantedBlockingPos
+	)
 	{
 		IVector2 finalPrimaryDirection = Vector2f.ZERO_VECTOR;
 		if (usePrimaryDirectionOuterBlockingStates)
 		{
-			var primaryDirection = Vector2.fromPoints(threatPosition, defensePosition);
+			var breakDistance = 1000 * SumatraMath.square(getVel().getLength()) / (2 * getMoveConstraints().getAccMax());
+			var enoughSpaceToBreak =
+					getPos().distanceTo(wantedBlockingPos) > 1.1 * breakDistance + Geometry.getBotRadius();
+			var notOvershoot = getPos().distanceTo(Geometry.getGoalOur().getCenter()) < wantedBlockingPos.distanceTo(
+					Geometry.getGoalOur().getCenter());
+
+			var primaryDirection = Vector2.fromPoints(threatPos, normalBlockingPos);
 			var keeperPrimaryDirectionIntersection = Lines.halfLineFromDirection(getPos(), getVel())
-					.intersect(Lines.lineFromDirection(threatPosition, primaryDirection)).asOptional();
+					.intersect(Lines.lineFromDirection(threatPos, primaryDirection)).asOptional();
+			var validIntersection = keeperPrimaryDirectionIntersection.isEmpty() || Geometry.getField()
+					.isPointInShape(keeperPrimaryDirectionIntersection.get());
 			final Color primaryDirectionColor;
-			if (keeperPrimaryDirectionIntersection.isEmpty() || Geometry.getField()
-					.isPointInShape(keeperPrimaryDirectionIntersection.get()))
+			if (validIntersection && enoughSpaceToBreak && notOvershoot)
 			{
 				finalPrimaryDirection = primaryDirection;
 				primaryDirectionColor = Color.BLACK;
@@ -122,25 +155,44 @@ public class CriticalKeeperSkill extends AMoveToSkill
 	}
 
 
+	private boolean isSpareTimeLeft(IVector2 interestingPosOnBallTrajectory, IVector2 defendPosition, double extraTime)
+	{
+		var timeLeft = getBall().getTrajectory().getTimeByPos(interestingPosOnBallTrajectory);
+		var drivingTime =
+				TrajectoryGenerator.generatePositionTrajectory(getTBot(), defendPosition).getTotalTime() + extraTime;
+		var spareTime = timeLeft - drivingTime;
+
+		var shapes = getShapes().get(ESkillShapesLayer.KEEPER);
+		shapes.add(new DrawableCircle(defendPosition, Geometry.getBotRadius(), Color.RED));
+		shapes.add(new DrawableAnnotation(defendPosition, String.format("%.2f", spareTime), Color.RED));
+		return spareTime > necessarySpareTimeToDelayMovement;
+	}
+
+
 	private class InterceptBall extends AState
 	{
 		private double targetAngle;
+		private boolean spareTimeOver = false;
+
 		private IKeeperDestinationCalculator destCalculator;
+		private IKeeperDestinationCalculator normalBlockCalculator;
 
 
 		@Override
 		public void doEntryActions()
 		{
 			targetAngle = getAngle();
+			spareTimeOver = false;
 			prepareMoveCon();
 			prepareMovementConstraints();
 			if (useBallCurveForIntercept)
 			{
-				destCalculator = new InterceptBallLineDestinationCalculator();
+				destCalculator = new InterceptBallCurveDestinationCalculator();
 			} else
 			{
-				destCalculator = new InterceptBallCurveDestinationCalculator();
+				destCalculator = new InterceptBallLineDestinationCalculator();
 			}
+			normalBlockCalculator = new NormalBlockDestinationCalculator();
 			super.doEntryActions();
 		}
 
@@ -153,8 +205,18 @@ public class CriticalKeeperSkill extends AMoveToSkill
 				// skill is not designed for lying balls
 				return;
 			}
-			updateDestination(
-					destCalculator.calcDestination(getWorldFrame(), getShapes(), getTBot(), getMoveConstraints(), null));
+			var destination = destCalculator.calcDestination(getWorldFrame(), getShapes(), getTBot(), getMoveConstraints(),
+					null);
+			if (isSpareTimeLeft(destination, destination, 0.0) && !spareTimeOver && useSpareTimeInIntercept)
+			{
+				var normalBlockDestination = normalBlockCalculator.calcDestination(getWorldFrame(), getShapes(), getTBot(),
+						getMoveConstraints(), getBallPosWithLookahead());
+				updateDestination(normalBlockDestination);
+			} else
+			{
+				updateDestination(destination);
+				spareTimeOver = true;
+			}
 			updateTargetAngle(calcTargetAngle());
 
 			super.doUpdate();
@@ -198,27 +260,32 @@ public class CriticalKeeperSkill extends AMoveToSkill
 		@Override
 		public void doUpdate()
 		{
-			IVector2 redirectPos = getRedirectBotPosition();
-			IVector2 destination = normalBlockCalculator.calcDestination(getWorldFrame(), getShapes(), getTBot(),
+			var redirectPos = getRedirectBotPosition();
+			getShapes().get(ESkillShapesLayer.KEEPER)
+					.add(new DrawableCircle(Circle.createCircle(redirectPos, 50), Color.MAGENTA));
+			var normalBlockingPos = normalBlockCalculator.calcDestination(getWorldFrame(), getShapes(), getTBot(),
 					getMoveConstraints(), redirectPos);
+			var goOutFeasible = isRedirectGoOutFeasible(redirectPos);
 
-			if (VectorMath.distancePP(getPos(), destination) < (Geometry.getBotRadius() / 2))
-			{
-				updateLookAtTarget(redirectPos);
-			}
-			getMoveConstraints().setPrimaryDirection(getPrimaryDirectionOuterBlockingStates(redirectPos, destination));
-			if ((isKeeperBetweenRedirectAndNormalBlock(redirectPos, destination) || stayInGoOut)
-					&& isRedirectGoOutFeasible(redirectPos))
+			var destination = normalBlockingPos;
+			double extraDriveTime = 0.0;
+
+			if ((isKeeperBetweenRedirectAndNormalBlock(redirectPos, destination) || stayInGoOut) && goOutFeasible)
 			{
 				stayInGoOut = true;
 				destination = goOutCalculator.calcDestination(getWorldFrame(), getShapes(), getTBot(), getMoveConstraints(),
 						redirectPos);
-				updateLookAtTarget(redirectPos);
 			} else
 			{
 				stayInGoOut = false;
+				if (goOutFeasible)
+				{
+					var goOutPos = goOutCalculator.calcDestination(getWorldFrame(), getShapes(), getTBot(),
+							getMoveConstraints(), redirectPos);
+					extraDriveTime = goOutPos.distanceTo(normalBlockingPos) / (getMoveConstraints().getVelMax() * 500);
+				}
 			}
-			if (isSpareTimeLeft(redirectPos, destination) && !spareTimeOver)
+			if (isSpareTimeLeft(redirectPos, destination, extraDriveTime) && !spareTimeOver)
 			{
 				destination = normalBlockCalculator.calcDestination(getWorldFrame(), getShapes(), getTBot(),
 						getMoveConstraints(), getBallPosWithLookahead());
@@ -226,6 +293,9 @@ public class CriticalKeeperSkill extends AMoveToSkill
 			{
 				spareTimeOver = true;
 			}
+			getMoveConstraints().setPrimaryDirection(
+					getPrimaryDirectionOuterBlockingStates(redirectPos, normalBlockingPos, destination));
+			updateLookAtTarget(redirectPos);
 			updateDestination(destination);
 			super.doUpdate();
 		}
@@ -241,14 +311,18 @@ public class CriticalKeeperSkill extends AMoveToSkill
 		{
 			IVector2 redirectBotPosition;
 			var redirectBotId = defendingKeeper.getBestRedirector(getWorldFrame().getOpponentBots());
+			var ballTravelLine = Lines.halfLineFromDirection(getBall().getPos(), getBall().getVel());
 			if (redirectBotId.isBot())
 			{
-				redirectBotPosition = getWorldFrame().getOpponentBot(redirectBotId).getBotKickerPos();
+				var opponent = getWorldFrame().getOpponentBot(redirectBotId);
+				redirectBotPosition = ballTravelLine.closestPointOnPath(opponent.getBotKickerPos());
 			} else
 			{
-				// .getOpponentClosestToBall from tactical field
-				redirectBotPosition = getWorldFrame().getOpponentBots().values().stream().map(ITrackedBot::getBotKickerPos)
-						.min(new VectorDistanceComparator(getWorldFrame().getBall().getPos())).orElse(Vector2.fromXY(0, 0));
+				redirectBotPosition = getWorldFrame().getOpponentBots().values().stream()
+						.map(ITrackedBot::getBotKickerPos)
+						.min(new VectorDistanceComparator(getWorldFrame().getBall().getPos()))
+						.map(ballTravelLine::closestPointOnPath)
+						.orElse(Vector2.fromXY(0, 0));
 			}
 			return redirectBotPosition;
 		}
@@ -257,20 +331,7 @@ public class CriticalKeeperSkill extends AMoveToSkill
 		private boolean isKeeperBetweenRedirectAndNormalBlock(IVector2 redirectPos, IVector2 normalBlockPosition)
 		{
 			return Lines.segmentFromPoints(redirectPos, normalBlockPosition).distanceTo(getPos())
-					< Geometry.getBotRadius();
-		}
-
-
-		private boolean isSpareTimeLeft(IVector2 redirectPos, IVector2 destination)
-		{
-			var timeLeft = getBall().getTrajectory().getTimeByPos(redirectPos);
-			var drivingTime = TrajectoryGenerator.generatePositionTrajectory(getTBot(), destination).getTotalTime();
-			var spareTime = timeLeft - drivingTime;
-
-			var shapes = getShapes().get(ESkillShapesLayer.KEEPER);
-			shapes.add(new DrawableCircle(destination, Geometry.getBotRadius(), Color.RED));
-			shapes.add(new DrawableAnnotation(destination, String.format("%.2f", spareTime), Color.RED));
-			return spareTime > necessarySpareTimeToDelayRedirect;
+					< 3 * Geometry.getBotRadius();
 		}
 	}
 
@@ -307,13 +368,11 @@ public class CriticalKeeperSkill extends AMoveToSkill
 						getMoveConstraints(), ballPos);
 			}
 			getMoveConstraints().setPrimaryDirection(
-					getPrimaryDirectionOuterBlockingStates(getBall().getPos(), normalBlockingPos));
+					getPrimaryDirectionOuterBlockingStates(getBall().getPos(), normalBlockingPos, targetPosition));
 			updateDestination(targetPosition);
 			updateTargetAngle(getPos().subtractNew(Geometry.getGoalOur().getCenter()).getAngle());
 
 			super.doUpdate();
-
-			draw(targetPosition);
 		}
 
 
@@ -323,19 +382,36 @@ public class CriticalKeeperSkill extends AMoveToSkill
 					.withMargin(-2 * Geometry.getBotRadius())
 					.isPointInShape(getWorldFrame().getBall().getPos());
 		}
+	}
+
+	private class ComeToAStop extends AState
+	{
+		IVector2 destination;
 
 
-		private void draw(IVector2 targetPose)
+		@Override
+		public void doEntryActions()
 		{
-			getShapes().get(ESkillShapesLayer.KEEPER)
-					.add(new DrawableLine(getWorldFrame().getBall().getPos(), Geometry.getGoalOur().getLeftPost()));
-			getShapes().get(ESkillShapesLayer.KEEPER)
-					.add(new DrawableLine(getWorldFrame().getBall().getPos(), Geometry.getGoalOur().getRightPost()));
-			getShapes().get(ESkillShapesLayer.KEEPER)
-					.add(new DrawableCircle(targetPose, Geometry.getBotRadius(), Color.green));
+			prepareMoveCon();
+			prepareMovementConstraints();
+			var vel = getVel();
+			var velLength = vel.getLength2();
+			var breakDistance = 1000 * (0.5f * velLength * velLength / getMoveConstraints().getAccMax());
+			destination = Geometry.getPenaltyAreaOur().getRectangle().withMargin(-Geometry.getBotRadius())
+					.nearestPointInside(getPos().addNew(vel.scaleToNew(breakDistance)));
+			updateDestination(destination);
+			super.doEntryActions();
 		}
 
 
+		@Override
+		public void doUpdate()
+		{
+			getShapes().get(ESkillShapesLayer.KEEPER)
+					.add(new DrawableCircle(Circle.createCircle(destination, 100), Color.MAGENTA));
+			updateDestination(destination);
+			super.doUpdate();
+		}
 	}
 
 	private class NormalBlock extends AState

@@ -5,28 +5,17 @@
 package edu.tigers.sumatra.skillsystem.skills;
 
 import com.github.g3force.configurable.Configurable;
-import edu.tigers.sumatra.bot.EDribbleTractionState;
-import edu.tigers.sumatra.drawable.DrawableAnnotation;
-import edu.tigers.sumatra.drawable.DrawableLine;
-import edu.tigers.sumatra.drawable.DrawablePoint;
+import edu.tigers.sumatra.drawable.DrawableArrow;
 import edu.tigers.sumatra.geometry.Geometry;
-import edu.tigers.sumatra.ids.ETeam;
 import edu.tigers.sumatra.math.AngleMath;
-import edu.tigers.sumatra.math.line.LineMath;
-import edu.tigers.sumatra.math.line.Lines;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
-import edu.tigers.sumatra.math.vector.Vector2f;
+import edu.tigers.sumatra.model.SumatraModel;
 import edu.tigers.sumatra.skillsystem.ESkillShapesLayer;
-import edu.tigers.sumatra.skillsystem.skills.util.AroundBallCalc;
-import edu.tigers.sumatra.skillsystem.skills.util.DoubleChargingValue;
-import edu.tigers.sumatra.skillsystem.skills.util.DoubleChargingValue.ChargeMode;
 import edu.tigers.sumatra.skillsystem.skills.util.EDribblerMode;
 import edu.tigers.sumatra.skillsystem.skills.util.KickParams;
-import edu.tigers.sumatra.skillsystem.skills.util.TargetAngleReachedChecker;
-import lombok.Getter;
+import edu.tigers.sumatra.time.TimestampTimer;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 import java.awt.Color;
 
@@ -37,44 +26,41 @@ import java.awt.Color;
 @NoArgsConstructor
 public class TouchKickSkill extends ATouchKickSkill
 {
-	@Configurable(comment = "The max margin to the ball for destinations", defValue = "70.0")
-	private static double maxMarginToBall = 70.0;
+	@Configurable(defValue = "HIGH_POWER")
+	private static EDribblerMode dribblerMode = EDribblerMode.HIGH_POWER;
 
-	@Getter
-	@Configurable(defValue = "0.15", comment = "The approximate tolerance when the angle is considered to be reached")
-	private static double roughAngleTolerance = 0.15;
-
-	@Configurable(defValue = "0.15", comment = "The max time to wait until angle is considered reached while within tolerance")
-	private static double maxTimeTargetAngleReached = 0.15;
-
-	@Configurable(defValue = "OFF")
-	private static EDribblerMode dribblerMode = EDribblerMode.OFF;
-
-	@Configurable(defValue = "10")
+	@Configurable(defValue = "10", comment = "Maximum angular velocity [rad/s] for this skill")
 	private static double maxAngularVelocity = 10;
 
-	@Configurable(defValue = "0.3")
-	private static double aroundBallLookahead = 0.3;
+	@Configurable(defValue = "2", comment = "Maximum acceleration [m/s²] when having ball contact")
+	private static double ballContactAccMax = 2;
 
-	@Configurable(defValue = "0.3")
-	private static double maxTargetOrientationStep = 0.3;
+	@Configurable(defValue = "20.0", comment = "Maximum rotation acc [rad/s²] when having ball contact")
+	private static double ballContactAccMaxW = 20.0;
 
-	@Configurable(defValue = "-100")
-	private static double maxPushDistance = -100;
+	@Configurable(defValue = "0.028", comment = "Lookahead [s] on the orientation for aiming")
+	private static double orientationLookaheadKickerArm = 0.028;
 
-	@Configurable(defValue = "-20")
-	private static double nearBallPushDistance = -20;
+	@Configurable(defValue = "3.0", comment = "[deg]")
+	private static double targetReachedArmEarlyOverstepCheck = 3.0;
 
-	private final TargetAngleReachedChecker targetAngleReachedChecker = new TargetAngleReachedChecker(
-			roughAngleTolerance, maxTimeTargetAngleReached);
+	@Configurable(defValue = "0.01", comment = "Lookahead [s] on the orientation for aiming for simulation")
+	private static double orientationLookaheadKickerArmSimulation = 0.01;
 
-	@Setter
-	private double marginToTheirPenArea = 0;
+	@Configurable(defValue = "true", comment = "Arm kicker early to compensate the rotation during the transmission delay")
+	private static boolean enableArmEarlyReality = true;
 
-	private DoubleChargingValue chargingValue;
-	private IVector2 initBallPos;
-	private IVector2 strongDribbleRobotPos;
+	@Configurable(defValue = "true", comment = "Same as enableArmEarlyReality, but this configurable is used while simulating")
+	private static boolean enableArmEarlySimulation = true;
+
+	@Configurable(defValue = "true", comment = "Enable kick direction compensation")
+	private static boolean enableKickDirectionCompensation = true;
+
 	private double maxBallSpeedThreshold;
+
+	private IVector2 initBallPos;
+
+	private TimestampTimer keepKickerArmedTimer = new TimestampTimer(0.1);
 
 
 	public TouchKickSkill(final IVector2 target, final KickParams desiredKickParams)
@@ -84,95 +70,54 @@ public class TouchKickSkill extends ATouchKickSkill
 	}
 
 
-	private boolean isFocused()
-	{
-		return targetAngleReachedChecker.isReached();
-	}
-
-
-	private boolean isRoughlyFocussed()
-	{
-		return isNearBall() && targetAngleReachedChecker.isRoughlyFocussed();
-	}
-
-
 	@Override
 	public void doEntryActions()
 	{
 		super.doEntryActions();
 		getMoveCon().setBallObstacle(false);
-		getMoveConstraints().setVelMaxW(maxAngularVelocity);
 		initBallPos = getBall().getPos();
-		strongDribbleRobotPos = getPos();
-		var dist2Ball = isNearBall() ? nearBallPushDistance : 0;
-		chargingValue = new DoubleChargingValue(
-				dist2Ball,
-				200,
-				-2000,
-				maxPushDistance,
-				0
-		);
 		maxBallSpeedThreshold = Math.max(maxBallSpeed, getBall().getVel().getLength2() + 0.1);
-	}
-
-
-	private boolean isNearBall()
-	{
-		return getBallPos().distanceTo(getTBot().getBotKickerPos()) < (Geometry.getBallRadius() + 10);
+		keepKickerArmedTimer.reset();
 	}
 
 
 	@Override
 	public void doUpdate()
 	{
-		var finalTargetOrientation = target.subtractNew(getBall().getPos()).getAngle(0);
-		var targetOrientation = getTargetOrientation(finalTargetOrientation);
-		var orientation = getTBot().getOrientation();
-		var passRangeTolerance = passRange / 2;
-		// try being a bit more precise than the pass range, but have a minimum tolerance
-		var angleTolerance = Math.max(roughAngleTolerance, passRangeTolerance - roughAngleTolerance);
-		targetAngleReachedChecker.setOuterAngleDiffTolerance(angleTolerance);
-		var angleDiff = targetAngleReachedChecker.update(
-				finalTargetOrientation,
-				orientation,
-				getWorldFrame().getTimestamp()
-		);
-
-		chargingValue.setChargeMode(isRoughlyFocussed() ? ChargeMode.DECREASE : ChargeMode.INCREASE);
-		chargingValue.update(getWorldFrame().getTimestamp());
-		var dist2Ball = chargingValue.getValue();
-
-		IVector2 dest = findDest(dist2Ball);
-
-		positionValidator.update(getWorldFrame(), getMoveCon());
-		positionValidator.getMarginToPenArea().put(ETeam.OPPONENTS, marginToTheirPenArea);
-		dest = positionValidator.movePosInsideField(dest);
-		dest = positionValidator.movePosOutOfPenAreaWrtBall(dest);
-
-		updateDestination(dest);
-		updateTargetAngle(targetOrientation);
+		if (getTBot().getBallContact().hadContact(0.1))
+		{
+			getMoveConstraints().setAccMax(ballContactAccMax);
+			getMoveConstraints().setAccMaxW(ballContactAccMaxW);
+		} else
+		{
+			getMoveConstraints().resetLimits(getBot().getBotParams().getMovementLimits());
+		}
+		getMoveConstraints().setVelMaxW(maxAngularVelocity);
 
 		super.doUpdate();
 
-		if (isFocused())
+		KickParams params = KickParams.disarm().withDribblerMode(dribblerMode);
+
+		boolean armEarly = armKickerEarly();
+		if (armEarly)
 		{
-			setKickParams(KickParams.of(desiredKickParams.getDevice(), getKickSpeed()));
-		} else if (dribblerMode == EDribblerMode.HIGH_POWER &&
-				getTBot().getRobotInfo().getDribbleTraction() == EDribbleTractionState.STRONG)
-		{
-			setKickParams(KickParams.disarm().withDribblerMode(EDribblerMode.HIGH_POWER));
-		} else if (dribblerMode == EDribblerMode.OFF)
-		{
-			setKickParams(KickParams.disarm().withDribblerMode(EDribblerMode.OFF));
-		} else
-		{
-			setKickParams(KickParams.disarm().withDribblerMode(EDribblerMode.DEFAULT));
+			// starting timer
+			keepKickerArmedTimer.start(getWorldFrame().getTimestamp());
 		}
+
+		if (isFocused() || armEarly || (keepKickerArmedTimer.isRunning() && !keepKickerArmedTimer.isTimeUp(
+				getWorldFrame().getTimestamp())))
+		{
+			params = KickParams.of(desiredKickParams.getDevice(), getKickSpeed())
+					.withDribblerMode(params.getDribblerMode());
+		}
+		setKickParams(params);
+
 
 		if (initBallPos.distanceTo(getBall().getPos()) > 500)
 		{
 			setSkillState(ESkillState.FAILURE);
-		} else if (getBall().getVel().getLength2() > maxBallSpeedThreshold)
+		} else if (getBall().getVel().getLength2() > maxBallSpeedThreshold && !getTBot().getBallContact().hasContact())
 		{
 			if (AngleMath.diffAbs(getBall().getVel().getAngle(), targetOrientation) < AngleMath.DEG_045_IN_RAD)
 			{
@@ -185,96 +130,107 @@ public class TouchKickSkill extends ATouchKickSkill
 		{
 			setSkillState(ESkillState.IN_PROGRESS);
 		}
-
-		drawShapes(orientation, angleDiff, angleTolerance);
 	}
 
 
-	private IVector2 findDest(double dist2Ball)
+	private double getCompensatedKickOrientation()
 	{
-		if (getTBot().getRobotInfo().getDribbleTraction() == EDribbleTractionState.STRONG)
-		{
-			return strongDribbleRobotPos;
-		}
-		strongDribbleRobotPos = getPos();
-		return AroundBallCalc
-				.aroundBall()
-				.withBallPos(getBallPosByTime(aroundBallLookahead))
-				.withTBot(getTBot())
-				.withDestination(getDestination(dist2Ball))
-				.withMaxMargin(maxMarginToBall)
-				.withMinMargin(dist2Ball)
-				.build()
-				.getAroundBallDest();
-	}
-
-
-	private void drawShapes(double orientation, double angleDiff, double angleTolerance)
-	{
-		var ballPos = getBallPos();
-		var kickDir = target.subtractNew(ballPos);
-		var currentTolerance = targetAngleReachedChecker.getCurrentTolerance();
-		var toleranceLine1 = Lines.segmentFromOffset(ballPos, kickDir.turnNew(angleTolerance));
-		var toleranceLine2 = Lines.segmentFromOffset(ballPos, kickDir.turnNew(-angleTolerance));
-		var focusLine1 = Lines.segmentFromOffset(ballPos, kickDir.turnNew(currentTolerance));
-		var focusLine2 = Lines.segmentFromOffset(ballPos, kickDir.turnNew(-currentTolerance));
-		var targetLine = Lines.segmentFromPoints(getBall().getPos(), target);
-		var orientationOffset = Vector2.fromAngleLength(orientation, targetLine.getLength());
-		var currentOrientationLine = Lines.segmentFromOffset(getPos(), orientationOffset);
-		var teamColor = getBotId().getTeamColor().getColor();
-		var focusedTxt = createFocusedText();
-		var angleDiffTxt = String.format("%.2f -> %s", angleDiff, focusedTxt);
-		var txtOffset = Vector2f.fromY(200);
-
-		getShapes().get(ESkillShapesLayer.KICK_SKILL).add(new DrawableAnnotation(getPos(),
-				String.format("dist2Ball: %.2f", chargingValue.getValue())).withOffset(Vector2.fromY(300)));
-		getShapes().get(ESkillShapesLayer.KICK_SKILL).add(new DrawablePoint(ballPos, Color.green));
-		getShapes().get(ESkillShapesLayer.KICK_SKILL).add(new DrawableLine(toleranceLine1, Color.green));
-		getShapes().get(ESkillShapesLayer.KICK_SKILL).add(new DrawableLine(toleranceLine2, Color.green));
-		getShapes().get(ESkillShapesLayer.KICK_SKILL).add(new DrawableLine(focusLine1, Color.magenta));
-		getShapes().get(ESkillShapesLayer.KICK_SKILL).add(new DrawableLine(focusLine2, Color.magenta));
-		getShapes().get(ESkillShapesLayer.KICK_SKILL).add(new DrawableLine(targetLine, teamColor));
-		getShapes().get(ESkillShapesLayer.KICK_SKILL).add(new DrawableLine(currentOrientationLine, Color.orange));
-		getShapes().get(ESkillShapesLayer.KICK_SKILL).add(new DrawableAnnotation(getPos(), angleDiffTxt, txtOffset));
-	}
-
-
-	private String createFocusedText()
-	{
-		if (isFocused())
-		{
-			return "focused";
-		}
-		return isRoughlyFocussed() ? "roughly focussed" : "unfocused";
-	}
-
-
-	private IVector2 getBallPosByTime(final double lookahead)
-	{
-		return getBall().getTrajectory().getPosByTime(lookahead).getXYVector();
-	}
-
-
-	private double getTargetOrientation(double finalTargetOrientation)
-	{
-		if (getTBot().getRobotInfo().getDribbleTraction() == EDribbleTractionState.STRONG)
+		if (!enableKickDirectionCompensation)
 		{
 			return finalTargetOrientation;
 		}
-		double currentDirection = getBall().getPos().subtractNew(getPos()).getAngle(0);
-		double diff = AngleMath.difference(finalTargetOrientation, currentDirection);
-		return currentDirection + Math.signum(diff) * Math.min(Math.abs(diff), maxTargetOrientationStep);
+
+		// factors that influence outgoing bal vel:
+		// Current ball velocity, which is equal to the tangential velocity of the robots rotation on location of the ball,
+		// plus the robots velocity
+		var robotVel = getVel(); // m/s
+		double radius = getTBot().getCenter2DribblerDist() + Geometry.getBallRadius(); // mm
+		var ballVel = Vector2.fromAngleLength(
+				Vector2.fromAngle(getTBot().getOrientation()).getNormalVector().getAngle(),
+				-getTBot().getAngularVel() * radius / 1000.0);
+		var compensationVel = robotVel.addNew(ballVel);
+
+		getShapes().get(ESkillShapesLayer.KICK_SKILL_COMP)
+				.add(new DrawableArrow(getBallPos(), compensationVel.multiplyNew(1000), Color.magenta));
+		getShapes().get(ESkillShapesLayer.KICK_SKILL_COMP)
+				.add(new DrawableArrow(getBallPos(), ballVel.multiplyNew(1000), Color.BLACK));
+		getShapes().get(ESkillShapesLayer.KICK_SKILL_COMP)
+				.add(new DrawableArrow(getBallPos(), robotVel.multiplyNew(1000), Color.GRAY));
+
+		var ballOffset = getTBot().getBotKickerPos().subtractNew(getTBot().getPos())
+				.scaleToNew(Geometry.getBallRadius());
+
+		// basically angle from ball to target
+		double plannedBallVelAngle = target.subtractNew(getTBot().getBotKickerPos().addNew(ballOffset)).getAngle();
+
+		IVector2 plannedKick = Vector2.fromAngleLength(plannedBallVelAngle, getKickSpeed());
+		IVector2 kick = plannedKick.subtractNew(compensationVel);
+
+		getShapes().get(ESkillShapesLayer.KICK_SKILL_COMP)
+				.add(new DrawableArrow(getBallPos(), kick.multiplyNew(1000), Color.ORANGE.darker()));
+		getShapes().get(ESkillShapesLayer.KICK_SKILL_COMP)
+				.add(new DrawableArrow(getBallPos(),
+						Vector2.fromAngle(getAngle()).scaleToNew(kick.multiplyNew(1000).getLength()),
+						Color.ORANGE.brighter()));
+		return kick.getAngle();
 	}
 
 
-	private IVector2 getDestination(final double margin)
+	private boolean armKickerEarly()
 	{
-		return LineMath.stepAlongLine(getBall().getPos(), target, -getDistance(margin));
+		double orientationLookahead;
+		if (SumatraModel.getInstance().isSimulation())
+		{
+			orientationLookahead = orientationLookaheadKickerArmSimulation;
+			if (!enableArmEarlySimulation)
+			{
+				return false;
+			}
+		} else
+		{
+			orientationLookahead = orientationLookaheadKickerArm;
+			if (!enableArmEarlyReality)
+			{
+				return false;
+			}
+		}
+
+		double compensatedFinalTargetOrientation = getCompensatedKickOrientation();
+
+		double orientation = getTBot().getOrientation();
+		double orientationChange = getTBot().getAngularVel() * orientationLookahead;
+
+		// use the uncompensated Orientation on purpose
+		if (!isRoughlyTargeted(finalTargetOrientation))
+		{
+			// avoid overflow in the opposite direction
+			return false;
+		}
+
+		// We do not use getAngleByTime on the Trajectory because it would perfectly converge with the
+		// target orientation. However, we need to detect whether the angle diff is positive or negative. b
+		double orientationFuture = orientation + orientationChange;
+		getShapes().get(ESkillShapesLayer.KICK_SKILL_COMP)
+				.add(new DrawableArrow(getBallPos(),
+						Vector2.fromAngle(orientationFuture).scaleToNew(getBallPos().subtractNew(target).getLength()),
+						Color.ORANGE.brighter()));
+
+		double futureDif = AngleMath.difference(compensatedFinalTargetOrientation, orientationFuture);
+		double angleDif = AngleMath.difference(compensatedFinalTargetOrientation, orientation);
+
+		boolean overstepped = Math.signum(getTBot().getAngularVel()) == Math.signum(angleDif) &&
+				Math.signum(getTBot().getAngularVel()) == Math.signum(futureDif);
+		if (Math.abs(angleDif) < AngleMath.deg2rad(targetReachedArmEarlyOverstepCheck) && overstepped)
+		{
+			return true;
+		}
+
+		return angleDif * futureDif < 0;
 	}
 
 
-	private double getDistance(final double margin)
+	private boolean isRoughlyTargeted(double desiredTargetAngle)
 	{
-		return getTBot().getCenter2DribblerDist() + Geometry.getBallRadius() + margin;
+		return AngleMath.diffAbs(desiredTargetAngle, getTBot().getOrientation()) < AngleMath.deg2rad(90);
 	}
 }

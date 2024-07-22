@@ -97,9 +97,9 @@ public class PathFinderPrioMapCalc extends ACalculator
 				map.setPriority(botId, prio--);
 			}
 		}
+		prio = updatePrio(map, prio, activeKeepers);
 		prio = updatePrio(map, prio, remainingOffenders);
 		prio = updatePrio(map, prio, remainingDefenders);
-		prio = updatePrio(map, prio, activeKeepers);
 		updatePrio(map, prio, activeSupporters);
 
 		return map;

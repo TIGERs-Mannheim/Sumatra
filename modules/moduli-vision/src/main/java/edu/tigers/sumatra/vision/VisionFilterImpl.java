@@ -155,8 +155,7 @@ public class VisionFilterImpl extends AVisionFilter
 
 	private void processCamFrameQueue()
 	{
-		Thread.currentThread().setName("VisionFilter Processor");
-		while (!scheduledExecutorService.isShutdown())
+		while (scheduledExecutorService != null && !scheduledExecutorService.isShutdown())
 		{
 			try
 			{
@@ -168,7 +167,7 @@ public class VisionFilterImpl extends AVisionFilter
 			} catch (InterruptedException e)
 			{
 				Thread.currentThread().interrupt();
-			} catch(Exception e)
+			} catch(Throwable e)
 			{
 				log.error("Uncaught exception while processing cam frame", e);
 			}
@@ -352,8 +351,8 @@ public class VisionFilterImpl extends AVisionFilter
 		if (useThreads)
 		{
 			scheduledExecutorService = Executors
-					.newScheduledThreadPool(2, new NamedThreadFactory("VisionFilter Publisher"));
-			scheduledExecutorService.execute(this::processCamFrameQueue);
+					.newSingleThreadScheduledExecutor(new NamedThreadFactory("VisionFilter Publisher"));
+			new Thread(this::processCamFrameQueue, "VisionFilter Processor").start();
 			scheduledExecutorService
 					.scheduleAtFixedRate(() -> Safe.run(this::publish), 0, (long) (publishDt * 1e9), TimeUnit.NANOSECONDS);
 			log.info("Using threaded VisionFilter");

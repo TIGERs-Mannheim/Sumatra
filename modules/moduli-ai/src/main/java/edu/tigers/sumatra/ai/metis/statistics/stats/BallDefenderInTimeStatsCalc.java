@@ -39,13 +39,14 @@ public class BallDefenderInTimeStatsCalc extends AEventWatchingStatsCalc<BotID>
 	private final MovingAverage ballDefenderPosDistance = new MovingAverage();
 	private final MovingAverage ballDefenderVelDistance = new MovingAverage();
 	private final MovingAverage ballDefenderCoverage = new MovingAverage();
+	private final MovingAverage ballDefenderReceivePosX = new MovingAverage();
 
 
 	public BallDefenderInTimeStatsCalc(Supplier<ITrackedBot> opponentPassReceiver,
 			Supplier<List<DefenseThreatAssignment>> threatAssignments, Supplier<Set<BotID>> currentlyTouchingBots,
 			Supplier<Double> defenseCoverage)
 	{
-		super(EAiShapesLayer.STATS_DEBUG_BALL_DEFENDER_IN_TIME);
+		super(EAiShapesLayer.STATS_BALL_DEFENDER_IN_TIME_DEBUG);
 		this.opponentPassReceiver = opponentPassReceiver;
 		this.threatAssignments = threatAssignments;
 		this.currentlyTouchingBots = currentlyTouchingBots;
@@ -100,6 +101,7 @@ public class BallDefenderInTimeStatsCalc extends AEventWatchingStatsCalc<BotID>
 							.sum()
 					)
 					.ifPresent(ballDefenderVelDistance::add);
+			ballDefenderReceivePosX.add(passReceiver.getBotKickerPos().x());
 		}
 
 		ballDefenderCoverage.add(defenseCoverage.get());
@@ -143,6 +145,8 @@ public class BallDefenderInTimeStatsCalc extends AEventWatchingStatsCalc<BotID>
 				new StatisticData(ballDefenderVelDistance.getCombinedValue()));
 		matchStatistics.putStatisticData(EMatchStatistics.DEFENSE_DIST_AT_BALL_RECEIVED,
 				new StatisticData(ballDefenderPosDistance.getCombinedValue()));
+		matchStatistics.putStatisticData(EMatchStatistics.DEFENSE_BALL_POS_X_AT_BALL_RECEIVED,
+				new StatisticData(ballDefenderReceivePosX.getCombinedValue()));
 	}
 
 }

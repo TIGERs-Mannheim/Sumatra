@@ -4,6 +4,7 @@
 
 package edu.tigers.sumatra.ai.metis.statistics;
 
+import com.github.g3force.configurable.Configurable;
 import edu.tigers.sumatra.ai.metis.ACalculator;
 import edu.tigers.sumatra.ai.metis.ballpossession.BallPossession;
 import edu.tigers.sumatra.ai.metis.botdistance.BotDistance;
@@ -22,8 +23,8 @@ import edu.tigers.sumatra.ai.metis.statistics.stats.MatchStats;
 import edu.tigers.sumatra.ai.metis.statistics.stats.RoleTimeStatsCalc;
 import edu.tigers.sumatra.ai.pandora.plays.EPlay;
 import edu.tigers.sumatra.ids.BotID;
-import edu.tigers.sumatra.vision.data.IKickEvent;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
+import edu.tigers.sumatra.wp.data.KickedBall;
 import lombok.Getter;
 
 import java.util.ArrayList;
@@ -40,8 +41,12 @@ import java.util.function.Supplier;
 public class MatchStatisticsCalc extends ACalculator
 {
 	private final Collection<AStatsCalc> statisticsSubscriber = new ArrayList<>();
+
 	@Getter
 	private MatchStats matchStatistics;
+
+	@Configurable(defValue = "false", comment = "Enable statistics calculation")
+	private static boolean enabled = false;
 
 
 	public MatchStatisticsCalc(
@@ -49,7 +54,7 @@ public class MatchStatisticsCalc extends ACalculator
 			Supplier<BallPossession> ballPossession,
 			Supplier<Set<BotID>> botsLastTouchedBall,
 			Supplier<EPossibleGoal> possibleGoal,
-			Supplier<IKickEvent> detectedGoalKickTigers,
+			Supplier<KickedBall> detectedGoalKickTigers,
 			Supplier<BotDistance> opponentClosestToBall,
 			Supplier<ITrackedBot> opponentPassReceiver,
 			Supplier<List<DefenseBotThreatDefData>> defenseBotThreats,
@@ -101,16 +106,24 @@ public class MatchStatisticsCalc extends ACalculator
 
 
 	@Override
+	protected boolean isCalculationNecessary()
+	{
+		return enabled && !getWFrame().getBots().isEmpty() && getAiFrame().getGameState().isGameRunning();
+	}
+
+
+	@Override
 	public void doCalc()
 	{
-		if (getWFrame().getBots().isEmpty() || !getAiFrame().getGameState().isGameRunning())
-		{
-			createMatchStatistics();
-			return;
-		}
-
 		updateStatistics();
-		createMatchStatistics();
+		matchStatistics = createMatchStatistics();
+	}
+
+
+	@Override
+	protected void reset()
+	{
+		matchStatistics = createMatchStatistics();
 	}
 
 
@@ -123,12 +136,13 @@ public class MatchStatisticsCalc extends ACalculator
 	}
 
 
-	private void createMatchStatistics()
+	private MatchStats createMatchStatistics()
 	{
-		matchStatistics = new MatchStats();
+		var matchStats = new MatchStats();
 		for (AStatsCalc statisticsToReceiveDataFrom : statisticsSubscriber)
 		{
-			statisticsToReceiveDataFrom.saveStatsToMatchStatistics(matchStatistics);
+			statisticsToReceiveDataFrom.saveStatsToMatchStatistics(matchStats);
 		}
+		return matchStats;
 	}
 }

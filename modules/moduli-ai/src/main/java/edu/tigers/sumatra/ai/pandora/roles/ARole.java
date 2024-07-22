@@ -140,7 +140,7 @@ public abstract class ARole
 					+ "' with an UNINITIALIZED BotID!!!");
 		}
 		botID = newBotId;
-		stateMachine.setName("Role " + getType() + " " + botID);
+		stateMachine.setName("Role " + this + " " + botID);
 	}
 
 
@@ -175,7 +175,7 @@ public abstract class ARole
 					firstUpdate = false;
 				} else
 				{
-					log.error(this + ": Update was called although role has not been assigned!");
+					log.error("{}: Update was called although role has not been assigned!", this);
 					return;
 				}
 			}
@@ -205,7 +205,7 @@ public abstract class ARole
 			}
 		} catch (Exception err)
 		{
-			log.error("Exception on role update (" + getBotID() + ", " + getType() + ")", err);
+			log.error("Exception on role update ({}, {})", getBotID(), this, err);
 		}
 	}
 
@@ -404,6 +404,7 @@ public abstract class ARole
 		return skill;
 	}
 
+
 	/**
 	 * A role state with a simple {@link MoveToSkill}.
 	 */
@@ -473,6 +474,7 @@ public abstract class ARole
 			super(supplier, ARole.this);
 		}
 	}
+
 
 	public Map<IEvent, Map<IState, IState>> getStateGraph()
 	{

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.wp.data;
@@ -47,19 +47,6 @@ public interface ITrackedBot extends ITrackedObject, IExportable
 	 * @return
 	 */
 	double getAngleByTime(double t);
-
-
-	/**
-	 * @return the ballContact
-	 */
-	boolean hasBallContact();
-
-
-	/**
-	 * @param horizon the time horizon in seconds
-	 * @return true, if the ball had ball contact within given horizon
-	 */
-	boolean hadBallContact(double horizon);
 
 
 	/**
@@ -171,4 +158,9 @@ public interface ITrackedBot extends ITrackedObject, IExportable
 	 * @return the current trajectory, if present
 	 */
 	Optional<ITrajectory<IVector3>> getCurrentTrajectory();
+
+	/**
+	 * @return the current movement status of the robot
+	 */
+	boolean isMalFunctioning();
 }

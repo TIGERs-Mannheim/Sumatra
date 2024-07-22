@@ -85,7 +85,7 @@ public class SkirmishFreeBallCalc extends ACalculator
 		}
 
 		// check if hasContact()
-		if (!attacker.hasBallContact())
+		if (!attacker.getBallContact().hadRecentContact())
 		{
 			info += "ballContact error | ";
 			fail = true;

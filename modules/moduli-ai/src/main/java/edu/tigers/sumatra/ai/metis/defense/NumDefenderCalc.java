@@ -12,7 +12,6 @@ import edu.tigers.sumatra.ai.metis.defense.data.DefensePassDisruptionAssignment;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.SumatraMath;
-import edu.tigers.sumatra.math.vector.IVector2;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -34,8 +33,8 @@ public class NumDefenderCalc extends ACalculator
 	@Configurable(comment = "Minimum number of defenders to keep at all times", defValue = "2")
 	private static int minDefendersAtAllTimes = 2;
 
-	@Configurable(comment = "Minimum number of free bots available if ball responsibility is offense", defValue = "2")
-	private static int minFreeBotsAtBallResponsibilityOffense = 2;
+	@Configurable(comment = "Minimum number of free bots available if ball responsibility is offense", defValue = "3")
+	private static int minFreeBotsAtBallResponsibilityOffense = 3;
 
 	@Configurable(defValue = "1.5")
 	private static double threatsToNumDefenderDivider = 1.5;
@@ -63,7 +62,7 @@ public class NumDefenderCalc extends ACalculator
 		numDefender = Math.max(minDefendersAtAllTimes, numDefender);
 		numDefender = Math.min(nAvailableBots, numDefender);
 
-		// if offense has ball responsibility, but we used all defenders we release one here
+		// if offense has ball responsibility, but we used all supporters as defenders we release one here
 		if (ballResponsibility.get() == EBallResponsibility.OFFENSE)
 		{
 			numDefender = SumatraMath.cap(numDefender, 0, nAvailableBots - minFreeBotsAtBallResponsibilityOffense);
@@ -136,21 +135,15 @@ public class NumDefenderCalc extends ACalculator
 
 	private int nDefenderRunning()
 	{
-		if (isBallSafeAtOurKeeper())
-		{
-			return numDefenderForBall.get();
-		}
-
-		int nThreats = defenseBotThreats.get().size();
+		int nBotThreats = defenseBotThreats.get().size();
+		int nBotThreatDefender = ((int) Math.ceil(nBotThreats / threatsToNumDefenderDivider));
 		int nDisrupt = passDisruptionAssignment.get() != null ? 1 : 0;
-		return ((int) Math.ceil(nThreats / threatsToNumDefenderDivider) + numDefenderForBall.get()) + nDisrupt;
-	}
+		int nBallDefender = numDefenderForBall.get();
 
-
-	private boolean isBallSafeAtOurKeeper()
-	{
-		IVector2 ballStopPos = getBall().getTrajectory().getPosByVel(0.0).getXYVector();
-		var penAreaWithMargin = Geometry.getPenaltyAreaOur().withMargin(-Geometry.getBotRadius());
-		return penAreaWithMargin.isPointInShape(getBall().getPos()) && penAreaWithMargin.isPointInShape(ballStopPos);
+		if (ballResponsibility.get() == EBallResponsibility.KEEPER)
+		{
+			return 2 * nBallDefender;
+		}
+		return nBallDefender + nDisrupt + nBotThreatDefender;
 	}
 }

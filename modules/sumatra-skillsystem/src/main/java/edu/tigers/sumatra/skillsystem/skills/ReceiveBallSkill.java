@@ -22,23 +22,28 @@ public class ReceiveBallSkill extends ABallArrivalSkill
 	@Configurable(defValue = "0.1", comment = "Delay to wait starting from the first barrier interrupted signal")
 	private static double receiveDelay = 0.1;
 
-	@Configurable(defValue = "1.0", comment = "Delay to wait starting from the first barrier interrupted signal")
-	private static double strongDribbelTimeout = 1.0;
-
-	@Configurable(defValue = "OFF")
-	private static EDribblerMode dribblerMode = EDribblerMode.OFF;
+	@Configurable(defValue = "HIGH_POWER")
+	private static EDribblerMode dribblerMode = EDribblerMode.HIGH_POWER;
 
 	@Configurable(defValue = "0", comment = "Distance [mm] between bot and ball when bot should start moving backwards")
 	private static double driveBackwardsDist = 0;
 
+	@Configurable(defValue = "false")
+	private static boolean stopDribbling = false;
+
 	private final TimestampTimer receiveDelayTimer = new TimestampTimer(receiveDelay);
-	private final TimestampTimer strongDribbelTimer = new TimestampTimer(strongDribbelTimeout);
 
 
 	@Override
 	public void doUpdate()
 	{
-		setKickParams(KickParams.disarm().withDribblerMode(dribblerMode));
+		if (stopDribbling && hasReceivedBall())
+		{
+			setKickParams(KickParams.disarm().withDribblerMode(EDribblerMode.OFF));
+		} else
+		{
+			setKickParams(KickParams.disarm().withDribblerMode(dribblerMode));
+		}
 		setDesiredTargetAngle(calcTargetAngle());
 		super.doUpdate();
 		setSkillState(calcSkillState());
@@ -60,25 +65,23 @@ public class ReceiveBallSkill extends ABallArrivalSkill
 
 	private ESkillState calcSkillState()
 	{
-		if (getTBot().getBallContact().isBallContactFromVision()
-				|| getTBot().getBallContact().hadContact(0.1)
-				|| getBall().getPos().distanceTo(getPos()) < Geometry.getBotRadius())
+		if (hasReceivedBall())
 		{
-			if (dribblerMode == EDribblerMode.HIGH_POWER)
+			if (getTBot().getRobotInfo().getDribbleTraction() == EDribbleTractionState.STRONG)
 			{
-				return stateForHighPowerDribble();
+				return ESkillState.SUCCESS;
 			} else
 			{
 				receiveDelayTimer.update(getWorldFrame().getTimestamp());
 				if (receiveDelayTimer.isTimeUp(getWorldFrame().getTimestamp()))
 				{
-					return ESkillState.SUCCESS;
+					return ESkillState.FAILURE;
 				}
 			}
+			return ESkillState.IN_PROGRESS;
 		} else
 		{
 			receiveDelayTimer.reset();
-			strongDribbelTimer.reset();
 			if (!ballIsMoving() || !getBall().getTrajectory().getTravelLine().isPointInFront(getPos()))
 			{
 				return ESkillState.FAILURE;
@@ -88,20 +91,11 @@ public class ReceiveBallSkill extends ABallArrivalSkill
 	}
 
 
-	private ESkillState stateForHighPowerDribble()
+	private boolean hasReceivedBall()
 	{
-		if (getTBot().getRobotInfo().getDribbleTraction() == EDribbleTractionState.STRONG)
-		{
-			return ESkillState.SUCCESS;
-		} else
-		{
-			strongDribbelTimer.update(getWorldFrame().getTimestamp());
-			if (strongDribbelTimer.isTimeUp(getWorldFrame().getTimestamp()))
-			{
-				return ESkillState.FAILURE;
-			}
-		}
-		return ESkillState.IN_PROGRESS;
+		return getTBot().getBallContact().hasContactFromVision()
+				|| getTBot().getBallContact().hadContact(0.1)
+				|| getBall().getPos().distanceTo(getPos()) < Geometry.getBotRadius();
 	}
 
 

@@ -4,11 +4,13 @@
 
 package edu.tigers.sumatra.ai.pandora.plays.test.kick;
 
+import com.github.g3force.configurable.Configurable;
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
 import edu.tigers.sumatra.ai.pandora.plays.EPlay;
 import edu.tigers.sumatra.ai.pandora.plays.standard.ABallPlacementPlay;
 import edu.tigers.sumatra.ai.pandora.roles.ARole;
 import edu.tigers.sumatra.ai.pandora.roles.move.MoveRole;
+import edu.tigers.sumatra.ai.pandora.roles.placement.BallPlacementRole;
 import edu.tigers.sumatra.drawable.DrawableCircle;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.circle.Circle;
@@ -28,8 +30,11 @@ import java.util.Objects;
 
 public abstract class ABallPreparationPlay extends ABallPlacementPlay
 {
+	@Configurable(defValue = "300", comment = "Custom ball placement tolerance [mm]")
+	private static double ballPlacementTolerance = 300;
+
 	private final IdleState idleState = new IdleState();
-	protected final BallPlacementState ballPlacementState = new BallPlacementState();
+	private final BallPlacementState ballPlacementState = new BallPlacementState();
 	protected final IStateMachine<IState> stateMachine = new StateMachine<>(this.getClass().getSimpleName());
 
 	@Setter
@@ -55,6 +60,19 @@ public abstract class ABallPreparationPlay extends ABallPlacementPlay
 	{
 		stateMachine.addTransition(ballPlacementState, EEvent.BALL_PLACED, executionState);
 		stateMachine.addTransition(null, EEvent.EXECUTED, ballPlacementState);
+	}
+
+
+	public void stopExecution()
+	{
+		stateMachine.triggerEvent(EEvent.STOP);
+	}
+
+
+	@Override
+	protected void onNumberOfBotsChanged()
+	{
+		stopExecution();
 	}
 
 
@@ -100,13 +118,15 @@ public abstract class ABallPreparationPlay extends ABallPlacementPlay
 
 		if (stateMachine.getCurrentState() != idleState && !ready())
 		{
-			stateMachine.triggerEvent(EEvent.STOP);
+			stopExecution();
 		}
 		stateMachine.update();
 
 		getShapes(EAiShapesLayer.TEST_BALL_PLACEMENT).add(
 				new DrawableCircle(Circle.createCircle(ballTargetPos, 30)).setColor(Color.cyan)
 		);
+
+		findRoles(BallPlacementRole.class).forEach(r -> r.setPlacementTolerance(ballPlacementTolerance));
 	}
 
 
@@ -137,7 +157,7 @@ public abstract class ABallPreparationPlay extends ABallPlacementPlay
 		@Override
 		public void doUpdate()
 		{
-			findOtherRoles(MoveRole.class).forEach(r -> switchRoles(r, new MoveRole()));
+			findOtherRoles(MoveRole.class).forEach(r -> reassignRole(r, MoveRole.class, MoveRole::new));
 			if (ready())
 			{
 				stateMachine.triggerEvent(EEvent.START);

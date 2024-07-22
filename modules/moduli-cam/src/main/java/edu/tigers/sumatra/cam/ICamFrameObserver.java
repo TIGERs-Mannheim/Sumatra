@@ -5,7 +5,7 @@ package edu.tigers.sumatra.cam;
 
 import edu.tigers.sumatra.cam.data.CamDetectionFrame;
 import edu.tigers.sumatra.cam.data.CamGeometry;
-import edu.tigers.sumatra.cam.proto.MessagesRobocupSslWrapper.SSL_WrapperPacket;
+import edu.tigers.sumatra.cam.proto.SslVisionWrapper.SSL_WrapperPacket;
 
 
 /**

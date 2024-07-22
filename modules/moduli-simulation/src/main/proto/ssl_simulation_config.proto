@@ -3,7 +3,7 @@ option go_package = "github.com/RoboCup-SSL/ssl-simulation-protocol/pkg/sim";
 package edu.tigers.sumatra.simulation;
 
 import "ssl_simulation_common.proto";
-import "messages_robocup_ssl_geometry.proto";
+import "ssl_vision_geometry.proto";
 import "google/protobuf/any.proto";
 
 // Movement limits for a robot

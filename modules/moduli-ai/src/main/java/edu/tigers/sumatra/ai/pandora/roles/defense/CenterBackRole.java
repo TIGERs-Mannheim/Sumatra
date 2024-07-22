@@ -8,6 +8,7 @@ import com.github.g3force.configurable.Configurable;
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
 import edu.tigers.sumatra.ai.metis.defense.data.EDefenseThreatType;
 import edu.tigers.sumatra.ai.pandora.plays.EPlay;
+import edu.tigers.sumatra.ai.pandora.roles.ARole;
 import edu.tigers.sumatra.ai.pandora.roles.ERole;
 import edu.tigers.sumatra.drawable.DrawableCircle;
 import edu.tigers.sumatra.drawable.DrawableLine;
@@ -22,10 +23,12 @@ import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 
 import java.awt.Color;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 
 /**
@@ -43,7 +46,7 @@ public class CenterBackRole extends AOuterDefenseRole
 	@Getter
 	private CoverMode coverMode = null;
 	@Setter
-	private Set<BotID> companions = new HashSet<>();
+	private List<CenterBackRole> companions = new ArrayList<>();
 	@Setter
 	private Set<BotID> closeCompanions = new HashSet<>();
 	@Setter
@@ -73,6 +76,12 @@ public class CenterBackRole extends AOuterDefenseRole
 	}
 
 
+	public double calcDistanceToDestination()
+	{
+		return getDefendDestination().getPos().distanceTo(getPos());
+	}
+
+
 	private boolean isBlockedByOwnBot(final IVector2 idealProtectionDest, final double backOffDistance)
 	{
 		List<ITrackedBot> consideredBots;
@@ -80,14 +89,14 @@ public class CenterBackRole extends AOuterDefenseRole
 		if (threat.getType() == EDefenseThreatType.BALL)
 		{
 			consideredBots = getWFrame().getTigerBotsVisible().values().stream()
-					.filter(b -> !companions.contains(b.getBotId()))
+					.filter(b -> companions.stream().noneMatch(other -> other.getBotID().equals(b.getBotId())))
 					.filter(b -> !getTacticalField().getDesiredBotMap().get(EPlay.SUPPORT).contains(b.getBotId()))
 					.filter(b -> !getTacticalField().getDesiredBotMap().get(EPlay.DEFENSIVE).contains(b.getBotId()))
 					.toList();
 		} else
 		{
 			consideredBots = getWFrame().getTigerBotsVisible().values().stream()
-					.filter(b -> !companions.contains(b.getBotId()))
+					.filter(b -> companions.stream().noneMatch(other -> other.getBotID().equals(b.getBotId())))
 					.filter(b -> !getTacticalField().getDesiredBotMap().get(EPlay.SUPPORT).contains(b.getBotId()))
 					.toList();
 		}
@@ -124,18 +133,20 @@ public class CenterBackRole extends AOuterDefenseRole
 
 		return idealDest;
 	}
-
-
 	@Override
-	protected IVector2 findDest()
+	protected Destination findDest()
 	{
 		final IVector2 idealProtectionDest = idealProtectionDest(idealProtectionPoint);
 		final double backOffDistance = Geometry.getBotRadius() * 3;
+		if (isGoalShotDetected(idealProtectionDest) && threat.getObjectId().isBall())
+		{
+			return interceptGoalShot();
+		}
 		if (isBlockedByOwnBot(idealProtectionDest, backOffDistance))
 		{
-			return makeRoomForAttacker(backOffDistance);
+			return new Destination(makeRoomForAttacker(backOffDistance), null);
 		}
-		return adaptToThreat(idealProtectionDest);
+		return new Destination(adaptToThreat(idealProtectionDest), null);
 	}
 
 
@@ -153,14 +164,21 @@ public class CenterBackRole extends AOuterDefenseRole
 
 
 	@Override
-	protected Set<BotID> ignoredBots(IVector2 dest)
+	protected Set<BotID> ignoredBots()
 	{
 		if (closeCompanions.contains(getBotID()))
 		{
-			return companions.stream()
-					.filter(id -> !id.equals(getBotID()))
-					.filter(closeCompanions::contains)
-					.filter(this::botIsMoving)
+			return Stream.concat(
+							companions.stream()
+									.map(ARole::getBotID)
+									.filter(botID -> !botID.equals(getBotID()))
+									.filter(botID -> !closeCompanions.contains(botID)),
+							companions.stream()
+									.filter(bot -> !bot.getBotID().equals(getBotID()))
+									.filter(bot -> closeCompanions.contains(bot.getBotID()))
+									.filter(this::botIsMoving)
+									.map(ARole::getBotID)
+					)
 					.collect(Collectors.toUnmodifiableSet());
 		} else
 		{
@@ -169,9 +187,9 @@ public class CenterBackRole extends AOuterDefenseRole
 	}
 
 
-	private boolean botIsMoving(final BotID id)
+	private boolean botIsMoving(CenterBackRole role)
 	{
-		return getWFrame().getBot(id).getVel().getLength2() > 0.5;
+		return role.getBot().getVel().getLength2() > 0.5 || role.calcDistanceToDestination() > Geometry.getBotRadius();
 	}
 
 
@@ -221,7 +239,13 @@ public class CenterBackRole extends AOuterDefenseRole
 		@Override
 		protected void onUpdate()
 		{
-			skill.getMoveCon().setBallObstacle(isNotBetweenBallAndGoal());
+			if (isNotBetweenBallAndGoal())
+			{
+				skill.getMoveCon().setCustomObstacles(offensePassObstacles());
+			} else
+			{
+				skill.getMoveCon().setCustomObstacles(List.of());
+			}
 
 			IVector2 finalDest = findRushBackDest();
 

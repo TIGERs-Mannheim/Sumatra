@@ -93,11 +93,17 @@ public class OffensivePlay extends APlay
 
 	private Optional<Pass> findPassForReceiver(BotID botID)
 	{
+		Pass keeperPass = getAiFrame().getTacticalField().getKeeperPass();
+		if (keeperPass != null)
+		{
+			return Optional.of(keeperPass);
+		}
 		return getAiFrame().getTacticalField().getOffensiveActions().values().stream()
 				.map(e -> e.getAction().getPass())
 				.filter(Objects::nonNull)
 				.filter(pass -> pass.getReceiver().equals(botID))
-				.findAny();
+				.findFirst();
+
 	}
 
 

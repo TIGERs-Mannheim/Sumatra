@@ -63,6 +63,7 @@ public class AiRecordManager extends RecordManager
 	protected void startRecording()
 	{
 		super.startRecording();
+		gameLogRecorder.setMatchInfo(matchType, matchStage, teamYellow, teamBlue);
 		gameLogRecorder.setRecording(true);
 	}
 

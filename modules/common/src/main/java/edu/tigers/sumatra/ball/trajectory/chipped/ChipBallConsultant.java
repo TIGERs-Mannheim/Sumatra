@@ -204,4 +204,22 @@ public class ChipBallConsultant implements IChipBallConsultant
 		return ChipBallTrajectory.fromKick(params, Vector2f.ZERO_VECTOR, kickVel, Vector2f.ZERO_VECTOR)
 				.getVelByTime(travelTime).getLength2();
 	}
+
+
+	@Override
+	public double getDistanceByTargetVel(double kickSpeed, double targetBallSpeed)
+	{
+		IVector2 xyVect = absoluteKickVelToVector(kickSpeed * 1000);
+		IVector3 kickVel = Vector3.fromXYZ(0, xyVect.x(), xyVect.y());
+		var chipTraj = ChipBallTrajectory.fromKick(params, Vector2f.ZERO_VECTOR, kickVel, Vector2f.ZERO_VECTOR);
+		double time = chipTraj.getTimeByVel(targetBallSpeed);
+		return chipTraj.getDistByTime(time);
+	}
+	@Override
+	public ChipBallTrajectory getChipTrajectory(double kickSpeed)
+	{
+		IVector2 xyVect = absoluteKickVelToVector(kickSpeed * 1000);
+		IVector3 kickVel = Vector3.fromXYZ(0, xyVect.x(), xyVect.y());
+		return ChipBallTrajectory.fromKick(params, Vector2f.ZERO_VECTOR, kickVel, Vector2f.ZERO_VECTOR);
+	}
 }

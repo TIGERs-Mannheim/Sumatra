@@ -23,15 +23,15 @@ import edu.tigers.sumatra.time.TimestampTimer;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang.Validate;
 
 import java.awt.Color;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -53,6 +53,9 @@ public class DefensePenAreaTargetGroupAssignerCalc extends ACalculator
 	@Configurable(defValue = "1000.0", comment = "[mm] ")
 	private static double defenderClassDifferentiationDistance = 1000.0;
 
+	@Configurable(defValue = "1000.0", comment = "[mm] ")
+	private static double preferredDefenderBonus = 1000.0;
+
 	private final Supplier<Set<BotID>> penAreaDefenders;
 	private final Supplier<List<DefensePenAreaTargetGroup>> targetGroups;
 	private final Supplier<IShapeBoundary> penAreaBoundary;
@@ -62,90 +65,57 @@ public class DefensePenAreaTargetGroupAssignerCalc extends ACalculator
 
 
 	private Map<BotID, TimestampTimer> isBotNewFirstClass = new HashMap<>();
+	private Set<BotID> usedRobots = new HashSet<>();
+	private List<ITrackedBot> allDefenders = new ArrayList<>();
 
 
 	@Override
 	protected void doCalc()
 	{
+		usedRobots = new HashSet<>();
+		allDefenders = sortedDefenders(penAreaDefenders.get().stream().map(botID -> getWFrame().getBot(botID)).toList());
+
+
 		var firstClassDefender = sortedDefenders(getFirstClassDefender());
-		var ballTargetGroup = targetGroups.get().stream()
-				.filter(this::isBallTargetGroup)
-				.findAny();
-		List<DefensePenAreaPositionAssignment> ballTargetAssignment;
-		List<ITrackedBot> ballDefender;
-		if (ballTargetGroup.isPresent())
-		{
-			ballDefender = sortedDefenders(getBallDefenders(ballTargetGroup.get(), firstClassDefender));
-			ballTargetAssignment = getDefensePenAreaPositionAssignments(ballTargetGroup.stream().toList(), ballDefender,
-					EDefensePenAreaPositionAssignmentClass.BALL);
-			firstClassDefender = firstClassDefender.stream().filter(first -> !ballDefender.contains(first)).toList();
-		} else
-		{
-			ballDefender = List.of();
-			ballTargetAssignment = List.of();
-		}
+
+		var ballTargetGroups = sortedTargetGroups(getBallTargetGroups());
+		var ballTargetAssignments = getDefensePenAreaPositionAssignments(ballTargetGroups, firstClassDefender,
+				EDefensePenAreaPositionAssignmentClass.BALL);
 
 
 		var firstClassTargetGroups = sortedTargetGroups(getFirstClassTargetGroups(firstClassDefender));
 		var firstClassAssignments = getDefensePenAreaPositionAssignments(firstClassTargetGroups, firstClassDefender,
 				EDefensePenAreaPositionAssignmentClass.FIRST_CLASS);
 
-		var secondClassDefender = sortedDefenders(getSecondClassDefender(firstClassAssignments, ballDefender));
 		var secondClassTargetGroups = sortedTargetGroups(getSecondClassTargetGroups(firstClassTargetGroups));
-		var secondClassAssignments = getDefensePenAreaPositionAssignments(secondClassTargetGroups, secondClassDefender,
+		var secondClassAssignments = getDefensePenAreaPositionAssignments(secondClassTargetGroups, List.of(),
 				EDefensePenAreaPositionAssignmentClass.SECOND_CLASS);
 
-		penAreaPositionAssignments = Stream.of(ballTargetAssignment.stream(), firstClassAssignments.stream(),
+		penAreaPositionAssignments = Stream.of(ballTargetAssignments.stream(), firstClassAssignments.stream(),
 						secondClassAssignments.stream())
 				.reduce(Stream::concat).orElseGet(Stream::empty)
 				.toList();
 	}
 
 
-	private List<ITrackedBot> getBallDefenders(DefensePenAreaTargetGroup ballTargetGroup,
-			List<ITrackedBot> firstClassDefenders)
+	private List<DefensePenAreaTargetGroup> getBallTargetGroups()
 	{
-		var amountNeeded = ballTargetGroup.moveDestinations().size();
-		if (firstClassDefenders.size() <= amountNeeded)
-		{
-			var result = new ArrayList<>(firstClassDefenders);
-			if (result.size() < amountNeeded)
-			{
-				penAreaDefenders.get().stream()
-						.map(def -> getWFrame().getBot(def))
-						.filter(def -> !result.contains(def))
-						.sorted(Comparator.comparingDouble(def -> getDistanceToTarget(def, ballTargetGroup.centerDest())))
-						.limit((long) amountNeeded - result.size())
-						.forEach(result::add);
-			}
-			return Collections.unmodifiableList(result);
-		}
-
-		return firstClassDefenders.stream()
-				.sorted(Comparator.comparingDouble(def -> getDistanceToTarget(def, ballTargetGroup.centerDest())))
-				.limit(amountNeeded)
+		return targetGroups.get().stream()
+				.filter(this::isBallTargetGroup)
 				.toList();
-	}
-
-
-	private double getDistanceToTarget(ITrackedBot defender, IVector2 target)
-	{
-		var defenderProjected = penAreaBoundary.get().closestPoint(defender.getPos());
-		var targetProjected = penAreaBoundary.get().closestPoint(target);
-		return penAreaBoundary.get().distanceBetween(defenderProjected, targetProjected);
 	}
 
 
 	private List<DefensePenAreaPositionAssignment> getDefensePenAreaPositionAssignments(
 			List<DefensePenAreaTargetGroup> targetGroups,
-			List<ITrackedBot> defenders,
+			List<ITrackedBot> preferredDefenders,
 			EDefensePenAreaPositionAssignmentClass defenderClass)
 	{
 		var targetGroupsSorted = sortedTargetGroups(targetGroups);
-		var penAreaTargetGroupAssignments = assignTargetGroups(targetGroupsSorted, defenders);
+		var penAreaTargetGroupAssignments = assignTargetGroups(targetGroupsSorted, preferredDefenders, defenderClass);
 
 		return penAreaTargetGroupAssignments.stream()
-				.map(groupAss -> assignTargetGroupToRole(groupAss, targetGroupsSorted, penAreaTargetGroupAssignments,
+				.map(groupAss -> assignTargetGroupToRole(groupAss, penAreaTargetGroupAssignments,
 						defenderClass))
 				.toList();
 	}
@@ -153,28 +123,13 @@ public class DefensePenAreaTargetGroupAssignerCalc extends ACalculator
 
 	private List<ITrackedBot> getFirstClassDefender()
 	{
-		var firstClassDefender = penAreaDefenders.get().stream()
-				.map(botID -> getWFrame().getBot(botID))
+		var firstClassDefender = allDefenders.stream()
 				.filter(bot -> Geometry.getPenaltyAreaOur().withMargin(defenderClassDifferentiationDistance)
 						.isPointInShape(bot.getPos()))
 				.toList();
 		var botIDs = firstClassDefender.stream().map(ITrackedBot::getBotId).collect(Collectors.toUnmodifiableSet());
 		isBotNewFirstClass.entrySet().removeIf(entry -> !botIDs.contains(entry.getKey()));
 		return firstClassDefender;
-	}
-
-
-	private List<ITrackedBot> getSecondClassDefender(List<DefensePenAreaPositionAssignment> firstClass,
-			List<ITrackedBot> ballDefenders)
-	{
-		var usedDefenders = Stream.concat(
-				ballDefenders.stream().map(ITrackedBot::getBotId),
-				firstClass.stream().map(DefensePenAreaPositionAssignment::botID)
-		).collect(Collectors.toUnmodifiableSet());
-		return penAreaDefenders.get().stream()
-				.filter(botID -> !usedDefenders.contains(botID))
-				.map(botID -> getWFrame().getBot(botID))
-				.toList();
 	}
 
 
@@ -247,16 +202,28 @@ public class DefensePenAreaTargetGroupAssignerCalc extends ACalculator
 
 
 	private List<TargetGroupAssignment> assignTargetGroups(
-			final List<DefensePenAreaTargetGroup> allTargetsSorted,
-			final List<ITrackedBot> defenders)
+			List<DefensePenAreaTargetGroup> allTargetsSorted,
+			List<ITrackedBot> preferredDefenders,
+			EDefensePenAreaPositionAssignmentClass defenderClass)
 	{
-		List<TargetGroupAssignment> targetGroupAssignments = new ArrayList<>();
-		var count = 0;
+		var targetGroupAssignments = new ArrayList<TargetGroupAssignment>();
 		for (var targetGroup : allTargetsSorted)
 		{
-			for (IVector2 moveDest : targetGroup.moveDestinations())
+			List<ITrackedBot> defenders;
+			if (defenderClass == EDefensePenAreaPositionAssignmentClass.BALL)
 			{
-				var defender = defenders.get(count++);
+				defenders = sortedDefenders(getBestDefendersConsideringDistance(preferredDefenders, targetGroup));
+			} else
+			{
+				defenders = sortedDefenders(getBestDefenders(preferredDefenders, targetGroup));
+			}
+			Validate.isTrue(defenders.size() == targetGroup.moveDestinations().size());
+			for (int i = 0; i < defenders.size(); ++i)
+			{
+				var moveDest = targetGroup.moveDestinations().get(i);
+				var adaptedMoveDest = targetGroup.velAdaptedMoveDestinations().get(i);
+				var defender = defenders.get(i);
+
 				var newTimer = isBotNewFirstClass.computeIfAbsent(defender.getBotId(),
 						ignored -> new TimestampTimer(firstClassNewTime));
 				newTimer.update(getWFrame().getTimestamp());
@@ -266,51 +233,91 @@ public class DefensePenAreaTargetGroupAssignerCalc extends ACalculator
 				var isProtected = Lines.segmentFromPoints(targetGroup.centerDest(), moveDest).distanceTo(defender.getPos())
 						< Geometry.getBotRadius() * 2 + currentInterchangeDist;
 
-				targetGroupAssignments.add(new TargetGroupAssignment(targetGroup, defender, moveDest, isProtected));
+				targetGroupAssignments.add(
+						new TargetGroupAssignment(targetGroup, defender, moveDest, adaptedMoveDest, isProtected));
 			}
 		}
 		return targetGroupAssignments;
 	}
 
 
-	/**
-	 * Assign a role to a target group
-	 *
-	 * @param targetGroupAssignment
-	 * @param allTargetsSorted
-	 * @param targetGroupAssignments
-	 */
+	private List<ITrackedBot> getBestDefendersConsideringDistance(
+			List<ITrackedBot> preferredDefenders,
+			DefensePenAreaTargetGroup targetGroup
+	)
+	{
+		var numWanted = targetGroup.moveDestinations().size();
+		var destination = targetGroup.centerDest();
+		var defendersSortedAndLimited = allDefenders.stream()
+				.filter(def -> !usedRobots.contains(def.getBotId()))
+				.sorted(Comparator.comparingDouble(def -> getConsideredDistance(def, preferredDefenders, destination)))
+				.limit(numWanted)
+				.toList();
+		usedRobots.addAll(defendersSortedAndLimited.stream().map(ITrackedBot::getBotId).toList());
+		return defendersSortedAndLimited;
+	}
+
+
+	private double getConsideredDistance(ITrackedBot defender, List<ITrackedBot> preferredDefenders,
+			IVector2 destination)
+	{
+		if (preferredDefenders.contains(defender))
+		{
+			return defender.getPos().distanceTo(destination) - preferredDefenderBonus;
+		} else
+		{
+			return defender.getPos().distanceTo(destination);
+		}
+	}
+
+
+	private List<ITrackedBot> getBestDefenders(
+			List<ITrackedBot> preferredDefenders,
+			DefensePenAreaTargetGroup targetGroup
+	)
+	{
+		var numWanted = targetGroup.moveDestinations().size();
+		var preferredLimited = preferredDefenders.stream()
+				.filter(def -> !usedRobots.contains(def.getBotId()))
+				.limit(numWanted)
+				.toList();
+		usedRobots.addAll(preferredLimited.stream().map(ITrackedBot::getBotId).toList());
+		if (preferredLimited.size() == numWanted)
+		{
+			return preferredLimited;
+		}
+		var numRemaining = numWanted - preferredLimited.size();
+		var defendersLimited = Stream.concat(
+				preferredLimited.stream(),
+				allDefenders.stream()
+						.filter(def -> !usedRobots.contains(def.getBotId()))
+						.limit(numRemaining)
+		).toList();
+		usedRobots.addAll(defendersLimited.stream().map(ITrackedBot::getBotId).toList());
+		return defendersLimited;
+	}
+
+
 	private DefensePenAreaPositionAssignment assignTargetGroupToRole(
 			final TargetGroupAssignment targetGroupAssignment,
-			final List<DefensePenAreaTargetGroup> allTargetsSorted,
 			final List<TargetGroupAssignment> targetGroupAssignments,
 			EDefensePenAreaPositionAssignmentClass defenderClass
 	)
 	{
 		var defender = targetGroupAssignment.defender;
-		final IVector2 moveDest = targetGroupAssignment.moveDest;
 		IVector2 finalMoveDest;
-		Optional<DefensePenAreaTargetGroup> otherProtectedTargetGroup = otherProtectedTargetGroup(allTargetsSorted,
-				targetGroupAssignment, defender);
-		if (otherProtectedTargetGroup.isPresent())
-		{
-			// the role is currently still protecting a more important threat in another target group
-			final IVector2 centerDest = otherProtectedTargetGroup.get().centerDest();
-			getShapes().add(new DrawableLine(defender.getPos(), centerDest, Color.RED));
-			finalMoveDest = centerDest;
-		} else if (isTargetProtected(targetGroupAssignments, targetGroupAssignment))
+		if (isTargetProtected(targetGroupAssignments, targetGroupAssignment))
 		{
 			// apply the desired move destination
-			finalMoveDest = moveDest;
+			finalMoveDest = targetGroupAssignment.velAdaptedMoveDest;
 		} else
 		{
 			// Stay on centerDest until second bot is near its destination
-			// See issue #1874
 			final IVector2 centerDest = targetGroupAssignment.targetGroup.centerDest();
 			getShapes().add(new DrawableLine(defender.getPos(), centerDest, Color.RED));
-			finalMoveDest = moveDest;
+			finalMoveDest = targetGroupAssignment.targetGroup.velAdaptedCenterDest();
 		}
-		getShapes().add(new DrawableLine(defender.getPos(), moveDest, Color.PINK));
+		getShapes().add(new DrawableLine(defender.getPos(), targetGroupAssignment.moveDest, Color.PINK));
 		getShapes().add(new DrawableAnnotation(defender.getPos(), defenderClass.toString()).withOffsetX(100));
 		return new DefensePenAreaPositionAssignment(
 				defender.getBotId(),
@@ -318,40 +325,6 @@ public class DefensePenAreaTargetGroupAssignerCalc extends ACalculator
 				targetGroupAssignment.targetGroup.threats(),
 				defenderClass
 		);
-	}
-
-
-	/**
-	 * check if this role is currently protecting a threat in another target group
-	 *
-	 * @param allTargetsSorted
-	 * @param targetGroupAssignment
-	 * @param defender
-	 * @return
-	 */
-	private Optional<DefensePenAreaTargetGroup> otherProtectedTargetGroup(
-			final List<DefensePenAreaTargetGroup> allTargetsSorted,
-			final TargetGroupAssignment targetGroupAssignment,
-			final ITrackedBot defender)
-	{
-		return allTargetsSorted.stream()
-				// not the one that is processed
-				.filter(targetGroup -> targetGroup != targetGroupAssignment.targetGroup)
-				// only those that are protected by the currently processed role
-				.filter(targetGroup -> targetGroup.isProtectedByPos(defender.getPos(), interchangeDist))
-				// only those that are more important than the one currently processed
-				.filter(targetGroup -> currentTargetIsMoreImportant(targetGroup, targetGroupAssignment.targetGroup))
-				// only those that are not already protected by their own role
-				.filter(targetGroup -> !targetGroup.isProtectedByPos(defender.getPos(), interchangeDist))
-				// one is enough, more is unlikely or impossible
-				.findFirst();
-	}
-
-
-	private boolean currentTargetIsMoreImportant(final DefensePenAreaTargetGroup currentTarget,
-			final DefensePenAreaTargetGroup nextTargetGroup)
-	{
-		return currentTarget.priority() < nextTargetGroup.priority();
 	}
 
 
@@ -381,8 +354,12 @@ public class DefensePenAreaTargetGroupAssignerCalc extends ACalculator
 	}
 
 
-	private record TargetGroupAssignment(DefensePenAreaTargetGroup targetGroup, ITrackedBot defender,
-	                                     IVector2 moveDest, boolean protectedByAssignedBot)
+	private record TargetGroupAssignment(
+			DefensePenAreaTargetGroup targetGroup,
+			ITrackedBot defender,
+			IVector2 moveDest,
+			IVector2 velAdaptedMoveDest,
+			boolean protectedByAssignedBot)
 	{
 	}
 

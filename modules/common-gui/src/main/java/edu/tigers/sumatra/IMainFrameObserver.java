@@ -13,50 +13,44 @@ import javax.swing.UIManager.LookAndFeelInfo;
 
 /**
  * MainFrame observer
- * 
+ *
  * @author AndreR
  */
 public interface IMainFrameObserver
 {
-	
+
 	/**
- *
- */
+	 *
+	 */
 	void onSaveLayout();
-	
-	
+
+
 	/**
- *
- */
+	 *
+	 */
 	void onDeleteLayout();
-	
-	
+
+
 	/**
- *
- */
+	 *
+	 */
 	void onExit();
-	
-	
+
+
 	/**
-	 * 
+	 *
 	 */
 	default void onAbout()
 	{
 	}
-	
-	
+
+
 	/**
 	 * @param filename
 	 */
 	void onLoadLayout(String filename);
-	
-	
-	/**
- *
- */
-	void onRefreshLayoutItems();
-	
-	
+
+
 	/**
 	 * @param info
 	 */

@@ -16,7 +16,6 @@ import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.penaltyarea.IPenaltyArea;
 import lombok.RequiredArgsConstructor;
 
-import java.util.Map;
 import java.util.Optional;
 import java.util.function.Supplier;
 
@@ -33,7 +32,7 @@ public class GoalKickActionMove extends AOffensiveActionMove
 	@Configurable(defValue = "0.1")
 	private static double minGoalChanceForPartiallyViability = 0.1;
 
-	private final Supplier<Map<BotID, GoalKick>> bestGoalKickPerBot;
+	private final Supplier<GoalKick> bestGoalKick;
 
 
 	private OffensiveActionViability calcViability(GoalKick goalKick, BotID botId)
@@ -72,7 +71,7 @@ public class GoalKickActionMove extends AOffensiveActionMove
 	@Override
 	public Optional<RatedOffensiveAction> calcAction(BotID botId)
 	{
-		var goalKick = bestGoalKickPerBot.get().get(botId);
+		var goalKick = bestGoalKick.get();
 		if (goalKick == null)
 		{
 			return Optional.empty();

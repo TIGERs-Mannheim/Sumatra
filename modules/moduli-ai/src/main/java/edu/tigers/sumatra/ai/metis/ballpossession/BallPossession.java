@@ -18,6 +18,7 @@ import lombok.Value;
 public class BallPossession
 {
 	EBallPossession eBallPossession;
+	EBallControl opponentBallControl;
 	BotID tigersId;
 	BotID opponentsId;
 
@@ -27,5 +28,6 @@ public class BallPossession
 		eBallPossession = EBallPossession.NO_ONE;
 		tigersId = BotID.noBot();
 		opponentsId = BotID.noBot();
+		opponentBallControl = EBallControl.NONE;
 	}
 }

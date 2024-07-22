@@ -58,6 +58,7 @@
             <source>CI</source>
             <gameController>true</gameController>
             <gc-ui-port>12000</gc-ui-port>
+            <useSystemBinary>false</useSystemBinary>
         </properties>
     </module>
 
@@ -100,9 +101,6 @@
         <dependency>edu.tigers.sumatra.timer.ATimer</dependency>
         <dependency>edu.tigers.sumatra.statistics.StatisticsSaver</dependency>
     </module>
-
-
-    <module id="edu.tigers.sumatra.trees.OffensiveTreeProvider"/>
 
 
     <module id="edu.tigers.sumatra.statistics.StatisticsSaver">

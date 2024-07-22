@@ -47,7 +47,7 @@ public class BerkeleySizeAnalyzer implements AutoCloseable
 
 		Mutations mutations = new Mutations();
 		mutations.addDeleter(new Deleter(
-				"edu.tigers.sumatra.ai.metis.offense.ballinterception.BallInterceptionInformation",
+				"edu.tigers.sumatra.ai.metis.ballinterception.BallInterceptionInformation",
 				2,
 				"interceptionTargetTimeFallback"
 		));

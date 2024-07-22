@@ -6,6 +6,7 @@ package edu.tigers.sumatra.vision.data;
 
 import edu.tigers.sumatra.cam.data.CamBall;
 import edu.tigers.sumatra.ids.BotID;
+import edu.tigers.sumatra.math.pose.Pose;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.IVector3;
 import edu.tigers.sumatra.math.vector.Vector2f;
@@ -35,6 +36,10 @@ public class VirtualBall
 	 */
 	BotID observingBot;
 	/**
+	 * Where was the reporting bot.
+	 */
+	Pose observingBotPose;
+	/**
 	 * Is this a ball reported from barrier contact?
 	 */
 	boolean fromBarrier;
@@ -43,6 +48,6 @@ public class VirtualBall
 	public CamBall toCamBall(final int camId, final long frameId)
 	{
 		return new CamBall(0, 0, position, Vector2f.ZERO_VECTOR,
-				timestamp, camId, frameId);
+				timestamp, timestamp, timestamp, camId, frameId);
 	}
 }

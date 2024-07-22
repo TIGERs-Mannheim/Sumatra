@@ -106,4 +106,11 @@ public class BotCrashDrawn extends AGameEvent
 				"Bots %d YELLOW and %d BLUE crashed into each other with %.2f m/s @ %s (Δv: %.2f m/s, angle: %.0f°)",
 				botY, botB, crashSpeed, formatVector(location), speedDiff, AngleMath.rad2deg(crashAngle));
 	}
+
+
+	@Override
+	public ETeamColor getTeam()
+	{
+		return ETeamColor.NEUTRAL;
+	}
 }

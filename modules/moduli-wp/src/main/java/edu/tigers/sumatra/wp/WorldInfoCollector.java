@@ -16,7 +16,12 @@ import edu.tigers.sumatra.cam.ACam;
 import edu.tigers.sumatra.cam.ICamFrameObserver;
 import edu.tigers.sumatra.cam.data.CamBall;
 import edu.tigers.sumatra.cam.data.CamDetectionFrame;
+import edu.tigers.sumatra.cam.data.CamObjectFilterParams;
 import edu.tigers.sumatra.data.TimestampBasedBuffer;
+import edu.tigers.sumatra.drawable.DrawableBorderText;
+import edu.tigers.sumatra.drawable.DrawableRectangle;
+import edu.tigers.sumatra.drawable.EFontSize;
+import edu.tigers.sumatra.drawable.IDrawableShape;
 import edu.tigers.sumatra.drawable.ShapeMap;
 import edu.tigers.sumatra.drawable.ShapeMapSource;
 import edu.tigers.sumatra.geometry.Geometry;
@@ -40,13 +45,12 @@ import edu.tigers.sumatra.vision.IVisionFilterObserver;
 import edu.tigers.sumatra.vision.data.FilteredVisionBall;
 import edu.tigers.sumatra.vision.data.FilteredVisionBot;
 import edu.tigers.sumatra.vision.data.FilteredVisionFrame;
-import edu.tigers.sumatra.vision.data.IKickEvent;
-import edu.tigers.sumatra.vision.data.KickEvent;
+import edu.tigers.sumatra.vision.data.FilteredVisionKick;
 import edu.tigers.sumatra.wp.data.BallContact;
-import edu.tigers.sumatra.wp.data.BallKickFitState;
 import edu.tigers.sumatra.wp.data.ExtendedCamDetectionFrame;
 import edu.tigers.sumatra.wp.data.ITrackedBall;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
+import edu.tigers.sumatra.wp.data.KickedBall;
 import edu.tigers.sumatra.wp.data.SimpleWorldFrame;
 import edu.tigers.sumatra.wp.data.TrackedBall;
 import edu.tigers.sumatra.wp.data.TrackedBot;
@@ -56,8 +60,11 @@ import edu.tigers.sumatra.wp.util.CurrentBallDetector;
 import edu.tigers.sumatra.wp.util.DefaultRobotInfoProvider;
 import edu.tigers.sumatra.wp.util.GameStateCalculator;
 import edu.tigers.sumatra.wp.util.IRobotInfoProvider;
+import edu.tigers.sumatra.wp.util.MalFunctioningBotCalculator;
+import edu.tigers.sumatra.wp.vis.EWpShapesLayer;
 import lombok.extern.log4j.Log4j2;
 
+import java.awt.Color;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.HashMap;
@@ -94,6 +101,12 @@ public class WorldInfoCollector extends AWorldPredictor
 	)
 	private static boolean preferRobotFeedback = true;
 
+	@Configurable(
+			comment = "Use mal functioning check to filter available bots",
+			defValue = "true"
+	)
+	private static boolean checkMalFunction = true;
+
 	static
 	{
 		ConfigRegistration.registerClass("wp", WorldInfoCollector.class);
@@ -114,12 +127,14 @@ public class WorldInfoCollector extends AWorldPredictor
 	private final TimestampBasedBuffer<ITrackedBall> ballBuffer = new TimestampBasedBuffer<>(0.3);
 	private final GameStateCalculator gameStateCalculator = new GameStateCalculator();
 	private final WorldFrameVisualization worldFrameVisualization = new WorldFrameVisualization();
+	private final MalFunctioningBotCalculator malFunctioningBotCalculator = new MalFunctioningBotCalculator();
 	private final BallContactCalculator ballContactCalculator = new BallContactCalculator();
 	private final CurrentBallDetector currentBallDetector = new CurrentBallDetector();
 	private final CamFrameShapeMapProducer camFrameShapeMapProducer = new CamFrameShapeMapProducer();
 	private AVisionFilter visionFilter;
 	private IRobotInfoProvider robotInfoProvider = new DefaultRobotInfoProvider();
 	private Referee referee;
+	private ACam cam;
 	private CiGameControllerConnector ciGameControllerConnector;
 	private long lastWFTimestamp;
 	private RefereeMsg latestRefereeMsg;
@@ -182,7 +197,8 @@ public class WorldInfoCollector extends AWorldPredictor
 			RobotInfo robotInfo,
 			BotState filterState,
 			BotState internalState,
-			FilteredVisionBot filteredVisionBot)
+			FilteredVisionBot filteredVisionBot,
+			Map<BotID, BotState> botStates)
 	{
 		if (filterState == null && internalState == null)
 		{
@@ -191,6 +207,8 @@ public class WorldInfoCollector extends AWorldPredictor
 		var currentBotState = selectRobotState(filterState, internalState);
 		var visionBotState = Optional.ofNullable(filterState).orElse(internalState);
 
+		boolean malFunctioning = checkMalFunction &&
+				malFunctioningBotCalculator.isMalFunctioning(robotInfo, visionBotState.getPose(), botStates);
 		return TrackedBot.newBuilder()
 				.withBotId(robotInfo.getBotId())
 				.withTimestamp(lastWFTimestamp)
@@ -199,6 +217,7 @@ public class WorldInfoCollector extends AWorldPredictor
 				.withBotInfo(robotInfo)
 				.withLastBallContact(getLastBallContact(robotInfo, visionBotState.getPose()))
 				.withQuality(filteredVisionBot != null ? filteredVisionBot.getQuality() : 0)
+				.withMalFunctioning(malFunctioning)
 				.build();
 	}
 
@@ -214,7 +233,8 @@ public class WorldInfoCollector extends AWorldPredictor
 		Map<BotID, ITrackedBot> trackedBots = robotInfo.stream()
 				.map(r -> createTrackedBot(r, filteredBotStates.get(r.getBotId()),
 						internalBotStates.get(r.getBotId()),
-						filteredVisionBotMap.get(r.getBotId())))
+						filteredVisionBotMap.get(r.getBotId()),
+						filteredBotStates))
 				.filter(Objects::nonNull)
 				.collect(Collectors.toMap(ITrackedBot::getBotId, Function.identity()));
 		return new HashMap<>(trackedBots);
@@ -234,25 +254,6 @@ public class WorldInfoCollector extends AWorldPredictor
 	}
 
 
-	private IKickEvent getKickEvent(final FilteredVisionFrame filteredVisionFrame)
-	{
-		if (filteredVisionFrame.getKick().isEmpty())
-		{
-			return null;
-		}
-
-		var kick = filteredVisionFrame.getKick().orElseThrow();
-
-		return KickEvent.builder()
-				.kickingBot(kick.getKickingBot())
-				.kickingBotPosition(kick.getKickingBotPosition())
-				.position(kick.getBallTrajectory().getInitialPos().getXYVector())
-				.botDirection(kick.getKickingBotOrientation())
-				.timestamp(kick.getKickTimestamp())
-				.build();
-	}
-
-
 	private void visualize(final WorldFrameWrapper wfw)
 	{
 		ShapeMap wfShapeMap = new ShapeMap();
@@ -260,20 +261,45 @@ public class WorldInfoCollector extends AWorldPredictor
 		notifyNewShapeMap(lastWFTimestamp, wfShapeMap, WP_SHAPE_MAP_SOURCE);
 
 		ShapeMap visionShapeMap = camFrameShapeMapProducer.createShapeMap();
+		addCamObjectFilterShapes(visionShapeMap);
 		notifyNewShapeMap(lastWFTimestamp, visionShapeMap, VISION_SHAPE_MAP_SOURCE);
 	}
 
 
-	private BallKickFitState getKickFitState(final FilteredVisionFrame filteredVisionFrame)
+	private void addCamObjectFilterShapes(ShapeMap shapeMap)
 	{
-		if (filteredVisionFrame.getKick().isEmpty())
+		if (cam == null)
 		{
-			return null;
+			return;
 		}
+		cam.getParams()
+				.ifPresent(p -> shapeMap.get(EWpShapesLayer.CAM_OBJECT_FILTER).addAll(createCamObjectFilterShapes(p)));
+	}
 
-		var kick = filteredVisionFrame.getKick().orElseThrow();
-		return new BallKickFitState(kick.getBallTrajectory().getInitialPos().getXYVector(),
-				kick.getBallTrajectory().getInitialVel(), kick.getTrajectoryStartTime());
+
+	private List<IDrawableShape> createCamObjectFilterShapes(CamObjectFilterParams p)
+	{
+		var rectangle = new DrawableRectangle(p.exclusionRectangle(), Color.red);
+		if (p.excludedCamIds().isEmpty())
+		{
+			return List.of(rectangle);
+		}
+		var camIdStrings = p.excludedCamIds().stream().map(Object::toString).sorted().toList();
+		var cams = new DrawableBorderText(Vector2.fromXY(1, 8), "Excluded cams: " + String.join(", ", camIdStrings))
+				.setFontSize(EFontSize.LARGE).setColor(Color.RED);
+		return List.of(rectangle, cams);
+	}
+
+
+	private KickedBall getKickedBall(FilteredVisionKick kick)
+	{
+		return KickedBall.builder()
+				.kickTimestamp(kick.getKickTimestamp())
+				.trajectoryStartTime(kick.getTrajectoryStartTime())
+				.kickingBot(kick.getKickingBot())
+				.kickingBotPose(Pose.from(kick.getKickingBotPosition(), kick.getKickingBotOrientation()))
+				.ballTrajectory(kick.getBallTrajectory())
+				.build();
 	}
 
 
@@ -292,11 +318,11 @@ public class WorldInfoCollector extends AWorldPredictor
 		ITrackedBall ball = getTrackedBall(filteredVisionFrame);
 		ballBuffer.add(ball);
 
-		IKickEvent kickEvent = getKickEvent(filteredVisionFrame);
-		BallKickFitState kickFitState = getKickFitState(filteredVisionFrame);
+		KickedBall kickedBall = filteredVisionFrame.getKick()
+				.map(this::getKickedBall).orElse(null);
 
 		long frameNumber = filteredVisionFrame.getId();
-		SimpleWorldFrame swf = new SimpleWorldFrame(frameNumber, lastWFTimestamp, bots, ball, kickEvent, kickFitState);
+		SimpleWorldFrame swf = new SimpleWorldFrame(frameNumber, lastWFTimestamp, bots, ball, kickedBall);
 
 		if (ciGameControllerConnector != null)
 		{
@@ -446,13 +472,17 @@ public class WorldInfoCollector extends AWorldPredictor
 
 	private void registerToCamModule()
 	{
-		SumatraModel.getInstance().getModuleOpt(ACam.class).ifPresent(cam -> cam.addObserver(this));
+		SumatraModel.getInstance().getModuleOpt(ACam.class).ifPresent(c -> {
+			this.cam = c;
+			c.addObserver(this);
+		});
 	}
 
 
 	private void unregisterFromCamModule()
 	{
-		SumatraModel.getInstance().getModuleOpt(ACam.class).ifPresent(cam -> cam.removeObserver(this));
+		SumatraModel.getInstance().getModuleOpt(ACam.class).ifPresent(c -> c.removeObserver(this));
+		cam = null;
 	}
 
 
@@ -467,6 +497,7 @@ public class WorldInfoCollector extends AWorldPredictor
 		currentBallDetector.reset();
 		camFrameShapeMapProducer.reset();
 		ballContactCalculator.reset();
+		malFunctioningBotCalculator.reset();
 		lastWFTimestamp = 0;
 		latestRefereeMsg = new RefereeMsg();
 	}

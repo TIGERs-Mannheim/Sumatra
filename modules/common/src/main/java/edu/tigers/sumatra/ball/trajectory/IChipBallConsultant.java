@@ -4,6 +4,7 @@
 
 package edu.tigers.sumatra.ball.trajectory;
 
+import edu.tigers.sumatra.ball.trajectory.chipped.ChipBallTrajectory;
 import edu.tigers.sumatra.math.vector.IVector3;
 
 
@@ -99,4 +100,20 @@ public interface IChipBallConsultant extends IBallConsultant
 	 * @return
 	 */
 	double getVelForKick(double distance, double kickSpeed);
+
+	/**
+	 * Get the distance at which the target ball speed is reached by a chip kick
+	 *
+	 * @param kickSpeed       in [m/s]
+	 * @param targetBallSpeed in [m/s]
+	 * @return distance in [mm]
+	 */
+	double getDistanceByTargetVel(double kickSpeed, double targetBallSpeed);
+
+	/**
+	 * Get a chip trajectory from a kickspeed
+	 * @param kickSpeed in [m/s]
+	 * @return
+	 */
+	ChipBallTrajectory getChipTrajectory(double kickSpeed);
 }

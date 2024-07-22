@@ -5,13 +5,12 @@
 package edu.tigers.sumatra.sim;
 
 import edu.tigers.sumatra.ball.BallState;
-import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.math.vector.IVector3;
 import edu.tigers.sumatra.math.vector.Vector2f;
-import edu.tigers.sumatra.math.vector.Vector3;
 import edu.tigers.sumatra.math.vector.Vector3f;
 import edu.tigers.sumatra.sim.collision.ball.BallCollisionHandler;
 import edu.tigers.sumatra.sim.collision.ball.ICollision;
+import edu.tigers.sumatra.sim.collision.ball.ICollisionObject;
 import edu.tigers.sumatra.sim.collision.ball.ICollisionState;
 import edu.tigers.sumatra.sim.dynamics.ball.BallDynamicsModelDynamicVelFixedLoss;
 
@@ -26,9 +25,8 @@ public class SimulatedBall implements ISimulatedObject, ISimBall
 {
 	private final BallDynamicsModelDynamicVelFixedLoss dynamicsModel = new BallDynamicsModelDynamicVelFixedLoss();
 	private final BallCollisionHandler ballCollisionHandler = new BallCollisionHandler();
-	private BallState state;
 	private final Collection<? extends ISimBot> bots;
-
+	private BallState state;
 	private ICollision lastCollision = null;
 
 
@@ -56,10 +54,6 @@ public class SimulatedBall implements ISimulatedObject, ISimBall
 		final Optional<ICollision> collision = processBall(dt);
 
 		lastCollision = collision.orElse(lastCollision);
-		if (!Geometry.getField().isPointInShape(state.getPos().getXYVector()))
-		{
-			lastCollision = null;
-		}
 	}
 
 
@@ -70,21 +64,13 @@ public class SimulatedBall implements ISimulatedObject, ISimBall
 		IVector3 pos = colState.getPos();
 		IVector3 vel = colState.getVel();
 		IVector3 acc = colState.getAcc();
-
-		IVector3 obtainedImpulse = colState.getVel().subtractNew(state.getVel());
-		final boolean ballGotImpulse = obtainedImpulse.getLength2() > 0;
-		if (ballGotImpulse && obtainedImpulse.z() <= 0)
-		{
-			// flat kick
-			pos = Vector3.from2d(pos.getXYVector(), 0);
-			vel = Vector3.from2d(vel.getXYVector(), 0);
-			acc = Vector3.from2d(acc.getXYVector(), 0);
-		}
-
-		if (colState.getCollision().isPresent())
-		{
-			acc = acc.addNew(colState.getCollision().get().getObject().getAcc());
-		}
+		
+		acc = acc.addNew(
+				colState.getCollision()
+						.map(ICollision::getObject)
+						.map(ICollisionObject::getAcc)
+						.orElse(Vector3f.ZERO_VECTOR)
+		);
 
 		state = BallState.builder()
 				.withPos(pos)
@@ -116,7 +102,7 @@ public class SimulatedBall implements ISimulatedObject, ISimBall
 	}
 
 
-	synchronized void resetState()
+	private synchronized void resetState()
 	{
 		state = BallState.builder()
 				.withPos(Vector3f.ZERO_VECTOR)

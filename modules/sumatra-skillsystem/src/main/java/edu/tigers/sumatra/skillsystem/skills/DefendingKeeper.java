@@ -65,7 +65,7 @@ public class DefendingKeeper
 	private final ASkill drawingSkill;
 	private double lastTimeKicked = 0;
 	private WorldFrame worldFrame;
-	private ITrackedBall ball;
+	private BotID keeperID;
 
 
 	protected DefendingKeeper(final ASkill drawingSkill)
@@ -74,10 +74,22 @@ public class DefendingKeeper
 	}
 
 
-	protected void update(final WorldFrame worldFrame)
+	protected void update(WorldFrame worldFrame, BotID keeperID)
 	{
 		this.worldFrame = worldFrame;
-		ball = worldFrame.getBall();
+		this.keeperID = keeperID;
+	}
+
+
+	private ITrackedBall getBall()
+	{
+		return worldFrame.getBall();
+	}
+
+
+	private ITrackedBot getBot()
+	{
+		return worldFrame.getBot(keeperID);
 	}
 
 
@@ -85,7 +97,10 @@ public class DefendingKeeper
 	{
 		// The order in if else represents the priority of the states
 		ECriticalKeeperStates nextState;
-		if (isSomeoneShootingAtOurGoal())
+		if (hasBallContact())
+		{
+			nextState = ECriticalKeeperStates.HAS_CONTACT;
+		} else if (isSomeoneShootingAtOurGoal())
 		{
 			nextState = ECriticalKeeperStates.INTERCEPT_BALL;
 		} else if (isOpponentRedirecting())
@@ -102,25 +117,31 @@ public class DefendingKeeper
 	}
 
 
+	private boolean hasBallContact()
+	{
+		return getBot().getBallContact().getContactDuration() > 0.1;
+	}
+
 	private boolean isSomeoneShootingAtOurGoal()
 	{
 		ILineSegment goalLine = Geometry.getGoalOur()
 				.withMargin(0, Geometry.getGoalOur().getWidth() / 2.0).getLineSegment();
-		Optional<IVector2> intersect = ball.getTrajectory().getTravelLineSegments().stream()
+		Optional<IVector2> intersect = getBall().getTrajectory().getTravelLineSegments().stream()
 				.map(line -> line.intersect(goalLine))
 				.flatMap(IIntersections::stream)
 				.findAny();
 
-		if (intersect.isPresent() && (ball.getVel().x() < 0))
+		if (intersect.isPresent() && (getBall().getVel().x() < 0))
 		{
-			double distToIntersection = intersect.get().distanceTo(ball.getPos());
+			double distToIntersection = intersect.get().distanceTo(getBall().getPos());
 			double distWithTolerance = Math.max(0, distToIntersection - distToIntersectionTolerance);
-			boolean isBallFastEnough = ball.getTrajectory().getAbsVelByDist(distWithTolerance) > blockDecisionVelocity;
-			boolean isBallOnOurSite = ball.getPos().x() < 0;
+			boolean isBallFastEnough =
+					getBall().getTrajectory().getAbsVelByDist(distWithTolerance) > blockDecisionVelocity;
+			boolean isBallOnOurSite = getBall().getPos().x() < 0;
 			boolean isBallVelocityIntersectingTheGoalLine = Math
 					.abs(intersect.get().y()) < ((Geometry.getGoalOur().getWidth() / 2) + goalAreaOffset);
 
-			worldFrame.getKickEvent().ifPresent(iKickEvent -> lastTimeKicked = iKickEvent.getTimestamp());
+			worldFrame.getKickedBall().ifPresent(iKickEvent -> lastTimeKicked = iKickEvent.getTimestamp());
 			boolean isBallKicked = ((lastTimeKicked - worldFrame.getTimestamp()) / 1e9) < maxKickTime;
 
 			boolean isBallLeavingOpponent = !isOpponentNearBall() || isBallKicked;
@@ -137,7 +158,7 @@ public class DefendingKeeper
 	private boolean isOpponentNearBall()
 	{
 		return worldFrame.getOpponentBots().values().stream()
-				.anyMatch(b -> b.getPos().distanceTo(ball.getPos()) < opponentBotBallPossessionDistance);
+				.anyMatch(b -> b.getPos().distanceTo(getBall().getPos()) < opponentBotBallPossessionDistance);
 	}
 
 
@@ -166,14 +187,14 @@ public class DefendingKeeper
 
 		return (redirectOpponentBot != null)
 				&& (p2pVisibilityRedirectOpponentGoal)
-				&& (ball.getVel().getLength() > chipKickDecisionVelocity);
+				&& (getBall().getVel().getLength() > chipKickDecisionVelocity);
 	}
 
 
 	protected BotID getBestRedirector(final Map<BotID, ITrackedBot> bots)
 	{
-		IVector2 ballPos = ball.getPos();
-		IVector2 endPos = ball.getTrajectory().getPosByVel(0.0).getXYVector();
+		IVector2 ballPos = getBall().getPos();
+		IVector2 endPos = getBall().getTrajectory().getPosByVel(0.0).getXYVector();
 
 		BotID minID = null;
 		double minDist = Double.MAX_VALUE;
@@ -200,7 +221,7 @@ public class DefendingKeeper
 	{
 		List<BotID> filteredBots = new ArrayList<>();
 		final double redirectTol = 350.;
-		IVector2 ballPos = ball.getPos();
+		IVector2 ballPos = getBall().getPos();
 
 		// input: endpoint, ballVel.vel = endpoint - curPos.getAngle().
 		IVector2 ballVel = endPos.subtractNew(ballPos);
@@ -280,7 +301,7 @@ public class DefendingKeeper
 
 	public boolean isGoOutFeasible()
 	{
-		return (isPositionCloseToPenaltyArea(ball.getPos()) && isOpponentNearBall());
+		return (isPositionCloseToPenaltyArea(getBall().getPos()) && isOpponentNearBall());
 	}
 
 
@@ -295,6 +316,7 @@ public class DefendingKeeper
 		NORMAL,
 		INTERCEPT_BALL,
 		DEFEND_REDIRECT,
-		GO_OUT
+		GO_OUT,
+		HAS_CONTACT,
 	}
 }

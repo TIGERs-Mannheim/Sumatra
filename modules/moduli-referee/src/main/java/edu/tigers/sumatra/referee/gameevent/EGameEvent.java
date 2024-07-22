@@ -46,7 +46,7 @@ public enum EGameEvent implements IInstanceableEnum
 	// Non-Stopping Fouls
 	ATTACKER_TOUCHED_BALL_IN_DEFENSE_AREA(Type.ATTACKER_TOUCHED_BALL_IN_DEFENSE_AREA,
 			AttackerTouchedBallInDefenseArea.class, FOUL),
-	BOT_KICKED_BALL_TOO_FAST(Type.BOT_KICKED_BALL_TOO_FAST, BotKickedBallToFast.class, FOUL),
+	BOT_KICKED_BALL_TOO_FAST(Type.BOT_KICKED_BALL_TOO_FAST, BotKickedBallTooFast.class, FOUL),
 	BOT_CRASH_UNIQUE(Type.BOT_CRASH_UNIQUE, BotCrashUnique.class, FOUL),
 	BOT_CRASH_DRAWN(Type.BOT_CRASH_DRAWN, BotCrashDrawn.class, FOUL),
 

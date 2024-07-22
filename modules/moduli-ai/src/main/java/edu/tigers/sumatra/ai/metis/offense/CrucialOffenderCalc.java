@@ -7,9 +7,11 @@ package edu.tigers.sumatra.ai.metis.offense;
 import com.github.g3force.configurable.Configurable;
 import edu.tigers.sumatra.ai.metis.ACalculator;
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
+import edu.tigers.sumatra.ai.metis.ballinterception.RatedBallInterception;
 import edu.tigers.sumatra.ai.metis.kicking.OngoingPass;
-import edu.tigers.sumatra.ai.metis.offense.ballinterception.RatedBallInterception;
 import edu.tigers.sumatra.ai.pandora.plays.EPlay;
+import edu.tigers.sumatra.ai.pandora.roles.ARole;
+import edu.tigers.sumatra.ai.pandora.roles.ERole;
 import edu.tigers.sumatra.drawable.DrawableCircle;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.BotID;
@@ -53,15 +55,29 @@ public class CrucialOffenderCalc extends ACalculator
 	public void doCalc()
 	{
 		var ballInterceptions = getAiFrame().getPrevFrame().getTacticalField().getBallInterceptions();
+
+		if (Geometry.getPenaltyAreaOur().withMargin(Geometry.getBotRadius()).isPointInShape(getBall().getPos())
+				&& getBall().getVel().getLength() > 0.3)
+		{
+			crucialOffender = Collections.emptySet();
+			return;
+		}
+
 		crucialOffender = getAiFrame().getPrevFrame().getTacticalField().getDesiredBotMap()
-				.getOrDefault(EPlay.OFFENSIVE, Collections.emptySet()).stream()
+				.getOrDefault(EPlay.OFFENSIVE, Collections.emptySet())
+				.stream()
+				.filter(e -> !getAiFrame().getPrevFrame().getPlayStrategy().getActiveRoles(ERole.SUPPORTIVE_ATTACKER)
+						.stream().map(ARole::getBotID)
+						.toList().contains(e)) // do not add past supportive attackers as crucial
 				.filter(e -> getWFrame().getBots().containsKey(e))
 				.filter(
 						e -> tigerIsCloserToBall(e) || isCloseToBall(e) || (ballInterceptions.containsKey(e) && canCatchBall(
 								ballInterceptions, e)))
 				.collect(Collectors.toSet());
+
 		ongoingPass.get().ifPresent(e -> crucialOffender.add(e.getPass().getReceiver()));
-		getShapes(EAiShapesLayer.CRUCIAL_OFFENDERS).addAll(
+
+		getShapes(EAiShapesLayer.DO_COORD_CRUCIAL_OFFENDERS).addAll(
 				crucialOffender.stream()
 						.map(botID -> getWFrame().getBot(botID))
 						.filter(Objects::nonNull) // onGoingPass Receiver might be a not existing BotID

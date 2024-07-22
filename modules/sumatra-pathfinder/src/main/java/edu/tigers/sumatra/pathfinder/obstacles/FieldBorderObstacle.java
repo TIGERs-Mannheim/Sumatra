@@ -19,7 +19,7 @@ import java.util.Optional;
  * An obstacle based on the field border (inverted rectangle obstacle)
  */
 @RequiredArgsConstructor
-public class FieldBorderObstacle extends AObstacle
+public class FieldBorderObstacle extends AMotionlessObstacle
 {
 	private final IRectangle field;
 
@@ -37,27 +37,35 @@ public class FieldBorderObstacle extends AObstacle
 	public double distanceTo(CollisionInput input)
 	{
 		IVector2 robotPos = input.getRobotPos();
-		return distanceTo(robotPos);
-	}
-
-
-	private double distanceTo(IVector2 robotPos)
-	{
 		return field.nearestPointOutside(robotPos).distanceTo(robotPos);
 	}
 
 
 	@Override
-	public Optional<IVector2> adaptDestination(IVector2 robotPos, IVector2 destination)
+	public Optional<IVector2> adaptDestinationForRobotPos(IVector2 robotPos)
 	{
 		if (!field.withMargin(100).isPointInShape(robotPos))
 		{
 			return Optional.of(field.withMargin(-100).nearestPointInside(robotPos));
 		}
+		return Optional.empty();
+	}
+
+
+	@Override
+	public Optional<IVector2> adaptDestination(IVector2 destination)
+	{
 		if (!field.isPointInShape(destination))
 		{
 			return Optional.of(field.withMargin(-1).nearestPointInside(destination));
 		}
 		return Optional.empty();
+	}
+
+
+	@Override
+	public boolean isCollidingAt(IVector2 pos)
+	{
+		return !field.isPointInShape(pos);
 	}
 }

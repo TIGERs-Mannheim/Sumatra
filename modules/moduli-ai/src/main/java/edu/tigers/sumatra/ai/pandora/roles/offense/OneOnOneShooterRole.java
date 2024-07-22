@@ -18,7 +18,6 @@ import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.geometry.RuleConstraints;
 import edu.tigers.sumatra.math.line.LineMath;
 import edu.tigers.sumatra.math.line.Lines;
-import edu.tigers.sumatra.math.triangle.Triangle;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.IVector3;
 import edu.tigers.sumatra.math.vector.Vector2;
@@ -48,8 +47,8 @@ public class OneOnOneShooterRole extends ARole
 	@Configurable(comment = "Distance to ball when approaching (>150mm) [mm]", defValue = "150")
 	private static double approachDistance = 150.0;
 
-	@Configurable(comment = "Some tolerance when the ball is considered approached [mm]", defValue = "0")
-	private static double approachDistanceTolerance = 0.0;
+	@Configurable(comment = "Some tolerance when the ball is considered approached [mm]", defValue = "-30")
+	private static double approachDistanceTolerance = -30;
 
 
 	private ChipOpportunity chipOpportunity;
@@ -71,18 +70,20 @@ public class OneOnOneShooterRole extends ARole
 
 		setInitialState(waitAtBallState);
 
-		waitAtBallState.addTransition("isPenaltyActiveAndGoalEmpty", waitAtBallState::isPenaltyActiveAndGoalEmpty, flatKickOnGoalState);
+
 		waitAtBallState.addTransition("isPenaltyActive", waitAtBallState::isPenaltyActive, approachBallState);
 		approachBallState.addTransition(ESkillState.SUCCESS, pokeBallState);
 		approachBallState.addTransition("isCloseToBall", approachBallState::isCloseToBall, pokeBallState);
 		approachBallState.addTransition(ESkillState.FAILURE, approachBallState);
 		approachBallState.addTransition("isGoodGoalKickAvailable", this::isGoodGoalKickAvailable, flatKickOnGoalState);
-		approachBallState.addTransition("isChipKickTheOnlyGoodPlanWeHave", this::isChipKickTheOnlyGoodPlanWeHave, chipKickOnGoalState);
+		approachBallState.addTransition("isChipKickTheOnlyGoodPlanWeHave", this::isChipKickTheOnlyGoodPlanWeHave,
+				chipKickOnGoalState);
 		approachBallState.addTransition("timeAlmostUp", this::timeAlmostUp, flatKickOnGoalState);
 
 		pokeBallState.addTransition("isBallHit", pokeBallState::isBallHit, approachBallState);
 		pokeBallState.addTransition("isGoodGoalKickAvailable", this::isGoodGoalKickAvailable, flatKickOnGoalState);
-		pokeBallState.addTransition("isChipKickTheOnlyGoodPlanWeHave", this::isChipKickTheOnlyGoodPlanWeHave, chipKickOnGoalState);
+		pokeBallState.addTransition("isChipKickTheOnlyGoodPlanWeHave", this::isChipKickTheOnlyGoodPlanWeHave,
+				chipKickOnGoalState);
 		pokeBallState.addTransition("timeAlmostUp", this::timeAlmostUp, flatKickOnGoalState);
 	}
 
@@ -244,16 +245,6 @@ public class OneOnOneShooterRole extends ARole
 		}
 
 
-		public boolean isPenaltyActiveAndGoalEmpty()
-		{
-			var ballGoalTriangle = Triangle.fromCorners(getBall().getPos(), Geometry.getGoalTheir().getLeftPost(),
-					Geometry.getGoalTheir().getRightPost());
-
-			boolean noOpponentInTriangle = getWFrame().getOpponentBots().values().stream()
-					.noneMatch(b -> ballGoalTriangle.withMargin(Geometry.getBotRadius() * 2).isPointInShape(b.getPos()));
-
-			return isPenaltyActive() && noOpponentInTriangle;
-		}
 	}
 
 	private class ApproachBallState extends RoleState<MoveToSkill>
@@ -324,7 +315,7 @@ public class OneOnOneShooterRole extends ARole
 
 		public boolean isBallHit()
 		{
-			return getBall().getVel().getLength() > initialBallSpeed + 0.1 || getBot().hasBallContact();
+			return getBall().getVel().getLength() > initialBallSpeed + 0.1 || getBot().getBallContact().hasContact();
 		}
 	}
 

@@ -47,6 +47,9 @@ import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Optional;
 
 
@@ -73,9 +76,14 @@ public class SimulationPresenter
 	private final FpsCounter realTimeFpsCounter = new FpsCounter();
 	private final FpsCounter frameTimeFpsCounter = new FpsCounter();
 
+	private final Path lastSnapshotFile = Paths.get("data/snapshots/last.json");
+	private final String restoreLastSnapshotKey = SimulationPresenter.class.getCanonicalName() + ".restoreLastSnapshot";
+
 	private static final int NO_SLOW_MOTION = Integer.MIN_VALUE;
 	private static final int SLOW_MOTION_SPEED = -6;
 	private int oldSpeed = NO_SLOW_MOTION;
+
+	private boolean moduleStarted = false;
 
 
 	public SimulationPresenter()
@@ -87,8 +95,14 @@ public class SimulationPresenter
 	@Override
 	public void onStartModuli()
 	{
+		boolean latestSnapActive = Boolean.parseBoolean(
+				SumatraModel.getInstance().getUserProperty(restoreLastSnapshotKey, "false"));
+		viewPanel.getRestoreLastSnapshot().setSelected(latestSnapActive);
+		if (latestSnapActive)
+		{
+			loadLastSnapshot();
+		}
 		ISumatraViewPresenter.super.onStartModuli();
-
 		viewPanel.reset();
 
 		SumatraModel.getInstance().getModuleOpt(AWorldPredictor.class).ifPresent(o -> o.addObserver(this));
@@ -100,7 +114,6 @@ public class SimulationPresenter
 
 		SumatraModel.getInstance().getModuleOpt(SumatraSimulator.class).ifPresent(
 				simulator -> viewPanel.getBotMgrPanel().getAutoBotCount().setSelected(simulator.getManageBotCount()));
-
 		GlobalShortcuts.add(
 				"Play / Pause", viewPanel, this::onToggleSimulation,
 				KeyStroke.getKeyStroke(KeyEvent.VK_P, InputEvent.CTRL_DOWN_MASK));
@@ -125,14 +138,15 @@ public class SimulationPresenter
 		GlobalShortcuts.add(
 				"Paste Snapshot from Clipboard", viewPanel, this::onPasteSnapshot,
 				KeyStroke.getKeyStroke(KeyEvent.VK_V, InputEvent.CTRL_DOWN_MASK | InputEvent.SHIFT_DOWN_MASK));
+		moduleStarted = true;
 	}
 
 
 	@Override
 	public void onStopModuli()
 	{
+		onSaveLastSnapshot();
 		ISumatraViewPresenter.super.onStopModuli();
-
 		viewPanel.removeObserver(this);
 		viewPanel.getBotMgrPanel().removeObserver(this);
 		GUIUtilities.setEnabledRecursive(viewPanel, false);
@@ -140,6 +154,24 @@ public class SimulationPresenter
 
 		SumatraModel.getInstance().getModuleOpt(AWorldPredictor.class).ifPresent(o -> o.removeObserver(this));
 		SumatraModel.getInstance().getModuleOpt(SumatraSimulator.class).ifPresent(s -> s.removeSimulatorObserver(this));
+		moduleStarted = false;
+	}
+
+
+	private void loadLastSnapshot()
+	{
+		if (!Files.exists(lastSnapshotFile) || !SumatraModel.getInstance().isSimulation())
+		{
+			return;
+		}
+		try
+		{
+			Snapshot snap = Snapshot.loadFromFile(lastSnapshotFile);
+			SimulationHelper.loadSimulation(snap);
+		} catch (IOException e)
+		{
+			log.error("Could not load latest snapshot", e);
+		}
 	}
 
 
@@ -154,7 +186,7 @@ public class SimulationPresenter
 			{
 				s.resume();
 			}
-			viewPanel.getBtnToggleSim().setSelected(s.isRunning());
+			viewPanel.setRunning(s.isRunning());
 		});
 	}
 
@@ -228,6 +260,26 @@ public class SimulationPresenter
 
 
 	@Override
+	public void onSaveLastSnapshot()
+	{
+		if (!moduleStarted)
+		{
+			return;
+		}
+		snapshotController.setSaveMoveDestinations(saveMoveDestinations);
+		Snapshot snapshot = snapshotController.createSnapshot();
+
+		try
+		{
+			snapshot.save(lastSnapshotFile);
+		} catch (IOException e)
+		{
+			log.error("Could not save last snapshot to {}", lastSnapshotFile, e);
+		}
+	}
+
+
+	@Override
 	public void onPasteSnapshot()
 	{
 		Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
@@ -263,17 +315,15 @@ public class SimulationPresenter
 	@Override
 	public void onLoadSnapshot()
 	{
-		var lastSnapshotFile = SumatraModel.getInstance()
-				.getUserProperty(SimulationPresenter.class.getCanonicalName() + ".snapshot.last",
-						"data/snapshot/last.snap");
-		var lastSnapshotDir = new File(lastSnapshotFile).getParentFile();
+		File savedSnapshot = Paths.get("data/snapshots/snapshot.json").toFile();
+		var lastSnapshotDir = savedSnapshot.getParentFile();
 		if (lastSnapshotDir.mkdirs())
 		{
 			log.info("New directory created: {}", lastSnapshotDir);
 		}
 
 		var fcOpenSnapshot = new JFileChooser(lastSnapshotDir);
-		fcOpenSnapshot.setSelectedFile(new File(lastSnapshotFile));
+		fcOpenSnapshot.setSelectedFile(savedSnapshot);
 
 		int returnVal = fcOpenSnapshot.showOpenDialog(viewPanel);
 
@@ -282,7 +332,7 @@ public class SimulationPresenter
 			try
 			{
 				String path = fcOpenSnapshot.getSelectedFile().getCanonicalPath();
-				Snapshot snapshot = Snapshot.loadFromFile(path);
+				Snapshot snapshot = Snapshot.loadFromFile(Paths.get(path));
 				SimulationHelper.loadSimulation(snapshot);
 			} catch (IOException e)
 			{
@@ -349,6 +399,13 @@ public class SimulationPresenter
 		String key = SumatraSimulator.class.getCanonicalName() + ".manageBotCount";
 		SumatraModel.getInstance().setUserProperty(key, String.valueOf(active));
 		SumatraModel.getInstance().getModuleOpt(SumatraSimulator.class).ifPresent(s -> s.setManageBotCount(active));
+	}
+
+
+	@Override
+	public void onSetRestoreLastSnapshot(final boolean active)
+	{
+		SumatraModel.getInstance().setUserProperty(restoreLastSnapshotKey, String.valueOf(active));
 	}
 
 

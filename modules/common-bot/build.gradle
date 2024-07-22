@@ -12,5 +12,5 @@ dependencies {
     implementation project(':common')
     implementation project(':common-math')
 
-    implementation 'com.sleepycat:je:18.3.12'
+    implementation(libs.com.sleepycat.je)
 }

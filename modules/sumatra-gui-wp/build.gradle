@@ -13,10 +13,10 @@ dependencies {
     implementation project(':common-gui')
     implementation project(':moduli-wp')
 
-    implementation 'com.github.TIGERs-Mannheim.matlabcontrol:matlabcontrol:4.1.2'
+    implementation(libs.com.github.TIGERs.mannheim.matlabcontrol)
 
-    implementation 'org.apache.logging.log4j:log4j-api:2.20.0'
+    implementation(libs.org.apache.logging.log4j.log4j.api)
 
-    implementation 'com.googlecode.json-simple:json-simple:1.1.1'
-    implementation 'com.miglayout:miglayout-swing:11.1'
+    implementation(libs.com.googlecode.json.simple)
+    implementation(libs.com.miglayout.miglayout.swing)
 }

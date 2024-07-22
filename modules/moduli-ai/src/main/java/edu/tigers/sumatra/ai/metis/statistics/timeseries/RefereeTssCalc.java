@@ -9,7 +9,12 @@ import edu.tigers.sumatra.ids.ETeamColor;
 import edu.tigers.sumatra.referee.data.GameState;
 import edu.tigers.sumatra.referee.data.RefereeMsg;
 import edu.tigers.sumatra.referee.data.TeamInfo;
+import edu.tigers.sumatra.referee.gameevent.EGameEventType;
+import edu.tigers.sumatra.referee.gameevent.IGameEvent;
 import edu.tigers.sumatra.statistics.TimeSeriesStatsEntry;
+
+import java.util.Comparator;
+import java.util.Objects;
 
 
 /**
@@ -25,11 +30,31 @@ public class RefereeTssCalc implements ITssCalc
 		final RefereeMsg refereeMsg = aiFrame.getRefereeMsg();
 		final ETeamColor ourTeam = aiFrame.getTeamColor();
 
+		var fouls = refereeMsg.getGameEvents().stream()
+				.filter(event -> event.getType().getType() == EGameEventType.FOUL)
+				.toList();
+
+		var mostRecentWe = fouls.stream()
+				.filter(event -> event.getTeam() == ourTeam || event.getTeam() == ETeamColor.NEUTRAL)
+				.max(Comparator.comparing(IGameEvent::getCreatedTimestamp))
+				.map(IGameEvent::getType)
+				.map(Objects::toString)
+				.orElse("NONE");
+		var mostRecentTheir = fouls.stream()
+				.filter(event -> event.getTeam() != ourTeam)
+				.max(Comparator.comparing(IGameEvent::getCreatedTimestamp))
+				.map(IGameEvent::getType)
+				.map(Objects::toString)
+				.orElse("NONE");
+
+
 		entry.addField("state.type", gamestate.getState().name());
 		entry.addField("state.for", gamestate.getForTeam().name());
 		entry.addField("command", refereeMsg.getCommand().name());
 		entry.addField("goals.we", refereeMsg.getGoals().get(ourTeam));
 		entry.addField("goals.they", refereeMsg.getGoals().get(ourTeam.opposite()));
+		entry.addField("lastFoul.we", mostRecentWe);
+		entry.addField("lastFoul.their", mostRecentTheir);
 
 		for (ETeamColor teamColor : ETeamColor.yellowBlueValues())
 		{

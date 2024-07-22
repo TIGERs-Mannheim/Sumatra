@@ -7,7 +7,6 @@ package edu.tigers.sumatra.ai.pandora.roles.defense;
 import edu.tigers.sumatra.ai.metis.m2mmarking.Man2ManMarkerPositionFinder;
 import edu.tigers.sumatra.ai.pandora.roles.ERole;
 import edu.tigers.sumatra.ids.BotID;
-import edu.tigers.sumatra.math.vector.IVector2;
 
 import java.util.Set;
 
@@ -29,17 +28,18 @@ public class Man2ManMarkerRole extends AOuterDefenseRole
 
 
 	@Override
-	protected Set<BotID> ignoredBots(IVector2 dest)
+	protected Set<BotID> ignoredBots()
 	{
 		return Set.of();
 	}
 
 
 	@Override
-	protected IVector2 findDest()
+	protected Destination findDest()
 	{
-		return mimicThreatVelocity(
-				man2ManMarkerPositionFinder.findMan2ManMarkerPosition(getWFrame().getBots(), getBotID(), threat)
-		);
+		return new Destination(
+				mimicThreatVelocity(
+						man2ManMarkerPositionFinder.findMan2ManMarkerPosition(getWFrame().getBots(), getBotID(), threat)
+				), null);
 	}
 }

@@ -83,7 +83,7 @@ public class TestModeAthenaAdapter implements IAthenaAdapter
 					});
 			if (!guiTestPlay.getRoles().contains(role))
 			{
-				guiTestPlay.addRole(role);
+				guiTestPlay.addNewRole(role);
 			}
 		}
 	}

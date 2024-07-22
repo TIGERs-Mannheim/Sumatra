@@ -19,7 +19,7 @@ import java.util.Optional;
  * A penalty area obstacle with efficient data storage and caching for painting
  */
 @RequiredArgsConstructor
-public class PenaltyAreaObstacle extends AObstacle
+public class PenaltyAreaObstacle extends AMotionlessObstacle
 {
 	private final IPenaltyArea penaltyArea;
 
@@ -56,16 +56,30 @@ public class PenaltyAreaObstacle extends AObstacle
 
 
 	@Override
-	public Optional<IVector2> adaptDestination(IVector2 robotPos, IVector2 destination)
+	public Optional<IVector2> adaptDestinationForRobotPos(IVector2 robotPos)
 	{
 		if (distanceTo(robotPos) <= 0)
 		{
 			return Optional.of(penaltyArea.withMargin(100).nearestPointOutside(robotPos));
 		}
+		return Optional.empty();
+	}
+
+
+	@Override
+	public Optional<IVector2> adaptDestination(IVector2 destination)
+	{
 		if (distanceTo(destination) <= 0)
 		{
 			return Optional.of(penaltyArea.withMargin(1).nearestPointOutside(destination));
 		}
 		return Optional.empty();
+	}
+
+
+	@Override
+	public boolean isCollidingAt(IVector2 pos)
+	{
+		return penaltyArea.isPointInShapeOrBehind(pos);
 	}
 }

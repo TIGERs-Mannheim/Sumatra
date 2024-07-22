@@ -8,18 +8,19 @@ import edu.tigers.sumatra.drawable.ShapeMap;
 import edu.tigers.sumatra.pathfinder.finder.PathFinderInput;
 import edu.tigers.sumatra.pathfinder.finder.PathFinderResult;
 
+import java.util.Optional;
+
 
 /**
  * Interface for all path finders
  */
-@FunctionalInterface
 public interface IPathFinder
 {
 	/**
 	 * @param input all necessary inputs to find a path
 	 * @return a path finder result with the found path and additional information
 	 */
-	PathFinderResult calcPath(PathFinderInput input);
+	Optional<PathFinderResult> calcPath(PathFinderInput input);
 
 	/**
 	 * Set the shape map to draw to. Will be set to <code>null</code> if drawing is disabled.
@@ -29,4 +30,12 @@ public interface IPathFinder
 	default void setShapeMap(ShapeMap shapeMap)
 	{
 	}
+
+	/**
+	 * Calculate a valid direct path. If no path without a collision was found, none will be returned.
+	 *
+	 * @param input all necessary inputs to find a path
+	 * @return a path finder result with the found path and additional information
+	 */
+	Optional<PathFinderResult> calcValidDirectPath(PathFinderInput input);
 }

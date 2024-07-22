@@ -100,7 +100,7 @@ public class BotSkillCircleBall extends AMoveBotSkill
 	 * @param jerkMax
 	 * @param jerkMaxW
 	 * @param dribbleSpeed
-	 * @param dribbleCurrent
+	 * @param dribbleForce
 	 * @param kickSpeed
 	 * @param kickDevice
 	 * @param kickMode
@@ -109,7 +109,7 @@ public class BotSkillCircleBall extends AMoveBotSkill
 	public BotSkillCircleBall(final double speed, final double radius, final double targetAngle,
 			final double friction,
 			final double accMax, final double accMaxW, final double jerkMax, final double jerkMaxW,
-			final double dribbleSpeed, final double dribbleCurrent, final double kickSpeed, final EKickerDevice kickDevice,
+			final double dribbleSpeed, final double dribbleForce, final double kickSpeed, final EKickerDevice kickDevice,
 			final EKickerMode kickMode)
 	{
 		this();
@@ -124,7 +124,7 @@ public class BotSkillCircleBall extends AMoveBotSkill
 		setJerkMaxW(jerkMaxW);
 		setJerkMax(jerkMax);
 
-		kickerDribbler.setDribbler(dribbleSpeed, dribbleCurrent);
+		kickerDribbler.setDribbler(dribbleSpeed, dribbleForce);
 		kickerDribbler.setKick(kickSpeed, kickDevice, kickMode);
 	}
 

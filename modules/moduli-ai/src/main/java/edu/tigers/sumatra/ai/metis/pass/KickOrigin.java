@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.metis.pass;
@@ -29,5 +29,10 @@ public class KickOrigin
 	public boolean isReached()
 	{
 		return Double.isInfinite(impactTime);
+	}
+
+	public double impactTimeOrZero()
+	{
+		return Double.isFinite(impactTime) ? impactTime : 0.0;
 	}
 }

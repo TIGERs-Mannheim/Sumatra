@@ -5,56 +5,123 @@
 package edu.tigers.sumatra.ai.pandora.plays.standard.cheerings;
 
 import edu.tigers.sumatra.ai.pandora.plays.standard.CheeringPlay;
-import edu.tigers.sumatra.ai.pandora.roles.ARole;
-import edu.tigers.sumatra.ai.pandora.roles.move.MoveRole;
+import edu.tigers.sumatra.botmanager.botskills.data.ESong;
 import edu.tigers.sumatra.geometry.Geometry;
+import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.AngleMath;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 
-public class MacarenaCheeringPlay implements ICheeringPlay
+public class MacarenaCheeringPlay extends ASongPlayingCheeringPlay
 {
 
-	private double distanceBetweenBots = Geometry.getBotRadius() * 3d;
-	private int shakingState = 0;
-	private boolean direction = true;
-	private int numDances = 0;
-	private boolean done = false;
-	private boolean targetSet = false;
-	private CheeringPlay play;
-	private double time;
+	private static final double DISTANCE_BETWEEN_BOTS = Geometry.getBotRadius() * 3d;
+	private static final double MOVE_OFFSET = Geometry.getBotRadius();
+	private Map<BotID, IVector2> centerPositions;
+	private boolean shake = false;
+
+
+	public MacarenaCheeringPlay()
+	{
+		super(List.of(ESong.MACARENA),
+				List.of(
+						0.0, //  0 | Move 1 - 4 interrupts
+						0.6,
+						1.2,
+						1.8,
+						2.4, //  4 | Move 2 - 4 interrupts
+						3.0,
+						3.6,
+						4.2,
+						4.8, //  8 | Move 3 - 4 interrupts
+						5.4,
+						6.0,
+						6.6,
+						7.2, // 12 | Shake Start
+						9.0, // 13 | Shake End
+						9.2  // 14 | Turn
+				), 4);
+	}
 
 
 	@Override
 	public void initialize(CheeringPlay play)
 	{
-		this.play = play;
-		this.time = play.getWorldFrame().getTimestamp();
-		this.shakingState = 0;
+		super.initialize(play);
+		centerPositions = null;
 	}
 
 
 	@Override
-	public boolean isDone()
+	void handleInterrupt(int loopCount, int interruptCount)
 	{
-		return done;
+		if (interruptCount < 12)
+		{
+			var offset = Vector2.fromAngleLength(getRotation(loopCount), getOffsetDistance(interruptCount));
+			for (var role : getPlay().getPermutedRoles())
+			{
+				role.updateDestination(centerPositions.get(role.getBotID()).addNew(offset));
+			}
+		} else if (interruptCount == 12)
+		{
+			shake = true;
+		} else if (interruptCount == 13)
+		{
+			shake = false;
+			for (var role : getPlay().getPermutedRoles())
+			{
+				role.updateDestination(centerPositions.get(role.getBotID()));
+			}
+		} else if (interruptCount == 14)
+		{
+			var lookingAngle = getRotation(loopCount + 1);
+			for (var role : getPlay().getPermutedRoles())
+			{
+				role.updateTargetAngle(lookingAngle);
+			}
+		}
+	}
+
+
+	private double getRotation(int loopCount)
+	{
+		return AngleMath.normalizeAngle((loopCount % 4) * AngleMath.PI_HALF);
+	}
+
+
+	private double getOffsetDistance(int interruptCount)
+	{
+		if (interruptCount >= 12)
+		{
+			return 0;
+		}
+		return switch (interruptCount % 4)
+		{
+			case 0, 2 -> MOVE_OFFSET;
+			case 1 -> 2 * MOVE_OFFSET;
+			default -> 0;
+		};
 	}
 
 
 	@Override
 	public List<IVector2> calcPositions()
 	{
-		List<ARole> roles = play.getRoles();
-		List<IVector2> positions = new ArrayList<>(roles.size());
+		var roles = getPlay().getPermutedRoles();
+		var positions = new ArrayList<IVector2>(roles.size());
 
+		roles.forEach(r -> r.updateTargetAngle(0));
 		int numLinesInDanceBlock = (int) Math.sqrt(roles.size());
 		int numRowsInDanceBlock = roles.size() / numLinesInDanceBlock;
 
-		double startYValue = -0.5 * (numLinesInDanceBlock - 1) * distanceBetweenBots;
+		double startYValue = -0.5 * (numLinesInDanceBlock - 1) * DISTANCE_BETWEEN_BOTS;
 		int additionalBotsInMid = roles.size() % numLinesInDanceBlock;
 
 		int roleCount = 0;
@@ -64,19 +131,19 @@ public class MacarenaCheeringPlay implements ICheeringPlay
 			if (i == numLinesInDanceBlock / 2)
 				numBotsInRow += additionalBotsInMid;
 
-			List<ARole> botsInRow = new ArrayList<>();
+			var botsInRow = new ArrayList<>();
 			for (int j = 0; j < numBotsInRow; j++)
 				botsInRow.add(roles.get(roleCount++));
 
 			int numBots = botsInRow.size();
-			double startX = -0.5 * (numBots - 1) * distanceBetweenBots;
+			double startX = -0.5 * (numBots - 1) * DISTANCE_BETWEEN_BOTS;
 
 			int j = 0;
 			for (int k = 0; k < botsInRow.size(); k++)
 			{
-				double x = startX + j * distanceBetweenBots;
+				double x = startX + j * DISTANCE_BETWEEN_BOTS;
 
-				IVector2 target = Vector2.fromXY(x, startYValue + i * distanceBetweenBots);
+				IVector2 target = Vector2.fromXY(x, startYValue + i * DISTANCE_BETWEEN_BOTS);
 
 				positions.add(target);
 				j++;
@@ -90,87 +157,30 @@ public class MacarenaCheeringPlay implements ICheeringPlay
 	@Override
 	public void doUpdate()
 	{
-		double curTime = play.getWorldFrame().getTimestamp();
-
-		if (curTime - time > 9.92e9 / 17 && !targetSet)
+		if (centerPositions == null)
 		{
-			time = curTime;
-			if (shakingState == 0)
+			var roles = getPlay().getPermutedRoles();
+			var positions = calcPositions();
+			centerPositions = IntStream.range(0, roles.size()).boxed()
+					.collect(Collectors.toMap(i -> roles.get(i).getBotID(), positions::get));
+		}
+		super.doUpdate();
+
+		if (shake)
+		{
+			// Orthogonal to looking distance
+			var offset = Vector2.fromAngleLength(getRotation(getLoopCounter() + 1), 0.3 * MOVE_OFFSET);
+			boolean flipDirection = Math.round((timeSinceStartOfLoop() - 7.2) * 10) % 2 == 0;
+			for (var role : getPlay().getPermutedRoles())
 			{
-				if (numDances == 0)
+				if (flipDirection)
 				{
-					turn();
+					role.updateDestination(centerPositions.get(role.getBotID()).subtractNew(offset));
+				} else
+				{
+					role.updateDestination(centerPositions.get(role.getBotID()).addNew(offset));
 				}
-
-				// (Not done yet) Start Music
-				shake();
-			} else if (shakingState == 15)
-			{
-				shakingState = -1;
-				numDances++;
-				turn();
-				if (numDances >= 3)
-					done = true;
-			} else if (shakingState < 12)
-			{
-				shake();
 			}
-			shakingState++;
-
-			targetSet = true;
-		}
-
-		checkTargetReached();
-	}
-
-
-	private void checkTargetReached()
-	{
-		int targetReached = 0;
-		for (ARole aRole : play.getRoles())
-		{
-			if (((MoveRole) aRole).isDestinationReached())
-				targetReached++;
-		}
-		if (targetReached == play.getRoles().size())
-			targetSet = false;
-	}
-
-
-	private void shake()
-	{
-		if (shakingState % 2 == 0)
-		{
-			direction = !direction;
-		}
-		moveSide(direction);
-	}
-
-
-	private void turn()
-	{
-		List<ARole> roles = play.getRoles();
-
-		for (ARole aRole : roles)
-		{
-			MoveRole role = (MoveRole) aRole;
-			role.updateTargetAngle(numDances * AngleMath.PI_HALF);
-		}
-	}
-
-
-	private void moveSide(boolean direction)
-	{
-		int dir = 1;
-		if (direction)
-			dir = -1;
-		for (ARole aRole : play.getRoles())
-		{
-			MoveRole role = (MoveRole) aRole;
-			IVector2 destinationVect = Vector2.fromAngle(role.getBot().getOrientation())
-					.multiplyNew(dir * 0.3 * distanceBetweenBots);
-			IVector2 destination = role.getPos().addNew(destinationVect);
-			role.updateDestination(destination);
 		}
 	}
 

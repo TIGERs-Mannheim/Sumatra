@@ -42,13 +42,13 @@ public class BowlingCheeringPlay implements ICheeringPlay
 	@Override
 	public List<IVector2> calcPositions()
 	{
-		List<IVector2> positions = new ArrayList<>();
-		List<ARole> roles = play.getRoles();
+		var roles = play.getPermutedRoles();
+		var positions = new ArrayList<IVector2>();
 
 		positions.add(Geometry.getGoalOur().getCenter().addNew(Vector2.fromXY(Geometry.getFieldLength() * 0.35, 0)));
 
-		BowlPositions bowls = new BowlPositions();
-		roles.stream().map(role -> bowls.next()).forEach(positions::add);
+		var bowls = new BowlPositions();
+		roles.stream().map(role -> bowls.next()).limit((long) roles.size() - 1).forEach(positions::add);
 		return positions;
 	}
 
@@ -68,21 +68,21 @@ public class BowlingCheeringPlay implements ICheeringPlay
 
 	private void doPre()
 	{
-		List<IVector2> positions = calcPositions();
-		List<ARole> roles = play.getRoles();
+		var roles = play.getPermutedRoles();
+		var positions = calcPositions();
 		for (int botId = 0; botId < roles.size(); botId++)
 		{
-			((MoveRole) roles.get(botId)).updateDestination(positions.get(botId));
+			roles.get(botId).updateDestination(positions.get(botId));
 		}
 
-		for (ARole r : roles)
+		for (MoveRole r : roles)
 		{
-			if (!((MoveRole) r).isDestinationReached())
+			if (!r.isDestinationReached())
 			{
 				return;
 			} else
 			{
-				((MoveRole) r).getMoveCon().setOurBotsObstacle(false);
+				r.getMoveCon().setOurBotsObstacle(false);
 			}
 		}
 
@@ -92,13 +92,13 @@ public class BowlingCheeringPlay implements ICheeringPlay
 
 	private void doRoll()
 	{
-		ARole ballbot = play.getRoles().get(0);
-		((MoveRole) ballbot).updateDestination(Vector2.fromXY(Geometry.getFieldLength() * 0.33, 0));
+		var ballBot = play.getPermutedRoles().get(0);
+		ballBot.updateDestination(Vector2.fromXY(Geometry.getFieldLength() * 0.33, 0));
 
-		for (ARole r : play.getRoles())
+		for (var r : play.getPermutedRoles())
 		{
-			if (!r.equals(ballbot) && !movedFromMid.contains(r) &&
-					r.getBot().getPos().subtractNew(ballbot.getBot().getPosByTime(0.5)).x() < 1 * Geometry.getBotRadius())
+			if (!r.equals(ballBot) && !movedFromMid.contains(r) &&
+					r.getBot().getPos().subtractNew(ballBot.getBot().getPosByTime(0.5)).x() < 1 * Geometry.getBotRadius())
 			{
 				double x = r.getBot().getPos().x();
 				double y = r.getBot().getPos().y();
@@ -106,23 +106,20 @@ public class BowlingCheeringPlay implements ICheeringPlay
 
 				if (y > 0)
 				{
-					((MoveRole) r).updateDestination(Vector2.fromXY(x, y + 500));
+					r.updateDestination(Vector2.fromXY(x, y + 500));
 				} else if (y < 0)
 				{
-					((MoveRole) r).updateDestination(Vector2.fromXY(x, y - 500));
-				} else if (movedFromMid.isEmpty())
-				{
-					((MoveRole) r).updateDestination(Vector2.fromXY(x, y + 500 - 2 * Geometry.getBotRadius()));
+					r.updateDestination(Vector2.fromXY(x, y - 500));
 				} else
 				{
-					((MoveRole) r).updateDestination(Vector2.fromXY(x, y - 500 + 2 * Geometry.getBotRadius()));
+					r.updateDestination(Vector2.fromXY(x, y - 500 + 2 * Geometry.getBotRadius()));
 				}
 			}
 		}
 
-		for (ARole r : play.getRoles())
+		for (var r : play.getPermutedRoles())
 		{
-			if (!((MoveRole) r).isDestinationReached())
+			if (!r.isDestinationReached())
 			{
 				return;
 			}

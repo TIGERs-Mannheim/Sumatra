@@ -33,7 +33,7 @@ public abstract class AMaintenancePlay extends APlay
 	protected final PointChecker pointChecker = new PointChecker()
 			.checkBallDistances()
 			.checkCustom(this::freeOfOtherBots);
-	private final TimestampTimer completionTimer = new TimestampTimer(1);
+	protected final TimestampTimer completionTimer = new TimestampTimer(0.5);
 
 
 	protected AMaintenancePlay(EPlay play)
@@ -61,7 +61,7 @@ public abstract class AMaintenancePlay extends APlay
 	}
 
 
-	private void drawDestinations(List<IVector2> destinations, double orientation)
+	protected void drawDestinations(List<IVector2> destinations, double orientation)
 	{
 		destinations.forEach(pos -> getShapes(EAiShapesLayer.AI_MAINTENANCE).add(
 				new DrawableBotShape(pos, AngleMath.deg2rad(orientation), Geometry.getBotRadius(),
@@ -102,16 +102,6 @@ public abstract class AMaintenancePlay extends APlay
 	protected void calculateBotActions(IVector2 startPos, IVector2 direction, double orientation)
 	{
 		List<MoveRole> roles = findRoles(MoveRole.class);
-		if (roles.isEmpty())
-		{
-			completionTimer.reset();
-			return;
-		} else if (completionTimer.isTimeUp(getWorldFrame().getTimestamp()))
-		{
-			roles.forEach(MoveRole::disableMotors);
-			return;
-		}
-
 		List<IVector2> drawingDestinations = new ArrayList<>();
 		PositionData data = adjustPositionsToFieldSize(roles.size(), startPos.x(), direction);
 		IVector2 dest = data.getStartPosition().orElse(startPos.subtractNew(direction));
@@ -131,7 +121,13 @@ public abstract class AMaintenancePlay extends APlay
 			role.updateTargetAngle(AngleMath.deg2rad(orientation));
 		}
 		drawDestinations(drawingDestinations, orientation);
-		if (roles.isEmpty() || roles.stream().allMatch(MoveRole::isDestinationReached))
+		updateTimer(roles);
+	}
+
+
+	protected void updateTimer(List<MoveRole> roles)
+	{
+		if (roles.isEmpty() || roles.stream().allMatch(MoveRole::isSkillStateSuccess))
 		{
 			completionTimer.update(getWorldFrame().getTimestamp());
 		} else

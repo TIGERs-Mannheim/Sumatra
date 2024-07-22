@@ -8,6 +8,7 @@ import edu.tigers.sumatra.ai.pandora.plays.APlay;
 import edu.tigers.sumatra.ai.pandora.plays.EPlay;
 import edu.tigers.sumatra.ai.pandora.roles.ARole;
 import edu.tigers.sumatra.ai.pandora.roles.move.MoveRole;
+import edu.tigers.sumatra.ai.pandora.roles.offense.KeepDistToBallRole;
 import edu.tigers.sumatra.ai.pandora.roles.placement.BallPlacementRole;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.BotID;
@@ -43,7 +44,7 @@ public abstract class ABallPlacementPlay extends APlay
 				.findFirst().orElse(BotID.noBot());
 		if (getRoles().size() == 1)
 		{
-			var placementRole = reassignRole(getRoles().get(0), BallPlacementRole.class, BallPlacementRole::new);
+			var placementRole = reassignRole(getRoles().getFirst(), BallPlacementRole.class, BallPlacementRole::new);
 			placementRole.setPassMode(BallPlacementRole.EPassMode.NONE);
 		} else if (useAssistant())
 		{
@@ -53,21 +54,23 @@ public abstract class ABallPlacementPlay extends APlay
 							- ((Objects.equals(r.getBotID(), currentBallPlacementBot)) ? 500 : 0)))
 					.map(r -> reassignRole(r, BallPlacementRole.class, BallPlacementRole::new))
 					.orElseThrow();
-			ARole receivingRole = allRolesExcept(ballPlacementRole)
+			MoveRole receivingRole = allRolesExcept(ballPlacementRole)
 					.stream()
 					.min(Comparator.comparing(r -> r.getPos().distanceToSqr(getBallTargetPos())))
 					.map(r -> reassignRole(r, MoveRole.class, MoveRole::new))
 					.orElseThrow();
 
-			MoveRole moveRole = findRoles(MoveRole.class).get(0);
-			double dist2Ball = moveRole.getBot().getCenter2DribblerDist() + Geometry.getBallRadius();
-			moveRole.updateDestination(LineMath.stepAlongLine(placementPos, getBall().getPos(), -dist2Ball));
-			moveRole.updateLookAtTarget(getBall());
-			moveRole.getMoveCon().physicalObstaclesOnly();
-			moveRole.getMoveCon().setBallObstacle(false);
+
+			double dist2Ball = receivingRole.getBot().getCenter2DribblerDist() + Geometry.getBallRadius();
+			receivingRole.updateDestination(LineMath.stepAlongLine(placementPos, getBall().getPos(), -dist2Ball));
+			receivingRole.updateLookAtTarget(getBall());
+			boolean isReadyForPass = receivingRole.isDestinationReached();
+
+			receivingRole.getMoveCon().physicalObstaclesOnly();
+			receivingRole.getMoveCon().setBallObstacle(!isReadyForPass);
 
 			findRoles(BallPlacementRole.class).forEach(r -> r.setPassMode(
-					moveRole.isDestinationReached()
+					isReadyForPass
 							? BallPlacementRole.EPassMode.READY
 							: BallPlacementRole.EPassMode.WAIT));
 
@@ -88,7 +91,10 @@ public abstract class ABallPlacementPlay extends APlay
 					.forEach(this::handleNonPlacingRole);
 		}
 
-		findRoles(BallPlacementRole.class).forEach(r -> r.setBallTargetPos(placementPos));
+		if (placementPos != null)
+		{
+			findRoles(BallPlacementRole.class).forEach(r -> r.setBallTargetPos(placementPos));
+		}
 	}
 
 
@@ -107,7 +113,7 @@ public abstract class ABallPlacementPlay extends APlay
 
 	protected void handleNonPlacingRole(ARole role)
 	{
-		reassignRole(role, MoveRole.class, MoveRole::new);
+		reassignRole(role, KeepDistToBallRole.class, KeepDistToBallRole::new);
 	}
 
 

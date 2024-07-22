@@ -7,6 +7,8 @@ package edu.tigers.sumatra.ai.pandora.roles.offense;
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
 import edu.tigers.sumatra.ai.metis.kicking.Kick;
 import edu.tigers.sumatra.ai.metis.kicking.Pass;
+import edu.tigers.sumatra.ai.metis.offense.OffensiveConstants;
+import edu.tigers.sumatra.ai.metis.offense.OffensiveMath;
 import edu.tigers.sumatra.ai.pandora.roles.ARole;
 import edu.tigers.sumatra.ai.pandora.roles.ERole;
 import edu.tigers.sumatra.drawable.DrawableAnnotation;
@@ -89,7 +91,7 @@ public class PassReceiverRole extends ARole
 			if (incomingPass == null)
 			{
 				skill.updateLookAtTarget(getBall());
-				getShapes(EAiShapesLayer.OFFENSIVE_PASSING).add(
+				getShapes(EAiShapesLayer.OFFENSE_PASSING).add(
 						new DrawableAnnotation(getPos(), "No incoming pass!")
 								.setColor(Color.magenta));
 				return;
@@ -114,14 +116,17 @@ public class PassReceiverRole extends ARole
 		{
 			if (outgoingKick != null)
 			{
-				var incomingBallVel = incomingPass.getKick().getKickVel().getXYVector()
-						.scaleToNew(incomingPass.getReceivingSpeed());
-				var desiredBallVel = outgoingKick.getKickVel().getXYVector();
-				return RedirectConsultantFactory.createDefault().getTargetAngle(incomingBallVel, desiredBallVel);
-			} else
-			{
-				return incomingPass.getKick().getKickVel().getXYVector().multiplyNew(-1).getAngle();
+				double angle = OffensiveMath.getRedirectAngle(getBall().getPos(), incomingPass.getKick().getTarget(),
+						outgoingKick.getTarget());
+				if (angle < OffensiveConstants.getMaximumReasonableRedirectAngle())
+				{
+					var incomingBallVel = incomingPass.getKick().getKickVel().getXYVector()
+							.scaleToNew(incomingPass.getReceivingSpeed());
+					var desiredBallVel = outgoingKick.getKickVel().getXYVector();
+					return RedirectConsultantFactory.createDefault().getTargetAngle(incomingBallVel, desiredBallVel);
+				}
 			}
+			return incomingPass.getKick().getKickVel().getXYVector().multiplyNew(-1).getAngle();
 		}
 
 
@@ -129,16 +134,18 @@ public class PassReceiverRole extends ARole
 		{
 			var incomingPassLine = Lines
 					.segmentFromPoints(incomingPass.getKick().getSource(), incomingPass.getKick().getTarget());
-			getAiFrame().getShapeMap().get(EAiShapesLayer.OFFENSIVE_PASSING)
-					.add(new DrawableArrow(incomingPassLine.getPathStart(), incomingPassLine.directionVector(), Color.WHITE));
+			getAiFrame().getShapeMap().get(EAiShapesLayer.OFFENSE_PASSING)
+					.add(new DrawableArrow(incomingPassLine.getPathStart(), incomingPassLine.directionVector(),
+							Color.WHITE));
 
 			if (outgoingKick != null)
 			{
 				var outgoingKickLine = Lines.segmentFromPoints(
 						outgoingKick.getSource(),
 						outgoingKick.getTarget());
-				getAiFrame().getShapeMap().get(EAiShapesLayer.OFFENSIVE_PASSING)
-						.add(new DrawableArrow(outgoingKickLine.getPathStart(), outgoingKickLine.directionVector(), Color.WHITE));
+				getAiFrame().getShapeMap().get(EAiShapesLayer.OFFENSE_PASSING)
+						.add(new DrawableArrow(outgoingKickLine.getPathStart(), outgoingKickLine.directionVector(),
+								Color.WHITE));
 			}
 		}
 	}

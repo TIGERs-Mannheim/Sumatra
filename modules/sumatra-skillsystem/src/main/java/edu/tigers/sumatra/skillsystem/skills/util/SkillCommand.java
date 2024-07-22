@@ -21,7 +21,7 @@ public class SkillCommand
 	private IVector2 xyVel = null;
 	private Double aVel = null;
 	private Integer dribbleSpeed = null;
-	private Double dribbleCurrent = null;
+	private Double dribbleForce = null;
 	private Double kickSpeed = null;
 	private EKickerDevice kickerDevice = null;
 	private Double accMaxXY = null;

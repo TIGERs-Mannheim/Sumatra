@@ -19,7 +19,7 @@ import edu.tigers.sumatra.referee.data.GameEventProposalGroup;
 import edu.tigers.sumatra.referee.data.RefereeMsg;
 import edu.tigers.sumatra.referee.data.TeamInfo;
 import edu.tigers.sumatra.referee.gameevent.IGameEvent;
-import edu.tigers.sumatra.wp.data.BallKickFitState;
+import edu.tigers.sumatra.wp.data.KickedBall;
 import edu.tigers.sumatra.wp.data.WorldFrameWrapper;
 
 import java.awt.Color;
@@ -74,8 +74,8 @@ public class RefereeVisCalc implements IWpCalc
 		String foulCounterBlueStr = getFoulCounterString(msg.getTeamInfoBlue().getFoulCounter());
 
 		double ballSpeed = wfw.getSimpleWorldFrame().getBall().getVel3().getLength();
-		double initBallSpeed = wfw.getSimpleWorldFrame().getKickFitState()
-				.map(BallKickFitState::getAbsoluteKickSpeed).orElse(0.0);
+		double initBallSpeed = wfw.getSimpleWorldFrame().getKickedBall()
+				.map(KickedBall::getAbsoluteKickSpeed).orElse(0.0);
 		double ballHeight = wfw.getSimpleWorldFrame().getBall().getPos3().z();
 		String ballVelStr = "Ball vel: " + dfBallVel.format(ballSpeed) + "| "
 				+ dfBallVel.format(initBallSpeed) + "; height: " + dfBallVel.format(ballHeight);
@@ -122,8 +122,8 @@ public class RefereeVisCalc implements IWpCalc
 		txtShapes.add(text(8, 2, proposedGameEvents));
 		txtShapes.add(text(8, 3, getSubstitutionString(msg)));
 
-		shapeMap.get(EWpShapesLayer.REFEREE).addAll(txtShapes);
-		paintShapes(shapeMap.get(EWpShapesLayer.REFEREE), wfw);
+		shapeMap.get(EWpShapesLayer.REFEREE_HEADER).addAll(txtShapes);
+		paintShapes(shapeMap.get(EWpShapesLayer.REFEREE_HEADER), wfw);
 	}
 
 

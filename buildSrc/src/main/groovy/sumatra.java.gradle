@@ -7,14 +7,9 @@ plugins {
     id 'groovy' // apply to all due to issues when only applying to some projects
     id 'idea'
     id 'ca.cutterslade.analyze'
-    id 'sumatra.versions'
 }
 
 repositories {
-    maven {
-        url = 'https://nexus.tigers-mannheim.de/content/groups/public/'
-    }
-
     mavenCentral()
 
     maven {
@@ -27,14 +22,14 @@ tasks.withType(JavaCompile).configureEach {
 }
 
 dependencies {
-    annotationProcessor "org.projectlombok:lombok:1.18.28"
-    compileOnly "org.projectlombok:lombok:1.18.28"
-    permitUnusedDeclared "org.projectlombok:lombok:1.18.28"
+    annotationProcessor(libs.org.projectlombok.lombok)
+    compileOnly(libs.org.projectlombok.lombok)
+    permitUnusedDeclared(libs.org.projectlombok.lombok)
 }
 
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of(17)
+        languageVersion = JavaLanguageVersion.of(21)
     }
 }
 

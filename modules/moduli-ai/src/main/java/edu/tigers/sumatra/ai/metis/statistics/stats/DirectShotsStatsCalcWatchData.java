@@ -5,25 +5,26 @@
 package edu.tigers.sumatra.ai.metis.statistics.stats;
 
 import edu.tigers.sumatra.ids.BotID;
-import edu.tigers.sumatra.vision.data.IKickEvent;
-import edu.tigers.sumatra.wp.data.BallKickFitState;
+import edu.tigers.sumatra.wp.data.KickedBall;
 
 import java.util.HashSet;
 import java.util.Set;
 
 
-public record DirectShotsStatsCalcWatchData(IKickEvent currentShot, long timestampDirectShotEnded, double maxShotSpeed,
+public record DirectShotsStatsCalcWatchData(KickedBall currentShot, long timestampDirectShotEnded, double maxShotSpeed,
                                             Set<BotID> ballTouchingOpponents)
 {
 
-	public static DirectShotsStatsCalcWatchData fromCurrentShot(IKickEvent currentShot)
+	public static DirectShotsStatsCalcWatchData fromCurrentShot(KickedBall currentShot)
 	{
 		return new DirectShotsStatsCalcWatchData(currentShot, -1, 0.0, new HashSet<>());
 	}
 
 
-	public DirectShotsStatsCalcWatchData update(Set<BotID> currentlyTouchingOpponents,
-			final BallKickFitState kickFitState)
+	public DirectShotsStatsCalcWatchData update(
+			Set<BotID> currentlyTouchingOpponents,
+			final KickedBall kickFitState
+	)
 	{
 		var newBallTouchingOpponents = new HashSet<>(ballTouchingOpponents);
 		newBallTouchingOpponents.addAll(currentlyTouchingOpponents);

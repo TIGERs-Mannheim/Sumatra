@@ -84,7 +84,7 @@ public class CamFrameShapeMapProducer
 		}
 
 		ShapeMap shapeMap = new ShapeMap();
-		shapeMap.get(EWpShapesLayer.VISION).addAll(shapes);
+		shapeMap.get(EWpShapesLayer.RAW_VISION).addAll(shapes);
 		return shapeMap;
 	}
 

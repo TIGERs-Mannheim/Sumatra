@@ -92,9 +92,8 @@ public class PlayNumberCalc extends ACalculator
 
 	private void ballPlacement()
 	{
-		keeper();
-
 		playNumbers.put(EPlay.BALL_PLACEMENT, Math.min(unassignedBots(), numBallPlacementBots.get()));
+		keeper();
 		defense();
 		playNumbers.put(EPlay.SUPPORT, unassignedBots());
 	}
@@ -104,6 +103,7 @@ public class PlayNumberCalc extends ACalculator
 	{
 		playNumbers.put(EPlay.INTERCHANGE, numInterchangeBots.get());
 	}
+
 
 	private void penalty()
 	{
@@ -158,7 +158,7 @@ public class PlayNumberCalc extends ACalculator
 
 	private void keeper()
 	{
-		if (getWFrame().getTigerBotsAvailable().containsKey(getAiFrame().getKeeperId()))
+		if (getWFrame().getTigerBotsAvailable().containsKey(getAiFrame().getKeeperId()) && unassignedBots() > 0)
 		{
 			playNumbers.put(EPlay.KEEPER, 1);
 		}

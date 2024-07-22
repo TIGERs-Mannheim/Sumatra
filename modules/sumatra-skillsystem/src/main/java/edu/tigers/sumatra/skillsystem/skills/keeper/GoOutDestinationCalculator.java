@@ -4,6 +4,8 @@
 
 package edu.tigers.sumatra.skillsystem.skills.keeper;
 
+import edu.tigers.sumatra.drawable.DrawableCircle;
+import edu.tigers.sumatra.drawable.DrawableLine;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.math.AngleMath;
 import edu.tigers.sumatra.math.SumatraMath;
@@ -13,7 +15,9 @@ import edu.tigers.sumatra.math.line.Lines;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.VectorDistanceComparator;
 import edu.tigers.sumatra.math.vector.VectorMath;
+import edu.tigers.sumatra.skillsystem.ESkillShapesLayer;
 
+import java.awt.Color;
 import java.util.List;
 import java.util.Optional;
 
@@ -29,30 +33,43 @@ public class GoOutDestinationCalculator extends AKeeperDestinationCalculator
 
 		Optional<IVector2> poleCoveringPosition = calcPositionAtPoleCoveringWholeGoal(getPosToCover());
 		IVector2 targetPosition;
+		Color circleColor;
 		if (poleCoveringPosition.isPresent())
 		{
 			targetPosition = poleCoveringPosition.get();
+			circleColor = Color.YELLOW;
 		} else
 		{
 			IVector2 posCoveringWholeGoal = calcPositionCoveringWholeGoal(getPosToCover());
 			if (isPositionInPenaltyArea(posCoveringWholeGoal))
 			{
+				circleColor = Color.GREEN;
 				targetPosition = posCoveringWholeGoal;
 			} else if (isTargetPositionOutsideOfField(posCoveringWholeGoal))
 			{
 				targetPosition = calcNearestGoalPostPosition(getPosToCover());
+				circleColor = Color.BLUE;
 			} else
 			{
 				targetPosition = calcPositionBehindPenaltyArea(getPosToCover());
+				circleColor = Color.RED;
 			}
 		}
+
+		getShapes().get(ESkillShapesLayer.KEEPER_POSITIONING_CALCULATORS)
+				.add(new DrawableLine(getPosToCover(), Geometry.getGoalOur().getLeftPost()));
+		getShapes().get(ESkillShapesLayer.KEEPER_POSITIONING_CALCULATORS)
+				.add(new DrawableLine(getPosToCover(), Geometry.getGoalOur().getRightPost()));
+		getShapes().get(ESkillShapesLayer.KEEPER_POSITIONING_CALCULATORS)
+				.add(new DrawableCircle(targetPosition, Geometry.getBotRadius(), circleColor));
+
 		return targetPosition;
 	}
 
 
 	private IVector2 calcPositionBehindPenaltyArea(IVector2 posToCover)
 	{
-		IVector2 goalCenter = Geometry.getGoalOur().getCenter();
+		IVector2 goalCenter = Geometry.getGoalOur().bisection(posToCover);
 		ILine ballGoalCenter = Lines.lineFromPoints(goalCenter, posToCover);
 
 		List<IVector2> intersectionsList = Geometry.getPenaltyAreaOur().intersectPerimeterPath(ballGoalCenter);
@@ -93,7 +110,8 @@ public class GoOutDestinationCalculator extends AKeeperDestinationCalculator
 	private boolean isPositionInPenaltyArea(IVector2 targetPos)
 	{
 		return Geometry.getPenaltyAreaOur()
-				.withMargin(-((2 * Geometry.getBallRadius()) + Geometry.getBotRadius())).isPointInShape(targetPos);
+				.withMargin(-(2 * Geometry.getBallRadius() + Geometry.getBotRadius()))
+				.isPointInShape(targetPos);
 	}
 
 

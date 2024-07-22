@@ -8,7 +8,7 @@ import edu.tigers.autoreferee.AutoRefFrame;
 import edu.tigers.autoreferee.EAutoRefShapesLayer;
 import edu.tigers.autoreferee.generic.BotPosition;
 import edu.tigers.sumatra.drawable.DrawableCircle;
-import edu.tigers.sumatra.vision.data.IKickEvent;
+import edu.tigers.sumatra.wp.data.KickedBall;
 import edu.tigers.sumatra.wp.util.BotLastTouchedBallCalculator;
 
 import java.awt.Color;
@@ -25,7 +25,7 @@ public class BotBallContactAutoRefCalc implements IAutoRefereeCalc
 {
 	private final BotLastTouchedBallCalculator botLastTouchedBallCalculator = new BotLastTouchedBallCalculator();
 	private List<BotPosition> lastBotTouchedBall = Collections.emptyList();
-	private IKickEvent lastKickEvent;
+	private KickedBall lastKickEvent;
 
 
 	@Override
@@ -40,7 +40,7 @@ public class BotBallContactAutoRefCalc implements IAutoRefereeCalc
 
 		if (currentlyTouchingBots.isEmpty())
 		{
-			var newKickEvent = frame.getWorldFrame().getKickEvent()
+			var newKickEvent = frame.getWorldFrame().getKickedBall()
 					.filter(k -> lastKickEvent == null || k.getTimestamp() != lastKickEvent.getTimestamp());
 			lastBotTouchedBall = newKickEvent
 					.map(k -> new BotPosition(k.getTimestamp(), k.getPosition(), k.getKickingBot()))
@@ -61,6 +61,6 @@ public class BotBallContactAutoRefCalc implements IAutoRefereeCalc
 		currentlyTouchingBots.forEach(b -> frame.getShapes().get(EAutoRefShapesLayer.LAST_BALL_CONTACT)
 				.add(new DrawableCircle(b.getPos(), 100, Color.RED)));
 
-		lastKickEvent = frame.getWorldFrame().getKickEvent().orElse(null);
+		lastKickEvent = frame.getWorldFrame().getKickedBall().orElse(null);
 	}
 }

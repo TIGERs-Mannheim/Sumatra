@@ -11,12 +11,10 @@ import edu.tigers.sumatra.botmanager.sim.skills.BotSkillGlobalPositionSim;
 import edu.tigers.sumatra.botmanager.sim.skills.BotSkillGlobalVelXyPosWSim;
 import edu.tigers.sumatra.botmanager.sim.skills.BotSkillGlobalVelocitySim;
 import edu.tigers.sumatra.botmanager.sim.skills.BotSkillInput;
-import edu.tigers.sumatra.botmanager.sim.skills.BotSkillReceiveBallSim;
 import edu.tigers.sumatra.botmanager.sim.skills.BotSkillLocalForceSim;
 import edu.tigers.sumatra.botmanager.sim.skills.BotSkillLocalVelocitySim;
 import edu.tigers.sumatra.botmanager.sim.skills.BotSkillMotorsOffSim;
 import edu.tigers.sumatra.botmanager.sim.skills.BotSkillOutput;
-import edu.tigers.sumatra.botmanager.sim.skills.BotSkillPenaltyShooterSim;
 import edu.tigers.sumatra.botmanager.sim.skills.BotSkillSineSim;
 import edu.tigers.sumatra.botmanager.sim.skills.BotSkillWheelVelocitySim;
 import edu.tigers.sumatra.botmanager.sim.skills.IBotSkillSim;
@@ -53,9 +51,7 @@ public class BotSkillSimulator
 		botSkills.put(EBotSkill.MOTORS_OFF, new BotSkillMotorsOffSim());
 		botSkills.put(EBotSkill.BOT_SKILL_SINE, new BotSkillSineSim());
 		botSkills.put(EBotSkill.WHEEL_VELOCITY, new BotSkillWheelVelocitySim());
-		botSkills.put(EBotSkill.PENALTY_SHOOTER_SKILL, new BotSkillPenaltyShooterSim());
 		botSkills.put(EBotSkill.LOCAL_FORCE, new BotSkillLocalForceSim());
-		botSkills.put(EBotSkill.RECEIVE_BALL, new BotSkillReceiveBallSim());
 	}
 
 

@@ -6,12 +6,20 @@ package edu.tigers.sumatra.ai.metis.offense.dribble;
 
 import com.github.g3force.configurable.Configurable;
 import edu.tigers.sumatra.ai.metis.ACalculator;
+import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
+import edu.tigers.sumatra.drawable.DrawableCircle;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.circle.Circle;
+import edu.tigers.sumatra.math.circle.ICircle;
+import edu.tigers.sumatra.math.line.Lines;
+import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.math.vector.Vector2;
+import edu.tigers.sumatra.wp.data.ITrackedBot;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
+import java.awt.Color;
 import java.util.Set;
 import java.util.function.Supplier;
 
@@ -51,10 +59,13 @@ public class BallDribblingDetectorCalc extends ACalculator
 			{
 				// dribbling not active anymore
 				return new DribblingInformation(getWFrame().getBall().getPos(), false, BotID.noBot(),
-						Circle.createCircle(getBall().getPos(), maxDribblingLength));
+						Circle.createCircle(getBall().getPos(), maxDribblingLength), null, false);
 			}
 
-			return dribblingInformation;
+			ITrackedBot bot = getWFrame().getBot(dribblingInformation.getDribblingBot());
+			IVector2 intersection = getIntersectionWithDribblingCircle(bot, dribblingInformation.getDribblingCircle());
+			boolean violationImminent = intersection == null || isViolationImminent(bot, intersection);
+			return DribblingInformation.update(dribblingInformation, intersection, violationImminent);
 		}
 
 		double ballToBotMinDistance = Geometry.getBotRadius() + Geometry.getBallRadius() + 10;
@@ -66,21 +77,61 @@ public class BallDribblingDetectorCalc extends ACalculator
 				.findFirst()
 				.map(this::getDribblingInformationFromBotID)
 				.orElse(new DribblingInformation(getBall().getPos(), false, BotID.noBot(),
-						Circle.createCircle(getBall().getPos(), maxDribblingLength)));
+						Circle.createCircle(getBall().getPos(), maxDribblingLength), null, false));
 	}
 
 
 	private DribblingInformation getDribblingInformationFromBotID(BotID botID)
 	{
-		return new DribblingInformation(getBall().getPos(), true, botID,
-				Circle.createCircle(getBall().getPos(), maxDribblingLength));
+		ITrackedBot bot = getWFrame().getBot(botID);
+		ICircle dribblingCircle = Circle.createCircle(getBall().getPos(), maxDribblingLength);
+		IVector2 intersection = getIntersectionWithDribblingCircle(bot, dribblingCircle);
+		boolean violationImminent = intersection != null && isViolationImminent(bot, intersection);
+		return new DribblingInformation(getBall().getPos(), true, botID, dribblingCircle, intersection,
+				violationImminent);
+	}
+
+
+	private boolean isViolationImminent(ITrackedBot bot, IVector2 intersectionPoint)
+	{
+		double v0 = bot.getVel().getLength();
+		if (v0 < 1e-3)
+		{
+			return false;
+		}
+
+		getShapes(EAiShapesLayer.OFFENSE_FINISHER)
+				.add((new DrawableCircle(Circle.createCircle(intersectionPoint, 50))).setColor(Color.BLACK)
+						.setFill(true));
+
+		double s = intersectionPoint.distanceTo(bot.getPos()) / 1000.0;
+		double t = s / v0;
+		return t < 0.1;
+	}
+
+
+	private IVector2 getIntersectionWithDribblingCircle(ITrackedBot bot, ICircle dribblingCircle)
+	{
+		if (!dribblingCircle.isPointInShape(bot.getPos()))
+			return null;
+		var halfLine = Lines.halfLineFromDirection(bot.getPos(), getCurrentMoveToDestination(bot, dribblingCircle));
+		var intersection = halfLine.intersect(dribblingCircle);
+		// must have exactly one intersection, since half line starts inside the circle!
+		assert intersection.size() == 1;
+		return intersection.asList().getFirst();
+	}
+
+
+	private Vector2 getCurrentMoveToDestination(ITrackedBot bot, ICircle dribblingCircle)
+	{
+		return bot.getPos().addNew(bot.getVel().scaleToNew(dribblingCircle.radius() * 2.5));
 	}
 
 
 	@Override
 	protected void reset()
 	{
-		dribblingInformation = new DribblingInformation(null, false, BotID.noBot(), null);
+		dribblingInformation = new DribblingInformation(null, false, BotID.noBot(), null, null, false);
 	}
 
 }

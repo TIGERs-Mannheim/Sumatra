@@ -36,6 +36,8 @@ import java.util.function.Supplier;
 @RequiredArgsConstructor
 public class BallPossessionCalc extends ACalculator
 {
+	private static final double NEAR_BARRIER_TOLERANCE = 4;
+
 	@Configurable(comment = "Distance below which t_near starts to tick. (Bot to ball, air gap) [mm]", defValue = "40")
 	private static double distNear = 40;
 
@@ -85,7 +87,9 @@ public class BallPossessionCalc extends ACalculator
 		// set ball possession based on near/far time thresholds
 		if (getBall().getPos3().z() < maxHeight)
 		{
-			ballPossession = new BallPossession(determinePossession(), closestTiger.getBotId(),
+			var ePossession = determinePossession();
+			ballPossession = new BallPossession(ePossession,
+					getOpponentBallControl(closestOpponent.getBotId(), ePossession), closestTiger.getBotId(),
 					closestOpponent.getBotId());
 		}
 
@@ -97,8 +101,28 @@ public class BallPossessionCalc extends ACalculator
 	@Override
 	protected void reset()
 	{
-		ballPossession = new BallPossession(EBallPossession.NO_ONE, BotID.noBot(), BotID.noBot());
+		ballPossession = new BallPossession(EBallPossession.NO_ONE, EBallControl.NONE, BotID.noBot(), BotID.noBot());
 		tLast = getWFrame().getTimestamp();
+	}
+
+
+	private EBallControl getOpponentBallControl(BotID id, EBallPossession ePossession)
+	{
+		var bot = getWFrame().getOpponentBot(id);
+		if (bot == null)
+		{
+			return EBallControl.NONE;
+		}
+		boolean similarBallRobotVel = getBall().getVel().subtractNew(bot.getVel()).getLength() < 1.8;
+		if (bot.getBotShape().isPointInKickerZone(getBall().getPos(), Geometry.getBallRadius() + NEAR_BARRIER_TOLERANCE)
+				&& similarBallRobotVel)
+		{
+			return EBallControl.STRONG;
+		} else if (ePossession == EBallPossession.THEY)
+		{
+			return EBallControl.WEAK;
+		}
+		return EBallControl.NONE;
 	}
 
 
@@ -121,10 +145,10 @@ public class BallPossessionCalc extends ACalculator
 		}
 
 		var hudColor = getWFrame().getTeamColor();
-		double posX = 44.8;
+		double posX = 1.0;
 		getShapes(EAiShapesLayer.AI_BALL_POSSESSION).add(
-				new DrawableBorderText(Vector2.fromXY(posX, hudColor == ETeamColor.BLUE ? 4.5 : 5.6),
-						ballPossession.getEBallPossession().toString())
+				new DrawableBorderText(Vector2.fromXY(posX, hudColor == ETeamColor.BLUE ? 10.3 : 12.0),
+						ballPossession.getEBallPossession().toString() + " control" + ballPossession.getOpponentBallControl())
 						.setFontSize(EFontSize.MEDIUM)
 						.setColor(hudColor.getColor())
 		);

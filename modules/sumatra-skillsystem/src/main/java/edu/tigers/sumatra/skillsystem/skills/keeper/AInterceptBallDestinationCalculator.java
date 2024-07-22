@@ -20,8 +20,8 @@ public abstract class AInterceptBallDestinationCalculator extends AKeeperDestina
 {
 	@Configurable(comment = "The radius to try intercepting the chip-kicked ball within", defValue = "500.0")
 	protected static double maxChipInterceptDist = 500.0;
-	@Configurable(comment = "Use MoveConstraints PrimaryDirection during intercept", defValue = "true")
-	protected static boolean usePrimaryDirectionsIntercept = true;
+	@Configurable(comment = "Use MoveConstraints PrimaryDirection during intercept", defValue = "false")
+	protected static boolean usePrimaryDirectionsIntercept = false;
 
 	static
 	{
@@ -31,8 +31,7 @@ public abstract class AInterceptBallDestinationCalculator extends AKeeperDestina
 
 	protected DestWithTrajectory buildDestWithTrajectory(IVector2 dest, double tt)
 	{
-		var trajectory = TrajectoryGenerator.generatePositionTrajectoryToReachPointInTime(getTBot(), getMoveConstraints(),
-				dest, tt);
+		var trajectory = TrajectoryGenerator.generatePositionTrajectoryToReachPointInTime(getTBot(), dest, tt);
 		var posAtTt = trajectory.getPositionMM(tt);
 		var distAtTt = posAtTt.distanceTo(dest);
 		var velAtTt = trajectory.getVelocity(tt).getLength();

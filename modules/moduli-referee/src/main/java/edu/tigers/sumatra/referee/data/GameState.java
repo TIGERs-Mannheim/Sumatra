@@ -368,6 +368,14 @@ public class GameState
 		return (state == EGameState.KICKOFF) || (state == EGameState.PREPARE_KICKOFF);
 	}
 
+	/**
+	 * @return true if the next state is KICKOFF or PREPARE_KICKOFF
+	 */
+	public boolean isNextKickoffOrPrepareKickoff()
+	{
+		return (nextState == EGameState.KICKOFF) || (nextState == EGameState.PREPARE_KICKOFF);
+	}
+
 
 	/**
 	 * @return true if this is a KICKOFF or PREPARE_KICKOFF for us.

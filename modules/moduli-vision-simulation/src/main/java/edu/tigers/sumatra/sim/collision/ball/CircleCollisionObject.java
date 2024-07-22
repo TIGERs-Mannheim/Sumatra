@@ -22,22 +22,31 @@ public class CircleCollisionObject implements ICollisionObject
 {
 	private final ICircle circle;
 	private final IVector3 vel;
-	
-	
+
+
 	CircleCollisionObject(final ICircle circle, final IVector3 vel)
 	{
 		this.circle = circle;
 		this.vel = vel;
 	}
-	
-	
+
+
 	@Override
 	public IVector3 getVel()
 	{
 		return vel;
 	}
-	
-	
+
+
+	@Override
+	public IVector2 getSurfaceVel(IVector2 collisionPos)
+	{
+		var connection = Vector2.fromPoints(collisionPos, circle.center());
+		var offset = connection.getNormalVector().scaleTo(vel.z() * circle.radius());
+		return vel.getXYVector().addNew(offset);
+	}
+
+
 	@Override
 	public Optional<ICollision> getCollision(final IVector3 prePos, final IVector3 postPos)
 	{
@@ -52,8 +61,8 @@ public class CircleCollisionObject implements ICollisionObject
 		}
 		return Optional.empty();
 	}
-	
-	
+
+
 	@Override
 	public Optional<ICollision> getInsideCollision(final IVector3 pos)
 	{
@@ -66,8 +75,8 @@ public class CircleCollisionObject implements ICollisionObject
 		}
 		return Optional.empty();
 	}
-	
-	
+
+
 	private IVector2 getNormal(IVector2 point)
 	{
 		IVector2 normal = point.subtractNew(circle.center());

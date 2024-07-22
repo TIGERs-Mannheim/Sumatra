@@ -6,7 +6,8 @@ package edu.tigers.sumatra.ai.metis.pass;
 
 import edu.tigers.sumatra.ai.metis.ACalculator;
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
-import edu.tigers.sumatra.ai.metis.offense.ballinterception.RatedBallInterception;
+import edu.tigers.sumatra.ai.metis.ballinterception.RatedBallInterception;
+import edu.tigers.sumatra.ai.metis.offense.OffensiveConstants;
 import edu.tigers.sumatra.drawable.DrawableAnnotation;
 import edu.tigers.sumatra.drawable.DrawableCircle;
 import edu.tigers.sumatra.geometry.Geometry;
@@ -32,7 +33,7 @@ public class KickOriginCalc extends ACalculator
 {
 	private static final DecimalFormat DF = new DecimalFormat("0.00");
 	private final Supplier<Map<BotID, RatedBallInterception>> ballInterceptions;
-	private final Supplier<Boolean> ballStopped;
+	private final Supplier<Boolean> tigerDribblingBall;
 	private final Supplier<List<BotID>> ballHandlingBots;
 
 	@Getter
@@ -44,9 +45,9 @@ public class KickOriginCalc extends ACalculator
 	{
 		kickOrigins = findKickOrigins();
 
-		kickOrigins.values().forEach(origin -> getShapes(EAiShapesLayer.KICK_ORIGIN)
+		kickOrigins.values().forEach(origin -> getShapes(EAiShapesLayer.PASS_KICK_ORIGIN)
 				.add(new DrawableCircle(Circle.createCircle(origin.getPos(), 30)).setColor(Color.cyan)));
-		kickOrigins.values().forEach(origin -> getShapes(EAiShapesLayer.KICK_ORIGIN)
+		kickOrigins.values().forEach(origin -> getShapes(EAiShapesLayer.PASS_KICK_ORIGIN)
 				.add(new DrawableAnnotation(origin.getPos(), DF.format(origin.getImpactTime()))
 						.withOffset(Vector2f.fromY(100)).setColor(Color.cyan)));
 	}
@@ -54,7 +55,13 @@ public class KickOriginCalc extends ACalculator
 
 	private Map<BotID, KickOrigin> findKickOrigins()
 	{
-		if (Boolean.TRUE.equals(ballStopped.get()))
+		var kickOriginCandidates = findInterceptingOrigins();
+		if (!kickOriginCandidates.isEmpty()
+				&& getBall().getVel().getLength() > OffensiveConstants.getAbortBallInterceptionVelThreshold()
+				&& !tigerDribblingBall.get())
+		{
+			return kickOriginCandidates;
+		} else
 		{
 			if (canBallBeKicked())
 			{
@@ -66,7 +73,6 @@ public class KickOriginCalc extends ACalculator
 			}
 			return Collections.emptyMap();
 		}
-		return findInterceptingOrigins();
 	}
 
 

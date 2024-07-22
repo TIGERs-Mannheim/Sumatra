@@ -53,7 +53,7 @@ public interface ILineSegment extends ILineBase, IBoundedPath
 	 * Returns a list of points on a line. All points are separated by
 	 * stepSize. Start and end of the line are always in the list.
 	 *
-	 * @param stepSize abolute with of each steps
+	 * @param stepSize absolute with of each steps
 	 * @return a list of positions on the line, all separated by stepSize
 	 */
 	List<IVector2> getSteps(double stepSize);

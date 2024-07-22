@@ -3,21 +3,19 @@
  */
 package edu.tigers.sumatra.botparams;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import edu.tigers.sumatra.bot.params.BotParams;
+import org.apache.commons.lang.Validate;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
-
-import org.apache.commons.lang.Validate;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import com.fasterxml.jackson.annotation.JsonAutoDetect;
-import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-
-import edu.tigers.sumatra.bot.params.BotParams;
 
 
 /**
@@ -36,7 +34,9 @@ public class BotParamsDatabase
 	private Map<String, BotParams> entries = new HashMap<>();
 
 
-	/** Constructor */
+	/**
+	 * Constructor
+	 */
 	public BotParamsDatabase()
 	{
 		for (EBotParamLabel label : EBotParamLabel.values())
@@ -58,6 +58,27 @@ public class BotParamsDatabase
 	{
 		entries.put(teamName, new BotParams());
 
+		notifyEntryAdded(teamName, entries.get(teamName));
+	}
+
+
+	/**
+	 * Add a new team by copying parameters from an existing team
+	 * If a team already exists, it is overwritten with the parameters copied from the other team.
+	 * If the team to copy from does not exist, the new team is created with default parameters.
+	 *
+	 * @param teamName
+	 * @param copyTeam
+	 */
+	public void copyEntry(final String teamName, final String copyTeam)
+	{
+		if (entries.containsKey(copyTeam))
+		{
+			entries.put(teamName, entries.get(copyTeam));
+		} else
+		{
+			addEntry(teamName);
+		}
 		notifyEntryAdded(teamName, entries.get(teamName));
 	}
 
@@ -212,6 +233,7 @@ public class BotParamsDatabase
 			observer.onBotParamLabelUpdated(label, newEntry);
 		}
 	}
+
 
 	/**
 	 * Observer interface for {@link BotParamsDatabase}

@@ -3,7 +3,7 @@
  */
 package edu.tigers.sumatra.cam.data;
 
-import edu.tigers.sumatra.cam.proto.MessagesRobocupSslGeometry.SSL_FieldShapeType;
+import edu.tigers.sumatra.cam.proto.SslVisionGeometry.SSL_FieldShapeType;
 import edu.tigers.sumatra.math.line.ILineSegment;
 import lombok.Value;
 

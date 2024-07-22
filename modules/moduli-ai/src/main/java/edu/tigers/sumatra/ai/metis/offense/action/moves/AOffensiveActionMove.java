@@ -44,6 +44,12 @@ public abstract class AOffensiveActionMove
 	public abstract Optional<RatedOffensiveAction> calcAction(BotID botId);
 
 
+	public Optional<RatedOffensiveAction> calcAction(BotID botId, boolean isImpactImminent)
+	{
+		return calcAction(botId);
+	}
+
+
 	protected double applyMultiplier(double baseScore)
 	{
 		return SumatraMath.cap(baseScore * scoreMultiplier, 0, 1);
@@ -75,6 +81,7 @@ public abstract class AOffensiveActionMove
 	{
 		return getAiFrame().getShapeMap().get(shapeLayer);
 	}
+
 
 	protected double getAntiToggleValue(BotID botId, EOffensiveActionMove currentActionMove, double antiToggleBonus)
 	{

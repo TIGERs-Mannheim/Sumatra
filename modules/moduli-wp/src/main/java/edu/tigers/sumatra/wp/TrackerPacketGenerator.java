@@ -10,10 +10,9 @@ import edu.tigers.sumatra.math.vector.IVector3;
 import edu.tigers.sumatra.referee.control.GcEventFactory;
 import edu.tigers.sumatra.referee.proto.SslGcCommon;
 import edu.tigers.sumatra.referee.proto.SslGcGeometry;
-import edu.tigers.sumatra.vision.data.IKickEvent;
-import edu.tigers.sumatra.wp.data.BallKickFitState;
 import edu.tigers.sumatra.wp.data.ITrackedBall;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
+import edu.tigers.sumatra.wp.data.KickedBall;
 import edu.tigers.sumatra.wp.data.SimpleWorldFrame;
 import edu.tigers.sumatra.wp.proto.SslVisionDetectionTracked;
 import edu.tigers.sumatra.wp.proto.SslVisionWrapperTracked;
@@ -48,7 +47,7 @@ public class TrackerPacketGenerator
 		frame.setTimestamp(buildTimestamp(swf.getTimestamp()));
 		frame.addBalls(buildBall(swf.getBall()));
 		frame.addAllRobots(buildRobots(swf.getBots().values()));
-		swf.getKickFitState()
+		swf.getKickedBall()
 				.map(s -> buildKickEvent(swf, s))
 				.ifPresent(frame::setKickedBall);
 		frame.addAllCapabilities(CAPABILITIES);
@@ -61,25 +60,26 @@ public class TrackerPacketGenerator
 	}
 
 
-	private SslVisionDetectionTracked.KickedBall buildKickEvent(final SimpleWorldFrame wFrame,
-			final BallKickFitState ballKickFitState)
+	private SslVisionDetectionTracked.KickedBall buildKickEvent(
+			final SimpleWorldFrame wFrame,
+			final KickedBall kickedBall)
 	{
 		final IVector2 stopPos = wFrame.getBall().getTrajectory().getPosByVel(0.0).getXYVector();
 		final double time2Stop = wFrame.getBall().getTrajectory().getTimeByPos(stopPos);
 		final long stopTimestamp = wFrame.getTimestamp() + (Double.isFinite(time2Stop) ? ((long) (time2Stop * 1e9)) : 0);
-		final SslVisionDetectionTracked.KickedBall.Builder kickedBall = SslVisionDetectionTracked.KickedBall
+		final SslVisionDetectionTracked.KickedBall.Builder trackedKickedBall = SslVisionDetectionTracked.KickedBall
 				.newBuilder()
-				.setPos(buildVector2(ballKickFitState.getKickPos().multiplyNew(1e-3)))
-				.setVel(buildVector3(ballKickFitState.getKickVel()))
-				.setStartTimestamp(buildTimestamp(ballKickFitState.getKickTimestamp()))
+				.setPos(buildVector2(kickedBall.getKickPos().multiplyNew(1e-3)))
+				.setVel(buildVector3(kickedBall.getKickVel()))
+				.setStartTimestamp(buildTimestamp(kickedBall.getKickTimestamp()))
 				.setStopTimestamp(buildTimestamp(stopTimestamp))
 				.setStopPos(buildVector2(stopPos.multiplyNew(1e-3)));
 
-		wFrame.getKickEvent()
-				.map(IKickEvent::getKickingBot)
+		wFrame.getKickedBall()
+				.map(KickedBall::getKickingBot)
 				.map(this::buildRobotId)
-				.ifPresent(kickedBall::setRobotId);
-		return kickedBall.build();
+				.ifPresent(trackedKickedBall::setRobotId);
+		return trackedKickedBall.build();
 	}
 
 

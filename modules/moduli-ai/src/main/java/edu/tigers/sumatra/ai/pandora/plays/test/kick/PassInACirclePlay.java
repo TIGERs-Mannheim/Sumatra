@@ -15,7 +15,7 @@ import edu.tigers.sumatra.math.circle.Circle;
 import edu.tigers.sumatra.math.intersections.IIntersections;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
-import edu.tigers.sumatra.wp.data.BallKickFitState;
+import edu.tigers.sumatra.wp.data.KickedBall;
 import lombok.Setter;
 import org.apache.commons.lang.Validate;
 
@@ -30,7 +30,7 @@ import java.util.Map;
  * Pass in a circle, while robots are optionally moving on the circle.
  * Robots pass to their opponents.
  */
-public class PassInACirclePlay extends ARedirectPlay
+public class PassInACirclePlay extends APassingPlay
 {
 	@Setter
 	private IVector2 center;
@@ -88,7 +88,7 @@ public class PassInACirclePlay extends ARedirectPlay
 		super.doUpdateAfterRoles();
 		tLast = getWorldFrame().getTimestamp();
 
-		var shapes = getAiFrame().getShapeMap().get(EAiShapesLayer.TEST_KICK);
+		var shapes = getAiFrame().getShapeMap().get(EAiShapesLayer.TEST_PASSING);
 		shapes.add(new DrawableCircle(Circle.createCircle(center, radius), Color.green));
 	}
 
@@ -154,8 +154,8 @@ public class PassInACirclePlay extends ARedirectPlay
 	@Override
 	protected IVector2 getReceiverCatchPoint(IVector2 origin)
 	{
-		var kickAge = getWorldFrame().getKickFitState()
-				.map(BallKickFitState::getKickTimestamp)
+		var kickAge = getWorldFrame().getKickedBall()
+				.map(KickedBall::getKickTimestamp)
 				.map(ts -> (getWorldFrame().getTimestamp() - ts) / 1e9)
 				.orElse(Double.POSITIVE_INFINITY);
 		if (kickAge > 0.2)

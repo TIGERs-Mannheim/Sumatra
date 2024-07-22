@@ -253,14 +253,14 @@ public final class LineMath
 	{
 		IVector2 supportVector = line.supportVector();
 		IVector2 directionVector = line.directionVector();
+		var directionLengthSqr = directionVector.getLengthSqr();
 
-		final IVector2 ortho = Vector2f.fromXY(directionVector.y(), -directionVector.x());
-		if (directionVector.isParallelTo(ortho))
+		if (SumatraMath.isZero(directionLengthSqr))
 		{
 			return 0;
 		}
 
-		return PathIntersectionMath.getLineIntersectionLambda(supportVector, directionVector, point, ortho);
+		return directionVector.scalarProduct(point.subtractNew(supportVector)) / directionVector.getLengthSqr();
 	}
 
 

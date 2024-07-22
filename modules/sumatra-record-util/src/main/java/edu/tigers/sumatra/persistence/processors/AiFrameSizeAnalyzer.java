@@ -39,8 +39,6 @@ public class AiFrameSizeAnalyzer implements ISizeAnalyzer<BerkeleyAiFrame>
 				measures.put("offensiveStrategy" + qualifier, visFrame.getOffensiveStrategy());
 				measures.put("offensiveActions" + qualifier, visFrame.getOffensiveActions());
 				measures.put("offensiveStatisticsFrame" + qualifier, visFrame.getOffensiveStatisticsFrame());
-				measures.put("currentPath" + qualifier, visFrame.getCurrentPath());
-				measures.put("actionTrees" + qualifier, visFrame.getActionTrees());
 				measures.put("ballInterceptions" + qualifier, visFrame.getBallInterceptionInformationMap());
 				measures.put("activeSupportBehaviors" + qualifier, visFrame.getActiveSupportBehaviors());
 				measures.put("supportBehaviorAssignment" + qualifier, visFrame.getSupportBehaviorAssignment());

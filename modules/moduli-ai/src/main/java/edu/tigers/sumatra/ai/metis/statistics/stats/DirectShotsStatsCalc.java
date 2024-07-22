@@ -10,7 +10,7 @@ import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
 import edu.tigers.sumatra.ai.metis.goal.EPossibleGoal;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.vector.Vector2;
-import edu.tigers.sumatra.vision.data.IKickEvent;
+import edu.tigers.sumatra.wp.data.KickedBall;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -38,16 +38,19 @@ public class DirectShotsStatsCalc extends AEventWatchingStatsCalc<DirectShotsSta
 		ConfigRegistration.registerClass("metis", DirectShotsStatsCalc.class);
 	}
 
-	private final Supplier<IKickEvent> detectedGoalKickTigers;
+	private final Supplier<KickedBall> detectedGoalKickTigers;
 	private final Supplier<EPossibleGoal> possibleGoal;
 	private final Supplier<Set<BotID>> currentlyTouchingBots;
 	private final StatsData statsData = new StatsData();
 
 
-	public DirectShotsStatsCalc(Supplier<IKickEvent> detectedGoalKickTigers, Supplier<EPossibleGoal> possibleGoal,
-			Supplier<Set<BotID>> currentlyTouchingBots)
+	public DirectShotsStatsCalc(
+			Supplier<KickedBall> detectedGoalKickTigers,
+			Supplier<EPossibleGoal> possibleGoal,
+			Supplier<Set<BotID>> currentlyTouchingBots
+	)
 	{
-		super(EAiShapesLayer.STATS_DEBUG_DIRECT_SHOTS);
+		super(EAiShapesLayer.STATS_DIRECT_SHOTS_DEBUG);
 		this.detectedGoalKickTigers = detectedGoalKickTigers;
 		this.possibleGoal = possibleGoal;
 		this.currentlyTouchingBots = currentlyTouchingBots;
@@ -102,7 +105,7 @@ public class DirectShotsStatsCalc extends AEventWatchingStatsCalc<DirectShotsSta
 		return oldData.update(currentlyTouchingBots.get().stream()
 						.filter(botID -> botID.getTeamColor().opposite() == baseAiFrame.getTeamColor())
 						.collect(Collectors.toSet()),
-				baseAiFrame.getWorldFrame().getKickFitState().orElse(null));
+				baseAiFrame.getWorldFrame().getKickedBall().orElse(null));
 	}
 
 

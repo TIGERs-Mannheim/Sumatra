@@ -19,6 +19,7 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import java.awt.BorderLayout;
 import java.awt.Dimension;
+import java.util.Arrays;
 
 
 public class SkillsPanel extends JPanel
@@ -42,10 +43,14 @@ public class SkillsPanel extends JPanel
 		cmbBots.setPreferredSize(new Dimension(150, 25));
 		selBotPanel.add(cmbBots);
 
-		skillPanel = new InstanceablePanel(ESkill.values(), SumatraModel.getInstance().getUserSettings());
+		var enums = ESkill.values();
+		Arrays.sort(enums, (o1, o2) -> String.CASE_INSENSITIVE_ORDER.compare(o1.name(), o2.name()));
+		skillPanel = new InstanceablePanel(enums, SumatraModel.getInstance().getUserSettings());
 		skillPanel.setShowCreate(true);
 
-		botSkillPanel = new InstanceablePanel(EBotSkill.values(), SumatraModel.getInstance().getUserSettings());
+		var enums2 = EBotSkill.values();
+		Arrays.sort(enums2, (o1, o2) -> String.CASE_INSENSITIVE_ORDER.compare(o1.name(), o2.name()));
+		botSkillPanel = new InstanceablePanel(enums2, SumatraModel.getInstance().getUserSettings());
 		botSkillPanel.setShowCreate(true);
 
 		JPanel createSkillsPanel = new JPanel();

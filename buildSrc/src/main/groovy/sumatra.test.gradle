@@ -4,18 +4,19 @@ plugins {
 
 dependencies {
     // Support old junit4 syntax for now
-    testImplementation 'junit:junit:4.13.2'
-    permitTestUnusedDeclared 'junit:junit:4.13.2'
+    testImplementation(libs.junit)
+    permitTestUnusedDeclared(libs.junit)
     // Support junit 5
-    testImplementation 'org.junit.jupiter:junit-jupiter:5.9.3'
-    permitTestUnusedDeclared 'org.junit.jupiter:junit-jupiter:5.9.3'
-    testRuntimeOnly 'org.junit.vintage:junit-vintage-engine:5.9.3'
+    testImplementation(libs.org.junit.jupiter.junit.jupiter)
+    permitTestUnusedDeclared(libs.org.junit.jupiter.junit.jupiter)
+    testRuntimeOnly(libs.org.junit.vintage.junit.vintage.engine)
+    testRuntimeOnly(libs.org.junit.platform.junit.platform.launcher)
 
     // Add common test tools
-    testImplementation 'org.assertj:assertj-core:3.24.2'
-    permitTestUnusedDeclared 'org.assertj:assertj-core:3.24.2'
-    testImplementation 'org.mockito:mockito-all:1.10.19'
-    permitTestUnusedDeclared 'org.mockito:mockito-all:1.10.19'
+    testImplementation(libs.org.assertj.assertj.core)
+    permitTestUnusedDeclared(libs.org.assertj.assertj.core)
+    testImplementation(libs.org.mockito.mockito.all)
+    permitTestUnusedDeclared(libs.org.mockito.mockito.all)
 }
 
 test {
@@ -28,7 +29,7 @@ test {
 }
 
 jacoco {
-    toolVersion = "0.8.9"
+    toolVersion = libs.versions.org.jacoco.get()
 }
 
 jacocoTestReport {

@@ -5,11 +5,11 @@
 package edu.tigers.sumatra.ai.pandora.plays.standard.cheerings;
 
 import edu.tigers.sumatra.ai.pandora.plays.standard.CheeringPlay;
-import edu.tigers.sumatra.ai.pandora.roles.ARole;
-import edu.tigers.sumatra.ai.pandora.roles.move.MoveRole;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.math.line.ILineSegment;
 import edu.tigers.sumatra.math.line.Lines;
+import edu.tigers.sumatra.math.rectangle.IRectangle;
+import edu.tigers.sumatra.math.rectangle.Rectangle;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
 
@@ -19,15 +19,10 @@ import java.util.List;
 
 public class PongCheeringPlay implements ICheeringPlay
 {
+	private static final double MAX_RECTANGLE_WIDTH = 2000;
+	private static final double MAX_RECTANGLE_LENGTH = 3000;
 	int c = 0;
-	private IVector2 topLeft = Geometry.getField().getCorners().get(0)
-			.addNew(Vector2.fromAngle(Math.PI / 4).scaleTo(750));
-	private IVector2 topRight = Geometry.getField().getCorners().get(1)
-			.addNew(Vector2.fromAngle(-Math.PI / 4).scaleTo(750));
-	private IVector2 bottomRight = Geometry.getField().getCorners().get(2)
-			.subtractNew(Vector2.fromAngle(Math.PI / 4).scaleTo(750));
-	private IVector2 bottomLeft = Geometry.getField().getCorners().get(3)
-			.subtractNew(Vector2.fromAngle(-Math.PI / 4).scaleTo(750));
+
 	private IVector2 ballPos;
 	private ILineSegment ballMoveLine = getMoveLineForStage(BallStage.INIT);
 	private BallStage stage = BallStage.INIT;
@@ -47,7 +42,8 @@ public class PongCheeringPlay implements ICheeringPlay
 		if (ballMoveLine.getPathEnd().distanceTo(Geometry.getGoalTheir().getCenter()) < ballMoveLine.getPathStart()
 				.distanceTo(Geometry.getGoalTheir().getCenter()))
 		{
-			return Vector2.fromXY(ballMoveLine.getPathEnd().x() + Geometry.getBotRadius() * 2.5, ballMoveLine.getPathEnd().y());
+			return Vector2.fromXY(ballMoveLine.getPathEnd().x() + Geometry.getBotRadius() * 2.5,
+					ballMoveLine.getPathEnd().y());
 		} else
 		{
 			return Vector2.fromXY(ballMoveLine.getPathStart().x() + Geometry.getBotRadius() * 2.5,
@@ -62,7 +58,8 @@ public class PongCheeringPlay implements ICheeringPlay
 		if (ballMoveLine.getPathEnd().distanceTo(Geometry.getGoalOur().getCenter()) < ballMoveLine.getPathStart()
 				.distanceTo(Geometry.getGoalOur().getCenter()))
 		{
-			return Vector2.fromXY(ballMoveLine.getPathEnd().x() - Geometry.getBotRadius() * 2.5, ballMoveLine.getPathEnd().y());
+			return Vector2.fromXY(ballMoveLine.getPathEnd().x() - Geometry.getBotRadius() * 2.5,
+					ballMoveLine.getPathEnd().y());
 		} else
 		{
 			return Vector2.fromXY(ballMoveLine.getPathStart().x() - Geometry.getBotRadius() * 2.5,
@@ -81,8 +78,8 @@ public class PongCheeringPlay implements ICheeringPlay
 	@Override
 	public List<IVector2> calcPositions()
 	{
-		List<ARole> roles = play.getRoles();
-		List<IVector2> positions = new ArrayList<>();
+		var roles = play.getPermutedRoles();
+		var positions = new ArrayList<IVector2>();
 
 		// Ball
 		if (ballPos.distanceTo(ballMoveLine.getPathEnd()) > 100)
@@ -122,47 +119,43 @@ public class PongCheeringPlay implements ICheeringPlay
 	{
 		List<IVector2> positions = calcPositions();
 
-		if (play.getRoles().get(0).getPos().distanceTo(ballMoveLine.getPathEnd()) < 250)
+		if (play.getPermutedRoles().get(0).getPos().distanceTo(ballMoveLine.getPathEnd()) < 250)
 		{
 			stage = stage.getNext();
 			ballMoveLine = getMoveLineForStage(stage);
 		}
 
-		if (stage == BallStage.BOTTOM_LEFT_TO_TOP_LEFT)
+		if (stage == BallStage.BOTTOM_RIGHT_TO_BOTTOM_LEFT)
 		{
 			c++;
 		}
 
-		List<ARole> roles = play.getRoles();
+		var roles = play.getPermutedRoles();
 		for (int botId = 0; botId < roles.size(); botId++)
 		{
-			((MoveRole) roles.get(botId)).getMoveCon().setBotsObstacle(false);
-			((MoveRole) roles.get(botId)).updateDestination(positions.get(botId));
+			roles.get(botId).getMoveCon().setOurBotsObstacle(false);
+			roles.get(botId).updateDestination(positions.get(botId));
 		}
 	}
 
 
 	private ILineSegment getMoveLineForStage(final BallStage stage)
 	{
-		switch (stage)
+		var rectangle = Rectangle.fromCenter(Vector2.zero(), MAX_RECTANGLE_LENGTH, MAX_RECTANGLE_WIDTH);
+		var field = Geometry.getField().withMargin(-500);
+		var bottomLeft = field.nearestPointInside(rectangle.getCorner(IRectangle.ECorner.BOTTOM_LEFT));
+		var topLeft = field.nearestPointInside(rectangle.getCorner(IRectangle.ECorner.TOP_LEFT));
+		var topRight = field.nearestPointInside(rectangle.getCorner(IRectangle.ECorner.TOP_RIGHT));
+		var bottomRight = field.nearestPointInside(rectangle.getCorner(IRectangle.ECorner.BOTTOM_RIGHT));
+		return switch (stage)
 		{
-			case TOP_LEFT_TO_BOTTOM_RIGHT:
-				return Lines.segmentFromPoints(topLeft, bottomRight);
+			case BOTTOM_LEFT_TO_TOP_RIGHT -> Lines.segmentFromPoints(bottomLeft, topRight);
+			case TOP_RIGHT_TO_TOP_LEFT -> Lines.segmentFromPoints(topRight, topLeft);
+			case TOP_LEFT_TO_BOTTOM_RIGHT -> Lines.segmentFromPoints(topLeft, bottomRight);
+			case BOTTOM_RIGHT_TO_BOTTOM_LEFT -> Lines.segmentFromPoints(bottomRight, bottomLeft);
+			case INIT -> getMoveLineForStage(BallStage.BOTTOM_RIGHT_TO_BOTTOM_LEFT);
+		};
 
-			case BOTTOM_RIGHT_TO_TOP_RIGHT:
-				return Lines.segmentFromPoints(bottomRight, topRight);
-
-			case TOP_RIGHT_TO_BOTTOM_LEFT:
-				return Lines.segmentFromPoints(topRight, bottomLeft);
-
-			case BOTTOM_LEFT_TO_TOP_LEFT:
-				return Lines.segmentFromPoints(bottomLeft, topLeft);
-
-			case INIT:
-				return getMoveLineForStage(BallStage.BOTTOM_LEFT_TO_TOP_LEFT);
-		}
-
-		return null;
 	}
 
 
@@ -172,23 +165,25 @@ public class PongCheeringPlay implements ICheeringPlay
 		return ECheeringPlays.PONG;
 	}
 
+
 	// TL -> TopLeft
 	// BR -> BottomRight
 	enum BallStage
 	{
 		INIT,
+		BOTTOM_LEFT_TO_TOP_RIGHT,
+		TOP_RIGHT_TO_TOP_LEFT,
 		TOP_LEFT_TO_BOTTOM_RIGHT,
-		BOTTOM_RIGHT_TO_TOP_RIGHT,
-		TOP_RIGHT_TO_BOTTOM_LEFT,
-		BOTTOM_LEFT_TO_TOP_LEFT;
+		BOTTOM_RIGHT_TO_BOTTOM_LEFT;
+
 
 		static
 		{
-			INIT.next = TOP_LEFT_TO_BOTTOM_RIGHT;
-			TOP_LEFT_TO_BOTTOM_RIGHT.next = BOTTOM_RIGHT_TO_TOP_RIGHT;
-			BOTTOM_RIGHT_TO_TOP_RIGHT.next = TOP_RIGHT_TO_BOTTOM_LEFT;
-			TOP_RIGHT_TO_BOTTOM_LEFT.next = BOTTOM_LEFT_TO_TOP_LEFT;
-			BOTTOM_LEFT_TO_TOP_LEFT.next = TOP_LEFT_TO_BOTTOM_RIGHT;
+			INIT.next = BOTTOM_LEFT_TO_TOP_RIGHT;
+			BOTTOM_LEFT_TO_TOP_RIGHT.next = TOP_RIGHT_TO_TOP_LEFT;
+			TOP_RIGHT_TO_TOP_LEFT.next = TOP_LEFT_TO_BOTTOM_RIGHT;
+			TOP_LEFT_TO_BOTTOM_RIGHT.next = BOTTOM_RIGHT_TO_BOTTOM_LEFT;
+			BOTTOM_RIGHT_TO_BOTTOM_LEFT.next = BOTTOM_LEFT_TO_TOP_RIGHT;
 		}
 
 		private BallStage next;

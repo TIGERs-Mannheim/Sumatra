@@ -5,10 +5,10 @@
 package edu.tigers.sumatra.ai.pandora.plays.standard.cheerings;
 
 import edu.tigers.sumatra.ai.pandora.plays.standard.CheeringPlay;
-import edu.tigers.sumatra.ai.pandora.roles.ARole;
-import edu.tigers.sumatra.ai.pandora.roles.move.MoveRole;
+import edu.tigers.sumatra.botmanager.botskills.data.ESong;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.math.AngleMath;
+import edu.tigers.sumatra.math.SumatraMath;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
 
@@ -33,9 +33,9 @@ public class LaolaCheeringPlay implements ICheeringPlay
 	{
 		this.cheeringPlayState = LaolaState.INIT;
 		this.play = play;
-		this.numRolesLastTime = play.getRoles().size();
+		this.numRolesLastTime = play.getPermutedRoles().size();
 
-		double totalDistance = (play.getRoles().size() - 2) * distanceBetweenBots;
+		double totalDistance = (play.getPermutedRoles().size() - 2) * distanceBetweenBots;
 		double startXValue = -0.5d * totalDistance;
 		double fieldLength = Geometry.getFieldLength();
 		double fieldWidth = Geometry.getFieldWidth();
@@ -58,10 +58,10 @@ public class LaolaCheeringPlay implements ICheeringPlay
 	@Override
 	public List<IVector2> calcPositions()
 	{
-		List<ARole> roles = play.getRoles();
-		List<IVector2> positions = new ArrayList<>(roles.size());
+		var roles = play.getPermutedRoles();
+		var positions = new ArrayList<IVector2>(roles.size());
 
-		double totalDistance = (play.getRoles().size() - 2) * distanceBetweenBots;
+		double totalDistance = (roles.size() - 2) * distanceBetweenBots;
 		double startXValue = -0.5d * totalDistance;
 
 		positions.add(path[racePathState]);
@@ -79,42 +79,38 @@ public class LaolaCheeringPlay implements ICheeringPlay
 	@Override
 	public void doUpdate()
 	{
-		if (play.getRoles().size() <= 3)
+		var numRoles = play.getPermutedRoles().size();
+		if (numRoles <= 3)
 		{
 			done = true;
 			return;
 		}
 
-		if (numRolesLastTime != play.getRoles().size())
+		if (numRolesLastTime != numRoles)
 		{
 			cheeringPlayState = LaolaState.INIT;
-			numRolesLastTime = play.getRoles().size();
+			numRolesLastTime = numRoles;
 		}
 
-		switch (cheeringPlayState)
+		if (cheeringPlayState == LaolaState.INIT || cheeringPlayState == LaolaState.RACE_PATH)
 		{
-			case INIT:
-			case RACE_PATH:
-				moveToInitPosition();
-				break;
-			case LAOLA:
-			default:
-				moveOnLaolaState();
-				break;
+			moveToInitPosition();
+		} else
+		{
+			moveOnLaolaState();
 		}
-
 	}
 
 
 	private void moveToInitPosition()
 	{
-		List<ARole> roles = play.getRoles();
-		List<IVector2> positions = calcPositions();
+		var roles = play.getPermutedRoles();
+		var positions = calcPositions();
 		int targetReached = 0;
 
 		for (int botId = 0; botId < roles.size(); botId++)
 		{
-			MoveRole role = (MoveRole) roles.get(botId);
+			var role = roles.get(botId);
 			role.updateDestination(positions.get(botId));
 
 			if (botId != 0)
@@ -132,7 +128,7 @@ public class LaolaCheeringPlay implements ICheeringPlay
 			return;
 		}
 
-		MoveRole specialRole = (MoveRole) roles.get(0);
+		var specialRole = roles.get(0);
 		boolean posReached = specialRole.getDestination().isCloseTo(specialRole.getPos(), 500d);
 
 		if (posReached && racePathState == path.length - 1)
@@ -147,11 +143,11 @@ public class LaolaCheeringPlay implements ICheeringPlay
 
 	private void moveOnLaolaState()
 	{
-		double totalDistance = (play.getRoles().size() - 2) * distanceBetweenBots;
+		double totalDistance = (play.getPermutedRoles().size() - 2) * distanceBetweenBots;
 		double endXValue = 0.5d * totalDistance;
-		List<ARole> roles = play.getRoles();
+		var roles = play.getPermutedRoles();
 
-		MoveRole specialRole = (MoveRole) roles.get(0);
+		var specialRole = roles.get(0);
 
 		if (specialRole.getPos().x() < endXValue + 8d * Geometry.getBotRadius())
 			specialRole.updateDestination(specialRole.getPos().addNew(Vector2.fromXY(500d, 0d)));
@@ -161,15 +157,22 @@ public class LaolaCheeringPlay implements ICheeringPlay
 
 		for (int botId = 1; botId < roles.size(); botId++)
 		{
-			MoveRole role = (MoveRole) roles.get(botId);
+			var role = roles.get(botId);
 			double x = role.getDestination().x();
 			double frequency = AngleMath.PI_TWO / (28d * Geometry.getBotRadius());
 			double phi = frequency * (specialRole.getPos().x() - x);
 			double amplitude = 8d * Geometry.getBotRadius();
 			double y = amplitude * Math.cos(Math.min(AngleMath.PI_HALF, Math.max(-AngleMath.PI_HALF, phi)));
 
+			if (SumatraMath.isZero(y))
+			{
+				play.setSong(role.getBotID(), ESong.NONE);
+			} else
+			{
+				play.setSong(role.getBotID(), ESong.CHEERING);
+			}
 
-			IVector2 target = Vector2.fromXY(x, y);
+			var target = Vector2.fromXY(x, y);
 
 			role.updateDestination(target);
 			role.updateTargetAngle(-AngleMath.PI_HALF);
@@ -182,6 +185,7 @@ public class LaolaCheeringPlay implements ICheeringPlay
 	{
 		return ECheeringPlays.LAOLA;
 	}
+
 
 	private enum LaolaState
 	{

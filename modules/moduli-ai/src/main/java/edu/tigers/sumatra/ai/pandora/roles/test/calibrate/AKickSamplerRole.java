@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2024, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.pandora.roles.test.calibrate;
@@ -26,7 +26,7 @@ import java.util.Map;
  */
 public abstract class AKickSamplerRole extends ARole
 {
-	protected static List<SamplePoint> samples = new ArrayList<>();
+	protected final List<SamplePoint> samples = new ArrayList<>();
 	private final boolean halfField;
 
 

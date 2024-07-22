@@ -8,22 +8,6 @@ plugins {
 
 protobuf {
     protoc {
-        artifact = 'com.google.protobuf:protoc:3.23.2'
-    }
-    // See: https://github.com/protocolbuffers/protobuf/issues/7271
-    generateProtoTasks {
-        all().each { task ->
-            task.doLast {
-                ant.replaceregexp(
-                        match: '@java.lang.Deprecated|@deprecated',
-                        replace: '',
-                        flags: 'g',
-                        byline: true
-                ) {
-                    fileset(
-                            dir: "${protobuf.generatedFilesBaseDir}/main/java")
-                }
-            }
-        }
+        artifact = libs.com.google.protobuf.protoc.get()
     }
 }

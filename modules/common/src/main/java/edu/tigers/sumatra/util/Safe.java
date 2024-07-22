@@ -29,7 +29,7 @@ public final class Safe
 		try
 		{
 			runnable.run();
-		} catch (Exception e)
+		} catch (Throwable e)
 		{
 			log.error("Unexpected exception", e);
 		}
@@ -48,7 +48,7 @@ public final class Safe
 		try
 		{
 			consumer.accept(element);
-		} catch (Exception e)
+		} catch (Throwable e)
 		{
 			log.error("Unexpected exception", e);
 		}

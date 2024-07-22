@@ -1,8 +1,8 @@
 == Calibration
 
-There are several parameters that have to be calibrated based on field on robot.
+There are several parameters that have to be calibrated based on field and robot.
 
-The calibration should be performed in the order of the subsections.
+The calibration should be performed in the order of the subsections, as some depend on each other.
 
 === Ball Model
 
@@ -23,8 +23,139 @@ The parameters are stored on the robots and can be changed under Bot Center -> B
 The parameters can be determined using the "Ball & Kick Model" view which shows further instructions.
 Determination of these parameters can be combined with the Ball Model.
 
+=== Dribbler
 
-=== Redirect Model
+WARNING: Each robot needs to have an individually calibrated dribbler. This calibration can be started from the bot's display.
+
+The following configurations affect dribbling behavior:
+
+- Sumatra Bot Params -> `dribblerSpecs`
+- Robot state estimation -> `v2020/ekf`
+- Robot dribbler control -> `v2020/drib`
+
+Robot configurations can be found under Bot Center -> Bot Details -> Config.
+All config values are listed in detail further down.
+The `TestStopBallPlay` and the different passing plays help in testing the dribbler in different scenarios.
+
+==== Tuning Guidelines
+
+|===
+|Problem |Possible Solutions
+
+| Ball bounces off the robot on reception
+| Reduce dribbling speed in Bot Params. The bounce comes from a sudden change of surface speed when the ball hits the dribbler.
+
+| Dribbler does not report any traction with ball at dribbler
+| Ensure your dribbler is calibrated (see above). Reduce `dribbler/active_min_force` if you are on a very slippy carpet.
+
+| Dribbler does not achieve strong traction
+| Reduce `dribbler/strong/on`. Ensure to lower `dribbler/strong/off` as well. Reduce overall target force in bot params. Increase `drib/vel/limit`.
+
+| Dribbler takes long to achieve strong traction
+| Increase `drib/vel/inc` to spin up faster. Should increase `drib/vel/dec` too.
+
+| Ball rolls away from robot if dribbler is stopped
+| Lower `drib/force/min` and/or `drib/force/dropRate` for a softer drop.
+
+| Bot looses ball during pulling
+| Increase dribbler target force. Increase `drib/force/fromFriction` to automatically increase target force while moving backwards.
+
+| Ball lost during rotation in place
+| Increase dribbler target force. Reduce rotational acceleration/velocity. Increase `drib/force/fromFriction` to automatically increase target force while moving backwards. Reduce (more negative) `drib/force/angle` to automatically use higher target force during sidewards movement.
+
+| Bot rotates while moving forward with ball
+| Ball force is too high. Reduce `drib/force/fromFriction` or target dribbler force.
+
+| Finisher cannot keep target orientation during side moves
+| Ball force is too high. Reduce `drib/force/fromFriction` or target dribbler force. Increase `drib/force/angle` to automatically use lower target force during sidewards movement.
+
+|===
+
+==== Bot Params
+
+Sets dribbler target values for the robots.
+
+|===
+|Parameter |Unit |Description
+|defaultSpeed |m/s |Default dribbler target speed
+|defaultForce |N |Default dribbler target force
+|highPowerSpeed |m/s |High power dribbler target speed
+|highPowerForce |N |High power dribbler target force
+|===
+
+Speeds and forces are measured at the dribbling bar/ball contact point. Hence, they are not rotational units.
+Default mode is used in normal situations like ball placement. High power mode is mostly used in skirmish situations. This depends on skill on role.
+
+==== Robot Dribbler State Estimation
+
+Determines dribbling state reported by robots.
+
+|===
+|Parameter |Unit |Description
+| dribbler/strong/on | %
+| If the achieved dribbling force is above this value the robot reports strong dribbling contact.
+| dribbler/strong/off | %
+| If the achieved dribbling force is below this value the robot reports weak dribbling contact.
+| dribbler/active_min_force | mN
+| If the target dribbler force drops below this value the robot reports dribbling as off. Active dribbling will only be detected above this threshold.
+| ball/timeout | ms
+| Determines how long the robot estimates a ball position after the last detection (by barrier or dribbler force).
+|===
+
+==== Robot Dribbler Control
+
+Influences how the robot adjusts dribbling speed and force to achieve best dribbling performance.
+
+
+|===
+|Parameter |Unit |Description
+
+| drib/force/angle
+| degree
+| Usually negative. Increases target dribbler force during sidewards movement with ball.
+
+| drib/force/fromFriction
+| mN
+| Increase/reduce target dribbler force based on ball movement at dribbler.
+
+| drib/force/dropRate
+| mN/s
+| Force reduction rate when target velocity is zero. Used for soft ball drops.
+
+| drib/force/min
+| mN
+| Minimum force output. For ball drop logic this is considered the drop-complete force.
+
+| drib/vel/limit
+| mm/s
+| Increase dribbler speed up to this limit to try to achiever higher dribbling force.
+
+| drib/vel/inc
+| mm/s^2
+| How fast to increase dribbler speed if force is not met.
+
+| drib/vel/dec
+| mm/s^2
+| How fast to decrease dribbler speed if target force is reached.
+
+| drib/frac/min
+| %
+| Maps achieved dribbler force fraction to robot acceleration reduction. This is the minimum force fraction and acceleration fraction.
+
+| drib/frac/max
+| %
+| Maps achieved dribbler force fraction to robot acceleration reduction. This is the maximum force fraction. Above this, full robot acceleration is used.
+|===
+
+Set `drib/force/angle` to 0 to disable force adjustments based on sidewards motion.
+Set `drib/force/fromFriction` to 0 to disable all force adjustments based on motion.
+Set `drib/frac/min` and `drib/frac/max` to 100 to disable robot acceleration adjustments.
+
+
+=== Redirects
+
+WARNING: The redirect model estimation does not work very well at the moment.
+The data scatters significantly.
 
 The redirect model estimates how the ball behaves when a robot redirects the ball. There is a certain damping and spin applied to the ball during a redirect.
 

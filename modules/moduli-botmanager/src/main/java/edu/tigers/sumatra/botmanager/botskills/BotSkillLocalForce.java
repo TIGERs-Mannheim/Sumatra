@@ -54,14 +54,14 @@ public class BotSkillLocalForce extends AMoveBotSkill
 	 * @param xy
 	 * @param w
 	 * @param dribbleSpeed
-	 * @param dribbleCurrent
+	 * @param dribbleForce
 	 * @param kickSpeed
 	 * @param kickDevice
 	 * @param kickMode
 	 */
 	@SuppressWarnings({ "squid:S00107", "unused" })
 	public BotSkillLocalForce(final IVector2 xy, final double w,
-			final double dribbleSpeed, final double dribbleCurrent, final double kickSpeed, final EKickerDevice kickDevice,
+			final double dribbleSpeed, final double dribbleForce, final double kickSpeed, final EKickerDevice kickDevice,
 			final EKickerMode kickMode)
 	{
 		this();
@@ -70,7 +70,7 @@ public class BotSkillLocalForce extends AMoveBotSkill
 		force[1] = (int) (xy.y() * 100.0);
 		force[2] = (int) (w * 1000.0);
 
-		kickerDribbler.setDribbler(dribbleSpeed, dribbleCurrent);
+		kickerDribbler.setDribbler(dribbleSpeed, dribbleForce);
 		kickerDribbler.setKick(kickSpeed, kickDevice, kickMode);
 	}
 

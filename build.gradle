@@ -1,8 +1,8 @@
 import org.apache.tools.ant.filters.ReplaceTokens
 
 plugins {
-    id 'com.palantir.git-version' version '3.0.0'
-    id 'org.sonarqube'
+    alias(libs.plugins.sonar)
+    alias(libs.plugins.versionCatalogUpdate)
     id 'idea'
 
     id 'sumatra.java'
@@ -10,14 +10,16 @@ plugins {
     id 'sumatra.application'
 }
 
-ext.versionPrefix = 'merge/'
-ext.versionDetails = versionDetails(prefix: versionPrefix)
-version versionDetails.lastTag + '-' + versionDetails.gitHash
+def gitDescribe = providers.exec {
+    commandLine("git", "describe", "--tags", "--always", "--first-parent")
+}.standardOutput.asText.map { it.replace("merge/", "").trim() }
+
+version gitDescribe.get()
 
 processResources {
-    inputs.property("project.version", rootProject.versionDetails.lastTag)
+    inputs.property("project.version", project.version)
     filter ReplaceTokens, tokens: [
-            "application.version": rootProject.versionDetails.lastTag,
+            "application.version": project.version,
     ]
 }
 
@@ -55,16 +57,16 @@ dependencies {
     implementation project(':moduli-ai-controller')
     implementation project(':moduli-vision-simulation')
     implementation project(':moduli-autoreferee')
+    runtimeOnly project(':moduli-autoreferee-ci')
     runtimeOnly project(':moduli-team-client')
     implementation project(':moduli-bot-params')
-    runtimeOnly project(':moduli-log-analysis')
 
-    implementation 'com.github.TIGERs-Mannheim:moduli:4.1'
+    implementation(libs.com.github.TIGERs.mannheim.moduli)
 
-    implementation 'org.apache.logging.log4j:log4j-api:2.20.0'
-    runtimeOnly 'org.apache.logging.log4j:log4j-core:2.20.0'
+    implementation(libs.org.apache.logging.log4j.log4j.api)
+    runtimeOnly(libs.org.apache.logging.log4j.log4j.core)
 
-    implementation 'commons-cli:commons-cli:1.5.0'
+    implementation(libs.commons.cli)
 }
 
 application {
@@ -105,7 +107,7 @@ jib {
 sonarqube {
     properties {
         property "sonar.projectKey", "main_Sumatra_AXyeyj5BLG1xSGHUS0Xf"
-        property "sonar.projectVersion", versionDetails.lastTag
+        property "sonar.projectVersion", gitDescribe
         property "sonar.host.url", System.getenv("SONARQUBE_URL")
         property "sonar.login", System.getenv("SONARQUBE_AUTH_TOKEN")
         if (System.getenv("CI_MERGE_REQUEST_IID") != null) {
@@ -115,5 +117,17 @@ sonarqube {
         } else {
             property "sonar.branch.name", System.getenv("CI_COMMIT_REF_NAME")
         }
+    }
+}
+
+def isNonStable = { String version ->
+    def stableKeyword = ['RELEASE', 'FINAL', 'GA', 'JRE'].any { it -> version.toUpperCase().contains(it) }
+    def regex = /^[0-9v]{1,3}\.([0-9,.v-]|(groovy))+(-r)?$/
+    return !stableKeyword && !(version ==~ regex)
+}
+
+versionCatalogUpdate {
+    versionSelector {
+        !isNonStable(it.candidate.version)
     }
 }

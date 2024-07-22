@@ -9,9 +9,12 @@ import com.github.g3force.configurable.Configurable;
 import edu.tigers.sumatra.ai.metis.kicking.Pass;
 import edu.tigers.sumatra.ai.metis.offense.situation.zone.OffensiveZones;
 import edu.tigers.sumatra.ai.metis.pass.PassStats;
+import edu.tigers.sumatra.drawable.IDrawableShape;
+import edu.tigers.sumatra.math.SumatraMath;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
 
 import java.util.Collection;
+import java.util.List;
 
 
 /**
@@ -24,14 +27,16 @@ import java.util.Collection;
  */
 public class DynamicPassInterceptionMovingRobotRater extends APassRater
 {
-	@Configurable(defValue = "0.2", comment = "Adjustment phase 1: max bonus for zone passes")
-	private static double maxDynamicAdjustment = 0.2;
+	@Configurable(defValue = "0.15", comment = "Adjustment phase 1: max bonus for zone passes")
+	private static double maxDynamicAdjustment = 0.15;
 
-	@Configurable(defValue = "0.05", comment = "Adjustment phase 1: calculate bonus via past pass success history of zone passes")
-	private static double dynamicAdjustmentStepSize = 0.05;
+	@Configurable(defValue = "0.03", comment = "Adjustment phase 1: calculate bonus via past pass success history of zone passes")
+	private static double dynamicAdjustmentStepSize = 0.03;
 
-	@Configurable(defValue = "0.4", comment = "Adjustment phase 2: success ratio bonus multiplier")
-	private static double dynamicAdjustmentFactor = 0.4;
+	@Configurable(defValue = "0.3", comment = "Adjustment phase 2: success ratio bonus multiplier")
+	private static double dynamicAdjustmentFactor = 0.3;
+	@Configurable(defValue = "0.7", comment = "the pass success ratio that shall be achieved using dynamic adjustment")
+	private static double targetedPassRatio = 0.7;
 
 	@Configurable(defValue = "10", comment = "Adjustment phase 2: calculate bonus via pass success ratio")
 	private static int numOfPassesToStartDynamicScoringFactorAdjustment = 10;
@@ -46,9 +51,12 @@ public class DynamicPassInterceptionMovingRobotRater extends APassRater
 	private final OffensiveZones offensiveZones;
 
 
-	public DynamicPassInterceptionMovingRobotRater(Collection<ITrackedBot> consideredBots,
+	public DynamicPassInterceptionMovingRobotRater(
+			Collection<ITrackedBot> consideredBots,
+			Collection<ITrackedBot> consideredBotsIntercept,
 			PassStats passStats,
-			OffensiveZones offensiveZones)
+			OffensiveZones offensiveZones
+	)
 	{
 		passInterceptionMovingRobotRater = new PassInterceptionMovingRobotRater(consideredBots);
 		this.passStats = passStats;
@@ -58,7 +66,7 @@ public class DynamicPassInterceptionMovingRobotRater extends APassRater
 		{
 			// start using dynamic scoring offset
 			double ratio = passStats.getSuccessfulPasses() / (double) passStats.getNPasses();
-			double offset = (ratio - 0.5) * 2 * dynamicAdjustmentFactor;
+			double offset = SumatraMath.cap((ratio - targetedPassRatio), -0.5, 0.5) * 2 * dynamicAdjustmentFactor;
 			passInterceptionMovingRobotRater.setScoringFactorOffset(offset);
 		}
 	}
@@ -82,5 +90,19 @@ public class DynamicPassInterceptionMovingRobotRater extends APassRater
 					Math.max(-maxDynamicAdjustment, (nSuccess - nFailure) * dynamicAdjustmentStepSize));
 		}
 		return Math.min(1, Math.max(0, rawScore + dynamicAdjustment));
+	}
+
+
+	@Override
+	public void setShapes(List<IDrawableShape> shapes)
+	{
+		passInterceptionMovingRobotRater.setShapes(shapes);
+	}
+
+
+	@Override
+	public void drawShapes(List<IDrawableShape> shapes)
+	{
+		passInterceptionMovingRobotRater.drawShapes(shapes);
 	}
 }

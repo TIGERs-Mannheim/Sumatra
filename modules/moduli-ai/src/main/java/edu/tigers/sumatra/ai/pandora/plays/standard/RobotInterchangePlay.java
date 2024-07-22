@@ -35,11 +35,11 @@ public class RobotInterchangePlay extends AMaintenancePlay
 	@Configurable(comment = "Factor to reduce maxAccW for interchange behaviour", defValue = "0.1")
 	private static double maxAccWFactor = 0.1;
 
-	@Configurable(comment = "Distance from field line for interchangable bots (may be negative)", defValue = "-130.0")
-	private static double distanceToFieldLine = -130.0;
+	@Configurable(comment = "Distance from field line for interchangable bots (may be negative)", defValue = "0.0")
+	private static double distanceToFieldLine = 0.0;
 
-	@Configurable(comment = "Position for interchangable bots in vision coordinates", defValue = "POS_Y")
-	private static VisionSide positionInVision = VisionSide.POS_Y;
+	@Configurable(comment = "Position for interchangable bots in vision coordinates", defValue = "NEG_Y")
+	private static VisionSide positionInVision = VisionSide.NEG_Y;
 
 	@Configurable(comment = "Offset factor to centerLine", defValue = "0.0")
 	private static double offsetFactorToCenterline = 0.0;

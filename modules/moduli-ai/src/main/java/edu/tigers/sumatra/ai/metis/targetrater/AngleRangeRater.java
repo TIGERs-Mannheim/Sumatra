@@ -52,8 +52,8 @@ public class AngleRangeRater implements ITargetRater
 	@Configurable(comment = "[s] Max time horizon to consider for moving robots", defValue = "2.0")
 	private static double maxHorizon = 2.0;
 
-	@Configurable(comment = "[s] The time a robot needs to react to the ball movement", defValue = "0.085")
-	private static double timeForBotToReact = 0.085;
+	@Configurable(comment = "[s] The time a robot needs to react to the ball movement", defValue = "0.1")
+	private static double timeForBotToReact = 0.1;
 
 	@Configurable(comment = "[rad] The angle that is considered a safe goal. Any higher angle will not improve the score", defValue = "0.3")
 	private static double probablyAGoalAngle = 0.3;
@@ -61,11 +61,8 @@ public class AngleRangeRater implements ITargetRater
 	@Configurable(comment = "[s] maxVel that considers opponent bots are reacting", defValue = "1.5")
 	private static double maxOpponentReactionVel = 1.5;
 
-	@Configurable(defValue = "CUBIC_REDUCTION")
-	private static EHorizonCalculation horizonCalculatorMode = EHorizonCalculation.CUBIC_REDUCTION;
-
-	@Configurable(comment = "[0-1] How good can the opponents use time before kick to improve the position", defValue = "0.2")
-	private static double timeBeforeReactionUsageFactor = 0.2;
+	@Configurable(comment = "[0-1] How good can the opponents use time before kick to improve the position", defValue = "0.1")
+	private static double timeBeforeReactionUsageFactor = 0.1;
 
 	static
 	{
@@ -125,7 +122,6 @@ public class AngleRangeRater implements ITargetRater
 	{
 		movingObstacleGen.setMaxHorizon(maxHorizon);
 		movingObstacleGen.setTimeForBotToReact(timeForBotToReact);
-		movingObstacleGen.setHorizonCalculation(horizonCalculatorMode);
 		movingObstacleGen.setNoneOptimalDriveFactor(noneOptimalDriveFactor);
 		movingObstacleGen.setTimeBeforeReactionUsageFactor(timeBeforeReactionUsageFactor);
 

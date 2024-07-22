@@ -13,6 +13,7 @@ import edu.tigers.sumatra.ids.ETeam;
 import edu.tigers.sumatra.math.AngleMath;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
+import edu.tigers.sumatra.pathfinder.TrajectoryGenerator;
 import edu.tigers.sumatra.skillsystem.ESkillShapesLayer;
 import edu.tigers.sumatra.skillsystem.skills.redirect.RedirectConsultantFactory;
 import edu.tigers.sumatra.skillsystem.skills.util.PositionValidator;
@@ -24,14 +25,11 @@ import java.awt.Color;
 
 public class ApproachBallLineSkill extends AMoveToSkill
 {
-	@Setter
-	private double maximumReasonableRedirectAngle = 1.2;
-
-	private final PositionValidator positionValidator = new PositionValidator();
-
 	@Configurable(defValue = "100.0", comment = "When distance is below, the ball is considered catched up")
 	private static double minDistanceToBallLine = 100;
-
+	private final PositionValidator positionValidator = new PositionValidator();
+	@Setter
+	private double maximumReasonableRedirectAngle = 1.2;
 	@Getter
 	@Setter
 	private IVector2 desiredBallCatchPos;
@@ -39,6 +37,8 @@ public class ApproachBallLineSkill extends AMoveToSkill
 	private IVector2 target;
 	@Setter
 	private double marginToTheirPenArea;
+	@Setter
+	private double approachFailedMinBallVel = 0.1;
 
 
 	@Override
@@ -81,7 +81,10 @@ public class ApproachBallLineSkill extends AMoveToSkill
 			var dest = catchPosition.subtractNew(botToKickerPos);
 
 			updateDestination(dest);
-			updatePrimaryDirection();
+			setComeToAStop(TrajectoryGenerator.isComeToAStopFaster(getTBot(), dest));
+		} else
+		{
+			setComeToAStop(false);
 		}
 
 		if (desiredBallCatchPos != null)
@@ -97,7 +100,7 @@ public class ApproachBallLineSkill extends AMoveToSkill
 
 	private void updateSkillState()
 	{
-		if (getBall().getVel().getLength2() < 0.1 || ballMovesAwayFromMe())
+		if (getBall().getVel().getLength2() < approachFailedMinBallVel || ballMovesAwayFromMe())
 		{
 			setSkillState(ESkillState.FAILURE);
 		} else if (ballLineIsApproached())
@@ -112,7 +115,8 @@ public class ApproachBallLineSkill extends AMoveToSkill
 
 	private boolean ballLineIsApproached()
 	{
-		return getDestination().distanceTo(getPos()) < minDistanceToBallLine;
+		return getBall().getTrajectory().getTravelLineSegment().distanceTo(getPos()) < minDistanceToBallLine
+				&& Math.abs(getTBot().getVel().scalarProduct(getBall().getVel().getNormalVector().normalizeNew())) < 0.3;
 	}
 
 
@@ -126,26 +130,7 @@ public class ApproachBallLineSkill extends AMoveToSkill
 		var ballDir = getBall().getVel();
 		var ballToBotDir = getPos().subtractNew(getBall().getPos());
 		var angle = ballDir.angleToAbs(ballToBotDir).orElse(0.0);
-		return angle > AngleMath.deg2rad(120);
-	}
-
-
-	private void updatePrimaryDirection()
-	{
-		if (Boolean.TRUE.equals(ballMovesInTheSameDirectionInWhichTheRobotAlsoWantsToMove()))
-		{
-			getMoveConstraints().setPrimaryDirection(Vector2.zero());
-		} else
-		{
-			getMoveConstraints().setPrimaryDirection(getBall().getVel());
-		}
-	}
-
-
-	private Boolean ballMovesInTheSameDirectionInWhichTheRobotAlsoWantsToMove()
-	{
-		return getBall().getVel().angleToAbs(getDestination().subtractNew(getPos())).map(a -> a < AngleMath.PI_HALF)
-				.orElse(true);
+		return angle > AngleMath.deg2rad(145);
 	}
 
 

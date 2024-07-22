@@ -6,7 +6,7 @@ package edu.tigers.sumatra.aicenter.view;
 import com.github.g3force.instanceables.InstanceablePanel;
 import edu.tigers.sumatra.ai.athena.EAIControlState;
 import edu.tigers.sumatra.ai.pandora.plays.EPlay;
-import edu.tigers.sumatra.ids.BotID;
+import edu.tigers.sumatra.ids.AObjectID;
 import edu.tigers.sumatra.model.SumatraModel;
 import edu.tigers.sumatra.util.ScalingUtil;
 import lombok.AllArgsConstructor;
@@ -62,14 +62,16 @@ public class AthenaControlPanel extends JPanel
 		table.setRowHeight(ScalingUtil.getTableRowHeight());
 		table.changeSelection(0, 0, false, false);
 
-		instanceablePanel = new InstanceablePanel(EPlay.values(), SumatraModel.getInstance().getUserSettings());
+		var enums = EPlay.values();
+		Arrays.sort(enums, (o1, o2) -> String.CASE_INSENSITIVE_ORDER.compare(o1.name(), o2.name()));
+		instanceablePanel = new InstanceablePanel(enums, SumatraModel.getInstance().getUserSettings());
 		instanceablePanel.setShowCreate(true);
 
 		DefaultTableCellRenderer textRenderer = new DefaultTableCellRenderer();
 		textRenderer.setHorizontalAlignment(SwingConstants.CENTER);
 		table.getColumnModel().getColumn(EColumn.BOTS.ordinal()).setCellRenderer(textRenderer);
 
-		botIdList = new JList<>(IntStream.range(0, BotID.BOT_ID_MAX + 1).boxed().toArray(Integer[]::new));
+		botIdList = new JList<>(IntStream.range(0, AObjectID.BOT_ID_MAX + 1).boxed().toArray(Integer[]::new));
 		botIdList.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
 
 		JScrollPane tableScrollPane = new JScrollPane(table);

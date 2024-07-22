@@ -24,15 +24,20 @@ import java.util.Map;
 @Getter
 public class RobotsPresenter implements ISumatraPresenter, IBotManagerObserver, IWorldFrameObserver
 {
-	@Getter
-	private final RobotsPanel robotsPanel = new RobotsPanel();
+	private final RobotScrollPanel robotScrollPanel = new RobotScrollPanel();
 
 	private BotID selectedRobotId = BotID.noBot();
 
 
 	public RobotsPresenter()
 	{
-		robotsPanel.onRobotClicked(this::onRobotClick);
+		getRobotsPanel().onRobotClicked(this::onRobotClick);
+	}
+
+
+	private RobotsPanel getRobotsPanel()
+	{
+		return robotScrollPanel.getRobotsPanel();
 	}
 
 
@@ -60,6 +65,8 @@ public class RobotsPresenter implements ISumatraPresenter, IBotManagerObserver, 
 		SumatraModel.getInstance().getModuleOpt(ABotManager.class).ifPresent(
 				botManager -> botManager.removeObserver(this)
 		);
+		getRobotsPanel().getBotStati().clear();
+		getRobotsPanel().clearView();
 	}
 
 
@@ -68,11 +75,11 @@ public class RobotsPresenter implements ISumatraPresenter, IBotManagerObserver, 
 		if (selectedRobotId.equals(botId))
 		{
 			selectedRobotId = BotID.noBot();
-			robotsPanel.deselectRobots();
+			getRobotsPanel().deselectRobots();
 		} else
 		{
 			selectedRobotId = botId;
-			robotsPanel.selectRobot(botId);
+			getRobotsPanel().selectRobot(botId);
 		}
 	}
 
@@ -83,7 +90,7 @@ public class RobotsPresenter implements ISumatraPresenter, IBotManagerObserver, 
 
 		for (ITrackedBot tBot : tigerBots.values())
 		{
-			BotStatus status = robotsPanel.getBotStatus(tBot.getBotId());
+			BotStatus status = getRobotsPanel().getBotStatus(tBot.getBotId());
 			RobotInfo robotInfo = tBot.getRobotInfo();
 			status.setConnected(robotInfo.isConnected());
 			status.setVisible(tBot.getFilteredState().isPresent());
@@ -93,15 +100,8 @@ public class RobotsPresenter implements ISumatraPresenter, IBotManagerObserver, 
 			status.setRobotMode(robotInfo.getRobotMode());
 		}
 
-		robotsPanel.getBotStati().entrySet().stream()
-				.filter(e -> e.getKey().getTeamColor() == wFrame.getTeamColor())
-				.filter(e -> !tigerBots.containsKey(e.getKey()))
-				.map(Map.Entry::getValue)
-				.forEach(botStatus -> {
-					botStatus.setConnected(false);
-					botStatus.setBatRel(0);
-					botStatus.setKickerRel(0);
-				});
+		getRobotsPanel().getBotStati().entrySet()
+				.removeIf(e -> e.getKey().getTeamColor() == wFrame.getTeamColor() && !tigerBots.containsKey(e.getKey()));
 	}
 
 
@@ -110,13 +110,13 @@ public class RobotsPresenter implements ISumatraPresenter, IBotManagerObserver, 
 	{
 		updateRobotsPanel(wfWrapper.getWorldFrame(EAiTeam.BLUE));
 		updateRobotsPanel(wfWrapper.getWorldFrame(EAiTeam.YELLOW));
-		robotsPanel.updateBotStati();
+		getRobotsPanel().updateBotStati();
 	}
 
 
 	@Override
 	public void onClearWorldFrame()
 	{
-		robotsPanel.clearView();
+		getRobotsPanel().clearView();
 	}
 }

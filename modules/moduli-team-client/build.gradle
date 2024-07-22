@@ -17,14 +17,14 @@ dependencies {
     implementation project(':moduli-wp')
     implementation project(':moduli-geometry')
 
-    implementation 'com.github.TIGERs-Mannheim:moduli:4.1'
-    implementation 'com.github.g3force:configurable:3.0'
+    implementation(libs.com.github.TIGERs.mannheim.moduli)
+    implementation(libs.com.github.g3force.configurable)
 
-    implementation 'org.apache.logging.log4j:log4j-api:2.20.0'
+    implementation(libs.org.apache.logging.log4j.log4j.api)
 
-    implementation 'commons-lang:commons-lang:2.6'
-    implementation 'commons-io:commons-io:2.13.0'
-    implementation 'commons-configuration:commons-configuration:1.10'
+    implementation(libs.commons.lang)
+    implementation(libs.commons.io)
+    implementation(libs.commons.configuration)
 
-    implementation 'com.google.protobuf:protobuf-java:3.23.2'
+    implementation(libs.com.google.protobuf.protobuf.java)
 }

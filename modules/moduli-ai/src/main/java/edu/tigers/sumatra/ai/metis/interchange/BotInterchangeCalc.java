@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.metis.interchange;
@@ -7,6 +7,8 @@ package edu.tigers.sumatra.ai.metis.interchange;
 import com.github.g3force.configurable.Configurable;
 import edu.tigers.sumatra.ai.metis.ACalculator;
 import edu.tigers.sumatra.ids.BotID;
+import edu.tigers.sumatra.ids.ETeamColor;
+import edu.tigers.sumatra.referee.data.EGameState;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -15,6 +17,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
 
@@ -32,12 +35,19 @@ public class BotInterchangeCalc extends ACalculator
 	@Configurable(comment = "Should automatic robot interchange also remove weak bots?", defValue = "true")
 	private static boolean interchangeWeakBots = true;
 
+	@Configurable(comment = "Should bots also interchange during running game?", defValue = "true")
+	private static boolean interchangeDuringRunning = true;
+
+	@Configurable(comment = "Should bots interchange in powerplay when yellow card was given?", defValue = "false")
+	private static boolean activeForPowerPlay = false;
+
 	@Getter
 	private List<BotID> botsToInterchange = new ArrayList<>();
 
 	@Getter
 	private int numInterchangeBots;
 
+	private boolean isPowerPlay;
 
 	private final Supplier<List<BotID>> weakBots;
 
@@ -45,8 +55,11 @@ public class BotInterchangeCalc extends ACalculator
 	@Override
 	public boolean isCalculationNecessary()
 	{
-		// We do not want any bots waiting for interchange during a running game
-		return robotInterchangeEnabled && getAiFrame().getGameState().isStoppedGame();
+		// We normally do not want any bots waiting for interchange during a running game
+		// We might consider situation where we have the advantage and a forced stop could disturb us
+		isPowerPlay = getWFrame().getTigerBotsAvailable().size() > getWFrame().getOpponentBots().size();
+		return robotInterchangeEnabled && (getAiFrame().getGameState().isStoppedGame() || interchangeDuringRunning ||
+				(isPowerPlay && activeForPowerPlay));
 	}
 
 
@@ -61,20 +74,27 @@ public class BotInterchangeCalc extends ACalculator
 	@Override
 	public void doCalc()
 	{
-		boolean substitutionFlag = getAiFrame().getRefereeMsg().getTeamInfo(getAiFrame().getTeamColor())
-				.isBotSubstitutionIntent();
+		if (isMaintenanceAfterGame())
+		{
+			botsToInterchange = getWFrame().getTigerBotsAvailable().keySet().stream().toList();
+			numInterchangeBots = botsToInterchange.size();
+			return;
+		}
+		// substitution intent (removed!) on our side is usually triggered when a bot does bullshit or loses parts,
+		// in that case the weakest bot is usually not the bot wanted to be exchanged
 		int numWeakBots = 0;
 		int numBotsToBeRemoved = Math.max(0, getWFrame().getTigerBotsAvailable().size() - numberOfAllowedBots());
 		if (interchangeWeakBots)
 		{
 			numWeakBots = weakBots.get().size();
 		}
-
 		int numBotsToInterchange = Math.max(numBotsToBeRemoved, numWeakBots);
-		if (substitutionFlag && numBotsToBeRemoved == 0)
+		// During running, we only want to interchange bots because of yellow cards
+		if (getAiFrame().getGameState().isRunning() && (interchangeDuringRunning || (activeForPowerPlay && isPowerPlay)))
 		{
-			numBotsToInterchange += 1;
+			numBotsToInterchange = numBotsToBeRemoved;
 		}
+
 		botsToInterchange = weakestBots(numBotsToInterchange);
 		numInterchangeBots = botsToInterchange.size();
 	}
@@ -85,7 +105,6 @@ public class BotInterchangeCalc extends ACalculator
 		return getAiFrame().getRefereeMsg().getTeamInfo(getAiFrame().getTeamColor()).getMaxAllowedBots();
 	}
 
-
 	private List<BotID> weakestBots(final long numberOfBotsToBeRemoved)
 	{
 		Set<BotID> weakestBots = new LinkedHashSet<>(botsToInterchange);
@@ -95,6 +114,7 @@ public class BotInterchangeCalc extends ACalculator
 				.filter(b -> getWFrame().getBot(b) != null)
 				.filter(b -> b != getAiFrame().getKeeperId())
 				.limit(numberOfBotsToBeRemoved)
+				.filter(botID -> getWFrame().getTigerBotsAvailable().containsKey(botID))
 				.toList();
 	}
 
@@ -106,5 +126,16 @@ public class BotInterchangeCalc extends ACalculator
 						bot2.getRobotInfo().getBatteryRelative()))
 				.map(ITrackedBot::getBotId)
 				.toList();
+	}
+
+	private boolean isMaintenanceAfterGame()
+	{
+		boolean isPostGame = getAiFrame().getGameState().getState() == EGameState.POST_GAME;
+		Map<ETeamColor, Integer> goals = getAiFrame().getRefereeMsg().getGoals();
+		ETeamColor ourTeam = getAiFrame().getTeamColor();
+		int ourGoals = goals.get(ourTeam);
+		int theirGoals = goals.get(ourTeam.opposite());
+		boolean cheering = ourGoals > theirGoals || (ourGoals == theirGoals && ourTeam == ETeamColor.YELLOW);
+		return isPostGame && !cheering;
 	}
 }

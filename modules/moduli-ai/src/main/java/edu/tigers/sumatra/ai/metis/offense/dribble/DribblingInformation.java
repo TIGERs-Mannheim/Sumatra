@@ -21,4 +21,13 @@ public class DribblingInformation
 	boolean dribblingInProgress;
 	BotID dribblingBot;
 	ICircle dribblingCircle;
+	IVector2 intersectionPoint;
+	boolean violationImminent;
+
+
+	public static DribblingInformation update(DribblingInformation info, IVector2 intersection, boolean violationImminent)
+	{
+		return new DribblingInformation(info.startPos, info.dribblingInProgress, info.dribblingBot, info.dribblingCircle,
+				intersection, violationImminent);
+	}
 }

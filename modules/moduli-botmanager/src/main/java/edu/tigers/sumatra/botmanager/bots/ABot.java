@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.botmanager.bots;
@@ -63,6 +63,8 @@ public abstract class ABot implements IBot
 		result.put(EFeature.MOVE, EFeatureState.WORKING);
 		result.put(EFeature.BARRIER, EFeatureState.WORKING);
 		result.put(EFeature.CHARGE_CAPS, EFeatureState.WORKING);
+		result.put(EFeature.ENERGETIC, EFeatureState.WORKING);
+		result.put(EFeature.EXT_BOARD, EFeatureState.UNKNOWN);
 		return result;
 	}
 

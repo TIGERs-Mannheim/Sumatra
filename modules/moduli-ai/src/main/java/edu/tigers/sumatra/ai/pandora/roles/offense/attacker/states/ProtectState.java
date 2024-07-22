@@ -5,6 +5,8 @@
 package edu.tigers.sumatra.ai.pandora.roles.offense.attacker.states;
 
 
+import com.github.g3force.configurable.ConfigRegistration;
+import com.github.g3force.configurable.Configurable;
 import edu.tigers.sumatra.ai.metis.offense.action.EOffensiveActionType;
 import edu.tigers.sumatra.ai.pandora.roles.offense.attacker.AttackerRole;
 import edu.tigers.sumatra.geometry.Geometry;
@@ -15,6 +17,14 @@ import edu.tigers.sumatra.skillsystem.skills.ProtectiveGetBallSkill;
 
 public class ProtectState extends AAttackerRoleState<ProtectiveGetBallSkill>
 {
+	@Configurable(defValue = "false")
+	private static boolean requireStrongDribblerContactForProtect = false;
+
+	static
+	{
+		ConfigRegistration.registerClass("roles", ProtectState.class);
+	}
+
 	private IVector2 protectionPos;
 
 
@@ -33,23 +43,39 @@ public class ProtectState extends AAttackerRoleState<ProtectiveGetBallSkill>
 		{
 			skill.setStrongDribblerContactNeeded(
 					action.getType() == EOffensiveActionType.DRIBBLE_KICK ||
-							action.getType() == EOffensiveActionType.PROTECT);
+							(requireStrongDribblerContactForProtect && action.getType() == EOffensiveActionType.PROTECT)
+			);
 		}
-		if (protectionPos == null || getRole().getBot().getBotKickerPos().distanceTo(getRole().getBot().getPos())
-				> Geometry.getBallRadius() + Geometry.getBotRadius())
+
+		if (protectionPos == null || getRole().getPos().distanceTo(getRole().getBall().getPos())
+				> Geometry.getBotRadius() * 2 + Geometry.getBallRadius())
 		{
-			if (getRole().getBot().getBallContact().hadContact(0.3))
-			{
-				// if already has contact, keep orientation
-				protectionPos = getRole().getBot().getBotKickerPos();
-			} else
-			{
-				protectionPos = getProtectionTarget();
-			}
+			protectionPos = calcProtectionTarget();
+		} // else keep old pos
+
+		skill.setTarget(protectionPos);
+	}
+
+
+	private IVector2 calcProtectionTarget()
+	{
+		if (getRole().getBot().getBotKickerPos().distanceTo(getRole().getBall().getPos()) < Geometry.getBotRadius())
+		{
+			// we are already very close to the ball. Just get it and dont try to turn around
+			var botPos = getRole().getPos();
+			var ballPos = getRole().getBall().getPos();
+			return ballPos.addNew(ballPos.subtractNew(botPos));
 		}
-		var posToBall = getRole().getBall().getPos().subtractNew(protectionPos);
-		var mirroredPos = protectionPos.addNew(posToBall.multiplyNew(2.0));
-		skill.setProtectionTarget(mirroredPos);
+		var closestEnemyBotID = getRole().getAiFrame().getTacticalField().getOpponentClosestToBall().getBotId();
+		IVector2 opponentPos;
+		if (getRole().getWFrame().getOpponentBots().containsKey(closestEnemyBotID))
+		{
+			opponentPos = getRole().getWFrame().getOpponentBot(closestEnemyBotID).getPos();
+		} else
+		{
+			opponentPos = Geometry.getGoalTheir().getCenter();
+		}
+		return opponentPos;
 	}
 }
 

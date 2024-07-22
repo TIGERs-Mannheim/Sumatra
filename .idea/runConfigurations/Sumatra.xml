@@ -1,23 +1,10 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="Sumatra" type="GradleRunConfiguration" factoryName="Gradle">
-    <ExternalSystemSettings>
-      <option name="executionName" />
-      <option name="externalProjectPath" value="$PROJECT_DIR$" />
-      <option name="externalSystemIdString" value="GRADLE" />
-      <option name="scriptParameters" value="" />
-      <option name="taskDescriptions">
-        <list />
-      </option>
-      <option name="taskNames">
-        <list>
-          <option value=":run" />
-        </list>
-      </option>
-      <option name="vmOptions" value="" />
-    </ExternalSystemSettings>
-    <ExternalSystemDebugServerProcess>false</ExternalSystemDebugServerProcess>
-    <ExternalSystemReattachDebugProcess>true</ExternalSystemReattachDebugProcess>
-    <DebugAllEnabled>false</DebugAllEnabled>
-    <method v="2" />
+  <configuration default="false" name="Sumatra" type="Application" factoryName="Application">
+    <option name="MAIN_CLASS_NAME" value="edu.tigers.sumatra.Sumatra" />
+    <module name="sumatra.main" />
+    <option name="VM_PARAMETERS" value="-Dsun.java2d.d3d=false -Djava.net.preferIPv4Stack=true" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
   </configuration>
 </component>

@@ -212,7 +212,7 @@ public abstract class AAiIntegrationTest
 				.forEach(tBot -> bots.put(tBot.getBotId(), tBot));
 		ITrackedBall wBall = wfw.getSimpleWorldFrame().getBall();
 		TrackedBall ball = TrackedBall.fromBallStateVisible(timestamp, wBall.getState());
-		SimpleWorldFrame nextFrame = new SimpleWorldFrame(frameId, timestamp, bots, ball, null, null);
+		SimpleWorldFrame nextFrame = new SimpleWorldFrame(frameId, timestamp, bots, ball, null);
 		wfw = new WorldFrameWrapper(nextFrame, refereeMsg, gameState);
 
 		metisCalled = false;
@@ -251,7 +251,7 @@ public abstract class AAiIntegrationTest
 				snapshot.getBall().getPos().getXYVector(),
 				snapshot.getBall().getVel().multiplyNew(1000));
 		ITrackedBall ball = TrackedBall.fromBallStateVisible(timestamp, traj.getMilliStateAtTime(0));
-		swf = new SimpleWorldFrame(0, timestamp, bots, ball, null, null);
+		swf = new SimpleWorldFrame(0, timestamp, bots, ball, null);
 	}
 
 

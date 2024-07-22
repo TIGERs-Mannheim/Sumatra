@@ -17,10 +17,10 @@ public class Force
 	double magnitude;
 	double mean;
 	boolean invert;
-	DistanceFunction func;
+	EDistanceFunction func;
 
 
-	Force(IVector2 position, double magnitude, DistanceFunction func)
+	Force(IVector2 position, double magnitude, EDistanceFunction func)
 	{
 		this.position = position;
 		this.sigma = 0;
@@ -38,7 +38,7 @@ public class Force
 		this.magnitude = magnitude;
 		this.mean = 0;
 		this.invert = false;
-		this.func = DistanceFunction.EXPONENTIAL;
+		this.func = EDistanceFunction.EXPONENTIAL;
 	}
 
 
@@ -49,12 +49,12 @@ public class Force
 		this.magnitude = magnitude;
 		this.mean = mean;
 		this.invert = invert;
-		this.func = DistanceFunction.EXPONENTIAL;
+		this.func = EDistanceFunction.EXPONENTIAL;
 	}
 
 
 	public static Force dummy()
 	{
-		return new Force(Geometry.getCenter(), 0, DistanceFunction.CONSTANT);
+		return new Force(Geometry.getCenter(), 0, EDistanceFunction.CONSTANT);
 	}
 }

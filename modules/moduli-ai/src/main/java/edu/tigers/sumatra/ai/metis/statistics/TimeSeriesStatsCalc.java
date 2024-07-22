@@ -14,6 +14,7 @@ import edu.tigers.sumatra.ai.metis.statistics.timeseries.BallDistTssCalc;
 import edu.tigers.sumatra.ai.metis.statistics.timeseries.BallPosTssCalc;
 import edu.tigers.sumatra.ai.metis.statistics.timeseries.BallPossessionTssCalc;
 import edu.tigers.sumatra.ai.metis.statistics.timeseries.BallVelTssCalc;
+import edu.tigers.sumatra.ai.metis.statistics.timeseries.FoulEventTssCalc;
 import edu.tigers.sumatra.ai.metis.statistics.timeseries.GameEventsTssCalc;
 import edu.tigers.sumatra.ai.metis.statistics.timeseries.ITssCalc;
 import edu.tigers.sumatra.ai.metis.statistics.timeseries.RealTimeTssCalc;
@@ -29,6 +30,7 @@ import edu.tigers.sumatra.statistics.TimeSeriesStatsEntry;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Supplier;
 
@@ -71,6 +73,7 @@ public class TimeSeriesStatsCalc extends ACalculator
 		tssCalcs.add(new BallVelTssCalc());
 		tssCalcs.add(new GameEventsTssCalc());
 		tssCalcs.add(new RefereeTssCalc());
+		tssCalcs.add(new FoulEventTssCalc());
 		tssCalcs.add(new StatisticsTssCalc(
 				matchStats
 		));
@@ -82,8 +85,7 @@ public class TimeSeriesStatsCalc extends ACalculator
 	{
 		return statisticsSaver != null
 				&& statisticsSaver.hasWriter()
-				&& !getAiFrame().getWorldFrame().getBots().isEmpty() &&
-				getAiFrame().getGameState().isGameRunning();
+				&& !getAiFrame().getWorldFrame().getBots().isEmpty();
 	}
 
 
@@ -105,7 +107,9 @@ public class TimeSeriesStatsCalc extends ACalculator
 	private void generateEntries(final long timestamp)
 	{
 		final List<TimeSeriesStatsEntry> entries = tssCalcs.stream()
+				.filter(c -> !c.executeOnlyDuringRunning() || getAiFrame().getGameState().isRunning())
 				.map(c -> c.createTimeSeriesStatsEntry(getAiFrame(), timestamp))
+				.filter(Objects::nonNull)
 				.toList();
 
 		for (TimeSeriesStatsEntry entry : entries)

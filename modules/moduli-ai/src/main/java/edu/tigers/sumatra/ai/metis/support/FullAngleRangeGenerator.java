@@ -6,41 +6,32 @@ package edu.tigers.sumatra.ai.metis.support;
 
 import edu.tigers.sumatra.ai.metis.targetrater.AngleRange;
 import edu.tigers.sumatra.ball.trajectory.IFlatBallConsultant;
-import edu.tigers.sumatra.drawable.DrawableArc;
-import edu.tigers.sumatra.drawable.IDrawableShape;
 import edu.tigers.sumatra.geometry.RuleConstraints;
-import edu.tigers.sumatra.math.circle.Arc;
 import edu.tigers.sumatra.math.circle.ICircle;
 import edu.tigers.sumatra.math.vector.IVector2;
-import edu.tigers.sumatra.pathfinder.obstacles.MovingRobot;
+import edu.tigers.sumatra.movingrobot.IMovingRobot;
+import lombok.RequiredArgsConstructor;
 
-import java.awt.Color;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
 
+@RequiredArgsConstructor
 public class FullAngleRangeGenerator
 {
+	private final List<IMovingRobot> consideredBots;
 	private final IVector2 center;
-	private final List<MovingRobot> consideredBtos;
+	private final IFlatBallConsultant ballConsultant;
+	private final double maxHorizon;
 	private List<AngleRange> coveredAngleRanges = new ArrayList<>();
 	private List<AngleRange> uncoveredAngleRanges = new ArrayList<>();
 	private List<AngleRange> consolidatedCoveredAngleRanges = new ArrayList<>();
 
 	private double kickSpeed = RuleConstraints.getMaxKickSpeed();
-	private IFlatBallConsultant ballConsultant;
 
 
-	public FullAngleRangeGenerator(List<MovingRobot> bots, IVector2 center, IFlatBallConsultant ballConsultant)
-	{
-		this.center = center;
-		this.consideredBtos = bots;
-		this.ballConsultant = ballConsultant;
-	}
-
-
-	public List<AngleRange> getCoveredAngleRanges()
+	private List<AngleRange> getCoveredAngleRanges()
 	{
 		if (coveredAngleRanges.isEmpty())
 		{
@@ -53,13 +44,13 @@ public class FullAngleRangeGenerator
 
 	private void calcCoveredAngleRanges()
 	{
-		for (MovingRobot movingRobot : consideredBtos)
+		for (IMovingRobot movingRobot : consideredBots)
 		{
 			double distBotToStart = movingRobot.getPos().distanceTo(center);
 			final double timeToKick = 0;
 			double timeBallToBot = ballConsultant.getTimeForKick(distBotToStart, kickSpeed) + timeToKick;
 			final double timeForBotToReact = 0.5;
-			double horizon = Math.max(0, timeBallToBot - timeForBotToReact);
+			double horizon = Math.min(maxHorizon, Math.max(0, timeBallToBot - timeForBotToReact));
 			ICircle obstacleCircle = movingRobot.getMovingHorizon(horizon);
 			List<IVector2> intersections = obstacleCircle.tangentialIntersections(center);
 
@@ -104,7 +95,7 @@ public class FullAngleRangeGenerator
 			uncoveredAngleRanges.add(AngleRange.fromAngles(-Math.PI + 0.01, Math.PI - 0.01));
 			return;
 		}
-		double lastLeft = getConsolidatedCoveredAngleRanges().get(getConsolidatedCoveredAngleRanges().size() - 1)
+		double lastLeft = getConsolidatedCoveredAngleRanges().getLast()
 				.getLeft();
 
 		for (AngleRange ar : getConsolidatedCoveredAngleRanges())
@@ -115,7 +106,7 @@ public class FullAngleRangeGenerator
 			}
 			lastLeft = ar.getLeft();
 		}
-		double firstRightAngle = getConsolidatedCoveredAngleRanges().get(0)
+		double firstRightAngle = getConsolidatedCoveredAngleRanges().getFirst()
 				.getRight();
 		if (firstRightAngle < lastLeft)
 		{
@@ -128,7 +119,7 @@ public class FullAngleRangeGenerator
 	}
 
 
-	public List<AngleRange> getConsolidatedCoveredAngleRanges()
+	private List<AngleRange> getConsolidatedCoveredAngleRanges()
 	{
 		if (consolidatedCoveredAngleRanges.isEmpty())
 		{
@@ -146,8 +137,8 @@ public class FullAngleRangeGenerator
 			consolidatedCoveredAngleRanges = getCoveredAngleRanges();
 			return;
 		}
-		double tmpRightAngle = getCoveredAngleRanges().get(0).getRight();
-		double tmpLeftAngle = getCoveredAngleRanges().get(0).getLeft();
+		double tmpRightAngle = getCoveredAngleRanges().getFirst().getRight();
+		double tmpLeftAngle = getCoveredAngleRanges().getFirst().getLeft();
 		for (AngleRange ar : getCoveredAngleRanges())
 		{
 			if (ar.getRight() > tmpLeftAngle)
@@ -165,7 +156,7 @@ public class FullAngleRangeGenerator
 			double rightAngle = getCoveredAngleRanges().stream().map(AngleRange::getRight).min(Double::compareTo)
 					.orElse(0.);
 			consolidatedCoveredAngleRanges.add(AngleRange.fromAngles(rightAngle, leftAngle));
-		} else if (Math.abs(tmpLeftAngle - consolidatedCoveredAngleRanges.get(consolidatedCoveredAngleRanges.size() - 1)
+		} else if (Math.abs(tmpLeftAngle - consolidatedCoveredAngleRanges.getLast()
 				.getLeft()) < 0.001)
 		{
 			consolidatedCoveredAngleRanges.add(AngleRange.fromAngles(tmpRightAngle, tmpLeftAngle));
@@ -173,8 +164,8 @@ public class FullAngleRangeGenerator
 
 		if (consolidatedCoveredAngleRanges.size() >= 2)
 		{
-			AngleRange first = consolidatedCoveredAngleRanges.get(0);
-			AngleRange last = consolidatedCoveredAngleRanges.get(consolidatedCoveredAngleRanges.size() - 1);
+			AngleRange first = consolidatedCoveredAngleRanges.getFirst();
+			AngleRange last = consolidatedCoveredAngleRanges.getLast();
 			if (first.getRight() > last.getLeft())
 			{
 				consolidatedCoveredAngleRanges.remove(first);
@@ -182,20 +173,6 @@ public class FullAngleRangeGenerator
 
 				consolidatedCoveredAngleRanges.add(AngleRange.fromAngles(first.getLeft(), last.getRight()));
 			}
-		}
-	}
-
-
-	public void drawAngleRanges(List<AngleRange> ranges, double radius, List<IDrawableShape> shapes, Color color)
-	{
-		for (AngleRange angleRange : ranges)
-		{
-			IDrawableShape arc = new DrawableArc(
-					Arc.createArc(center, radius, angleRange.getRight(),
-							angleRange.getLeft() - angleRange.getRight()),
-					color);
-			arc.setFill(true);
-			shapes.add(arc);
 		}
 	}
 }

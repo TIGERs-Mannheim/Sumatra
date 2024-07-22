@@ -2,7 +2,7 @@ field: <
   field_length: 12000
   field_width: 9000
   goal_width: 1800
-  goal_depth: 300
+  goal_depth: 180
   boundary_width: 300
   penalty_area_depth: 1800
   penalty_area_width: 3600

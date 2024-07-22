@@ -34,7 +34,7 @@ public class ShapeLayerIdentifier implements IShapeLayerIdentifier
 	}
 
 
-	public ShapeLayerIdentifier(
+	private ShapeLayerIdentifier(
 			String id,
 			String layerName,
 			List<String> categories,
@@ -51,12 +51,6 @@ public class ShapeLayerIdentifier implements IShapeLayerIdentifier
 				persistenceType != null ? persistenceType : ShapeMap.EShapeLayerPersistenceType.ALWAYS_PERSIST;
 		this.visibleByDefault = visibleByDefault;
 		this.orderId = orderId;
-	}
-
-
-	public static ShapeLayerIdentifierBuilder create(Class<?> type, String layerName)
-	{
-		return ShapeLayerIdentifier.builder().id(type.getCanonicalName() + "." + layerName).layerName(layerName);
 	}
 
 

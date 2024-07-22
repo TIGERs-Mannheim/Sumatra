@@ -35,6 +35,7 @@ public class PassGenerationCalc extends ACalculator
 	private final Supplier<Map<BotID, KickOrigin>> kickOrigins;
 	private final Supplier<Map<BotID, List<AngleRange>>> inaccessibleBallAngles;
 	private final Supplier<List<BotID>> ballHandlingBots;
+	private final Supplier<Set<BotID>> crucialDefender;
 
 	private PassGenerator passGenerator;
 
@@ -72,7 +73,14 @@ public class PassGenerationCalc extends ACalculator
 				.filter(this::notADefenderExceptM2M)
 				.filter(this::notAnInterchangeBot)
 				.filter(this::notAPrimaryAttacker)
+				.filter(this::notCrucialDefender)
 				.collect(Collectors.toSet());
+	}
+
+
+	private boolean notCrucialDefender(BotID botID)
+	{
+		return !crucialDefender.get().contains(botID);
 	}
 
 

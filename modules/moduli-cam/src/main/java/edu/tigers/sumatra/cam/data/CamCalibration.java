@@ -3,7 +3,7 @@
  */
 package edu.tigers.sumatra.cam.data;
 
-import edu.tigers.sumatra.cam.proto.MessagesRobocupSslGeometry.SSL_GeometryCameraCalibration;
+import edu.tigers.sumatra.cam.proto.SslVisionGeometry.SSL_GeometryCameraCalibration;
 import edu.tigers.sumatra.export.IJsonString;
 import edu.tigers.sumatra.math.SumatraMath;
 import edu.tigers.sumatra.math.vector.IVector2;

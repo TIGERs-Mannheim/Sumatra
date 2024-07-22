@@ -5,6 +5,7 @@
 package edu.tigers.sumatra.referee.gameevent;
 
 import com.sleepycat.persist.model.Persistent;
+import edu.tigers.sumatra.ids.ETeamColor;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.referee.proto.SslGcGameEvent;
 import lombok.EqualsAndHashCode;
@@ -67,5 +68,12 @@ public class NoProgressInGame extends AGameEvent
 	public String getDescription()
 	{
 		return String.format("No progress in Game for %.2f s @ %s", time, formatVector(location));
+	}
+
+
+	@Override
+	public ETeamColor getTeam()
+	{
+		return ETeamColor.NEUTRAL;
 	}
 }

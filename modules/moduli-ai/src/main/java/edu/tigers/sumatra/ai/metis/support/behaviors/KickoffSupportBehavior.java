@@ -6,6 +6,7 @@ package edu.tigers.sumatra.ai.metis.support.behaviors;
 
 import com.github.g3force.configurable.Configurable;
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
+import edu.tigers.sumatra.ai.metis.kicking.EBallReceiveMode;
 import edu.tigers.sumatra.ai.metis.kicking.PassFactory;
 import edu.tigers.sumatra.ai.metis.pass.rating.EPassRating;
 import edu.tigers.sumatra.ai.metis.pass.rating.RatedPassFactory;
@@ -46,13 +47,13 @@ public class KickoffSupportBehavior extends ASupportBehavior
 	@Override
 	public SupportBehaviorPosition calculatePositionForRobot(BotID botID)
 	{
-		if (!getAiFrame().getGameState().isKickoffOrPrepareKickoff())
+		if (possibleSupporterKickoffPositions.get().isEmpty())
 		{
 			return SupportBehaviorPosition.notAvailable();
 		}
 
 		passFactory.update(getWFrame());
-		ratedPassFactory.update(getWFrame().getOpponentBots().values());
+		ratedPassFactory.update(getWFrame().getOpponentBots().values(), getWFrame().getOpponentBots().values());
 
 		return possibleSupporterKickoffPositions.get().stream()
 				.sorted(Comparator.comparingDouble(point -> point.distanceToSqr(getWFrame().getBot(botID).getPos())))
@@ -71,7 +72,7 @@ public class KickoffSupportBehavior extends ASupportBehavior
 		getAiFrame().getShapeMap().get(EAiShapesLayer.SUPPORT_KICKOFF)
 				.add(new DrawableLine(getWFrame().getBot(botID).getPos(), destination, Color.ORANGE));
 
-		var pass = passFactory.straight(getWFrame().getBall().getPos(), destination, BotID.noBot(), botID);
+		var pass = passFactory.straight(getWFrame().getBall().getPos(), destination, BotID.noBot(), botID, EBallReceiveMode.DONT_CARE);
 		var rating = ratedPassFactory.rateMaxCombined(pass, EPassRating.PASSABILITY, EPassRating.INTERCEPTION);
 
 		if (rating < passScoreThreshold)

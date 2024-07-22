@@ -10,7 +10,8 @@ import edu.tigers.sumatra.geometry.RuleConstraints;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.circle.ICircle;
 import edu.tigers.sumatra.math.vector.IVector2;
-import edu.tigers.sumatra.pathfinder.obstacles.MovingRobot;
+import edu.tigers.sumatra.movingrobot.AcceleratingRobotFactory;
+import edu.tigers.sumatra.movingrobot.IMovingRobot;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
 import lombok.Setter;
 
@@ -21,12 +22,13 @@ import java.util.stream.Collectors;
 
 
 /**
- * Generate circles from using {@link MovingRobot}s.
+ * Generate circles from using {@link IMovingRobot}s.
  */
 public class MovingObstacleGen
 {
 	@Setter
 	private double kickSpeed = RuleConstraints.getMaxBallSpeed();
+
 	@Setter
 	private double timeForBotToReact = 0.0;
 
@@ -40,10 +42,7 @@ public class MovingObstacleGen
 	private double maxHorizon = Double.MAX_VALUE;
 
 	@Setter
-	private EHorizonCalculation horizonCalculation = EHorizonCalculation.DEFAULT;
-
-	private static final HorizonCubicReductionCalculator cubicReductionCalculator = new HorizonCubicReductionCalculator();
-
+	private double opponentBotReactionTime = 0.1;
 
 	public List<ICircle> generateCircles(Collection<ITrackedBot> bots, IVector2 start,
 			Map<BotID, Double> reactionTimeBotHasBeforeKick)
@@ -70,14 +69,13 @@ public class MovingObstacleGen
 		var reactionPos = bot.getPosByTime(reactionTimestamp);
 		var reactionVel = bot.getVelByTime(reactionTimestamp);
 
-
-		var movingRobot = new MovingRobot(
+		var movingRobot = AcceleratingRobotFactory.create(
 				reactionPos,
 				reactionVel,
 				bot.getRobotInfo().getBotParams().getMovementLimits().getVelMax(),
 				bot.getRobotInfo().getBotParams().getMovementLimits().getAccMax(),
-				maxHorizon,
-				Geometry.getBotRadius() + Geometry.getBallRadius()
+				Geometry.getBotRadius() + Geometry.getBallRadius(),
+				opponentBotReactionTime
 		);
 
 		var reactionDistance = reactionPos.distanceTo(start);
@@ -85,11 +83,8 @@ public class MovingObstacleGen
 				noneOptimalDriveFactor * ballConsultant.getTimeForKick(reactionDistance, kickSpeed)
 						+ timeBeforeReactionUsageFactor * reactionTimestamp
 						- timeForBotToReact);
-		var horizon = switch (horizonCalculation)
-				{
-					case DEFAULT -> reactionTimeAfterKick;
-					case CUBIC_REDUCTION -> cubicReductionCalculator.reduceHorizon(reactionTimeAfterKick);
-				};
-		return movingRobot.getMovingHorizon(horizon);
+		double horizon = reactionTimeAfterKick;
+		var t = bot.getCurrentTrajectory().isPresent() ? 0 : Math.min(maxHorizon, horizon);
+		return movingRobot.getMovingHorizon(t);
 	}
 }

@@ -18,10 +18,10 @@ dependencies {
     implementation project(':moduli-record')
     implementation project(':moduli-ai-controller')
 
-    implementation 'org.apache.logging.log4j:log4j-api:2.20.0'
+    implementation(libs.org.apache.logging.log4j.log4j.api)
 
-    implementation 'org.openjdk.jol:jol-core:0.17'
-    implementation 'com.sleepycat:je:18.3.12'
+    implementation(libs.org.openjdk.jol.jol.core)
+    implementation(libs.com.sleepycat.je)
 }
 
 application {

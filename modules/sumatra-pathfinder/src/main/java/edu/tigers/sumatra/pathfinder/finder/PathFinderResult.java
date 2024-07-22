@@ -8,7 +8,9 @@ import lombok.Value;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 
 
 @Value
@@ -50,5 +52,12 @@ public class PathFinderResult
 				.mapToDouble(PathFinderCollision::getFirstCollisionTime)
 				.min()
 				.orElse(Double.POSITIVE_INFINITY);
+	}
+
+
+	public Optional<PathFinderCollision> getFirstCollision()
+	{
+		return collisions.stream()
+				.min(Comparator.comparing(PathFinderCollision::getFirstCollisionTime));
 	}
 }

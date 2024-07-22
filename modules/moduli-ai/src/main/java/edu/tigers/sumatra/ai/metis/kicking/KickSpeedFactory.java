@@ -16,8 +16,8 @@ import java.util.Optional;
 
 public class KickSpeedFactory
 {
-	@Configurable(comment = "Number of touchdowns before a chipped pass can be received", defValue = "4")
-	private static int touchdownsForPasses = 4;
+	@Configurable(comment = "Number of touchdowns before a chipped pass can be received", defValue = "6")
+	private static int touchdownsForPasses = 6;
 
 	static
 	{

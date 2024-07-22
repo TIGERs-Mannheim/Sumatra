@@ -29,8 +29,8 @@ public class DefenseThreatReductionRater
 	@Configurable(comment = "[%] The CenterBacks BotRadius is considered this much smaller, where it can safely block", defValue = "0.9")
 	private static double centerBackSafetyFactor = 0.9;
 
-	@Configurable(comment = "[%] Man2Man Blocking provides this much risk reduction (1 -> perfect blocking, 0 -> no blocking)", defValue = "0.9")
-	private static double m2mSafetyFactor = 0.9;
+	@Configurable(comment = "[%] Man2Man Blocking provides this much risk reduction (1 -> perfect blocking, 0 -> no blocking)", defValue = "0.8")
+	private static double m2mSafetyFactor = 0.7;
 
 	@Configurable(comment = "[%] PenArea CenterBack provide this much risk reduction", defValue = "0.95")
 	private static double penAreaSafetyFactor = 0.95;

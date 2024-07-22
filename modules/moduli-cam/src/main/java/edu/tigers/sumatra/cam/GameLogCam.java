@@ -5,7 +5,7 @@
 package edu.tigers.sumatra.cam;
 
 import edu.tigers.sumatra.cam.data.CamGeometry;
-import edu.tigers.sumatra.cam.proto.MessagesRobocupSslWrapper;
+import edu.tigers.sumatra.cam.proto.SslVisionWrapper;
 import edu.tigers.sumatra.gamelog.EMessageType;
 import edu.tigers.sumatra.gamelog.GameLogMessage;
 import edu.tigers.sumatra.gamelog.GameLogPlayer;
@@ -44,10 +44,10 @@ public class GameLogCam extends ACam implements GameLogPlayerObserver
 		if (message.getType() != EMessageType.SSL_VISION_2014)
 			return;
 
-		MessagesRobocupSslWrapper.SSL_WrapperPacket sslPacket;
+		SslVisionWrapper.SSL_WrapperPacket sslPacket;
 		try
 		{
-			sslPacket = MessagesRobocupSslWrapper.SSL_WrapperPacket.parseFrom(message.getData());
+			sslPacket = SslVisionWrapper.SSL_WrapperPacket.parseFrom(message.getData());
 		} catch (Exception err)
 		{
 			log.error("Invalid SSL_VISION_2014 package.", err);

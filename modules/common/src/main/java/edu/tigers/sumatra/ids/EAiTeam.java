@@ -21,7 +21,7 @@ public enum EAiTeam
 
 	;
 
-	private ETeamColor teamColor;
+	private final ETeamColor teamColor;
 
 
 	/**
@@ -53,4 +53,29 @@ public enum EAiTeam
 	{
 		return color == teamColor;
 	}
+
+
+	/**
+	 * @param color
+	 * @return
+	 */
+	public static EAiTeam opposite(final EAiTeam color)
+	{
+		return switch (color)
+		{
+			case YELLOW -> BLUE;
+			case BLUE -> YELLOW;
+		};
+	}
+
+
+	/**
+	 * @return
+	 */
+	public EAiTeam opposite()
+	{
+		return opposite(this);
+	}
+
+
 }

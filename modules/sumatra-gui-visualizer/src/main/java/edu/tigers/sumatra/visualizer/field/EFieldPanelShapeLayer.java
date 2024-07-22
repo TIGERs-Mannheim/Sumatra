@@ -14,18 +14,14 @@ import lombok.NoArgsConstructor;
 public final class EFieldPanelShapeLayer
 {
 	private static final ShapeLayerFactory F = new ShapeLayerFactory(EFieldPanelShapeLayer.class, 50);
-	private static final String CATEGORY = "Panel";
+	private static final String PANEL = "Panel";
 
-	public static final IShapeLayerIdentifier FPS = F.create(F.layer("FPS")
-			.category(CATEGORY)
-			.visibleByDefault(true));
-	public static final IShapeLayerIdentifier COORDINATES = F.create(F.layer("Coordinates")
-			.category(CATEGORY)
-			.visibleByDefault(true));
-	public static final IShapeLayerIdentifier RULER = F.create(F.layer("Ruler")
-			.category(CATEGORY)
-			.visibleByDefault(true));
-	public static final IShapeLayerIdentifier RECORDING = F.create(F.layer("Recording")
-			.category(CATEGORY)
-			.visibleByDefault(true));
+	public static final IShapeLayerIdentifier FPS = F.create(
+			F.category(PANEL).layerName("FPS").visibleByDefault(true));
+	public static final IShapeLayerIdentifier COORDINATES = F.create(
+			F.category(PANEL).layerName("Coordinates").visibleByDefault(true));
+	public static final IShapeLayerIdentifier RULER = F.create(
+			F.category(PANEL).layerName("Ruler").visibleByDefault(true));
+	public static final IShapeLayerIdentifier RECORDING = F.create(
+			F.category(PANEL).layerName("Recording").visibleByDefault(true));
 }

@@ -31,12 +31,10 @@ public class GoalRater implements IPassRater
 	}
 
 	private final AngleRangeRater rater = AngleRangeRater.forGoal(Geometry.getGoalTheir());
-	private final Collection<ITrackedBot> obstacles;
 
 
 	public GoalRater(Collection<ITrackedBot> obstacles)
 	{
-		this.obstacles = obstacles;
 		rater.setObstacles(obstacles);
 	}
 
@@ -44,13 +42,12 @@ public class GoalRater implements IPassRater
 	@Override
 	public double rate(Pass pass)
 	{
-		rater.setObstacles(obstacles);
 		var ratedSource = rater.rate(pass.getKick().getSource())
 				.orElseGet(() -> RatedTarget.ratedPoint(Geometry.getGoalTheir().getCenter(), 0));
 		var ratedTarget = rater.rate(pass.getKick().getTarget())
 				.orElseGet(() -> RatedTarget.ratedPoint(Geometry.getGoalTheir().getCenter(), 0));
 
 		var improvement = ratedTarget.getScore() - ratedSource.getScore();
-		return SumatraMath.relative(improvement, 0, bestImprovement);
+		return Math.min(SumatraMath.relative(improvement, 0, bestImprovement), ratedTarget.getScore());
 	}
 }

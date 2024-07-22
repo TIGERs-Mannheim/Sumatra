@@ -20,7 +20,7 @@ import java.util.List;
 /**
  * Pass between n bots around a circle (pass to the next bot clock-wise), stopping the ball each time.
  */
-public class PassAroundACirclePlay extends ARedirectPlay
+public class PassAroundACirclePlay extends APassingPlay
 {
 	@Setter
 	private IVector2 center;
@@ -41,7 +41,7 @@ public class PassAroundACirclePlay extends ARedirectPlay
 	{
 		super.doUpdateAfterRoles();
 
-		var shapes = getAiFrame().getShapeMap().get(EAiShapesLayer.TEST_KICK);
+		var shapes = getAiFrame().getShapeMap().get(EAiShapesLayer.TEST_PASSING);
 		shapes.add(new DrawableCircle(Circle.createCircle(center, radius), Color.green));
 	}
 

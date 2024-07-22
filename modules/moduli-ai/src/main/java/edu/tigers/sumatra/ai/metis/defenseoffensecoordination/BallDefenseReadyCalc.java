@@ -41,7 +41,8 @@ public class BallDefenseReadyCalc extends ACalculator
 	{
 		ballDefenseIsReady = isDefenseReady();
 		var offset = getAiFrame().getTeamColor() == ETeamColor.BLUE ? Vector2.zero() : Vector2.fromY(1.1);
-		getShapes(EAiShapesLayer.BALL_DEFENSE_READY).add(new DrawableBorderText(Vector2.fromXY(1, 7.7).add(offset),
+		getShapes(EAiShapesLayer.DO_COORD_BALL_DEFENSE_READY).add(
+				new DrawableBorderText(Vector2.fromXY(1, 7.7).add(offset),
 				String.format("BallDefenseReady: %b", ballDefenseIsReady))
 				.setColor(getAiFrame().getTeamColor().getColor()));
 	}

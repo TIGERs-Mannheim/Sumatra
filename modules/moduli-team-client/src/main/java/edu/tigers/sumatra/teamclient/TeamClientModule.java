@@ -10,6 +10,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
+import edu.tigers.sumatra.util.Safe;
 import org.apache.commons.lang.Validate;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -73,7 +74,7 @@ public class TeamClientModule extends AModule implements IAIObserver
 	private void addTask(final TeamClientTask task)
 	{
 		tasks.add(task);
-		threadPool.submit(task);
+		threadPool.submit(() -> Safe.run(task));
 	}
 
 

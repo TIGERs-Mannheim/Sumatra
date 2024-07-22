@@ -24,3 +24,7 @@ build
 /sumatra
 temp
 cache
+
+out
+**/test/generated_tests
+**/integrationTest/generated

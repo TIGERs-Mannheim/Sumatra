@@ -19,7 +19,9 @@ import edu.tigers.sumatra.drawable.DrawableCircle;
 import edu.tigers.sumatra.drawable.DrawableLine;
 import edu.tigers.sumatra.drawable.IDrawableShape;
 import edu.tigers.sumatra.geometry.Geometry;
+import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.AngleMath;
+import edu.tigers.sumatra.math.Hysteresis;
 import edu.tigers.sumatra.math.line.ILineSegment;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
@@ -52,8 +54,14 @@ import static edu.tigers.sumatra.ai.pandora.roles.defense.CenterBackRole.CoverMo
 public class CenterBackGroup extends ADefenseGroup
 {
 	private static final Map<Integer, List<CenterBackRole.CoverMode>> COVER_MODES = new HashMap<>();
-	@Configurable(comment = "[s] time for Bots in Group to give place to new arriving Bots", defValue = "0.3")
-	private static double minTimeToGivePlace = 0.3;
+	private static final Comparator<TimedCenterBackRole> SORT_BY_SLOWEST_FIRST = Comparator.comparing(
+			timed -> -timed.time);
+	private static final Comparator<TimedCenterBackRole> SORT_BY_COVER_MODE = Comparator.comparing(
+			timed -> timed.role.getCoverMode());
+	@Configurable(comment = "[s] time for Bots in Group to give place to new arriving Bots, hysteresis upper limit", defValue = "0.35")
+	private static double minTimeToGivePlaceUpper = 0.35;
+	@Configurable(comment = "[s] time for Bots in Group to give place to new arriving Bots, hysteresis lower limit", defValue = "0.3")
+	private static double minTimeToGivePlaceLower = 0.3;
 	@Configurable(comment = "[Bot Radius] if robot is closer than this to it's final destination, make room for it", defValue = "3.0")
 	private static double minDistanceToGivePlaceSufficient = 3;
 	@Configurable(comment = "[mm] Robot needs to be at least this distance close to the fastest defender to be considered close", defValue = "1000.0")
@@ -64,7 +72,6 @@ public class CenterBackGroup extends ADefenseGroup
 	private static double angleDifferenceHysteresis = 0.1;
 	@Configurable(comment = "[s] Time to project position in the future for decision making", defValue = "0.2")
 	private static double lookahead = 0.2;
-
 
 	static
 	{
@@ -84,8 +91,8 @@ public class CenterBackGroup extends ADefenseGroup
 	}
 
 	private final IDefenseThreat threat;
-
 	private List<IDrawableShape> shapes;
+	private Map<BotID, Hysteresis> timeToGivePlaceHysteresis = new HashMap<>();
 
 
 	/**
@@ -104,7 +111,11 @@ public class CenterBackGroup extends ADefenseGroup
 	{
 		getRoles().stream()
 				.filter(sdr -> sdr.getOriginalRole().getType() != ERole.CENTER_BACK)
-				.forEach(sdr -> sdr.setNewRole(new CenterBackRole()));
+				.forEach(sdr -> {
+					var hysteresis = new Hysteresis(minTimeToGivePlaceLower, minTimeToGivePlaceUpper);
+					timeToGivePlaceHysteresis.put(sdr.getOriginalRole().getBotID(), hysteresis);
+					sdr.setNewRole(new CenterBackRole());
+				});
 	}
 
 
@@ -152,7 +163,8 @@ public class CenterBackGroup extends ADefenseGroup
 	{
 		return allRoles.stream()
 				.map(role -> createTimedRole(center, role))
-				.sorted().toList();
+				.sorted(SORT_BY_SLOWEST_FIRST)
+				.toList();
 	}
 
 
@@ -175,14 +187,14 @@ public class CenterBackGroup extends ADefenseGroup
 
 	private List<TimedCenterBackRole> extractCloseRoles(List<TimedCenterBackRole> timedRoles)
 	{
-		var fastest = timedRoles.get(timedRoles.size() - 1);
+		var fastest = timedRoles.getLast();
 		if (fastest.role.getCoverMode() == null)
 		{
 			return List.of();
 		}
 		return timedRoles.stream()
 				.filter(timed -> isRoleClose(timed, fastest))
-				.sorted(Comparator.comparing(timed -> timed.role.getCoverMode()))
+				.sorted(SORT_BY_COVER_MODE)
 				.toList();
 	}
 
@@ -193,14 +205,17 @@ public class CenterBackGroup extends ADefenseGroup
 		{
 			return false;
 		}
-		var maxAllowedTimeForCloseRoles = fastest.time + minTimeToGivePlace;
-		var distanceToFastestSqr = fastest.role.getBot().getPosByTime(lookahead)
+		double timeAdapted = timedRole.time - fastest.time;
+		var hysteresis = timeToGivePlaceHysteresis.computeIfAbsent(timedRole.role.getBotID(),
+				botID -> new Hysteresis(minTimeToGivePlaceLower, minTimeToGivePlaceUpper));
+		hysteresis.update(timeAdapted);
+		double distanceToFastestSqr = fastest.role.getBot().getPosByTime(lookahead)
 				.distanceToSqr(timedRole.role.getBot().getPosByTime(lookahead));
 		if (distanceToFastestSqr > minDistanceToGivePlaceNecessary * minDistanceToGivePlaceNecessary)
 		{
 			return false;
 		}
-		return timedRole.time <= maxAllowedTimeForCloseRoles
+		return hysteresis.isLower()
 				|| timedRole.distanceToDestSqr <= minDistanceToGivePlaceSufficient * minDistanceToGivePlaceSufficient;
 	}
 
@@ -217,7 +232,8 @@ public class CenterBackGroup extends ADefenseGroup
 		var rolesToAssign = timedRoles.stream()
 				.filter(r -> !isRoleAssigned(r))
 				.collect(Collectors.toCollection(ArrayList::new));
-		if (closeRolesMayNeedReordering(center, closeRoles))
+		var closeReorderCause = closeRolesMayNeedReordering(center, closeRoles);
+		if (closeReorderCause != EReorderCause.NONE)
 		{
 			closeRoles.stream()
 					.filter(r1 -> rolesToAssign.stream().noneMatch(r2 -> r1.role.getBotID().equals(r2.role.getBotID())))
@@ -230,21 +246,18 @@ public class CenterBackGroup extends ADefenseGroup
 					.filter(r1 -> rolesToAssign.stream().noneMatch(r2 -> r1.role.getBotID().equals(r2.role.getBotID())))
 					.filter(r1 -> closeRoles.stream().noneMatch(r2 -> r1.role.getBotID().equals(r2.role.getBotID())))
 					.toList());
-			// Sort by slowest first
-			rolesToAssign.sort(TimedCenterBackRole::compareTo);
+			rolesToAssign.sort(SORT_BY_SLOWEST_FIRST);
 			var allCoverModes = COVER_MODES.get(getRoles().size());
 			var availableCoverModes = new ArrayList<>(allCoverModes);
 			for (var timed : rolesToAssign)
 			{
-				var coverMode = availableCoverModes.stream()
-						.min(Comparator.comparingDouble(
-								cm -> getNewTrajectoryTime(offsetProtectionPoint(center, cm), timed.role)))
-						.orElse(CENTER);
+				var coverMode = selectNewCoverMode(availableCoverModes, closeRoles, timed, center, closeReorderCause);
 				availableCoverModes.remove(coverMode);
 				timed.role.setCoverMode(coverMode);
 			}
 			// Fill in the spots with close roles that have not been assigned, without reordering them
-			var sortedByCoverMode = closeRoles.stream().sorted(Comparator.comparing(timed -> timed.role.getCoverMode()))
+			var sortedByCoverMode = closeRoles.stream()
+					.sorted(SORT_BY_COVER_MODE)
 					.toList();
 			for (var timed : sortedByCoverMode)
 			{
@@ -252,9 +265,43 @@ public class CenterBackGroup extends ADefenseGroup
 				{
 					continue;
 				}
-				timed.role.setCoverMode(availableCoverModes.remove(0));
+				timed.role.setCoverMode(availableCoverModes.removeFirst());
 			}
 		}
+	}
+
+
+	private CoverMode selectNewCoverMode(
+			List<CoverMode> availableCoverModes,
+			List<TimedCenterBackRole> closeRoles,
+			TimedCenterBackRole timed,
+			IVector2 center,
+			EReorderCause closeReorderCause
+	)
+	{
+		var fastest = availableCoverModes.stream()
+				.min(Comparator.comparingDouble(cm -> getNewTrajectoryTime(offsetProtectionPoint(center, cm), timed.role)))
+				.orElse(CENTER);
+
+		if (closeReorderCause != EReorderCause.SPREAD)
+		{
+			return fastest;
+		}
+		boolean isCloseRole = closeRoles.stream()
+				.map(TimedCenterBackRole::role)
+				.map(ARole::getBotID)
+				.anyMatch(id -> id == timed.role.getBotID());
+		if (isCloseRole && availableCoverModes.contains(timed.role.getCoverMode()))
+		{
+			// Apply hysteresis for close roles
+			double oldTime = getNewTrajectoryTime(offsetProtectionPoint(center, timed.role.getCoverMode()), timed.role);
+			double newTime = getNewTrajectoryTime(offsetProtectionPoint(center, fastest), timed.role);
+			if (oldTime < newTime + 0.1)
+			{
+				return timed.role.getCoverMode();
+			}
+		}
+		return fastest;
 	}
 
 
@@ -286,7 +333,7 @@ public class CenterBackGroup extends ADefenseGroup
 	}
 
 
-	private boolean closeRolesMayNeedReordering(IVector2 center, List<TimedCenterBackRole> closeRoles)
+	private EReorderCause closeRolesMayNeedReordering(IVector2 center, List<TimedCenterBackRole> closeRoles)
 	{
 		var sortedByAngles = closeRoles.stream()
 				.map(TimedCenterBackRole::role)
@@ -298,7 +345,7 @@ public class CenterBackGroup extends ADefenseGroup
 			{
 				// Indicates swapping might improve the overall time
 				shapes.add(new DrawableAnnotation(center, "SWAPPING", Color.PINK));
-				return true;
+				return EReorderCause.SWAPPING;
 			}
 		}
 		var closeAngles = closeRoles.stream()
@@ -314,9 +361,9 @@ public class CenterBackGroup extends ADefenseGroup
 		{
 			// Close roles are spread out quite a lot
 			shapes.add(new DrawableAnnotation(center, "SPREAD", Color.PINK));
-			return true;
+			return EReorderCause.SPREAD;
 		}
-		return false;
+		return EReorderCause.NONE;
 	}
 
 
@@ -346,7 +393,7 @@ public class CenterBackGroup extends ADefenseGroup
 			if (closeIDs.contains(role.getBotID()))
 			{
 				role.setIdealProtectionPoint(intermediateProtectionPoint);
-				role.setDistanceToProtectionLine(getDistanceToProtectionLine(coverModes.remove(0)));
+				role.setDistanceToProtectionLine(getDistanceToProtectionLine(coverModes.removeFirst()));
 			} else
 			{
 				role.setIdealProtectionPoint(idealProtectionPoint);
@@ -380,20 +427,19 @@ public class CenterBackGroup extends ADefenseGroup
 	{
 		var closeCompanions = closeRoles.stream().map(TimedCenterBackRole::role).map(ARole::getBotID)
 				.collect(Collectors.toUnmodifiableSet());
-		var companions = allRoles.stream().map(ARole::getBotID).collect(Collectors.toUnmodifiableSet());
-		allRoles.forEach(cbr -> cbr.setCompanions(companions));
+		allRoles.forEach(cbr -> cbr.setCompanions(allRoles));
 		allRoles.forEach(cbr -> cbr.setCloseCompanions(closeCompanions));
 	}
 
 
-	private record TimedCenterBackRole(CenterBackRole role, double time, double distanceToDestSqr)
-			implements Comparable<TimedCenterBackRole>
+	private enum EReorderCause
 	{
+		NONE,
+		SPREAD,
+		SWAPPING,
+	}
 
-		@Override
-		public int compareTo(TimedCenterBackRole o)
-		{
-			return -Double.compare(time, o.time);
-		}
+	private record TimedCenterBackRole(CenterBackRole role, double time, double distanceToDestSqr)
+	{
 	}
 }

@@ -21,23 +21,24 @@ dependencies {
     implementation project(':moduli-botmanager')
     implementation project(':moduli-geometry')
 
-    implementation 'com.github.TIGERs-Mannheim.jinput:jinput:2.0.9.4'
-    natives 'net.java.jinput:jinput:2.0.9:natives-all'
-    implementation 'com.github.TIGERs-Mannheim:moduli:4.1'
-    implementation 'com.github.g3force:configurable:3.0'
-    implementation 'com.github.g3force:instanceables:5.2'
+    implementation(libs.com.github.TIGERs.mannheim.jinput)
+    natives(variantOf(libs.net.java.jinput) { classifier('natives-all') })
+    implementation(libs.com.github.TIGERs.mannheim.moduli)
+    implementation(libs.com.github.g3force.configurable)
+    implementation(libs.com.github.g3force.instanceables)
 
-    implementation 'org.apache.logging.log4j:log4j-api:2.20.0'
+    implementation(libs.org.apache.logging.log4j.log4j.api)
 
-    implementation 'com.googlecode.json-simple:json-simple:1.1.1'
-    implementation 'com.google.protobuf:protobuf-java:3.23.2'
+    implementation(libs.com.googlecode.json.simple)
+    implementation(libs.com.google.protobuf.protobuf.java)
 }
 
 tasks.register('copyNatives', Copy) {
     configurations.natives.asFileTree.each {
         from(zipTree(it))
     }
-    into "$buildDir/natives"
+
+    into layout.getBuildDirectory().dir("natives")
 }
 
 processResources.finalizedBy('copyNatives')

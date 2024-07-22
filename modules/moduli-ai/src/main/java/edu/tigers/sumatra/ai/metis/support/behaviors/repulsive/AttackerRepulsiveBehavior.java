@@ -11,6 +11,7 @@ import edu.tigers.sumatra.ai.pandora.plays.EPlay;
 import edu.tigers.sumatra.bot.BotState;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.BotID;
+import edu.tigers.sumatra.math.circle.IArc;
 import edu.tigers.sumatra.math.penaltyarea.IPenaltyArea;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2f;
@@ -66,15 +67,22 @@ public class AttackerRepulsiveBehavior extends ARepulsiveBehavior
 	private static double radiusGoal = 2500;
 
 	private final Supplier<List<IVector2>> supportiveGoalPositions;
+	private final Supplier<Map<EPlay, Set<BotID>>> desiredBots;
+	private final Supplier<List<IArc>> offensiveShadows;
+	private final Supplier<Map<BotID, RatedOffensiveAction>> offensiveActions;
 
 
 	public AttackerRepulsiveBehavior(
+			Supplier<List<IVector2>> supportiveGoalPositions,
 			Supplier<Map<EPlay, Set<BotID>>> desiredBots,
 			Supplier<Map<BotID, RatedOffensiveAction>> offensiveActions,
-			Supplier<List<IVector2>> supportiveGoalPositions
+			Supplier<List<IArc>> offensiveShadows
 	)
 	{
-		super(Color.red, desiredBots, offensiveActions);
+		super(Color.red, desiredBots);
+		this.offensiveActions = offensiveActions;
+		this.desiredBots = desiredBots;
+		this.offensiveShadows = offensiveShadows;
 		this.supportiveGoalPositions = supportiveGoalPositions;
 	}
 
@@ -93,15 +101,17 @@ public class AttackerRepulsiveBehavior extends ARepulsiveBehavior
 			Collection<ITrackedBot> opponents
 	)
 	{
+		var forceGenerator = new RepulsivePassReceiverForceGenerator(
+				this.offensiveShadows.get(), this.offensiveActions.get(), this.desiredBots.get(), getWFrame());
 		List<Force> forces = new ArrayList<>();
-		forces.add(getForceStayInsideField(affectedBot));
-		forces.add(getForceRepelFromBall());
+		forces.add(forceGenerator.getForceStayInsideField(affectedBot));
+		forces.add(forceGenerator.getForceRepelFromBall());
 		forces.add(getForceAttractToPenaltyArea(affectedBot));
-		forces.addAll(getForceRepelFromOpponentBot(opponents, affectedBot));
-		forces.addAll(getForceRepelFromTeamBot(supporter, affectedBot));
+		forces.addAll(forceGenerator.getForceRepelFromOpponentBot(opponents, affectedBot));
+		forces.addAll(forceGenerator.getForceRepelFromTeamBot(supporter, affectedBot));
 		forces.addAll(getForceAttractGoalCircle());
-		forces.addAll(getForceRepelFromOffensiveGoalSight(affectedBot));
-		forces.addAll(getForceRepelFromPassLine(affectedBot));
+		forces.addAll(forceGenerator.getForceRepelFromOffensiveGoalSight(affectedBot));
+		forces.addAll(forceGenerator.getForceRepelFromPassLine(affectedBot));
 		forces.addAll(getAngleRangePositionForce());
 		return forces;
 	}

@@ -81,6 +81,7 @@ public enum EMatchStatistics
 
 	DEFENSE_DIST_AT_BALL_RECEIVED("Def. Distance at receive"),
 	DEFENSE_VEL_AT_BALL_RECEIVED("Def. Vel Diff at receive"),
+	DEFENSE_BALL_POS_X_AT_BALL_RECEIVED("Def. X component of Ball pos at receive"),
 
 	DEFENSE_BOT_THREAT_RATING_RAW("BotThreatRating 0 Defender"),
 	DEFENSE_BOT_THREAT_RATING_RAW_AVG("Avg. BotThreatRating 0 Defender"),

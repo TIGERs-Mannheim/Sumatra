@@ -13,10 +13,14 @@ import org.apache.commons.configuration.tree.ConfigurationNode;
 
 import javax.swing.JLabel;
 import javax.swing.JTable;
+import javax.swing.tree.TreePath;
 import java.awt.event.MouseEvent;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Optional;
+import java.util.stream.Stream;
 
 
 /**
@@ -31,14 +35,12 @@ public class ConfigXMLTreeTableModel extends ATreeTableModel
 
 
 	private final String2ValueConverter s2vConv = String2ValueConverter.getDefault();
-	private final HierarchicalConfiguration config;
 
 
 	public ConfigXMLTreeTableModel(final HierarchicalConfiguration xml)
 	{
 		// Hopefully there is no comment as first element... :-P
 		super(xml.getRoot());
-		config = xml;
 	}
 
 
@@ -137,39 +139,6 @@ public class ConfigXMLTreeTableModel extends ATreeTableModel
 	{
 		final Node node = (Node) obj;
 		return node.getChildrenCount();
-	}
-
-
-	@Override
-	public boolean isCellEditable(final Object obj, final int col)
-	{
-		// 0.0 = "Name"
-		if (col == 0)
-		{
-			// For tree-expansion/collapse
-			return super.isCellEditable(obj, col);
-		}
-
-		if (!isEditable())
-		{
-			// Editing disabled
-			return false;
-		}
-
-		switch (col)
-		{
-
-			// "Value"
-			case 1:
-				return isLeaf(obj);
-
-			// "Comment"
-			case 2:
-				final org.w3c.dom.Node comment = getComment(obj);
-				return comment != null;
-			default:
-				throw new IllegalArgumentException();
-		}
 	}
 
 
@@ -281,6 +250,23 @@ public class ConfigXMLTreeTableModel extends ATreeTableModel
 
 
 	@Override
+	protected Stream<TreePath> getAllTreePaths(Object node, List<Object> parentPath)
+	{
+		if (node instanceof ConfigurationNode configNode)
+		{
+			var currentPath = new ArrayList<>(parentPath);
+			currentPath.add(configNode);
+
+			return Stream.concat(
+					configNode.getChildren().stream().flatMap(child -> getAllTreePaths(child, currentPath)),
+					Stream.of(new TreePath(currentPath.toArray()))
+			);
+		}
+		return Stream.of();
+	}
+
+
+	@Override
 	public int getColumnCount()
 	{
 		return COLUMNS.length;
@@ -298,5 +284,16 @@ public class ConfigXMLTreeTableModel extends ATreeTableModel
 	public Class<?> getColumnClass(final int col)
 	{
 		return CLASSES[col];
+	}
+
+
+	@Override
+	protected Optional<String> nodeToString(Object node)
+	{
+		if (node instanceof ConfigurationNode configNode)
+		{
+			return Optional.ofNullable(configNode.getName());
+		}
+		return Optional.empty();
 	}
 }

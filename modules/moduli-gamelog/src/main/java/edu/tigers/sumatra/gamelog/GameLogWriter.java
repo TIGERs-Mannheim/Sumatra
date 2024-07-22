@@ -33,12 +33,12 @@ public class GameLogWriter
 	/**
 	 * Open a gamelog for writing using current date/time as filename.
 	 */
-	public void open()
+	public void open(String matchType, String stage, String teamYellow, String teamBlue)
 	{
 		SimpleDateFormat dt = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss");
 		dt.setTimeZone(TimeZone.getDefault());
-
-		open(dt.format(new Date()));
+		String filename = dt.format(new Date()) + String.format("-%s-%s-%s-vs-%s", matchType, stage, teamYellow, teamBlue);
+		open(filename);
 	}
 
 

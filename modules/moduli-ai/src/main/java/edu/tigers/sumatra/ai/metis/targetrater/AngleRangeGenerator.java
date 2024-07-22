@@ -7,6 +7,7 @@ package edu.tigers.sumatra.ai.metis.targetrater;
 import edu.tigers.sumatra.geometry.Goal;
 import edu.tigers.sumatra.math.AngleMath;
 import edu.tigers.sumatra.math.circle.ICircle;
+import edu.tigers.sumatra.math.intersections.IIntersections;
 import edu.tigers.sumatra.math.line.ILineSegment;
 import edu.tigers.sumatra.math.line.Lines;
 import edu.tigers.sumatra.math.triangle.TriangleMath;
@@ -66,17 +67,50 @@ public class AngleRangeGenerator
 		IVector2 endCenter = TriangleMath.bisector(origin, lineSegment.getPathStart(), lineSegment.getPathEnd());
 		IVector2 originToEndCenter = endCenter.subtractNew(origin);
 
+		double maxDistanceToLine = origin.farthestTo(List.of(lineSegment.getPathStart(), lineSegment.getPathEnd()))
+				.distanceTo(origin);
+
 		if (obstacles.stream().anyMatch(c -> c.isPointInShape(origin)))
 		{
 			return List.of(AngleRange.width(AngleMath.PI_TWO));
 		}
 
 		return obstacles.stream()
-				.map(circle -> circle.tangentialIntersections(origin))
-				.map(intersections -> createRange(origin, originToEndCenter, intersections))
-				.filter(Optional::isPresent)
-				.map(Optional::get)
+				.map(circle -> createAngleRange(origin, originToEndCenter, circle, maxDistanceToLine))
+				.flatMap(Optional::stream)
 				.toList();
+	}
+
+
+	private Optional<AngleRange> createAngleRange(IVector2 origin, IVector2 originToEndCenter, ICircle obstacle,
+			double maxDistanceToLine)
+	{
+		if (origin.distanceTo(obstacle.center()) > maxDistanceToLine + obstacle.radius())
+		{
+			return Optional.empty();
+		}
+
+		var intersections = obstacle.intersect(lineSegment);
+		var tangentialIntersections = obstacle.tangentialIntersections(origin);
+		if (intersections.isEmpty())
+		{
+			return createRange(origin, originToEndCenter, tangentialIntersections);
+		}
+		var filteredTangentialIntersections = tangentialIntersections.stream()
+				.map(tangentialIntersection -> filterTangentialIntersection(origin, tangentialIntersection, intersections))
+				.toList();
+		return createRange(origin, originToEndCenter, filteredTangentialIntersections);
+	}
+
+
+	private IVector2 filterTangentialIntersection(IVector2 origin, IVector2 tangentialIntersection,
+			IIntersections obstacleLineIntersections)
+	{
+		if (Lines.segmentFromPoints(origin, tangentialIntersection).intersect(lineSegment).isEmpty())
+		{
+			return tangentialIntersection;
+		}
+		return tangentialIntersection.nearestTo(obstacleLineIntersections.asList());
 	}
 
 

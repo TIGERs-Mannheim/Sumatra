@@ -10,32 +10,22 @@ package edu.tigers.sumatra.bot.params;
 public interface IBotDribblerSpecs
 {
 	/**
-	 * @return Maximum acceleration the dribbler can put on the ball.
-	 */
-	double getMaxBallAcceleration();
-
-	/**
-	 * @return Angle from robot negative Y axis (aka back) where a ball can be kept at dribbler [rad].
-	 */
-	double getMaxRetainingBallAngle();
-
-	/**
-	 * @return Dribbling speed in [rpm] in default mode.
+	 * @return Dribbling speed in [m/s] in default mode.
 	 */
 	double getDefaultSpeed();
 
 	/**
-	 * @return Maximum dribbler current in [A] in default mode.
+	 * @return Maximum dribbler force in [N] in default mode.
 	 */
-	double getDefaultMaxCurrent();
+	double getDefaultForce();
 
 	/**
-	 * @return Dribbling speed in [rpm] in high power mode.
+	 * @return Dribbling speed in [m/s] in high power mode.
 	 */
 	double getHighPowerSpeed();
 
 	/**
-	 * @return Maximum dribbler current in [A] in high power mode.
+	 * @return Maximum dribbler force in [N] in high power mode.
 	 */
-	double getHighPowerMaxCurrent();
+	double getHighPowerForce();
 }

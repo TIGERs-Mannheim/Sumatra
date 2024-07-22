@@ -121,7 +121,7 @@ public final class SumatraModel extends Moduli
 			userSettings.load(inUserSettings);
 		} catch (final IOException err)
 		{
-			log.warn("Config: " + uf.getPath() + " could not be read, using default configs!", err);
+			log.warn("Config: {} could not be read, using default configs!", uf.getPath(), err);
 		}
 	}
 
@@ -226,7 +226,7 @@ public final class SumatraModel extends Moduli
 	 * @param value
 	 * @return The value which was associated with the given key before
 	 */
-	public String setUserProperty(final String key, final String value)
+	public String setUserProperty(final String key, final Object value)
 	{
 		Object obj;
 		if (value == null)
@@ -234,7 +234,7 @@ public final class SumatraModel extends Moduli
 			obj = userSettings.remove(key);
 		} else
 		{
-			obj = userSettings.setProperty(key, value);
+			obj = userSettings.setProperty(key, String.valueOf(value));
 		}
 
 		if (obj == null)
@@ -254,7 +254,7 @@ public final class SumatraModel extends Moduli
 
 	public String setUserProperty(Class<?> type, String key, Object value)
 	{
-		return setUserProperty(type.getCanonicalName() + "." + key, String.valueOf(value));
+		return setUserProperty(type.getCanonicalName() + "." + key, value);
 	}
 
 
@@ -353,6 +353,43 @@ public final class SumatraModel extends Moduli
 
 
 	/**
+	 * Calls {@link Properties#getProperty(String)} and parses value to double
+	 *
+	 * @param key
+	 * @param def
+	 * @return The double associated with the given key
+	 */
+	public double getUserProperty(String key, double def)
+	{
+		String val = getUserProperty(key);
+		if (val == null)
+		{
+			return def;
+		}
+		return Double.parseDouble(val);
+	}
+
+
+	/**
+	 * Calls {@link Properties#getProperty(String)} and parses value to double
+	 *
+	 * @param type
+	 * @param key
+	 * @param def
+	 * @return The double associated with the given key
+	 */
+	public double getUserProperty(Class<?> type, String key, double def)
+	{
+		String val = getUserProperty(type, key);
+		if (val == null)
+		{
+			return def;
+		}
+		return Double.parseDouble(val);
+	}
+
+
+	/**
 	 * Sumatra version
 	 *
 	 * @return
@@ -383,7 +420,7 @@ public final class SumatraModel extends Moduli
 				}
 			} catch (IOException e)
 			{
-				log.error("Could not create properties file: " + uf.getAbsolutePath(), e);
+				log.error("Could not create properties file: {}", uf.getAbsolutePath(), e);
 			}
 		}
 
@@ -394,7 +431,7 @@ public final class SumatraModel extends Moduli
 			userSettings.store(out, null);
 		} catch (final IOException err)
 		{
-			log.warn("Could not write to " + uf.getPath() + ", configuration is not saved", err);
+			log.warn("Could not write to {}, configuration is not saved", uf.getPath(), err);
 		}
 
 		if (out != null)

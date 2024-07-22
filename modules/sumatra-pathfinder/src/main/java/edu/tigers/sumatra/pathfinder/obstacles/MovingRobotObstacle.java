@@ -8,31 +8,18 @@ import edu.tigers.sumatra.drawable.DrawableCircle;
 import edu.tigers.sumatra.drawable.IDrawableShape;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.circle.ICircle;
+import edu.tigers.sumatra.movingrobot.IMovingRobot;
 import edu.tigers.sumatra.pathfinder.obstacles.input.CollisionInput;
-import lombok.RequiredArgsConstructor;
 
+import java.awt.Color;
 import java.util.List;
 
 
-@RequiredArgsConstructor
-public class MovingRobotObstacle extends AObstacle
+public class MovingRobotObstacle extends AMovingRobotObstacle
 {
-	private final BotID botID;
-	private final MovingRobot movingRobot;
-	private final double minSpeed;
-
-
-	@Override
-	public String getIdentifier()
+	public MovingRobotObstacle(BotID botID, IMovingRobot movingRobot, double minSpeed, double maxHorizon)
 	{
-		return super.getIdentifier() + " " + botID.getSaveableString();
-	}
-
-
-	@Override
-	protected void configure()
-	{
-		setMotionLess(false);
+		super(botID, movingRobot, minSpeed, maxHorizon);
 	}
 
 
@@ -40,14 +27,11 @@ public class MovingRobotObstacle extends AObstacle
 	public double distanceTo(CollisionInput input)
 	{
 		ICircle movingHorizon = movingRobot.getMovingHorizon(input.getTimeOffset());
+		if (movingHorizon.isPointInShape(input.getRobotPos()))
+		{
+			return 0;
+		}
 		return movingHorizon.distanceTo(input.getRobotPos());
-	}
-
-
-	@Override
-	public boolean canCollide(CollisionInput input)
-	{
-		return input.getRobotVel().getLength2() > minSpeed || input.accelerating();
 	}
 
 
@@ -56,7 +40,7 @@ public class MovingRobotObstacle extends AObstacle
 	{
 		return List.of(
 				new DrawableCircle(movingRobot.getMovingHorizon(0)),
-				new DrawableCircle(movingRobot.getMovingHorizon(movingRobot.getMaxHorizon()))
+				new DrawableCircle(movingRobot.getMovingHorizon(maxHorizon)).setColor(Color.gray)
 		);
 	}
 }

@@ -23,8 +23,8 @@ public class KickParams
 	EKickerDevice device;
 	double kickSpeed;
 	EDribblerMode dribblerMode;
-	double dribbleSpeedRpm;
-	double dribbleMaxCurrent;
+	double dribbleSpeed;
+	double dribbleForce;
 
 
 	@SuppressWarnings("unused") // berkeley
@@ -89,9 +89,9 @@ public class KickParams
 	}
 
 
-	public KickParams withDribbleSpeedRpm(double dribbleSpeedRpm, double dribbleMaxCurrent)
+	public KickParams withDribbleSpeed(double dribbleSpeed, double dribbleForce)
 	{
-		return new KickParams(device, kickSpeed, EDribblerMode.MANUAL, dribbleSpeedRpm, dribbleMaxCurrent);
+		return new KickParams(device, kickSpeed, EDribblerMode.MANUAL, dribbleSpeed, dribbleForce);
 	}
 }
 

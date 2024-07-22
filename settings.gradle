@@ -4,9 +4,6 @@
 
 pluginManagement {
     repositories {
-        maven {
-            url 'https://nexus.tigers-mannheim.de/repository/gradle-plugin-portal/'
-        }
         gradlePluginPortal()
     }
 }
@@ -25,16 +22,16 @@ rootProject.name = 'sumatra'
 //    }
 //}
 
-buildCache {
-    remote(HttpBuildCache) {
-        url = 'https://build-cache.tigers-mannheim.de/cache/'
-        credentials {
-            username = System.getenv("GRADLE_BUILD_CACHE_USERNAME") ?: "read"
-            password = System.getenv("GRADLE_BUILD_CACHE_PASSWORD") ?: "I\"\"H=*#X11he9fW-=U\"k*80+lR-'uy7="
-        }
-        push = (System.getenv("GRADLE_BUILD_CACHE_USERNAME") != null)
-    }
-}
+//buildCache {
+//    remote(HttpBuildCache) {
+//        url = 'https://build-cache.tigers-mannheim.de/cache/'
+//        credentials {
+//            username = System.getenv("GRADLE_BUILD_CACHE_USERNAME") ?: "read"
+//            password = System.getenv("GRADLE_BUILD_CACHE_PASSWORD") ?: "I\"\"H=*#X11he9fW-=U\"k*80+lR-'uy7="
+//        }
+//        push = (System.getenv("GRADLE_BUILD_CACHE_USERNAME") != null)
+//    }
+//}
 
 file('modules').eachDir { dir ->
     include dir.name

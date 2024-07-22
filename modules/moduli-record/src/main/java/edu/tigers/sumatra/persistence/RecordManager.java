@@ -37,6 +37,10 @@ public class RecordManager extends AModule implements IRefereeObserver
 	private final List<IBerkeleyRecorderHook> hooks = new CopyOnWriteArrayList<>();
 	private long lastCommandCounter = -1;
 	private BerkeleyAsyncRecorder recorder = null;
+	protected String teamYellow = "";
+	protected String teamBlue = "";
+	protected String matchType = "";
+	protected String matchStage = "";
 
 	@Configurable(defValue = "false", comment = "Automatically compress recordings after they were closed")
 	private static boolean compressOnClose = false;
@@ -55,7 +59,8 @@ public class RecordManager extends AModule implements IRefereeObserver
 		Mutations mutations = new Mutations();
 		mutations.addRenamer(new Renamer("edu.tigers.sumatra.referee.gameevent.AttackerInDefenseArea", 0,
 				"edu.tigers.sumatra.referee.gameevent.AttackerTouchedBallInDefenseArea"));
-		mutations.addRenamer(new Renamer("edu.tigers.sumatra.ai.metis.offense.action.moves.OffensiveAction", 3, "edu.tigers.sumatra.ai.metis.offense.action.OffensiveAction"));
+		mutations.addRenamer(new Renamer("edu.tigers.sumatra.ai.metis.offense.action.moves.OffensiveAction", 3,
+				"edu.tigers.sumatra.ai.metis.offense.action.OffensiveAction"));
 
 		return mutations;
 	}
@@ -162,6 +167,13 @@ public class RecordManager extends AModule implements IRefereeObserver
 	@Override
 	public void onNewRefereeMsg(final SslGcRefereeMessage.Referee refMsg)
 	{
+		if (refMsg != null && recorder == null)
+		{
+			teamYellow = refMsg.getYellow().getName().replace(" ", "_");
+			teamBlue = refMsg.getBlue().getName().replace(" ", "_");
+			matchType = refMsg.getMatchType().toString();
+			matchStage = refMsg.getStage().toString().replace("_PRE", "");
+		}
 		if (autoRecord && SumatraModel.getInstance().isTournamentMode() && (refMsg != null)
 				&& refMsg.getCommandCounter() != lastCommandCounter)
 		{
@@ -294,7 +306,7 @@ public class RecordManager extends AModule implements IRefereeObserver
 	 */
 	private BerkeleyDb newBerkeleyDb()
 	{
-		BerkeleyDb db = BerkeleyDb.withDefaultLocation();
+		BerkeleyDb db = BerkeleyDb.withDefaultLocation(matchType, matchStage, teamYellow, teamBlue);
 		onNewBerkeleyDb(db);
 		return db;
 	}

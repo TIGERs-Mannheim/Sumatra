@@ -20,24 +20,23 @@ dependencies {
     implementation project(':common-bot')
     implementation project(':sumatra-model')
     implementation project(':moduli-wp')
-    implementation project(':moduli-vision')
     implementation project(':moduli-geometry')
     implementation project(':moduli-referee')
     implementation project(':moduli-record')
 
-    implementation 'com.github.TIGERs-Mannheim:moduli:4.1'
-    implementation 'com.github.g3force:configurable:3.0'
-    api 'com.github.g3force:instanceables:5.2'
+    implementation(libs.com.github.TIGERs.mannheim.moduli)
+    implementation(libs.com.github.g3force.configurable)
+    api(libs.com.github.g3force.instanceables)
 
-    implementation 'org.apache.logging.log4j:log4j-api:2.20.0'
+    implementation(libs.org.apache.logging.log4j.log4j.api)
 
-    implementation 'commons-configuration:commons-configuration:1.10'
-    implementation 'com.google.guava:guava:32.0.1-jre'
-    implementation 'commons-io:commons-io:2.13.0'
-    implementation 'commons-lang:commons-lang:2.6'
+    implementation(libs.commons.configuration)
+    implementation(libs.com.google.guava)
+    implementation(libs.commons.io)
+    implementation(libs.commons.lang)
 
-    implementation 'com.sleepycat:je:18.3.12'
-    implementation 'com.google.protobuf:protobuf-java:3.23.2'
+    implementation(libs.com.sleepycat.je)
+    implementation(libs.com.google.protobuf.protobuf.java)
 
 
     integrationTestImplementation project(':common')
@@ -48,19 +47,19 @@ dependencies {
     integrationTestImplementation project(':moduli-referee')
     integrationTestImplementation project(':moduli-record')
 
-    integrationTestImplementation 'junit:junit:4.13.2'
-    integrationTestRuntimeOnly 'org.junit.vintage:junit-vintage-engine:5.9.3'
-    integrationTestImplementation 'org.assertj:assertj-core:3.24.2'
-    integrationTestImplementation 'com.google.protobuf:protobuf-java:3.23.2'
-    integrationTestImplementation 'com.google.protobuf:protobuf-java-util:3.23.2'
+    integrationTestImplementation(libs.junit)
+    integrationTestRuntimeOnly(libs.org.junit.vintage.junit.vintage.engine)
+    integrationTestImplementation(libs.org.assertj.assertj.core)
+    integrationTestImplementation(libs.com.google.protobuf.protobuf.java)
+    integrationTestImplementation(libs.com.google.protobuf.protobuf.java.util)
 
-    integrationTestImplementation 'com.github.g3force:configurable:3.0'
+    integrationTestImplementation(libs.com.github.g3force.configurable)
 
-    integrationTestImplementation 'org.apache.logging.log4j:log4j-api:2.20.0'
-    integrationTestImplementation 'org.apache.logging.log4j:log4j-core:2.20.0'
+    integrationTestImplementation(libs.org.apache.logging.log4j.log4j.api)
+    integrationTestImplementation(libs.org.apache.logging.log4j.log4j.core)
 
-    integrationTestAnnotationProcessor "org.projectlombok:lombok:1.18.28"
-    integrationTestImplementation "org.projectlombok:lombok:1.18.28"
+    integrationTestAnnotationProcessor(libs.org.projectlombok.lombok)
+    integrationTestCompileOnly(libs.org.projectlombok.lombok)
 
     integrationTestImplementation project(':moduli-gamelog')
 }

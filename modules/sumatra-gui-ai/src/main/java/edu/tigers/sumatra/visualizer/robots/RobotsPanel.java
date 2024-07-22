@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.visualizer.robots;
@@ -11,8 +11,10 @@ import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.ids.ETeamColor;
 import lombok.Setter;
 import lombok.experimental.Accessors;
+import lombok.extern.log4j.Log4j2;
 import net.miginfocom.swing.MigLayout;
 
+import javax.imageio.ImageIO;
 import javax.swing.ButtonGroup;
 import javax.swing.JPanel;
 import javax.swing.JRadioButton;
@@ -25,7 +27,12 @@ import java.awt.Font;
 import java.awt.FontMetrics;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.Image;
 import java.awt.Insets;
+import java.awt.RenderingHints;
+import java.awt.Shape;
+import java.awt.geom.Arc2D;
+import java.io.IOException;
 import java.io.Serial;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -39,24 +46,21 @@ import java.util.function.Consumer;
 /**
  * Visualizes all available robots.
  */
+@Log4j2
 public class RobotsPanel extends JPanel
 {
 	@Serial
 	private static final long serialVersionUID = 6408342941543334436L;
 
 	// --- constants ---
-	private static final int SIGN_WIDTH = 40;
-	private static final int SIGN_HEIGHT = 30;
-	private static final int SIGN_MARGIN = 5;
-	private static final int SIGN_STRIP_WIDTH = 5;
-	private static final int Y_START_MARGIN = 1;
-	private static final int PANEL_WIDTH = 50;
+	private static final int SIGN_DIAMETER = 28;
+	private static final int SIGN_WIDTH = 38;
+	private static final int PANEL_WIDTH = 53;
 	private static final int BAT_SIGN_WIDTH = 8;
+	private static final int ERROR_MSG_HEIGHT = 11;
 
 	// --- color ---
 	private static final Color SELECTED_COLOR = Color.black;
-	private static final Color TRUE_COLOR = Color.green;
-	private static final Color FALSE_COLOR = Color.red;
 	private static final Color YELLOW_BOT_COLOR = Color.yellow;
 	private static final Color BLUE_BOT_COLOR = Color.blue;
 	private static final Color YELLOW_CONTRAST_COLOR = Color.black;
@@ -73,6 +77,8 @@ public class RobotsPanel extends JPanel
 		botFeaturesToCheck.add(EFeature.DRIBBLER);
 		botFeaturesToCheck.add(EFeature.MOVE);
 		botFeaturesToCheck.add(EFeature.STRAIGHT_KICKER);
+		botFeaturesToCheck.add(EFeature.ENERGETIC);
+		botFeaturesToCheck.add(EFeature.EXT_BOARD);
 	}
 
 	@Setter
@@ -80,7 +86,6 @@ public class RobotsPanel extends JPanel
 	private transient Consumer<BotID> onRobotClicked = b -> {
 	};
 	private final List<Color> colors = new ArrayList<>();
-	private int signHeight = SIGN_HEIGHT;
 	// --- marker-position ---
 	private transient BotID selectedBot = BotID.noBot();
 	// --- connection arrays ---
@@ -91,6 +96,12 @@ public class RobotsPanel extends JPanel
 	private boolean flashState = false;
 	private boolean flashState2 = false;
 	private boolean necessaryToRemoveAll = false;
+
+	private transient Image flash;
+	private transient Image visibleRed;
+	private transient Image visibleGreen;
+	private transient Image signalRed;
+	private transient Image signalGreen;
 
 
 	/**
@@ -103,11 +114,22 @@ public class RobotsPanel extends JPanel
 		colors.add(new Color(0xBAD200));
 		colors.add(new Color(0x58C800));
 		colors.add(new Color(0x00BF02));
-
+		try
+		{
+			flash = ImageIO.read(getClass().getResourceAsStream("/flash.png"));
+			signalRed = ImageIO.read(getClass().getResourceAsStream("/signal_red.png"));
+			signalGreen = ImageIO.read(getClass().getResourceAsStream("/signal_green.png"));
+			visibleRed = ImageIO.read(getClass().getResourceAsStream("/location_red.png"));
+			visibleGreen = ImageIO.read(getClass().getResourceAsStream("/location_green.png"));
+		} catch (IOException e)
+		{
+			log.trace(e);
+		}
 		// --- configure panel ---
+
 		setLayout(new MigLayout("ins 1 0 1 0, gapy 2, wrap", "", "[top]"));
-		setMinimumSize(new Dimension(PANEL_WIDTH + 5, signHeight));
-		setPreferredSize(new Dimension(PANEL_WIDTH + 5, 2000));
+		setMinimumSize(new Dimension(PANEL_WIDTH, SIGN_DIAMETER));
+		setPreferredSize(new Dimension(PANEL_WIDTH, 1200));
 
 		// --- swing timer for flashing ---
 		Timer flashFast = new Timer(200, e -> {
@@ -174,29 +196,18 @@ public class RobotsPanel extends JPanel
 			old.setKickerRel(status.getKickerRel());
 			old.setVisible(status.isVisible());
 		}
+		oldBotStati.entrySet().removeIf(e -> !botStati.containsKey(e.getKey()));
 	}
 
 
 	@Override
 	protected void paintComponent(final Graphics g1)
 	{
-		int fixedHeight = Y_START_MARGIN + (botStati.size() * SIGN_MARGIN) + SIGN_MARGIN;
-		int availHeight = getHeight();
-		if (botStati.isEmpty())
-		{
-			signHeight = availHeight - fixedHeight;
-		} else
-		{
-			signHeight = (availHeight - fixedHeight) / botStati.size();
-			signHeight = Math.min(signHeight, SIGN_HEIGHT);
-		}
-
 		// --- init work ---
 		super.paintComponent(g1);
 
 		// --- drawRobots ---
 		addBots();
-
 	}
 
 
@@ -206,7 +217,42 @@ public class RobotsPanel extends JPanel
 	 */
 	private synchronized void addBots()
 	{
+		updateButtonMap();
+		if (necessaryToRemoveAll)
+		{
+			refreshButtonGroup();
+			necessaryToRemoveAll = false;
+		}
+	}
 
+
+	private void refreshButtonGroup()
+	{
+		removeAll();
+		ButtonGroup group = new ButtonGroup();
+		int numLines = 0;
+		for (Map.Entry<BotID, BotStatus> entry : botStati.entrySet())
+		{
+			add(robotButtonMap.get(entry.getKey()));
+			group.add(robotButtonMap.get(entry.getKey()).btn);
+			if (entry.getValue().getRobotMode() != ERobotMode.IDLE)
+			{
+				List<String> brokenFeatures = entry.getValue().getBrokenFeatures();
+				for (String feat : brokenFeatures)
+				{
+					add(new ErrorMsg(feat));
+				}
+				numLines += brokenFeatures.size() * ERROR_MSG_HEIGHT;
+			}
+			brokenFeatureMap.put(entry.getKey(), entry.getValue().getBrokenFeatures());
+		}
+		setPreferredSize(new Dimension(PANEL_WIDTH, robotButtonMap.size() * (SIGN_DIAMETER + 2) + numLines));
+		validate();
+	}
+
+
+	private void updateButtonMap()
+	{
 		for (Map.Entry<BotID, BotStatus> entry : botStati.entrySet())
 		{
 			if (!robotButtonMap.containsKey(entry.getKey()))
@@ -222,27 +268,9 @@ public class RobotsPanel extends JPanel
 				brokenFeatureMap.put(entry.getKey(), entry.getValue().getBrokenFeatures());
 			}
 		}
-		if (necessaryToRemoveAll)
-		{
-			removeAll();
-			ButtonGroup group = new ButtonGroup();
-			for (Map.Entry<BotID, BotStatus> entry : botStati.entrySet())
-			{
-				add(robotButtonMap.get(entry.getKey()));
-				group.add(robotButtonMap.get(entry.getKey()).btn);
-				if (entry.getValue().getRobotMode() != ERobotMode.IDLE)
-				{
-					List<String> brokenFeatures = entry.getValue().getBrokenFeatures();
-					for (String feat : brokenFeatures)
-					{
-						add(new ErrorMsg(feat));
-					}
-				}
-				brokenFeatureMap.put(entry.getKey(), entry.getValue().getBrokenFeatures());
-			}
-			validate();
-			necessaryToRemoveAll = false;
-		}
+		int before = robotButtonMap.size();
+		robotButtonMap.entrySet().removeIf(e -> !botStati.containsKey(e.getKey()));
+		necessaryToRemoveAll = robotButtonMap.size() != before || necessaryToRemoveAll;
 	}
 
 
@@ -295,8 +323,8 @@ public class RobotsPanel extends JPanel
 			botID = id;
 			botStatus = status;
 			setMargin(new Insets(0, 0, 0, 0));
-			setMinimumSize(new Dimension(SIGN_WIDTH + 1, signHeight + 1));
-			setPreferredSize(new Dimension(SIGN_WIDTH + 1, signHeight + 1));
+			setMinimumSize(new Dimension(SIGN_WIDTH + 1, SIGN_DIAMETER + 1));
+			setPreferredSize(new Dimension(SIGN_WIDTH + 1, SIGN_DIAMETER + 1));
 			setContentAreaFilled(false);
 			setBorder(new EmptyBorder(-1, -1, -1, -1));
 			addActionListener(actionEvent -> onRobotClicked.accept(botID));
@@ -327,39 +355,15 @@ public class RobotsPanel extends JPanel
 		 *
 		 * @param g
 		 */
-		private void drawMarker(final Graphics2D g)
+		private void drawMarker(final Graphics2D g, Shape shape)
 		{
 			if (this.isSelected() && selectedBot.equals(botID))
 			{
 				g.setColor(SELECTED_COLOR);
 				g.setStroke(new BasicStroke(3));
-				g.drawRect(0, 0, SIGN_WIDTH, signHeight);
+				g.draw(shape);
 				g.setStroke(new BasicStroke(1));
 			}
-		}
-
-
-		/**
-		 * used to set color of left column which shows if bot is visible
-		 *
-		 * @param on
-		 * @param g
-		 */
-		private void setColorBoolean(final Boolean on, final Graphics2D g)
-		{
-			if (is(on))
-			{
-				g.setColor(TRUE_COLOR);
-			} else
-			{
-				g.setColor(FALSE_COLOR);
-			}
-		}
-
-
-		private boolean is(final Boolean on)
-		{
-			return (on != null) && on;
 		}
 
 
@@ -377,6 +381,9 @@ public class RobotsPanel extends JPanel
 
 		private void drawRobot(final Graphics2D g)
 		{
+			g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+			g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+
 			ETeamColor color = botID.getTeamColor();
 			int id = botID.getNumber();
 
@@ -391,25 +398,32 @@ public class RobotsPanel extends JPanel
 				fontColor = BLUE_CONTRAST_COLOR;
 			}
 
+			Shape botShape = new Arc2D.Double(0, 0, SIGN_DIAMETER, SIGN_DIAMETER, 45,
+					270, Arc2D.CHORD);
 			// Draw bot-panel
-			g.fillRect(0, 0, SIGN_WIDTH, signHeight);
+			g.fill(botShape);
 
 			// Border
 			g.setColor(Color.black);
-			g.drawRect(0, 0, SIGN_WIDTH, signHeight);
+			g.draw(botShape);
 
-			// Detected by WP? --> left strip
-			setColorBoolean(botStatus.isVisible(), g);
-			g.fillRect(1, 1, SIGN_WIDTH / 6, signHeight - 1);
+			int size = SIGN_DIAMETER / 2;
+			// Detected by filtered vision? --> location icon
+			Image vis = botStatus.isVisible() ?
+					visibleGreen.getScaledInstance(size, size, Image.SCALE_DEFAULT) :
+					visibleRed.getScaledInstance(size, size, Image.SCALE_DEFAULT);
+			g.drawImage(vis, SIGN_DIAMETER - 2, 0, null);
 
-			// Connected? --> right strip
-			g.setColor(botStatus.isConnected() ? TRUE_COLOR : FALSE_COLOR);
-			g.fillRect(SIGN_WIDTH - SIGN_STRIP_WIDTH - 1, 1, SIGN_WIDTH / 6, signHeight - 1);
+			// Connected? --> signal icon
+			Image conn = botStatus.isConnected() ?
+					signalGreen.getScaledInstance(size, size, Image.SCALE_DEFAULT) :
+					signalRed.getScaledInstance(size, size, Image.SCALE_DEFAULT);
+			g.drawImage(conn, SIGN_DIAMETER - 2, size, null);
 
 			updateBrokenFeatures();
 
 			// Write id
-			int fontSize = signHeight;
+			int fontSize = size + 1;
 			g.setFont(new Font("Courier", Font.BOLD, fontSize));
 			FontMetrics fontMetrics = g.getFontMetrics();
 			int textWidth = fontMetrics.stringWidth(String.valueOf(id));
@@ -421,16 +435,16 @@ public class RobotsPanel extends JPanel
 			}
 			g.drawString(
 					String.valueOf(id),
-					(PANEL_WIDTH - textWidth - BAT_SIGN_WIDTH) / 2,
-					signHeight - ((signHeight - textHeight) / 2) - 2);
+					(SIGN_DIAMETER - textWidth) / 2,
+					SIGN_DIAMETER - ((SIGN_DIAMETER - textHeight) / 2) - 2);
 
 			// grey out bot panel if bot is invisible
 			if (botStatus.getRobotMode() == ERobotMode.IDLE)
 			{
 				g.setColor(new Color(150, 150, 150, 150));
-				g.fillRect(0, 0, SIGN_WIDTH, signHeight);
+				g.fill(botShape);
 			}
-			drawMarker(g);
+			drawMarker(g, botShape);
 		}
 
 
@@ -443,21 +457,20 @@ public class RobotsPanel extends JPanel
 				for (EFeature feat : botFeaturesToCheck)
 				{
 					EFeatureState state = botFeatures.getOrDefault(feat, EFeatureState.UNKNOWN);
-					if (state != EFeatureState.WORKING)
+					if (state == EFeatureState.KAPUT)
 					{
 						brokenFeatures.add(feat.getName());
 					}
 				}
 			}
 			botStatus.setBrokenFeatures(brokenFeatures);
-			String tip = "";
+			String tip = null;
 			if (!brokenFeatures.isEmpty())
 			{
 				tip = "Broken: " + String.join(", ", brokenFeatures);
 			}
 			setToolTipText(tip);
 		}
-
 	}
 
 	private static class ErrorMsg extends JPanel
@@ -468,7 +481,7 @@ public class RobotsPanel extends JPanel
 		public ErrorMsg(String s)
 		{
 			this.text = s;
-			setMinimumSize(new Dimension(PANEL_WIDTH + 5, 11));
+			setMinimumSize(new Dimension(PANEL_WIDTH, ERROR_MSG_HEIGHT));
 		}
 
 
@@ -494,7 +507,7 @@ public class RobotsPanel extends JPanel
 			botStatus = status;
 			btn = new RobotButton(id, status);
 			setLayout(new MigLayout("ins 0, gapy 0, gapx 0", "", ""));
-			setMinimumSize(new Dimension(PANEL_WIDTH + 5, signHeight));
+			setMinimumSize(new Dimension(PANEL_WIDTH, SIGN_DIAMETER));
 
 			add(btn);
 		}
@@ -525,10 +538,11 @@ public class RobotsPanel extends JPanel
 		 */
 		private void drawSymbols(final Graphics2D g)
 		{
-			int barHeight = signHeight / 2 - 3;
-			int barX = PANEL_WIDTH - BAT_SIGN_WIDTH + 3;
+			int barHeight = SIGN_DIAMETER / 2 - 3;
+			int barX = PANEL_WIDTH - BAT_SIGN_WIDTH - 3;
 			int barY = 2;
-			int barY2 = (barY + signHeight) - (barHeight) - 1;
+			int barX2 = barX - 1;
+			int barY2 = SIGN_DIAMETER - barHeight - 1;
 
 			if (botStatus.isConnected())
 			{
@@ -560,23 +574,24 @@ public class RobotsPanel extends JPanel
 					{
 						g.setColor(Color.black);
 					}
-					g.fillArc(barX, barY2, BAT_SIGN_WIDTH + 1, BAT_SIGN_WIDTH + 1,
+					g.fillArc(barX2, barY2, BAT_SIGN_WIDTH + 2, BAT_SIGN_WIDTH + 2,
 							90, 360);
 				} else
 				{
 					g.setColor(getChargeColor(botStatus.getKickerRel()));
-					g.fillArc(barX, barY2, BAT_SIGN_WIDTH + 1, BAT_SIGN_WIDTH + 1, 90,
+					g.fillArc(barX2, barY2, BAT_SIGN_WIDTH + 2, BAT_SIGN_WIDTH + 2, 90,
 							(int) (360 * botStatus.getKickerRel()));
 				}
 				g.setColor(Color.black);
-				g.drawArc(barX, barY2, BAT_SIGN_WIDTH + 1, BAT_SIGN_WIDTH + 1, 90, 360);
+				g.drawArc(barX2, barY2, BAT_SIGN_WIDTH + 2, BAT_SIGN_WIDTH + 2, 90, 360);
 			}
+			g.drawImage(flash.getScaledInstance(BAT_SIGN_WIDTH + 4, BAT_SIGN_WIDTH + 4, Image.SCALE_DEFAULT),
+					barX2 - 1, barY2, null);
 
 			// battery symbol:
 			g.setColor(Color.black);
 			g.drawRect(barX, barY, BAT_SIGN_WIDTH, barHeight);
 			g.drawRect(barX + BAT_SIGN_WIDTH / 4, 0, BAT_SIGN_WIDTH / 2, 2);
-
 		}
 
 

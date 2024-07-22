@@ -30,7 +30,7 @@ public class KickerFrontLineCollisionObjectTest
 		ILineSegment obstacleLine = Lines.segmentFromPoints(Vector2.fromXY(0, -2), Vector2.fromXY(0, 2));
 		IVector3 vel = Vector3.zero();
 		IVector2 normal = Vector2.fromX(1);
-		KickerFrontLineCollisionObject colHandler = new KickerFrontLineCollisionObject(obstacleLine, vel, normal,
+		KickerFrontLineCollisionObject colHandler = new KickerFrontLineCollisionObject(obstacleLine, vel, vel, normal,
 				BotID.noBot());
 
 		Optional<ICollision> collision;
@@ -73,5 +73,43 @@ public class KickerFrontLineCollisionObjectTest
 		assertThat(collision).isPresent();
 		assertThat(collision.get().getNormal()).isEqualTo(normal);
 		assertThat(collision.get().getPos()).isEqualTo(Vector2.fromXY(0, 0));
+	}
+
+
+	@Test
+	public void testSurfaceVel()
+	{
+		// Position in mm, mm
+		// Velocities in m/s, m/s, rad/s
+		var obstacleLine = Lines.segmentFromPoints(Vector2.fromXY(0, -2), Vector2.fromXY(0, 2));
+		var vel = Vector3.fromXYZ(1, 0, 3);
+		var normal = Vector2.fromX(1);
+		var colHandler = new KickerFrontLineCollisionObject(obstacleLine, vel, vel, normal, BotID.noBot());
+
+		IVector2 surfaceVel;
+
+
+		//              <--|
+		//                 |
+		// ^ +y            O
+		// |               |
+		// +-> +x          |-->
+		surfaceVel = colHandler.getSurfaceVel(Vector2.zero());
+		assertThat(surfaceVel).isEqualTo(vel.getXYVector());
+
+		surfaceVel = colHandler.getSurfaceVel(Vector2.fromX(1));
+		assertThat(surfaceVel).isEqualTo(vel.getXYVector());
+		surfaceVel = colHandler.getSurfaceVel(Vector2.fromX(-1));
+		assertThat(surfaceVel).isEqualTo(vel.getXYVector());
+
+		surfaceVel = colHandler.getSurfaceVel(Vector2.fromY(1));
+		assertThat(surfaceVel).isEqualTo(vel.getXYVector().add(Vector2.fromX(-3)));
+		surfaceVel = colHandler.getSurfaceVel(Vector2.fromY(-1));
+		assertThat(surfaceVel).isEqualTo(vel.getXYVector().add(Vector2.fromX(3)));
+
+		surfaceVel = colHandler.getSurfaceVel(Vector2.fromY(2));
+		assertThat(surfaceVel).isEqualTo(vel.getXYVector().add(Vector2.fromX(-6)));
+		surfaceVel = colHandler.getSurfaceVel(Vector2.fromY(-2));
+		assertThat(surfaceVel).isEqualTo(vel.getXYVector().add(Vector2.fromX(6)));
 	}
 }

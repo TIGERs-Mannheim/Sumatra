@@ -5,7 +5,7 @@ package edu.tigers.autoref.model.ballspeed;
 
 import edu.tigers.sumatra.math.vector.IVector3;
 import edu.tigers.sumatra.referee.data.GameState;
-import edu.tigers.sumatra.wp.data.BallKickFitState;
+import edu.tigers.sumatra.wp.data.KickedBall;
 import edu.tigers.sumatra.wp.data.WorldFrameWrapper;
 
 
@@ -16,42 +16,42 @@ public class BallSpeedModel
 {
 	private double lastBallSpeed = 0.0d;
 	private double lastEstimatedBallSpeed = 0.0d;
-	
+
 	private GameState lastState = GameState.HALT;
 	private boolean gameStateChanged = false;
-	
-	
+
+
 	/**
 	 * @param wFrameWrapper
 	 */
 	public void update(final WorldFrameWrapper wFrameWrapper)
 	{
 		GameState curState = wFrameWrapper.getGameState();
-		
+
 		if (!curState.equals(lastState))
 		{
 			gameStateChanged = true;
 		}
-		
+
 		lastBallSpeed = wFrameWrapper.getSimpleWorldFrame().getBall().getVel3().getLength();
-		lastEstimatedBallSpeed = wFrameWrapper.getSimpleWorldFrame().getKickFitState()
-				.map(BallKickFitState::getKickVel)
+		lastEstimatedBallSpeed = wFrameWrapper.getSimpleWorldFrame().getKickedBall()
+				.map(KickedBall::getKickVel)
 				.map(IVector3::getLength).orElse(0.0);
-		
+
 		lastState = curState;
-		
+
 	}
-	
-	
+
+
 	/**
-	 * 
+	 *
 	 */
 	public void reset()
 	{
 		gameStateChanged = false;
 	}
-	
-	
+
+
 	/**
 	 * @return
 	 */
@@ -59,8 +59,8 @@ public class BallSpeedModel
 	{
 		return lastBallSpeed;
 	}
-	
-	
+
+
 	/**
 	 * @return
 	 */
@@ -68,8 +68,8 @@ public class BallSpeedModel
 	{
 		return lastState;
 	}
-	
-	
+
+
 	/**
 	 * @return
 	 */
@@ -77,8 +77,8 @@ public class BallSpeedModel
 	{
 		return gameStateChanged;
 	}
-	
-	
+
+
 	public double getLastEstimatedBallSpeed()
 	{
 		return lastEstimatedBallSpeed;

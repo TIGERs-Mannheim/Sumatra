@@ -160,16 +160,10 @@ public abstract class AVector implements IVector
 		return Optional.empty();
 	}
 
-
 	@Override
 	public double getLength()
 	{
-		double sum = 0;
-		for (int d = 0; d < getNumDimensions(); d++)
-		{
-			sum += get(d) * get(d);
-		}
-		return SumatraMath.sqrt(sum);
+		return SumatraMath.sqrt(getLengthSqr());
 	}
 
 
