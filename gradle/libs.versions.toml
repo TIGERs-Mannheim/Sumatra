@@ -14,6 +14,7 @@ plugin-jib = "3.4.2"
 plugin-protobuf = "0.9.4"
 plugin-sonar = "5.0.0.4638"
 plugin-version-catalog-update = "0.8.4"
+plugin-github-release = "2.4.1"
 
 [libraries]
 com-fasterxml-jackson-core-jackson-annotations = { module = "com.fasterxml.jackson.core:jackson-annotations", version.ref = "com-fasterxml-jackson-core" }
@@ -76,3 +77,4 @@ plugin-protobuf = { module = "com.google.protobuf:protobuf-gradle-plugin", versi
 [plugins]
 sonar = { id = "org.sonarqube", version.ref = "plugin-sonar" }
 versionCatalogUpdate = { id = "nl.littlerobots.version-catalog-update", version.ref = "plugin-version-catalog-update" }
+githubRelease = { id = "com.github.breadmoirai.github-release", version.ref = "plugin-github-release" }

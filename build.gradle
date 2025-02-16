@@ -3,6 +3,7 @@ import org.apache.tools.ant.filters.ReplaceTokens
 plugins {
     alias(libs.plugins.sonar)
     alias(libs.plugins.versionCatalogUpdate)
+    alias(libs.plugins.githubRelease)
     id 'idea'
 
     id 'sumatra.java'
@@ -12,7 +13,7 @@ plugins {
 
 def gitDescribe = providers.exec {
     commandLine("git", "describe", "--tags", "--always", "--first-parent")
-}.standardOutput.asText.map { it.replace("merge/", "").trim() }
+}.standardOutput.asText.map { it.replace("merge/", "").replace("version/", "").trim() }
 
 version gitDescribe.get()
 
@@ -80,11 +81,8 @@ application {
 
 jib {
     to {
-        image = "sumatra"
-        auth {
-            username = "docker"
-            password = System.getenv("GITLAB_DOCKER_REGISTRY_TOKEN") ?: ""
-        }
+        image = "registry.gitlab.tigers-mannheim.de/main/sumatra"
+        tags = [project.version.toString()]
     }
     container {
         workingDirectory = "/Sumatra"
@@ -130,4 +128,13 @@ versionCatalogUpdate {
     versionSelector {
         !isNonStable(it.candidate.version)
     }
+}
+
+githubRelease {
+    token System.getenv("GITHUB_TOKEN") ?: ""
+    owner "TIGERs-Mannheim"
+    targetCommitish.set("master")
+    repo.set("Sumatra")
+    releaseAssets distZip
+    tagName.set(project.version.toString())
 }

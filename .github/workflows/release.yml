@@ -1,11 +1,12 @@
-name: Build and push to docker
+name: Perform Release
 
 on:
   push:
-    branches: [ master ]
+    tags:
+      - version/*
 
 jobs:
-  build:
+  release:
 
     runs-on: ubuntu-22.04
 
@@ -23,3 +24,7 @@ jobs:
           CI_REGISTRY_USER: ${{ secrets.DOCKER_HUB_USERNAME }}
           CI_REGISTRY_PASSWORD: ${{ secrets.DOCKER_HUB_PASSWORD }}
         run: ./gradlew jib --image=registry.hub.docker.com/tigersmannheim/sumatra
+      - name: Publish Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: ./gradlew githubRelease

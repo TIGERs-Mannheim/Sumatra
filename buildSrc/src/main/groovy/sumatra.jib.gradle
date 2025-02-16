@@ -3,11 +3,24 @@ plugins {
 }
 
 jib {
-    to {
-        tags = [rootProject.version]
-    }
     from {
         image = "ghcr.io/graalvm/jdk-community@sha256:57e5c4cf8536dac4346611691c31ea4828f3ff7bbb0d3695902b234f69ed99b5"
+        platforms {
+            platform {
+                architecture = 'amd64'
+                os = 'linux'
+            }
+            platform {
+                architecture = 'arm64'
+                os = 'linux'
+            }
+        }
+    }
+    to {
+        auth {
+            username = System.getenv("CI_REGISTRY_USER") ?: ""
+            password = System.getenv("CI_REGISTRY_PASSWORD") ?: ""
+        }
     }
     container.jvmFlags = [
             '-Djava.net.preferIPv4Stack=true',
