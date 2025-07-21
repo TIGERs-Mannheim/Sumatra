@@ -16,15 +16,9 @@ dependencies {
     implementation project(':moduli-vision')
     implementation project(':moduli-geometry')
 
-    api(libs.com.github.g3force.configurable)
-
     implementation(libs.org.apache.logging.log4j.log4j.api)
 
     implementation(libs.io.humble.humble.video.noarch)
     implementation(libs.com.jidesoft.jide.oss)
     implementation(libs.commons.lang)
-
-    if (!project.property("compactBuild").toBoolean()) {
-        runtimeOnly(libs.io.humble.humble.video.all)
-    }
 }

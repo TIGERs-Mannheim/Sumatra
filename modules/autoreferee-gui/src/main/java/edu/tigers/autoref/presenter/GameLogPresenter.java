@@ -14,7 +14,6 @@ import edu.tigers.autoreferee.engine.log.RefereeCommandGameLogEntry;
 import edu.tigers.autoreferee.engine.log.RefereeGameEventGameLogEntry;
 import edu.tigers.autoreferee.engine.log.RefereeGameEventProposalGameLogEntry;
 import edu.tigers.autoreferee.module.AutoRefModule;
-import edu.tigers.moduli.listenerVariables.ModulesState;
 import edu.tigers.sumatra.components.EnumCheckBoxPanel;
 import edu.tigers.sumatra.model.SumatraModel;
 import edu.tigers.sumatra.referee.data.GameEventProposalGroup;
@@ -38,7 +37,7 @@ import java.util.stream.Collectors;
 
 public class GameLogPresenter
 		implements ISumatraViewPresenter, IAutoRefObserver, EnumCheckBoxPanel.IEnumPanelObserver<ELogEntryType>,
-		IWorldFrameObserver
+		           IWorldFrameObserver
 {
 	private static final String ACTIVE_LOG_TYPES_KEY = GameLogPresenter.class + ".activeLogTypes";
 
@@ -94,7 +93,8 @@ public class GameLogPresenter
 			gameLogTableModel.add(new RefereeCommandGameLogEntry(
 					wfw.getTimestamp(),
 					GameTime.of(wfw.getRefereeMsg()),
-					wfw.getRefereeMsg().getCommand()));
+					wfw.getRefereeMsg().getCommand()
+			));
 		}
 	}
 
@@ -106,7 +106,8 @@ public class GameLogPresenter
 			gameLogTableModel.add(new GameStateGameLogEntry(
 					wfw.getTimestamp(),
 					GameTime.of(wfw.getRefereeMsg()),
-					wfw.getGameState()));
+					wfw.getGameState()
+			));
 		}
 	}
 
@@ -121,7 +122,8 @@ public class GameLogPresenter
 			gameLogTableModel.add(new RefereeGameEventGameLogEntry(
 					wfw.getTimestamp(),
 					GameTime.of(wfw.getRefereeMsg()),
-					gameEvent));
+					gameEvent
+			));
 		}
 	}
 
@@ -142,7 +144,8 @@ public class GameLogPresenter
 			gameLogTableModel.add(new RefereeGameEventProposalGameLogEntry(
 					wfw.getTimestamp(),
 					GameTime.of(wfw.getRefereeMsg()),
-					gameEvent));
+					gameEvent
+			));
 		}
 	}
 
@@ -157,23 +160,25 @@ public class GameLogPresenter
 		SwingUtilities.invokeLater(() -> gameLogTableModel.add(new AutoRefGameEventGameLogEntry(
 				lastWorldFrameWrapper.getTimestamp(),
 				GameTime.of(lastWorldFrameWrapper.getRefereeMsg()),
-				gameEvent)));
+				gameEvent
+		)));
 	}
 
 
 	@Override
-	public void onModuliStateChanged(final ModulesState state)
+	public void onModuliStarted()
 	{
+		SumatraModel.getInstance().getModule(AWorldPredictor.class).addObserver(this);
+		SumatraModel.getInstance().getModuleOpt(AutoRefModule.class).ifPresent(m -> m.addObserver(this));
+	}
+
+
+	@Override
+	public void onModuliStopped()
+	{
+		SumatraModel.getInstance().getModule(AWorldPredictor.class).removeObserver(this);
+		SumatraModel.getInstance().getModuleOpt(AutoRefModule.class).ifPresent(m -> m.removeObserver(this));
 		gameLogTableModel.onClear();
-		if (state == ModulesState.ACTIVE)
-		{
-			SumatraModel.getInstance().getModule(AWorldPredictor.class).addObserver(this);
-			SumatraModel.getInstance().getModuleOpt(AutoRefModule.class).ifPresent(m -> m.addObserver(this));
-		} else if (state == ModulesState.RESOLVED)
-		{
-			SumatraModel.getInstance().getModule(AWorldPredictor.class).removeObserver(this);
-			SumatraModel.getInstance().getModuleOpt(AutoRefModule.class).ifPresent(m -> m.removeObserver(this));
-		}
 	}
 
 

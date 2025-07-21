@@ -61,12 +61,8 @@
     </module>
 
 
-    <module id="edu.tigers.sumatra.botmanager.ABotManager">
-        <implementation>edu.tigers.sumatra.botmanager.sim.SimBotManager</implementation>
-
-        <properties>
-            <basestation-impl>edu.tigers.sumatra.botmanager.sim.SumatraBaseStation</basestation-impl>
-        </properties>
+    <module id="edu.tigers.sumatra.botmanager.BotManager">
+        <implementation>edu.tigers.sumatra.botmanager.sim.SumatraSimBotManager</implementation>
 
         <dependency>edu.tigers.sumatra.botparams.BotParamsManager</dependency>
         <dependency>edu.tigers.sumatra.vision.AVisionFilter</dependency>
@@ -79,7 +75,7 @@
     <module id="edu.tigers.sumatra.skillsystem.ASkillSystem">
         <implementation>edu.tigers.sumatra.skillsystem.GenericSkillSystem</implementation>
 
-        <dependency>edu.tigers.sumatra.botmanager.ABotManager</dependency>
+        <dependency>edu.tigers.sumatra.botmanager.BotManager</dependency>
         <dependency>edu.tigers.sumatra.wp.AWorldPredictor</dependency>
     </module>
 
@@ -136,12 +132,10 @@
         </properties>
     </module>
 
-    <!--
-        <module id="edu.tigers.sumatra.movementlimits.MovementObserverModule">
-            <dependency>edu.tigers.sumatra.wp.AWorldPredictor</dependency>
-            <dependency>edu.tigers.sumatra.botparams.BotParamsManager</dependency>
-        </module>
-    -->
+    <module id="edu.tigers.sumatra.modelidentification.ModelIdentificationModule">
+        <dependency>edu.tigers.sumatra.wp.AWorldPredictor</dependency>
+        <dependency>edu.tigers.sumatra.botparams.BotParamsManager</dependency>
+    </module>
 
     <!-- If you want to export the robot and ball coordinates to another application, activate this -->
     <!--

@@ -4,54 +4,25 @@
 
 package edu.tigers.sumatra.drawable;
 
-import com.sleepycat.persist.model.Persistent;
 import lombok.Builder;
 import lombok.Singular;
 import lombok.Value;
 
-import java.util.ArrayList;
 import java.util.List;
 
 
 @Value
 @Builder(toBuilder = true)
-@Persistent
 public class ShapeLayerIdentifier implements IShapeLayerIdentifier
 {
 	String id;
 	String layerName;
 	@Singular
 	List<String> categories;
-	ShapeMap.EShapeLayerPersistenceType persistenceType;
+	@Builder.Default
+	ShapeMap.EShapeLayerPersistenceType persistenceType = ShapeMap.EShapeLayerPersistenceType.ALWAYS_PERSIST;
 	boolean visibleByDefault;
 	int orderId;
-
-
-	@SuppressWarnings("unused") // berkeley
-	private ShapeLayerIdentifier()
-	{
-		this("", "", List.of(), ShapeMap.EShapeLayerPersistenceType.ALWAYS_PERSIST, false, 0);
-	}
-
-
-	private ShapeLayerIdentifier(
-			String id,
-			String layerName,
-			List<String> categories,
-			ShapeMap.EShapeLayerPersistenceType persistenceType,
-			boolean visibleByDefault,
-			int orderId
-	)
-	{
-		this.id = id;
-		this.layerName = layerName;
-		// use a simple list to avoid berkeley-incompatible implementations...
-		this.categories = new ArrayList<>(categories);
-		this.persistenceType =
-				persistenceType != null ? persistenceType : ShapeMap.EShapeLayerPersistenceType.ALWAYS_PERSIST;
-		this.visibleByDefault = visibleByDefault;
-		this.orderId = orderId;
-	}
 
 
 	@Override

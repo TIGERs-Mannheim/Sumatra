@@ -70,7 +70,7 @@ public class ProtectActionMove extends AOffensiveActionMove
 		if (protectPass.get() != null && enableProtectKick)
 		{
 			return Optional.of(
-					RatedOffensiveAction.buildPass(EOffensiveActionMove.PROTECT_MOVE, calcViability(botId),
+					RatedOffensiveAction.buildProtectPass(EOffensiveActionMove.PROTECT_MOVE, calcViability(botId),
 							protectPass.get()));
 		}
 		return Optional.of(RatedOffensiveAction.buildProtect(

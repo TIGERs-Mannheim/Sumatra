@@ -4,33 +4,25 @@
 
 package edu.tigers.sumatra.geometry;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
-import java.util.List;
-
-import org.junit.Test;
-
 import edu.tigers.sumatra.ids.ETeamColor;
 import edu.tigers.sumatra.math.rectangle.IRectangle;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.IVector3;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.math.vector.Vector3;
+import org.junit.jupiter.api.Test;
+
+import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
-/**
- * @author "Lukas Magel"
- */
-public class NGeometryTest
+class NGeometryTest
 {
-	
-	/**
-	 * 
-	 */
 	@Test
-	public void testClosestCorner()
+	void testClosestCorner()
 	{
 		IRectangle field = NGeometry.getField();
 		List<IVector2> corners = field.getCorners();
@@ -51,7 +43,7 @@ public class NGeometryTest
 	 * {@link NGeometry#getTeamOfClosestGoalLine(IVector2)}.
 	 */
 	@Test
-	public void testGetTeamOfClosestGoalLine()
+	void testGetTeamOfClosestGoalLine()
 	{
 		ETeamColor leftTeam = Geometry.getNegativeHalfTeam();
 		
@@ -64,7 +56,7 @@ public class NGeometryTest
 	 * Test method for {@link NGeometry#ballInsideGoal(IVector3)}
 	 */
 	@Test
-	public void testBallInsideGoal()
+	void testBallInsideGoal()
 	{
 		IRectangle field = Geometry.getField();
 		assertFalse(NGeometry.ballInsideGoal(Vector3.zero()));

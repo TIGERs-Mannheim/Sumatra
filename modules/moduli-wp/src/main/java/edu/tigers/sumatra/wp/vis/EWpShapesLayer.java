@@ -25,6 +25,8 @@ public final class EWpShapesLayer
 	private static final String CAT_BALL = "Ball";
 	private static final String BOT_STATES = "States";
 
+	public static final IShapeLayerIdentifier FIELD_BACKGROUND = F.create(
+			F.category(FIELD).category(FIELD_LINES).layerName("Background").visibleByDefault(true).orderId(-500));
 	public static final IShapeLayerIdentifier FIELD_LINES_REGULAR = F.create(
 			F.category(FIELD).category(FIELD_LINES).layerName("Regular").visibleByDefault(true).orderId(-100));
 	public static final IShapeLayerIdentifier FIELD_LINES_ADDITIONAL = F.create(

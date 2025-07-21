@@ -18,19 +18,14 @@ dependencies {
     api project(':moduli-referee')
     api project(':moduli-vision')
     implementation project(':moduli-geometry')
-    implementation project(':moduli-record')
-
-    implementation(libs.com.github.TIGERs.mannheim.moduli)
-    implementation(libs.com.github.g3force.string2ValueConverter)
-    api(libs.com.github.g3force.configurable)
+    api project(':moduli-record')
 
     implementation(libs.commons.lang)
     implementation(libs.commons.configuration)
 
     implementation(libs.org.apache.logging.log4j.log4j.api)
 
-    implementation(libs.com.sleepycat.je)
-    implementation(libs.com.googlecode.json.simple)
+    implementation(libs.com.github.cliftonlabs.json.simple)
     api(libs.com.google.protobuf.protobuf.java)
     implementation(libs.commons.codec)
 }

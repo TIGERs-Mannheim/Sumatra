@@ -68,7 +68,8 @@ public class NumDefenderCalc extends ACalculator
 			numDefender = SumatraMath.cap(numDefender, 0, nAvailableBots - minFreeBotsAtBallResponsibilityOffense);
 		}
 
-		availableAttackers = Math.max(0, nAvailableBots - numDefender);
+		numDefender = SumatraMath.cap(numDefender, 0, nAvailableBots - numMinFreeBots());
+		availableAttackers = nAvailableBots - numDefender;
 	}
 
 
@@ -84,17 +85,19 @@ public class NumDefenderCalc extends ACalculator
 
 	private int defaultNumDefenders(final int nAvailableBots)
 	{
-		if (getAiFrame().getGameState().isStandardSituationForUs()
-				|| getAiFrame().getGameState().isNextStandardSituationForUs())
+		var gameState = getAiFrame().getGameState();
+
+		if (gameState.isStandardSituationForUs() || gameState.isNextStandardSituationForUs())
 		{
 			return nDefenderStandardWe();
-		}
-
-		if (getAiFrame().getGameState().isStoppedGame()
-				|| getAiFrame().getGameState().isStandardSituationForThem())
+		} else if (gameState.isNextStandardSituationForThem() || gameState.isStandardSituationForThem())
 		{
 			return nDefenderStandardThem(nAvailableBots);
+		} else if (gameState.isStoppedGame() && getBall().getPos().x() < 0)
+		{
+			return nAvailableBots;
 		}
+
 		return nDefenderRunning();
 	}
 
@@ -125,10 +128,20 @@ public class NumDefenderCalc extends ACalculator
 	private int nDefenderStandardThem(int nAvailableBots)
 	{
 		var pos = getAiFrame().getGameState().getBallPlacementPositionForUs();
-		if (pos != null && pos.x() > 0)
+		if (pos != null)
 		{
-			return nDefenderRunning();
+			if (pos.x() > 0)
+			{
+				return nDefenderRunning();
+			}
+		} else
+		{
+			if (getBall().getPos().x() > 0)
+			{
+				return nDefenderRunning();
+			}
 		}
+
 		return nAvailableBots;
 	}
 
@@ -145,5 +158,23 @@ public class NumDefenderCalc extends ACalculator
 			return 2 * nBallDefender;
 		}
 		return nBallDefender + nDisrupt + nBotThreatDefender;
+	}
+
+
+	private int numMinFreeBots()
+	{
+		if (getAiFrame().getGameState().isNextStandardSituationForThem()
+				|| getAiFrame().getGameState().isStandardSituationForThem())
+		{
+			return Math.min(minFreeBotsAtBallResponsibilityOffense, 1);
+		}
+
+		if (ballResponsibility.get() == EBallResponsibility.OFFENSE)
+		{
+			return minFreeBotsAtBallResponsibilityOffense;
+		}
+
+		return 0;
+
 	}
 }

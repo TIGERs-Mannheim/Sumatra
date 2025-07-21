@@ -11,19 +11,15 @@ dependencies {
     implementation project(':common')
     implementation project(':common-gui')
     implementation project(':common-math')
+    implementation project(':common-bot')
     implementation project(':sumatra-model')
     implementation project(':sumatra-skillsystem')
     implementation project(':moduli-botmanager')
     implementation project(':moduli-vision')
-
-    implementation(libs.com.github.TIGERs.mannheim.moduli)
+    implementation project(':moduli-model-identification')
 
     implementation(libs.org.apache.logging.log4j.log4j.api)
 
-    implementation(libs.com.fasterxml.jackson.core.jackson.databind)
-    implementation(libs.com.fasterxml.jackson.core.jackson.core)
-    implementation(libs.com.fasterxml.jackson.core.jackson.annotations)
     implementation(libs.com.miglayout.miglayout.swing)
     implementation(libs.net.sf.jchart2d)
-    implementation(libs.org.apache.commons.commons.math3)
 }

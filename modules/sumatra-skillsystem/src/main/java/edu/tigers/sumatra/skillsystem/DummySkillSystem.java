@@ -65,18 +65,4 @@ public class DummySkillSystem extends ASkillSystem
 	{
 		// empty
 	}
-
-
-	@Override
-	public void addSkillExecutorPostHook(ISkillExecutorPostHook hook)
-	{
-		// empty
-	}
-
-
-	@Override
-	public void removeSkillExecutorPostHook(ISkillExecutorPostHook hook)
-	{
-		// empty
-	}
 }

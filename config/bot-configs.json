@@ -1,16 +1,10 @@
 {
   "savedConfigFiles": {
     "2": {
-      "8": {
-        "names": [ "Max. Voltage [V]", "Charge Hysteresis [V]", "Cooldown [ms]", "Ignore Kick Threshold", "Kick Conv. Offset", "Kick Conv. Slope", "Kick Conv. Cubic", "Kick Time Min [ms]", "Chip Conv. Offset", "Chip Conv. Factor", "Chip Time Min [ms]" ],
-        "values": [ "200.0", "5.0", "80", "0.9", "1.2", "-0.085", "0.096", "1.0", "0.166", "0.919", "2.0" ],
-        "elements": [ 6, 6, 4, 6, 6, 6, 6, 6, 6, 6, 6 ],
-        "name": "kick/cfg"
-      },
-      "9": {
-        "names": [ "Max. Voltage [V]", "Charge Hysteresis [V]", "Cooldown [ms]", "Ignore Kick Threshold [0.0-1.0]", "Kick Conv. Offset", "Kick Conv. Slope", "Kick Conv. Quadratic", "Kick Time Min [ms]", "Chip Conv. Offset", "Chip Conv. Slope", "Chip Conv. Quadratic", "Chip Time Min [ms]", "Dribble Force->Speed Offset [m/s]", "Dribble Force->Speed Slope [m/(s*N)]", "Dribble Force->Speed Offset, Chip [m/s]", "Dribble Force->Speed Slope, Chip [m/(s*N)]" ],
-        "values": [ "200.0", "5.0", "80", "0.9", "1.0", "0.107", "0.087", "1.0", "1.156", "0.232", "0.091", "1.7", "0.0", "0.0", "0.0", "0.0" ],
-        "elements": [ 6, 6, 4, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6 ],
+      "10": {
+        "names": [ "Max. Voltage [V]", "Charge Hysteresis [V]", "Ignore Kick Threshold [0.0-1.0]", "Kick Conv. Offset", "Kick Conv. Slope", "Kick Conv. Quadratic", "Kick Time Min [ms]", "Chip Conv. Offset", "Chip Conv. Slope", "Chip Conv. Quadratic", "Chip Time Min [ms]", "Dribble Force->Speed Offset [m/s]", "Dribble Force->Speed Slope [m/(s*N)]", "Dribble Force->Speed Offset, Chip [m/s]", "Dribble Force->Speed Slope, Chip [m/(s*N)]", "Cooldown [ms]", "IR int. below this value [%]" ],
+        "values": [ "200.0", "5.0", "0.9", "0.22", "0.701", "0", "1.0", "-1.551", "1.361", "0", "1.7", "-0.2", "0.12", "0.0", "0.0", "80", "50" ],
+        "elements": [ 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 2, 0 ],
         "name": "kick/cfg"
       }
     },
@@ -23,9 +17,9 @@
       }
     },
     "289": {
-      "2": {
-        "names": [ "pos/xy/k", "pos/xy/max [m/s]", "pos/xy/anti_jitter", "pos/w/k", "pos/w/max [rad/s]", "pos/w/anti_jitter", "vel/w/k", "vel/w/cent_acc [m/s^2]", "drib/cur2acc [m/(s^2*A)]" ],
-        "values": [ "8.0", "2.0", "0.01", "8.0", "8.0", "0.01", "2.0", "4.0", "1.0" ],
+      "6": {
+        "names": [ "pos/xy/k", "pos/xy/max [m/s]", "pos/xy/anti_jitter", "pos/w/k", "pos/w/max [rad/s]", "pos/w/anti_jitter", "vel/w/k", "vel/w/cent_acc [m/s^2]", "torque_vect_strength [0-1]" ],
+        "values": [ "8.0", "2.0", "0.01", "8.0", "8.0", "0.01", "2.0", "8.0", "0.0" ],
         "elements": [ 6, 6, 6, 6, 6, 6, 6, 6, 6 ],
         "name": "v2020/ctrl"
       }
@@ -81,14 +75,21 @@
     "321": {
       "1": {
         "names": [ "drib/force/angle [deg]", "drib/force/fromFriction [mN]", "drib/force/dropRate [mN/s]", "drib/force/min [mN]", "drib/vel/limit [mm/s]", "drib/vel/inc [mm/s^2]", "drib/vel/dec [mm/s^2]", "drib/frac/min [0-100]", "drib/frac/max [0-100]" ],
-        "values": [ "0", "0", "10000", "50", "16000", "8000", "10000", "100", "75" ],
+        "values": [ "0", "0", "5000", "50", "16000", "16000", "20000", "100", "75" ],
         "elements": [ 3, 2, 2, 2, 2, 2, 2, 2, 2 ],
         "name": "v2020/drib"
+      }
+    },
+    "336": {
+      "0": {
+        "names": [ "vel/Kp", "vel/Ki", "vel/antiJitter [rad/s]" ],
+        "values": [ "300.0", "0.0", "1.5" ],
+        "elements": [ 6, 6, 6 ],
+        "name": "drive_DD/vel"
       }
     }
   },
   "autoUpdateConfigs": {
-    "289": [ 2 ],
     "273": [ 1 ],
     "53": [ 7 ],
     "54": [ 2 ],
@@ -96,7 +97,9 @@
     "55": [ 0 ],
     "51": [ 1 ],
     "321": [ 1 ],
-    "2": [ 8, 9 ],
-    "257": [ 10 ]
+    "2": [ 10 ],
+    "257": [ 10 ],
+    "289": [ 6 ],
+    "336": [ 0 ]
   }
 }

@@ -8,6 +8,5 @@ repositories {
 
 dependencies {
     implementation(libs.plugin.jib)
-    implementation(libs.plugin.dependency.analysis)
     implementation(libs.plugin.protobuf)
 }

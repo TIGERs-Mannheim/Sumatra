@@ -5,7 +5,6 @@
 package edu.tigers.sumatra.ai.metis.offense.strategy;
 
 import edu.tigers.sumatra.ai.metis.ACalculator;
-import edu.tigers.sumatra.ai.metis.general.SkirmishInformation;
 import edu.tigers.sumatra.ai.metis.offense.EFreeKickDelay;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -16,7 +15,7 @@ import java.util.function.Supplier;
 @RequiredArgsConstructor
 public class BallHandlingRobotsStrategyCalc extends ACalculator
 {
-	private final Supplier<SkirmishInformation> skirmishInformation;
+	private final Supplier<Boolean> ripFreeStarted;
 	private final Supplier<EFreeKickDelay> freeKickDelay;
 
 	@Getter
@@ -49,7 +48,7 @@ public class BallHandlingRobotsStrategyCalc extends ACalculator
 		{
 			return EOffensiveStrategy.INTERCEPT;
 		}
-		if (skirmishInformation.get().isStartCircleMove())
+		if (Boolean.TRUE.equals(ripFreeStarted.get()))
 		{
 			return EOffensiveStrategy.FREE_SKIRMISH;
 		}

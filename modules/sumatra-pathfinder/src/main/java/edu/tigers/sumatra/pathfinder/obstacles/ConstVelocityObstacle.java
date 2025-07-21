@@ -6,6 +6,7 @@ package edu.tigers.sumatra.pathfinder.obstacles;
 
 import edu.tigers.sumatra.drawable.DrawableTube;
 import edu.tigers.sumatra.drawable.IDrawableShape;
+import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.circle.Circle;
 import edu.tigers.sumatra.math.tube.ITube;
 import edu.tigers.sumatra.math.tube.Tube;
@@ -23,12 +24,19 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class ConstVelocityObstacle extends AMovingObstacle
 {
+	private final BotID botID;
 	private final IVector2 start;
 	private final IVector2 vel;
 	private final double radius;
 	private final double tMax;
 	private final double minVelocity;
 
+
+	@Override
+	public String getIdentifier()
+	{
+		return super.getIdentifier() + " " + botID.getSaveableString();
+	}
 
 	@Override
 	protected List<IDrawableShape> initializeShapes()

@@ -3,7 +3,7 @@
  */
 package edu.tigers.sumatra.rcm;
 
-import org.json.simple.JSONObject;
+import com.github.cliftonlabs.json_simple.JsonObject;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -70,7 +70,7 @@ public class RcmActionMapping
 	/**
 	 * @return
 	 */
-	public JSONObject toJSON()
+	public JsonObject toJSON()
 	{
 		Map<String, Object> jsonMapping = new LinkedHashMap<>();
 		jsonMapping.put("action", action.toJSON());
@@ -80,7 +80,7 @@ public class RcmActionMapping
 			jsonIds.add(extId.getExtIdentifier());
 		}
 		jsonMapping.put("identifiers", jsonIds);
-		return new JSONObject(jsonMapping);
+		return new JsonObject(jsonMapping);
 	}
 	
 	
@@ -89,10 +89,10 @@ public class RcmActionMapping
 	 * @return
 	 */
 	@SuppressWarnings("unchecked")
-	public static RcmActionMapping fromJSON(final JSONObject jsonObj)
+	public static RcmActionMapping fromJSON(final JsonObject jsonObj)
 	{
 		Map<String, Object> jsonMapping = jsonObj;
-		JSONObject jsonAction = (JSONObject) jsonMapping.get("action");
+		JsonObject jsonAction = (JsonObject) jsonMapping.get("action");
 		RcmAction action = RcmAction.fromJSON(jsonAction);
 		List<String> jsonIdentifiers = (List<String>) jsonMapping.get("identifiers");
 		List<ExtIdentifier> extIds = new ArrayList<>(jsonIdentifiers.size());

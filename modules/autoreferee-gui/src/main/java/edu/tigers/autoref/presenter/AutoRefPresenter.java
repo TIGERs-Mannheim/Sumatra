@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.autoref.presenter;
 
@@ -15,7 +15,7 @@ import edu.tigers.sumatra.referee.gameevent.IGameEvent;
 import edu.tigers.sumatra.views.ISumatraViewPresenter;
 import lombok.Getter;
 
-import java.awt.EventQueue;
+import javax.swing.SwingUtilities;
 
 
 public class AutoRefPresenter implements ISumatraViewPresenter, IStartStopPanelObserver, IAutoRefObserver
@@ -26,14 +26,14 @@ public class AutoRefPresenter implements ISumatraViewPresenter, IStartStopPanelO
 
 
 	@Override
-	public void onStartModuli()
+	public void onModuliStarted()
 	{
-		ISumatraViewPresenter.super.onStartModuli();
+		ISumatraViewPresenter.super.onModuliStarted();
 		SumatraModel.getInstance().getModuleOpt(AutoRefModule.class).ifPresent(autoRef -> autoRef.addObserver(this));
 		SumatraModel.getInstance().getModuleOpt(AutoRefModule.class)
 				.ifPresent(autoRef -> viewPanel.getStartStopPanel().setAutoRefMode(autoRef.getMode())
 				);
-		EventQueue.invokeLater(() -> viewPanel.setEnabled(true));
+		SwingUtilities.invokeLater(() -> viewPanel.setEnabled(true));
 		viewPanel.getStartStopPanel().addObserver(this);
 		viewPanel.getGameEventDetectorPanel().addObserver(gameEventDetectorObserver);
 		viewPanel.getGameEventDetectorPanel().setSelectedBoxes(EGameEventDetectorType.valuesEnabledByDefault());
@@ -41,27 +41,27 @@ public class AutoRefPresenter implements ISumatraViewPresenter, IStartStopPanelO
 
 
 	@Override
-	public void onStopModuli()
+	public void onModuliStopped()
 	{
-		ISumatraViewPresenter.super.onStopModuli();
+		ISumatraViewPresenter.super.onModuliStopped();
 		SumatraModel.getInstance().getModuleOpt(AutoRefModule.class).ifPresent(autoRef -> autoRef.removeObserver(this));
 		viewPanel.getStartStopPanel().removeObserver(this);
 		viewPanel.getGameEventDetectorPanel().removeObserver(gameEventDetectorObserver);
-		EventQueue.invokeLater(() -> viewPanel.setEnabled(false));
+		SwingUtilities.invokeLater(() -> viewPanel.setEnabled(false));
 	}
 
 
 	@Override
 	public void onAutoRefModeChanged(EAutoRefMode mode)
 	{
-		EventQueue.invokeLater(() -> viewPanel.getStartStopPanel().setAutoRefMode(mode));
+		SwingUtilities.invokeLater(() -> viewPanel.getStartStopPanel().setAutoRefMode(mode));
 	}
 
 
 	@Override
 	public void changeMode(final EAutoRefMode mode)
 	{
-		EventQueue.invokeLater(() -> SumatraModel.getInstance().getModuleOpt(AutoRefModule.class)
+		SwingUtilities.invokeLater(() -> SumatraModel.getInstance().getModuleOpt(AutoRefModule.class)
 				.ifPresent(autoRef -> autoRef.changeMode(mode)));
 	}
 

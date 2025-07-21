@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.pandora.roles.placement;
@@ -56,8 +56,8 @@ public class BallPlacementRole extends ARole
 	@Configurable(defValue = "50", comment = "Extra tolerance to subtract from the rule-defined placement tolerance")
 	private static double extraPlacementTolerance = 50;
 
-	@Configurable(defValue = "30", comment = "Angle [deg] that the robot can turn with the ball on dribbler while pulling")
-	private static double maxRotateWhilePullAngle = 30;
+	@Configurable(defValue = "180", comment = "Angle [deg] that the robot can turn with the ball on dribbler while pulling")
+	private static double maxRotateWhilePullAngle = 180;
 
 	@Setter
 	private IVector2 ballTargetPos = Vector2.zero();
@@ -90,7 +90,8 @@ public class BallPlacementRole extends ARole
 
 		clearBallState.addTransition(
 				"ball cleared, but not yet on target",
-				() -> clearBallState.isCalmedDown() && clearBallState.isCleared() && ballNotOnTargetYet(),
+				() -> clearBallState.isCalmedDown() && clearBallState.isCleared() && ballNotOnTargetYet()
+						&& !ballPlacedAndCleared,
 				receiveState
 		);
 		receiveState.addTransition(ESkillState.SUCCESS, prepareState);
@@ -126,7 +127,8 @@ public class BallPlacementRole extends ARole
 
 	private void updateCurrentBallTarget()
 	{
-		currentBallTarget = pullAwayDestCalc.getPullAwayBallTarget(getBall().getPos()).orElse(ballTargetPos);
+		var ballInsideFieldPos = Geometry.getFieldWBorders().nearestPointInside(getBall().getPos(), getPos());
+		currentBallTarget = pullAwayDestCalc.getPullAwayBallTarget(ballInsideFieldPos).orElse(ballTargetPos);
 	}
 
 
@@ -135,12 +137,16 @@ public class BallPlacementRole extends ARole
 	{
 		List<IDrawableShape> shapes = getShapes(EAiShapesLayer.AI_BALL_PLACEMENT);
 		shapes.add(
-				new DrawableCircle(Circle.createCircle(currentBallTarget, placementTolerance),
-						Color.magenta)
+				new DrawableCircle(
+						Circle.createCircle(currentBallTarget, placementTolerance),
+						Color.magenta
+				)
 		);
 		shapes.add(
-				new DrawableCircle(Circle.createCircle(ballTargetPos, placementTolerance),
-						Color.cyan)
+				new DrawableCircle(
+						Circle.createCircle(ballTargetPos, placementTolerance),
+						Color.cyan
+				)
 		);
 		shapes.addAll(pullAwayDestCalc.getShapes());
 	}
@@ -213,8 +219,6 @@ public class BallPlacementRole extends ARole
 				skill.setComeToAStop(false);
 				skill.updateDestination(getDest());
 				skill.getMoveCon().setBallObstacle(true);
-				// If goal is outside field (playing with walls), we have to move "out of field"
-				skill.getMoveCon().setFieldBorderObstacle(false);
 				calmedDown = true;
 			}
 		}
@@ -322,6 +326,7 @@ public class BallPlacementRole extends ARole
 						.checkNotInPenaltyAreas()
 						.checkPointFreeOfBots());
 		private final TimestampTimer calmDownTimer = new TimestampTimer(0.0);
+		private final TimestampTimer clearedTimer = new TimestampTimer(2);
 
 
 		public ClearBallState()
@@ -364,7 +369,26 @@ public class BallPlacementRole extends ARole
 				skill.updateLookAtTarget(getBall());
 				skill.getMoveCon().setBallObstacle(true);
 
-				ballPlacedAndCleared = ballTargetPos.distanceTo(getBall().getPos()) < placementTolerance;
+				if (getBall().getVel().getLength2() < 0.1
+						&& ballTargetPos.distanceTo(getBall().getPos()) < placementTolerance + extraPlacementTolerance)
+				{
+					clearedTimer.update(getWFrame().getTimestamp());
+				} else
+				{
+					clearedTimer.reset();
+				}
+
+				double tolerance;
+				if (clearedTimer.isTimeUp(getWFrame().getTimestamp()))
+				{
+					tolerance = placementTolerance;
+				} else
+				{
+					tolerance = placementTolerance + extraPlacementTolerance;
+				}
+
+				ballPlacedAndCleared = getBall().getVel().getLength2() < 0.1
+						&& ballTargetPos.distanceTo(getBall().getPos()) < tolerance;
 
 				// find a valid destination, after having sufficient distance to the ball
 				// This is required to clear the stop radius in cases where the game is not continued
@@ -379,6 +403,7 @@ public class BallPlacementRole extends ARole
 		protected void onExit()
 		{
 			ballPlacedAndCleared = false;
+			clearedTimer.reset();
 		}
 
 

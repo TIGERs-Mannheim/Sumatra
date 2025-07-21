@@ -69,7 +69,7 @@ public class BallVisCalc implements IWpCalc
 			shapeMap.get(EWpShapesLayer.BALL_PREDICTION).add(land);
 		}
 
-		for (ILineSegment line : ball.getTrajectory().getTravelLinesInterceptable())
+		for (ILineSegment line : ball.getTrajectory().getTravelLinesInterceptableByRobot())
 		{
 			if (line.directionVector().getLength2() > 1)
 			{

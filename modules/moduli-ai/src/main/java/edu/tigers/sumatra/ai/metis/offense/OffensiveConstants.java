@@ -19,8 +19,12 @@ import lombok.NoArgsConstructor;
 public class OffensiveConstants
 {
 	@Getter
-	@Configurable(defValue = "0.2")
-	private static double minBotShouldDoGoalShotScore = 0.2;
+	@Configurable(defValue = "0.3")
+	private static double minBotShouldDoGoalShotScore = 0.3;
+
+	@Getter
+	@Configurable(comment = "[mm] Any dribbling distance above this value is considered a violation. Includes safety margin", defValue = "870.0")
+	private static double maxDribblingLength = 870.0;
 
 	@Getter
 	@Configurable(defValue = "0.2", comment = "[m/s] Min ball vel to still receive balls via approachBallLine")
@@ -35,8 +39,12 @@ public class OffensiveConstants
 	private static double maximumReasonableRedirectAngle = 1.2;
 
 	@Getter
-	@Configurable(comment = "warning, this is storing large data in the tactical field!", defValue = "false")
-	private static boolean enableOffensiveStatistics = false;
+	@Configurable(comment = "Allow to try using overshooting trajectories while receiving", defValue = "true")
+	private static boolean allowOvershootingBallInterceptions = true;
+
+	@Getter
+	@Configurable(defValue = "50", comment = "[mm] For chipped balls the ball must be below this height to be considered receivable")
+	private static double maxInterceptHeight = 50;
 
 	static
 	{

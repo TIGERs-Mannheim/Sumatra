@@ -16,7 +16,5 @@ dependencies {
     implementation project(':sumatra-skillsystem')
     implementation project(':moduli-botmanager')
 
-    implementation(libs.com.github.g3force.instanceables)
-
     implementation(libs.com.miglayout.miglayout.swing)
 }

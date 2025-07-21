@@ -10,6 +10,7 @@ import org.apache.commons.configuration.HierarchicalConfiguration;
 import org.apache.commons.configuration.HierarchicalConfiguration.Node;
 import org.apache.commons.configuration.XMLConfiguration;
 import org.apache.commons.configuration.tree.ConfigurationNode;
+import org.apache.commons.lang.NotImplementedException;
 
 import javax.swing.JLabel;
 import javax.swing.JTable;
@@ -30,8 +31,8 @@ import java.util.stream.Stream;
  */
 public class ConfigXMLTreeTableModel extends ATreeTableModel
 {
-	private static final String[] COLUMNS = new String[] { "Node", "Value", "Comment" };
-	private static final Class<?>[] CLASSES = new Class<?>[] { ITreeTableModel.class, String.class, String.class };
+	private static final String[] COLUMNS = new String[] { "Node", "Value", "Comment", "Tags" };
+	private static final Class<?>[] CLASSES = new Class<?>[] { ITreeTableModel.class, String.class, String.class, String.class };
 
 
 	private final String2ValueConverter s2vConv = String2ValueConverter.getDefault();
@@ -59,28 +60,26 @@ public class ConfigXMLTreeTableModel extends ATreeTableModel
 		{
 			case 1:
 				final Object val = node.getValue();
-				if (val != null)
+				var classAttr = node.getAttributes("class");
+
+				if (val == null || classAttr.isEmpty())
+					break;
+
+				Class<?> classType = String2ValueConverter.getClassFromValue(classAttr.getFirst().getValue());
+				if (classType.isEnum() || (classType == Boolean.TYPE) || (classType == Boolean.class))
 				{
-					for (ConfigurationNode attr : node.getAttributes("class"))
-					{
-						Class<?> classType = String2ValueConverter.getClassFromValue(attr.getValue());
-						if (classType.isEnum() || (classType == Boolean.TYPE) || (classType == Boolean.class))
-						{
-							result = s2vConv.parseString(classType, val.toString());
-						} else
-						{
-							result = val.toString();
-						}
-						break;
-					}
+					result = s2vConv.parseString(classType, val.toString());
+				} else
+				{
+					result = val.toString();
 				}
 				break;
 
 			case 2:
-				for (ConfigurationNode attr : node.getAttributes("comment"))
+				var commentAttr = node.getAttributes("comment");
+				if (!commentAttr.isEmpty())
 				{
-					result = attr.getValue().toString();
-					break;
+					result = commentAttr.getFirst().getValue().toString();
 				}
 				final org.w3c.dom.Node comment = getComment(node);
 				if (comment != null)
@@ -88,6 +87,14 @@ public class ConfigXMLTreeTableModel extends ATreeTableModel
 					result += " " + comment.getTextContent();
 				}
 				break;
+			case 3:
+				var tags = node.getAttributes("tags");
+				if (!tags.isEmpty())
+				{
+					result = tags.getFirst().getValue().toString();
+				}
+				break;
+
 			default:
 				throw new IllegalArgumentException("Invalid value for col: " + col);
 		}
@@ -161,6 +168,9 @@ public class ConfigXMLTreeTableModel extends ATreeTableModel
 					fireTreeNodesChanged(this, getPathTo(node), new int[0], new Object[0]);
 				}
 				break;
+			case 3:
+				throw new NotImplementedException("I have not seen this method ever been used for cases other than 1. If "
+						+ "you need it, please implement it yourself");
 			default:
 				throw new IllegalArgumentException();
 		}
@@ -283,6 +293,10 @@ public class ConfigXMLTreeTableModel extends ATreeTableModel
 	@Override
 	public Class<?> getColumnClass(final int col)
 	{
+		if (col == -1)
+		{
+			return Object.class;
+		}
 		return CLASSES[col];
 	}
 

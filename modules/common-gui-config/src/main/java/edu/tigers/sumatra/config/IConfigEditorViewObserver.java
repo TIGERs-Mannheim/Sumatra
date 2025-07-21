@@ -31,7 +31,7 @@ public interface IConfigEditorViewObserver
 	
 	
 	/**
-	 * The user wants to apply his config-changes made in the editor to the model
+	 * The user wants to discard current changes and reload the existing config
 	 * 
 	 * @param configKey
 	 */

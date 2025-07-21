@@ -7,7 +7,7 @@ import edu.tigers.autoreferee.IAutoRefObserver;
 import edu.tigers.autoreferee.engine.AutoRefEngine;
 import edu.tigers.autoreferee.engine.EAutoRefMode;
 import edu.tigers.autoreferee.engine.detector.EGameEventDetectorType;
-import edu.tigers.moduli.AModule;
+import edu.tigers.sumatra.moduli.AModule;
 import edu.tigers.sumatra.referee.gameevent.IGameEvent;
 import edu.tigers.sumatra.wp.IWorldFrameObserver;
 import org.apache.logging.log4j.LogManager;

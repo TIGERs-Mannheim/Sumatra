@@ -1,4 +1,1 @@
-<?xml version="1.0" encoding="UTF-8"?><edu.tigers.sumatra.botmanager.basestation.TigersBaseStation base="edu.tigers.sumatra.botmanager.basestation.TigersBaseStation">
-    <host:ROBOCUP>10.0.0.210</host:ROBOCUP>
-    <host:ANDRE>192.168.1.210</host:ANDRE>
-</edu.tigers.sumatra.botmanager.basestation.TigersBaseStation>
+<?xml version="1.0" encoding="UTF-8"?><configuration/>

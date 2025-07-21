@@ -44,7 +44,6 @@ public class SslGameControllerProcess implements Runnable
 	private final int gcUiPort;
 	private final String publishAddress;
 	private final String timeAcquisitionMode;
-	private final Thread shutdownHook = new Thread(this::stop);
 
 	@Setter
 	private boolean useSystemBinary = false;
@@ -81,8 +80,6 @@ public class SslGameControllerProcess implements Runnable
 		{
 			return;
 		}
-
-		Runtime.getRuntime().addShutdownHook(shutdownHook);
 
 		Path engineConfig = Path.of("config", "engine.yaml");
 		Path engineConfigDefault = Path.of("config", "engine-default.yaml");
@@ -123,21 +120,62 @@ public class SslGameControllerProcess implements Runnable
 			Scanner s = new Scanner(gcProcess.getInputStream());
 			inputLoop(s);
 			s.close();
+
+			boolean exited = gcProcess.waitFor(1, TimeUnit.SECONDS);
+			if (!exited)
+			{
+				log.warn("game-controller did not exit after 1 second");
+				gcProcess.destroyForcibly().waitFor(1, TimeUnit.SECONDS);
+			}
+			if (gcProcess.exitValue() != 0
+					// no SIGPIPE
+					&& gcProcess.exitValue() != 141)
+			{
+				log.warn("game-controller has returned a non-zero exit code: {}", gcProcess.exitValue());
+			}
 		} catch (IOException e)
 		{
 			if (!"Stream closed".equals(e.getMessage()))
 			{
 				log.warn("Could not execute ssl-game-controller", e);
 			}
-		}
-		// thread safe local variable
-		Process p = process;
-		if (p != null && !p.isAlive() && p.exitValue() != 0)
+		} catch (InterruptedException e)
 		{
-			log.warn("game-controller has returned a non-zero exit code: {}", p.exitValue());
+			Thread.currentThread().interrupt();
+			log.debug("interrupted while waiting for game-controller to exit", e);
 		}
-		log.debug("game-controller process thread finished");
-		Runtime.getRuntime().removeShutdownHook(shutdownHook);
+
+		log.debug("game-controller exited");
+	}
+
+
+	private String getOsAndArchSuffix()
+	{
+		String os = System.getProperty("os.name").toLowerCase();
+		String arch = System.getProperty("os.arch").toLowerCase();
+		if (os.contains("windows"))
+		{
+			return "windows_amd64";
+		} else if (os.contains("linux"))
+		{
+			if (arch.equalsIgnoreCase("amd64"))
+			{
+				return "linux_amd64";
+			} else if (arch.equalsIgnoreCase("aarch64"))
+			{
+				return "linux_arm64";
+			}
+		} else if (os.contains("mac"))
+		{
+			if (arch.equalsIgnoreCase("aarch64"))
+			{
+				return "darwin_arm64";
+			}
+			return "darwin_amd64";
+		}
+		throw new IllegalStateException(
+				String.format("Unknown operating system '%s' or architecture '%s'", os, arch)
+		);
 	}
 
 
@@ -202,7 +240,7 @@ public class SslGameControllerProcess implements Runnable
 				}
 			}).orElse(null);
 		}
-		return ClassLoader.getSystemClassLoader().getResourceAsStream(BINARY_NAME);
+		return ClassLoader.getSystemClassLoader().getResourceAsStream(BINARY_NAME + "_" + getOsAndArchSuffix());
 	}
 
 
@@ -244,6 +282,7 @@ public class SslGameControllerProcess implements Runnable
 
 	public void stop()
 	{
+		log.debug("Stopping process");
 		Process gcProcess = process;
 		process = null;
 		if (gcProcess == null)
@@ -264,5 +303,6 @@ public class SslGameControllerProcess implements Runnable
 			log.warn("Interrupted while waiting for the process to exit");
 			Thread.currentThread().interrupt();
 		}
+		log.debug("Process stopped");
 	}
 }

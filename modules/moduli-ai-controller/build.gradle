@@ -17,11 +17,7 @@ dependencies {
     implementation project(':moduli-record')
     implementation project(':moduli-timer')
 
-    implementation(libs.com.github.TIGERs.mannheim.moduli)
-
     implementation(libs.org.apache.logging.log4j.log4j.api)
 
     implementation(libs.commons.lang)
-
-    implementation(libs.com.sleepycat.je)
 }

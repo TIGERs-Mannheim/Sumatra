@@ -5,7 +5,9 @@
 package edu.tigers.sumatra.ai;
 
 import edu.tigers.sumatra.ai.athena.EAIControlState;
+import edu.tigers.sumatra.botmanager.BotManager;
 import edu.tigers.sumatra.drawable.ShapeMapSource;
+import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.ids.EAiTeam;
 import edu.tigers.sumatra.model.SumatraModel;
 import edu.tigers.sumatra.skillsystem.ASkillSystem;
@@ -66,6 +68,10 @@ public class AiManager
 		timer = SumatraModel.getInstance().getModuleOpt(ATimer.class).orElse(null);
 		wp = SumatraModel.getInstance().getModule(AWorldPredictor.class);
 
+		SumatraModel.getInstance().getModuleOpt(BotManager.class).ifPresent(
+				b -> b.addAllocatedBots(getClass().getCanonicalName(), BotID.getAll(ai.getAiTeam().getTeamColor()))
+		);
+
 		assert executor == null;
 		executor = Executors.newSingleThreadExecutor();
 		executor.execute(aiProcessor);
@@ -77,6 +83,10 @@ public class AiManager
 	 */
 	public void stop()
 	{
+		SumatraModel.getInstance().getModuleOpt(BotManager.class).ifPresent(
+				b -> b.removeAllocatedBots(getClass().getCanonicalName(), BotID.getAll(ai.getAiTeam().getTeamColor()))
+		);
+
 		aiProcessor.running = false;
 		executor.shutdown();
 

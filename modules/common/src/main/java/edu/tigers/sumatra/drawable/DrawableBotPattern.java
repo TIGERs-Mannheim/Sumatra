@@ -4,11 +4,10 @@
 
 package edu.tigers.sumatra.drawable;
 
-import com.sleepycat.persist.model.Persistent;
 import edu.tigers.sumatra.ids.BotID;
+import edu.tigers.sumatra.ids.ETeamColor;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
-import edu.tigers.sumatra.math.vector.Vector2f;
 
 import java.awt.Color;
 import java.awt.Graphics2D;
@@ -16,7 +15,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 
-@Persistent
 public class DrawableBotPattern extends DrawableBotShape
 {
 	private final BotID botID;
@@ -101,13 +99,6 @@ public class DrawableBotPattern extends DrawableBotShape
 	}
 
 
-	@SuppressWarnings("unused")
-	private DrawableBotPattern()
-	{
-		this(Vector2f.ZERO_VECTOR, 0, 0, 0, BotID.noBot());
-	}
-
-
 	public DrawableBotPattern(
 			final IVector2 pos,
 			final double angle,
@@ -118,8 +109,8 @@ public class DrawableBotPattern extends DrawableBotShape
 		super(pos, angle, radius, center2DribblerDist);
 		this.botID = botID;
 
-		setBorderColor(null);
-		setFillColor(Color.black);
+		setBorderColor(botID.getTeamColor() == ETeamColor.YELLOW ? Color.white : Color.black);
+		setFillColor(botID.getTeamColor() == ETeamColor.YELLOW ? Color.darkGray : Color.black);
 		setDrawDirection(false);
 	}
 

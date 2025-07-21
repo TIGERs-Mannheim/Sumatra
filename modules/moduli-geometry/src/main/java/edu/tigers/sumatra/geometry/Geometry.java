@@ -151,11 +151,12 @@ public class Geometry
 	 */
 	public static synchronized void update(final CamGeometry geometry)
 	{
-		if (!instance.lastCamGeometry.equalBallModels(geometry))
-		{
-			log.info("New Ball Models received from SSL vision!");
-		}
+		var oldGeometry = instance;
 		instance = new Geometry(instance.lastCamGeometry.merge(geometry));
+		if (!oldGeometry.ballParameters.equals(instance.ballParameters))
+		{
+			log.info("Ball parameters changed to: {}", instance.ballParameters);
+		}
 	}
 
 

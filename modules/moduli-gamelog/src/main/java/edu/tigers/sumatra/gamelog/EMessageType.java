@@ -19,9 +19,9 @@ public enum EMessageType
 	SSL_INDEX_2021(6),
 
 	/** BaseStationACommand sent by Sumatra */
-	TIGERS_BASE_STATION_CMD_SENT(1000),
+	TIGERS_BASE_STATION_CMD_SENT(1002),
 	/** BaseStationACommand received by Sumatra */
-	TIGERS_BASE_STATION_CMD_RECEIVED(1001),
+	TIGERS_BASE_STATION_CMD_RECEIVED(1003),
 	;
 
 	private final int id;

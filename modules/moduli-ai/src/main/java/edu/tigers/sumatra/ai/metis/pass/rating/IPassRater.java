@@ -26,15 +26,4 @@ public interface IPassRater
 	default void setShapes(List<IDrawableShape> shapes)
 	{
 	}
-
-
-	/**
-	 * Overwrite to draw shapes.
-	 *
-	 * @param shapes
-	 */
-	default void drawShapes(List<IDrawableShape> shapes)
-	{
-		// can be overwritten
-	}
 }

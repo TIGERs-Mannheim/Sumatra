@@ -4,8 +4,6 @@
 
 package edu.tigers.sumatra.ids;
 
-import com.sleepycat.persist.model.Persistent;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
@@ -18,7 +16,6 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  */
-@Persistent
 public final class BotID extends AObjectID
 {
 	private final ETeamColor teamColor;

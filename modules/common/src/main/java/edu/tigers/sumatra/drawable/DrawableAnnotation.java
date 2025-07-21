@@ -4,9 +4,9 @@
 
 package edu.tigers.sumatra.drawable;
 
-import com.sleepycat.persist.model.Persistent;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2f;
+import lombok.RequiredArgsConstructor;
 
 import java.awt.Color;
 import java.awt.Font;
@@ -20,7 +20,7 @@ import java.awt.Graphics2D;
  * The offset text will thus always appear at the same location regardless
  * of field orientation.
  */
-@Persistent
+@RequiredArgsConstructor
 public class DrawableAnnotation implements IDrawableShape
 {
 	private final IVector2 center;
@@ -29,66 +29,28 @@ public class DrawableAnnotation implements IDrawableShape
 	private IVector2 offset = Vector2f.ZERO_VECTOR;
 	private boolean centerHorizontally = false;
 	private Color color = Color.BLACK;
-	private int fontHeight = 50;
+	private double fontHeight = 50;
 	private boolean bold = false;
 
 
-	@SuppressWarnings("unused")
-	private DrawableAnnotation()
-	{
-		center = Vector2f.ZERO_VECTOR;
-		text = "";
-	}
-
-
-	/**
-	 * @param center
-	 * @param text
-	 */
-	public DrawableAnnotation(final IVector2 center, final String text)
-	{
-		super();
-		this.center = center;
-		this.text = text;
-	}
-
-
-	/**
-	 * @param center
-	 * @param text
-	 * @param centerHorizontal
-	 */
 	public DrawableAnnotation(final IVector2 center, final String text, final boolean centerHorizontal)
 	{
-		super();
 		this.center = center;
 		this.text = text;
 		centerHorizontally = centerHorizontal;
 	}
 
 
-	/**
-	 * @param center
-	 * @param text
-	 * @param offset
-	 */
 	public DrawableAnnotation(final IVector2 center, final String text, final IVector2 offset)
 	{
-		super();
 		this.center = center;
 		this.text = text;
 		this.offset = offset;
 	}
 
 
-	/**
-	 * @param center
-	 * @param text
-	 * @param color
-	 */
 	public DrawableAnnotation(final IVector2 center, final String text, final Color color)
 	{
-		super();
 		this.center = center;
 		this.text = text;
 		this.color = color;
@@ -119,24 +81,13 @@ public class DrawableAnnotation implements IDrawableShape
 		double drawingX = transPoint.x() + tool.scaleGlobalToGui(offset.x());
 		double drawingY = transPoint.y() + tool.scaleGlobalToGui(offset.y());
 
-		drawingY += (textHeight / 2) - g.getFontMetrics(font).getDescent();
-
-		if (offset.x() < 0)
-		{
-			drawingX -= maxWidth;
-		}
 
 		if (centerHorizontally)
 		{
-			if (offset.x() < 0)
-			{
-				drawingX += maxWidth / 2;
-			} else
-			{
-				drawingX -= maxWidth / 2;
-			}
+			drawingX += -maxWidth / 2;
 		}
 
+		drawingY += (textHeight / 2) - g.getFontMetrics(font).getDescent();
 		drawingY -= (numLines - 1) * lineHeight;
 
 		for (String txt : lines)
@@ -162,7 +113,7 @@ public class DrawableAnnotation implements IDrawableShape
 	 * @param fontHeight the fontHeight to set in [mm]
 	 * @return
 	 */
-	public final DrawableAnnotation withFontHeight(final int fontHeight)
+	public final DrawableAnnotation withFontHeight(final double fontHeight)
 	{
 		this.fontHeight = fontHeight;
 		return this;

@@ -13,7 +13,7 @@ import edu.tigers.sumatra.ids.ETeamColor;
 import edu.tigers.sumatra.referee.data.GameState;
 import edu.tigers.sumatra.referee.data.RefereeMsgBuilder;
 import edu.tigers.sumatra.referee.proto.SslGcRefereeMessage;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 

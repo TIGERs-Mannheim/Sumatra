@@ -4,24 +4,14 @@
 
 package edu.tigers.sumatra.bot;
 
-import com.sleepycat.persist.model.Persistent;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.pose.Pose;
 import edu.tigers.sumatra.math.vector.Vector3f;
 
 
-@Persistent
 public class BotState extends State
 {
 	private final BotID botID;
-
-
-	@SuppressWarnings("unused") // berkeley
-	protected BotState()
-	{
-		super();
-		botID = BotID.noBot();
-	}
 
 
 	protected BotState(final BotID botID, final State state)

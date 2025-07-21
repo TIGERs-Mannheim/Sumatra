@@ -4,7 +4,6 @@
 
 package edu.tigers.sumatra.bot;
 
-import com.sleepycat.persist.model.Persistent;
 import edu.tigers.sumatra.bot.params.IBotMovementLimits;
 import edu.tigers.sumatra.data.collector.IExportable;
 import edu.tigers.sumatra.math.vector.IVector2;
@@ -21,7 +20,6 @@ import java.util.List;
 /**
  * Constraints on the movement of robots.
  */
-@Persistent
 @Data
 @Accessors(chain = true)
 public class MoveConstraints implements IExportable, IMoveConstraints

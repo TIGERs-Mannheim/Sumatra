@@ -1,10 +1,5 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2016, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 20.07.2016
- * Author(s): ryll
- * *********************************************************
+ * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.botmanager.botskills.data;
 
@@ -24,6 +19,7 @@ public enum ESong
 	EYE_OF_THE_TIGER_FOLLOW(5, 8.88, false),
 	CANTINA_BAND(6, 57.9, false),
 	MACARENA(7, 9.6, false),
+	IMPERIAL_MARCH(8, 27.569, false),
 
 	;
 
@@ -42,5 +38,25 @@ public enum ESong
 		this.id = id;
 		this.duration = duration;
 		this.isLooping = isLooping;
+	}
+
+
+	/**
+	 * Convert an id to an enum.
+	 *
+	 * @param id
+	 * @return enum
+	 */
+	public static ESong getSongConstant(final int id)
+	{
+		for (ESong s : values())
+		{
+			if (s.getId() == id)
+			{
+				return s;
+			}
+		}
+
+		return null;
 	}
 }

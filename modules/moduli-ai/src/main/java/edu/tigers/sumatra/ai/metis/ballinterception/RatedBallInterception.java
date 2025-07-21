@@ -4,8 +4,6 @@
 
 package edu.tigers.sumatra.ai.metis.ballinterception;
 
-import edu.tigers.sumatra.ids.BotID;
-import edu.tigers.sumatra.math.vector.Vector2;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Value;
@@ -18,14 +16,4 @@ public class RatedBallInterception
 	BallInterception ballInterception;
 	double corridorLength;
 	double minCorridorSlackTime;
-
-
-	@SuppressWarnings("unused") // berkeley
-	private RatedBallInterception()
-	{
-		corridorLength = 0;
-		minCorridorSlackTime = 0;
-		ballInterception = new BallInterception(BotID.noBot(), 0, Vector2.zero());
-	}
-
 }

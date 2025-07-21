@@ -23,7 +23,6 @@ public enum ESumatraViewType
 	TIMER(5, "Timer"),
 	REFEREE(6, "Ref"),
 	CONFIG_EDITOR(8, "Cfg"),
-	DUMMY(9, "<unknown>"),
 	RCM(31, "RCM"),
 	BOT_OVERVIEW(32, "Bots"),
 	OFFENSIVE_STRATEGY(34, "Offensive Strategy"),

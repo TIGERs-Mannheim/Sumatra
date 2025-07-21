@@ -4,7 +4,6 @@
 
 package edu.tigers.sumatra.wp.exporter;
 
-import edu.tigers.moduli.AModule;
 import edu.tigers.sumatra.cam.proto.SslVisionDetection;
 import edu.tigers.sumatra.cam.proto.SslVisionDetection.SSL_DetectionBall;
 import edu.tigers.sumatra.cam.proto.SslVisionDetection.SSL_DetectionFrame;
@@ -23,6 +22,7 @@ import edu.tigers.sumatra.math.line.ILineSegment;
 import edu.tigers.sumatra.math.line.Lines;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.model.SumatraModel;
+import edu.tigers.sumatra.moduli.AModule;
 import edu.tigers.sumatra.network.MulticastUDPTransmitter;
 import edu.tigers.sumatra.wp.AWorldPredictor;
 import edu.tigers.sumatra.wp.IWorldFrameObserver;

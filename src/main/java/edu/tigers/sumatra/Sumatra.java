@@ -1,16 +1,16 @@
 /*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra;
 
-import edu.tigers.autoreferee.engine.EAutoRefMode;
-import edu.tigers.autoreferee.module.AutoRefModule;
+import edu.tigers.base.BaseApp;
 import edu.tigers.sumatra.ai.AAgent;
 import edu.tigers.sumatra.ai.athena.EAIControlState;
-import edu.tigers.sumatra.cam.SSLVisionCam;
+import edu.tigers.sumatra.ai.metis.statistics.MatchStatisticsCalc;
 import edu.tigers.sumatra.ids.EAiTeam;
 import edu.tigers.sumatra.ids.ETeamColor;
 import edu.tigers.sumatra.model.SumatraModel;
+import edu.tigers.sumatra.presenter.MainPresenter;
 import edu.tigers.sumatra.referee.IRefereeObserver;
 import edu.tigers.sumatra.referee.Referee;
 import edu.tigers.sumatra.referee.control.GcEventFactory;
@@ -19,19 +19,16 @@ import edu.tigers.sumatra.referee.proto.SslGcRefereeMessage.Referee.Command;
 import edu.tigers.sumatra.sim.SimulationHelper;
 import edu.tigers.sumatra.sim.SumatraSimulator;
 import edu.tigers.sumatra.sim.net.SimNetClient;
-import edu.tigers.sumatra.wp.exporter.VisionTrackerSender;
+import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 import lombok.extern.log4j.Log4j2;
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.CommandLineParser;
-import org.apache.commons.cli.DefaultParser;
-import org.apache.commons.cli.HelpFormatter;
-import org.apache.commons.cli.Options;
-import org.apache.commons.cli.ParseException;
+import picocli.CommandLine.Option;
 
-import javax.swing.SwingUtilities;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+
+import static java.util.concurrent.CompletableFuture.runAsync;
 
 
 /**
@@ -67,165 +64,217 @@ import java.util.List;
  */
 @SuppressWarnings("squid:S1147") // calling System.exit() is ok in this entry class
 @Log4j2
-public final class Sumatra
+public final class Sumatra extends BaseApp implements Runnable
 {
-	private static CommandLine cmd;
+	@Setter(onMethod_ = @Option(
+			names = { "-hl", "--headless" },
+			defaultValue = "${env:SUMATRA_HEADLESS:-false}",
+			description = "run without a UI"
+	))
+	private boolean headless = false;
+
+	@Setter(onMethod_ = @Option(
+			names = { "-m", "--moduli" },
+			defaultValue = "${env:SUMATRA_MODULI}",
+			description = "moduli config to load by default")
+	)
+	private String moduli;
+
+	@Setter(onMethod_ = @Option(
+			names = { "-w", "--waitForAis" },
+			defaultValue = "${env:SUMATRA_WAIT_FOR_AIS}",
+			description = "wait for all AIs to connect before simulation is started")
+	)
+	private Boolean waitForAis;
+
+	@Setter(onMethod_ = @Option(
+			names = { "-ms", "--maxSpeed" },
+			defaultValue = "${env:SUMATRA_MAX_SPEED}",
+			description = "run simulation with maximum speed (not in real time)")
+	)
+	private Boolean maxSpeed;
+
+	@Setter(onMethod_ = @Option(
+			names = { "-ay", "--aiYellow" },
+			defaultValue = "${env:SUMATRA_AI_YELLOW}",
+			description = "activate yellow AI")
+	)
+	private Boolean aiYellow;
+
+	@Setter(onMethod_ = @Option(
+			names = { "-ab", "--aiBlue" },
+			defaultValue = "${env:SUMATRA_AI_BLUE}",
+			description = "activate blue AI")
+	)
+	private Boolean aiBlue;
+
+	@Setter(onMethod_ = @Option(
+			names = { "-ar", "--autoRef" },
+			defaultValue = "${env:SUMATRA_AUTOREF:-false}",
+			description = "activate autoRef in active mode")
+	)
+	private boolean autoRef;
+
+	@Setter(onMethod_ = @Option(
+			names = { "-c", "--initialCommand" },
+			defaultValue = "${env:SUMATRA_INITIAL_COMMAND}",
+			description = "initial referee command to send")
+	)
+	private Command initialCommand;
+
+	@Setter(onMethod_ = @Option(
+			names = { "--stopAtStageTime" },
+			defaultValue = "${env:SUMATRA_STOP_AT_STAGE_TIME}",
+			description = "Stop the game when the stage time [s] is reached (can be negative, zero is one half time)")
+	)
+	private Integer stopAtStageTime;
+
+	@Setter(onMethod_ = @Option(
+			names = { "--stopAtStage" },
+			defaultValue = "${env:SUMATRA_STOP_AT_STAGE}",
+			description = "Stop the game when this stage is reached")
+	)
+	private SslGcRefereeMessage.Referee.Stage stopAtStage;
+
+	@Setter(onMethod_ = @Option(
+			names = { "-ho", "--host" },
+			defaultValue = "${env:SUMATRA_HOST}",
+			description = "the host of the simulator to connect to")
+	)
+	private String host;
+
+	@Setter(onMethod_ = @Option(
+			names = { "-to", "--timeout" },
+			defaultValue = "${env:SUMATRA_TIMEOUT}",
+			description = "the timeout [s] after which the application will be exited")
+	)
+	private Double timeout;
+
+	@Setter(onMethod_ = @Option(
+			names = { "-tm", "--tournamentMode" },
+			defaultValue = "${env:SUMATRA_TOURNAMENT_MODE}",
+			description = "run in tournament mode")
+	)
+	private Boolean tournamentMode;
+
+	@Setter(onMethod_ = @Option(
+			names = { "-va", "--visionAddress" },
+			defaultValue = "${env:SUMATRA_VISION_ADDRESS}",
+			description = "address:port for vision")
+	)
+	private String visionAddress;
+
+	@Setter(onMethod_ = @Option(
+			names = { "-ra", "--refereeAddress" },
+			defaultValue = "${env:SUMATRA_REFEREE_ADDRESS}",
+			description = "address:port for GC")
+	)
+	private String refereeAddress;
+
+	@Setter(onMethod_ = @Option(
+			names = { "-ta", "--trackerAddress" },
+			defaultValue = "${env:SUMATRA_TRACKER_ADDRESS}",
+			description = "address:port for tracker")
+	)
+	private String trackerAddress;
+
+	@Setter(onMethod_ = @Option(
+			names = { "--matchStats" },
+			defaultValue = "${env:SUMATRA_MATCH_STATS}",
+			description = "enable match stats calc")
+	)
+	private Boolean matchStats;
 
 
-	/**
-	 * Creates the model of the application and redirects to a presenter.
-	 *
-	 * @param args
-	 */
 	public static void main(final String[] args)
 	{
+		new picocli.CommandLine(new Sumatra()).execute(args);
+	}
+
+
+	@Override
+	public void run()
+	{
 		log.info("Starting Sumatra {}", SumatraModel.getVersion());
-		Options options = createOptions();
-		cmd = parseOptions(args, options, new DefaultParser());
 
-		ifHasOption("h", () -> printHelp(options));
-		ifNotHasOption("hl", () -> SwingUtilities.invokeLater(MainPresenter::new));
+		// Start the UI in a separate thread first
+		runIf(!headless, this::startUi);
 
-		ifHasOption("m", Sumatra::setModule);
-		ifHasOption("w", () -> SumatraSimulator.setWaitForRemoteAis(true));
-		ifHasOption("ho", () -> SimNetClient.setStartupHost(cmd.getOptionValue("ho")));
-		ifHasOption("p", () -> SumatraModel.getInstance().setTournamentMode(true));
-		ifHasOption("va", () -> setVisionAddress(cmd.getOptionValue("va")));
-		ifHasOption("ra", () -> setRefereeAddress(cmd.getOptionValue("ra")));
-		ifHasOption("ta", () -> setTrackerAddress(cmd.getOptionValue("ta")));
+		// Set static parameters that can and must be set before any module is initialized
+		ifNotNull(moduli, this::updateModuliConfig);
+		ifNotNull(waitForAis, SumatraSimulator::setWaitForRemoteAis);
+		ifNotNull(tournamentMode, this::enableTournamentMode);
+		ifNotNull(host, SimNetClient::setStartupHost);
+		ifNotNull(visionAddress, this::updateVisionAddress);
+		ifNotNull(refereeAddress, this::updateRefereeAddress);
+		ifNotNull(trackerAddress, this::updateTrackerAddress);
+		ifNotNull(matchStats, MatchStatisticsCalc::setEnabled);
+		SimNetClient.setStartupTeamColors(aiColors());
 
-		start(cmd);
-		ifHasOption("to", () -> setTimeout(cmd));
-		ifHasOption("ms", () -> SimulationHelper.setSimulateWithMaxSpeed(true));
-		ifHasOption("pt", () -> limitMatchDuration(cmd));
-		ifHasOption("c", () -> setInitialRefereeCommand(cmd));
-		ifHasOption("ar", Sumatra::activateAutoRef);
+		loadModules();
+
+		ifNotNull(timeout, this::enableTimeout);
+		ifNotNull(maxSpeed, SimulationHelper::setSimulateWithMaxSpeed);
+		ifNotNull(stopAtStage, this::enableStopAtStage);
+		ifNotNull(stopAtStageTime, this::enableStopAtStageTime);
+
+		start();
+
+		ifNotNull(initialCommand, this::setInitialRefereeCommand);
+		runIf(autoRef, this::activateAutoRef);
+		activateAis();
+
 		log.trace("Started Sumatra");
 	}
 
 
-	private static void setVisionAddress(String fullAddress)
+	private void startUi()
 	{
-		String[] parts = fullAddress.split(":");
-		String address = parts[0];
-		if (!address.isBlank())
-		{
-			SSLVisionCam.setCustomAddress(address);
-		}
-		if (parts.length > 1)
-		{
-			SSLVisionCam.setCustomPort(Integer.parseInt(parts[1]));
-		}
+		CompletableFuture.runAsync(MainPresenter::new).exceptionally(e -> {
+			log.error("Failed to start UI", e);
+			return null;
+		});
 	}
 
 
-	private static void setRefereeAddress(String fullAddress)
+	private void enableStopAtStage(SslGcRefereeMessage.Referee.Stage stage)
 	{
-		String[] parts = fullAddress.split(":");
-		String address = parts[0];
-		if (!address.isBlank())
-		{
-			Referee.setCustomAddress(address);
-		}
-		if (parts.length > 1)
-		{
-			Referee.setCustomPort(Integer.parseInt(parts[1]));
-		}
-	}
-
-
-	private static void setTrackerAddress(String fullAddress)
-	{
-		String[] parts = fullAddress.split(":");
-		String address = parts[0];
-		if (!address.isBlank())
-		{
-			VisionTrackerSender.setCustomAddress(address);
-		}
-		if (parts.length > 1)
-		{
-			VisionTrackerSender.setCustomPort(Integer.parseInt(parts[1]));
-		}
-	}
-
-
-	private static void activateAutoRef()
-	{
-		SumatraModel.getInstance().getModuleOpt(AutoRefModule.class)
-				.ifPresent(a -> a.changeMode(EAutoRefMode.ACTIVE));
-	}
-
-
-	private static void setModule()
-	{
-		SumatraModel.getInstance().setCurrentModuliConfig(getModuliConfig(cmd.getOptionValue("m")));
-	}
-
-
-	private static Options createOptions()
-	{
-		Options options = new Options();
-		options.addOption("h", "help", false, "Print this help message");
-		options.addOption("m", "moduli", true, "moduli config to load by default");
-		options.addOption("w", "waitForAis", false, "wait for all AIs to connect before simulation is started");
-		options.addOption("ms", "maxSpeed", false, "run simulation with maximum speed (not in real time)");
-		options.addOption("hl", "headless", false, "run without a UI");
-		options.addOption("ay", "aiYellow", false, "activate yellow AI");
-		options.addOption("ab", "aiBlue", false, "activate blue AI");
-		options.addOption("ar", "autoRef", false, "activate autoRef in active mode");
-		options.addOption("c", "initialCommand", true, "initial referee command to send");
-		options.addOption("pt", "playingTime", true, "duration [s] of time to play (match time)");
-		options.addOption("ho", "host", true, "the host of the simulator to connect to");
-		options.addOption("to", "timeout", true, "the timeout [s] after which the application will be exited");
-		options.addOption("p", "productive", false, "run in tournament mode (aka productive mode)");
-		options.addOption("va", "visionAddress", true, "address:port for vision");
-		options.addOption("ra", "refereeAddress", true, "address:port for GC");
-		options.addOption("ta", "trackerAddress", true, "address:port for tracker");
-		return options;
-	}
-
-
-	private static void ifHasOption(String shortOptions, Runnable r)
-	{
-		if (cmd.hasOption(shortOptions))
-		{
-			r.run();
-		}
-	}
-
-
-	private static void ifNotHasOption(String shortOptions, Runnable r)
-	{
-		if (!cmd.hasOption(shortOptions))
-		{
-			r.run();
-		}
-	}
-
-
-	private static void limitMatchDuration(final CommandLine cmd)
-	{
-		double stageTimeLeft = Double.parseDouble(cmd.getOptionValue("pt"));
+		log.info("Stopping match at stage {}", stage);
 		SumatraModel.getInstance().getModuleOpt(Referee.class)
-				.ifPresent(r -> r.addObserver(new MatchDurationLimiter(stageTimeLeft)));
+				.ifPresent(r -> r.addObserver(new MatchStageWatcher(stage)));
 	}
 
 
-	private static void setTimeout(final CommandLine cmd)
+	private void enableStopAtStageTime(int stageTime)
 	{
-		double timeout = Double.parseDouble(cmd.getOptionValue("to"));
-		new Thread(() -> timeout(timeout)).start();
+		log.info("Stopping match at stage time {}", stageTime);
+		SumatraModel.getInstance().getModuleOpt(Referee.class)
+				.ifPresent(r -> r.addObserver(new MatchStageTimeWatcher(stageTime)));
 	}
 
 
-	private static void timeout(double timeout)
+	private void enableTimeout(double t)
+	{
+		log.info("Starting timeout of {} s", t);
+		new Thread(() -> timeout(t)).start();
+	}
+
+
+	private void enableTournamentMode(boolean tournamentMode)
+	{
+		log.info("Setting tournament mode to {}", tournamentMode);
+		SumatraModel.getInstance().setTournamentMode(tournamentMode);
+	}
+
+
+	private void timeout(double timeout)
 	{
 		Thread.currentThread().setName("TimeoutHandler");
 		try
 		{
 			Thread.sleep((long) (timeout * 1000));
 			log.info("Timed out after {} s", () -> String.format("%.1f", timeout));
-			tearDown();
+			runAsync(() -> System.exit(0));
 		} catch (InterruptedException e)
 		{
 			Thread.currentThread().interrupt();
@@ -233,36 +282,18 @@ public final class Sumatra
 	}
 
 
-	private static void tearDown()
+	private void setInitialRefereeCommand(Command command)
 	{
-		Thread.currentThread().setName("TearDown");
-		SumatraModel.getInstance().stopModules();
-		System.exit(0);
+		log.info("Sending initial referee command: {}", command);
+		SumatraModel.getInstance().getModuleOpt(Referee.class)
+				.ifPresent(r -> r.sendGameControllerEvent(GcEventFactory.command(command)));
 	}
 
 
-	private static void setInitialRefereeCommand(final CommandLine cmd)
+	private void updateModuliConfig(String moduli)
 	{
-		try
-		{
-			Command command = Command.valueOf(cmd.getOptionValue("c"));
-			SumatraModel.getInstance().getModuleOpt(Referee.class)
-					.ifPresent(r -> r.sendGameControllerEvent(GcEventFactory.command(command)));
-		} catch (IllegalArgumentException err)
-		{
-			log.error("Could not parse command: {}. It should be one of: {}",
-					cmd.getOptionValue("c"),
-					Arrays.toString(Command.values()), err);
-			System.exit(1);
-		}
-	}
-
-
-	private static void printHelp(final Options options)
-	{
-		HelpFormatter formatter = new HelpFormatter();
-		formatter.printHelp("Sumatra", options);
-		System.exit(0);
+		log.info("Setting moduli config to {}", moduli);
+		SumatraModel.getInstance().setCurrentModuliConfig(getModuliConfig(moduli));
 	}
 
 
@@ -276,14 +307,14 @@ public final class Sumatra
 	}
 
 
-	private static List<ETeamColor> aiColors(final CommandLine cmd)
+	private List<ETeamColor> aiColors()
 	{
 		List<ETeamColor> teamColors = new ArrayList<>();
-		if (cmd.hasOption("ay"))
+		if (aiYellow != null && aiYellow)
 		{
 			teamColors.add(ETeamColor.YELLOW);
 		}
-		if (cmd.hasOption("ab"))
+		if (aiBlue != null && aiBlue)
 		{
 			teamColors.add(ETeamColor.BLUE);
 		}
@@ -291,38 +322,25 @@ public final class Sumatra
 	}
 
 
-	private static void start(final CommandLine cmd)
+	private void activateAis()
 	{
-		SimNetClient.setStartupTeamColors(aiColors(cmd));
-		try
+		if (aiBlue == null && aiYellow == null)
 		{
-			SumatraModel.getInstance().loadModulesOfConfig(SumatraModel.getInstance().getCurrentModuliConfig());
-			SumatraModel.getInstance().startModules();
-		} catch (Throwable e)
-		{
-			log.error("Could not start Sumatra. Setting moduli config to default. Please try again.", e);
-			SumatraModel.getInstance().setCurrentModuliConfig(SumatraModel.MODULI_CONFIG_FILE_DEFAULT);
-			System.exit(1);
+			return;
 		}
-		if (cmd.hasOption("ay") || cmd.hasOption("ab"))
-		{
-			activateAis(cmd);
-		}
-	}
 
-
-	private static void activateAis(final CommandLine cmd)
-	{
-		if (cmd.hasOption("ay"))
+		if (aiYellow != null && aiYellow)
 		{
+			log.info("Activating yellow AI");
 			SumatraModel.getInstance().getModule(AAgent.class).changeMode(EAiTeam.YELLOW, EAIControlState.MATCH_MODE);
 		} else
 		{
 			SumatraModel.getInstance().getModuleOpt(AAgent.class)
 					.ifPresent(a -> a.changeMode(EAiTeam.YELLOW, EAIControlState.OFF));
 		}
-		if (cmd.hasOption("ab"))
+		if (aiBlue != null && aiBlue)
 		{
+			log.info("Activating blue AI");
 			SumatraModel.getInstance().getModule(AAgent.class).changeMode(EAiTeam.BLUE, EAIControlState.MATCH_MODE);
 		} else
 		{
@@ -332,35 +350,39 @@ public final class Sumatra
 	}
 
 
-	private static CommandLine parseOptions(final String[] args, final Options options, final CommandLineParser parser)
+	@RequiredArgsConstructor
+	private static class MatchStageTimeWatcher implements IRefereeObserver
 	{
-		try
-		{
-			return parser.parse(options, args);
-		} catch (ParseException e)
-		{
-			log.error("Could not parse options.", e);
-			printHelp(options);
-		}
-		return null;
-	}
+		private final int stageTime;
 
 
-	private record MatchDurationLimiter(double desiredStageTimeLeft) implements IRefereeObserver
-	{
 		@Override
 		public void onNewRefereeMsg(final edu.tigers.sumatra.referee.proto.SslGcRefereeMessage.Referee refMsg)
 		{
-			if (refMsg.getStage() != SslGcRefereeMessage.Referee.Stage.NORMAL_FIRST_HALF)
+			if (refMsg.getStageTimeLeft() / 1e6 < stageTime)
 			{
-				return;
-			}
-			double stageTimeLeft = refMsg.getStageTimeLeft() / 1e6;
-			if (stageTimeLeft < desiredStageTimeLeft)
-			{
-				log.info("Match reached the desired stageTime: {}", stageTimeLeft);
+				log.info("Match reached stage time {}. Shutting down", stageTime);
 				SumatraModel.getInstance().getModule(Referee.class).removeObserver(this);
-				new Thread(Sumatra::tearDown).start();
+				runAsync(() -> System.exit(0));
+			}
+		}
+	}
+
+
+	@RequiredArgsConstructor
+	private static class MatchStageWatcher implements IRefereeObserver
+	{
+		private final SslGcRefereeMessage.Referee.Stage stage;
+
+
+		@Override
+		public void onNewRefereeMsg(final edu.tigers.sumatra.referee.proto.SslGcRefereeMessage.Referee refMsg)
+		{
+			if (refMsg.getStage() == stage)
+			{
+				log.info("Match reached stage {}. Shutting down", stage);
+				SumatraModel.getInstance().getModule(Referee.class).removeObserver(this);
+				runAsync(() -> System.exit(0));
 			}
 		}
 	}

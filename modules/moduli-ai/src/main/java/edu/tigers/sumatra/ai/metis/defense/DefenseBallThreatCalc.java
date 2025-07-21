@@ -58,6 +58,8 @@ public class DefenseBallThreatCalc extends ADefenseThreatCalc
 	@Getter
 	private DefenseBallThreat defenseBallThreat;
 
+	@Getter
+	private IVector2 opponentReceivePosGuess;
 
 	@Override
 	public void doCalc()
@@ -94,6 +96,10 @@ public class DefenseBallThreatCalc extends ADefenseThreatCalc
 
 	private ThreatSource threatSource()
 	{
+		var opponentReceiveSource = Optional.ofNullable(opponentPassReceiver.get())
+				.map(this::threatFromReceive);
+		opponentReceivePosGuess = opponentReceiveSource.map(ThreatSource::threatPos).orElse(null);
+
 		if (getAiFrame().getGameState().isFreeKick() && getBall().getVel().getLength() < 0.3)
 		{
 			return new ThreatSource(EDefenseBallThreatSourceType.FREE_KICK, getBall().getPos(), Vector2.zero());
@@ -103,33 +109,40 @@ public class DefenseBallThreatCalc extends ADefenseThreatCalc
 			// For DirectShots, always protectBall directly
 			return threatFromBall(EDefenseBallThreatSourceType.GOAL_SHOT);
 		}
-		if (opponentPassReceiver.get() != null)
-		{
-			// Prefer protecting opponentPassReceiver than protecting the ball
-			return threatFromReceive(opponentPassReceiver.get());
-		}
-		return findOpponentHandlingTheBall()
-				.map(this::threatFromBot)
-				.orElseGet(() -> threatFromBall(EDefenseBallThreatSourceType.BALL));
+
+		// Prefer protecting opponentPassReceiver than protecting the ball
+		return opponentReceiveSource.orElseGet(
+				() -> findOpponentHandlingTheBall()
+						.map(this::threatFromBot)
+						.orElseGet(() -> threatFromBall(EDefenseBallThreatSourceType.BALL))
+		);
 	}
 
 
 	private ThreatSource threatFromReceive(ITrackedBot opponentPassReceiver)
 	{
-		var posLookAhead = opponentPassReceiver.getPosByTime(ballLookahead);
-		var pos = opponentPassReceiver.getPos();
-		var target = Geometry.getGoalOur().bisection(posLookAhead);
-		var shootLine = Lines.halfLineFromPoints(posLookAhead, target);
-		var ballLine = Lines.halfLineFromDirection(getBall().getPos(), getBall().getVel());
+		var pos = opponentPassReceiver.getPosByTime(ballLookahead);
+		var target = Geometry.getGoalOur().bisection(pos);
+		var shootLine = Lines.halfLineFromPoints(pos, target);
+		var ballLine = getBall().getTrajectory().getTravelLine();
 
 		var receivePos = shootLine.intersect(ballLine).asOptional()
 				.orElseGet(() -> ballLine.closestPointOnPath(opponentPassReceiver.getBotKickerPosByTime(ballLookahead)));
-		var offset = receivePos.subtractNew(posLookAhead);
-		var receiverSource = Geometry.getField().nearestPointInside(receivePos, pos.addNew(offset));
+
+		// Move receivePos inside the field
+		receivePos = Geometry.getField().nearestPointInside(receivePos, getBall().getPos());
+
+		// Move receivePos outside the penArea
+		var penArea = Geometry.getPenaltyAreaOur().withMargin(Geometry.getBotRadius());
+		if (penArea.isPointInShapeOrBehind(receivePos))
+		{
+			receivePos = receivePos.nearestToOpt(penArea.intersectPerimeterPath(getBall().getTrajectory().getTravelLine()))
+					.orElse(receivePos);
+		}
 
 		var projectedVel = ballLine.directionVector().projectOntoThis(opponentPassReceiver.getVel());
 
-		return new ThreatSource(EDefenseBallThreatSourceType.PASS_RECEIVE, receiverSource, projectedVel);
+		return new ThreatSource(EDefenseBallThreatSourceType.PASS_RECEIVE, receivePos, projectedVel);
 	}
 
 

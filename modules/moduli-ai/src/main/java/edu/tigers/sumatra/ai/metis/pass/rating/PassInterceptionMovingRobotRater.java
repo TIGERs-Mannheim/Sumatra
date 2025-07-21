@@ -19,25 +19,39 @@ import edu.tigers.sumatra.drawable.IColorPicker;
 import edu.tigers.sumatra.drawable.IDrawableShape;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.BotID;
-import edu.tigers.sumatra.math.AngleMath;
+import edu.tigers.sumatra.math.StatisticsMath;
 import edu.tigers.sumatra.math.SumatraMath;
 import edu.tigers.sumatra.math.circle.ICircle;
 import edu.tigers.sumatra.math.line.ILineSegment;
 import edu.tigers.sumatra.math.line.Lines;
 import edu.tigers.sumatra.math.vector.IVector2;
-import edu.tigers.sumatra.movingrobot.AcceleratingRobotFactory;
 import edu.tigers.sumatra.movingrobot.IMovingRobot;
-import edu.tigers.sumatra.movingrobot.StoppingRobotFactory;
+import edu.tigers.sumatra.movingrobot.MovingRobotFactory;
 import edu.tigers.sumatra.skillsystem.skills.util.KickParams;
 import edu.tigers.sumatra.wp.data.ITrackedBall;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
 import lombok.Setter;
+import lombok.extern.log4j.Log4j2;
+import org.apache.commons.math3.exception.TooManyEvaluationsException;
+import org.apache.commons.math3.exception.TooManyIterationsException;
+import org.apache.commons.math3.optim.MaxEval;
+import org.apache.commons.math3.optim.MaxIter;
+import org.apache.commons.math3.optim.nonlinear.scalar.GoalType;
+import org.apache.commons.math3.optim.univariate.BrentOptimizer;
+import org.apache.commons.math3.optim.univariate.SearchInterval;
+import org.apache.commons.math3.optim.univariate.UnivariateObjectiveFunction;
+import org.apache.commons.math3.optim.univariate.UnivariateOptimizer;
+import org.apache.commons.math3.optim.univariate.UnivariatePointValuePair;
 
 import java.awt.Color;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 
 /**
@@ -45,25 +59,23 @@ import java.util.stream.Collectors;
  * and intersect them with the ball travel line at different points in time.
  * The distance that the circle covers on the ball travel line is used for the rating.
  */
+@Log4j2
 public class PassInterceptionMovingRobotRater extends APassRater
 {
-	@Configurable(defValue = "10.0", comment = "Max horizon [s] for MovingRobots. Caps the future prediction horizon.")
-	private static double maxHorizon = 10.0;
-
 	@Configurable(defValue = "0.08", comment = "Reaction time of opponent [s] for slow robots. Predicts constant velocity in this time.")
 	private static double opponentBotReactionTimeSlowRobots = 0.08;
 
 	@Configurable(defValue = "0.0", comment = "Reaction time of opponent [s] for fast robots. Predicts constant velocity in this time.")
 	private static double opponentBotReactionTimeFastRobots = 0.0;
 
-	@Configurable(defValue = "1.0", comment = "Horizon [s] for drawing MovingRobots. Only for debugging.")
-	private static double drawingHorizon = 1.0;
+	@Configurable(defValue = "0.5;1.0", comment = "Horizons [s] for drawing MovingRobots. Only for debugging.")
+	private static Double[] drawingHorizons = new Double[] { 0.5, 1.0 };
 
-	@Configurable(defValue = "1.5", comment = "Factor on relative distance. Larger -> less pessimistic")
-	private static double scoringFactor = 1.5;
+	@Configurable(defValue = "0;1", comment = "Draw movingRobots for these bot ids only")
+	private static Integer[] drawShapesForBotIds = new Integer[] { 0, 1 };
 
-	@Configurable(defValue = "170", comment = "Step size [mm] over the pass trajectory (should be smaller than robot width (180mm))")
-	private static double stepSize = 170.0;
+	@Configurable(defValue = "1.0", comment = "Factor on relative distance. Larger -> less pessimistic")
+	private static double scoringFactor = 1.0;
 
 	@Configurable(defValue = "30", comment = "Min distance [mm] between pass line and opponent robot (in addition to robot and ball radius")
 	private static double minDistToRobot = 30.0;
@@ -83,11 +95,11 @@ public class PassInterceptionMovingRobotRater extends APassRater
 	@Configurable(defValue = "2.5", comment = "Break Acceleration [m/s^2] of slow robots for lower scoring factor")
 	private static double slowRobotBrkLimit = 2.5;
 
-	@Configurable(defValue = "0.5", comment = "Max time [s] to subtract from tHorizon to penalize opponent behind receiver")
-	private static double maxPenaltyTimeOffsetOpponentBehindReceiver = 0.5;
-
 	@Configurable(defValue = "true", comment = "Consider pass preparation time as additional horizon time")
 	private static boolean considerPassPreparationTime = true;
+
+	@Configurable(defValue = "SMALLEST", comment = "Determine how the sums of each bot are combined")
+	private static RateCombinationType rateCombinationType = RateCombinationType.SMALLEST;
 
 	static
 	{
@@ -95,6 +107,7 @@ public class PassInterceptionMovingRobotRater extends APassRater
 	}
 
 	private final Collection<ITrackedBot> consideredBots;
+	private final List<BotID> opponentMan2ManMarkers;
 	private final Map<BotID, IMovingRobot> movingRobotsFast;
 	private final Map<BotID, IMovingRobot> movingRobotsSlow;
 	private final IColorPicker colorPicker = ColorPickerFactory.greenRedGradient();
@@ -107,58 +120,80 @@ public class PassInterceptionMovingRobotRater extends APassRater
 	private double robotMovementLimitFactor = 1.0;
 
 
-	public PassInterceptionMovingRobotRater(Collection<ITrackedBot> consideredBots)
+	public PassInterceptionMovingRobotRater(Collection<ITrackedBot> consideredBots, List<BotID> opponentMan2ManMarkers)
 	{
+		this.opponentMan2ManMarkers = opponentMan2ManMarkers;
 		this.consideredBots = consideredBots;
 
 		movingRobotsFast = consideredBots.stream().collect(
-				Collectors.toMap(ITrackedBot::getBotId, bot ->
-						AcceleratingRobotFactory.create(
-								bot.getPos(),
-								bot.getVel(),
-								bot.getRobotInfo().getBotParams().getMovementLimits().getVelMax() * robotMovementLimitFactor,
-								bot.getRobotInfo().getBotParams().getMovementLimits().getAccMax() * robotMovementLimitFactor,
-								distToRobot,
-								opponentBotReactionTimeFastRobots
-						)
+				Collectors.toMap(
+						ITrackedBot::getBotId, bot ->
+								MovingRobotFactory.acceleratingRobot(
+										bot.getPos(),
+										bot.getVel(),
+										bot.getRobotInfo().getBotParams().getMovementLimits().getVelMax()
+												* robotMovementLimitFactor,
+										bot.getRobotInfo().getBotParams().getMovementLimits().getAccMax()
+												* robotMovementLimitFactor,
+										distToRobot,
+										opponentBotReactionTimeFastRobots
+								)
 				));
 		movingRobotsSlow = consideredBots.stream().collect(
-				Collectors.toMap(ITrackedBot::getBotId, tBot ->
-						StoppingRobotFactory.create(
-								tBot.getPos(),
-								tBot.getVel(),
-								slowRobotVel * robotMovementLimitFactor,
-								slowRobotAcc * robotMovementLimitFactor,
-								slowRobotBrkLimit * robotMovementLimitFactor,
-								distToRobot,
-								opponentBotReactionTimeSlowRobots
-						)
+				Collectors.toMap(
+						ITrackedBot::getBotId, tBot ->
+								MovingRobotFactory.stoppingRobot(
+										tBot.getPos(),
+										tBot.getVel(),
+										slowRobotVel * robotMovementLimitFactor,
+										slowRobotAcc * robotMovementLimitFactor,
+										slowRobotBrkLimit * robotMovementLimitFactor,
+										distToRobot,
+										opponentBotReactionTimeSlowRobots
+								)
 				));
 	}
 
 
-	@Override
-	public void drawShapes(List<IDrawableShape> shapes)
+	private List<IDrawableShape> drawShapes(IBallTrajectory passTrajectory)
 	{
-		movingRobotsFast.values()
-				.stream()
-				.map(mr -> movingRobotShapes(mr, Color.darkGray))
-				.flatMap(List::stream)
-				.forEach(shapes::add);
-		movingRobotsSlow.values()
-				.stream()
-				.map(mr -> movingRobotShapes(mr, Color.magenta))
-				.flatMap(List::stream)
-				.forEach(shapes::add);
+		List<IDrawableShape> shapes = new ArrayList<>();
+		int colorIdx = 0;
+		for (double drawingHorizon : drawingHorizons)
+		{
+			Color colorFast = ColorPickerFactory.getDistinctColor(colorIdx++);
+			Color colorSlow = ColorPickerFactory.getDistinctColor(colorIdx++);
+			movingRobotsFast.entrySet()
+					.stream()
+					.filter(e -> Arrays.stream(drawShapesForBotIds).toList().contains(e.getKey().getNumber()))
+					.map(Map.Entry::getValue)
+					.map(mr -> movingRobotShapes(mr, passTrajectory, colorFast, drawingHorizon))
+					.flatMap(List::stream)
+					.forEach(shapes::add);
+			movingRobotsSlow.entrySet()
+					.stream()
+					.filter(e -> Arrays.stream(drawShapesForBotIds).toList().contains(e.getKey().getNumber()))
+					.map(Map.Entry::getValue)
+					.map(mr -> movingRobotShapes(mr, passTrajectory, colorSlow, drawingHorizon))
+					.flatMap(List::stream)
+					.forEach(shapes::add);
+		}
+		return shapes;
 	}
 
 
-	private List<IDrawableShape> movingRobotShapes(IMovingRobot movingRobot, Color color)
+	private List<IDrawableShape> movingRobotShapes(
+			IMovingRobot movingRobot,
+			IBallTrajectory passTrajectory,
+			Color color,
+			double drawingHorizon
+	)
 	{
 		ICircle movingHorizon = movingRobot.getMovingHorizon(drawingHorizon);
+		IVector2 pos = passTrajectory.getPosByTime(drawingHorizon).getXYVector();
 		return List.of(
 				new DrawableCircle(movingHorizon, color),
-				new DrawableLine(Lines.segmentFromPoints(movingRobot.getPos(), movingHorizon.center()), color)
+				new DrawableLine(Lines.segmentFromPoints(pos, movingHorizon.center()), color)
 		);
 	}
 
@@ -198,55 +233,113 @@ public class PassInterceptionMovingRobotRater extends APassRater
 		var origin = pass.getKick().getSource();
 		var velMM = pass.getKick().getKickVel().multiplyNew(1000);
 		var passTrajectory = Geometry.getBallFactory().createTrajectoryFromKickedBallWithoutSpin(origin, velMM);
-		return rateInternal(pass, passTrajectory);
+		drawMany(() -> drawShapes(passTrajectory));
+		return SumatraMath.cap(rateInternal(pass, passTrajectory), 0, 1);
+	}
+
+
+	private Stream<ILineSegment> removePenArea(ILineSegment segment)
+	{
+		// ensure that start and end are inside the field
+		// this simplifies the following calculation with the penArea.
+		var adaptedSegment = Lines.segmentFromPoints(
+				Geometry.getField().nearestPointInside(segment.getPathStart(), segment.getPathEnd()),
+				Geometry.getField().nearestPointInside(segment.getPathEnd(), segment.getPathStart())
+		);
+		var penArea = Geometry.getPenaltyAreaTheir();
+
+		boolean startInside = penArea.isPointInShape(adaptedSegment.getPathStart());
+		boolean endInside = penArea.isPointInShape(adaptedSegment.getPathEnd());
+		if (startInside && endInside)
+		{
+			// segment is completely inside penArea
+			return Stream.empty();
+		}
+
+		var intersections = penArea.intersectPerimeterPath(adaptedSegment);
+		if (intersections.isEmpty())
+		{
+			// segment is completely outside penArea
+			return Stream.of(adaptedSegment);
+		}
+
+		List<ILineSegment> segments = new ArrayList<>();
+		if (!startInside)
+		{
+			var intersection = adaptedSegment.getPathStart().nearestTo(intersections);
+			segments.add(Lines.segmentFromPoints(adaptedSegment.getPathStart(), intersection));
+		}
+
+		if (!endInside)
+		{
+			var intersection = adaptedSegment.getPathEnd().nearestTo(intersections);
+			segments.add(Lines.segmentFromPoints(intersection, adaptedSegment.getPathEnd()));
+		}
+
+		return segments.stream();
+	}
+
+
+	private List<TimeRange> getTimeRanges(IBallTrajectory passTrajectory, Pass pass)
+	{
+		double timeOffset = (Geometry.getBotRadius() / 1000) / pass.getReceivingSpeed();
+		return passTrajectory.getTravelLinesInterceptableByRobot().stream()
+				.flatMap(this::removePenArea)
+				.map(segment -> new TimeRange(
+						passTrajectory.getTimeByPos(segment.getPathStart()),
+						Math.min(passTrajectory.getTimeByPos(segment.getPathEnd()), pass.getDuration())
+				))
+				.filter(range -> range.min() < pass.getDuration() - timeOffset)
+				.filter(range -> Math.abs(range.max() - range.min()) > 0.01)
+				.toList();
 	}
 
 
 	private double rateInternal(Pass pass, IBallTrajectory passTrajectory)
 	{
-		var posIterator = passTrajectory.getTravelLinesInterceptable().stream()
-				.map(l -> l.getSteps(stepSize))
-				.flatMap(Collection::stream)
-				// Only the keeper can intercept passes in the opponent penalty area.
-				// However, it is quite dangerous for the keeper to intercept the ball in the penalty area.
-				// Therefore, we skip points in the opponent penArea.
-				.filter(pos -> !Geometry.getPenaltyAreaTheir().isPointInShape(pos))
-				.iterator();
-
+		List<TimeRange> timeRanges = getTimeRanges(passTrajectory, pass);
 		var passLine = Lines.segmentFromPoints(pass.getKick().getSource(), pass.getKick().getTarget());
 		var bots = consideredBots.stream()
 				// Ignore shooter and receiver
 				.filter(bot -> !bot.getBotId().equals(pass.getShooter()) && !bot.getBotId().equals(pass.getReceiver()))
 				// Ignore bots that are too far away
 				.filter(bot -> considerBot(pass, bot, passLine))
+				// Nearest bots first
+				.sorted(Comparator.comparingDouble(bot -> bot.getPos().distanceTo(pass.getKick().getSource())))
 				.toList();
 
-		bots.forEach(bot -> draw(() -> new DrawableCircle(bot.getPos(), 100, Color.cyan)));
-
-		double minScore = 1;
-		while (posIterator.hasNext())
+		List<Double> scores = new ArrayList<>();
+		for (ITrackedBot bot : bots)
 		{
-			var pos = posIterator.next();
-			var ballTravelTime = passTrajectory.getTimeByPos(pos);
-			if (ballTravelTime > pass.getDuration())
+			IVector2 closestPointOnPassLine = passLine.closestPointOnPath(bot.getPos());
+			double timeToClosestPoint = passTrajectory.getTimeByPos(closestPointOnPassLine);
+			for (TimeRange timeRange : timeRanges)
 			{
-				// Only until the ball reaches the receiver
-				break;
-			}
-			var score = ratePos(pass, pos, ballTravelTime, bots);
-			draw(() -> new DrawablePoint(pos).setColor(colorPicker.getColor(score)));
-			draw(() -> new DrawableAnnotation(pos, String.format("%.1f", ballTravelTime)).withOffsetX(50));
-			if (score <= 0)
-			{
-				return 0;
-			}
-			if (score < minScore)
-			{
-				minScore = score;
+				var score = new InterceptionOptimizer(passTrajectory, pass, bot)
+						.minimizeScore(timeRange, timeToClosestPoint);
+				if (score <= 0)
+				{
+					return 0;
+				}
+				scores.add(score);
 			}
 		}
 
-		return minScore;
+		if (scores.isEmpty())
+		{
+			return 1;
+		}
+
+		var scorePenalty = pass.isChip() ? chipKickPenalty : 0;
+
+		var score = switch (rateCombinationType)
+		{
+			case SMALLEST -> scores.stream().mapToDouble(s -> s).min().orElse(1.0);
+			case RECIPROCAL_SUM -> 1 / scores.stream().mapToDouble(s -> s).map(s -> 1 / s).sum();
+			case COUNTER_PROBABILITY -> StatisticsMath.anyOccurs(scores);
+		};
+
+		return score - scorePenalty;
 	}
 
 
@@ -259,82 +352,132 @@ public class PassInterceptionMovingRobotRater extends APassRater
 		}
 
 		IMovingRobot movingRobot = movingRobotsFast.get(bot.getBotId());
-		double t = Math.min(maxHorizon, pass.getDuration() + pass.getPreparationTime());
+		double preparationTime = considerPassPreparationTime ? pass.getPreparationTime() : 0;
+		double t = pass.getDuration() + preparationTime;
 		ICircle movingHorizon = movingRobot.getMovingHorizon(t);
 		return passLine.distanceTo(movingHorizon.center()) < movingHorizon.radius() + minDistToRobot;
 	}
 
 
-	private double ratePos(Pass pass, IVector2 pos, double ballTravelTime, List<ITrackedBot> bots)
+	private enum RateCombinationType
 	{
-		var scorePenalty = pass.isChip() ? chipKickPenalty : 0;
-		var minScore = 1.0 - scorePenalty;
-		for (var bot : bots)
+		SMALLEST,
+		RECIPROCAL_SUM,
+		COUNTER_PROBABILITY,
+	}
+
+	private record TimeRange(double min, double max)
+	{
+	}
+
+	private class InterceptionOptimizer
+	{
+		private final IBallTrajectory ballTrajectory;
+		private final Pass pass;
+		private final ITrackedBot bot;
+		private final UnivariateOptimizer optimizer;
+
+
+		public InterceptionOptimizer(IBallTrajectory ballTrajectory, Pass pass, ITrackedBot bot)
 		{
-			double score = ratePosForBot(pass, pos, ballTravelTime, bot) - scorePenalty;
-			if (score <= 0)
+			this.ballTrajectory = ballTrajectory;
+			this.pass = pass;
+			this.bot = bot;
+			this.optimizer = new BrentOptimizer(0.001, 0.01, this::converged);
+		}
+
+
+		boolean converged(int iteration, UnivariatePointValuePair previous, UnivariatePointValuePair current)
+		{
+			var pointSize = 25.0;
+			var ballTravelTime = previous.getPoint();
+			var score = previous.getValue();
+			var pos = ballTrajectory.getPosByTime(ballTravelTime).getXYVector();
+			draw(() -> new DrawablePoint(pos).withSize(pointSize).setColor(colorPicker.getColor(score)));
+			draw(() -> new DrawableAnnotation(pos, String.format("%d-%d", bot.getBotId().getNumber(), iteration))
+					.withCenterHorizontally(true)
+					.withFontHeight(12.5));
+			draw(() -> new DrawableAnnotation(pos, String.format("%.1f -> %.1f", ballTravelTime, score))
+					.withFontHeight(pointSize / 2)
+					.withOffsetX(pointSize));
+			return previous.getValue() <= 0;
+		}
+
+
+		private double objectiveFunction(double ballTravelTime)
+		{
+			var pos = ballTrajectory.getPosByTime(ballTravelTime).getXYVector();
+			return ratePosForBot(pass, pos, ballTravelTime, bot);
+		}
+
+
+		private double ratePosForBot(Pass pass, IVector2 pos, double ballTravelTime, ITrackedBot bot)
+		{
+			if (bot.getBotId().getTeamColor() == pass.getShooter().getTeamColor())
 			{
+				// own bot
+				return bot.getPosByTime(ballTravelTime).distanceTo(pos) > distToRobot ? 1 : 0;
+			}
+
+			double preparationTime = considerPassPreparationTime ? pass.getPreparationTime() : 0;
+
+			double t;
+			double additionalReactionTime;
+			if (opponentMan2ManMarkers.contains(bot.getBotId()))
+			{
+				t = ballTravelTime + preparationTime;
+				additionalReactionTime = 0;
+			} else
+			{
+				t = ballTravelTime;
+				additionalReactionTime = preparationTime;
+			}
+			return ratePosForOpponentBot(pos, bot, t, additionalReactionTime);
+		}
+
+
+		private double ratePosForOpponentBot(
+				IVector2 pos, ITrackedBot bot, double tHorizon,
+				double additionalReactionTime
+		)
+		{
+			var movingHorizonFast = movingRobotsFast.get(bot.getBotId())
+					.getMovingHorizon(tHorizon, additionalReactionTime);
+			var movingHorizonSlow = movingRobotsSlow.get(bot.getBotId())
+					.getMovingHorizon(tHorizon, additionalReactionTime);
+
+			var centerPos = movingHorizonSlow.center().addNew(movingHorizonFast.center()).multiply(0.5);
+			var distToPos = centerPos.distanceTo(pos);
+			var range = movingHorizonFast.radius() - movingHorizonSlow.radius();
+			if (range <= 0)
+			{
+				// inside robot?
+				return distToPos > distToRobot ? 1 : 0;
+			}
+			double baseScore = (distToPos - movingHorizonSlow.radius()) / range;
+			double dynamicFactor = Math.max(0, scoringFactor + scoringFactorOffset);
+			return baseScore * dynamicFactor;
+		}
+
+
+		private double minimizeScore(TimeRange timeRange, double initialTime)
+		{
+			double init = SumatraMath.cap(initialTime, timeRange.min(), timeRange.max());
+			try
+			{
+				UnivariatePointValuePair result = optimizer.optimize(
+						GoalType.MINIMIZE,
+						new MaxEval(100),
+						new MaxIter(100),
+						new SearchInterval(timeRange.min(), timeRange.max(), init),
+						new UnivariateObjectiveFunction(this::objectiveFunction)
+				);
+				return result.getValue();
+			} catch (TooManyIterationsException | TooManyEvaluationsException e)
+			{
+				log.debug("Could not find a solution for pass interception", e);
 				return 0;
 			}
-			if (score < minScore)
-			{
-				minScore = score;
-			}
 		}
-		return minScore;
-	}
-
-
-	private double ratePosForBot(Pass pass, IVector2 pos, double ballTravelTime, ITrackedBot bot)
-	{
-		var tHorizon = Math.min(maxHorizon, ballTravelTime + pass.getPreparationTime());
-
-		if (bot.getBotId().getTeamColor() == pass.getShooter().getTeamColor())
-		{
-			// own bot
-			return bot.getPosByTime(tHorizon).distanceTo(pos) > distToRobot ? 1 : 0;
-		}
-
-		var opponentBehindReceiverPenaltyTime = getOpponentBehindReceiverPenaltyTime(pass, bot);
-
-		double tAdditionalReaction = considerPassPreparationTime ? pass.getPreparationTime() : 0;
-		return ratePosForOpponentBot(pos, bot, tHorizon - opponentBehindReceiverPenaltyTime + tAdditionalReaction, 0);
-	}
-
-
-	private double getOpponentBehindReceiverPenaltyTime(Pass pass, ITrackedBot bot)
-	{
-		var targetToBot = bot.getPos().subtractNew(pass.getKick().getTarget());
-		var sourceToTarget = pass.getKick().getTarget().subtractNew(pass.getKick().getSource());
-		return maxPenaltyTimeOffsetOpponentBehindReceiver * SumatraMath.relative(
-				targetToBot.angleToAbs(sourceToTarget).orElse(0.0),
-				AngleMath.DEG_090_IN_RAD,
-				0
-		);
-	}
-
-
-	private double ratePosForOpponentBot(IVector2 pos, ITrackedBot bot, double tHorizon, double tAdditionalReaction)
-	{
-		var movingHorizonFast = movingRobotsFast.get(bot.getBotId()).getMovingHorizon(tHorizon, tAdditionalReaction);
-		var fastDist = movingHorizonFast.center().distanceTo(pos);
-		if (fastDist > movingHorizonFast.radius())
-		{
-			return 1;
-		}
-
-		var movingHorizonSlow = movingRobotsSlow.get(bot.getBotId()).getMovingHorizon(tHorizon, tAdditionalReaction);
-		var slowDist = movingHorizonSlow.center().distanceTo(pos);
-		if (slowDist < movingHorizonSlow.radius())
-		{
-			return 0;
-		}
-		double range = movingHorizonFast.radius() - movingHorizonSlow.radius();
-		if (range <= 0)
-		{
-			return slowDist > distToRobot ? 1 : 0;
-		}
-		return Math.min(1,
-				((slowDist - movingHorizonSlow.radius()) / range) * Math.max(0, scoringFactor + scoringFactorOffset));
 	}
 }

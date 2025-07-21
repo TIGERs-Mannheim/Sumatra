@@ -3,7 +3,6 @@
  */
 package edu.tigers.sumatra.ball.trajectory.chipped;
 
-import com.sleepycat.persist.model.Persistent;
 import edu.tigers.sumatra.ball.BallParameters;
 import edu.tigers.sumatra.ball.BallState;
 import edu.tigers.sumatra.ball.trajectory.ABallTrajectory;
@@ -13,7 +12,6 @@ import edu.tigers.sumatra.math.line.ILineSegment;
 import edu.tigers.sumatra.math.line.Lines;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.IVector3;
-import edu.tigers.sumatra.math.vector.Vector2f;
 import edu.tigers.sumatra.math.vector.Vector3;
 import edu.tigers.sumatra.math.vector.Vector3f;
 import edu.tigers.sumatra.planarcurve.PlanarCurve;
@@ -28,7 +26,6 @@ import java.util.List;
  * Ball trajectory for chipped kicks. Uses fixed Z damping and one damping in XY for first hop
  * and one damping in XY for all following hops.
  */
-@Persistent
 public class ChipBallTrajectory extends ABallTrajectory
 {
 	private static final double G = 9810;
@@ -36,19 +33,6 @@ public class ChipBallTrajectory extends ABallTrajectory
 	private final double tInAir;
 	private final IVector2 kickPos;
 	private final IVector3 kickVel;
-
-
-	/**
-	 * Create an empty default state. Required for {@link Persistent}.
-	 */
-	private ChipBallTrajectory()
-	{
-		super();
-
-		tInAir = 0;
-		kickPos = Vector2f.ZERO_VECTOR;
-		kickVel = Vector3f.ZERO_VECTOR;
-	}
 
 
 	private ChipBallTrajectory(
@@ -74,9 +58,9 @@ public class ChipBallTrajectory extends ABallTrajectory
 	 * Create from kick
 	 *
 	 * @param parameters
-	 * @param kickPos in [mm]
-	 * @param kickVel in [mm/s]
-	 * @param kickSpin in [rad/s]
+	 * @param kickPos    in [mm]
+	 * @param kickVel    in [mm/s]
+	 * @param kickSpin   in [rad/s]
 	 * @return
 	 */
 	public static ChipBallTrajectory fromKick(
@@ -90,9 +74,9 @@ public class ChipBallTrajectory extends ABallTrajectory
 	 * Create from state
 	 *
 	 * @param parameters
-	 * @param posNow in [mm]
-	 * @param velNow in [mm/s]
-	 * @param spin in [rad/s]
+	 * @param posNow     in [mm]
+	 * @param velNow     in [mm/s]
+	 * @param spin       in [rad/s]
 	 * @return
 	 */
 	public static ChipBallTrajectory fromState(
@@ -224,12 +208,18 @@ public class ChipBallTrajectory extends ABallTrajectory
 		IVector2 spin = initialSpin;
 
 		// go through hops while max. height is above minHopHeight
-		while (((velNow.z() * velNow.z()) / (2.0 * G)) > parameters.getMinHopHeight())
+		while (true)
 		{
+			var hopHeight = (velNow.z() * velNow.z()) / (2.0 * G);
+			if (hopHeight < parameters.getMinHopHeight())
+				break;
+
 			double tFly = (2 * velNow.z()) / G;
 
-			PlanarCurveSegment fly = PlanarCurveSegment.fromFirstOrder(posNow.getXYVector(),
-					velNow.getXYVector(), tNow, tNow + tFly);
+			PlanarCurveSegment fly = PlanarCurveSegment.fromFirstOrder(posNow.getXYVector(), velNow.getXYVector(), tNow,
+					tNow + tFly);
+			fly.setAirtime(tFly);
+			fly.setHopHeight(hopHeight);
 
 			segments.add(fly);
 
@@ -427,15 +417,21 @@ public class ChipBallTrajectory extends ABallTrajectory
 		}
 
 		IVector2 finalPos = getPosByVel(0).getXYVector();
-		return Lines.segmentFromPoints(locs.get(locs.size() - 1), finalPos);
+		return Lines.segmentFromPoints(locs.getLast(), finalPos);
 	}
 
 
 	@Override
-	public List<ILineSegment> getTravelLinesInterceptable()
+	public List<ILineSegment> getTravelLinesInterceptableByRobot()
+	{
+		return this.getTravelLinesInterceptableBelow(parameters.getMaxInterceptableHeight());
+	}
+
+
+	@Override
+	public List<ILineSegment> getTravelLinesInterceptableBelow(double maximumHeight)
 	{
 		final double g = G;
-		final double h = parameters.getMaxInterceptableHeight();
 		List<ILineSegment> lines = new ArrayList<>();
 		Vector3 posNow = Vector3.copy(kickPos.getXYZVector());
 		Vector3 velNow = Vector3.copy(kickVel);
@@ -447,12 +443,12 @@ public class ChipBallTrajectory extends ABallTrajectory
 		IVector2 p2 = getPosByTime(0).getXYVector();
 
 		// go through hops while max. height is above 150mm
-		while (((velNow.z() * velNow.z()) / (2.0 * g)) > h)
+		while (((velNow.z() * velNow.z()) / (2.0 * g)) > maximumHeight)
 		{
 			double vz = velNow.z();
 			double tFly = (2 * vz) / g;
 
-			t1 = -(SumatraMath.sqrt((vz * vz) - (2 * g * h)) - vz) / g;
+			t1 = -(SumatraMath.sqrt((vz * vz) - (2 * g * maximumHeight)) - vz) / g;
 
 			IVector2 p1 = posNow.addNew(velNow.multiplyNew(t1)).add(Vector3.fromXYZ(0, 0, -0.5 * g * t1 * t1))
 					.getXYVector();
@@ -462,7 +458,7 @@ public class ChipBallTrajectory extends ABallTrajectory
 				lines.add(Lines.segmentFromPoints(p2, p1));
 			}
 
-			t2 = (SumatraMath.sqrt((vz * vz) - (2 * g * h)) + vz) / g;
+			t2 = (SumatraMath.sqrt((vz * vz) - (2 * g * maximumHeight)) + vz) / g;
 
 			if ((tNow + t2) < 0)
 			{

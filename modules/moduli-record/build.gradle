@@ -4,16 +4,14 @@
 
 plugins {
     id 'sumatra.java'
+    id 'sumatra.test'
     id 'java-library'
 }
 
 dependencies {
-    implementation project(':sumatra-model')
     implementation project(':common')
+    implementation project(':sumatra-model')
     implementation project(':moduli-referee')
-
-    implementation(libs.com.github.TIGERs.mannheim.moduli)
-    implementation(libs.com.github.g3force.configurable)
 
     implementation(libs.org.apache.logging.log4j.log4j.api)
     implementation(libs.org.apache.logging.log4j.log4j.core)
@@ -22,5 +20,9 @@ dependencies {
     implementation(libs.commons.lang)
 
     implementation(libs.net.lingala.zip4j)
-    implementation(libs.com.sleepycat.je)
+
+    testImplementation(libs.org.projectlombok.lombok)
+    testAnnotationProcessor(libs.org.projectlombok.lombok)
+    testImplementation(libs.org.openjdk.jmh.jmh.core)
+    testAnnotationProcessor(libs.org.openjdk.jmh.jmh.generator.annprocess)
 }

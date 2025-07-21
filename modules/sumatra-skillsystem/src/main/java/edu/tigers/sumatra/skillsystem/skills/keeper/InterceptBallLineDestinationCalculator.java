@@ -14,8 +14,6 @@ import edu.tigers.sumatra.math.SumatraMath;
 import edu.tigers.sumatra.math.circle.Circle;
 import edu.tigers.sumatra.math.line.Lines;
 import edu.tigers.sumatra.math.vector.IVector2;
-import edu.tigers.sumatra.math.vector.Vector2f;
-import edu.tigers.sumatra.pathfinder.TrajectoryGenerator;
 import edu.tigers.sumatra.skillsystem.ESkillShapesLayer;
 
 import java.awt.Color;
@@ -75,20 +73,14 @@ public class InterceptBallLineDestinationCalculator extends AInterceptBallDestin
 
 
 	@Override
-	public IVector2 calcDestination()
+	public KeeperDestination calcDestination()
 	{
-		if (usePrimaryDirectionsIntercept)
-		{
-			getMoveConstraints().setPrimaryDirection(getBall().getVel());
-		} else
-		{
-			getMoveConstraints().setPrimaryDirection(Vector2f.ZERO_VECTOR);
-		}
 		var fallBackPoint = findPointOnBallTraj();
 		var bestPoint = findBestDestinationWithinPenArea(fallBackPoint);
 		bestPoint = adaptDestinationToChipKick(bestPoint);
 		bestPoint = moveInterceptDestinationInsideField(bestPoint);
-		return calcOverAcceleration(bestPoint);
+
+		return KeeperDestination.fromTimedDestination(getTBot(), bestPoint, getTargetTime(bestPoint));
 	}
 
 
@@ -110,16 +102,14 @@ public class InterceptBallLineDestinationCalculator extends AInterceptBallDestin
 	}
 
 
-	private IVector2 calcOverAcceleration(final IVector2 destination)
+	private double getTargetTime(final IVector2 destination)
 	{
-		final double targetTime;
 		if (Math.abs(destination.subtractNew(getBall().getPos()).getAngle()) > AngleMath.PI_HALF)
 		{
-			targetTime = getBall().getTrajectory().getTimeByPos(destination);
+			return getBall().getTrajectory().getTimeByPos(destination);
 		} else
 		{
-			targetTime = 0.0;
+			return 0.0;
 		}
-		return TrajectoryGenerator.generateVirtualPositionToReachPointInTime(getTBot(), destination, targetTime);
 	}
 }

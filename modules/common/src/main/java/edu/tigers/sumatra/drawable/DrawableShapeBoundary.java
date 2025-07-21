@@ -4,7 +4,6 @@
 
 package edu.tigers.sumatra.drawable;
 
-import com.sleepycat.persist.model.Persistent;
 import edu.tigers.sumatra.math.I2DShape;
 import edu.tigers.sumatra.math.IBoundedPath;
 import edu.tigers.sumatra.math.boundary.IShapeBoundary;
@@ -20,20 +19,9 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 
-@Persistent
 public class DrawableShapeBoundary extends ADrawableWithStroke
 {
 	private final List<IDrawableShape> drawables;
-
-
-	/**
-	 * For db only
-	 */
-	@SuppressWarnings("unused")
-	private DrawableShapeBoundary()
-	{
-		drawables = new ArrayList<>();
-	}
 
 
 	public DrawableShapeBoundary(I2DShape shape, Color color)
@@ -64,19 +52,13 @@ public class DrawableShapeBoundary extends ADrawableWithStroke
 
 	private IDrawableShape pathToDrawable(IBoundedPath path)
 	{
-		if (path instanceof ILineSegment segment)
+		return switch (path)
 		{
-			return new DrawableLine(segment);
-		} else if (path instanceof IArc arc)
-		{
-			return new DrawableArc(arc);
-		} else if (path instanceof ICircle circle)
-		{
-			return new DrawableCircle(circle);
-		} else
-		{
-			throw new NotImplementedException();
-		}
+			case ILineSegment segment -> new DrawableLine(segment);
+			case IArc arc -> new DrawableArc(arc);
+			case ICircle circle -> new DrawableCircle(circle);
+			case null, default -> throw new NotImplementedException();
+		};
 	}
 
 
@@ -103,6 +85,18 @@ public class DrawableShapeBoundary extends ADrawableWithStroke
 	public ADrawableWithStroke setStrokeWidth(double strokeWidth)
 	{
 		drawables.forEach(d -> d.setStrokeWidth(strokeWidth));
+		return this;
+	}
+
+
+	public DrawableShapeBoundary setArcType(int arcType)
+	{
+		drawables.forEach(d -> {
+			if (d instanceof DrawableArc arc)
+			{
+				arc.setArcType(arcType);
+			}
+		});
 		return this;
 	}
 }

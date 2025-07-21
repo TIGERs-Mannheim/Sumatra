@@ -9,13 +9,10 @@ plugins {
 }
 
 dependencies {
-    implementation project(':moduli-cam')
+    implementation project(':common')
     implementation project(':common-math')
     implementation project(':sumatra-model')
-    implementation project(':common')
-
-    implementation(libs.com.github.TIGERs.mannheim.moduli)
-    implementation(libs.com.github.g3force.configurable)
+    implementation project(':moduli-cam')
 
     implementation(libs.org.apache.logging.log4j.log4j.api)
 

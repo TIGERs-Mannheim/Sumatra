@@ -6,7 +6,7 @@ package edu.tigers.sumatra.math;
 
 
 import org.assertj.core.api.Assertions;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.within;
@@ -16,10 +16,10 @@ import static org.assertj.core.api.Assertions.within;
  * Test for AIMath functions
  * you may extend it as appropriate
  */
-public class SumatraMathTest
+class SumatraMathTest
 {
 	@Test
-	public void testHasDigitsAfterDecimal()
+	void testHasDigitsAfterDecimal()
 	{
 		assertThat(SumatraMath.hasDigitsAfterDecimalPoint(1.0f)).isFalse();
 		assertThat(SumatraMath.hasDigitsAfterDecimalPoint(1.22f)).isTrue();
@@ -29,7 +29,7 @@ public class SumatraMathTest
 
 
 	@Test
-	public void testIsBetween()
+	void testIsBetween()
 	{
 		assertThat(SumatraMath.isBetween(-2, -10, 0)).isTrue();
 		assertThat(SumatraMath.isBetween(5, -10, 10)).isTrue();
@@ -42,7 +42,7 @@ public class SumatraMathTest
 
 
 	@Test
-	public void testSqrt()
+	void testSqrt()
 	{
 		assertThat(SumatraMath.sqrt(0)).isCloseTo(Math.sqrt(0), Assertions.withinPercentage(0.1));
 		assertThat(SumatraMath.sqrt(1)).isCloseTo(Math.sqrt(1), Assertions.withinPercentage(0.1));
@@ -54,7 +54,7 @@ public class SumatraMathTest
 
 
 	@Test
-	public void testMin()
+	void testMin()
 	{
 		assertThat(SumatraMath.min(1)).isEqualTo(1.0);
 		assertThat(SumatraMath.min(1, 2)).isEqualTo(1.0);
@@ -67,7 +67,7 @@ public class SumatraMathTest
 
 
 	@Test
-	public void testMax()
+	void testMax()
 	{
 		assertThat(SumatraMath.max(1)).isEqualTo(1.0);
 		assertThat(SumatraMath.max(1, 2)).isEqualTo(2.0);
@@ -80,7 +80,7 @@ public class SumatraMathTest
 
 
 	@Test
-	public void testIsEqual()
+	void testIsEqual()
 	{
 		assertThat(SumatraMath.isEqual(1, 1)).isTrue();
 		assertThat(SumatraMath.isEqual(1, 2)).isFalse();
@@ -96,7 +96,7 @@ public class SumatraMathTest
 
 
 	@Test
-	public void testIsZero()
+	void testIsZero()
 	{
 		assertThat(SumatraMath.isZero(0.0)).isTrue();
 		assertThat(SumatraMath.isZero(1e-10)).isTrue();
@@ -108,7 +108,7 @@ public class SumatraMathTest
 
 
 	@Test
-	public void testRelative()
+	void testRelative()
 	{
 		assertThat(SumatraMath.relative(0.5, 0, 1)).isCloseTo(0.5, within(1e-10));
 		assertThat(SumatraMath.relative(0.0, 0, 1)).isCloseTo(0.0, within(1e-10));

@@ -3,15 +3,11 @@
  */
 package edu.tigers.sumatra.bot.params;
 
-import com.sleepycat.persist.model.Persistent;
-
-
 /**
  * Robot dimensions.
  * 
  * @author AndreR <andre@ryll.cc>
  */
-@Persistent
 public class BotDimensions implements IBotDimensions
 {
 	private double	center2DribblerDist	= 75.0;

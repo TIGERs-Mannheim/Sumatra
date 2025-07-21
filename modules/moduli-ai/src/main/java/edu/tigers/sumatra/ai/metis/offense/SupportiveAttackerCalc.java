@@ -7,11 +7,11 @@ package edu.tigers.sumatra.ai.metis.offense;
 import com.github.g3force.configurable.Configurable;
 import edu.tigers.sumatra.ai.metis.ACalculator;
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
-import edu.tigers.sumatra.ai.metis.general.ESkirmishStrategy;
-import edu.tigers.sumatra.ai.metis.general.SkirmishInformation;
 import edu.tigers.sumatra.ai.metis.pass.KickOrigin;
 import edu.tigers.sumatra.ai.metis.redirector.ERecommendedReceiverAction;
 import edu.tigers.sumatra.ai.metis.redirector.RedirectorDetectionInformation;
+import edu.tigers.sumatra.ai.metis.skirmish.ESkirmishStrategyType;
+import edu.tigers.sumatra.ai.metis.skirmish.SkirmishStrategy;
 import edu.tigers.sumatra.ai.pandora.roles.ERole;
 import edu.tigers.sumatra.drawable.DrawableAnnotation;
 import edu.tigers.sumatra.drawable.DrawableCircle;
@@ -26,6 +26,7 @@ import edu.tigers.sumatra.pathfinder.TrajectoryGenerator;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang.Validate;
 
 import java.awt.Color;
 import java.util.Collections;
@@ -33,8 +34,10 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 
 /**
@@ -70,30 +73,26 @@ public class SupportiveAttackerCalc extends ACalculator
 	@Configurable(defValue = "1500.0")
 	private static double marginAroundOurPenAreaToDeactivateSupportiveAttackers = 1500;
 
-	private List<IVector2> supportiveOpponentFinisherBlockPositionsLastFrame = Collections.emptyList();
-
-	private final Supplier<SkirmishInformation> skirmishInformation;
+	private final Supplier<SkirmishStrategy> skirmishStrategy;
 	private final Supplier<RedirectorDetectionInformation> redirectorDetectionInformation;
 	private final Supplier<Set<BotID>> potentialOffensiveBots;
 	private final Supplier<List<BotID>> ballHandlingBots;
-	private final Supplier<IVector2> supportiveAttackerPos;
 	private final Supplier<Set<BotID>> bestBallDefenderCandidates;
-	private final Supplier<IVector2> supportiveBlockerPos;
-	private final Supplier<List<IVector2>> supportiveOpponentFinisherBlockPositions;
 	private final Supplier<Map<BotID, KickOrigin>> kickOrigins;
+	private final Supplier<Optional<IVector2>> supportiveReceiveEarlyPos;
+	private final Supplier<IVector2> supportiveDefaultPos;
 
+	private List<IVector2> supportiveBullyPositions = Collections.emptyList();
 	@Getter
-	private List<BotID> supportiveAttackers;
+	private Map<BotID, IVector2> supportiveAttackers;
 
-	@Getter
-	private Map<BotID, IVector2> supportiveAttackerOpponentFinisherBlocker;
+	private Map<BotID, IVector2> lastSupportiveAttackerBullies;
 
 
 	@Override
 	protected void reset()
 	{
-		supportiveAttackers = Collections.emptyList();
-		supportiveAttackerOpponentFinisherBlocker = Collections.emptyMap();
+		supportiveAttackers = Collections.emptyMap();
 	}
 
 
@@ -107,33 +106,34 @@ public class SupportiveAttackerCalc extends ACalculator
 	@Override
 	public void doCalc()
 	{
-		var opponentFinisherBlocker = getFinisherBlockingSupportiveAttackers();
-		if (!opponentFinisherBlocker.isEmpty() && skirmishInformation.get().getStrategy() == ESkirmishStrategy.BLOCKING
-				&& enableOpponentFinisherBlocker)
-		{
-			supportiveAttackers = opponentFinisherBlocker.keySet().stream().toList();
-			supportiveAttackerOpponentFinisherBlocker = opponentFinisherBlocker;
-			return;
-		}
-		supportiveAttackerOpponentFinisherBlocker = Collections.emptyMap();
+		Map<BotID, IVector2> newSupportiveAttackerBullies = Map.of();
 
-		if (!shouldAddSupportiveAttacker())
+		if (skirmishStrategy.get().type() == ESkirmishStrategyType.BLOCKER_FOR_FINISHER)
 		{
-			supportiveAttackers = Collections.emptyList();
-			return;
-		}
-
-		if (supportiveBlockerPos.get() != null)
+			Validate.isTrue(skirmishStrategy.get().targetPositions().size() == 1);
+			supportiveAttackers = activateSingleSupportiveAttacker(skirmishStrategy.get().targetPositions().getFirst());
+		} else if (enableOpponentFinisherBlocker && Set.of(ESkirmishStrategyType.BULLY,
+				ESkirmishStrategyType.PREPARE_DEFENSIVE).contains(skirmishStrategy.get().type()))
 		{
-			supportiveAttackers = activateSingleSupportiveAttacker(supportiveBlockerPos.get());
-		} else if (skirmishInformation.get().getStrategy() != ESkirmishStrategy.NONE
-				|| (activateSupportiveInterceptor && redirectDetectionRequiresSupportiveAttacker()))
+			newSupportiveAttackerBullies = getBullySupportiveAttackers();
+			supportiveAttackers = newSupportiveAttackerBullies;
+		} else if (!getAiFrame().getGameState().isRunning() || isTooCloseToPenAreaForSupportiveAttacker())
 		{
-			supportiveAttackers = activateSingleSupportiveAttacker(supportiveAttackerPos.get());
+			supportiveAttackers = Collections.emptyMap();
+		} else if (skirmishStrategy.get().type() != ESkirmishStrategyType.NONE && skirmishStrategy.get().numRobots() > 0)
+		{
+			Validate.isTrue(skirmishStrategy.get().numRobots() == 1);
+			supportiveAttackers = activateSingleSupportiveAttacker(skirmishStrategy.get().targetPositions().getFirst());
+		} else if (activateSupportiveInterceptor && redirectDetectionRequiresSupportiveAttacker())
+		{
+			supportiveAttackers = activateSingleSupportiveAttacker(
+					supportiveReceiveEarlyPos.get().orElseGet(supportiveDefaultPos)
+			);
 		} else
 		{
-			supportiveAttackers = Collections.emptyList();
+			supportiveAttackers = Collections.emptyMap();
 		}
+		lastSupportiveAttackerBullies = newSupportiveAttackerBullies;
 	}
 
 
@@ -147,17 +147,16 @@ public class SupportiveAttackerCalc extends ACalculator
 	}
 
 
-	private List<BotID> activateSingleSupportiveAttacker(IVector2 supportPos)
+	private Map<BotID, IVector2> activateSingleSupportiveAttacker(IVector2 supportPos)
 	{
 		return potentialOffensiveBots.get().stream()
 				.filter(b -> generallyAllowedToUseASingleBallCandidate() || !bestBallDefenderCandidates.get().contains(b))
 				.filter(b -> !ballHandlingBots.get().contains(b))
 				.map(b -> getWFrame().getBot(b))
-				.min(Comparator.comparingDouble(
-						e -> getTotalTimeWithHyst(supportPos, e)))
+				.min(Comparator.comparingDouble(e -> getTotalTimeWithHyst(supportPos, e)))
 				.map(ITrackedBot::getBotId)
 				.stream()
-				.toList();
+				.collect(Collectors.toMap(botId -> botId, botID -> supportPos));
 	}
 
 
@@ -177,7 +176,7 @@ public class SupportiveAttackerCalc extends ACalculator
 	}
 
 
-	private Map<BotID, IVector2> getFinisherBlockingSupportiveAttackers()
+	private Map<BotID, IVector2> getBullySupportiveAttackers()
 	{
 		IVector2 ballPos = kickOrigins.get().values().stream().findFirst().map(KickOrigin::getPos)
 				.orElse(getBall().getPos());
@@ -192,16 +191,16 @@ public class SupportiveAttackerCalc extends ACalculator
 				.map(b -> getWFrame().getBot(b))
 				.toList();
 
-		int size = Math.min(supportiveOpponentFinisherBlockPositionsLastFrame.size(),
-				supportiveOpponentFinisherBlockPositions.get().size());
+		int size = Math.min(supportiveBullyPositions.size(),
+				skirmishStrategy.get().targetPositions().size());
 
 		Map<BotID, Integer> botIdToBlockerPositionIndex = new HashMap<>();
 		for (int i = 0; i < size; i++)
 		{
 			// we match old and new point by ID in the list, this works since the list is ordered and
 			// always created with the same pattern
-			var oldPos = supportiveOpponentFinisherBlockPositionsLastFrame.get(i);
-			var newPos = supportiveOpponentFinisherBlockPositions.get().get(i);
+			var oldPos = supportiveBullyPositions.get(i);
+			var newPos = skirmishStrategy.get().targetPositions().get(i);
 
 			getShapes(EAiShapesLayer.OFFENSE_SUPPORTIVE_FINISHER_BLOCK).add(
 					new DrawableCircle(Circle.createCircle(oldPos, 80))
@@ -220,7 +219,7 @@ public class SupportiveAttackerCalc extends ACalculator
 			if (oldPos.distanceTo(newPos) < Geometry.getBotRadius() * 2)
 			{
 				// we fetch the old bot ID that fits the old position
-				var oldEntryCandidate = supportiveAttackerOpponentFinisherBlocker.entrySet().stream()
+				var oldEntryCandidate = lastSupportiveAttackerBullies.entrySet().stream()
 						.min(Comparator.comparingDouble(e -> e.getValue().distanceTo(oldPos)));
 
 				// we store the botID with its index in the new list
@@ -229,11 +228,11 @@ public class SupportiveAttackerCalc extends ACalculator
 			}
 		}
 
-		Map<BotID, IVector2> supportiveFinisherBlockerMap = new HashMap<>();
-		for (int i = 0; i < supportiveOpponentFinisherBlockPositions.get().size(); i++)
+		Map<BotID, IVector2> supportiveBullyMap = new HashMap<>();
+		for (int i = 0; i < skirmishStrategy.get().targetPositions().size(); i++)
 		{
-			var supportPos = supportiveOpponentFinisherBlockPositions.get().get(i);
-			if (singleAvailableBallCandidateUsedUp(supportiveFinisherBlockerMap))
+			var supportPos = skirmishStrategy.get().targetPositions().get(i);
+			if (singleAvailableBallCandidateUsedUp(supportiveBullyMap))
 			{
 				consideredBots = consideredBots.stream()
 						.filter(bot -> !bestBallDefenderCandidates.get().contains(bot.getBotId()))
@@ -248,15 +247,15 @@ public class SupportiveAttackerCalc extends ACalculator
 
 			consideredBots
 					.stream()
-					.filter(e -> !supportiveFinisherBlockerMap.containsKey(e.getBotId()))
+					.filter(e -> !supportiveBullyMap.containsKey(e.getBotId()))
 					.min(Comparator.comparingDouble(
 							bot -> getDistWithHyst(supportPos, bot,
 									bot.getBotId() == botLastFrameAssignedToCurrentPosition.orElse(null))))
-					.ifPresent(e -> supportiveFinisherBlockerMap.put(e.getBotId(), supportPos));
+					.ifPresent(e -> supportiveBullyMap.put(e.getBotId(), supportPos));
 		}
 
-		supportiveOpponentFinisherBlockPositionsLastFrame = supportiveOpponentFinisherBlockPositions.get();
-		return supportiveFinisherBlockerMap;
+		supportiveBullyPositions = skirmishStrategy.get().targetPositions();
+		return supportiveBullyMap;
 	}
 
 
@@ -280,7 +279,7 @@ public class SupportiveAttackerCalc extends ACalculator
 	private double getDistWithHyst(IVector2 supportPos, ITrackedBot bot, boolean applyAdditionalPosHyst)
 	{
 		double hyst = 0;
-		if (this.supportiveAttackerOpponentFinisherBlocker.containsKey(bot.getBotId()))
+		if (this.lastSupportiveAttackerBullies.containsKey(bot.getBotId()))
 		{
 			hyst = opponentFinisherBlockerSelectionHystBot;
 		}
@@ -301,12 +300,11 @@ public class SupportiveAttackerCalc extends ACalculator
 	}
 
 
-	private boolean shouldAddSupportiveAttacker()
+	private boolean isTooCloseToPenAreaForSupportiveAttacker()
 	{
-		return getAiFrame().getGameState().isRunning()
-				&& !(Geometry.getPenaltyAreaOur().withMargin(marginAroundOurPenAreaToDeactivateSupportiveAttackers)
+		return (Geometry.getPenaltyAreaOur().withMargin(marginAroundOurPenAreaToDeactivateSupportiveAttackers)
 				.isPointInShape(getBall().getPos()))
-				&& !Geometry.getPenaltyAreaTheir().withMargin(marginOpponentPenAreaToDeactivateSupportiveAttacker)
+				|| Geometry.getPenaltyAreaTheir().withMargin(marginOpponentPenAreaToDeactivateSupportiveAttacker)
 				.isPointInShape(getBall().getPos());
 	}
 }

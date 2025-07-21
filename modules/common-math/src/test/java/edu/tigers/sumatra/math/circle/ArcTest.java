@@ -10,7 +10,7 @@ import edu.tigers.sumatra.math.IBoundedPathComplianceChecker;
 import edu.tigers.sumatra.math.line.Lines;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.math.vector.Vector2f;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.List;
 

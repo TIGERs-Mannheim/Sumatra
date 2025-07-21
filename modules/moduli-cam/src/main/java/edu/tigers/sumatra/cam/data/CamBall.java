@@ -3,23 +3,20 @@
  */
 package edu.tigers.sumatra.cam.data;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import com.sleepycat.persist.model.Persistent;
-
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.IVector3;
 import edu.tigers.sumatra.math.vector.Vector3;
 import edu.tigers.sumatra.math.vector.Vector3f;
+import lombok.Getter;
+
+import java.util.ArrayList;
+import java.util.List;
 
 
 /**
  * Simple data holder; internal data structure for the protobuf-protocol, coming from the SSL-Vision.
- *
- * @author Gero
  */
-@Persistent
+@Getter
 public class CamBall extends ACamObject
 {
 	private final int area;
@@ -30,9 +27,6 @@ public class CamBall extends ACamObject
 	private final IVector3 pos;
 
 
-	/**
-	 * @author Nicolai Ommer <nicolai.ommer@gmail.com>
-	 */
 	public CamBall()
 	{
 		super();
@@ -41,53 +35,20 @@ public class CamBall extends ACamObject
 	}
 
 
-	/**
-	 * <p>
-	 * <i>Implemented being aware of EJSE Item 2; but we prefer performance over readability - at least in this case.
-	 * Objects are created at only one point in the system, but needs to be fast (so builder seems to be too much
-	 * overhead).</i>
-	 * </p>
-	 *
-	 * @param confidence
-	 * @param area
-	 * @param pos
-	 * @param pixel
-	 * @param tCapture
-	 * @param camId
-	 * @param frameId
-	 */
-	public CamBall(final double confidence, final int area, final IVector3 pos,
-			final IVector2 pixel, final long tCapture, final Long tCaptureCamera, final long tSent, final int camId,
-			final long frameId)
+	public CamBall(
+			double confidence, int area, IVector3 pos,
+			IVector2 pixel, long tCapture, int camId, long globalFrameId
+	)
 	{
-		super(confidence, pixel, tCapture, tCaptureCamera, tSent, camId, frameId);
+		super(confidence, pixel, tCapture, camId, globalFrameId);
 		this.area = area;
 		this.pos = pos;
 	}
 
 
-	/**
-	 * @param newCamBall
-	 */
 	public CamBall(final CamBall newCamBall)
 	{
 		super(newCamBall);
-		area = newCamBall.getArea();
-		pos = Vector3.copy(newCamBall.getPos());
-	}
-
-
-	/**
-	 * New CamBall with adjusted tCapture.
-	 *
-	 * @param newCamBall
-	 * @param tCapture
-	 */
-	public CamBall(final CamBall newCamBall, final long tCapture)
-	{
-		super(newCamBall.getConfidence(), newCamBall.getPixel(), tCapture, newCamBall.getTCaptureCamera(),
-				newCamBall.getTSent(), newCamBall.getCameraId(),
-				newCamBall.getFrameId());
 		area = newCamBall.getArea();
 		pos = Vector3.copy(newCamBall.getPos());
 	}
@@ -116,27 +77,11 @@ public class CamBall extends ACamObject
 		builder.append(getPixel().x());
 		builder.append(", pixelY=");
 		builder.append(getPixel().y());
-		builder.append(", tCameraCapture=");
-		builder.append(getTCaptureCamera());
-		builder.append(", tSent=");
-		builder.append(getTSent());
 		builder.append("]");
 		return builder.toString();
 	}
 
 
-	/**
-	 * @return the area
-	 */
-	public int getArea()
-	{
-		return area;
-	}
-
-
-	/**
-	 * @return the pos
-	 */
 	@Override
 	public IVector3 getPos()
 	{

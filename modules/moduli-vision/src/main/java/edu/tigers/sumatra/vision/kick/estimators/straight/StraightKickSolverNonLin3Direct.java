@@ -51,7 +51,7 @@ public class StraightKickSolverNonLin3Direct implements IKickSolver
 	@SuppressWarnings("squid:S1166") // Exception from solver not logged
 	public Optional<KickSolverResult> solve(final List<CamBall> records)
 	{
-		final long tZero = records.get(0).gettCapture();
+		final long tZero = records.get(0).getTimestamp();
 
 		List<IVector2> groundPos = records.stream()
 				.map(CamBall::getFlatPos)
@@ -127,7 +127,7 @@ public class StraightKickSolverNonLin3Direct implements IKickSolver
 		@Override
 		public double value(final double[] point)
 		{
-			final long tZero = records.get(0).getCameraCaptureTimestamp();
+			final long tZero = records.get(0).getTimestamp();
 			final IVector2 kickPos = Vector2.fromXY(point[0], point[1]);
 			final IVector2 kickVel = kickDir.scaleToNew(point[2]);
 
@@ -137,7 +137,7 @@ public class StraightKickSolverNonLin3Direct implements IKickSolver
 			double error = 0;
 			for (CamBall ball : records)
 			{
-				IVector2 modelPos = traj.getMilliStateAtTime((ball.getCameraCaptureTimestamp() - tZero) * 1e-9).getPos()
+				IVector2 modelPos = traj.getMilliStateAtTime((ball.getTimestamp() - tZero) * 1e-9).getPos()
 						.getXYVector();
 
 				error += modelPos.distanceTo(ball.getFlatPos());

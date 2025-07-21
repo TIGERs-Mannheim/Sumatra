@@ -95,6 +95,8 @@ public class DefensePenAreaTargetGroupAssignerCalc extends ACalculator
 						secondClassAssignments.stream())
 				.reduce(Stream::concat).orElseGet(Stream::empty)
 				.toList();
+
+		Validate.isTrue(penAreaPositionAssignments.size() == penAreaDefenders.get().size());
 	}
 
 
@@ -171,12 +173,9 @@ public class DefensePenAreaTargetGroupAssignerCalc extends ACalculator
 	private List<DefensePenAreaTargetGroup> getSecondClassTargetGroups(
 			List<DefensePenAreaTargetGroup> firstClassTargetGroups)
 	{
-		var protectedPriorities = firstClassTargetGroups.stream()
-				.map(DefensePenAreaTargetGroup::priority)
-				.collect(Collectors.toUnmodifiableSet());
 		return targetGroups.get().stream()
 				.filter(tg -> !isBallTargetGroup(tg))
-				.filter(tg -> !protectedPriorities.contains(tg.priority()))
+				.filter(tg -> !firstClassTargetGroups.contains(tg))
 				.toList();
 	}
 

@@ -136,7 +136,8 @@ public class DefenseThreatAssignmentSeparationCalc extends ACalculator
 
 	private boolean defenderNeedsTransitionViaPenAreGroup(final DefenseThreatAssignment assignment, final BotID botID)
 	{
-		if (assignment.getThreat().getType() == EDefenseThreatType.BOT_M2M)
+		if (assignment.getThreat().getType() == EDefenseThreatType.BOT_M2M
+				|| assignment.getThreat().getType() == EDefenseThreatType.BALL)
 		{
 			return false;
 		}

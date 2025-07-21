@@ -52,8 +52,8 @@ public class VelocityValidator implements IKickValidator
 			{
 				CamBall bPrev = group.get(i - 1).getLatestCamBall().orElseThrow(IllegalStateException::new);
 				CamBall bNow = group.get(i).getLatestCamBall().orElseThrow(IllegalStateException::new);
-				long tPrev = bPrev.gettCapture();
-				long tNow = bNow.gettCapture();
+				long tPrev = bPrev.getTimestamp();
+				long tNow = bNow.getTimestamp();
 				IVector2 prev = bPrev.getFlatPos();
 				IVector2 now = bNow.getFlatPos();
 

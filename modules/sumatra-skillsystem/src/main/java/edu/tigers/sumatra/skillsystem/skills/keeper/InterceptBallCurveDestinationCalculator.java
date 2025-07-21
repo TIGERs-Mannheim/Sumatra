@@ -13,7 +13,6 @@ import edu.tigers.sumatra.math.AngleMath;
 import edu.tigers.sumatra.math.SumatraMath;
 import edu.tigers.sumatra.math.circle.Circle;
 import edu.tigers.sumatra.math.vector.IVector2;
-import edu.tigers.sumatra.pathfinder.TrajectoryGenerator;
 import edu.tigers.sumatra.skillsystem.ESkillShapesLayer;
 
 import java.awt.Color;
@@ -85,13 +84,13 @@ public class InterceptBallCurveDestinationCalculator extends AInterceptBallDesti
 
 
 	@Override
-	public IVector2 calcDestination()
+	public KeeperDestination calcDestination()
 	{
 		var fallBackPoint = findPointOnBallTraj();
 		var bestPoint = findBestDestinationWithinPenArea(fallBackPoint);
 		bestPoint = adaptDestinationToChipKick(bestPoint);
 		bestPoint = moveInterceptDestinationInsideField(bestPoint);
-		return calcOverAcceleration(bestPoint);
+		return KeeperDestination.fromTimedDestination(getTBot(), bestPoint.pos, getTargetTime(bestPoint));
 	}
 
 
@@ -121,23 +120,21 @@ public class InterceptBallCurveDestinationCalculator extends AInterceptBallDesti
 	}
 
 
-	private IVector2 calcOverAcceleration(final TimedPos timedPos)
+	private double getTargetTime(final TimedPos timedPos)
 	{
-		double targetTime;
 		if (timedPos.time.isPresent())
 		{
-			targetTime = timedPos.time.get();
+			return timedPos.time.get();
 		} else
 		{
 			if (Math.abs(timedPos.pos.subtractNew(getBall().getPos()).getAngle()) > AngleMath.PI_HALF)
 			{
-				targetTime = getBall().getTrajectory().getTimeByPos(timedPos.pos);
+				return getBall().getTrajectory().getTimeByPos(timedPos.pos);
 			} else
 			{
-				targetTime = 0.0;
+				return 0.0;
 			}
 		}
-		return TrajectoryGenerator.generateVirtualPositionToReachPointInTime(getTBot(), timedPos.pos, targetTime);
 	}
 
 

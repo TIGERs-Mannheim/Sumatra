@@ -4,7 +4,6 @@
 
 package edu.tigers.sumatra.math.line;
 
-import com.sleepycat.persist.model.Persistent;
 import edu.tigers.sumatra.math.circle.IArc;
 import edu.tigers.sumatra.math.circle.ICircle;
 import edu.tigers.sumatra.math.intersections.IIntersections;
@@ -20,10 +19,7 @@ import java.util.stream.Stream;
 
 /**
  * Implementation of the {@link ILineSegment} interface. It provides a factory method to create new instances.
- *
- * @author Lukas Magel
  */
-@Persistent
 final class LineSegment extends ALine implements ILineSegment
 {
 	private final Vector2f start;
@@ -34,18 +30,6 @@ final class LineSegment extends ALine implements ILineSegment
 	 * this field is calculated on demand
 	 */
 	private transient IVector2 directionVector;
-
-
-	/**
-	 * Used by berkely
-	 */
-	@SuppressWarnings("unused")
-	private LineSegment()
-	{
-		start = Vector2f.ZERO_VECTOR;
-		end = Vector2f.ZERO_VECTOR;
-		valid = false;
-	}
 
 
 	private LineSegment(final IVector2 start, final IVector2 end)

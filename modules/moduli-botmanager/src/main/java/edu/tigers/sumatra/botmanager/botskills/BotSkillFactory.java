@@ -5,8 +5,7 @@ package edu.tigers.sumatra.botmanager.botskills;
 
 import edu.tigers.sumatra.botmanager.serial.SerialDescription;
 import edu.tigers.sumatra.botmanager.serial.SerialException;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import lombok.extern.log4j.Log4j2;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -14,14 +13,11 @@ import java.util.Optional;
 
 
 /**
- * Create bot skills
- *
- * @author andre
+ * Create bot skills.
  */
+@Log4j2
 public final class BotSkillFactory
 {
-	private static final Logger log = LogManager.getLogger(BotSkillFactory.class.getName());
-
 	private static final int MAX_SKILL_DATA_SIZE = 16;
 
 	private static BotSkillFactory instance = null;
@@ -31,6 +27,10 @@ public final class BotSkillFactory
 
 	private BotSkillFactory()
 	{
+		for (EBotSkill esk : EBotSkill.values())
+		{
+			getSerialDescription(esk).ifPresent(d -> skills.put(esk.getId(), d));
+		}
 	}
 
 
@@ -49,20 +49,6 @@ public final class BotSkillFactory
 	}
 
 
-	/**
-	 * Call once per application lifetime to parse all commands.
-	 */
-	public void loadSkills()
-	{
-		skills.clear();
-
-		for (EBotSkill esk : EBotSkill.values())
-		{
-			getSerialDescription(esk).ifPresent(d -> skills.put(esk.getId(), d));
-		}
-	}
-
-
 	private Optional<SerialDescription> getSerialDescription(final EBotSkill esk)
 	{
 		SerialDescription desc;
@@ -74,7 +60,7 @@ public final class BotSkillFactory
 			desc.decode(desc.encode(desc.newInstance()));
 		} catch (SerialException err)
 		{
-			log.error("Could not load bot skill: " + esk, err);
+			log.error("Could not load bot skill: {}", esk, err);
 			return Optional.empty();
 		}
 
@@ -84,24 +70,23 @@ public final class BotSkillFactory
 			ask = (ABotSkill) desc.newInstance();
 		} catch (SerialException err)
 		{
-			log.error("Could not create instance of: " + esk, err);
+			log.error("Could not create instance of: {}", esk, err);
 			return Optional.empty();
 		} catch (ClassCastException err)
 		{
-			log.error(esk + " is not based on ABotSkill!", err);
+			log.error("{} is not based on ABotSkill!", esk, err);
 			return Optional.empty();
 		}
 
 		if (ask.getType().getId() != esk.getId())
 		{
-			log.error("EBotSkill id mismatch in bot skill: " + esk + ". The bot skill does not use the correct enum.");
+			log.error("EBotSkill id mismatch in bot skill: {}. The bot skill does not use the correct enum.", esk);
 			return Optional.empty();
 		}
 
 		if (skills.get(esk.getId()) != null)
 		{
-			log.error(esk + "'s skill code is already defined by: "
-					+ skills.get(esk.getId()).getClass().getName());
+			log.error("{}'s skill code is already defined by: {}", esk, skills.get(esk.getId()).getClass().getName());
 			return Optional.empty();
 		}
 		return Optional.of(desc);
@@ -119,7 +104,7 @@ public final class BotSkillFactory
 	{
 		if (!skills.containsKey(skillId))
 		{
-			log.warn("Unknown skill: " + skillId + ", length: " + data.length);
+			log.warn("Unknown skill: {}, length: {}", skillId, data.length);
 			return null;
 		}
 
@@ -132,7 +117,7 @@ public final class BotSkillFactory
 			ask = (ABotSkill) skillDesc.decode(data);
 		} catch (SerialException err)
 		{
-			log.error("Could not parse cmd: " + skillId, err);
+			log.error("Could not parse cmd: {}", skillId, err);
 			return null;
 		}
 
@@ -152,7 +137,7 @@ public final class BotSkillFactory
 
 		if (!skills.containsKey(skillId))
 		{
-			log.error("No description for skill: " + skillId);
+			log.error("No description for skill: {}", skillId);
 			return new byte[0];
 		}
 
@@ -164,13 +149,13 @@ public final class BotSkillFactory
 			skillData = skillDesc.encode(skill);
 		} catch (SerialException err)
 		{
-			log.error("Could not encode skill: " + skillId, err);
+			log.error("Could not encode skill: {}", skillId, err);
 			return new byte[0];
 		}
 
 		if (skillData.length > MAX_SKILL_DATA_SIZE)
 		{
-			log.error("Skill " + skill.getType() + " exceeds data usage limit of " + MAX_SKILL_DATA_SIZE);
+			log.error("Skill {} exceeds data usage limit of " + MAX_SKILL_DATA_SIZE, skill.getType());
 			return new byte[0];
 		}
 
@@ -189,7 +174,7 @@ public final class BotSkillFactory
 
 		if (!skills.containsKey(skillId))
 		{
-			log.error("No description for skill: " + skillId);
+			log.error("No description for skill: {}", skillId);
 			return 0;
 		}
 
@@ -200,7 +185,7 @@ public final class BotSkillFactory
 			length = skillDesc.getLength(skill);
 		} catch (SerialException err)
 		{
-			log.error("Could not get length of: " + skill.getType(), err);
+			log.error("Could not get length of: {}", skill.getType(), err);
 			return 0;
 		}
 

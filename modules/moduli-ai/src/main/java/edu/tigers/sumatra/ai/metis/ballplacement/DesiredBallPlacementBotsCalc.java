@@ -6,106 +6,59 @@ package edu.tigers.sumatra.ai.metis.ballplacement;
 import edu.tigers.sumatra.ai.metis.general.ADesiredBotCalc;
 import edu.tigers.sumatra.ai.pandora.plays.EPlay;
 import edu.tigers.sumatra.ids.BotID;
-import edu.tigers.sumatra.math.vector.IVector2;
-import edu.tigers.sumatra.math.vector.Vector2;
+import lombok.extern.log4j.Log4j2;
 
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 
 /**
  * Select the desired bots for ball placement.
  */
+@Log4j2
 public class DesiredBallPlacementBotsCalc extends ADesiredBotCalc
 {
 	private final Supplier<Map<EPlay, Integer>> playNumbers;
-
-	private Set<BotID> lastDesiredBots;
+	private final Supplier<List<BotID>> preferredBotsSupplier;
 
 
 	public DesiredBallPlacementBotsCalc(
 			Supplier<Map<EPlay, Set<BotID>>> desiredBotMap,
-			Supplier<Map<EPlay, Integer>> playNumbers)
+			Supplier<Map<EPlay, Integer>> playNumbers,
+			Supplier<List<BotID>> preferredBotsSupplier
+	)
 	{
 		super(desiredBotMap);
 		this.playNumbers = playNumbers;
+		this.preferredBotsSupplier = preferredBotsSupplier;
 	}
 
 
 	@Override
 	public boolean isCalculationNecessary()
 	{
-		return getAiFrame().getGameState().isBallPlacementForUs();
-	}
-
-
-	@Override
-	protected void reset()
-	{
-		lastDesiredBots = Collections.emptySet();
+		return !playNumbers.get().isEmpty() && getAiFrame().getGameState().isBallPlacementForUs();
 	}
 
 
 	@Override
 	public void doCalc()
 	{
-		lastDesiredBots = getDesiredBots();
-		addDesiredBots(EPlay.BALL_PLACEMENT, lastDesiredBots);
-	}
-
-
-	private IVector2 getPlacementPos()
-	{
-		return Optional.ofNullable(getAiFrame().getGameState().getBallPlacementPositionForUs()).orElse(Vector2.zero());
+		addDesiredBots(EPlay.BALL_PLACEMENT, getDesiredBots());
 	}
 
 
 	private Set<BotID> getDesiredBots()
 	{
-		final Set<BotID> newDesiredBots = calcNewDesiredBots();
-		if (lastDesiredBots.stream().anyMatch(b -> !isAssignable(b))
-				|| lastDesiredBots.size() != newDesiredBots.size())
-		{
-			return newDesiredBots;
-		}
-		return lastDesiredBots;
-	}
+		var bots = new ArrayList<>(preferredBotsSupplier.get());
+		bots.removeIf(id -> !this.isAssignable(id));
 
-
-	private Set<BotID> calcNewDesiredBots()
-	{
-		Set<BotID> desiredBots = new HashSet<>();
-
-		if (playNumbers.get().isEmpty())
-		{
-			return Collections.emptySet();
-		}
-
-		List<BotID> availableBots = new ArrayList<>(getUnassignedBots());
-
-		IVector2 botTargetPos = getBall().getTrajectory().closestPointTo(getPlacementPos());
-		getUnassignedBots().stream()
-				.min(Comparator.comparing(b -> getWFrame().getBot(b).getPos().distanceTo(botTargetPos)))
-				.ifPresent(b -> {
-					desiredBots.add(b);
-					availableBots.remove(b);
-				});
-
-		if (playNumbers.get().get(EPlay.BALL_PLACEMENT) == 1)
-		{
-			return desiredBots;
-		}
-
-		availableBots.stream()
-				.min(Comparator.comparingDouble(b -> getWFrame().getBot(b).getPos().distanceTo(getPlacementPos())))
-				.ifPresent(desiredBots::add);
-		return desiredBots;
+		return bots.stream()
+				.limit(playNumbers.get().get(EPlay.BALL_PLACEMENT))
+				.collect(Collectors.toSet());
 	}
 }

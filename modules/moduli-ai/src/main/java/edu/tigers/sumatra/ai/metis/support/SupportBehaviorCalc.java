@@ -10,6 +10,7 @@ import edu.tigers.sumatra.ai.metis.ballpossession.BallPossession;
 import edu.tigers.sumatra.ai.metis.defense.data.DefenseBallThreat;
 import edu.tigers.sumatra.ai.metis.defense.data.DefenseBotThreat;
 import edu.tigers.sumatra.ai.metis.kicking.OngoingPass;
+import edu.tigers.sumatra.ai.metis.kicking.Pass;
 import edu.tigers.sumatra.ai.metis.offense.action.RatedOffensiveAction;
 import edu.tigers.sumatra.ai.metis.offense.strategy.OffensiveStrategy;
 import edu.tigers.sumatra.ai.metis.pass.KickOrigin;
@@ -20,6 +21,7 @@ import edu.tigers.sumatra.ai.metis.support.behaviors.ESupportBehavior;
 import edu.tigers.sumatra.ai.metis.support.behaviors.FakePassReceiverSupportBehavior;
 import edu.tigers.sumatra.ai.metis.support.behaviors.ISupportBehavior;
 import edu.tigers.sumatra.ai.metis.support.behaviors.KickoffSupportBehavior;
+import edu.tigers.sumatra.ai.metis.support.behaviors.PassReceiverBehavior;
 import edu.tigers.sumatra.ai.metis.support.behaviors.PenaltyAreaAttackerBehavior;
 import edu.tigers.sumatra.ai.metis.support.behaviors.SupportBehaviorPosition;
 import edu.tigers.sumatra.ai.metis.support.behaviors.repulsive.AttackerRepulsiveBehavior;
@@ -62,12 +64,13 @@ public class SupportBehaviorCalc extends ACalculator
 	private final Supplier<List<IVector2>> possibleSupporterKickoffPositions;
 	private final Supplier<Map<BotID, RatedOffensiveAction>> offensiveActions;
 	private final Supplier<Map<BotID, KickOrigin>> kickOrigins;
-	private final Supplier<GoalKick> bestGoalKick;
+	private final Supplier<Map<BotID, GoalKick>> bestGoalKickPerBot;
 	private final Supplier<List<IArc>> offensiveShadows;
 	private final Supplier<Optional<OngoingPass>> ongoingPass;
 	private final Supplier<Map<BotID, DefenseBotThreat>> supporterToBotThreatMapping;
 	private final Supplier<Optional<Boolean>> canOngoingPassBeTrusted;
 	private final Supplier<DefenseBallThreat> defenseBallThreat;
+	private final Supplier<Map<BotID, Pass>> supportPassReceivers;
 
 
 	@Getter
@@ -88,6 +91,7 @@ public class SupportBehaviorCalc extends ACalculator
 	@Override
 	protected void start()
 	{
+		behaviors.put(ESupportBehavior.PASS_RECEIVER, new PassReceiverBehavior(supportPassReceivers));
 		behaviors.put(ESupportBehavior.DIRECT_REDIRECTOR, new DirectRedirectorSupportBehavior(
 				kickOrigins,
 				supportiveGoalPositions
@@ -97,10 +101,17 @@ public class SupportBehaviorCalc extends ACalculator
 				ongoingPass,
 				canOngoingPassBeTrusted
 		));
+		behaviors.put(
+				ESupportBehavior.MAN_2_MAN_MARKING, new AggressiveMan2ManMarkerBehavior(
+						ballPossession,
+						supporterToBotThreatMapping,
+						defenseBallThreat
+				)
+		);
 		behaviors.put(ESupportBehavior.PENALTY_AREA_ATTACKER, new PenaltyAreaAttackerBehavior(
 				offensiveStrategy,
 				kickOrigins,
-				bestGoalKick,
+				bestGoalKickPerBot,
 				ballPossession
 		));
 		behaviors.put(ESupportBehavior.BREAKTHROUGH_DEFENSIVE, new BreakThroughDefenseBehavior());
@@ -111,11 +122,6 @@ public class SupportBehaviorCalc extends ACalculator
 		));
 		behaviors.put(ESupportBehavior.KICKOFF,
 				new KickoffSupportBehavior(possibleSupporterKickoffPositions));
-		behaviors.put(ESupportBehavior.MAN_2_MAN_MARKING, new AggressiveMan2ManMarkerBehavior(
-				ballPossession,
-				supporterToBotThreatMapping,
-				defenseBallThreat
-		));
 		behaviors.put(ESupportBehavior.REPULSIVE_PASS_RECEIVER, new PassReceiverRepulsiveBehavior(
 				desiredBots,
 				offensiveActions,

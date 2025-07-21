@@ -3,19 +3,19 @@
  */
 package edu.tigers.sumatra.botmanager;
 
-import edu.tigers.sumatra.botmanager.bots.ITigerBotObserver;
+import edu.tigers.sumatra.botmanager.basestation.BotCommand;
+import edu.tigers.sumatra.botmanager.bots.ABot;
 import edu.tigers.sumatra.botmanager.bots.TigerBot;
 import edu.tigers.sumatra.botmanager.botskills.EDataAcquisitionMode;
 import edu.tigers.sumatra.botmanager.commands.ACommand;
 import edu.tigers.sumatra.botmanager.commands.tigerv2.TigerSystemConsoleCommand;
+import edu.tigers.sumatra.botmanager.commands.tigerv2.TigerSystemConsoleCommand.ConsoleCommandTarget;
 import edu.tigers.sumatra.botmanager.commands.tigerv2.TigerSystemMatchFeedback;
 import edu.tigers.sumatra.botmanager.commands.tigerv3.TigerDataAcqBotModel;
 import edu.tigers.sumatra.botmanager.commands.tigerv3.TigerDataAcqBotModelV2;
 import edu.tigers.sumatra.botmanager.commands.tigerv3.TigerDataAcqDelays;
 import edu.tigers.sumatra.botmanager.commands.tigerv3.TigerDataAcqMotorModel;
 import edu.tigers.sumatra.botmanager.commands.tigerv3.TigerDataAcqSetMode;
-import edu.tigers.sumatra.botmanager.commands.tigerv3.TigerDataAcqVelocity;
-import edu.tigers.sumatra.botparams.EBotParamLabel;
 import edu.tigers.sumatra.data.collector.ITimeSeriesDataCollectorObserver;
 import edu.tigers.sumatra.data.collector.TimeSeriesDataCollector;
 import edu.tigers.sumatra.export.CSVExporter;
@@ -36,14 +36,13 @@ import java.util.Optional;
 /**
  * Capture data from a {@link TigerBot} and export it to CSV files
  */
-public class BotWatcher implements ITigerBotObserver
+public class BotWatcher
 {
 	private final BotID botId;
 	private final EDataAcquisitionMode acqMode;
 	private final String id;
-	private CSVExporter exporter = null;
-	private long frameId = 0;
-	private boolean dataReceived = false;
+	private CSVExporter exporter;
+	private long frameId;
 	private TimeSeriesDataCollector dataCollector;
 	private ITimeSeriesDataCollectorObserver timeSeriesDataCollectorObserver;
 
@@ -71,13 +70,14 @@ public class BotWatcher implements ITigerBotObserver
 		String fullId = dateStr + "_" + id;
 
 		SumatraModel.getInstance().getModuleOpt(TigersBotManager.class)
-				.flatMap(b -> b.getTigerBot(botId))
-				.ifPresent(bot -> {
-					final TigerSystemConsoleCommand logFileCmd = new TigerSystemConsoleCommand(
-							TigerSystemConsoleCommand.ConsoleCommandTarget.MAIN, "logfile " + fullId);
-					bot.execute(logFileCmd);
-					bot.execute(new TigerDataAcqSetMode(acqMode));
-					bot.getBaseStation().activateDataBurstMode();
+				.ifPresent(mgr -> {
+					mgr.getBot(botId).ifPresent(b -> {
+						var logFileCmd = new TigerSystemConsoleCommand(ConsoleCommandTarget.MAIN, "logfile " + fullId);
+						b.sendCommand(logFileCmd);
+						b.sendCommand(new TigerDataAcqSetMode(acqMode).setReliable(true));
+					});
+					mgr.getBaseStation().activateDataBurstMode();
+					mgr.getOnIncomingBotCommand().subscribe(getClass().getCanonicalName(), this::onIncomingBotCommand);
 				});
 
 		switch (acqMode)
@@ -107,10 +107,6 @@ public class BotWatcher implements ITigerBotObserver
 		dataCollector.setTimeout(600);
 		Optional.ofNullable(timeSeriesDataCollectorObserver).ifPresent(dataCollector::addObserver);
 		dataCollector.start();
-
-		dataReceived = false;
-
-		SumatraModel.getInstance().getModuleOpt(TigersBotManager.class).ifPresent(b -> b.addBotObserver(this));
 	}
 
 
@@ -120,18 +116,15 @@ public class BotWatcher implements ITigerBotObserver
 	public void stop()
 	{
 		SumatraModel.getInstance().getModuleOpt(TigersBotManager.class)
-				.flatMap(b -> b.getTigerBot(botId))
-				.ifPresent(bot -> {
-					bot.execute(new TigerDataAcqSetMode(EDataAcquisitionMode.NONE));
-					final TigerSystemConsoleCommand stopLogCmd = new TigerSystemConsoleCommand(
-							TigerSystemConsoleCommand.ConsoleCommandTarget.MAIN, "stoplog");
-					stopLogCmd.setReliable(true);
-					bot.execute(stopLogCmd);
-					bot.getBaseStation().activateDefaultConfig();
-
+				.ifPresent(mgr -> {
+					mgr.getBot(botId).ifPresent(b -> {
+						b.sendCommand(new TigerDataAcqSetMode(EDataAcquisitionMode.NONE).setReliable(true));
+						b.sendCommand(new TigerSystemConsoleCommand(ConsoleCommandTarget.MAIN, "stoplog"));
+					});
+					mgr.getBaseStation().activateDefaultConfig();
+					mgr.getOnIncomingBotCommand().unsubscribe(getClass().getCanonicalName());
 				});
 
-		SumatraModel.getInstance().getModuleOpt(TigersBotManager.class).ifPresent(b -> b.removeBotObserver(this));
 		Optional.ofNullable(exporter).ifPresent(CSVExporter::close);
 		Optional.ofNullable(dataCollector).ifPresent(TimeSeriesDataCollector::stopExport);
 	}
@@ -168,36 +161,25 @@ public class BotWatcher implements ITigerBotObserver
 		nbrs.add(cmd.isAccelerationValid() ? 1 : 0);
 		exporter.addValues(nbrs);
 		frameId++;
-
-		dataReceived = true;
-	}
-
-
-	/**
-	 * @return true, if any data was received
-	 */
-	public boolean isDataReceived()
-	{
-		return dataReceived;
 	}
 
 
 	public void setTimeSeriesDataCollectorObserver(
-			final ITimeSeriesDataCollectorObserver timeSeriesDataCollectorObserver)
+			final ITimeSeriesDataCollectorObserver timeSeriesDataCollectorObserver
+	)
 	{
 		this.timeSeriesDataCollectorObserver = timeSeriesDataCollectorObserver;
 	}
 
 
-	@Override
-	public void onIncomingBotCommand(final TigerBot tigerBot, final ACommand cmd)
+	private void onIncomingBotCommand(BotCommand botCommand)
 	{
-		if (!tigerBot.getBotId().equals(botId))
+		if (!botCommand.botId().equals(botId))
 		{
 			return;
 		}
 
-		List<Number> nbrs = new ArrayList<>();
+		ACommand cmd = botCommand.command();
 		switch (cmd.getType())
 		{
 			case CMD_SYSTEM_MATCH_FEEDBACK:
@@ -205,19 +187,16 @@ public class BotWatcher implements ITigerBotObserver
 				onNewFeedbackCmd(fdbk);
 				break;
 			case CMD_DATA_ACQ_MOTOR_MODEL:
-				handleAcqMotorModel(cmd, nbrs);
+				handleAcqMotorModel(cmd);
 				break;
 			case CMD_DATA_ACQ_BOT_MODEL:
-				handleAcqBotModel(cmd, nbrs);
+				handleAcqBotModel(cmd);
 				break;
 			case CMD_DATA_ACQ_DELAYS:
-				handleAcqDelays(cmd, nbrs);
-				break;
-			case CMD_DATA_ACQ_VELOCITY:
-				handleAcqVelocity(cmd, nbrs);
+				handleAcqDelays(cmd);
 				break;
 			case CMD_DATA_ACQ_BOT_MODEL_V2:
-				handleAcqBotModelV2(cmd, nbrs);
+				handleAcqBotModelV2(cmd);
 				break;
 			default:
 				break;
@@ -225,22 +204,10 @@ public class BotWatcher implements ITigerBotObserver
 	}
 
 
-	private void handleAcqVelocity(final ACommand cmd, final List<Number> nbrs)
-	{
-		TigerDataAcqVelocity vel = (TigerDataAcqVelocity) cmd;
-		nbrs.add(botId.getNumberWithColorOffsetBS());
-		nbrs.add(vel.getTimestamp());
-		nbrs.addAll(vel.getSetAcc().getNumberList());
-		nbrs.addAll(vel.getSetVel().getNumberList());
-		nbrs.addAll(vel.getOutVel().getNumberList());
-		exporter.addValues(nbrs);
-		dataReceived = true;
-	}
-
-
-	private void handleAcqDelays(final ACommand cmd, final List<Number> nbrs)
+	private void handleAcqDelays(final ACommand cmd)
 	{
 		TigerDataAcqDelays de = (TigerDataAcqDelays) cmd;
+		List<Number> nbrs = new ArrayList<>();
 		nbrs.add(botId.getNumberWithColorOffsetBS());
 		nbrs.add(de.getTimestamp());
 		nbrs.add(de.getVisionTime());
@@ -248,31 +215,31 @@ public class BotWatcher implements ITigerBotObserver
 		nbrs.add(de.getVisionPositionW());
 		nbrs.add(de.getGyroVelocityW());
 		exporter.addValues(nbrs);
-		dataReceived = true;
 	}
 
 
-	private void handleAcqBotModel(final ACommand cmd, final List<Number> nbrs)
+	private void handleAcqBotModel(final ACommand cmd)
 	{
 		TigerDataAcqBotModel bm = (TigerDataAcqBotModel) cmd;
+		List<Number> nbrs = new ArrayList<>();
 		nbrs.add(botId.getNumberWithColorOffsetBS());
 		nbrs.add(bm.getTimestamp());
 		nbrs.add(bm.getVisionTime());
 		nbrs.addAll(bm.getOutVelocityList());
 		nbrs.addAll(bm.getVisionPositionList());
 		exporter.addValues(nbrs);
-		dataReceived = true;
 	}
 
 
-	private void handleAcqBotModelV2(final ACommand cmd, final List<Number> nbrs)
+	private void handleAcqBotModelV2(final ACommand cmd)
 	{
 		int botParamsLabelNbr = SumatraModel.getInstance().getModuleOpt(TigersBotManager.class)
-				.flatMap(b -> b.getTigerBot(botId))
-				.map(TigerBot::getBotParamLabel)
-				.map(l -> l == EBotParamLabel.TIGER_V2016 ? 2016 : 2020)
+				.flatMap(b -> b.getBot(botId))
+				.map(ABot::getBotParamLabel)
+				.map(l -> 2020)
 				.orElse(0);
 		TigerDataAcqBotModelV2 bm = (TigerDataAcqBotModelV2) cmd;
+		List<Number> nbrs = new ArrayList<>();
 		nbrs.add(botId.getNumberWithColorOffsetBS());
 		nbrs.add(bm.getTimestamp());
 		nbrs.addAll(bm.getStateVelocityList());
@@ -284,18 +251,17 @@ public class BotWatcher implements ITigerBotObserver
 		nbrs.add(bm.getModeW());
 		nbrs.add(botParamsLabelNbr);
 		exporter.addValues(nbrs);
-		dataReceived = true;
 	}
 
 
-	private void handleAcqMotorModel(final ACommand cmd, final List<Number> nbrs)
+	private void handleAcqMotorModel(final ACommand cmd)
 	{
 		TigerDataAcqMotorModel mm = (TigerDataAcqMotorModel) cmd;
+		List<Number> nbrs = new ArrayList<>();
 		nbrs.add(botId.getNumberWithColorOffsetBS());
 		nbrs.add(mm.getTimestamp());
 		nbrs.addAll(mm.getMotorVoltageList());
 		nbrs.addAll(mm.getMotorVelocityList());
 		exporter.addValues(nbrs);
-		dataReceived = true;
 	}
 }

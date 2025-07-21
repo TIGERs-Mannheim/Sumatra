@@ -6,12 +6,19 @@ package edu.tigers.sumatra.ai.pandora.roles.defense;
 
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
 import edu.tigers.sumatra.ai.metis.defense.data.DefensePassDisruptionAssignment;
+import edu.tigers.sumatra.ai.metis.defense.data.EDefensePassDisruptionStrategyType;
 import edu.tigers.sumatra.ai.pandora.roles.ERole;
 import edu.tigers.sumatra.drawable.DrawableCircle;
+import edu.tigers.sumatra.drawable.DrawableLine;
+import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.BotID;
+import edu.tigers.sumatra.math.circle.Circle;
+import edu.tigers.sumatra.math.line.Lines;
 import edu.tigers.sumatra.math.vector.IVector2;
 
 import java.awt.Color;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -67,7 +74,27 @@ public class PassDisruptionRole extends ADefenseRole
 
 		private IVector2 findDest()
 		{
-			return getAssignment().getMovementDestination();
+			if (getAssignment().getStrategyType() == EDefensePassDisruptionStrategyType.DISRUPT_PASS)
+			{
+				return getAssignment().getMovementDestination();
+			}
+
+			// Ensure that we do not stop battling for the interception position
+			var opponent = getWFrame().getOpponentBot(getAssignment().getThreatId());
+			var opponentTravelLine = Lines.segmentFromPoints(opponent.getPos(), getAssignment().getInterceptionPoint());
+
+			var defendedArea = Circle.createCircle(getPos(), 2 * Geometry.getBotRadius());
+
+			var destination = opponentTravelLine.intersect(defendedArea).stream()
+					.min(Comparator.comparingDouble(intersection -> opponent.getPos().distanceTo(intersection)))
+					.orElse(getAssignment().getInterceptionPoint());
+
+			getShapes(EAiShapesLayer.DEFENSE_PASS_DISRUPTION).addAll(List.of(
+					new DrawableLine(opponentTravelLine, Color.PINK),
+					new DrawableLine(getAssignment().getInterceptionPoint(), destination, Color.BLUE)
+			));
+
+			return destination;
 		}
 
 

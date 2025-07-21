@@ -4,7 +4,7 @@
 
 package edu.tigers.sumatra.export;
 
-import org.json.simple.JSONObject;
+import com.github.cliftonlabs.json_simple.JsonObject;
 
 
 /**
@@ -18,5 +18,5 @@ public interface IJsonString
 	 * 
 	 * @return
 	 */
-	JSONObject toJSON();
+	JsonObject toJSON();
 }

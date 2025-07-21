@@ -40,4 +40,23 @@ public enum ELedColor
 	{
 		return color;
 	}
+
+	/**
+	 * Convert an id to an enum.
+	 *
+	 * @param id
+	 * @return enum
+	 */
+	public static ELedColor getLedColorConstant(final int id)
+	{
+		for (ELedColor s : values())
+		{
+			if (s.getId() == id)
+			{
+				return s;
+			}
+		}
+
+		return null;
+	}
 }

@@ -91,6 +91,7 @@ public class AttackerToDefenseAreaDistanceDetector extends AGameEventDetector
 	{
 		return NGeometry.getPenaltyArea(bot.getTeamColor().opposite())
 				.withMargin(requiredMargin)
+				.withRoundedCorners(requiredMargin)
 				.isPointInShape(bot.getPos());
 	}
 
@@ -132,8 +133,8 @@ public class AttackerToDefenseAreaDistanceDetector extends AGameEventDetector
 	private IGameEvent buildViolation(final ITrackedBot offender)
 	{
 		double distance = NGeometry.getPenaltyArea(offender.getTeamColor().opposite())
-				.withMargin(requiredMargin)
-				.distanceToNearestPointOutside(offender.getPos());
+				.distanceTo(offender.getPos()) - Geometry.getBotRadius();
+		distance = Math.max(distance, 0);
 
 		return new AttackerTooCloseToDefenseArea(offender.getBotId(), offender.getPos(), distance,
 				frame.getWorldFrame().getBall().getPos());

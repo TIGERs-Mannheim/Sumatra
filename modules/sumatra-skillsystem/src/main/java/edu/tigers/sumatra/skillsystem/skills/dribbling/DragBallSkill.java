@@ -6,7 +6,9 @@ package edu.tigers.sumatra.skillsystem.skills.dribbling;
 
 import com.github.g3force.configurable.Configurable;
 import edu.tigers.sumatra.bot.EDribbleTractionState;
+import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.pathfinder.obstacles.FieldBorderObstacle;
 import edu.tigers.sumatra.skillsystem.skills.AMoveToSkill;
 import edu.tigers.sumatra.skillsystem.skills.ESkillState;
 import edu.tigers.sumatra.skillsystem.skills.util.EDribblerMode;
@@ -14,20 +16,22 @@ import edu.tigers.sumatra.skillsystem.skills.util.KickParams;
 import edu.tigers.sumatra.time.TimestampTimer;
 import lombok.Setter;
 
+import java.util.List;
+
 
 /**
  * Protect the ball against a given opponent
  */
 public class DragBallSkill extends AMoveToSkill
 {
-	@Configurable(defValue = "1.2")
-	private static double accMax = 1.2;
+	@Configurable(defValue = "1.0")
+	private static double accMax = 1.0;
+
+	@Configurable(defValue = "20.0")
+	private static double accMaxW = 20.0;
 
 	@Configurable(defValue = "1.0")
 	private static double initialAccMax = 1.0;
-
-	@Configurable(defValue = "14.0")
-	private static double accMaxW = 14.0;
 
 	@Configurable(defValue = "1.2")
 	private static double velMax = 1.2;
@@ -76,6 +80,9 @@ public class DragBallSkill extends AMoveToSkill
 			getMoveConstraints().setAccMax(initialAccMax);
 		}
 
+		getMoveCon().setCustomObstacles(
+				List.of(new FieldBorderObstacle(Geometry.getField().withMargin(-Geometry.getBotRadius() * 2.0))));
+
 		if (!getTBot().getBallContact().hadRecentContact())
 		{
 			if (!changeStateTimer.isRunning())
@@ -94,7 +101,7 @@ public class DragBallSkill extends AMoveToSkill
 		if (forceKick)
 		{
 			// dribbling violation is imminent, so saving chip kick
-			setKickParams(KickParams.chip(1.7).withDribblerMode(EDribblerMode.HIGH_POWER));
+			setKickParams(KickParams.chip(1.5).withDribblerMode(EDribblerMode.HIGH_POWER));
 		} else
 		{
 			setKickParams(KickParams.disarm().withDribblerMode(EDribblerMode.HIGH_POWER));

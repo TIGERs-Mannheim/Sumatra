@@ -85,11 +85,13 @@ public class BreakThroughDefenseBehavior extends ASupportBehavior
 	private final PassFactory passFactory = new PassFactory();
 	private final RatedPassFactory ratedPassFactory = new RatedPassFactory();
 
+
 	@Override
 	public SupportBehaviorPosition calculatePositionForRobot(BotID botID)
 	{
 		passFactory.update(getWFrame());
-		ratedPassFactory.update(getWFrame().getOpponentBots().values(), getWFrame().getOpponentBots().values());
+		ratedPassFactory.update(getWFrame().getOpponentBots().values(), getWFrame().getOpponentBots().values(),
+				Collections.emptyList());
 
 		if (!getAiFrame().getGameState().isRunning())
 		{
@@ -113,7 +115,9 @@ public class BreakThroughDefenseBehavior extends ASupportBehavior
 		}
 
 
-		var pass = passFactory.straight(getWFrame().getBall().getPos(), destination, BotID.noBot(), bot.getBotId(), EBallReceiveMode.DONT_CARE);
+		var pass = passFactory.straight(getWFrame().getBall().getPos(), destination, BotID.noBot(), bot.getBotId(),
+						EBallReceiveMode.DONT_CARE)
+				.orElseThrow();
 		var rating = ratedPassFactory.rateMaxCombined(pass, EPassRating.PASSABILITY, EPassRating.INTERCEPTION);
 
 		if (rating > passScoreThreshold)
@@ -328,6 +332,7 @@ public class BreakThroughDefenseBehavior extends ASupportBehavior
 				.stream().min(Comparator.comparingDouble(b -> b.distanceTo(affectedBot.getPos()))).orElse(pos));
 
 	}
+
 
 	@Override
 	public boolean isEnabled()

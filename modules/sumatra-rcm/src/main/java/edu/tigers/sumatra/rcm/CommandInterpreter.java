@@ -10,6 +10,7 @@ import edu.tigers.sumatra.bot.EDribblerTemperature;
 import edu.tigers.sumatra.bot.EFeature;
 import edu.tigers.sumatra.bot.EFeatureState;
 import edu.tigers.sumatra.botmanager.bots.ABot;
+import edu.tigers.sumatra.botmanager.botskills.ABotSkill;
 import edu.tigers.sumatra.botmanager.botskills.AMoveBotSkill;
 import edu.tigers.sumatra.botmanager.botskills.BotSkillMotorsOff;
 import edu.tigers.sumatra.botmanager.botskills.data.EKickerDevice;
@@ -57,7 +58,7 @@ public class CommandInterpreter implements ICommandInterpreter
 
 		;
 
-		private Class<?> clazz;
+		private final Class<?> clazz;
 
 		EMoveControllerType(final Class<?> clazz)
 		{
@@ -75,18 +76,18 @@ public class CommandInterpreter implements ICommandInterpreter
 
 
 	@Override
-	public void interpret(final BotActionCommand command)
+	public ABotSkill interpret(final BotActionCommand command)
 	{
 		if (paused)
 		{
-			return;
+			return new BotSkillMotorsOff();
 		}
 
 		updateMoveController();
 
 		final AMoveBotSkill skill = moveController.control(command, controllerState);
 
-		boolean isDribblerOverheated = controllerState.getBot().getDribblerTemperature() == EDribblerTemperature.OVERHEATED;
+		boolean isDribblerOverheated = controllerState.getBot().getLastReceivedBotFeedback().getDribblerTemperature() == EDribblerTemperature.OVERHEATED;
 
 		double dribbleForce = controllerState.getBot().getBotParams().getDribblerSpecs().getDefaultForce();
 		double dribbleSpeed = controllerState.getBot().getBotParams().getDribblerSpecs().getDefaultSpeed();
@@ -103,8 +104,7 @@ public class CommandInterpreter implements ICommandInterpreter
 		interpretKick(command);
 
 		skill.setKickerDribbler(kdOut);
-		controllerState.getBot().getMatchCtrl().setSkill(skill);
-		controllerState.getBot().sendMatchCommand();
+		return skill;
 	}
 
 
@@ -141,7 +141,7 @@ public class CommandInterpreter implements ICommandInterpreter
 		}
 		if (command.hasKickArm())
 		{
-			if (controllerState.getBot().getBotFeatures().get(EFeature.BARRIER) == EFeatureState.WORKING)
+			if (controllerState.getBot().getLastReceivedBotFeedback().getBotFeatures().get(EFeature.BARRIER) == EFeatureState.WORKING)
 			{
 				lastForceKick = 0;
 				lastArmKick = System.nanoTime();
@@ -180,13 +180,6 @@ public class CommandInterpreter implements ICommandInterpreter
 
 
 	@Override
-	public void stopAll()
-	{
-		controllerState.getBot().getMatchCtrl().setSkill(new BotSkillMotorsOff());
-	}
-
-
-	@Override
 	public ABot getBot()
 	{
 		return controllerState.getBot();
@@ -220,13 +213,6 @@ public class CommandInterpreter implements ICommandInterpreter
 		{
 			log.info("High Speed Mode deactivated");
 		}
-	}
-
-
-	@Override
-	public boolean isPaused()
-	{
-		return paused;
 	}
 
 

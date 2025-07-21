@@ -11,6 +11,7 @@ import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
 import edu.tigers.sumatra.ai.metis.defense.data.DefenseBallThreat;
 import edu.tigers.sumatra.ai.metis.defense.data.DefensePassDisruptionAssignment;
 import edu.tigers.sumatra.ai.metis.defense.data.EDefenseBallThreatSourceType;
+import edu.tigers.sumatra.ai.metis.defense.data.EDefensePassDisruptionStrategyType;
 import edu.tigers.sumatra.ai.metis.kicking.OngoingPass;
 import edu.tigers.sumatra.drawable.DrawableAnnotation;
 import edu.tigers.sumatra.drawable.DrawableLine;
@@ -51,9 +52,9 @@ public class DefensePassDisruptionCalc extends ACalculator
 	private static double offenseTimeFactor = 1.3;
 	@Configurable(defValue = "1.3", comment = "[s] A constant offset added to the maximum time our offense has to reach it's intercept point")
 	private static double offenseTimeOffset = 0.1;
-	@Configurable(defValue = "0.8", comment = "[m/s] Tolerance the actual disruption point can have from the best one regarding the velocity")
+	@Configurable(defValue = "0.3", comment = "[m/s] Tolerance the actual disruption point can have from the best one regarding the velocity")
 	private static double toleranceVel = 0.3;
-	@Configurable(defValue = "0.8", comment = "[mm] Tolerance the actual disruption point can have from the best one regarding the distance")
+	@Configurable(defValue = "10.0", comment = "[mm] Tolerance the actual disruption point can have from the best one regarding the distance")
 	private static double toleranceDist = 10.0;
 
 	private final Supplier<Set<BotID>> crucialOffender;
@@ -205,7 +206,7 @@ public class DefensePassDisruptionCalc extends ACalculator
 	)
 	{
 		var disruptionData = getWFrame().getTigerBotsAvailable().values().stream()
-				.filter(bot -> bot.getBotId() != getAiFrame().getKeeperId())
+				.filter(bot -> !bot.getBotId().equals(getAiFrame().getKeeperId()))
 				.filter(bot -> !crucialOffender.get().contains(bot.getBotId()))
 				.map(bot -> creatDisruptionDataFromDefender(bot, offense, opponent, constellation))
 				.flatMap(List::stream)
@@ -283,7 +284,8 @@ public class DefensePassDisruptionCalc extends ACalculator
 	private List<DisruptionStrategy> createDefStrategiesForDistanceRange(
 			ITrackedBot defender,
 			double distMin,
-			BallTimePosDist opponent)
+			BallTimePosDist opponent
+	)
 	{
 		if (distMin >= opponent.dist)
 		{
@@ -295,8 +297,10 @@ public class DefensePassDisruptionCalc extends ACalculator
 		var penArea = Geometry.getPenaltyAreaOur().withMargin(Geometry.getBotRadius());
 		while (dist < opponent.dist - Geometry.getBotRadius())
 		{
-			var newStrategy = DisruptionStrategy.ballIntercept(getWFrame(), defender,
-					BallTimePosDist.fromDist(getBall(), dist));
+			var newStrategy = DisruptionStrategy.ballIntercept(
+					getWFrame(), defender,
+					BallTimePosDist.fromDist(getBall(), dist)
+			);
 
 			var ballHeight = getBall().getTrajectory().getPosByTime(newStrategy.disruption.time).z();
 			if (!penArea.isPointInShapeOrBehind(newStrategy.disruption.pos)
@@ -396,7 +400,7 @@ public class DefensePassDisruptionCalc extends ACalculator
 			BallTimePosDist disruption,
 			ITrackedBot defender,
 			ITrajectory<IVector2> trajectory,
-			EDisruptionStrategyType type,
+			EDefensePassDisruptionStrategyType type,
 			long creationTimestamp
 	)
 	{
@@ -411,7 +415,7 @@ public class DefensePassDisruptionCalc extends ACalculator
 					ballTimePosDist,
 					defenderBot,
 					TrajectoryGenerator.generatePositionTrajectory(defenderBot, ballTimePosDist.pos),
-					EDisruptionStrategyType.DISRUPT_OPPONENT_RECEIVER,
+					EDefensePassDisruptionStrategyType.DISRUPT_OPPONENT_RECEIVER,
 					wFrame.getTimestamp()
 			);
 		}
@@ -421,15 +425,16 @@ public class DefensePassDisruptionCalc extends ACalculator
 				WorldFrame wFrame,
 				ITrackedBot defenderBot,
 				BallTimePosDist ballTimePosDist
-
 		)
 		{
 			return new DisruptionStrategy(
 					ballTimePosDist,
 					defenderBot,
-					TrajectoryGenerator.generatePositionTrajectoryToReachPointInTime(defenderBot, ballTimePosDist.pos,
-							ballTimePosDist.time),
-					EDisruptionStrategyType.DISRUPT_PASS,
+					TrajectoryGenerator.generatePositionTrajectoryToReachPointInTime(
+							defenderBot, ballTimePosDist.pos,
+							ballTimePosDist.time
+					),
+					EDefensePassDisruptionStrategyType.DISRUPT_PASS,
 					wFrame.getTimestamp()
 			);
 		}
@@ -448,21 +453,37 @@ public class DefensePassDisruptionCalc extends ACalculator
 			return Optional.of(switch (type)
 			{
 				case DISRUPT_OPPONENT_RECEIVER -> DisruptionStrategy.opponentDisturbance(wFrame, newDefender, opponent);
-				case DISRUPT_PASS -> DisruptionStrategy.ballIntercept(wFrame, newDefender,
-						BallTimePosDist.fromTime(wFrame.getBall(), disruption.time - timePassed));
+				case DISRUPT_PASS -> DisruptionStrategy.ballIntercept(
+						wFrame, newDefender,
+						BallTimePosDist.fromTime(wFrame.getBall(), disruption.time - timePassed)
+				);
 			});
 		}
 
 
 		Feasibility determineFeasibility()
 		{
+			double maxDistForFully;
+			double maxVelForFully;
+
+			if (type == EDefensePassDisruptionStrategyType.DISRUPT_PASS)
+			{
+				maxDistForFully = 0.1 * Geometry.getBotRadius();
+				maxVelForFully = 0.5;
+			} else
+			{
+				maxDistForFully = 0.5 * Geometry.getBotRadius();
+				maxVelForFully = 1.0;
+			}
+
+
 			var distAtIntercept = distAtIntercept();
 			if (distAtIntercept > Geometry.getBotRadius())
 			{
 				return new Feasibility(EFeasibilityCategory.UNFEASIBLE, 0);
 			}
 			var velAtIntercept = velAtIntercept();
-			if (distAtIntercept < 0.5 * Geometry.getBotRadius() && velAtIntercept < 1.0)
+			if (distAtIntercept < maxDistForFully && velAtIntercept < maxVelForFully)
 			{
 				return new Feasibility(EFeasibilityCategory.FULLY, velAtIntercept);
 			}
@@ -487,18 +508,15 @@ public class DefensePassDisruptionCalc extends ACalculator
 			return Stream.concat(
 					disruption.draw(color),
 					Stream.of(
-							new DrawableAnnotation(disruption.pos.addNew(Vector2.fromY(135)),
-									String.format("%s%n%.2f s | %.2f mm | %.2f m/s", type, trajectory.getTotalTime(),
-											distAtIntercept(), velAtIntercept()), color)
+							new DrawableAnnotation(
+									disruption.pos.addNew(Vector2.fromY(135)),
+									String.format(
+											"%s%n%.2f s | %.2f mm | %.2f m/s", type, trajectory.getTotalTime(),
+											distAtIntercept(), velAtIntercept()
+									), color
+							)
 					)
 			);
-		}
-
-
-		private enum EDisruptionStrategyType
-		{
-			DISRUPT_OPPONENT_RECEIVER,
-			DISRUPT_PASS
 		}
 	}
 
@@ -557,7 +575,8 @@ public class DefensePassDisruptionCalc extends ACalculator
 					strategy.disruption.pos,
 					strategy.trajectory.getFinalDestination(),
 					constellation != EOffenseOpponentConstellation.OUR_OFFENSE_IS_FIRST_WITH_MARGIN,
-					strategy.trajectory.getVelocity(strategy.disruption.time).getLength() < maxVelToRiskCollision
+					strategy.trajectory.getVelocity(strategy.disruption.time).getLength() < maxVelToRiskCollision,
+					strategy.type
 			);
 		}
 	}

@@ -6,12 +6,13 @@ package edu.tigers.sumatra.geometry;
 
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
-import edu.tigers.moduli.AModule;
-import edu.tigers.moduli.exceptions.ModuleNotFoundException;
 import edu.tigers.sumatra.cam.ACam;
 import edu.tigers.sumatra.cam.ICamFrameObserver;
 import edu.tigers.sumatra.cam.data.CamGeometry;
+import edu.tigers.sumatra.cam.proto.SslVisionGeometry;
 import edu.tigers.sumatra.model.SumatraModel;
+import edu.tigers.sumatra.moduli.AModule;
+import edu.tigers.sumatra.moduli.exceptions.ModuleNotFoundException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -25,6 +26,9 @@ public class GeometryUpdater extends AModule
 
 	@Configurable(comment = "Receive geometry from SSL vision", defValue = "true")
 	private static boolean receiveGeometry = true;
+
+	@Configurable(comment = "Receive ball models from SSL vision", defValue = "true")
+	private static boolean receiveBallModels = true;
 
 	@Configurable(comment = "Receive geometry from SSL vision, but only once!", defValue = "false")
 	private static boolean receiveGeometryOnceOnly = false;
@@ -76,7 +80,17 @@ public class GeometryUpdater extends AModule
 			{
 				if (!geometryReceived || !receiveGeometryOnceOnly)
 				{
-					Geometry.update(geometry);
+					if (!receiveBallModels)
+					{
+						Geometry.update(
+								geometry.toBuilder()
+										.ballModels(SslVisionGeometry.SSL_GeometryModels.newBuilder().build())
+										.build()
+						);
+					} else
+					{
+						Geometry.update(geometry);
+					}
 				}
 
 				if (!geometryReceived)

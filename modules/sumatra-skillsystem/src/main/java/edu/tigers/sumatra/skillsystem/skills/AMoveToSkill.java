@@ -221,6 +221,7 @@ public abstract class AMoveToSkill extends AMoveSkill
 				.dest(destination)
 				.build();
 
+		inputProcessor.setShapeMap(debugShapes ? getShapes() : null);
 		PathFinderInput adaptedInput = inputProcessor.processInput(input);
 		drawObstacles(obstacles);
 
@@ -241,8 +242,9 @@ public abstract class AMoveToSkill extends AMoveSkill
 	{
 		if (debugShapes)
 		{
-			obstacles.forEach(obstacle ->
-					getShapes().get(EPathFinderShapesLayer.obstacle(obstacle.getIdentifier())).addAll(obstacle.getShapes()));
+			obstacles.forEach(
+					obstacle -> getShapes().get(EPathFinderShapesLayer.obstacle(obstacle.getIdentifier()))
+							.addAll(obstacle.getShapes()));
 		} else
 		{
 			obstacles.forEach(

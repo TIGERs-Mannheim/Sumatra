@@ -5,14 +5,16 @@
 package edu.tigers.sumatra.ai.metis.pass;
 
 import edu.tigers.sumatra.ai.metis.offense.situation.zone.EOffensiveZone;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import lombok.Setter;
 
+import java.util.List;
 import java.util.Map;
 
 
 @RequiredArgsConstructor
+@Builder(toBuilder = true)
 public class PassStats
 {
 	/**
@@ -23,14 +25,14 @@ public class PassStats
 	final Map<EOffensiveZone, Map<EOffensiveZone, ZonePassStats>> zonePassSuccessMap;
 
 	@Getter
-	@Setter
-	int nPasses = 0;
+	final List<PassStatsKickReceiveVelocity> receiveVelocities;
 
 	@Getter
-	@Setter
-	int successfulPasses = 0;
+	final int nPasses;
 
 	@Getter
-	@Setter
-	int numPassLineReachedOnTime = 0;
+	final int successfulPasses;
+
+	@Getter
+	final int numPassLineReachedOnTime;
 }

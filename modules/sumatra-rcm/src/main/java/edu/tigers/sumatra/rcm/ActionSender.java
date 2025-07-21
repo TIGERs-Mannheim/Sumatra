@@ -4,9 +4,11 @@
 
 package edu.tigers.sumatra.rcm;
 
+import edu.tigers.sumatra.botmanager.botskills.ABotSkill;
 import edu.tigers.sumatra.proto.BotActionCommandProtos.BotActionCommand;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 
@@ -55,20 +57,11 @@ public class ActionSender
 	
 	
 	/**
-	 * Stop sending
-	 */
-	public void stopSending()
-	{
-		cmdInterpreter.stopAll();
-	}
-	
-	
-	/**
 	 * @param newCmd
 	 */
-	public void execute(final BotActionCommand newCmd)
+	public ABotSkill execute(final BotActionCommand newCmd)
 	{
-		cmdInterpreter.interpret(newCmd);
+		return cmdInterpreter.interpret(newCmd);
 	}
 	
 	
@@ -79,13 +72,7 @@ public class ActionSender
 	 */
 	public void setInterpreter(final ICommandInterpreter interpreter)
 	{
-		if (interpreter == null)
-		{
-			cmdInterpreter = new CommandInterpreterStub();
-		} else
-		{
-			cmdInterpreter = interpreter;
-		}
+		cmdInterpreter = Objects.requireNonNullElseGet(interpreter, CommandInterpreterStub::new);
 	}
 	
 	
@@ -112,8 +99,6 @@ public class ActionSender
 	 */
 	public void notifyNextBot()
 	{
-		cmdInterpreter.stopAll();
-		
 		for (IRCMObserver observer : observers)
 		{
 			observer.onNextBot(this);
@@ -126,8 +111,6 @@ public class ActionSender
 	 */
 	public void notifyPrevBot()
 	{
-		cmdInterpreter.stopAll();
-		
 		for (IRCMObserver observer : observers)
 		{
 			observer.onPrevBot(this);
@@ -140,7 +123,6 @@ public class ActionSender
 	 */
 	public void notifyBotUnassigned()
 	{
-		cmdInterpreter.stopAll();
 		cmdInterpreter.getBot().setControlledBy("");
 		cmdInterpreter = new CommandInterpreterStub();
 		

@@ -4,8 +4,6 @@
 
 package edu.tigers.sumatra.math.line;
 
-import com.sleepycat.persist.model.Persistent;
-
 import java.util.Optional;
 
 
@@ -14,7 +12,6 @@ import java.util.Optional;
  *
  * @author Lukas Magel
  */
-@Persistent
 abstract class ALine implements ILineBase
 {
 

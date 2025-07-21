@@ -88,7 +88,7 @@ The simulation can only be controlled from the server. The game-controller is al
 the autoRef on the server as well. The client only provides the AI including the skill system.
 
 To simplify the setup, there is a docker compose setup. It is
-described [here](./modules/moduli-statistics-saver/Readme.md).
+described [here](./simulation/Readme.md).
 
 ## Further Documentation
 

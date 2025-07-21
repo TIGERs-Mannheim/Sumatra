@@ -4,59 +4,59 @@
 
 package edu.tigers.sumatra.botmanager;
 
-import edu.tigers.sumatra.bot.IBot;
-import edu.tigers.sumatra.botmanager.basestation.ITigersBaseStationObserver;
+import edu.tigers.sumatra.botmanager.basestation.LatencyTester;
 import edu.tigers.sumatra.botmanager.basestation.TigersBaseStation;
 import edu.tigers.sumatra.botmanager.bots.ABot;
-import edu.tigers.sumatra.botmanager.bots.ITigerBotObserver;
 import edu.tigers.sumatra.botmanager.bots.TigerBot;
 import edu.tigers.sumatra.botmanager.commands.ACommand;
 import edu.tigers.sumatra.botmanager.commands.CommandFactory;
+import edu.tigers.sumatra.botmanager.commands.basestation.BaseStationBroadcast;
 import edu.tigers.sumatra.botmanager.commands.basestation.BaseStationCameraViewport;
-import edu.tigers.sumatra.botmanager.commands.basestation.BaseStationWifiStats;
-import edu.tigers.sumatra.botmanager.commands.tigerv3.TigerConfigWrite;
+import edu.tigers.sumatra.botmanager.communication.ENetworkState;
 import edu.tigers.sumatra.botmanager.configs.ConfigFileDatabaseManager;
+import edu.tigers.sumatra.clock.NanoTime;
+import edu.tigers.sumatra.gamelog.EMessageType;
+import edu.tigers.sumatra.gamelog.GameLogMessage;
+import edu.tigers.sumatra.gamelog.GameLogRecorder;
 import edu.tigers.sumatra.ids.BotID;
-import edu.tigers.sumatra.math.rectangle.IRectangle;
 import edu.tigers.sumatra.model.SumatraModel;
+import edu.tigers.sumatra.thread.NamedThreadFactory;
+import edu.tigers.sumatra.util.Safe;
 import edu.tigers.sumatra.vision.AVisionFilter;
-import edu.tigers.sumatra.vision.IVisionFilterObserver;
+import edu.tigers.sumatra.vision.data.Viewport;
+import edu.tigers.sumatra.wp.AWorldPredictor;
+import edu.tigers.sumatra.wp.IWorldFrameObserver;
+import edu.tigers.sumatra.wp.data.WorldFrameWrapper;
 import lombok.Getter;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static edu.tigers.sumatra.botmanager.commands.ECommand.CMD_SYSTEM_MATCH_FEEDBACK;
-
 
 /**
- * Tigers Bot manager implementation
+ * TIGERs bot manager implementation
  */
-public class TigersBotManager extends ABotManager implements IVisionFilterObserver, ITigersBaseStationObserver
+public class TigersBotManager extends ACommandBasedBotManager implements IWorldFrameObserver
 {
 	private static final String PROP_AUTO_CHARGE = TigersBotManager.class.getName() + ".autoCharge";
-	private boolean autoCharge = true;
+
 	@Getter
 	private final ConfigFileDatabaseManager configDatabase = new ConfigFileDatabaseManager();
-	private final List<ITigerBotObserver> botObservers = new CopyOnWriteArrayList<>();
 
+	@Getter
+	private final TigersBaseStation baseStation = new TigersBaseStation();
+	private GameLogRecorder gameLogRecorder;
 
-	@Override
-	public void initModule()
-	{
-		super.initModule();
+	@Getter
+	private LatencyTester latencyTester = new LatencyTester(this);
 
-		CommandFactory.getInstance().loadCommands();
-
-		autoCharge = Boolean.parseBoolean(SumatraModel.getInstance().getUserProperty(
-				PROP_AUTO_CHARGE, String.valueOf(true)));
-	}
+	private ScheduledExecutorService scheduledExecutorService;
 
 
 	@Override
@@ -64,151 +64,163 @@ public class TigersBotManager extends ABotManager implements IVisionFilterObserv
 	{
 		super.startModule();
 
-		getBaseStation().addTigersBsObserver(this);
+		matchBroadcast.setAutoCharge(SumatraModel.getInstance().getUserProperty(PROP_AUTO_CHARGE, true));
 
-		AVisionFilter visionFilter = SumatraModel.getInstance().getModule(AVisionFilter.class);
-		visionFilter.addObserver(this);
+		SumatraModel.getInstance().getModule(AWorldPredictor.class).addObserver(this);
+
+		SumatraModel.getInstance().getModule(AVisionFilter.class).getViewport()
+				.subscribe(getClass().getCanonicalName(), this::onViewportUpdated);
+
+		gameLogRecorder = SumatraModel.getInstance().getModuleOpt(GameLogRecorder.class).orElse(null);
+
+		baseStation.getOnIncomingCommand().subscribe(getClass().getCanonicalName(), this::onIncomingCommand);
+		baseStation.getNetworkState().subscribe(getClass().getCanonicalName(), this::onNetworkStateChanged);
+
+		baseStation.connect();
+
+		scheduledExecutorService = Executors.newSingleThreadScheduledExecutor(
+				new NamedThreadFactory("TIGERs Broadcast Sender"));
+
+		scheduledExecutorService
+				.scheduleAtFixedRate(() -> Safe.run(this::sendBroadcast), 0, 10L, TimeUnit.MILLISECONDS);
 	}
 
 
 	@Override
 	public void stopModule()
 	{
-		getBaseStation().removeTigersBsObserver(this);
+		if (scheduledExecutorService != null)
+		{
+			scheduledExecutorService.shutdown();
+			scheduledExecutorService = null;
+		}
+
+		baseStation.disconnect();
+
+		baseStation.getOnIncomingCommand().unsubscribe(getClass().getCanonicalName());
+		baseStation.getNetworkState().unsubscribe(getClass().getCanonicalName());
+
+		gameLogRecorder = null;
+
+		SumatraModel.getInstance().getModule(AVisionFilter.class).getViewport()
+				.unsubscribe(getClass().getCanonicalName());
+
+		SumatraModel.getInstance().getModule(AWorldPredictor.class).removeObserver(this);
 
 		super.stopModule();
+	}
 
-		AVisionFilter visionFilter = SumatraModel.getInstance().getModule(AVisionFilter.class);
-		visionFilter.removeObserver(this);
 
-		Collection<ABot> bots = new ArrayList<>(getBots().values());
-		for (IBot bot : bots)
+	@Override
+	public Map<BotID, TigerBot> getBots()
+	{
+		return super.getBots().values().stream().map(TigerBot.class::cast)
+				.collect(Collectors.toMap(TigerBot::getBotId, Function.identity()));
+	}
+
+
+	@Override
+	public Optional<TigerBot> getBot(BotID botID)
+	{
+		return super.getBot(botID).map(TigerBot.class::cast);
+	}
+
+
+	@Override
+	protected ABot createBot(BotID botId, ICommandSink commandSink)
+	{
+		return new TigerBot(botId, commandSink, configDatabase.getDatabase());
+	}
+
+
+	@Override
+	public void onNewWorldFrame(WorldFrameWrapper wFrameWrapper)
+	{
+		matchBroadcast.setStrictVelocityLimit(wFrameWrapper.getGameState().isVelocityLimited());
+	}
+
+
+	@Override
+	public void sendCommand(ACommand cmd)
+	{
+		super.sendCommand(cmd);
+		baseStation.enqueueCommand(cmd);
+		recordCommand(cmd, EMessageType.TIGERS_BASE_STATION_CMD_SENT);
+	}
+
+
+	private void sendBroadcast()
+	{
+		BaseStationBroadcast broadcast = new BaseStationBroadcast();
+
+		broadcast.setKickerAutocharge(matchBroadcast.isAutoCharge());
+		broadcast.setStrictVelocityLimit(matchBroadcast.isStrictVelocityLimit());
+		broadcast.setUnixTime(System.currentTimeMillis() / 1000L);
+		broadcast.setAllocatedBotIds(getAllocatedBots());
+
+		sendCommand(broadcast);
+	}
+
+
+	private void onIncomingCommand(ACommand cmd)
+	{
+		recordCommand(cmd, EMessageType.TIGERS_BASE_STATION_CMD_RECEIVED);
+		latencyTester.processIncomingCommand(cmd);
+		processIncommingCommand(cmd);
+	}
+
+
+	private void recordCommand(final ACommand cmd, EMessageType type)
+	{
+		if (gameLogRecorder != null)
 		{
-			onBotOffline(bot.getBotId());
+			byte[] data = CommandFactory.getInstance().encode(cmd);
+			gameLogRecorder.writeMessage(new GameLogMessage(NanoTime.getTimestampNow(), type, data));
+		}
+	}
+
+
+	private void onNetworkStateChanged(ENetworkState oldState, ENetworkState newState)
+	{
+		if (newState != ENetworkState.ONLINE)
+		{
+			var connectedBots = new HashSet<>(getBots().keySet());
+			connectedBots.forEach(this::removeBot);
 		}
 	}
 
 
 	public void chargeAll()
 	{
-		for (final ABot bot : getBots().values())
-		{
-			bot.getMatchCtrl().setKickerAutocharge(true);
-		}
 		setAutoCharge(true);
 	}
 
 
 	public void dischargeAll()
 	{
-		for (final ABot bot : getBots().values())
-		{
-			bot.getMatchCtrl().setKickerAutocharge(false);
-		}
 		setAutoCharge(false);
-	}
-
-
-	public void broadcast(ACommand cmd)
-	{
-		getTigerBots().values().forEach(b -> b.execute(cmd));
-	}
-
-
-	public void broadcastWithVersionCheck(TigerConfigWrite cmd, final int version)
-	{
-		getTigerBots().values().forEach(b -> {
-			if (b.isSameConfigVersion(cmd.getConfigId(), version))
-			{
-				b.execute(cmd);
-			}
-		});
 	}
 
 
 	private void setAutoCharge(final boolean autoCharge)
 	{
-		this.autoCharge = autoCharge;
-		SumatraModel.getInstance().setUserProperty(PROP_AUTO_CHARGE,
-				String.valueOf(autoCharge));
+		matchBroadcast.setAutoCharge(autoCharge);
+		SumatraModel.getInstance().setUserProperty(PROP_AUTO_CHARGE, autoCharge);
 	}
 
 
-	@Override
-	public TigersBaseStation getBaseStation()
+	private void onViewportUpdated(Viewport viewport)
 	{
-		return (TigersBaseStation) baseStation;
-	}
-
-
-	public Optional<TigerBot> getTigerBot(final BotID botID)
-	{
-		return getBot(botID).map(TigerBot.class::cast);
-	}
-
-
-	private Map<BotID, TigerBot> getTigerBots()
-	{
-		return getBots().values().stream()
-				.map(TigerBot.class::cast)
-				.collect(Collectors.toMap(TigerBot::getBotId, Function.identity()));
-	}
-
-
-	@Override
-	public void onIncomingBotCommand(final BotID id, final ACommand command)
-	{
-		getTigerBot(id).ifPresent(bot -> processCommand(command, bot));
-	}
-
-
-	private void processCommand(final ACommand command, final TigerBot bot)
-	{
-		if (command.getType() == CMD_SYSTEM_MATCH_FEEDBACK)
-		{
-			// update bot params as feature may have changed, which include the type of robot
-			bot.setBotParams(botParamsManager.get(bot.getBotParamLabel()));
-		}
-		bot.onIncomingBotCommand(command);
-		botObservers.forEach(c -> c.onIncomingBotCommand(bot, command));
-	}
-
-
-	@Override
-	public void onBotOnline(final ABot bot)
-	{
-		super.onBotOnline(bot);
-		bot.getMatchCtrl().setKickerAutocharge(autoCharge);
-	}
-
-
-	@Override
-	public void onViewportUpdated(final int cameraId, final IRectangle viewport)
-	{
-		BaseStationCameraViewport cmd = new BaseStationCameraViewport(cameraId, viewport);
+		BaseStationCameraViewport cmd = new BaseStationCameraViewport(viewport.getCameraId(), viewport.getArea());
 		getBaseStation().enqueueCommand(cmd);
 	}
 
 
 	@Override
-	public void onNewBaseStationWifiStats(final BaseStationWifiStats stats)
+	protected void removeBot(BotID botId)
 	{
-		for (BaseStationWifiStats.BotStats botStats : stats.getBotStats())
-		{
-			getTigerBot(botStats.getBotId()).ifPresent(bot -> bot.setStats(botStats));
-		}
-	}
-
-
-	public void addBotObserver(final ITigerBotObserver observer)
-	{
-		botObservers.add(observer);
-	}
-
-
-	public void removeBotObserver(final ITigerBotObserver observer)
-	{
-		botObservers.remove(observer);
+		getBot(botId).ifPresent(TigerBot::stop);
+		super.removeBot(botId);
 	}
 }
 

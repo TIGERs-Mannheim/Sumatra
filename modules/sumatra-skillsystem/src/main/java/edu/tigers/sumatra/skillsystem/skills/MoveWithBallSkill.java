@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.skillsystem.skills;
@@ -59,11 +59,14 @@ public class MoveWithBallSkill extends AMoveToSkill
 	@Configurable(defValue = "200", comment = "Min distance [mm] to final destination to update target angle")
 	private static double minDistanceToFinalDestToUpdateTargetAngle = 200;
 
-	@Configurable(comment = "Factor that is applied on the default dribble force when pushing the ball", defValue = "0.25")
-	private static double forwardDribbleForceFactor = 0.25;
+	@Configurable(comment = "Factor that is applied on the default dribble force when pushing the ball", defValue = "1.0")
+	private static double forwardDribbleForceFactor = 1.0;
 
 	@Configurable(comment = "Offset [m/s] that is added to the default dribble force when pushing the ball", defValue = "0.0")
 	private static double forwardDribbleForceOffset = 0.0;
+
+	@Configurable(defValue = "DEFAULT")
+	private static EDribblerMode dribblerMode = EDribblerMode.DEFAULT;
 
 	private final TimestampTimer calmDownTimer = new TimestampTimer(0.5);
 
@@ -111,7 +114,7 @@ public class MoveWithBallSkill extends AMoveToSkill
 		{
 			getMoveConstraints().setAccMax(moveWithBallAcc);
 			getMoveConstraints().setVelMax(moveWithBallVel);
-			setKickParams(getKick().withDribblerMode(EDribblerMode.DEFAULT));
+			setKickParams(getKick().withDribblerMode(dribblerMode));
 		}
 
 		super.doUpdate();
@@ -138,7 +141,7 @@ public class MoveWithBallSkill extends AMoveToSkill
 
 		getShapes().get(ESkillShapesLayer.MOVE_WITH_BALL)
 				.add(new DrawableBotShape(finalDest, finalOrientation(), Geometry.getBotRadius() + 20,
-						getBot().getCenter2DribblerDist()));
+						getTBot().getCenter2DribblerDist()));
 	}
 
 
@@ -160,9 +163,9 @@ public class MoveWithBallSkill extends AMoveToSkill
 
 	private IVector2 calcDestination()
 	{
-		if (Math.abs(AngleMath.difference(getAngle(), getTargetAngle())) < 0.3
-				&& (getTBot().getBallContact().hadContact(minContactTime))
-				|| getTBot().getBallContact().hasContactFromVisionOrBarrier())
+		if (Math.abs(AngleMath.difference(getAngle(), getTargetAngle())) < 0.2
+				&& (getTBot().getBallContact().hadContact(minContactTime)
+				|| getTBot().getBallContact().hasContactFromVisionOrBarrier()))
 		{
 			// start moving only after target angle reached approximately
 			return finalDest;

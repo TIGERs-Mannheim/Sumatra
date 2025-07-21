@@ -3,7 +3,6 @@
  */
 package edu.tigers.sumatra.trajectory;
 
-import com.sleepycat.persist.model.Persistent;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.IVector3;
 import edu.tigers.sumatra.math.vector.Vector3;
@@ -18,20 +17,11 @@ import java.util.List;
  * Three dimensional trajectory.
  */
 @Value
-@Persistent
 @RequiredArgsConstructor
 public class TrajectoryXyw implements ITrajectory<IVector3>
 {
 	ITrajectory<IVector2> trajXy;
 	ITrajectory<Double> trajW;
-
-
-	@SuppressWarnings("unused") // berkeley
-	private TrajectoryXyw()
-	{
-		trajXy = new StubTrajectory<>();
-		trajW = new StubTrajectory<>();
-	}
 
 
 	@Override

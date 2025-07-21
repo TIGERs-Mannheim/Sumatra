@@ -4,7 +4,6 @@
 
 package edu.tigers.sumatra.bot;
 
-import com.sleepycat.persist.model.Persistent;
 import edu.tigers.sumatra.bot.params.BotParams;
 import edu.tigers.sumatra.bot.params.IBotParams;
 import edu.tigers.sumatra.ids.BotID;
@@ -25,7 +24,6 @@ import java.util.Optional;
 /**
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  */
-@Persistent(version = 3)
 @Builder(setterPrefix = "with", builderClassName = "Builder", builderMethodName = "newBuilder", toBuilder = true)
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class RobotInfo implements IMirrorable<RobotInfo>
@@ -66,18 +64,11 @@ public class RobotInfo implements IMirrorable<RobotInfo>
 	@NonNull
 	private final IBotParams botParams;
 	@Getter
-	private final boolean healthy;
+	private final ERobotHealthState healthState;
 	@Getter
 	private final boolean availableToAi;
 	private final EDribbleTractionState dribbleTraction;
 	private final BotBallState ballState;
-
-
-	@SuppressWarnings("unused")
-	private RobotInfo()
-	{
-		this(BotID.noBot(), 0);
-	}
 
 
 	private RobotInfo(final BotID botId, final long timestamp)
@@ -98,7 +89,7 @@ public class RobotInfo implements IMirrorable<RobotInfo>
 		internalState = null;
 		barrierInterrupted = false;
 		botParams = new BotParams();
-		healthy = true;
+		healthState = ERobotHealthState.READY;
 		dribbleTraction = EDribbleTractionState.OFF;
 		availableToAi = true;
 		ballState = null;

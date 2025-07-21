@@ -18,7 +18,7 @@ import java.util.Map;
 
 
 @Log4j2
-public class FrameClassSizeAnalyzer implements ISizeAnalyzer<Object>
+public class FrameClassSizeAnalyzer implements IPersistenceDbAnalyzer<Object>
 {
 	private final ObjectSizeAnalyzer objectSizeAnalyzer = new ObjectSizeAnalyzer();
 	private final Map<Class<?>, Summer> map = new LinkedHashMap<>();

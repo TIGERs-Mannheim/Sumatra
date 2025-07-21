@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.pandora.roles.keeper;
@@ -11,6 +11,7 @@ import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
 import edu.tigers.sumatra.ai.metis.keeper.EKeeperActionType;
 import edu.tigers.sumatra.ai.metis.keeper.IKeeperPenAreaMarginProvider;
 import edu.tigers.sumatra.ai.metis.keeper.KeeperBehaviorCalc;
+import edu.tigers.sumatra.ai.metis.kicking.KickSpeedFactory;
 import edu.tigers.sumatra.ai.metis.kicking.Pass;
 import edu.tigers.sumatra.ai.pandora.roles.ARole;
 import edu.tigers.sumatra.ai.pandora.roles.ERole;
@@ -130,8 +131,10 @@ public class KeeperRole extends ARole
 		interceptState.addTransition("isBallDribblerContact", this::isDribblingBallOrHasContact, moveWithBallPrepState);
 
 		setupStandardExitTransitions(moveInFrontOfBallState);
-		moveInFrontOfBallState.addTransition("isBallDribblerContact", this::isDribblingBallOrHasContact,
-				moveWithBallPrepState);
+		moveInFrontOfBallState.addTransition(
+				"isBallDribblerContact", this::isDribblingBallOrHasContact,
+				moveWithBallPrepState
+		);
 		moveInFrontOfBallState.addTransition("isBallMoving", this::isBallMoving, defendState);
 		moveInFrontOfBallState.addTransition("movedInFront", () -> movedInFront, getBallContactState);
 
@@ -341,15 +344,34 @@ public class KeeperRole extends ARole
 	{
 		var ballTravel = Lines.halfLineFromDirection(getBot().getPos(), Vector2.fromAngle(getBot().getAngleByTime(0)));
 		var intersections = Geometry.getField().intersectPerimeterPath(ballTravel);
+		var maxChipSpeed = new KickSpeedFactory().maxChip(getBot());
+		double kickSpeed;
 		if (intersections.size() != 1)
 		{
 			// Should never happen, but if it does yeet the ball away
-			return KickParams.maxChip().withDribblerMode(dribblerMode);
+			kickSpeed = maxChipSpeed;
+		} else
+		{
+			var distance = intersections.getFirst().distanceTo(getPos());
+			kickSpeed = getBall().getChipConsultant().getInitVelForDistAtTouchdown(distance, 3);
 		}
-		var distance = intersections.get(0).distanceTo(getPos());
-		var kickSpeed = getBall().getChipConsultant().getInitVelForDistAtTouchdown(distance, 3);
-		return KickParams.chip(SumatraMath.min(kickSpeed, RuleConstraints.getMaxKickSpeed()))
-				.withDribblerMode(dribblerMode);
+
+		var limitedKickSpeed = SumatraMath.min(kickSpeed, maxChipSpeed);
+
+		var closestNoneKeeperToBall = getWFrame().getBots().values().stream()
+				.filter(bot -> !bot.getBotId().equals(getBotID()))
+				.mapToDouble(bot -> getBall().getPos().distanceTo(bot.getPos()))
+				.map(distance -> distance - Geometry.getBotRadius() - Geometry.getBallRadius())
+				.min().orElse(Double.POSITIVE_INFINITY);
+		var minDistanceToOverChip = getBall().getChipConsultant()
+				.getMinimumDistanceToOverChip(limitedKickSpeed, 1.2 * RuleConstraints.getMaxRobotHeight());
+
+		if (closestNoneKeeperToBall < minDistanceToOverChip)
+		{
+			return KickParams.disarm().withDribblerMode(dribblerMode);
+		}
+
+		return KickParams.chip(limitedKickSpeed).withDribblerMode(dribblerMode);
 	}
 
 
@@ -389,8 +411,10 @@ public class KeeperRole extends ARole
 		{
 			skill.getMoveCon().physicalObstaclesOnly();
 
-			var dest = LineMath.stepAlongLine(Geometry.getGoalOur().bisection(getBall().getPos()), getBall().getPos(),
-							Geometry.getGoalOur().getWidth() / 3)
+			var dest = LineMath.stepAlongLine(
+							Geometry.getGoalOur().bisection(getBall().getPos()), getBall().getPos(),
+							Geometry.getGoalOur().getWidth() / 3
+					)
 					.addNew(Vector2.fromX(Geometry.getPenaltyAreaDepth() / 5));
 			skill.updateDestination(keepDistanceToBall.findNextFreeDest(getAiFrame(), dest, getBotID()));
 			skill.updateLookAtTarget(getWFrame().getBall());
@@ -768,7 +792,17 @@ public class KeeperRole extends ARole
 			{
 				target = Geometry.getGoalTheir().getCenter();
 				tolerance = 0.1;
-				paramsIfAimed = KickParams.maxChip().withDribblerMode(ballHandlingDribblerMode);
+				if (getBot().getRobotInfo().getBotParams().getKickerSpecs().getMaxAbsoluteChipVelocity() > 0)
+				{
+					paramsIfAimed = KickParams.chip(
+							getBot().getRobotInfo().getBotParams().getKickerSpecs().getMaxAbsoluteChipVelocity()
+					).withDribblerMode(ballHandlingDribblerMode);
+				} else
+				{
+					paramsIfAimed = KickParams.straight(
+							getBot().getRobotInfo().getBotParams().getKickerSpecs().getMaxAbsoluteStraightVelocity()
+					).withDribblerMode(ballHandlingDribblerMode);
+				}
 			} else
 			{
 				target = keeperPass.getKick().getTarget();

@@ -3,25 +3,20 @@
  */
 package edu.tigers.sumatra.cam.data;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import com.sleepycat.persist.model.Persistent;
-
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2f;
+import lombok.Getter;
+
+import java.util.ArrayList;
+import java.util.List;
 
 
 /**
- * Simple data holder; internal data structure for the
- * SSL_DetectionRobot from
- * protobuf-protocol, coming from
- * the SSL-Vision.
- *
- * @author Gero
+ * Simple data holder; internal data structure for the SSL_DetectionRobot from
+ * protobuf-protocol, coming from SSL-Vision.
  */
-@Persistent
+@Getter
 public class CamRobot extends ACamObject
 {
 	private final BotID botId;
@@ -44,57 +39,24 @@ public class CamRobot extends ACamObject
 	}
 
 
-	/**
-	 * <p>
-	 * <i>(Being aware of EJ-SE Item 2; but we prefer performance over readability - at least in this case. Objects are
-	 * created at only one point in the system, but needs to be fast.</i>
-	 * </p>
-	 *
-	 * @param confidence
-	 * @param pixel
-	 * @param tCapture
-	 * @param camId
-	 * @param frameId
-	 * @param pos
-	 * @param orientation
-	 * @param height
-	 * @param botId
-	 */
 	@SuppressWarnings("squid:S00107") // number of parameters vs. performance
-	public CamRobot(final double confidence,
+	public CamRobot(
+			final double confidence,
 			final IVector2 pixel,
 			final long tCapture,
-			final Long tCaptureCamera,
-			final long tSent,
 			final int camId,
-			final long frameId,
+			final long globalFrameId,
 			final IVector2 pos,
 			final double orientation,
 			final double height,
-			final BotID botId)
+			final BotID botId
+	)
 	{
-		super(confidence, pixel, tCapture, tCaptureCamera, tSent, camId, frameId);
+		super(confidence, pixel, tCapture, camId, globalFrameId);
 		this.pos = pos.copy();
 		this.orientation = orientation;
 		this.height = height;
 		this.botId = botId;
-	}
-
-
-	/**
-	 * New CamRobot with adjusted tCapture timestamp.
-	 *
-	 * @param orig
-	 * @param tCapture
-	 */
-	public CamRobot(final CamRobot orig, final long tCapture)
-	{
-		super(orig.getConfidence(), orig.getPixel(), tCapture, orig.getTCaptureCamera(), orig.getTSent(),
-				orig.getCameraId(), orig.getFrameId());
-		pos = orig.pos.copy();
-		orientation = orig.orientation;
-		height = orig.height;
-		botId = orig.botId;
 	}
 
 
@@ -124,40 +86,16 @@ public class CamRobot extends ACamObject
 	}
 
 
-	/**
-	 * @return the robotID
-	 */
 	public int getRobotID()
 	{
 		return botId.getNumber();
 	}
 
 
-	/**
-	 * @return the pos
-	 */
 	@Override
 	public IVector2 getPos()
 	{
 		return pos;
-	}
-
-
-	/**
-	 * @return the orientation
-	 */
-	public double getOrientation()
-	{
-		return orientation;
-	}
-
-
-	/**
-	 * @return the height
-	 */
-	public double getHeight()
-	{
-		return height;
 	}
 
 
@@ -182,14 +120,5 @@ public class CamRobot extends ACamObject
 		headers.add("robotColor");
 		headers.add("height");
 		return headers;
-	}
-
-
-	/**
-	 * @return the botId
-	 */
-	public BotID getBotId()
-	{
-		return botId;
 	}
 }

@@ -25,8 +25,8 @@ import java.awt.Color;
 
 public class ApproachBallLineSkill extends AMoveToSkill
 {
-	@Configurable(defValue = "100.0", comment = "When distance is below, the ball is considered catched up")
-	private static double minDistanceToBallLine = 100;
+	@Configurable(defValue = "200.0", comment = "When distance is below, the ball is considered catched up")
+	private static double minDistanceToBallLine = 200;
 	private final PositionValidator positionValidator = new PositionValidator();
 	@Setter
 	private double maximumReasonableRedirectAngle = 1.2;
@@ -39,6 +39,8 @@ public class ApproachBallLineSkill extends AMoveToSkill
 	private double marginToTheirPenArea;
 	@Setter
 	private double approachFailedMinBallVel = 0.1;
+	@Setter
+	private boolean useOvershoot = false;
 
 
 	@Override
@@ -76,11 +78,11 @@ public class ApproachBallLineSkill extends AMoveToSkill
 				updateTargetAngle(targetAngle);
 			}
 
-			var center2DribblerDist = getBot().getCenter2DribblerDist() + Geometry.getBallRadius();
+			var center2DribblerDist = getTBot().getCenter2DribblerDist() + Geometry.getBallRadius();
 			var botToKickerPos = Vector2.fromAngle(targetAngle).scaleToNew(center2DribblerDist);
 			var dest = catchPosition.subtractNew(botToKickerPos);
 
-			updateDestination(dest);
+			updateDestination(calcDest(catchPosition, dest));
 			setComeToAStop(TrajectoryGenerator.isComeToAStopFaster(getTBot(), dest));
 		} else
 		{
@@ -95,6 +97,18 @@ public class ApproachBallLineSkill extends AMoveToSkill
 		super.doUpdate();
 
 		updateSkillState();
+	}
+
+
+	private IVector2 calcDest(IVector2 interceptPosition, IVector2 wantedDest)
+	{
+		if (!useOvershoot)
+		{
+			return wantedDest;
+		}
+
+		var ballTime = getBall().getTrajectory().getTimeByPos(interceptPosition);
+		return TrajectoryGenerator.generateVirtualPositionToReachPointInTime(getTBot(), wantedDest, ballTime);
 	}
 
 
@@ -116,7 +130,7 @@ public class ApproachBallLineSkill extends AMoveToSkill
 	private boolean ballLineIsApproached()
 	{
 		return getBall().getTrajectory().getTravelLineSegment().distanceTo(getPos()) < minDistanceToBallLine
-				&& Math.abs(getTBot().getVel().scalarProduct(getBall().getVel().getNormalVector().normalizeNew())) < 0.3;
+				&& Math.abs(getTBot().getVel().scalarProduct(getBall().getVel().getNormalVector().normalizeNew())) < 0.6;
 	}
 
 
@@ -141,6 +155,6 @@ public class ApproachBallLineSkill extends AMoveToSkill
 			return desiredBallCatchPos;
 		}
 		IVector2 catchPos = getTBot().getBotKickerPos(Geometry.getBallRadius());
-		return getBall().getTrajectory().closestPointTo(catchPos);
+		return getBall().getTrajectory().closestPointToRolling(catchPos);
 	}
 }

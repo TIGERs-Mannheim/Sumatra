@@ -3,12 +3,9 @@
  */
 package edu.tigers.sumatra.botmanager.bots;
 
-import edu.tigers.sumatra.bot.EBallObservationState;
 import edu.tigers.sumatra.bot.EBotType;
-import edu.tigers.sumatra.bot.EDribbleTractionState;
-import edu.tigers.sumatra.bot.EDribblerTemperature;
-import edu.tigers.sumatra.bot.ERobotMode;
-import edu.tigers.sumatra.botmanager.basestation.DummyBaseStation;
+import edu.tigers.sumatra.bot.ERobotHealthState;
+import edu.tigers.sumatra.botmanager.data.MatchCommand;
 import edu.tigers.sumatra.botparams.EBotParamLabel;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.ids.ETeamColor;
@@ -24,7 +21,7 @@ public class DummyBot extends ABot
 	 */
 	public DummyBot()
 	{
-		super(EBotType.UNKNOWN, BotID.noBot(), new DummyBaseStation());
+		super(EBotType.UNKNOWN, BotID.noBot());
 	}
 
 
@@ -33,68 +30,21 @@ public class DummyBot extends ABot
 	 */
 	public DummyBot(final BotID botId)
 	{
-		super(EBotType.UNKNOWN, botId, new DummyBaseStation());
+		super(EBotType.UNKNOWN, botId);
 	}
 
 
 	@Override
-	public boolean isBarrierInterrupted()
+	public void sendMatchCommand(MatchCommand matchCommand)
 	{
-		return false;
+		// Cannot send anything, too dumb :/
 	}
 
 
 	@Override
-	public double getCenter2DribblerDist()
+	public ERobotHealthState getHealthState()
 	{
-		return 75;
-	}
-
-
-	@Override
-	public int getHardwareId()
-	{
-		return getBotId().getNumberWithColorOffsetBS();
-	}
-
-
-	@Override
-	public EDribblerTemperature getDribblerTemperature()
-	{
-		return EDribblerTemperature.COLD;
-	}
-
-	@Override
-	public EDribbleTractionState getDribbleTractionState() { return EDribbleTractionState.OFF; }
-
-	@Override
-	public EBallObservationState getBallObservationState() { return EBallObservationState.UNKNOWN; }
-
-	@Override
-	public double getKickerLevel()
-	{
-		return 0;
-	}
-
-
-	@Override
-	public double getBatteryRelative()
-	{
-		return 0;
-	}
-
-
-	@Override
-	public ERobotMode getRobotMode()
-	{
-		return ERobotMode.READY;
-	}
-
-
-	@Override
-	public boolean isHealthy()
-	{
-		return true;
+		return ERobotHealthState.UNUSABLE;
 	}
 
 

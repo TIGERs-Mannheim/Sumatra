@@ -4,14 +4,12 @@
 
 package edu.tigers.sumatra.ai;
 
-import com.sleepycat.persist.model.Persistent;
 import edu.tigers.sumatra.ai.athena.IPlayStrategy;
 import edu.tigers.sumatra.ai.data.BotAiInformation;
 import edu.tigers.sumatra.ai.metis.ballinterception.BallInterceptionInformation;
 import edu.tigers.sumatra.ai.metis.offense.action.RatedOffensiveAction;
-import edu.tigers.sumatra.ai.metis.offense.statistics.OffensiveAnalysedFrame;
-import edu.tigers.sumatra.ai.metis.offense.statistics.OffensiveStatisticsFrame;
 import edu.tigers.sumatra.ai.metis.offense.strategy.OffensiveStrategy;
+import edu.tigers.sumatra.ai.metis.pass.PassStats;
 import edu.tigers.sumatra.ai.metis.statistics.stats.MatchStats;
 import edu.tigers.sumatra.ai.metis.support.behaviors.ESupportBehavior;
 import edu.tigers.sumatra.ai.metis.support.behaviors.SupportBehaviorPosition;
@@ -28,9 +26,8 @@ import java.util.stream.Collectors;
 
 
 /**
- * Data container that is send to the UI and that is stored in the Berkeley DB.
+ * Data container that is send to the UI and that is stored in the Persistence DB.
  */
-@Persistent(version = 7)
 @Value
 public class VisualizationFrame
 {
@@ -42,31 +39,13 @@ public class VisualizationFrame
 	OffensiveStrategy offensiveStrategy;
 	Map<BotID, RatedOffensiveAction> offensiveActions = new HashMap<>();
 	Map<BotID, BotAiInformation> aiInfos = new HashMap<>();
-	OffensiveAnalysedFrame offensiveStatisticsFrame;
-	OffensiveStatisticsFrame offensiveStatisticsFrameRaw;
 	transient IPlayStrategy playStrategy;
 	Map<BotID, BallInterceptionInformation> ballInterceptionInformationMap;
 
 	Map<BotID, ESupportBehavior> supportBehaviorAssignment;
 	Map<BotID, EnumMap<ESupportBehavior, SupportBehaviorPosition>> supportBehaviorViabilities;
 	Map<ESupportBehavior, Boolean> activeSupportBehaviors;
-
-
-	@SuppressWarnings("unused")
-	private VisualizationFrame()
-	{
-		timestamp = 0;
-		aiTeam = null;
-		matchStats = null;
-		offensiveStrategy = null;
-		offensiveStatisticsFrame = null;
-		offensiveStatisticsFrameRaw = null;
-		playStrategy = null;
-		ballInterceptionInformationMap = null;
-		supportBehaviorAssignment = null;
-		supportBehaviorViabilities = null;
-		activeSupportBehaviors = null;
-	}
+	PassStats passStats;
 
 
 	/**
@@ -77,19 +56,18 @@ public class VisualizationFrame
 		timestamp = aiFrame.getSimpleWorldFrame().getTimestamp();
 		aiTeam = aiFrame.getAiTeam();
 		matchStats = aiFrame.getTacticalField().getMatchStats();
-		offensiveStrategy = berkeleyFriendly(aiFrame.getTacticalField().getOffensiveStrategy());
+		offensiveStrategy = persistenceFriendly(aiFrame.getTacticalField().getOffensiveStrategy());
 		offensiveActions.putAll(aiFrame.getTacticalField().getOffensiveActions());
 		aiInfos.putAll(aiFrame.getAresData().getBotAiInformation());
-		offensiveStatisticsFrame = aiFrame.getTacticalField().getAnalyzedOffensiveStatisticsFrame();
-		offensiveStatisticsFrameRaw = aiFrame.getTacticalField().getOffensiveStatistics();
 		playStrategy = aiFrame.getAthenaAiFrame().getPlayStrategy();
 		ballInterceptionInformationMap = aiFrame.getTacticalField().getBallInterceptionInformationMap().entrySet()
-				.stream().collect(Collectors.toMap(Map.Entry::getKey, e -> berkeleyFriendly(e.getValue())));
+				.stream().collect(Collectors.toMap(Map.Entry::getKey, e -> persistenceFriendly(e.getValue())));
 		supportBehaviorAssignment = new HashMap<>(aiFrame.getTacticalField().getSupportBehaviorAssignment());
 		supportBehaviorViabilities = new HashMap<>(aiFrame.getTacticalField().getSupportViabilities());
 		activeSupportBehaviors = aiFrame.getTacticalField().getActiveSupportBehaviors().isEmpty()
 				? new HashMap<>()
 				: new EnumMap<>(aiFrame.getTacticalField().getActiveSupportBehaviors());
+		passStats = aiFrame.getTacticalField().getPassStats();
 	}
 
 
@@ -104,13 +82,12 @@ public class VisualizationFrame
 		offensiveStrategy = aiFrame.getOffensiveStrategy();
 		offensiveActions.putAll(aiFrame.getOffensiveActions());
 		aiInfos.putAll(aiFrame.getAiInfos());
-		offensiveStatisticsFrame = aiFrame.getOffensiveStatisticsFrame();
-		offensiveStatisticsFrameRaw = aiFrame.getOffensiveStatisticsFrameRaw();
 		playStrategy = aiFrame.getPlayStrategy();
 		ballInterceptionInformationMap = aiFrame.getBallInterceptionInformationMap();
 		supportBehaviorAssignment = aiFrame.getSupportBehaviorAssignment();
 		supportBehaviorViabilities = aiFrame.getSupportBehaviorViabilities();
 		activeSupportBehaviors = aiFrame.activeSupportBehaviors;
+		passStats = aiFrame.getPassStats();
 	}
 
 
@@ -123,14 +100,14 @@ public class VisualizationFrame
 	}
 
 
-	private OffensiveStrategy berkeleyFriendly(OffensiveStrategy offensiveStrategy)
+	private OffensiveStrategy persistenceFriendly(OffensiveStrategy offensiveStrategy)
 	{
 		return new OffensiveStrategy(offensiveStrategy.getAttackerBot().orElse(null),
 				new HashMap<>(offensiveStrategy.getCurrentOffensivePlayConfiguration()));
 	}
 
 
-	private BallInterceptionInformation berkeleyFriendly(BallInterceptionInformation ballInterceptionInformation)
+	private BallInterceptionInformation persistenceFriendly(BallInterceptionInformation ballInterceptionInformation)
 	{
 		return ballInterceptionInformation.toBuilder()
 				.interceptionCorridors(new ArrayList<>(ballInterceptionInformation.getInterceptionCorridors()))

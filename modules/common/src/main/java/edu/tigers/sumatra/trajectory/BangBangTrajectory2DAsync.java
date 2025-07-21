@@ -4,7 +4,6 @@
 
 package edu.tigers.sumatra.trajectory;
 
-import com.sleepycat.persist.model.Persistent;
 import edu.tigers.sumatra.math.AngleMath;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
@@ -22,22 +21,12 @@ import java.util.List;
  */
 @ToString
 @Getter
-@Persistent
 @RequiredArgsConstructor
 class BangBangTrajectory2DAsync implements ITrajectory<IVector2>
 {
 	final BangBangTrajectory2D child;
 	final IVector2 initialPos;
 	final double rotation;
-
-
-	@SuppressWarnings("unused") // berkeley
-	private BangBangTrajectory2DAsync()
-	{
-		child = new BangBangTrajectory2D();
-		initialPos = Vector2.zero();
-		rotation = 0;
-	}
 
 
 	@Override

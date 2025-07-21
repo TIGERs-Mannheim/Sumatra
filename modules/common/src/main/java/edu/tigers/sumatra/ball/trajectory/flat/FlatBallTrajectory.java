@@ -3,7 +3,6 @@
  */
 package edu.tigers.sumatra.ball.trajectory.flat;
 
-import com.sleepycat.persist.model.Persistent;
 import edu.tigers.sumatra.ball.BallParameters;
 import edu.tigers.sumatra.ball.BallState;
 import edu.tigers.sumatra.ball.trajectory.ABallTrajectory;
@@ -13,7 +12,6 @@ import edu.tigers.sumatra.math.line.ILineSegment;
 import edu.tigers.sumatra.math.line.Lines;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.IVector3;
-import edu.tigers.sumatra.math.vector.Vector2f;
 import edu.tigers.sumatra.math.vector.Vector3f;
 import edu.tigers.sumatra.planarcurve.PlanarCurve;
 import edu.tigers.sumatra.planarcurve.PlanarCurveSegment;
@@ -27,7 +25,6 @@ import java.util.List;
 /**
  * Ball trajectory for flat kicks with two phases, separated by a dynamically calculated switch velocity.
  */
-@Persistent
 public class FlatBallTrajectory extends ABallTrajectory
 {
 	@Getter
@@ -39,22 +36,6 @@ public class FlatBallTrajectory extends ABallTrajectory
 	private final IVector2 accSlide;
 	private final IVector2 accSlideSpin;
 	private final IVector2 accRoll;
-
-
-	/**
-	 * Create an empty default state. Required for {@link Persistent}.
-	 */
-	private FlatBallTrajectory()
-	{
-		super();
-
-		tSwitch = 0;
-		posSwitch = Vector2f.ZERO_VECTOR;
-		velSwitch = Vector2f.ZERO_VECTOR;
-		accSlide = Vector2f.ZERO_VECTOR;
-		accSlideSpin = Vector2f.ZERO_VECTOR;
-		accRoll = Vector2f.ZERO_VECTOR;
-	}
 
 
 	private FlatBallTrajectory(

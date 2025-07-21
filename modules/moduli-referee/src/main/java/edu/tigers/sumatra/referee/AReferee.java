@@ -3,7 +3,7 @@
  */
 package edu.tigers.sumatra.referee;
 
-import edu.tigers.moduli.AModule;
+import edu.tigers.sumatra.moduli.AModule;
 import edu.tigers.sumatra.referee.control.GcEventFactory;
 import edu.tigers.sumatra.referee.proto.SslGcApi;
 import edu.tigers.sumatra.referee.proto.SslGcRefereeMessage;

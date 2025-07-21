@@ -4,7 +4,6 @@
 
 package edu.tigers.sumatra.wp.data;
 
-import com.sleepycat.persist.model.Persistent;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.IMirrorable;
 import lombok.AccessLevel;
@@ -22,7 +21,6 @@ import java.util.stream.Collectors;
 /**
  * This frame contains tracked (filtered) objects from vision in the vision coordinate system.
  */
-@Persistent(version = 5)
 @Data
 @RequiredArgsConstructor
 public class SimpleWorldFrame implements IMirrorable<SimpleWorldFrame>
@@ -35,17 +33,6 @@ public class SimpleWorldFrame implements IMirrorable<SimpleWorldFrame>
 	@Getter(AccessLevel.NONE)
 	@Setter(AccessLevel.NONE)
 	private transient Map<BotID, ITrackedBot> botsReadOnly;
-
-
-	@SuppressWarnings("unused")
-	private SimpleWorldFrame()
-	{
-		frameNumber = 0;
-		timestamp = 0;
-		bots = null;
-		ball = null;
-		kickedBall = null;
-	}
 
 
 	/**

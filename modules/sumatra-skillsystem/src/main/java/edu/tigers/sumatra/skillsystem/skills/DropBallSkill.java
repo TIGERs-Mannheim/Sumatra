@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.skillsystem.skills;
@@ -20,8 +20,8 @@ public class DropBallSkill extends AMoveToSkill
 	@Configurable(comment = "Move back during drop.", defValue = "true")
 	private static boolean moveBack = true;
 
-	@Configurable(comment = "Velocity for move back.", defValue = "2")
-	private static double moveBackVelocity = 2;
+	@Configurable(comment = "Velocity for move back.", defValue = "0.05")
+	private static double moveBackVelocity = 0.05;
 
 	@Configurable(comment = "Acceleration for move back.", defValue = "5")
 	private static double moveBackAcceleration = 5;
@@ -32,8 +32,8 @@ public class DropBallSkill extends AMoveToSkill
 	@Configurable(comment = "Time to calm down after moving away from ball", defValue = "0.5")
 	private static double calmDownAfterTime = 0.5;
 
-	@Configurable(comment = "Distance to move away from ball", defValue = "15")
-	private static double moveAwayDistance = 15;
+	@Configurable(comment = "Distance to move away from ball", defValue = "40")
+	private static double moveAwayDistance = 40;
 
 	private IVector2 moveBackTarget;
 	private final TimestampTimer calmDownBeforeTimer = new TimestampTimer(calmDownBeforeTime);
@@ -62,7 +62,7 @@ public class DropBallSkill extends AMoveToSkill
 			return;
 		}
 
-		if (getBot().getDribbleTractionState() == EDribbleTractionState.OFF)
+		if (getBot().getLastReceivedBotFeedback().getDribbleTraction() == EDribbleTractionState.OFF)
 		{
 			calmDownBeforeTimer.update(getWorldFrame().getTimestamp());
 			if (!calmDownBeforeTimer.isTimeUp(getWorldFrame().getTimestamp()))

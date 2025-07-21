@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.metis.pass;
@@ -13,6 +13,7 @@ import edu.tigers.sumatra.ai.metis.pass.rating.EPassRating;
 import edu.tigers.sumatra.ai.metis.pass.rating.RatedPass;
 import edu.tigers.sumatra.ai.metis.pass.rating.RatedPassFactory;
 import edu.tigers.sumatra.drawable.DrawableLine;
+import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
 import edu.tigers.sumatra.wp.util.BotDistanceComparator;
@@ -21,6 +22,7 @@ import lombok.RequiredArgsConstructor;
 
 import java.awt.Color;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
@@ -35,21 +37,25 @@ import java.util.stream.Collectors;
 public class PassRatingCalc extends ACalculator
 {
 
-	@Configurable(defValue = "true", comment = "Use dynamic pass interception rating based on pass stats")
+	@Configurable(defValue = "true", comment = "Use dynamic pass interception rating based on pass stats",
+			tags = { "pass" })
 	private static boolean useDynamicInterceptionRating = true;
 
-	@Configurable(defValue = "0.1", comment = "Hysteresis bonus multiplier for same receiver")
+	@Configurable(defValue = "0.1", comment = "Hysteresis bonus multiplier for same receiver",
+			tags = { "hysteresis", "pass" })
 	private static double hystBonusMultiplierBot = 0.1;
 
-	@Configurable(defValue = "0.15", comment = "Hysteresis bonus multiplier for same target")
+	@Configurable(defValue = "0.15", comment = "Hysteresis bonus multiplier for same target",
+			tags = { "hysteresis", "pass" })
 	private static double hystBonusMultiplierTarget = 0.15;
 
-	@Configurable(defValue = "false", comment = "Draw debug shapes")
+	@Configurable(defValue = "false", comment = "Draw debug shapes", tags = { "debug", "pass" })
 	private static boolean debugShapes = false;
 
 	private final Supplier<Map<KickOrigin, List<Pass>>> generatedPasses;
 	private final Supplier<PassStats> passStats;
 	private final Supplier<OffensiveZones> offensiveZones;
+	private final Supplier<List<BotID>> opponentMan2ManMarkers;
 
 	private final RatedPassFactory ratingFactory = new RatedPassFactory();
 
@@ -66,20 +72,27 @@ public class PassRatingCalc extends ACalculator
 				// Sort by distance to ball as rough estimate to get the closest bots first
 				.sorted(new BotDistanceComparator(getBall().getPos()))
 				.toList();
+		var consideredBotsIntercept = consideredBots.stream().filter(e -> e.getBotId() != getAiFrame().getKeeperOpponentId()).toList();
 		if (useDynamicInterceptionRating)
 		{
-			ratingFactory.updateDynamic(consideredBots,
-					consideredBots.stream().filter(e -> e.getBotId() != getAiFrame().getKeeperOpponentId()).toList(),
-					passStats.get(), offensiveZones.get());
+			ratingFactory.updateDynamic(
+					consideredBots,
+					consideredBotsIntercept,
+					passStats.get(),
+					offensiveZones.get(),
+					opponentMan2ManMarkers.get()
+			);
 		} else
 		{
-			ratingFactory.update(consideredBots,
-					consideredBots.stream().filter(e -> e.getBotId() != getAiFrame().getKeeperOpponentId()).toList());
+			ratingFactory.update(
+					consideredBots,
+					consideredBotsIntercept,
+					opponentMan2ManMarkers.get()
+			);
 		}
 		if (debugShapes)
 		{
 			ratingFactory.setShapes(getShapes(EAiShapesLayer.PASS_RATING_DEBUG));
-			ratingFactory.drawShapes(getShapes(EAiShapesLayer.PASS_RATING_DEBUG));
 		} else
 		{
 			ratingFactory.setShapes(null);
@@ -100,7 +113,9 @@ public class PassRatingCalc extends ACalculator
 		return passes.parallelStream()
 				.map(ratingFactory::rate)
 				.map(this::addHysteresis)
-				.toList();
+				.sorted(Comparator.comparingDouble(e -> e.getScore(EPassRating.INTERCEPTION)))
+				.toList()
+				.reversed();
 	}
 
 

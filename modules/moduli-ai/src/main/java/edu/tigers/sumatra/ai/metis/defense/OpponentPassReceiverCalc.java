@@ -6,16 +6,23 @@ package edu.tigers.sumatra.ai.metis.defense;
 import com.github.g3force.configurable.Configurable;
 import edu.tigers.sumatra.ai.metis.ACalculator;
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
-import edu.tigers.sumatra.ai.metis.defense.DefenseMath.ReceiveData;
 import edu.tigers.sumatra.ball.trajectory.IBallTrajectory;
 import edu.tigers.sumatra.drawable.DrawableAnnotation;
 import edu.tigers.sumatra.drawable.animated.AnimatedCrosshair;
+import edu.tigers.sumatra.geometry.RuleConstraints;
 import edu.tigers.sumatra.math.circle.Circle;
+import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
+import edu.tigers.sumatra.planarcurve.PlanarCurve;
+import edu.tigers.sumatra.planarcurve.PlanarCurveSegment;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.Value;
 
 import java.awt.Color;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
@@ -30,14 +37,16 @@ import java.util.Optional;
  */
 public class OpponentPassReceiverCalc extends ACalculator
 {
-	@Configurable(comment = "Bots with a minimum curve to (ball) curve distance below this are consired to be pass receivers. [mm]", defValue = "300.0")
-	private static double validReceiveDistance = 300.0;
+	@Configurable(comment = "[mm] Bots with a minimum curve to (ball) curve distance below this are consired to be pass receivers", defValue = "300.0")
+	private static double validReceiveDistanceFirstPass = 300.0;
+	@Configurable(comment = "[mm] Bots with a minimum curve to (ball) curve distance below this are consired to be pass receivers", defValue = "450.0")
+	private static double validReceiveDistanceSecondPass = 450.0;
 
 	@Configurable(comment = "Minimum ball speed to start looking for a pass receiver. [m/s]", defValue = "1.0")
 	private static double minBallSpeed = 1.0;
 
-	@Configurable(comment = "Bots further away than this from the ball travel line are not considered as pass receivers. [mm]", defValue = "2000.0")
-	private static double maxBotToBallTravelLineDistance = 2000.0;
+	@Configurable(comment = "Bots further away than this from the ball travel line are not considered as pass receivers. [mm]", defValue = "3000.0")
+	private static double maxBotToBallTravelLineDistance = 3000.0;
 
 	@Getter
 	private ITrackedBot opponentPassReceiver;
@@ -63,8 +72,15 @@ public class OpponentPassReceiverCalc extends ACalculator
 		List<ReceiveData> ratings = getRatings();
 
 		Optional<ReceiveData> bestReceiver = ratings.stream()
-				.filter(this::isDistanceValid)
+				.filter(d -> isDistanceValid(d, validReceiveDistanceFirstPass))
 				.min(Comparator.comparingDouble(ReceiveData::getDistToBall));
+
+		if (bestReceiver.isEmpty())
+		{
+			bestReceiver = ratings.stream()
+					.filter(d -> isDistanceValid(d, validReceiveDistanceSecondPass))
+					.min(Comparator.comparingDouble(ReceiveData::getDistToBall));
+		}
 
 		opponentPassReceiver = bestReceiver.map(ReceiveData::getBot).orElse(null);
 
@@ -92,29 +108,81 @@ public class OpponentPassReceiverCalc extends ACalculator
 	{
 		IBallTrajectory ballTrajectory = getBall().getTrajectory();
 
-		List<ReceiveData> ratings;
-		if (ballTrajectory.getTouchdownLocations().isEmpty())
+		var ballCurve = new PlanarCurve(
+				ballTrajectory.getPlanarCurve().getSegments()
+						.stream()
+						.map(this::simplifyHoppingSegments)
+						.toList()
+		);
+
+		// calculate receive ratings
+		return calculateReceiveRatings(
+				ballTrajectory,
+				getWFrame().getOpponentBots().values(),
+				maxBotToBallTravelLineDistance,
+				ballCurve
+		);
+	}
+
+
+	private boolean isDistanceValid(ReceiveData data, double validDistance)
+	{
+		// Per meter distance to the ball increase allowed distance to ball curve by 0.1 meter
+		var allowedDistance = validDistance + data.getDistToBall() / 10;
+		return data.getDistToBallCurve() < allowedDistance;
+	}
+
+
+	private List<ReceiveData> calculateReceiveRatings(final IBallTrajectory ballTrajectory,
+			final Collection<ITrackedBot> bots,
+			final double maxCheckDistance, final PlanarCurve ballCurve)
+	{
+		final List<ReceiveData> ratings = new ArrayList<>();
+		for (ITrackedBot bot : bots)
 		{
-			ratings = DefenseMath.calcReceiveRatingsNonRestricted(
-					ballTrajectory,
-					getWFrame().getOpponentBots().values(),
-					maxBotToBallTravelLineDistance);
-		} else
-		{
-			// restrict start of curve
-			ratings = DefenseMath.calcReceiveRatingsForRestrictedStart(
-					ballTrajectory,
-					getWFrame().getOpponentBots().values(),
-					maxBotToBallTravelLineDistance);
+			IVector2 botPos = bot.getBotKickerPos();
+			if ((ballCurve.getMinimumDistanceToPoint(botPos) > maxCheckDistance)
+					|| !ballTrajectory.getTravelLine().isPointInFront(botPos))
+			{
+				continue;
+			}
+
+			// Calculate the time the robots need to a full stop
+			double brakeTime = (bot.getVel().getLength2() / bot.getMoveConstraints().getAccMax()) + 0.01;
+
+			// Generate a stop trajectory into the current travel direction
+			PlanarCurve botCurve = PlanarCurve.fromPositionVelocityAndAcceleration(bot.getBotKickerPos(),
+					bot.getVel().multiplyNew(1e3),
+					bot.getVel().scaleToNew(-bot.getMoveConstraints().getAccMax() * 1e3), brakeTime);
+
+			var distToBallCurve = ballCurve.getMinimumDistanceToCurve(botCurve);
+			var distToBall = ballTrajectory.getPosByTime(0).getXYVector().distanceTo(bot.getBotKickerPos());
+
+			ratings.add(new ReceiveData(bot, distToBallCurve, distToBall));
 		}
 		return ratings;
 	}
 
 
-	private boolean isDistanceValid(ReceiveData data)
+	private PlanarCurveSegment simplifyHoppingSegments(PlanarCurveSegment segment)
 	{
-		// Per meter distance to the ball increase allowed distance to ball curve by 0.1 meter
-		var allowedDistance = validReceiveDistance + data.getDistToBall() / 10;
-		return data.getDistToBallCurve() < allowedDistance;
+		if (segment.getHopHeight() <= 2 * RuleConstraints.getMaxRobotHeight())
+		{
+			return segment;
+		}
+		var tStart = segment.getStartTime();
+		var tEnd = segment.getEndTime();
+		var pEnd = segment.getPosition(tEnd);
+		return PlanarCurveSegment.fromPoint(pEnd, tStart, tEnd);
+	}
+
+
+	@Value
+	@AllArgsConstructor
+	public static class ReceiveData
+	{
+		ITrackedBot bot;
+		double distToBallCurve;
+		double distToBall;
 	}
 }

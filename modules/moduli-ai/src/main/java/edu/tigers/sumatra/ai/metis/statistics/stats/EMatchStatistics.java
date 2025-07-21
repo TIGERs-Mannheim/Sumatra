@@ -90,6 +90,10 @@ public enum EMatchStatistics
 	DEFENSE_BOT_THREAT_RATING_ACTUAL("BotThreatRating actual Defender"),
 	DEFENSE_BOT_THREAT_RATING_ACTUAL_AVG("Avg. BotThreatRating actual Defender"),
 
+	PASS_STATS_N_PASSES("PassStats - n passes"),
+	PASS_STATS_PASSES("PassStats - # passes"),
+	PASS_STATS_SUCCESSFUL_PASSES("PassStats - # successful passes"),
+	PASS_STATS_PASS_LINE_REACHED("PassStats - # pass line reached")
 	;
 
 	private final String descriptor;

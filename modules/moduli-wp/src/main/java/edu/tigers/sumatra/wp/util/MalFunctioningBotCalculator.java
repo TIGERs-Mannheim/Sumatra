@@ -34,8 +34,8 @@ public class MalFunctioningBotCalculator
 	private static int minTimeNotMoved = 5;
 	@Configurable(defValue = "0.1", comment = "[rad] Min orientation change to consider as rotation")
 	private static double minOrientationChange = 0.1;
-	@Configurable(defValue = "50", comment = "[mm] Min position distance to consider as movement")
-	private static double minPosDiff = 50;
+	@Configurable(defValue = "100", comment = "[mm] Min position distance to consider as movement")
+	private static double minPosDiff = 100;
 	@Configurable(defValue = "true", comment = "Consider constant rotation as additional condition for malfunction")
 	private static boolean useRotationCriteria = true;
 

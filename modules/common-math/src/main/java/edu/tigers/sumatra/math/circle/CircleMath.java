@@ -11,6 +11,8 @@ import edu.tigers.sumatra.math.line.Lines;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.math.vector.Vector2f;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -21,18 +23,10 @@ import static java.lang.Math.abs;
 /**
  * Circle related calculations.
  * Please consider using the methods from {@link ICircle} instead of these static methods!
- *
- * @author nicolai.ommer
  */
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class CircleMath
 {
-
-	@SuppressWarnings("unused")
-	private CircleMath()
-	{
-	}
-
-
 	/**
 	 * Get the intersection points of the two tangential lines that cross the external points.
 	 *
@@ -185,7 +179,7 @@ public final class CircleMath
 			return endPoint;
 		} else if (intersections.size() == 1)
 		{
-			return intersections.get(0);
+			return intersections.getFirst();
 		}
 		throw new IllegalArgumentException(
 				"More than one intersection between half line starting from within a circle, this is impossible");

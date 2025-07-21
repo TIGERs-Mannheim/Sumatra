@@ -8,35 +8,19 @@
  */
 package edu.tigers.sumatra.ids;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 
 /**
  * Tests the {@link BotID} class
- * 
- * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  */
-public class BotIDTest
+class BotIDTest
 {
-	// --------------------------------------------------------------------------
-	// --- variables and constants ----------------------------------------------
-	// --------------------------------------------------------------------------
-	
-	
-	// --------------------------------------------------------------------------
-	// --- constructors ---------------------------------------------------------
-	// --------------------------------------------------------------------------
-	
-	
-	// --------------------------------------------------------------------------
-	// --- methods --------------------------------------------------------------
-	// --------------------------------------------------------------------------
-	
-	/**
-	 */
 	@Test
-	public void testEquals()
+	void testEquals()
 	{
 		BotID bot0blue = BotID.createBotId(0, ETeamColor.BLUE);
 		BotID bot0blueTigers = BotID.createBotId(0, ETeamColor.BLUE);
@@ -46,30 +30,26 @@ public class BotIDTest
 		BotID bot2blueOpponents = BotID.createBotId(2, ETeamColor.BLUE);
 		BotID bot3blueTigers = BotID.createBotId(3, ETeamColor.BLUE);
 		BotID bot3yellowTigers = BotID.createBotId(3, ETeamColor.YELLOW);
-		
-		Assert.assertTrue(bot0blue.equals(bot0blue));
-		Assert.assertTrue(bot0blueTigers.equals(bot0blueTigers));
-		Assert.assertTrue(bot0Yellow.equals(bot0Yellow));
-		Assert.assertTrue(bot1blue.equals(bot1blue));
-		Assert.assertTrue(bot2blueTigers.equals(bot2blueTigers));
-		Assert.assertTrue(bot2blueOpponents.equals(bot2blueOpponents));
-		Assert.assertTrue(bot3blueTigers.equals(bot3blueTigers));
-		Assert.assertTrue(bot3yellowTigers.equals(bot3yellowTigers));
-		
-		Assert.assertTrue(bot2blueTigers.equals(bot2blueOpponents));
-		Assert.assertTrue(bot0blueTigers.equals(bot0blue));
-		Assert.assertTrue(bot0blue.equals(bot0blueTigers));
-		
-		Assert.assertFalse(bot0blue.equals(bot0Yellow));
-		Assert.assertFalse(bot0blue.equals(bot1blue));
-		Assert.assertFalse(bot0blue.equals(bot2blueTigers));
-		Assert.assertFalse(bot1blue.equals(bot2blueTigers));
-		Assert.assertFalse(bot2blueOpponents.equals(bot3blueTigers));
-		Assert.assertFalse(bot2blueOpponents.equals(bot3yellowTigers));
-		Assert.assertFalse(bot3blueTigers.equals(bot3yellowTigers));
+
+		assertEquals(bot0blue, bot0blue);
+		assertEquals(bot0blueTigers, bot0blueTigers);
+		assertEquals(bot0Yellow, bot0Yellow);
+		assertEquals(bot1blue, bot1blue);
+		assertEquals(bot2blueTigers, bot2blueTigers);
+		assertEquals(bot2blueOpponents, bot2blueOpponents);
+		assertEquals(bot3blueTigers, bot3blueTigers);
+		assertEquals(bot3yellowTigers, bot3yellowTigers);
+
+		assertEquals(bot2blueTigers, bot2blueOpponents);
+		assertEquals(bot0blueTigers, bot0blue);
+		assertEquals(bot0blue, bot0blueTigers);
+
+		assertNotEquals(bot0blue, bot0Yellow);
+		assertNotEquals(bot0blue, bot1blue);
+		assertNotEquals(bot0blue, bot2blueTigers);
+		assertNotEquals(bot1blue, bot2blueTigers);
+		assertNotEquals(bot2blueOpponents, bot3blueTigers);
+		assertNotEquals(bot2blueOpponents, bot3yellowTigers);
+		assertNotEquals(bot3blueTigers, bot3yellowTigers);
 	}
-	
-	// --------------------------------------------------------------------------
-	// --- getter/setter --------------------------------------------------------
-	// --------------------------------------------------------------------------
 }

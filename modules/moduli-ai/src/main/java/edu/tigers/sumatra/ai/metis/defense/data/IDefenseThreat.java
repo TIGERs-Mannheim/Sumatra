@@ -17,12 +17,18 @@ import java.util.Optional;
 public interface IDefenseThreat
 {
 	/**
+	 * The start of the line is at the threat source, e.g. for the BallThreat at the ball/receiver position and
+	 * the end of the line is at the target, e.g. tbe middle of our goal
+	 *
 	 * @return the line of this threat that should be defended.
 	 */
 	ILineSegment getThreatLine();
 
 
 	/**
+	 * The start of the line is closer to the threat source, e.g. for the BallThreat at the ball/receiver position and
+	 * the end of the line is closer to the target, e.g. tbe middle of our goal
+	 *
 	 * @return the line of this threat on which the threat can be protected.
 	 */
 	Optional<ILineSegment> getProtectionLine();

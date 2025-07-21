@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.pandora.roles;
@@ -7,6 +7,7 @@ package edu.tigers.sumatra.ai.pandora.roles;
 import com.github.g3force.instanceables.IInstanceableEnum;
 import com.github.g3force.instanceables.InstanceableClass;
 import com.github.g3force.instanceables.InstanceableParameter;
+import edu.tigers.sumatra.ai.pandora.plays.test.ballmodel.EFieldSide;
 import edu.tigers.sumatra.ai.pandora.roles.defense.CenterBackRole;
 import edu.tigers.sumatra.ai.pandora.roles.defense.DefenderPenAreaRole;
 import edu.tigers.sumatra.ai.pandora.roles.defense.DefenderPlaceholderRole;
@@ -26,6 +27,9 @@ import edu.tigers.sumatra.ai.pandora.roles.offense.attacker.AttackerRole;
 import edu.tigers.sumatra.ai.pandora.roles.placement.BallPlacementRole;
 import edu.tigers.sumatra.ai.pandora.roles.support.SupportRole;
 import edu.tigers.sumatra.ai.pandora.roles.test.DribbleKickTestRole;
+import edu.tigers.sumatra.ai.pandora.roles.test.DribbleTestRole;
+import edu.tigers.sumatra.ai.pandora.roles.test.EDribbleTestMovement;
+import edu.tigers.sumatra.ai.pandora.roles.test.calibrate.AKickSamplerRole.EKickMode;
 import edu.tigers.sumatra.ai.pandora.roles.test.calibrate.CrookedKickSamplerRole;
 import edu.tigers.sumatra.ai.pandora.roles.test.calibrate.IdentifyBotModelRole;
 import edu.tigers.sumatra.ai.pandora.roles.test.calibrate.StraightChipKickSamplerRole;
@@ -148,6 +152,11 @@ public enum ERole implements IInstanceableEnum
 			.setterParam(IVector2.class, "kickTarget", "6000,0", DribbleKickTestRole::setKickTarget)
 			.setterParam(IVector2.class, "dribbleToPos", "4000,1000", DribbleKickTestRole::setDribbleToPos)),
 
+	DRIBBLE_TEST(ic(DribbleTestRole.class)
+			.setterParam(IVector2.class, "practiceLocation", "-1000,0", DribbleTestRole::setPracticeLocation)
+			.setterParam(EDribbleTestMovement.class, "dribble movement", "NONE", DribbleTestRole::setTestMovement)
+			.setterParam(Boolean.class, "use full auto", "false", DribbleTestRole::setFullAuto)),
+
 
 	KICK_TEST(ic(KickTestRole.class,
 			new InstanceableParameter(DynamicPosition.class, "passTarget", "4500,0"),
@@ -156,15 +165,12 @@ public enum ERole implements IInstanceableEnum
 	),
 
 	STRAIGHT_CHIP_KICK_SAMPLER(ic(StraightChipKickSamplerRole.class,
-			new InstanceableParameter(Boolean.TYPE, "onlyOurHalf", "false"),
-			new InstanceableParameter(Boolean.TYPE, "chipFromSide", "false"),
+			new InstanceableParameter(EFieldSide.class, "fieldHalf", "BOTH"),
+			new InstanceableParameter(EKickerDevice.class, "kickType", "STRAIGHT"),
+			new InstanceableParameter(Double.TYPE, "durationMs", "1.0"),
+			new InstanceableParameter(EKickMode.class, "kickMode", "SINGLE_TOUCH"),
 			new InstanceableParameter(IVector2.class, "kickCorner", "1,1"),
-			new InstanceableParameter(Double.TYPE, "minDurationMs", "1.0"),
-			new InstanceableParameter(Double.TYPE, "maxDurationMs", "10.0"),
-			new InstanceableParameter(Double.TYPE, "stepSize", "1"),
-			new InstanceableParameter(Boolean.TYPE, "continueSampling", "false"),
-			new InstanceableParameter(Boolean.TYPE, "doChip", "true"),
-			new InstanceableParameter(Boolean.TYPE, "doStraight", "true"))
+			new InstanceableParameter(Boolean.TYPE, "chipFromSide", "false"))
 	),
 
 	CROOKED_KICK_SAMPLER(ic(CrookedKickSamplerRole.class,

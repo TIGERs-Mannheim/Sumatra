@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2024, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.pandora.plays.test.kick;
@@ -22,6 +22,7 @@ import edu.tigers.sumatra.skillsystem.skills.util.EDribblerMode;
 import edu.tigers.sumatra.skillsystem.skills.util.KickParams;
 import edu.tigers.sumatra.statemachine.AState;
 import edu.tigers.sumatra.statemachine.IEvent;
+import edu.tigers.sumatra.statemachine.TransitionableState;
 import edu.tigers.sumatra.time.TimestampTimer;
 
 import java.awt.Color;
@@ -81,7 +82,6 @@ public class TestTouchKickSkillPlay extends ABallPreparationPlay
 		this.inputs = Collections.unmodifiableList(newInputs);
 		this.samples = new ArrayList<>();
 
-		setUseAssistant(true);
 		setExecutionState(new PreparationState());
 		stateMachine.addTransition(null, EKickEvent.PREPARED, new StartMovementState());
 		stateMachine.addTransition(null, EKickEvent.MOVING, new KickState());
@@ -150,12 +150,18 @@ public class TestTouchKickSkillPlay extends ABallPreparationPlay
 	{
 	}
 
-	private class PreparationState extends AState
+	private class PreparationState extends TransitionableState
 	{
-		TimestampTimer timer = new TimestampTimer(0.5);
+		private TimestampTimer timer = new TimestampTimer(0.5);
 
-		MoveRole shooter;
-		MoveRole receiver;
+		private MoveRole shooter;
+		private MoveRole receiver;
+
+
+		public PreparationState()
+		{
+			super(stateMachine::changeState);
+		}
 
 
 		@Override
@@ -190,7 +196,7 @@ public class TestTouchKickSkillPlay extends ABallPreparationPlay
 
 
 		@Override
-		public void doUpdate()
+		public void onUpdate()
 		{
 			if (shooter.isDestinationReached() && (receiver == null || receiver.isDestinationReached()))
 			{

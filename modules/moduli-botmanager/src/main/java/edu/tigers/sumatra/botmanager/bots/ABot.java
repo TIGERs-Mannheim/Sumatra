@@ -4,22 +4,20 @@
 
 package edu.tigers.sumatra.botmanager.bots;
 
-import edu.tigers.sumatra.bot.BotState;
 import edu.tigers.sumatra.bot.EBotType;
-import edu.tigers.sumatra.bot.EFeature;
-import edu.tigers.sumatra.bot.EFeatureState;
+import edu.tigers.sumatra.bot.ERobotHealthState;
 import edu.tigers.sumatra.bot.IBot;
 import edu.tigers.sumatra.bot.params.BotParams;
 import edu.tigers.sumatra.bot.params.IBotParams;
-import edu.tigers.sumatra.botmanager.basestation.IBaseStation;
-import edu.tigers.sumatra.botmanager.botskills.data.MatchCommand;
+import edu.tigers.sumatra.botmanager.data.MatchCommand;
+import edu.tigers.sumatra.botmanager.data.BotFeedback;
 import edu.tigers.sumatra.botparams.EBotParamLabel;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.ids.ETeamColor;
 import edu.tigers.sumatra.math.vector.IVector3;
 import edu.tigers.sumatra.trajectory.TrajectoryWithTime;
+import lombok.Getter;
 
-import java.util.Map;
 import java.util.Optional;
 
 
@@ -28,67 +26,36 @@ import java.util.Optional;
  */
 public abstract class ABot implements IBot
 {
-	private static final double KICKER_LEVEL_MAX = 220;
-
 	private final BotID botId;
 	private final EBotType type;
-	private final IBaseStation baseStation;
-	private final Map<EFeature, EFeatureState> botFeatures;
-	private final MatchCommand matchCtrl = new MatchCommand();
 
 	private IBotParams botParams = new BotParams();
 	private TrajectoryWithTime<IVector3> curTrajectory = null;
 	private String controlledBy = "";
-	protected long lastFeedback = 0;
+
+	@Getter
+	protected MatchCommand lastSentMatchCommand = new MatchCommand();
+
+	@Getter
+	protected BotFeedback lastReceivedBotFeedback = new BotFeedback();
 
 
-	protected ABot(final EBotType type, final BotID id, final IBaseStation baseStation)
+	protected ABot(final EBotType type, final BotID id)
 	{
 		botId = id;
 		this.type = type;
-		botFeatures = getDefaultFeatureStates();
-		this.baseStation = baseStation;
 	}
 
 
 	public abstract EBotParamLabel getBotParamLabel();
 
-
-	private Map<EFeature, EFeatureState> getDefaultFeatureStates()
-	{
-		Map<EFeature, EFeatureState> result = EFeature.createFeatureList();
-		result.put(EFeature.DRIBBLER, EFeatureState.WORKING);
-		result.put(EFeature.CHIP_KICKER, EFeatureState.WORKING);
-		result.put(EFeature.STRAIGHT_KICKER, EFeatureState.WORKING);
-		result.put(EFeature.MOVE, EFeatureState.WORKING);
-		result.put(EFeature.BARRIER, EFeatureState.WORKING);
-		result.put(EFeature.CHARGE_CAPS, EFeatureState.WORKING);
-		result.put(EFeature.ENERGETIC, EFeatureState.WORKING);
-		result.put(EFeature.EXT_BOARD, EFeatureState.UNKNOWN);
-		return result;
-	}
-
-
-	/**
-	 * This is called when the match command should be sent
-	 */
-	public void sendMatchCommand()
-	{
-		getBaseStation().acceptMatchCommand(getBotId(), getMatchCtrl());
-	}
-
-
-	@Override
-	public double getKickerLevelMax()
-	{
-		return KICKER_LEVEL_MAX;
-	}
+	public abstract void sendMatchCommand(final MatchCommand matchCommand);
 
 
 	@Override
 	public boolean isAvailableToAi()
 	{
-		return !isBlocked();
+		return !isBlocked() && getHealthState() != ERobotHealthState.UNUSABLE;
 	}
 
 
@@ -103,13 +70,6 @@ public abstract class ABot implements IBot
 	public String toString()
 	{
 		return "[Bot: " + type + "|" + getBotId() + "]";
-	}
-
-
-	@Override
-	public final Map<EFeature, EFeatureState> getBotFeatures()
-	{
-		return botFeatures;
 	}
 
 
@@ -150,31 +110,6 @@ public abstract class ABot implements IBot
 	}
 
 
-	/**
-	 * @return the matchCtrl
-	 */
-	public final MatchCommand getMatchCtrl()
-	{
-		return matchCtrl;
-	}
-
-
-	/**
-	 * @return the baseStation
-	 */
-	public IBaseStation getBaseStation()
-	{
-		return baseStation;
-	}
-
-
-	@Override
-	public Optional<BotState> getSensoryState()
-	{
-		return Optional.empty();
-	}
-
-
 	@Override
 	public Optional<TrajectoryWithTime<IVector3>> getCurrentTrajectory()
 	{
@@ -201,11 +136,5 @@ public abstract class ABot implements IBot
 	public void setBotParams(final IBotParams botParams)
 	{
 		this.botParams = botParams;
-	}
-
-
-	public long getLastFeedback()
-	{
-		return lastFeedback;
 	}
 }

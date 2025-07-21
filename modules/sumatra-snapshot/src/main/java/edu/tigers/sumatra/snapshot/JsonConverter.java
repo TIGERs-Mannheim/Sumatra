@@ -4,6 +4,8 @@
 
 package edu.tigers.sumatra.snapshot;
 
+import com.github.cliftonlabs.json_simple.JsonArray;
+import com.github.cliftonlabs.json_simple.JsonObject;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.ids.ETeamColor;
 import edu.tigers.sumatra.math.vector.IVector2;
@@ -12,9 +14,8 @@ import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.math.vector.Vector3;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
-import org.json.simple.JSONArray;
-import org.json.simple.JSONObject;
 
+import java.math.BigDecimal;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -32,10 +33,9 @@ public final class JsonConverter
 	}
 
 
-	@SuppressWarnings("unchecked")
-	static JSONArray encode(final IVector3 vec)
+	static JsonArray encode(final IVector3 vec)
 	{
-		JSONArray array = new JSONArray();
+		JsonArray array = new JsonArray();
 		array.add(vec.x());
 		array.add(vec.y());
 		array.add(vec.z());
@@ -43,7 +43,7 @@ public final class JsonConverter
 	}
 
 
-	static IVector3 decodeVector3(final JSONArray jsonArray)
+	static IVector3 decodeVector3(final JsonArray jsonArray)
 	{
 		Vector3 vector = Vector3.zero();
 		if (jsonArray == null)
@@ -58,22 +58,27 @@ public final class JsonConverter
 	}
 
 
-	@SuppressWarnings("unchecked")
-	static JSONArray encode(final IVector2 vec)
+	static JsonArray encode(final IVector2 vec)
 	{
-		JSONArray array = new JSONArray();
+		JsonArray array = new JsonArray();
 		array.add(vec.x());
 		array.add(vec.y());
 		return array;
 	}
 
 
-	static IVector2 decodeVector2(final JSONArray jsonArray)
+	static IVector2 decodeVector2(final JsonArray jsonArray)
+	{
+		return decodeVector2(jsonArray, Vector2.zero());
+	}
+
+
+	static IVector2 decodeVector2(final JsonArray jsonArray, IVector2 defaultValue)
 	{
 		Vector2 vector = Vector2.zero();
 		if (jsonArray == null)
 		{
-			return vector;
+			return defaultValue;
 		}
 		for (int i = 0; i < jsonArray.size(); i++)
 		{
@@ -83,13 +88,12 @@ public final class JsonConverter
 	}
 
 
-	@SuppressWarnings("unchecked")
-	static JSONArray encode(final Map<BotID, SnapObject> bots)
+	static JsonArray encode(final Map<BotID, SnapObject> bots)
 	{
-		JSONArray array = new JSONArray();
+		JsonArray array = new JsonArray();
 		for (Map.Entry<BotID, SnapObject> entry : bots.entrySet())
 		{
-			JSONObject botObj = new JSONObject();
+			JsonObject botObj = new JsonObject();
 			botObj.put("id", encode(entry.getKey()));
 			botObj.put("obj", entry.getValue().toJSON());
 			array.add(botObj);
@@ -98,13 +102,12 @@ public final class JsonConverter
 	}
 
 
-	@SuppressWarnings("unchecked")
-	static JSONArray encodeVector3Map(final Map<BotID, IVector3> vectors)
+	static JsonArray encodeVector3Map(final Map<BotID, IVector3> vectors)
 	{
-		JSONArray array = new JSONArray();
+		JsonArray array = new JsonArray();
 		for (Map.Entry<BotID, IVector3> entry : vectors.entrySet())
 		{
-			JSONObject botObj = new JSONObject();
+			JsonObject botObj = new JsonObject();
 			botObj.put("id", encode(entry.getKey()));
 			botObj.put("dest", JsonConverter.encode(entry.getValue()));
 			array.add(botObj);
@@ -117,7 +120,7 @@ public final class JsonConverter
 	 * @param array
 	 * @return
 	 */
-	static Map<BotID, SnapObject> decodeBots(final JSONArray array)
+	static Map<BotID, SnapObject> decodeBots(final JsonArray array)
 	{
 		if (array == null)
 		{
@@ -126,8 +129,8 @@ public final class JsonConverter
 		Map<BotID, SnapObject> bots = new LinkedHashMap<>();
 		for (Object obj : array)
 		{
-			JSONObject jsonObj = (JSONObject) obj;
-			bots.put(decodeBotId((JSONObject) jsonObj.get("id")), SnapObject.fromJSON((JSONObject) jsonObj.get("obj")));
+			JsonObject jsonObj = (JsonObject) obj;
+			bots.put(decodeBotId((JsonObject) jsonObj.get("id")), SnapObject.fromJSON((JsonObject) jsonObj.get("obj")));
 		}
 		return bots;
 	}
@@ -137,7 +140,7 @@ public final class JsonConverter
 	 * @param array
 	 * @return
 	 */
-	static Map<BotID, IVector3> decodeVector3Map(final JSONArray array)
+	static Map<BotID, IVector3> decodeVector3Map(final JsonArray array)
 	{
 		if (array == null)
 		{
@@ -146,27 +149,26 @@ public final class JsonConverter
 		Map<BotID, IVector3> bots = new LinkedHashMap<>();
 		for (Object obj : array)
 		{
-			JSONObject jsonObj = (JSONObject) obj;
-			bots.put(decodeBotId((JSONObject) jsonObj.get("id")),
-					JsonConverter.decodeVector3((JSONArray) jsonObj.get("dest")));
+			JsonObject jsonObj = (JsonObject) obj;
+			bots.put(decodeBotId((JsonObject) jsonObj.get("id")),
+					JsonConverter.decodeVector3((JsonArray) jsonObj.get("dest")));
 		}
 		return bots;
 	}
 
 
-	@SuppressWarnings("unchecked")
-	private static JSONObject encode(final BotID botId)
+	private static JsonObject encode(final BotID botId)
 	{
-		JSONObject obj = new JSONObject();
+		JsonObject obj = new JsonObject();
 		obj.put("number", botId.getNumber());
 		obj.put("color", encode(botId.getTeamColor()));
 		return obj;
 	}
 
 
-	private static BotID decodeBotId(final JSONObject jsonBotId)
+	private static BotID decodeBotId(final JsonObject jsonBotId)
 	{
-		return BotID.createBotId((int) (long) jsonBotId.get("number"),
+		return BotID.createBotId(((BigDecimal) jsonBotId.get("number")).intValue(),
 				ETeamColor.valueOf((String) jsonBotId.get("color")));
 	}
 }

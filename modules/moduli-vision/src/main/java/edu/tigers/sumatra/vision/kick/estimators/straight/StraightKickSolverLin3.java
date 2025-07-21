@@ -34,7 +34,7 @@ public class StraightKickSolverLin3 implements IKickSolver
 	public Optional<KickSolverResult> solve(final List<CamBall> records)
 	{
 		final int numRecords = records.size();
-		long tZero = records.get(0).getCameraCaptureTimestamp();
+		long tZero = records.get(0).getTimestamp();
 		double acc = Geometry.getBallParameters().getAccSlide();
 
 		List<IVector2> groundPos = records.stream()
@@ -58,7 +58,7 @@ public class StraightKickSolverLin3 implements IKickSolver
 			CamBall ballRecord = records.get(i);
 
 			IVector2 g = ballRecord.getPos().getXYVector();
-			double t = ((ballRecord.getCameraCaptureTimestamp()) - tZero) * 1e-9;
+			double t = ((ballRecord.getTimestamp()) - tZero) * 1e-9;
 
 			matA.setRow(i * 2, new double[] { 1, 0, dir.x() * t });
 			matA.setRow((i * 2) + 1, new double[] { 0, 1, dir.y() * t });
@@ -81,6 +81,6 @@ public class StraightKickSolverLin3 implements IKickSolver
 		IVector3 kickVel = dir.scaleToNew(x.getEntry(2)).getXYZVector();
 
 		return Optional.of(
-				new KickSolverResult(kickPos, kickVel, records.get(0).gettCapture(), getClass().getSimpleName()));
+				new KickSolverResult(kickPos, kickVel, records.get(0).getTimestamp(), getClass().getSimpleName()));
 	}
 }

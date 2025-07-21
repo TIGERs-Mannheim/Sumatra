@@ -3,9 +3,11 @@
  */
 package edu.tigers.sumatra.rcm;
 
-import edu.tigers.sumatra.proto.BotActionCommandProtos.BotActionCommand;
 import edu.tigers.sumatra.botmanager.bots.ABot;
 import edu.tigers.sumatra.botmanager.bots.DummyBot;
+import edu.tigers.sumatra.botmanager.botskills.ABotSkill;
+import edu.tigers.sumatra.botmanager.botskills.BotSkillMotorsOff;
+import edu.tigers.sumatra.proto.BotActionCommandProtos.BotActionCommand;
 
 
 /**
@@ -19,12 +21,10 @@ public class CommandInterpreterStub implements ICommandInterpreter
 	
 	
 	@Override
-	public void interpret(final BotActionCommand command)
+	public ABotSkill interpret(final BotActionCommand command)
 	{
-		// this is a stub only
+		return new BotSkillMotorsOff();
 	}
-	
-
 	
 	
 	@Override
@@ -45,13 +45,6 @@ public class CommandInterpreterStub implements ICommandInterpreter
 	public void setHighSpeedMode(final boolean highSpeedMode)
 	{
 		// ignore this
-	}
-	
-	
-	@Override
-	public boolean isPaused()
-	{
-		return false;
 	}
 	
 	

@@ -101,7 +101,7 @@ public abstract class AMaintenancePlay extends APlay
 	 */
 	protected void calculateBotActions(IVector2 startPos, IVector2 direction, double orientation)
 	{
-		List<MoveRole> roles = findRoles(MoveRole.class);
+		List<MoveRole> roles = new ArrayList<>(findRoles(MoveRole.class));
 		List<IVector2> drawingDestinations = new ArrayList<>();
 		PositionData data = adjustPositionsToFieldSize(roles.size(), startPos.x(), direction);
 		IVector2 dest = data.getStartPosition().orElse(startPos.subtractNew(direction));

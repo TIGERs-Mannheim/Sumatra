@@ -4,13 +4,9 @@
 
 package edu.tigers.sumatra.ai.metis.statistics.stats;
 
-import com.sleepycat.persist.model.Persistent;
-
-
 /**
  * Simple helper class for percentage calculation and data holding
  */
-@Persistent(version = 1)
 public class Percentage
 {
 	private int current = 0;

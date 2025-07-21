@@ -3,12 +3,11 @@
  */
 package edu.tigers.sumatra.drawable;
 
-import com.sleepycat.persist.model.Persistent;
 import edu.tigers.sumatra.math.AngleMath;
 import edu.tigers.sumatra.math.SumatraMath;
 import edu.tigers.sumatra.math.botshape.BotShape;
 import edu.tigers.sumatra.math.vector.IVector2;
-import edu.tigers.sumatra.math.vector.Vector2f;
+import lombok.RequiredArgsConstructor;
 
 import java.awt.Color;
 import java.awt.Font;
@@ -20,35 +19,18 @@ import java.awt.geom.Arc2D;
 /**
  * Outline of a bot with orientation
  */
-@Persistent
+@RequiredArgsConstructor
 public class DrawableBotShape implements IDrawableShape
 {
 	protected final IVector2 pos;
 	protected final double angle;
-	private double center2DribblerDist;
-	protected double radius;
+	protected final double radius;
+	private final double center2DribblerDist;
 	private Color fillColor = null;
 	private Color borderColor = Color.WHITE;
 	private Color fontColor = Color.black;
 	private String id = "";
 	private boolean drawDirection = true;
-
-
-	@SuppressWarnings("unused")
-	private DrawableBotShape()
-	{
-		this(Vector2f.ZERO_VECTOR, 0, 0, 0);
-	}
-
-
-	public DrawableBotShape(final IVector2 pos, final double angle, final double radius,
-			final double center2DribblerDist)
-	{
-		this.pos = pos;
-		this.angle = angle;
-		this.radius = radius;
-		this.center2DribblerDist = center2DribblerDist;
-	}
 
 
 	@Override
@@ -148,15 +130,6 @@ public class DrawableBotShape implements IDrawableShape
 	public final void setId(final String id)
 	{
 		this.id = id;
-	}
-
-
-	/**
-	 * @param radius the radius to set
-	 */
-	public final void setRadius(final double radius)
-	{
-		this.radius = radius;
 	}
 
 

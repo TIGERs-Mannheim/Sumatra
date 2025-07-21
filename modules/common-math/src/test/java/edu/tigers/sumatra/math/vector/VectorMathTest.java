@@ -4,29 +4,25 @@
 
 package edu.tigers.sumatra.math.vector;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.within;
-import static org.junit.Assert.assertTrue;
+import edu.tigers.sumatra.math.AngleMath;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 
-import org.junit.Test;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.within;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import edu.tigers.sumatra.math.AngleMath;
 
-
-/**
- * @author nicolai.ommer
- */
-public class VectorMathTest
+class VectorMathTest
 {
 	
 	
 	@Test
-	public void testGetAngle()
+	void testGetAngle()
 	{
 		for (double angle = -2 * AngleMath.PI_TWO; angle < 2 * AngleMath.PI_TWO; angle += 0.1)
 		{
@@ -40,7 +36,7 @@ public class VectorMathTest
 	
 	
 	@Test
-	public void testAngleDifference()
+	void testAngleDifference()
 	{
 		final double maxAbsAngle = 2 * AngleMath.PI_TWO;
 		for (double angle1 = -maxAbsAngle; angle1 < maxAbsAngle; angle1 += 0.1)
@@ -60,7 +56,7 @@ public class VectorMathTest
 	
 	
 	@Test
-	public void testNearestPointInList()
+	void testNearestPointInList()
 	{
 		Random rnd = new Random(239827);
 		for (int times = 0; times < 1e5; ++times)
@@ -80,7 +76,7 @@ public class VectorMathTest
 	
 	
 	@Test
-	public void testFarthestPointInList()
+	void testFarthestPointInList()
 	{
 		Random rnd = new Random(239827);
 		for (int times = 0; times < 1e5; ++times)

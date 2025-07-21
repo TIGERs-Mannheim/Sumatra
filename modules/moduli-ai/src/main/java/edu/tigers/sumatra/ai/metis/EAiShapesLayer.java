@@ -46,6 +46,8 @@ public final class EAiShapesLayer
 			F.category(AI).layerName("Ball Placement"));
 	public static final IShapeLayerIdentifier AI_SKIRMISH_DETECTOR = F.create(
 			F.category(AI).layerName("Skirmish detection"));
+	public static final IShapeLayerIdentifier AI_SKIRMISH_STRATEGY = F.create(
+			F.category(AI).layerName("Skirmish strategy"));
 	public static final IShapeLayerIdentifier AI_WEAK_BOT = F.create(
 			F.category(AI).layerName("Weak bots"));
 	public static final IShapeLayerIdentifier AI_DIRECT_SHOT_DETECTION = F.create(
@@ -62,9 +64,13 @@ public final class EAiShapesLayer
 			F.category(AI).layerName("Maintenance"));
 	public static final IShapeLayerIdentifier AI_MULTIMEDIA = F.create(
 			F.category(AI).layerName("Multimedia"));
+	public static final IShapeLayerIdentifier AI_OPPONENT_CLASSIFIER = F.create(
+			F.category(AI).layerName("Opponent Classifier"));
 	public static final IShapeLayerIdentifier PENALTY_ONE_ON_ONE = F.create(
 			F.category(AI).layerName("One On One Shooter"));
 
+	public static final IShapeLayerIdentifier SUPPORT_PASS_RECEIVER = F.create(
+			F.category(SUPPORT).layerName("pass receiver"));
 	public static final IShapeLayerIdentifier SUPPORT_FORCE_FIELD = F.create(
 			F.category(SUPPORT).layerName("force field").persistenceType(NEVER_PERSIST));
 	public static final IShapeLayerIdentifier SUPPORT_FORCE_FIELD_FLOW = F.create(
@@ -90,8 +96,6 @@ public final class EAiShapesLayer
 			F.category(PASS).layerName("Pass Stats"));
 	public static final IShapeLayerIdentifier PASS_GENERATION = F.create(
 			F.category(PASS).layerName("Generation"));
-	public static final IShapeLayerIdentifier PASS_GENERATION_PASS_DIR = F.create(
-			F.category(PASS).layerName("Generation (pass dir)"));
 	public static final IShapeLayerIdentifier PASS_GENERATION_FORBIDDEN = F.create(
 			F.category(PASS).layerName("Generation (forbidden)"));
 	public static final IShapeLayerIdentifier PASS_GENERATION_REDIRECT = F.create(
@@ -113,10 +117,14 @@ public final class EAiShapesLayer
 			F.category(DEFENSE).layerName("Threats"));
 	public static final IShapeLayerIdentifier DEFENSE_THREAT_RATING = F.create(
 			F.category(DEFENSE).layerName("Threat Ratings"));
+	public static final IShapeLayerIdentifier DEFENSE_THREAT_RATING_REDUCTION = F.create(
+			F.category(DEFENSE).layerName("Threat Rating Reduction"));
 	public static final IShapeLayerIdentifier DEFENSE_THREAT_ASSIGNMENT = F.create(
 			F.category(DEFENSE).layerName("Threat Assignment"));
 	public static final IShapeLayerIdentifier DEFENSE_BALL_THREAT = F.create(
 			F.category(DEFENSE).layerName("Ball Threat"));
+	public static final IShapeLayerIdentifier DEFENSE_NUM_DEFENDER_FOR_BALL_DEBUG = F.create(
+			F.category(DEFENSE).layerName("NumDefenderForBall Debug").persistenceType(DEBUG_PERSIST));
 	public static final IShapeLayerIdentifier DEFENSE_CENTER_BACK = F.create(
 			F.category(DEFENSE).layerName("CenterBack"));
 	public static final IShapeLayerIdentifier DEFENSE_PASS_RECEIVER = F.create(
@@ -140,6 +148,8 @@ public final class EAiShapesLayer
 			F.category(DEFENSE_OFFENSE_COORDINATION).layerName("Ball Defender Candidates"));
 	public static final IShapeLayerIdentifier DO_COORD_BALL_DEFENSE_READY = F.create(
 			F.category(DEFENSE_OFFENSE_COORDINATION).layerName("Ball Defense Ready"));
+	public static final IShapeLayerIdentifier DO_COORD_DEFENSE_SUPPORTIVE_BALL_RECEPTION = F.create(
+			F.category(DEFENSE_OFFENSE_COORDINATION).layerName("Defense supportive reception"));
 
 	public static final IShapeLayerIdentifier OFFENSE_ONGOING_PASS = F.create(
 			F.category(OFFENSE).layerName("Ongoing Passes"));
@@ -192,9 +202,11 @@ public final class EAiShapesLayer
 	public static final IShapeLayerIdentifier TEST_ANGLE_RANGE_RATER = F.create(
 			F.category(TEST).layerName("Angle Range Rater").visibleByDefault(true));
 	public static final IShapeLayerIdentifier TEST_GRID_DEBUG = F.create(
-			F.category(TEST).layerName("Debug Grid").visibleByDefault(true).persistenceType(NEVER_PERSIST).orderId(0));
+			F.category(TEST).layerName("Debug Grid").visibleByDefault(true).persistenceType(NEVER_PERSIST).orderId(-200));
 	public static final IShapeLayerIdentifier TEST_GRID_ADDITIONAL = F.create(
 			F.category(TEST).layerName("Debug Grid Additional").visibleByDefault(true));
+	public static final IShapeLayerIdentifier TEST_DRIBBLE = F.create(
+			F.category(TEST).layerName("Test Dribbling Role").visibleByDefault(true));
 	public static final IShapeLayerIdentifier TEST_BALL_CALIBRATION = F.create(
 			F.category(TEST).layerName("Ball Calibration").visibleByDefault(true));
 	public static final IShapeLayerIdentifier TEST_BALL_PLACEMENT = F.create(

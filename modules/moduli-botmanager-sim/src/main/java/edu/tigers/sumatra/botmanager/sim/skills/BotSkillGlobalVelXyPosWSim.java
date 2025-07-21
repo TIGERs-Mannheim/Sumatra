@@ -33,7 +33,7 @@ public class BotSkillGlobalVelXyPosWSim implements IBotSkillSim
 				.kickMode(skill.getMode())
 				.kickSpeed(skill.getKickSpeed())
 				.dribblerRPM(skill.getDribbleSpeed())
-				.strictVelocityLimit(input.strictVelocityLimit())
+				.strictVelocityLimit(input.broadcast().isStrictVelocityLimit())
 				.build();
 	}
 }

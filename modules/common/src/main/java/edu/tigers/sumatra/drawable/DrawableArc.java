@@ -4,12 +4,9 @@
 
 package edu.tigers.sumatra.drawable;
 
-import com.sleepycat.persist.model.Persistent;
 import edu.tigers.sumatra.math.AngleMath;
-import edu.tigers.sumatra.math.circle.Arc;
 import edu.tigers.sumatra.math.circle.IArc;
 import edu.tigers.sumatra.math.vector.IVector2;
-import edu.tigers.sumatra.math.vector.Vector2f;
 
 import java.awt.Color;
 import java.awt.Graphics2D;
@@ -20,19 +17,11 @@ import java.awt.geom.Arc2D;
 /**
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  */
-@Persistent
 public class DrawableArc extends ADrawableWithStroke
 {
 	private IArc arc;
 	private boolean fill = false;
 	private int arcType = Arc2D.PIE;
-
-
-	@SuppressWarnings("unused") // used by berkeley
-	protected DrawableArc()
-	{
-		arc = Arc.createArc(Vector2f.ZERO_VECTOR, 1, 0, 1);
-	}
 
 
 	public DrawableArc(final IArc arc)

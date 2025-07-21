@@ -4,13 +4,11 @@
 
 package edu.tigers.sumatra.drawable;
 
-import com.sleepycat.persist.model.Persistent;
 import edu.tigers.sumatra.math.AngleMath;
 import edu.tigers.sumatra.math.line.ILineSegment;
 import edu.tigers.sumatra.math.line.Lines;
 import edu.tigers.sumatra.math.vector.IVector;
 import edu.tigers.sumatra.math.vector.IVector2;
-import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.trajectory.ITrajectory;
 
 import java.awt.Graphics2D;
@@ -23,7 +21,6 @@ import java.util.function.DoubleUnaryOperator;
 /**
  * Drawable trajectory path. Uses sampled points on a bang bang trajectory.
  */
-@Persistent
 public class DrawableTrajectoryArea extends ADrawableWithStroke
 {
 	private static final double STEP_SIZE = 0.05;
@@ -31,14 +28,6 @@ public class DrawableTrajectoryArea extends ADrawableWithStroke
 	private final List<ILineSegment> lines = new ArrayList<>();
 	private final IVector2 pathStart;
 	private final IVector2 pathEnd;
-
-
-	@SuppressWarnings("unused")
-	private DrawableTrajectoryArea()
-	{
-		pathStart = Vector2.zero();
-		pathEnd = Vector2.zero();
-	}
 
 
 	public DrawableTrajectoryArea(ITrajectory<? extends IVector> trajXY, DoubleUnaryOperator widthFunction)

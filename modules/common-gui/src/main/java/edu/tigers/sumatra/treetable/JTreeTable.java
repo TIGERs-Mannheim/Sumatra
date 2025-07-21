@@ -3,10 +3,9 @@
  */
 package edu.tigers.sumatra.treetable;
 
-import edu.tigers.sumatra.lookandfeel.ILookAndFeelStateObserver;
-import edu.tigers.sumatra.lookandfeel.LookAndFeelStateAdapter;
 import edu.tigers.sumatra.util.ScalingUtil;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import org.apache.commons.configuration.HierarchicalConfiguration.Node;
 import org.apache.commons.configuration.tree.ConfigurationNode;
 import org.apache.logging.log4j.LogManager;
@@ -65,10 +64,14 @@ import java.util.EventObject;
 public class JTreeTable extends JTable
 {
 	private static final Logger log = LogManager.getLogger(JTreeTable.class.getName());
-	/**  */
+	/**
+	 *
+	 */
 	private static final long serialVersionUID = -3052468144632521282L;
 
-	/** A subclass of JTree. */
+	/**
+	 * A subclass of JTree.
+	 */
 	@Getter
 	protected TreeTableCellRenderer tree;
 	private final ITreeTableModel treeTableModel;
@@ -89,39 +92,45 @@ public class JTreeTable extends JTable
 		// Add Keyboard Actions
 		// Expand
 		this.getInputMap(JComponent.WHEN_FOCUSED).put(KeyStroke.getKeyStroke("RIGHT"), "expand");
-		this.getActionMap().put("expand", new AbstractAction()
-		{
-			@Override
-			public void actionPerformed(final ActionEvent actionEvent)
-			{
-				int r = JTreeTable.this.getSelectedRow();
-				JTreeTable.this.expandRow(r);
-			}
-		});
+		this.getActionMap().put(
+				"expand", new AbstractAction()
+				{
+					@Override
+					public void actionPerformed(final ActionEvent actionEvent)
+					{
+						int r = JTreeTable.this.getSelectedRow();
+						JTreeTable.this.expandRow(r);
+					}
+				}
+		);
 
 		// Collapse
 		this.getInputMap(JComponent.WHEN_FOCUSED).put(KeyStroke.getKeyStroke("LEFT"), "collapse");
-		this.getActionMap().put("collapse", new AbstractAction()
-		{
-			@Override
-			public void actionPerformed(final ActionEvent actionEvent)
-			{
-				int r = JTreeTable.this.getSelectedRow();
-				JTreeTable.this.collapseRow(r);
-			}
-		});
+		this.getActionMap().put(
+				"collapse", new AbstractAction()
+				{
+					@Override
+					public void actionPerformed(final ActionEvent actionEvent)
+					{
+						int r = JTreeTable.this.getSelectedRow();
+						JTreeTable.this.collapseRow(r);
+					}
+				}
+		);
 
 		// Edit
 		this.getInputMap(JComponent.WHEN_FOCUSED).put(KeyStroke.getKeyStroke("TAB"), "edit");
-		this.getActionMap().put("edit", new AbstractAction()
-		{
-			@Override
-			public void actionPerformed(final ActionEvent actionEvent)
-			{
-				int r = JTreeTable.this.getSelectedRow();
-				JTreeTable.this.editCellAt(r, 1);
-			}
-		});
+		this.getActionMap().put(
+				"edit", new AbstractAction()
+				{
+					@Override
+					public void actionPerformed(final ActionEvent actionEvent)
+					{
+						int r = JTreeTable.this.getSelectedRow();
+						JTreeTable.this.editCellAt(r, 1);
+					}
+				}
+		);
 
 	}
 
@@ -302,8 +311,7 @@ public class JTreeTable extends JTable
 
 
 	/**
-	 * @param value
-	 *           either a Class or a String
+	 * @param value either a Class or a String
 	 * @return
 	 */
 	public Class<?> getClassFromValue(final Object value)
@@ -343,15 +351,20 @@ public class JTreeTable extends JTable
 		}
 	}
 
+
 	/**
 	 * A TreeCellRenderer that displays a JTree.
 	 */
 	public class TreeTableCellRenderer extends JTree implements TableCellRenderer
 	{
-		/**  */
+		/**
+		 *
+		 */
 		private static final long serialVersionUID = 6816892617917678961L;
 
-		/** Last table/tree row asked to renderer. */
+		/**
+		 * Last table/tree row asked to renderer.
+		 */
 		protected int visibleRow;
 
 
@@ -430,8 +443,10 @@ public class JTreeTable extends JTable
 		 * TreeCellRenderer method. Overridden to update the visible row.
 		 */
 		@Override
-		public Component getTableCellRendererComponent(final JTable table, final Object value, final boolean isSelected,
-				final boolean hasFocus, final int row, final int column)
+		public Component getTableCellRendererComponent(
+				final JTable table, final Object value, final boolean isSelected,
+				final boolean hasFocus, final int row, final int column
+		)
 		{
 			if (isSelected)
 			{
@@ -451,13 +466,17 @@ public class JTreeTable extends JTable
 	 */
 	private class TreeTableCellEditor extends AbstractCellEditor implements TableCellEditor
 	{
-		/**  */
+		/**
+		 *
+		 */
 		private static final long serialVersionUID = -2591875536212318768L;
 
 
 		@Override
-		public Component getTableCellEditorComponent(final JTable table, final Object value, final boolean isSelected,
-				final int r, final int c)
+		public Component getTableCellEditorComponent(
+				final JTable table, final Object value, final boolean isSelected,
+				final int r, final int c
+		)
 		{
 			return tree;
 		}
@@ -492,9 +511,11 @@ public class JTreeTable extends JTable
 					if (getColumnClass(counter) == ITreeTableModel.class)
 					{
 						@SuppressWarnings({ "deprecation", "squid:CallToDeprecatedMethod" }) // getModifiersEx() does not work
-						final MouseEvent newME = new MouseEvent(tree, me.getID(), me.getWhen(), me.getModifiers(),
+						final MouseEvent newME = new MouseEvent(
+								tree, me.getID(), me.getWhen(), me.getModifiers(),
 								me.getX() - getCellRect(0, counter, true).x, me.getY(), me.getClickCount(),
-								me.isPopupTrigger());
+								me.isPopupTrigger()
+						);
 						tree.dispatchEvent(newME);
 						break;
 					}
@@ -521,14 +542,19 @@ public class JTreeTable extends JTable
 	 */
 	class ListToTreeSelectionModelWrapper extends DefaultTreeSelectionModel
 	{
-		/**  */
+		/**
+		 *
+		 */
 		private static final long serialVersionUID = -5909393885929909085L;
 
-		/** Set to true when we are updating the ListSelectionModel. */
+		/**
+		 * Set to true when we are updating the ListSelectionModel.
+		 */
 		protected boolean updatingListSelectionModel;
 
 
 		/**
+		 *
 		 */
 		public ListToTreeSelectionModelWrapper()
 		{
@@ -639,6 +665,7 @@ public class JTreeTable extends JTable
 			return null;
 		}
 
+
 		/**
 		 * Class responsible for calling updateSelectedPathsFromSelectedRows
 		 * when the selection of the list changse.
@@ -655,47 +682,26 @@ public class JTreeTable extends JTable
 
 	/**
 	 * Forwards the possibility to influence the rendering of the first column
-	 * to the {@link ITreeTableModel}, and acts as
-	 * {@link ILookAndFeelStateObserver} for Sumatra.
+	 * to the {@link ITreeTableModel}
 	 *
 	 * @author Gero
 	 */
-	private static class TreeRenderer extends DefaultTreeCellRenderer implements ILookAndFeelStateObserver
+	@RequiredArgsConstructor
+	private static class TreeRenderer extends DefaultTreeCellRenderer
 	{
-		/**  */
-		private static final long serialVersionUID = 7785387299072802203L;
-
-		private final ITreeTableModel treeTableModel;
-
-
-		/**
-		 * @param treeTableModel
-		 */
-		public TreeRenderer(final ITreeTableModel treeTableModel)
-		{
-			super();
-			this.treeTableModel = treeTableModel;
-			LookAndFeelStateAdapter.getInstance().addObserver(this);
-		}
+		private final transient ITreeTableModel treeTableModel;
 
 
 		@Override
-		public void onLookAndFeelChanged()
+		public Component getTreeCellRendererComponent(
+				final JTree tree, final Object value, final boolean selected,
+				final boolean expanded, final boolean isLeaf, final int row, final boolean hasFocus
+		)
 		{
-			setUI(UIManager.getUI(this));
-
-			setOpenIcon(UIManager.getIcon("Tree.openIcon"));
-			setLeafIcon(UIManager.getIcon("Tree.leafIcon"));
-			setClosedIcon(UIManager.getIcon("Tree.closedIcon"));
-		}
-
-
-		@Override
-		public Component getTreeCellRendererComponent(final JTree tree, final Object value, final boolean selected,
-				final boolean expanded, final boolean isLeaf, final int row, final boolean hasFocus)
-		{
-			final Component comp = super.getTreeCellRendererComponent(tree, value, selected, expanded, isLeaf, row,
-					hasFocus);
+			final Component comp = super.getTreeCellRendererComponent(
+					tree, value, selected, expanded, isLeaf, row,
+					hasFocus
+			);
 
 			// Let the model change whatever it wants
 			final JLabel label = (JLabel) comp;

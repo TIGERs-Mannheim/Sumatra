@@ -114,7 +114,7 @@ public class FullMoveController extends AMoveController
 
 		lastVel = outVel;
 
-		if (controllerState.getBot().getBotFeatures().get(EFeature.V2016) == EFeatureState.WORKING)
+		if (controllerState.getBot().getLastReceivedBotFeedback().getBotFeatures().get(EFeature.V2016) == EFeatureState.WORKING)
 		{
 			mm.updateGeometry(30, 45, 0.076, 0.025);
 		} else

@@ -4,7 +4,6 @@
 
 package edu.tigers.sumatra.ai.metis.offense.action;
 
-import com.sleepycat.persist.model.Persistent;
 import edu.tigers.sumatra.ai.metis.kicking.Kick;
 import edu.tigers.sumatra.ai.metis.kicking.Pass;
 import edu.tigers.sumatra.ai.metis.offense.action.moves.EOffensiveActionMove;
@@ -23,7 +22,6 @@ import java.util.Optional;
 /**
  * The offensive action gives instructions to the attacker
  */
-@Persistent(version = 8)
 @Value
 @Builder(access = AccessLevel.PRIVATE)
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
@@ -32,15 +30,6 @@ public class RatedOffensiveAction
 	EOffensiveActionMove move;
 	OffensiveActionViability viability;
 	OffensiveAction action;
-
-
-	@SuppressWarnings("unused") // used by berkeley
-	private RatedOffensiveAction()
-	{
-		this.move = EOffensiveActionMove.PROTECT_MOVE;
-		this.viability = new OffensiveActionViability(EActionViability.FALSE, 0.0);
-		this.action = new OffensiveAction();
-	}
 
 
 	public Optional<IVector2> getTarget()
@@ -77,6 +66,18 @@ public class RatedOffensiveAction
 				.move(move)
 				.viability(viability)
 				.action(OffensiveAction.buildPass(pass))
+				.build();
+	}
+
+	public static RatedOffensiveAction buildProtectPass(
+			@NonNull EOffensiveActionMove move,
+			@NonNull OffensiveActionViability viability,
+			@NonNull Pass pass)
+	{
+		return RatedOffensiveAction.builder()
+				.move(move)
+				.viability(viability)
+				.action(OffensiveAction.buildProtectPass(pass))
 				.build();
 	}
 

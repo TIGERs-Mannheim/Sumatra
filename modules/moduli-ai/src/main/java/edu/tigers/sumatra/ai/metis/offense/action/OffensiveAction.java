@@ -4,7 +4,6 @@
 
 package edu.tigers.sumatra.ai.metis.offense.action;
 
-import com.sleepycat.persist.model.Persistent;
 import edu.tigers.sumatra.ai.metis.kicking.Kick;
 import edu.tigers.sumatra.ai.metis.kicking.Pass;
 import edu.tigers.sumatra.ai.metis.offense.dribble.DribbleToPos;
@@ -23,7 +22,6 @@ import java.util.Optional;
 /**
  * The offensive action gives instructions to the attacker
  */
-@Persistent(version = 8)
 @Value
 @Builder(access = AccessLevel.PRIVATE)
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
@@ -34,6 +32,7 @@ public class OffensiveAction
 	Kick kick;
 	IVector2 ballContactPos;
 	DribbleToPos dribbleToPos;
+	boolean forcePushDuringKick;
 
 
 	public OffensiveAction()
@@ -43,6 +42,7 @@ public class OffensiveAction
 		this.dribbleToPos = null;
 		this.ballContactPos = null;
 		this.type = null;
+		this.forcePushDuringKick = false;
 	}
 
 
@@ -53,6 +53,7 @@ public class OffensiveAction
 				.kick(kick)
 				.ballContactPos(kick.getSource())
 				.type(EOffensiveActionType.REDIRECT_KICK)
+				.forcePushDuringKick(false)
 				.build();
 	}
 
@@ -83,6 +84,7 @@ public class OffensiveAction
 		return OffensiveAction.builder()
 				.type(EOffensiveActionType.PROTECT)
 				.dribbleToPos(dribbleToPos)
+				.forcePushDuringKick(false)
 				.build();
 	}
 
@@ -95,6 +97,19 @@ public class OffensiveAction
 				.kick(pass.getKick())
 				.ballContactPos(pass.getKick().getSource())
 				.type(EOffensiveActionType.PASS)
+				.forcePushDuringKick(false)
+				.build();
+	}
+
+	public static OffensiveAction buildProtectPass(
+			@NonNull Pass pass)
+	{
+		return OffensiveAction.builder()
+				.pass(pass)
+				.kick(pass.getKick())
+				.ballContactPos(pass.getKick().getSource())
+				.type(EOffensiveActionType.PASS)
+				.forcePushDuringKick(true)
 				.build();
 	}
 
@@ -106,6 +121,7 @@ public class OffensiveAction
 				.kick(kick)
 				.ballContactPos(kick.getSource())
 				.type(EOffensiveActionType.KICK)
+				.forcePushDuringKick(false)
 				.build();
 	}
 
@@ -118,6 +134,7 @@ public class OffensiveAction
 				.kick(kick)
 				.type(EOffensiveActionType.DRIBBLE_KICK)
 				.dribbleToPos(dribbleToPos)
+				.forcePushDuringKick(false)
 				.build();
 	}
 
@@ -128,6 +145,7 @@ public class OffensiveAction
 		return OffensiveAction.builder()
 				.type(EOffensiveActionType.RECEIVE)
 				.ballContactPos(ballContactPos)
+				.forcePushDuringKick(false)
 				.build();
 	}
 }

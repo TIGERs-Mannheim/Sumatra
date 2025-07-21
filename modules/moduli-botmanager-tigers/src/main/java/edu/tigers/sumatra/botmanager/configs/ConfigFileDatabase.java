@@ -16,7 +16,7 @@ import java.util.Optional;
 import java.util.Set;
 
 
-public class ConfigFileDatabase
+public class ConfigFileDatabase implements IConfigFileDatabase
 {
 	@Getter
 	private final Map<Integer, Map<Integer, Map<String, Object>>> savedConfigFiles = new HashMap<>();
@@ -57,8 +57,9 @@ public class ConfigFileDatabase
 	}
 
 
+	@Override
 	@SuppressWarnings("unchecked")
-	Optional<ConfigFile> getSelectedEntry(final int configId, final int version)
+	public Optional<ConfigFile> getSelectedEntry(final int configId, final int version)
 	{
 		if (!savedConfigFiles.containsKey(configId) || !savedConfigFiles.get(configId).containsKey(version))
 		{
@@ -106,7 +107,8 @@ public class ConfigFileDatabase
 	}
 
 
-	boolean isAutoUpdate(final int configId, final int version)
+	@Override
+	public boolean isAutoUpdate(final int configId, final int version)
 	{
 		return autoUpdateConfigs.containsKey(configId) && autoUpdateConfigs.get(configId).contains(version);
 	}

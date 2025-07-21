@@ -11,8 +11,7 @@ import edu.tigers.sumatra.drawable.ColorPickerFactory;
 import edu.tigers.sumatra.drawable.DrawableCircle;
 import edu.tigers.sumatra.drawable.IDrawableShape;
 import edu.tigers.sumatra.ids.BotID;
-import edu.tigers.sumatra.movingrobot.AcceleratingRobotFactory;
-import edu.tigers.sumatra.movingrobot.StoppingRobotFactory;
+import edu.tigers.sumatra.movingrobot.MovingRobotFactory;
 
 import java.util.List;
 
@@ -54,7 +53,7 @@ public class MovingRobotTestCalc extends ACalculator
 		var botId = BotID.createBotId(botNumber, getAiFrame().getTeamColor());
 		var movingRobot = switch (kind)
 		{
-			case ACCELERATING -> AcceleratingRobotFactory.create(
+			case ACCELERATING -> MovingRobotFactory.acceleratingRobot(
 					getAiFrame().getWorldFrame().getBot(botId).getPos(),
 					getAiFrame().getWorldFrame().getBot(botId).getVel(),
 					getAiFrame().getWorldFrame().getBot(botId).getMoveConstraints().getVelMax(),
@@ -62,7 +61,7 @@ public class MovingRobotTestCalc extends ACalculator
 					radius,
 					reactionTime
 			);
-			case STOPPING -> StoppingRobotFactory.create(
+			case STOPPING -> MovingRobotFactory.stoppingRobot(
 					getAiFrame().getWorldFrame().getBot(botId).getPos(),
 					getAiFrame().getWorldFrame().getBot(botId).getVel(),
 					getAiFrame().getWorldFrame().getBot(botId).getMoveConstraints().getVelMax(),

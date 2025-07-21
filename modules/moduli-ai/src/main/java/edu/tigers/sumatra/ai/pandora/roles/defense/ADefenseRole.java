@@ -80,10 +80,11 @@ public abstract class ADefenseRole extends ARole
 	}
 
 
-	protected boolean isGoalShotDetected(IVector2 idealProtectionDest)
+	protected boolean isGoalShotInterceptNecessary(IVector2 idealProtectionDest)
 	{
 		var botTime = TrajectoryGenerator.generatePositionTrajectory(getBot(), idealProtectionDest).getTotalTime();
-		var ballTime = getBall().getTrajectory().getTimeByPos(idealProtectionDest);
+		var interceptPos = getBall().getTrajectory().getTravelLine().closestPointOnPath(idealProtectionDest);
+		var ballTime = getBall().getTrajectory().getTimeByPos(interceptPos);
 
 		if (botTime + idealTimeToReachDest > ballTime)
 		{
@@ -101,12 +102,18 @@ public abstract class ADefenseRole extends ARole
 
 	protected Destination interceptGoalShot()
 	{
+		return interceptGoalShot(Vector2.zero());
+	}
+
+
+	protected Destination interceptGoalShot(IVector2 destinationOffset)
+	{
 		var closestPointsToIdealPos = getBall().getTrajectory().getTravelLineSegments().stream()
 				.map(line -> line.closestPointOnPath(getPos()))
 				.toList();
 		var interceptPos = getPos().nearestTo(closestPointsToIdealPos);
 		var ballTravelTime = getBall().getTrajectory().getTimeByPos(interceptPos);
-		return new Destination(interceptPos, ballTravelTime);
+		return new Destination(interceptPos.addNew(destinationOffset), ballTravelTime);
 	}
 
 
@@ -188,7 +195,13 @@ public abstract class ADefenseRole extends ARole
 
 		public IVector2 validPos()
 		{
-			return moveToValidDest(pos);
+			var validDest = moveToValidDest(pos);
+			if (time == null)
+			{
+				return validDest;
+			}
+
+			return TrajectoryGenerator.generateVirtualPositionToReachPointInTime(getBot(), validDest, time);
 		}
 	}
 }

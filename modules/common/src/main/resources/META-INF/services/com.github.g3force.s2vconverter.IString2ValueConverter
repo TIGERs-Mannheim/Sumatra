@@ -1,1 +1,4 @@
 edu.tigers.sumatra.ids.ObjectIdConverter
+com.github.g3force.s2vconverter.ArrayConverter
+com.github.g3force.s2vconverter.VectorConverter
+com.github.g3force.s2vconverter.PoseConverter

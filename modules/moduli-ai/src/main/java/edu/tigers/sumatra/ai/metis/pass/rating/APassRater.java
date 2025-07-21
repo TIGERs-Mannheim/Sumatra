@@ -32,4 +32,18 @@ public abstract class APassRater implements IPassRater
 			shapes.add(shapeSupplier.get());
 		}
 	}
+
+
+	/**
+	 * Draw multiple shapes, if drawing is enabled.
+	 *
+	 * @param shapeSupplier
+	 */
+	protected final void drawMany(Supplier<List<IDrawableShape>> shapeSupplier)
+	{
+		if (shapes != null)
+		{
+			shapes.addAll(shapeSupplier.get());
+		}
+	}
 }

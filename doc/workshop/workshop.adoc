@@ -357,7 +357,7 @@ private class WorkshopState extends RoleState<MoveToSkill>
     @Override
     protected void onInit()
     {
-		 if (target == null) {
+         if (target == null) {
              target = getPos();
          }
     }
@@ -416,15 +416,11 @@ public class WorkshopResult
 }
 ----
 
-Add a new field to the `TacticalField`:
+Add a new field to the `TacticalField` class:
 
 [source,java]
 ----
-class TacticalField {
-   // ...
-   WorkshopResult workshopResult;
-   // ...
-}
+WorkshopResult workshopResult;
 ----
 
 We will also need a new shape layer where we can draw our own shapes.
@@ -432,12 +428,7 @@ Add
 
 [source,java]
 ----
-class EAiShapesLayer {
-   // ...
-    public static final IShapeLayerIdentifier TEST_WORKSHOP = F.create(F.layer("Workshop").category("Test"));
-
-   // ...
-}
+public static final IShapeLayerIdentifier TEST_WORKSHOP = F.create(F.category("Test").layerName("Workshop"));
 ----
 
 to `EAiShapesLayer`.

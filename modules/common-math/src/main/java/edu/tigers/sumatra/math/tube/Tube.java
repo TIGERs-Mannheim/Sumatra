@@ -4,7 +4,6 @@
 
 package edu.tigers.sumatra.math.tube;
 
-import com.sleepycat.persist.model.Persistent;
 import edu.tigers.sumatra.math.AngleMath;
 import edu.tigers.sumatra.math.IBoundedPath;
 import edu.tigers.sumatra.math.SumatraMath;
@@ -14,7 +13,6 @@ import edu.tigers.sumatra.math.line.ILineSegment;
 import edu.tigers.sumatra.math.line.LineMath;
 import edu.tigers.sumatra.math.line.Lines;
 import edu.tigers.sumatra.math.vector.IVector2;
-import edu.tigers.sumatra.math.vector.Vector2f;
 import lombok.EqualsAndHashCode;
 import lombok.RequiredArgsConstructor;
 import lombok.ToString;
@@ -26,7 +24,6 @@ import java.util.List;
 /**
  * Implementation of a {@link ITube}
  */
-@Persistent(version = 1)
 @ToString
 @EqualsAndHashCode
 @RequiredArgsConstructor(staticName = "create")
@@ -34,17 +31,6 @@ public class Tube implements ITube
 {
 	private final ILineSegment lineSegment;
 	private final double radius;
-
-
-	/**
-	 * for DB only
-	 */
-	@SuppressWarnings("unused")
-	private Tube()
-	{
-		lineSegment = Lines.segmentFromPoints(Vector2f.ZERO_VECTOR, Vector2f.ZERO_VECTOR);
-		radius = 1;
-	}
 
 
 	/**

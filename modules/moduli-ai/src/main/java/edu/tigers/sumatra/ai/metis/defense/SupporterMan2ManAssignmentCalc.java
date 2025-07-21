@@ -5,11 +5,13 @@
 package edu.tigers.sumatra.ai.metis.defense;
 
 import edu.tigers.sumatra.ai.metis.ACalculator;
+import edu.tigers.sumatra.ai.metis.defense.data.DefenseBallThreat;
 import edu.tigers.sumatra.ai.metis.defense.data.DefenseBotThreat;
 import edu.tigers.sumatra.ai.metis.defense.data.DefenseThreatAssignment;
 import edu.tigers.sumatra.ai.metis.defense.data.EDefenseBotThreatDefStrategy;
 import edu.tigers.sumatra.ai.pandora.plays.EPlay;
 import edu.tigers.sumatra.ids.BotID;
+import edu.tigers.sumatra.math.SumatraMath;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -28,7 +30,8 @@ public class SupporterMan2ManAssignmentCalc extends ACalculator
 {
 	private final Supplier<Map<EPlay, Set<BotID>>> desiredBots;
 	private final Supplier<List<DefenseThreatAssignment>> defenseThreatAssignment;
-	private final Supplier<List<DefenseBotThreat>> defenseBotThreats;
+	private final Supplier<List<DefenseBotThreat>> allDefenseMan2ManBotThreats;
+	private final Supplier<DefenseBallThreat> defenseBallThreat;
 
 	@Getter
 	private Map<BotID, DefenseBotThreat> supporterToBotThreatMapping = Collections.emptyMap();
@@ -48,9 +51,11 @@ public class SupporterMan2ManAssignmentCalc extends ACalculator
 				.filter(dta -> dta.getBotIds().stream().anyMatch(defenders::contains))
 				.map(assignment -> assignment.getThreat().getObjectId())
 				.collect(Collectors.toSet());
-		var unprotectedBallToBotThreats = defenseBotThreats.get().stream()
+
+		var unprotectedBallToBotThreats = allDefenseMan2ManBotThreats.get().stream()
 				.filter(threat -> threat.getDefendStrategy() == EDefenseBotThreatDefStrategy.MAN_2_MAN_MARKER)
 				.filter(threat -> !protectedOpponentObjects.contains(threat.getObjectId()))
+				.sorted(Comparator.comparingDouble(this::pressingScore))
 				.toList();
 
 		if (!desiredBots.get().containsKey(EPlay.SUPPORT))
@@ -72,6 +77,17 @@ public class SupporterMan2ManAssignmentCalc extends ACalculator
 			mapping.put(closestSupporter.get().getBotId(), threat);
 		}
 		return Collections.unmodifiableMap(mapping);
+	}
+
+
+	private double pressingScore(DefenseBotThreat threat)
+	{
+		var ball = defenseBallThreat.get().getPos();
+		var bot = threat.getPos();
+		var passScore = new DefenseThreatRater().calcPassDistanceScore(ball, bot);
+
+		var factor = SumatraMath.cap(1 - (bot.x() - ball.x()) / 1000, 0, 1);
+		return passScore * factor;
 	}
 
 }

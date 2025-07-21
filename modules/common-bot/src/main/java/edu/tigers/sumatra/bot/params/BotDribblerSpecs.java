@@ -3,14 +3,12 @@
  */
 package edu.tigers.sumatra.bot.params;
 
-import com.sleepycat.persist.model.Persistent;
 import lombok.Data;
 
 
 /**
  * Robot dribbler specifications.
  */
-@Persistent
 @Data
 public class BotDribblerSpecs implements IBotDribblerSpecs
 {

@@ -7,15 +7,15 @@ package edu.tigers.sumatra.skillsystem.skills;
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
 import edu.tigers.sumatra.drawable.DrawableCircle;
-import edu.tigers.sumatra.drawable.DrawableTriangle;
+import edu.tigers.sumatra.drawable.DrawableQuadrilateral;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.BotID;
+import edu.tigers.sumatra.math.SumatraMath;
 import edu.tigers.sumatra.math.intersections.IIntersections;
 import edu.tigers.sumatra.math.line.ILineSegment;
 import edu.tigers.sumatra.math.line.Lines;
-import edu.tigers.sumatra.math.triangle.Triangle;
+import edu.tigers.sumatra.math.quadrilateral.Quadrilateral;
 import edu.tigers.sumatra.math.vector.IVector2;
-import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.math.vector.VectorMath;
 import edu.tigers.sumatra.skillsystem.ESkillShapesLayer;
 import edu.tigers.sumatra.statemachine.IEvent;
@@ -26,8 +26,10 @@ import edu.tigers.sumatra.wp.data.WorldFrame;
 import java.awt.Color;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 
 
@@ -36,26 +38,29 @@ import java.util.Optional;
  */
 public class DefendingKeeper
 {
-	@Configurable(comment = "Ball Speed wher Keeper react on his direction", defValue = "0.1")
+	@Configurable(comment = "[m/s] Ball Speed wher Keeper react on his direction", defValue = "0.1")
 	private static double blockDecisionVelocity = 0.1;
 
-	@Configurable(comment = "offset to the Sides of the goalposts (BalVelIsDirToGoal State)", defValue = "180.0")
+	@Configurable(comment = "[mm] offset to the Sides of the goalposts (BalVelIsDirToGoal State)", defValue = "180.0")
 	private static double goalAreaOffset = 180.0;
 
-	@Configurable(comment = "Ball declared as shot after kick event", defValue = "0.5")
+	@Configurable(comment = "[m/s] Ball declared as shot after kick event", defValue = "0.5")
 	private static double maxKickTime = 0.5;
 
-	@Configurable(comment = "Distance from Opponent to Ball where Keeper beliefs Opponent could be in possession of the ball", defValue = "250.0")
+	@Configurable(comment = "[mm] Distance from Opponent to Ball where Keeper beliefs Opponent could be in possession of the ball", defValue = "250.0")
 	private static double opponentBotBallPossessionDistance = 250.0;
 
-	@Configurable(comment = "Speed limit of ball of ChipKickState", defValue = "0.8")
+	@Configurable(comment = "[m/s] Speed limit of ball of ChipKickState", defValue = "0.8")
 	private static double chipKickDecisionVelocity = 0.8;
 
-	@Configurable(comment = "Additional area around PE where Opponent with Ball are very dangerous (GoOutState is triggered)", defValue = "300.0")
+	@Configurable(comment = "[mm] Additional area around PE where Opponent with Ball are very dangerous (GoOutState is triggered)", defValue = "300.0")
 	private static double ballDangerZone = 300.0;
 
-	@Configurable(comment = "Additional distance to allow until ball reach goal line", defValue = "1000.0")
+	@Configurable(comment = "[mm] Additional distance to allow until ball reach goal line", defValue = "1000.0")
 	private static double distToIntersectionTolerance = 1000;
+
+	@Configurable(comment = "[rad] Angle of the search triangle to look for opponent redirectors", defValue = "0.4")
+	private static double opponentRedirectorSearchAngle = 0.4;
 
 	static
 	{
@@ -122,6 +127,7 @@ public class DefendingKeeper
 		return getBot().getBallContact().getContactDuration() > 0.1;
 	}
 
+
 	private boolean isSomeoneShootingAtOurGoal()
 	{
 		ILineSegment goalLine = Geometry.getGoalOur()
@@ -164,56 +170,29 @@ public class DefendingKeeper
 
 	private boolean isOpponentRedirecting()
 	{
-		BotID redirectOpponentBotId = getBestRedirector(worldFrame.getOpponentBots());
-		IVector2 redirectOpponentBot = null;
-		if (redirectOpponentBotId.isBot())
-		{
-			redirectOpponentBot = worldFrame.getOpponentBot(redirectOpponentBotId).getPos();
-		}
-
-		// Alternative to p2pVisibility in AiMath
-		boolean p2pVisibilityRedirectOpponentGoal;
-		if (redirectOpponentBot != null)
-		{
-			var lineGoalOpponentBot = Lines.segmentFromPoints(redirectOpponentBot, Geometry.getGoalOur().getCenter());
-			p2pVisibilityRedirectOpponentGoal = worldFrame.getBots().values().stream()
-					.filter(b -> !b.getBotId().equals(drawingSkill.getBotId()))
-					.anyMatch(b -> lineGoalOpponentBot.distanceTo(b.getPos())
-							< Geometry.getBotRadius() + Geometry.getBallRadius());
-		} else
-		{
-			p2pVisibilityRedirectOpponentGoal = false;
-		}
-
-		return (redirectOpponentBot != null)
-				&& (p2pVisibilityRedirectOpponentGoal)
-				&& (getBall().getVel().getLength() > chipKickDecisionVelocity);
+		return getBestRedirector(worldFrame.getOpponentBots()).isPresent()
+				&& getBall().getVel().getLength() > chipKickDecisionVelocity;
 	}
 
 
-	protected BotID getBestRedirector(final Map<BotID, ITrackedBot> bots)
+	protected Optional<BotID> getBestRedirector(final Map<BotID, ITrackedBot> bots)
 	{
 		IVector2 ballPos = getBall().getPos();
 		IVector2 endPos = getBall().getTrajectory().getPosByVel(0.0).getXYVector();
+		var penaltyAreaOur = Geometry.getPenaltyAreaOur().withMargin(-2 * Geometry.getBotRadius());
 
-		BotID minID = null;
-		double minDist = Double.MAX_VALUE;
+		return getPotentialRedirectors(bots, endPos).stream()
+				.map(bots::get)
+				.filter(Objects::nonNull)
+				.filter(b -> !penaltyAreaOur.isPointInShapeOrBehind(getRedirectPosition(b.getPos())))
+				.min(Comparator.comparingDouble(b -> b.getPos().distanceToSqr(ballPos)))
+				.map(ITrackedBot::getBotId);
+	}
 
-		List<BotID> filteredBots = getPotentialRedirectors(bots, endPos);
-		for (BotID key : filteredBots)
-		{
-			IVector2 pos = bots.get(key).getPos();
-			if (VectorMath.distancePP(pos, ballPos) < minDist)
-			{
-				minDist = VectorMath.distancePP(pos, ballPos);
-				minID = key;
-			}
-		}
-		if (minID != null)
-		{
-			return minID;
-		}
-		return BotID.noBot();
+
+	protected IVector2 getRedirectPosition(IVector2 redirectorPosition)
+	{
+		return Lines.halfLineFromDirection(getBall().getPos(), getBall().getVel()).closestPointOnPath(redirectorPosition);
 	}
 
 
@@ -223,32 +202,19 @@ public class DefendingKeeper
 		final double redirectTol = 350.;
 		IVector2 ballPos = getBall().getPos();
 
-		// input: endpoint, ballVel.vel = endpoint - curPos.getAngle().
-		IVector2 ballVel = endPos.subtractNew(ballPos);
 
+		IVector2 ballVel = endPos.subtractNew(ballPos);
 		if (ballVel.getLength() < 0.4)
 		{
 			return Collections.emptyList();
 		}
 
-		IVector2 left = Vector2.fromAngle(ballVel.getAngle() - 0.2).normalizeNew();
-		IVector2 right = Vector2.fromAngle(ballVel.getAngle() + 0.2).normalizeNew();
-
 		double dist = Math.max(VectorMath.distancePP(ballPos, endPos) - redirectTol, 10);
 
-		IVector2 lp = ballPos.addNew(left.multiplyNew(dist));
-		IVector2 rp = ballPos.addNew(right.multiplyNew(dist));
-
-		IVector2 normal = ballVel.getNormalVector().normalizeNew();
-		IVector2 tleft = ballPos.addNew(normal.scaleToNew(160));
-		IVector2 tright = ballPos.addNew(normal.scaleToNew(-160));
-		IVector2 uleft = tleft.addNew(left.scaleToNew(dist)).addNew(normal.scaleToNew(100));
-		IVector2 uright = tright.addNew(right.scaleToNew(dist)).addNew(normal.scaleToNew(-100));
-
-
-		Triangle tri1 = Triangle.fromCorners(ballPos, lp, rp);
-		Triangle tri2 = Triangle.fromCorners(tleft, uleft, uright);
-		Triangle tri3 = Triangle.fromCorners(tleft, tright, uright);
+		var w1 = 2 * 160;
+		var w2 = 2 * (SumatraMath.sin(opponentRedirectorSearchAngle / 2) * dist + 260);
+		var quad = Quadrilateral.isoscelesTrapezoid(ballPos, w1,
+				ballPos.addNew(ballVel.scaleToNew(SumatraMath.cos(opponentRedirectorSearchAngle / 2) * dist)), w2);
 
 		for (Map.Entry<BotID, ITrackedBot> entry : bots.entrySet())
 		{
@@ -259,43 +225,22 @@ public class DefendingKeeper
 				continue;
 			}
 			IVector2 pos = tBot.getPos();
-			if (tri2.isPointInShape(pos) || tri3.isPointInShape(pos))
+			if (quad.isPointInShape(pos))
 			{
 				filteredBots.add(botID);
 			}
 			if ((drawingSkill != null) && filteredBots.contains(botID))
 			{
-				drawRedirectorPos(pos);
+				drawingSkill.getShapes().get(ESkillShapesLayer.KEEPER).add(new DrawableCircle(pos, 150, Color.CYAN));
 			}
 		}
 
 		if (drawingSkill != null)
 		{
-			drawRedirectorTriangles(tri1, tri2, tri2);
+			drawingSkill.getShapes().get(ESkillShapesLayer.KEEPER)
+					.add(new DrawableQuadrilateral(quad, new Color(255, 0, 0, 20)).setFill(true));
 		}
 		return filteredBots;
-	}
-
-
-	private void drawRedirectorTriangles(final Triangle tri1, final Triangle tri2, final Triangle tri3)
-	{
-
-		DrawableTriangle dtri1 = new DrawableTriangle(tri1, new Color(255, 0, 0, 20));
-		dtri1.setFill(true);
-		DrawableTriangle dtri2 = new DrawableTriangle(tri2, new Color(255, 0, 0, 20));
-		dtri2.setFill(true);
-		DrawableTriangle dtri3 = new DrawableTriangle(tri3, new Color(255, 0, 0, 20));
-		dtri3.setFill(true);
-
-		drawingSkill.getShapes().get(ESkillShapesLayer.KEEPER).add(dtri1);
-		drawingSkill.getShapes().get(ESkillShapesLayer.KEEPER).add(dtri2);
-		drawingSkill.getShapes().get(ESkillShapesLayer.KEEPER).add(dtri3);
-	}
-
-
-	private void drawRedirectorPos(final IVector2 pos)
-	{
-		drawingSkill.getShapes().get(ESkillShapesLayer.KEEPER).add(new DrawableCircle(pos, 150, Color.CYAN));
 	}
 
 

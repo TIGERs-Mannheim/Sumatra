@@ -20,13 +20,8 @@ dependencies {
     implementation project(':moduli-wp')
     implementation project(':moduli-gamelog')
 
-    api(libs.com.github.g3force.instanceables)
-    api(libs.com.github.g3force.configurable)
-
     implementation(libs.commons.lang)
     implementation(libs.org.apache.logging.log4j.log4j.api)
-
-    implementation(libs.com.sleepycat.je)
 
     implementation(libs.com.fasterxml.jackson.core.jackson.core)
     implementation(libs.com.fasterxml.jackson.core.jackson.databind)

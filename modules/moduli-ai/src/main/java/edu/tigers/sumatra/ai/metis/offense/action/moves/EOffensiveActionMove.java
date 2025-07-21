@@ -24,19 +24,19 @@ public enum EOffensiveActionMove implements IInstanceableEnum
 	/**
 	 * Direct kick on the opponent goal
 	 */
-	FINISHER(new InstanceableClass<>(FinisherActionMove.class)),
-	/**
-	 * Direct kick on the opponent goal
-	 */
 	GOAL_KICK(new InstanceableClass<>(GoalKickActionMove.class)),
-	/**
-	 * Pass is forced in standard situations
-	 */
-	FORCED_PASS(new InstanceableClass<>(ForcedPassActionMove.class)),
 	/**
 	 * A standard pass to another friendly robot
 	 */
 	STANDARD_PASS(new InstanceableClass<>(StandardPassActionMove.class)),
+	/**
+	 * Direct kick on the opponent goal
+	 */
+	FINISHER(new InstanceableClass<>(FinisherActionMove.class)),
+	/**
+	 * Pass is forced in standard situations
+	 */
+	FORCED_PASS(new InstanceableClass<>(ForcedPassActionMove.class)),
 	/**
 	 * Low chance of scoring a goal, otherwise same as {@link #GOAL_KICK}
 	 */

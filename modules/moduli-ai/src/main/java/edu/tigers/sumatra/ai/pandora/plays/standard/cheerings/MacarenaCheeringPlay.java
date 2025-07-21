@@ -47,7 +47,7 @@ public class MacarenaCheeringPlay extends ASongPlayingCheeringPlay
 						7.2, // 12 | Shake Start
 						9.0, // 13 | Shake End
 						9.2  // 14 | Turn
-				), 4);
+				), 2);
 	}
 
 
@@ -92,7 +92,7 @@ public class MacarenaCheeringPlay extends ASongPlayingCheeringPlay
 
 	private double getRotation(int loopCount)
 	{
-		return AngleMath.normalizeAngle((loopCount % 4) * AngleMath.PI_HALF);
+		return  AngleMath.normalizeAngle(AngleMath.PI_HALF + (loopCount % 2) * AngleMath.PI);
 	}
 
 
@@ -117,7 +117,7 @@ public class MacarenaCheeringPlay extends ASongPlayingCheeringPlay
 		var roles = getPlay().getPermutedRoles();
 		var positions = new ArrayList<IVector2>(roles.size());
 
-		roles.forEach(r -> r.updateTargetAngle(0));
+		roles.forEach(r -> r.updateTargetAngle(getRotation(0)));
 		int numLinesInDanceBlock = (int) Math.sqrt(roles.size());
 		int numRowsInDanceBlock = roles.size() / numLinesInDanceBlock;
 
@@ -169,7 +169,7 @@ public class MacarenaCheeringPlay extends ASongPlayingCheeringPlay
 		if (shake)
 		{
 			// Orthogonal to looking distance
-			var offset = Vector2.fromAngleLength(getRotation(getLoopCounter() + 1), 0.3 * MOVE_OFFSET);
+			var offset = Vector2.fromAngleLength(AngleMath.PI_HALF + getRotation(getLoopCounter()), 0.3 * MOVE_OFFSET);
 			boolean flipDirection = Math.round((timeSinceStartOfLoop() - 7.2) * 10) % 2 == 0;
 			for (var role : getPlay().getPermutedRoles())
 			{

@@ -7,7 +7,6 @@ import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
 import com.github.g3force.configurable.IConfigClient;
 import com.github.g3force.configurable.IConfigObserver;
-import edu.tigers.moduli.exceptions.InitModuleException;
 import edu.tigers.sumatra.cam.data.CamGeometry;
 import edu.tigers.sumatra.cam.proto.SslVisionWrapper.SSL_WrapperPacket;
 import edu.tigers.sumatra.clock.NanoTime;
@@ -68,7 +67,7 @@ public class SSLVisionCam extends ACam implements Runnable, IReceiverObserver, I
 
 
 	@Override
-	public void initModule() throws InitModuleException
+	public void initModule()
 	{
 		super.initModule();
 		port = customPort > 0 ? customPort : getSubnodeConfiguration().getInt("port", 10006);

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Configuration>
+<Configuration shutdownHook="disable">
     <Appenders>
         <Console name="CONSOLE" target="SYSTEM_OUT">
             <PatternLayout pattern="%d %p [%t|%c{1}|%X] %m%n"/>
@@ -7,14 +7,14 @@
         <File name="FILE" fileName="data/logs/Sumatra-${date:yyyy-MM-dd'_'HH-mm-ss}.log">
             <PatternLayout pattern="%d %p [%t|%c{1}|%X] %m%n"/>
         </File>
-        <SumatraAppender name="berkeley"/>
+        <SumatraAppender name="persistence"/>
         <SumatraAppender name="logView">
             <PatternLayout pattern="%d %p [%t|%c{1}|%X] %m%n"/>
         </SumatraAppender>
         <Async name="ASYNC">
-            <AppenderRef ref="CONSOLE" level="info"/>
+            <AppenderRef ref="CONSOLE" level="${env:LOG_LEVEL:-info}"/>
             <AppenderRef ref="FILE" level="debug"/>
-            <AppenderRef ref="berkeley" level="all"/>
+            <AppenderRef ref="persistence" level="all"/>
             <AppenderRef ref="logView" level="all"/>
         </Async>
     </Appenders>

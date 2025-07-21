@@ -10,8 +10,8 @@ import edu.tigers.sumatra.bot.EFeatureState;
 import edu.tigers.sumatra.botmanager.bots.ABot;
 import edu.tigers.sumatra.botmanager.bots.TigerBot;
 import edu.tigers.sumatra.botmanager.botskills.data.EKickerMode;
-import edu.tigers.sumatra.botmanager.botskills.data.IMatchCommand;
-import edu.tigers.sumatra.botmanager.botskills.data.MultimediaControl;
+import edu.tigers.sumatra.botmanager.data.MatchCommand;
+import edu.tigers.sumatra.botmanager.data.MultimediaControl;
 import edu.tigers.sumatra.drawable.ShapeMap;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.statemachine.AState;
@@ -51,6 +51,7 @@ public abstract class ASkill implements ISkill
 	private boolean initialized = false;
 	private ABot bot;
 	private ShapeMap shapeMap = new ShapeMap();
+	private MatchCommand matchCommand = new MatchCommand();
 
 
 	protected ASkill()
@@ -127,17 +128,18 @@ public abstract class ASkill implements ISkill
 	/**
 	 * @return the matchCtrl
 	 */
-	protected final IMatchCommand getMatchCtrl()
+	protected final MatchCommand getMatchCtrl()
 	{
-		return bot.getMatchCtrl();
+		return matchCommand;
 	}
 
 
 	@Override
-	public void update(final WorldFrameWrapper wfw, final ABot bot, final ShapeMap shapeMap)
+	public void update(final WorldFrameWrapper wfw, final ABot bot, final ShapeMap shapeMap, MatchCommand matchCommand)
 	{
 		this.bot = bot;
 		this.shapeMap = shapeMap;
+		this.matchCommand = matchCommand;
 	}
 
 
@@ -239,7 +241,7 @@ public abstract class ASkill implements ISkill
 	@Override
 	public final void setMultimediaControl(final MultimediaControl control)
 	{
-		getMatchCtrl().setMultimediaControl(control);
+		matchCommand.setMultimediaControl(control);
 	}
 
 
@@ -253,13 +255,15 @@ public abstract class ASkill implements ISkill
 			return aiInfo;
 		}
 
-		aiInfo.setBallContact(bot.isBarrierInterrupted() ? "BARRIER" : "NO");
-		aiInfo.setBattery(bot.getBatteryRelative());
+		var fb = bot.getLastReceivedBotFeedback();
+
+		aiInfo.setBallContact(fb.isBarrierInterrupted() ? "BARRIER" : "NO");
+		aiInfo.setBattery(fb.getBatteryLevelRelative());
 		aiInfo.setVersion(bot.getVersionString());
-		aiInfo.setHwId(bot.getHardwareId());
-		aiInfo.setLastFeedback(bot.getLastFeedback());
-		aiInfo.setKickerCharge(bot.getKickerLevel());
-		Set<EFeature> brokenFeatures = bot.getBotFeatures().entrySet().stream()
+		aiInfo.setHwId(fb.getHardwareId());
+		aiInfo.setLastFeedback(fb.getTimestamp());
+		aiInfo.setKickerCharge(fb.getKickerLevel());
+		Set<EFeature> brokenFeatures = fb.getBotFeatures().entrySet().stream()
 				.filter(entry -> entry.getValue() == EFeatureState.KAPUT)
 				.map(Map.Entry::getKey).collect(Collectors.toSet());
 		aiInfo.setBrokenFeatures(brokenFeatures);
@@ -278,13 +282,14 @@ public abstract class ASkill implements ISkill
 		aiInfo.setMaxProcTime(averageTimeMeasure.getMaxTime());
 		aiInfo.setAvgProcTime(averageTimeMeasure.getAverageTime());
 		aiInfo.setDribbleForce(getMatchCtrl().getSkill().getKickerDribbler().getDribblerForce());
-		aiInfo.setDribbleTraction(bot.getDribbleTractionState());
-		aiInfo.setBallObservation(bot.getBallObservationState());
+		aiInfo.setDribbleTraction(fb.getDribbleTraction());
+		aiInfo.setBallObservation(fb.getBallObservationState());
+		aiInfo.setLastKick(fb.getLastKick());
 
 		if (bot.getClass().equals(TigerBot.class))
 		{
 			TigerBot tigerBot = (TigerBot) bot;
-			aiInfo.setBotStats(tigerBot.getStats());
+			aiInfo.setBotStats(tigerBot.getWifiStats());
 		}
 		return aiInfo;
 	}

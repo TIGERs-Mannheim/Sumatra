@@ -45,16 +45,13 @@ public class Athena
 	}
 
 	@Getter
-	private final AthenaGuiInput athenaGuiInput = new AthenaGuiInput();
+	private AthenaGuiInput athenaGuiInput = new AthenaGuiInput();
 	private IAthenaAdapter athenaAdapter = new MatchModeAthenaAdapter();
 	@Getter
 	private EAIControlState controlState = EAIControlState.MATCH_MODE;
 	private boolean newControlState = false;
 
 
-	/**
-	 * @param mode
-	 */
 	public void changeMode(final EAIControlState mode)
 	{
 		controlState = mode;
@@ -89,7 +86,9 @@ public class Athena
 	public AthenaAiFrame process(final MetisAiFrame metisAiFrame)
 	{
 		updateAdapter();
-		IPlayStrategy playStrategy = athenaAdapter.process(metisAiFrame, athenaGuiInput);
+		var input = athenaGuiInput.copy();
+		IPlayStrategy playStrategy = athenaAdapter.process(metisAiFrame, input);
+		athenaGuiInput = input;
 		AthenaAiFrame athenaAiFrame = AthenaAiFrame.builder()
 				.baseAiFrame(metisAiFrame.getBaseAiFrame())
 				.metisAiFrame(metisAiFrame)

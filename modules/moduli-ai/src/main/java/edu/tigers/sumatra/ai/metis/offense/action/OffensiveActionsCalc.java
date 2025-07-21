@@ -11,7 +11,6 @@ import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
 import edu.tigers.sumatra.ai.metis.ballpossession.BallPossession;
 import edu.tigers.sumatra.ai.metis.botdistance.BotDistance;
 import edu.tigers.sumatra.ai.metis.kicking.Pass;
-import edu.tigers.sumatra.ai.metis.offense.OffensiveConstants;
 import edu.tigers.sumatra.ai.metis.offense.action.moves.AOffensiveActionMove;
 import edu.tigers.sumatra.ai.metis.offense.action.moves.EOffensiveActionMove;
 import edu.tigers.sumatra.ai.metis.offense.action.moves.FinisherActionMove;
@@ -25,11 +24,11 @@ import edu.tigers.sumatra.ai.metis.offense.action.moves.RedirectGoalKickActionMo
 import edu.tigers.sumatra.ai.metis.offense.action.moves.StandardPassActionMove;
 import edu.tigers.sumatra.ai.metis.offense.dribble.DribbleToPos;
 import edu.tigers.sumatra.ai.metis.offense.dribble.DribblingInformation;
-import edu.tigers.sumatra.ai.metis.offense.statistics.OffensiveStatisticsFrame;
 import edu.tigers.sumatra.ai.metis.offense.strategy.EOffensiveStrategy;
 import edu.tigers.sumatra.ai.metis.pass.KickOrigin;
 import edu.tigers.sumatra.ai.metis.pass.rating.RatedPass;
 import edu.tigers.sumatra.ai.metis.targetrater.GoalKick;
+import edu.tigers.sumatra.ai.metis.targetrater.RotationTimeHelper;
 import edu.tigers.sumatra.drawable.DrawableAnnotation;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.vector.Vector2f;
@@ -70,8 +69,11 @@ public class OffensiveActionsCalc extends ACalculator
 	@Configurable(defValue = "1.0")
 	private static double viabilityMultiplierGoToOtherHalf = 1.0;
 
-	@Configurable(defValue = "0.35")
+	@Configurable(defValue = "0.35", comment = "[s]")
 	private static double impactTimeActionLockThreshold = 0.35;
+
+	@Configurable(defValue = "1.6", comment = "Rotation time multiplier")
+	private static double rotationTimeMultiplier = 1.6;
 
 	@Configurable(defValue = "PROTECT_MOVE")
 	private static EOffensiveActionMove forcedOffensiveActionMove = EOffensiveActionMove.PROTECT_MOVE;
@@ -92,9 +94,8 @@ public class OffensiveActionsCalc extends ACalculator
 	private final Supplier<Map<KickOrigin, RatedPass>> selectedPasses;
 	private final Supplier<Map<BotID, KickOrigin>> kickOrigins;
 	private final Supplier<BotDistance> opponentClosestToBall;
-	private final Supplier<OffensiveStatisticsFrame> offensiveStatisticsFrameSupplier;
 	private final Supplier<Map<BotID, GoalKick>> bestGoalKickPerBot;
-	private final Supplier<GoalKick> bestGoalKick;
+	private final Supplier<Map<BotID, GoalKick>> bestRedirectGoalKickPerBot;
 	private final Supplier<DribblingInformation> dribblingInformation;
 	private final Map<EOffensiveActionMove, AOffensiveActionMove> actionMoves = new EnumMap<>(
 			EOffensiveActionMove.class);
@@ -111,10 +112,10 @@ public class OffensiveActionsCalc extends ACalculator
 	protected void start()
 	{
 		register(EOffensiveActionMove.FORCED_PASS, new ForcedPassActionMove(selectedPasses));
-		register(EOffensiveActionMove.REDIRECT_GOAL_KICK, new RedirectGoalKickActionMove(bestGoalKickPerBot));
+		register(EOffensiveActionMove.REDIRECT_GOAL_KICK, new RedirectGoalKickActionMove(bestRedirectGoalKickPerBot));
 		register(EOffensiveActionMove.FINISHER,
 				new FinisherActionMove(opponentClosestToBall, dribblingInformation, tigerDribblingBall));
-		register(EOffensiveActionMove.GOAL_KICK, new GoalKickActionMove(bestGoalKick));
+		register(EOffensiveActionMove.GOAL_KICK, new GoalKickActionMove(bestGoalKickPerBot));
 		register(EOffensiveActionMove.STANDARD_PASS, new StandardPassActionMove(selectedPasses, kickOrigins));
 		register(EOffensiveActionMove.LOW_CHANCE_GOAL_KICK, new LowChanceGoalKickActionMove(bestGoalKickPerBot));
 		register(EOffensiveActionMove.MOVE_BALL_TO_OPPONENT_HALF,
@@ -183,7 +184,7 @@ public class OffensiveActionsCalc extends ACalculator
 			if (kickOrigin.getImpactTime() < impactTimeActionLockThreshold && offensiveActions.containsKey(botId)
 					&& offensiveActions.get(botId).getMove() != EOffensiveActionMove.PROTECT_MOVE)
 			{
-				return getStableOffensiveAction(botId);
+				return getStableOffensiveAction(botId, kickOrigin.getImpactTime());
 			}
 
 			getShapes(EAiShapesLayer.OFFENSE_ACTION_DEBUG).add(
@@ -202,15 +203,6 @@ public class OffensiveActionsCalc extends ACalculator
 			var bestAction = firstFullyViableAction(actions).or(() -> bestPartiallyViableAction(actions)).orElse(null);
 			if (bestAction != null)
 			{
-				if (OffensiveConstants.isEnableOffensiveStatistics())
-				{
-					var offensiveStatisticsFrame = offensiveStatisticsFrameSupplier.get();
-					var viabilityMap = actions.stream()
-							.collect(Collectors.toMap(RatedOffensiveAction::getMove, RatedOffensiveAction::getViability));
-					var offensiveBotFrame = offensiveStatisticsFrame.getBotFrames().get(botId);
-					offensiveBotFrame.setMoveViabilityMap(viabilityMap);
-				}
-
 				return bestAction;
 			}
 			log.warn("No offensive action has been declared... desperation level > 9000");
@@ -230,12 +222,32 @@ public class OffensiveActionsCalc extends ACalculator
 	}
 
 
-	private RatedOffensiveAction getStableOffensiveAction(BotID botId)
+	private RatedOffensiveAction getStableOffensiveAction(BotID botId, double impactTime)
 	{
 		var lastActionMove = offensiveActions.get(botId).getMove();
-		var updatedAction = actionMoves.get(lastActionMove).calcAction(botId, true);
+		var updatedAction = actionMoves.get(lastActionMove).calcAction(botId);
 		if (updatedAction.isEmpty() || updatedAction.get().getViability().getType() == EActionViability.FALSE)
 		{
+			if (lastActionMove == EOffensiveActionMove.STANDARD_PASS)
+			{
+				// in this case we do not have a valid pass anymore, so we consider aborting the action and do a receive instead.
+				var bot = getWFrame().getBot(botId);
+				double rotationTime = RotationTimeHelper.calcRotationTime(
+						bot.getAngularVel(),
+						bot.getAngleByTime(0),
+						getBall().getPos().subtractNew(bot.getPos()).getAngle(),
+						bot.getMoveConstraints().getVelMaxW(),
+						bot.getMoveConstraints().getAccMaxW());
+				boolean isTurnToReceivePossibleInTime = rotationTime * rotationTimeMultiplier < impactTime;
+
+				var receiveAction = actionMoves.get(EOffensiveActionMove.RECEIVE_BALL).calcAction(botId);
+				if (receiveAction.isPresent() && isTurnToReceivePossibleInTime)
+				{
+					getShapes(EAiShapesLayer.OFFENSE_ACTION_DEBUG).add(
+							getActionUpdateDebugAnnotation(botId, "overwrite to Receive"));
+					return receiveAction.get();
+				}
+			}
 			// keep old action, since an update is not possible
 			getShapes(EAiShapesLayer.OFFENSE_ACTION_DEBUG).add(
 					getActionUpdateDebugAnnotation(botId, "keeping old action"));

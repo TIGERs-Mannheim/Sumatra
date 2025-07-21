@@ -3,20 +3,14 @@ plugins {
 }
 
 dependencies {
-    // Support old junit4 syntax for now
-    testImplementation(libs.junit)
-    permitTestUnusedDeclared(libs.junit)
     // Support junit 5
-    testImplementation(libs.org.junit.jupiter.junit.jupiter)
-    permitTestUnusedDeclared(libs.org.junit.jupiter.junit.jupiter)
-    testRuntimeOnly(libs.org.junit.vintage.junit.vintage.engine)
-    testRuntimeOnly(libs.org.junit.platform.junit.platform.launcher)
+    testImplementation(platform(libs.org.junit.bom))
+    testImplementation('org.junit.jupiter:junit-jupiter')
+    testRuntimeOnly('org.junit.platform:junit-platform-launcher')
 
     // Add common test tools
     testImplementation(libs.org.assertj.assertj.core)
-    permitTestUnusedDeclared(libs.org.assertj.assertj.core)
     testImplementation(libs.org.mockito.mockito.all)
-    permitTestUnusedDeclared(libs.org.mockito.mockito.all)
 }
 
 test {

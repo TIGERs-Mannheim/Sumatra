@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.config;
@@ -20,7 +20,6 @@ import javax.swing.JButton;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.ScrollPaneConstants;
-import javax.swing.SwingUtilities;
 import javax.swing.event.TableModelEvent;
 import javax.swing.event.TreeExpansionEvent;
 import javax.swing.event.TreeExpansionListener;
@@ -45,7 +44,8 @@ public class EditorView extends JPanel
 	private final List<IConfigEditorViewObserver> observers = new CopyOnWriteArrayList<>();
 	private boolean wasLoaded = false;
 	private transient ITreeTableModel model;
-	private boolean listenForExpansionEvents = false;
+	private transient HierarchicalConfiguration referenceConfig;
+	private boolean listenForExpansionEvents;
 
 
 	public EditorView(final String title, final String configKey, final HierarchicalConfiguration config)
@@ -126,6 +126,7 @@ public class EditorView extends JPanel
 
 
 		// Finally: Add model
+		referenceConfig = config;
 		model = new ConfigXMLTreeTableModel(config);
 		treetable = new JTreeTable(model);
 		treetable.getModel().addTableModelListener(event -> {
@@ -159,7 +160,7 @@ public class EditorView extends JPanel
 		{
 			listenForExpansionEvents = false;
 			model.getAllTreePaths()
-					.forEach(pair -> SwingUtilities.invokeLater(() -> treetable.getTree().expandPath(pair.objectPath())));
+					.forEach(pair -> treetable.getTree().expandPath(pair.objectPath()));
 		} else
 		{
 			listenForExpansionEvents = false;
@@ -175,7 +176,7 @@ public class EditorView extends JPanel
 				.getUserProperty(EditorView.class, pair.nodeNamePath().toString(), false);
 		if (expanded)
 		{
-			SwingUtilities.invokeLater(() -> treetable.getTree().expandPath(pair.objectPath()));
+			treetable.getTree().expandPath(pair.objectPath());
 		}
 	}
 
@@ -207,7 +208,7 @@ public class EditorView extends JPanel
 	}
 
 
-	public void reload()
+	private void reload()
 	{
 		notifyReloadPressed(configKey);
 		wasLoaded = true;
@@ -286,6 +287,15 @@ public class EditorView extends JPanel
 		return configKey;
 	}
 
+	public void setReferenceConfig(HierarchicalConfiguration config)
+	{
+		referenceConfig = config;
+	}
+
+	public HierarchicalConfiguration getReferenceConfig()
+	{
+		return referenceConfig;
+	}
 
 	private class MyTreeExpansionListener implements TreeExpansionListener
 	{

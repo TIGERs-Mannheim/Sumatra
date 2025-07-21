@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.skillsystem.skills;
@@ -17,6 +17,7 @@ import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.skillsystem.ESkillShapesLayer;
 import edu.tigers.sumatra.skillsystem.skills.util.AroundBallCalc;
+import edu.tigers.sumatra.skillsystem.skills.util.EDribblerMode;
 import edu.tigers.sumatra.skillsystem.skills.util.KickParams;
 import edu.tigers.sumatra.skillsystem.skills.util.MinMarginChargeValue;
 import edu.tigers.sumatra.skillsystem.skills.util.TargetAngleReachedChecker;
@@ -62,6 +63,9 @@ public class SingleTouchKickSkill extends ATouchKickSkill
 
 	@Configurable(defValue = "80", comment = "Upper threshold for min margin charger")
 	private static double minMarginUpperThreshold = 80;
+
+	@Configurable(defValue = "DEFAULT", comment = "Dribbler mode")
+	private static EDribblerMode dribblerMode = EDribblerMode.DEFAULT;
 
 	private final TargetAngleReachedChecker targetAngleReachedChecker = new TargetAngleReachedChecker(
 			roughAngleTolerance, maxTimeTargetAngleReached);
@@ -170,8 +174,7 @@ public class SingleTouchKickSkill extends ATouchKickSkill
 
 		if (readyForKick)
 		{
-			double kickSpeed = getKickSpeed();
-			setKickParams(KickParams.of(desiredKickParams.getDevice(), kickSpeed));
+			setKickParams(getArmedKickParams().withDribblerMode(dribblerMode));
 		} else
 		{
 			setKickParams(KickParams.disarm());

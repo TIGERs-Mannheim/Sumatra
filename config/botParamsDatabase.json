@@ -1,6 +1,5 @@
 {
   "selectedParams": {
-    "TIGER_V2016": "TIGERs v2016",
     "TIGER_V2020": "TIGERs v2020",
     "OPPONENT": "ZJUNlict",
     "SIMULATION_YELLOW": "Simulation",
@@ -9,40 +8,11 @@
     "BLUE_LIVE": "BLUE"
   },
   "entries": {
-    "TIGERs v2016": {
-      "movementLimits": {
-        "velMax": 2.5,
-        "accMax": 2.0,
-        "brkMax": 4.0,
-        "jerkMax": 20.0,
-        "velMaxW": 20.0,
-        "accMaxW": 50.0,
-        "jerkMaxW": 1000.0,
-        "velMaxFast": 4.0,
-        "accMaxFast": 3.5
-      },
-      "dimensions": {
-        "center2DribblerDist": 78.0,
-        "diameter": 180.0,
-        "height": 136.0
-      },
-      "kickerSpecs": {
-        "chipAngle": 45.0,
-        "maxAbsoluteChipVelocity": 5.0,
-        "maxAbsoluteStraightVelocity": 8.0
-      },
-      "dribblerSpecs": {
-        "defaultSpeed": 3.0,
-        "defaultForce": 3.0,
-        "highPowerSpeed": 5.0,
-        "highPowerForce": 5.0
-      }
-    },
     "YELLOW": {
       "movementLimits": {
-        "velMax": 3.0,
+        "velMax": 3.2,
         "accMax": 3.0,
-        "brkMax": 6.0,
+        "brkMax": 5.1,
         "jerkMax": 20.0,
         "velMaxW": 20.0,
         "accMaxW": 50.0,
@@ -67,39 +37,10 @@
         "highPowerForce": 5.0
       }
     },
-    "Parsian": {
-      "movementLimits": {
-        "velMax": 3.8,
-        "accMax": 3.0,
-        "brkMax": 6.0,
-        "jerkMax": 20.0,
-        "velMaxW": 20.0,
-        "accMaxW": 50.0,
-        "jerkMaxW": 1000.0,
-        "velMaxFast": 4.0,
-        "accMaxFast": 4.0
-      },
-      "dimensions": {
-        "center2DribblerDist": 75.0,
-        "diameter": 180.0,
-        "height": 150.0
-      },
-      "kickerSpecs": {
-        "chipAngle": 45.0,
-        "maxAbsoluteChipVelocity": 6.5,
-        "maxAbsoluteStraightVelocity": 8.0
-      },
-      "dribblerSpecs": {
-        "defaultSpeed": 3.0,
-        "defaultForce": 3.0,
-        "highPowerSpeed": 5.0,
-        "highPowerForce": 5.0
-      }
-    },
     "BLUE": {
       "movementLimits": {
-        "velMax": 3.0,
-        "accMax": 3.0,
+        "velMax": 3.1,
+        "accMax": 3.4,
         "brkMax": 6.0,
         "jerkMax": 20.0,
         "velMaxW": 20.0,
@@ -128,14 +69,14 @@
     "TIGERs v2020": {
       "movementLimits": {
         "velMax": 3.0,
-        "accMax": 2.5,
+        "accMax": 3.0,
         "brkMax": 6.0,
         "jerkMax": 20.0,
         "velMaxW": 20.0,
         "accMaxW": 50.0,
         "jerkMaxW": 1000.0,
         "velMaxFast": 4.0,
-        "accMaxFast": 3.5
+        "accMaxFast": 3.0
       },
       "dimensions": {
         "center2DribblerDist": 71.5,
@@ -149,9 +90,9 @@
       },
       "dribblerSpecs": {
         "defaultSpeed": 2.0,
-        "defaultForce": 3.0,
+        "defaultForce": 4.0,
         "highPowerSpeed": 2.0,
-        "highPowerForce": 4.0
+        "highPowerForce": 6.0
       }
     },
     "Simulation": {
@@ -185,15 +126,15 @@
     },
     "ER-Force": {
       "movementLimits": {
-        "velMax": 3.0,
+        "velMax": 2.8,
         "accMax": 3.0,
-        "brkMax": 3.0,
+        "brkMax": 5.8,
         "jerkMax": 20.0,
         "velMaxW": 20.0,
         "accMaxW": 50.0,
         "jerkMaxW": 1000.0,
         "velMaxFast": 3.0,
-        "accMaxFast": 4.0
+        "accMaxFast": 3.0
       },
       "dimensions": {
         "center2DribblerDist": 75.0,
@@ -239,6 +180,151 @@
         "defaultForce": 3.0,
         "highPowerSpeed": 5.0,
         "highPowerForce": 5.0
+      }
+    },
+    "Unknown": {
+      "movementLimits": {
+        "velMax": 3.0,
+        "accMax": 3.0,
+        "brkMax": 3.0,
+        "jerkMax": 20.0,
+        "velMaxW": 20.0,
+        "accMaxW": 50.0,
+        "jerkMaxW": 1000.0,
+        "velMaxFast": 3.0,
+        "accMaxFast": 4.0
+      },
+      "dimensions": {
+        "center2DribblerDist": 75.0,
+        "diameter": 180.0,
+        "height": 136.0
+      },
+      "kickerSpecs": {
+        "chipAngle": 45.0,
+        "maxAbsoluteChipVelocity": 6.5,
+        "maxAbsoluteStraightVelocity": 8.0
+      },
+      "dribblerSpecs": {
+        "defaultSpeed": 3.0,
+        "defaultForce": 3.0,
+        "highPowerSpeed": 5.0,
+        "highPowerForce": 5.0
+      }
+    },
+    "Immortals": {
+      "movementLimits": {
+        "velMax": 3.2,
+        "accMax": 3.3,
+        "brkMax": 5.6,
+        "jerkMax": 20.0,
+        "velMaxW": 20.0,
+        "accMaxW": 50.0,
+        "jerkMaxW": 1000.0,
+        "velMaxFast": 3.0,
+        "accMaxFast": 4.0
+      },
+      "dimensions": {
+        "center2DribblerDist": 75.0,
+        "diameter": 180.0,
+        "height": 136.0
+      },
+      "kickerSpecs": {
+        "chipAngle": 45.0,
+        "maxAbsoluteChipVelocity": 6.5,
+        "maxAbsoluteStraightVelocity": 8.0
+      },
+      "dribblerSpecs": {
+        "defaultSpeed": 3.0,
+        "defaultForce": 3.0,
+        "highPowerSpeed": 5.0,
+        "highPowerForce": 5.0
+      }
+    },
+    "RoboTeam Twente": {
+      "movementLimits": {
+        "velMax": 2.2,
+        "accMax": 2.0,
+        "brkMax": 3.0,
+        "jerkMax": 20.0,
+        "velMaxW": 20.0,
+        "accMaxW": 50.0,
+        "jerkMaxW": 1000.0,
+        "velMaxFast": 3.0,
+        "accMaxFast": 4.0
+      },
+      "dimensions": {
+        "center2DribblerDist": 75.0,
+        "diameter": 180.0,
+        "height": 136.0
+      },
+      "kickerSpecs": {
+        "chipAngle": 45.0,
+        "maxAbsoluteChipVelocity": 6.5,
+        "maxAbsoluteStraightVelocity": 8.0
+      },
+      "dribblerSpecs": {
+        "defaultSpeed": 3.0,
+        "defaultForce": 3.0,
+        "highPowerSpeed": 5.0,
+        "highPowerForce": 5.0
+      }
+    },
+    "luhbots": {
+      "movementLimits": {
+        "velMax": 2.5,
+        "accMax": 1.5,
+        "brkMax": 3.0,
+        "jerkMax": 20.0,
+        "velMaxW": 20.0,
+        "accMaxW": 50.0,
+        "jerkMaxW": 1000.0,
+        "velMaxFast": 2.5,
+        "accMaxFast": 2.0
+      },
+      "dimensions": {
+        "center2DribblerDist": 75.0,
+        "diameter": 180.0,
+        "height": 136.0
+      },
+      "kickerSpecs": {
+        "chipAngle": 45.0,
+        "maxAbsoluteChipVelocity": 6.5,
+        "maxAbsoluteStraightVelocity": 8.0
+      },
+      "dribblerSpecs": {
+        "defaultSpeed": 3.0,
+        "defaultForce": 3.0,
+        "highPowerSpeed": 5.0,
+        "highPowerForce": 5.0
+      }
+    },
+    "Junior Superteam": {
+      "movementLimits": {
+        "velMax": 1.0,
+        "accMax": 2.0,
+        "brkMax": 6.0,
+        "jerkMax": 20.0,
+        "velMaxW": 20.0,
+        "accMaxW": 50.0,
+        "jerkMaxW": 1000.0,
+        "velMaxFast": 1.0,
+        "accMaxFast": 2.0
+      },
+      "dimensions": {
+        "center2DribblerDist": 71.5,
+        "diameter": 180.0,
+        "height": 143.0
+      },
+      "kickerSpecs": {
+        "chipAngle": 45.0,
+        "maxAbsoluteChipVelocity": 0.0,
+        "maxAbsoluteStraightVelocity": 3.0
+      },
+      "dribblerSpecs": {
+        "defaultSpeed": 0.7,
+        "defaultForce": 1.0,
+        "highPowerSpeed": 1.5,
+        "highPowerForce": 1.5
       }
     }
   }

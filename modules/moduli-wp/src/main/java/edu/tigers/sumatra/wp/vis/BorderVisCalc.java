@@ -41,7 +41,8 @@ public class BorderVisCalc implements IWpCalc
 		var lengthHalf = Geometry.getFieldLength() / 2.0;
 		var lengthQuarter = Geometry.getFieldLength() / 4.0;
 
-		shapes.add(new DrawableFieldBackground(Geometry.getField(), Geometry.getBoundaryWidth()));
+		shapeMap.get(EWpShapesLayer.FIELD_BACKGROUND)
+				.add(new DrawableFieldBackground(Geometry.getField(), Geometry.getBoundaryWidth()));
 		drawLine(shapes, new DrawableRectangle(Geometry.getField()));
 		drawLine(shapes, new DrawableCircle(Geometry.getCenterCircle()));
 		drawLine(shapes, new DrawableLine(Vector2.fromY(-widthHalf), Vector2.fromY(widthHalf)));
@@ -73,7 +74,7 @@ public class BorderVisCalc implements IWpCalc
 
 	private void drawLine(List<IDrawableShape> list, IDrawableShape newShape)
 	{
-		list.add(newShape.setColor(Color.WHITE).setStrokeWidth(Geometry.getLineWidth()));
+		list.add(newShape.setColor(Color.WHITE).setStrokeWidth(Geometry.getLineWidth() * 2));
 	}
 
 

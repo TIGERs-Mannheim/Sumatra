@@ -15,6 +15,7 @@ import edu.tigers.sumatra.geometry.RuleConstraints;
 import edu.tigers.sumatra.math.circle.Circle;
 
 import java.awt.Color;
+import java.awt.geom.Arc2D;
 import java.util.List;
 
 
@@ -28,8 +29,10 @@ public class AllowedDistancesAutoRefVisCalc implements IAutoRefereeCalc
 		if (frame.getGameState().isStandardSituation() || frame.getGameState().isStoppedGame())
 		{
 			NGeometry.getPenaltyAreas().stream()
-					.map(p -> p.withMargin(RuleConstraints.getBotToPenaltyAreaMarginStandard()))
+					.map(p -> p.withMargin(RuleConstraints.getBotToPenaltyAreaMarginStandard())
+							.withRoundedCorners(RuleConstraints.getBotToPenaltyAreaMarginStandard()))
 					.map(DrawableShapeBoundary::new)
+					.map(s -> s.setArcType(Arc2D.OPEN))
 					.forEach(shapes::add);
 		}
 

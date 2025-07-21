@@ -9,7 +9,7 @@ import edu.tigers.sumatra.math.I2DShape;
 import edu.tigers.sumatra.math.penaltyarea.PenaltyArea;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Optional;
 

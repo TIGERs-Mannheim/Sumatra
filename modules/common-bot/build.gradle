@@ -11,6 +11,4 @@ plugins {
 dependencies {
     implementation project(':common')
     implementation project(':common-math')
-
-    implementation(libs.com.sleepycat.je)
 }

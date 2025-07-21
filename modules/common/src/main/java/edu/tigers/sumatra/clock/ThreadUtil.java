@@ -29,11 +29,12 @@ public final class ThreadUtil
 		final long sleepStart = System.nanoTime();
 		long stillSleep = sleepTotal;
 
-		do
+		while (stillSleep > 1)
 		{
-			LockSupport.parkNanos(stillSleep);
+			// On some OS, the threads sleep too long, so we apply an exponential strategy
+			LockSupport.parkNanos(stillSleep / 2);
 			long timeSinceStart = System.nanoTime() - sleepStart;
 			stillSleep = sleepTotal - timeSinceStart;
-		} while (stillSleep > 0);
+		}
 	}
 }

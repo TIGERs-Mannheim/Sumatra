@@ -13,16 +13,15 @@ import edu.tigers.sumatra.ai.metis.botdistance.BotDistance;
 import edu.tigers.sumatra.ai.metis.defense.data.DefensePassDisruptionAssignment;
 import edu.tigers.sumatra.ai.metis.defense.data.DefensePenAreaPositionAssignment;
 import edu.tigers.sumatra.ai.metis.defense.data.DefenseThreatAssignment;
-import edu.tigers.sumatra.ai.metis.general.SkirmishInformation;
 import edu.tigers.sumatra.ai.metis.keeper.EKeeperActionType;
 import edu.tigers.sumatra.ai.metis.kicking.Pass;
 import edu.tigers.sumatra.ai.metis.offense.action.EOffensiveActionType;
 import edu.tigers.sumatra.ai.metis.offense.action.RatedOffensiveAction;
 import edu.tigers.sumatra.ai.metis.offense.dribble.DribblingInformation;
-import edu.tigers.sumatra.ai.metis.offense.statistics.OffensiveAnalysedFrame;
-import edu.tigers.sumatra.ai.metis.offense.statistics.OffensiveStatisticsFrame;
+import edu.tigers.sumatra.ai.metis.offense.situation.zone.EOffensiveZone;
 import edu.tigers.sumatra.ai.metis.offense.strategy.OffensiveStrategy;
 import edu.tigers.sumatra.ai.metis.pass.KickOrigin;
+import edu.tigers.sumatra.ai.metis.pass.PassStats;
 import edu.tigers.sumatra.ai.metis.pass.rating.RatedPass;
 import edu.tigers.sumatra.ai.metis.redirector.RedirectorDetectionInformation;
 import edu.tigers.sumatra.ai.metis.statistics.stats.MatchStats;
@@ -44,6 +43,7 @@ import lombok.NonNull;
 import lombok.Singular;
 import lombok.Value;
 
+import java.util.Collections;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
@@ -85,14 +85,6 @@ public class TacticalField
 	Map<BotID, Map<IEvent, Map<IState, IState>>> skillStatemachineGraphBotMap;
 
 	//
-	// Statistics
-	//
-
-	OffensiveStatisticsFrame offensiveStatistics;
-	OffensiveAnalysedFrame analyzedOffensiveStatisticsFrame;
-
-
-	//
 	// Attack
 	//
 
@@ -100,14 +92,12 @@ public class TacticalField
 	OffensiveStrategy offensiveStrategy;
 	@Singular
 	Map<BotID, RatedOffensiveAction> offensiveActions;
-	@Singular("supportiveAttackerOpponentFinisherBlocker")
-	Map<BotID, IVector2> supportiveAttackersOpponentFinisherBlocker;
+	@Singular
+	Map<BotID, IVector2> supportiveAttackers;
 	@NonNull
-	SkirmishInformation skirmishInformation;
+	IVector2 skirmishRipFreeTarget;
 	@Singular
 	Map<BotID, RatedBallInterception> ballInterceptions;
-	@NonNull
-	IVector2 supportiveAttackerMovePos;
 	@NonNull
 	RedirectorDetectionInformation redirectorDetectionInformation;
 	@Singular("ballInterceptionInformation")
@@ -120,12 +110,15 @@ public class TacticalField
 	Map<EOffensiveActionType, List<IObstacle>> primaryPassObstacles;
 	@NonNull
 	Map<EOffensiveActionType, List<IObstacle>> allPassObstacles;
+	IObstacle ongoingPassObstacle;
 	@NonNull
 	BallHandlingAdvise ballHandlingAdvise;
 	@NonNull
 	BallPossession ballPossession;
 	@NonNull
 	DribblingInformation dribblingInformation;
+	@NonNull
+	PassStats passStats;
 
 	//
 	// Support
@@ -142,12 +135,14 @@ public class TacticalField
 	// Defense
 	//
 	ITrackedBot opponentPassReceiver;
+	IVector2 opponentReceivePosGuess;
 	@Singular
 	List<DefenseThreatAssignment> defenseOuterThreatAssignments;
 	@Singular
 	List<DefensePenAreaPositionAssignment> defensePenAreaPositionAssignments;
 	DefensePassDisruptionAssignment defensePassDisruptionAssignment;
 	IShapeBoundary defensePenAreaBoundaryForPenAreaGroup;
+	IVector2 defenseSupportingBallReceptionPos;
 
 	//
 	// Keeper
@@ -169,8 +164,7 @@ public class TacticalField
 				.opponentClosestToBall(BotDistance.NULL_BOT_DISTANCE)
 				.pathFinderPrioMap(new PathFinderPrioMap())
 				.offensiveStrategy(new OffensiveStrategy())
-				.skirmishInformation(new SkirmishInformation())
-				.supportiveAttackerMovePos(Vector2.zero())
+				.skirmishRipFreeTarget(Vector2.zero())
 				.redirectorDetectionInformation(new RedirectorDetectionInformation())
 				.primaryPassObstacles(Map.of())
 				.allPassObstacles(Map.of())
@@ -179,6 +173,7 @@ public class TacticalField
 				.keeperInterceptPos(Vector2.zero())
 				.ballPossession(new BallPossession(EBallPossession.NO_ONE, EBallControl.NONE, BotID.noBot(), BotID.noBot()))
 				.dribblingInformation(new DribblingInformation(Vector2.zero(), false, BotID.noBot(), null, null, false))
+				.passStats(new PassStats(new EnumMap<>(EOffensiveZone.class), Collections.emptyList(), 0, 0, 0))
 				.build();
 	}
 }

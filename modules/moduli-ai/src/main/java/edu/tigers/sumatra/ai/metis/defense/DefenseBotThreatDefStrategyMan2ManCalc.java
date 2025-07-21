@@ -6,6 +6,7 @@ package edu.tigers.sumatra.ai.metis.defense;
 
 import com.github.g3force.configurable.Configurable;
 import edu.tigers.sumatra.ai.metis.botdistance.BotDistance;
+import edu.tigers.sumatra.ai.metis.defense.data.DefenseBallThreat;
 import edu.tigers.sumatra.ai.metis.defense.data.DefenseBotThreatDefStrategyData;
 import edu.tigers.sumatra.ai.metis.defense.data.EDefenseBotThreatDefStrategy;
 import edu.tigers.sumatra.geometry.Geometry;
@@ -46,6 +47,10 @@ public class DefenseBotThreatDefStrategyMan2ManCalc extends ADefenseThreatCalc
 	@Configurable(defValue = "true", comment = "Enable ball -> bot threats (man to man marking)")
 	private static boolean enabled = true;
 
+	@Configurable(defValue = "true", comment = "Enable man2man marking while stop")
+	private static boolean man2manEnabledWhileStop = true;
+
+	private final Supplier<DefenseBallThreat> defenseBallThreat;
 	private final Supplier<List<DefenseBotThreatDefStrategyData>> centerBackDefData;
 	private final Supplier<BotDistance> opponentClosestToBall;
 
@@ -58,7 +63,8 @@ public class DefenseBotThreatDefStrategyMan2ManCalc extends ADefenseThreatCalc
 	{
 		return enabled
 				&& opponentClosestToBall.get().getBotId().isBot()
-				&& getAiFrame().getGameState().isRunning();
+				&& (getAiFrame().getGameState().isRunning() || man2manEnabledWhileStop)
+				&& (!getAiFrame().getGameState().isKickoffOrPrepareKickoff());
 	}
 
 
@@ -85,7 +91,7 @@ public class DefenseBotThreatDefStrategyMan2ManCalc extends ADefenseThreatCalc
 
 	private ILineSegment threatLine(final ITrackedBot bot)
 	{
-		return Lines.segmentFromPoints(getBall().getPos(), predictedOpponentPos(bot));
+		return Lines.segmentFromPoints(defenseBallThreat.get().getPos(), predictedOpponentPos(bot));
 	}
 
 
@@ -172,16 +178,13 @@ public class DefenseBotThreatDefStrategyMan2ManCalc extends ADefenseThreatCalc
 		var threatLine = threatLine(getWFrame().getBot(threatID));
 		var protectionLine = protectionLine(threatLine);
 
-		return protectionLine.map(pl ->
-				new DefenseBotThreatDefStrategyData(
-						bot.getBotId(),
-						threatLine,
-						pl,
-						threatLine.getPathEnd(),
-						bot.getVel(),
-						pl.getPathEnd(),
-						EDefenseBotThreatDefStrategy.MAN_2_MAN_MARKER
-				)
-		);
+		return protectionLine.map(line -> DefenseBotThreatDefStrategyData.create(
+				EDefenseBotThreatDefStrategy.MAN_2_MAN_MARKER,
+				bot,
+				threatLine.getPathEnd(),
+				threatLine,
+				line,
+				defenseBallThreat.get()
+		));
 	}
 }

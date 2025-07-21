@@ -10,7 +10,7 @@ import nl.jqno.equalsverifier.EqualsVerifier;
 import nl.jqno.equalsverifier.Warning;
 import org.apache.commons.math3.linear.ArrayRealVector;
 import org.apache.commons.math3.linear.RealVector;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -20,24 +20,21 @@ import java.util.stream.Collectors;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.within;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
 /**
  * Class for testing several functions provided by {@link AVector2} and {@link Vector2}
- * 
- * @author Malte
- * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  */
 @SuppressWarnings("OptionalGetWithoutIsPresent")
-public class Vector2Test
+class Vector2Test
 {
 	private static final double ACCURACY = 0.001;
 	
 	
 	@Test
-	public void testTurnNew()
+	void testTurnNew()
 	{
 		final Vector2 input = Vector2.fromXY(1, 0);
 		Vector2 expected = Vector2.fromXY(0, 1);
@@ -60,7 +57,7 @@ public class Vector2Test
 	
 	
 	@Test
-	public void testScaleToNew()
+	void testScaleToNew()
 	{
 		Vector2 input = Vector2.fromXY(1, 0);
 		Vector2 expected = Vector2.fromXY(5, 0);
@@ -86,7 +83,7 @@ public class Vector2Test
 	
 	
 	@Test
-	public void testAdd()
+	void testAdd()
 	{
 		Vector2 vec1 = Vector2.fromXY(2, 1);
 		Vector2 vec2 = Vector2.fromXY(3, 4);
@@ -106,7 +103,7 @@ public class Vector2Test
 	
 	
 	@Test
-	public void testAddNew()
+	void testAddNew()
 	{
 		Vector2 vec1 = Vector2.fromXY(5, 7);
 		Vector2 vec2 = Vector2.fromXY(1, 2);
@@ -127,7 +124,7 @@ public class Vector2Test
 	
 	
 	@Test
-	public void testMultiply()
+	void testMultiply()
 	{
 		Vector2 vec1 = Vector2.fromXY(4, 7);
 		double factor = 4.5;
@@ -153,7 +150,7 @@ public class Vector2Test
 	
 	
 	@Test
-	public void testMultiplyNewFactor()
+	void testMultiplyNewFactor()
 	{
 		Vector2 vec1 = Vector2.fromXY(4, 7);
 		double factor = 4.5;
@@ -180,7 +177,7 @@ public class Vector2Test
 	
 	
 	@Test
-	public void testMultiplyNewVector()
+	void testMultiplyNewVector()
 	{
 		assertThat(Vector2.zero().multiplyNew(Vector2.fromXY(1, 1))).isEqualTo(Vector2.zero());
 		assertThat(Vector2.fromXY(1, 1).multiplyNew(Vector2.fromXY(1, 1))).isEqualTo(Vector2.fromXY(1, 1));
@@ -189,7 +186,7 @@ public class Vector2Test
 	
 	
 	@Test
-	public void testSubtract()
+	void testSubtract()
 	{
 		Vector2 vec1 = Vector2.fromXY(4, 2);
 		Vector2 vec2 = Vector2.fromXY(3, 5);
@@ -209,7 +206,7 @@ public class Vector2Test
 	
 	
 	@Test
-	public void testSubtractNew()
+	void testSubtractNew()
 	{
 		Vector2 vec1 = Vector2.fromXY(5, 7);
 		Vector2 vec2 = Vector2.fromXY(1, 2);
@@ -230,7 +227,7 @@ public class Vector2Test
 	
 	
 	@Test
-	public void testScaleTo()
+	void testScaleTo()
 	{
 		Vector2 vec1 = Vector2.fromXY(3, -4);
 		vec1.scaleTo(15.0f);
@@ -248,7 +245,7 @@ public class Vector2Test
 	
 	
 	@Test
-	public void testTurn()
+	void testTurn()
 	{
 		Vector2 vec1 = Vector2.fromXY(1, 0);
 		vec1.turn(AngleMath.PI);
@@ -273,7 +270,7 @@ public class Vector2Test
 	
 	
 	@Test
-	public void testTurnTo()
+	void testTurnTo()
 	{
 		Vector2 vec1 = Vector2.fromXY(1, 0);
 		vec1.turnTo(AngleMath.PI);
@@ -293,7 +290,7 @@ public class Vector2Test
 	
 	
 	@Test
-	public void testScalarProduct()
+	void testScalarProduct()
 	{
 		Vector2 vec1 = Vector2.fromXY(1, 3);
 		Vector2 vec2 = Vector2.fromXY(-4, 2);
@@ -313,7 +310,7 @@ public class Vector2Test
 	
 	
 	@Test
-	public void testNormalize()
+	void testNormalize()
 	{
 		assertThat(Vector2.fromXY(42, 1337).normalize().getLength2()).isCloseTo(1, within(1e-6));
 		assertThat(Vector2.fromXY(42, 1337).normalizeNew().getLength2()).isCloseTo(1, within(1e-6));
@@ -323,7 +320,7 @@ public class Vector2Test
 	
 	
 	@Test
-	public void testGetLength2()
+	void testGetLength2()
 	{
 		assertThat(Vector2.fromX(42).getLength2()).isEqualTo(42);
 		assertThat(Vector2.fromY(-42).getLength2()).isEqualTo(42);
@@ -333,7 +330,7 @@ public class Vector2Test
 	
 	
 	@Test
-	public void testGetAngle()
+	void testGetAngle()
 	{
 		assertThat(Vector2.fromX(1).getAngle()).isCloseTo(0, within(ACCURACY));
 		assertThat(Vector2.fromY(1).getAngle()).isCloseTo(AngleMath.PI_HALF, within(ACCURACY));
@@ -345,7 +342,7 @@ public class Vector2Test
 	
 	
 	@Test
-	public void testEquals()
+	void testEquals()
 	{
 		Vector2 vec1 = Vector2.fromXY(5, 0);
 		Vector2 vec2 = Vector2.fromXY(5, 0);
@@ -369,7 +366,7 @@ public class Vector2Test
 	
 	
 	@Test
-	public void testFromAngle()
+	void testFromAngle()
 	{
 		assertThat(Vector2.fromAngle(1).getAngle()).isEqualTo(1, within(ACCURACY));
 		assertThat(Vector2.fromAngle(-1).getAngle()).isEqualTo(-1, within(ACCURACY));
@@ -379,7 +376,7 @@ public class Vector2Test
 	
 	
 	@Test
-	public void testFromPoints()
+	void testFromPoints()
 	{
 		assertThat(Vector2.fromPoints(Vector2.fromXY(0, 0), Vector2.fromXY(1, 1))).isEqualTo(Vector2.fromXY(1, 1));
 		assertThat(Vector2.fromPoints(Vector2.fromXY(1, 0), Vector2.fromXY(2, 1))).isEqualTo(Vector2.fromXY(1, 1));
@@ -387,7 +384,7 @@ public class Vector2Test
 	
 	
 	@Test
-	public void testValueOf()
+	void testValueOf()
 	{
 		assertThat(Vector2.valueOf("0,0").isCloseTo(Vector2f.ZERO_VECTOR)).isTrue();
 		assertThat(Vector2.valueOf("42,21").isCloseTo(Vector2.fromXY(42, 21))).isTrue();
@@ -398,7 +395,7 @@ public class Vector2Test
 	
 	
 	@Test
-	public void testSet()
+	void testSet()
 	{
 		Vector2 vector = Vector2.zero();
 		assertThat(vector.isCloseTo(Vector2f.ZERO_VECTOR)).isTrue();
@@ -411,7 +408,7 @@ public class Vector2Test
 	
 	
 	@Test
-	public void testRealVector()
+	void testRealVector()
 	{
 		RealVector realVector = new ArrayRealVector(2);
 		assertThat(Vector2.fromReal(realVector).isCloseTo(Vector2f.ZERO_VECTOR)).isTrue();
@@ -422,7 +419,7 @@ public class Vector2Test
 	
 	
 	@Test
-	public void testIsZeroVector()
+	void testIsZeroVector()
 	{
 		assertThat(Vector2.fromXY(0, 0).isZeroVector()).isTrue();
 		assertThat(Vector2.fromXY(1e-8, 0).isZeroVector()).isTrue();
@@ -432,7 +429,7 @@ public class Vector2Test
 	
 	
 	@Test
-	public void testIsFinite()
+	void testIsFinite()
 	{
 		assertThat(Vector2.fromX(0).isFinite()).isTrue();
 		assertThat(Vector2.fromX(Double.NaN).isFinite()).isFalse();
@@ -441,7 +438,7 @@ public class Vector2Test
 	
 	
 	@Test
-	public void testGetSaveableString()
+	void testGetSaveableString()
 	{
 		assertThat(Vector2.fromXY(42, 1337).getSaveableString())
 				.isEqualTo(42d + ";" + 1337d);
@@ -449,7 +446,7 @@ public class Vector2Test
 	
 	
 	@Test
-	public void testNumberList()
+	void testNumberList()
 	{
 		IVector2 vector = Vector2.fromXY(42, 1337);
 		List<Number> nbrList = vector.getNumberList();
@@ -460,7 +457,7 @@ public class Vector2Test
 	
 	
 	@Test
-	public void testToArray()
+	void testToArray()
 	{
 		IVector2 vector = Vector2.fromXY(42, 1337);
 		assertThat(vector.toArray()).isEqualTo(new double[] { 42d, 1337d });
@@ -468,7 +465,7 @@ public class Vector2Test
 	
 	
 	@Test
-	public void testToString()
+	void testToString()
 	{
 		IVector2 vector1 = Vector2.fromXY(42, 0);
 		assertThat(vector1.toString()).isEqualTo("[42.000,0.000|l=42.000|a=0.000]");
@@ -480,21 +477,21 @@ public class Vector2Test
 	
 	
 	@Test
-	public void testToJSON()
+	void testToJSON()
 	{
-		assertThat(Vector2.fromXY(42, 1337).toJSON().toJSONString()).isEqualTo("{\"dim1\":1337.0,\"dim0\":42.0}");
+		assertThat(Vector2.fromXY(42, 1337).toJSON().toJson()).isEqualTo("{\"dim1\":1337.0,\"dim0\":42.0}");
 	}
 	
 	
 	@Test
-	public void testToJSONArray()
+	void testToJsonArray()
 	{
-		assertThat(Vector2.fromXY(42, 1337).toJSONArray().toJSONString()).isEqualTo("[42.0,1337.0]");
+		assertThat(Vector2.fromXY(42, 1337).toJsonArray().toJson()).isEqualTo("[42.0,1337.0]");
 	}
 	
 	
 	@Test
-	public void testIsCloseTo()
+	void testIsCloseTo()
 	{
 		assertThat(Vector2.zero().isCloseTo(Vector2.zero(), 0)).isTrue();
 		assertThat(Vector2.zero().isCloseTo(Vector2.fromX(1), 0.1)).isFalse();
@@ -504,7 +501,7 @@ public class Vector2Test
 	
 	
 	@Test
-	public void testMeanVector()
+	void testMeanVector()
 	{
 		List<IVector> list = new ArrayList<>();
 		list.add(Vector2.fromXY(24, 7331));
@@ -520,7 +517,7 @@ public class Vector2Test
 	
 	
 	@Test
-	public void testVarianceVector()
+	void testVarianceVector()
 	{
 		List<IVector> list = new ArrayList<>();
 		list.add(Vector2.fromXY(24, 0));
@@ -536,7 +533,7 @@ public class Vector2Test
 	
 	
 	@Test
-	public void testStdVector()
+	void testStdVector()
 	{
 		List<IVector> list = new ArrayList<>();
 		list.add(Vector2.fromXY(24, 0));
@@ -552,7 +549,7 @@ public class Vector2Test
 	
 	
 	@Test
-	public void testGet()
+	void testGet()
 	{
 		IVector2 vector = Vector2.fromXY(42, 1337);
 		assertThat(vector.get(0)).isEqualTo(vector.x());
@@ -562,7 +559,7 @@ public class Vector2Test
 	
 	
 	@Test
-	public void testAbs()
+	void testAbs()
 	{
 		assertThat(Vector2.fromXY(42, 1337).absNew()).isEqualTo(Vector2.fromXY(42, 1337));
 		assertThat(Vector2.fromXY(-42, 1337).absNew()).isEqualTo(Vector2.fromXY(42, 1337));
@@ -571,7 +568,7 @@ public class Vector2Test
 	
 	
 	@Test
-	public void testGetNormalVector()
+	void testGetNormalVector()
 	{
 		assertThat(Vector2.fromXY(1, 0).getNormalVector()).isEqualTo(Vector2.fromXY(0, -1));
 		assertThat(Vector2.fromXY(1, 1).getNormalVector()).isEqualTo(Vector2.fromXY(1, -1));
@@ -580,7 +577,7 @@ public class Vector2Test
 	
 	
 	@Test
-	public void testIsVertical()
+	void testIsVertical()
 	{
 		assertThat(Vector2.fromX(1).isVertical()).isFalse();
 		assertThat(Vector2.fromY(1).isVertical()).isTrue();
@@ -589,7 +586,7 @@ public class Vector2Test
 	
 	
 	@Test
-	public void testIsHorizontal()
+	void testIsHorizontal()
 	{
 		assertThat(Vector2.fromX(1).isHorizontal()).isTrue();
 		assertThat(Vector2.fromY(1).isHorizontal()).isFalse();
@@ -598,14 +595,14 @@ public class Vector2Test
 	
 	
 	@Test
-	public void testGetXYZVector()
+	void testGetXYZVector()
 	{
 		assertThat(Vector2.fromXY(42, 1337).getXYZVector()).isEqualTo(Vector3.fromXYZ(42, 1337, 0));
 	}
 	
 	
 	@Test
-	public void testDistanceTo()
+	void testDistanceTo()
 	{
 		assertThat(Vector2.zero().distanceTo(Vector2.fromX(1))).isEqualTo(1.0);
 		assertThat(Vector2.zero().distanceTo(Vector2.fromY(1))).isEqualTo(1.0);
@@ -616,7 +613,7 @@ public class Vector2Test
 	
 	
 	@Test
-	public void testIsParallelTo()
+	void testIsParallelTo()
 	{
 		assertThat(Vector2.fromX(1).isParallelTo(Vector2.fromX(2))).isTrue();
 		assertThat(Vector2.fromX(1).isParallelTo(Vector2.fromX(-5))).isTrue();
@@ -628,7 +625,7 @@ public class Vector2Test
 	
 	
 	@Test
-	public void testAngleTo()
+	void testAngleTo()
 	{
 		assertThat(Vector2.fromX(1).angleTo(Vector2.fromY(1)).get()).isEqualTo(AngleMath.PI_HALF, within(ACCURACY));
 		assertThat(Vector2.fromX(1).angleTo(Vector2.fromX(-1)).get()).isEqualTo(AngleMath.PI, within(ACCURACY));
@@ -639,7 +636,7 @@ public class Vector2Test
 	
 	
 	@Test
-	public void testAngleToAbs()
+	void testAngleToAbs()
 	{
 		assertThat(Vector2.fromX(1).angleToAbs(Vector2.fromY(1)).get()).isEqualTo(AngleMath.PI_HALF, within(ACCURACY));
 		assertThat(Vector2.fromX(1).angleToAbs(Vector2.fromX(-1)).get()).isEqualTo(AngleMath.PI, within(ACCURACY));
@@ -650,7 +647,7 @@ public class Vector2Test
 	
 	
 	@Test
-	public void testNearestTo()
+	void testNearestTo()
 	{
 		List<IVector2> points = new ArrayList<>();
 		points.add(Vector2.fromX(1));
@@ -671,7 +668,7 @@ public class Vector2Test
 
 
 	@Test
-	public void testProjectOntoThis()
+	void testProjectOntoThis()
 	{
 		var nonZeroVector = Vector2.fromX(10);
 		var zeroVector = Vector2.zero();

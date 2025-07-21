@@ -25,6 +25,9 @@ public class GoalRater implements IPassRater
 	@Configurable(defValue = "0.5")
 	private static double bestImprovement = 0.5;
 
+	@Configurable(defValue = "0.5")
+	private static double timeToKickFactor = 0.5;
+
 	static
 	{
 		ConfigRegistration.registerClass("metis", GoalRater.class);
@@ -42,6 +45,8 @@ public class GoalRater implements IPassRater
 	@Override
 	public double rate(Pass pass)
 	{
+		rater.setTimeToKick(pass.getPreparationTime() + pass.getDuration() * timeToKickFactor);
+
 		var ratedSource = rater.rate(pass.getKick().getSource())
 				.orElseGet(() -> RatedTarget.ratedPoint(Geometry.getGoalTheir().getCenter(), 0));
 		var ratedTarget = rater.rate(pass.getKick().getTarget())

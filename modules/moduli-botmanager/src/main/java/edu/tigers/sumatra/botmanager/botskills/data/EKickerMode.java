@@ -8,37 +8,45 @@
  */
 package edu.tigers.sumatra.botmanager.botskills.data;
 
+import lombok.Getter;
+
+
 /**
- * @author Nicolai Ommer <nicolai.ommer@gmail.com>
+ * The kicker mode that robot should kick with.
  */
 public enum EKickerMode
 {
-	/**  */
 	DISARM(0),
-	/**  */
 	ARM(1),
-	/**  */
 	FORCE(2),
-	/** */
 	ARM_TIME(3),
-	/** */
-	ARM_AIM(4),
-	/**  */
-	NONE(0x0F);
+	NONE(0x0F),
+
+	;
+
+	@Getter
 	private final int id;
-	
-	
+
+
 	EKickerMode(final int id)
 	{
 		this.id = id;
 	}
-	
-	
+
+
 	/**
-	 * @return the id
+	 * @param id
+	 * @return enum
 	 */
-	public final int getId()
+	public static EKickerMode fromId(final int id)
 	{
-		return id;
+		for (final EKickerMode mode : values())
+		{
+			if (mode.getId() == id)
+			{
+				return mode;
+			}
+		}
+		return NONE;
 	}
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.config;
 
@@ -7,6 +7,7 @@ import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.IConfigClientsObserver;
 import edu.tigers.sumatra.views.ISumatraViewPresenter;
 import lombok.Getter;
+import org.apache.commons.configuration.HierarchicalConfiguration;
 
 import javax.swing.SwingUtilities;
 
@@ -54,6 +55,7 @@ public class ConfigEditorPresenter
 	@Override
 	public void onReloadPressed(final String configKey)
 	{
-		viewPanel.refreshConfigModel(configKey, ConfigRegistration.loadConfig(configKey));
+		HierarchicalConfiguration config = ConfigRegistration.loadConfig(configKey);
+		SwingUtilities.invokeLater(() -> viewPanel.refreshConfigModel(config));
 	}
 }

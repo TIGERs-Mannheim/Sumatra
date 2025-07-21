@@ -109,6 +109,9 @@ public class NetworkRefereeReceiver extends ARefereeMessageSource implements Run
 			} catch (IOException err)
 			{
 				log.error("Could not read referee message", err);
+			} catch (Throwable e)
+			{
+				log.error("Error while processing referee message", e);
 			}
 		}
 

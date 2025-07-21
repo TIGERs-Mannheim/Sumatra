@@ -15,17 +15,14 @@ import edu.tigers.sumatra.math.vector.Vector3f;
 import edu.tigers.sumatra.trajectory.BangBangTrajectoryFactory;
 import edu.tigers.sumatra.trajectory.ITrajectory;
 import edu.tigers.sumatra.trajectory.PlanarCurveFactory;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
-/**
- * @author AndreR <andre@ryll.cc>
- */
-public class ChipBallTrajectoryTest
+class ChipBallTrajectoryTest
 {
 	private static IVector3 kickPos = Vector3.fromXYZ(0, 0, 0);
 	private static IVector3 kickVel = Vector3.fromXYZ(3000, 0, 3000);
@@ -35,8 +32,8 @@ public class ChipBallTrajectoryTest
 	private IBallTrajectory trajectory;
 
 
-	@Before
-	public void setup()
+	@BeforeEach
+	void setup()
 	{
 		params = BallParameters.builder()
 				.withBallRadius(21.5)
@@ -55,7 +52,7 @@ public class ChipBallTrajectoryTest
 
 
 	@Test
-	public void testGetPos3ByTime()
+	void testGetPos3ByTime()
 	{
 		IVector posLate = trajectory.getPosByTime(1e6);
 		IVector3 posInf = trajectory.getPosByTime(Double.POSITIVE_INFINITY).getXYZVector();
@@ -69,7 +66,7 @@ public class ChipBallTrajectoryTest
 
 
 	@Test
-	public void testGetVel3ByTime()
+	void testGetVel3ByTime()
 	{
 		IVector velLate = trajectory.getVelByTime(1e6);
 		IVector3 velInf = trajectory.getVelByTime(Double.POSITIVE_INFINITY).getXYZVector();
@@ -85,7 +82,7 @@ public class ChipBallTrajectoryTest
 
 
 	@Test
-	public void testGetAcc3ByTime()
+	void testGetAcc3ByTime()
 	{
 		IVector accLate = trajectory.getAccByTime(1e6);
 		IVector3 accInf = trajectory.getAccByTime(Double.POSITIVE_INFINITY).getXYZVector();
@@ -103,7 +100,7 @@ public class ChipBallTrajectoryTest
 
 
 	@Test
-	public void testGetTimeByDist()
+	void testGetTimeByDist()
 	{
 		double tTotal = trajectory.getTimeByVel(0);
 		double dTotal = trajectory.getDistByTime(tTotal);
@@ -121,7 +118,7 @@ public class ChipBallTrajectoryTest
 
 
 	@Test
-	public void testGetPosByVel()
+	void testGetPosByVel()
 	{
 		IVector finalPos = trajectory.getPosByVel(0);
 		double tTotal = trajectory.getTimeByVel(0);
@@ -144,7 +141,7 @@ public class ChipBallTrajectoryTest
 
 
 	@Test
-	public void testGetMinimumDistanceTrajBall()
+	void testGetMinimumDistanceTrajBall()
 	{
 		IVector2 initialPos1 = Vector2.fromXY(2, -2);
 		IVector2 finalPos1 = Vector2.fromXY(2, 4);

@@ -3,12 +3,12 @@
  */
 package edu.tigers.sumatra.cam;
 
-import edu.tigers.moduli.AModule;
 import edu.tigers.sumatra.cam.data.CamDetectionFrame;
 import edu.tigers.sumatra.cam.data.CamGeometry;
 import edu.tigers.sumatra.cam.data.CamObjectFilterParams;
 import edu.tigers.sumatra.cam.proto.SslVisionDetection.SSL_DetectionFrame;
 import edu.tigers.sumatra.cam.proto.SslVisionWrapper.SSL_WrapperPacket;
+import edu.tigers.sumatra.moduli.AModule;
 
 import java.util.List;
 import java.util.Optional;

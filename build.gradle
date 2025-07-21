@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
+ */
+
 import org.apache.tools.ant.filters.ReplaceTokens
 
 plugins {
@@ -15,7 +19,7 @@ def gitDescribe = providers.exec {
     commandLine("git", "describe", "--tags", "--always", "--first-parent")
 }.standardOutput.asText.map { it.replace("merge/", "").replace("version/", "").trim() }
 
-version gitDescribe.get()
+version = gitDescribe.get()
 
 processResources {
     inputs.property("project.version", project.version)
@@ -30,6 +34,7 @@ dependencies {
     implementation project(':common-gui-config')
     implementation project(':sumatra-model')
     implementation project(':sumatra-skillsystem')
+    implementation project(':sumatra-snapshot')
     implementation project(':sumatra-simulation-control')
     implementation project(':sumatra-gui-skills')
     implementation project(':sumatra-gui-ai')
@@ -41,11 +46,12 @@ dependencies {
     implementation project(':sumatra-gui-replay')
     implementation project(':sumatra-gui-sim')
     implementation project(':sumatra-gui-timer')
-    implementation project(':sumatra-gui-wp')
+    implementation project(':sumatra-gui-ball-analyzer')
     implementation project(':sumatra-gui-logfile')
     implementation project(':sumatra-gui-kick')
+    implementation project(':sumatra-gui-visualizer')
     implementation project(':autoreferee-gui')
-    runtimeOnly project(':moduli-movement-limit-observer')
+    runtimeOnly project(':moduli-model-identification')
     implementation project(':moduli-botmanager')
     runtimeOnly project(':moduli-botmanager-sim')
     implementation project(':moduli-botmanager-tigers')
@@ -62,21 +68,17 @@ dependencies {
     runtimeOnly project(':moduli-team-client')
     implementation project(':moduli-bot-params')
 
-    implementation(libs.com.github.TIGERs.mannheim.moduli)
+    implementation(libs.com.github.TIGERs.mannheim.infonode)
 
     implementation(libs.org.apache.logging.log4j.log4j.api)
     runtimeOnly(libs.org.apache.logging.log4j.log4j.core)
 
-    implementation(libs.commons.cli)
+    implementation(libs.info.picocli.picocli)
+    annotationProcessor(libs.info.picocli.picocli.codegen)
 }
 
 application {
     mainClass.set('edu.tigers.sumatra.Sumatra')
-    applicationDefaultJvmArgs = [
-            // Change font (size):
-//            "-Dswing.plaf.metal.controlFont=sans-serif-16",
-//            "-Dswing.plaf.metal.userFont=sans-serif-16",
-    ]
 }
 
 jib {
@@ -85,6 +87,7 @@ jib {
         tags = [project.version.toString()]
     }
     container {
+        mainClass = application.mainClass
         workingDirectory = "/Sumatra"
     }
     extraDirectories {
@@ -132,7 +135,7 @@ versionCatalogUpdate {
 
 githubRelease {
     token System.getenv("GITHUB_TOKEN") ?: ""
-    owner "TIGERs-Mannheim"
+    owner = "TIGERs-Mannheim"
     targetCommitish.set("master")
     repo.set("Sumatra")
     releaseAssets distZip

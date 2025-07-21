@@ -4,7 +4,7 @@
 
 package edu.tigers.sumatra.botmanager;
 
-import edu.tigers.sumatra.bot.ERobotMode;
+import edu.tigers.sumatra.bot.ERobotHealthState;
 import edu.tigers.sumatra.bot.RobotInfo;
 import edu.tigers.sumatra.botmanager.bots.ABot;
 import edu.tigers.sumatra.botmanager.botskills.data.EKickerDevice;
@@ -67,7 +67,7 @@ public class RobotInfoProvider implements IRobotInfoProvider
 	public Set<BotID> getConnectedBotIds()
 	{
 		return botProvider.getBots().values().stream()
-				.filter(bot -> bot.getRobotMode() == ERobotMode.READY)
+				.filter(bot -> bot.getHealthState() != ERobotHealthState.UNUSABLE)
 				.map(ABot::getBotId)
 				.collect(Collectors.toSet());
 	}
@@ -75,27 +75,30 @@ public class RobotInfoProvider implements IRobotInfoProvider
 
 	private RobotInfo botToRobotInfo(final ABot bot)
 	{
+		var fb = bot.getLastReceivedBotFeedback();
+		var mc = bot.getLastSentMatchCommand();
+		
 		return RobotInfo.newBuilder()
 				.withTimestamp(lastWFTimestamp)
 				.withBotId(bot.getBotId())
-				.withDribbleTraction(bot.getDribbleTractionState())
-				.withBarrierInterrupted(bot.isBarrierInterrupted())
-				.withBatteryRelative((float) bot.getBatteryRelative())
-				.withBotFeatures(bot.getBotFeatures())
+				.withDribbleTraction(fb.getDribbleTraction())
+				.withBarrierInterrupted(fb.isBarrierInterrupted())
+				.withBatteryRelative((float) fb.getBatteryLevelRelative())
+				.withBotFeatures(fb.getBotFeatures())
 				.withBotParams(bot.getBotParams())
-				.withChip(bot.getMatchCtrl().getSkill().getDevice().equals(EKickerDevice.CHIP))
-				.withArmed(bot.getMatchCtrl().getSkill().getMode().equals(EKickerMode.ARM))
-				.withDribbleSpeed((float) bot.getMatchCtrl().getSkill().getDribbleSpeed())
-				.withHardwareId(bot.getHardwareId())
-				.withInternalState(bot.getSensoryState().orElse(null))
-				.withKickerLevelRelative((float) (bot.getKickerLevel() / bot.getKickerLevelMax()))
-				.withKickSpeed((float) bot.getMatchCtrl().getSkill().getKickSpeed())
+				.withChip(mc.getSkill().getDevice().equals(EKickerDevice.CHIP))
+				.withArmed(mc.getSkill().getMode().equals(EKickerMode.ARM))
+				.withDribbleSpeed((float) mc.getSkill().getDribbleSpeed())
+				.withHardwareId(fb.getHardwareId())
+				.withInternalState(fb.getInternalState().orElse(null))
+				.withKickerLevelRelative((float) fb.getKickerLevelRelative())
+				.withKickSpeed((float) mc.getSkill().getKickSpeed())
 				.withType(bot.getType())
-				.withRobotMode(bot.getRobotMode())
-				.withHealthy(bot.isHealthy())
+				.withRobotMode(fb.getRobotMode())
+				.withHealthState(bot.getHealthState())
 				.withAvailableToAi(bot.isAvailableToAi())
 				.withTrajectory(trajectoryOfBot(bot))
-				.withBallState(bot.getBallState().orElse(null))
+				.withBallState(fb.getBallState().orElse(null))
 				.build();
 	}
 

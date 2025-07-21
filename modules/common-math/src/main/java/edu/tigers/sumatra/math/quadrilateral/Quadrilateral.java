@@ -4,7 +4,6 @@
 
 package edu.tigers.sumatra.math.quadrilateral;
 
-import com.sleepycat.persist.model.Persistent;
 import edu.tigers.sumatra.math.IBoundedPath;
 import edu.tigers.sumatra.math.line.ILineSegment;
 import edu.tigers.sumatra.math.line.Lines;
@@ -27,7 +26,6 @@ import java.util.List;
 /**
  * Implementation of a quadrilateral ("Viereck") defined by 4 corners and backed by 2 triangles.
  */
-@Persistent
 @EqualsAndHashCode
 @ToString
 public final class Quadrilateral implements IQuadrilateral
@@ -35,12 +33,6 @@ public final class Quadrilateral implements IQuadrilateral
 	@NonNull
 	private final List<IVector2> corners;
 
-
-	@SuppressWarnings("unused")
-	private Quadrilateral()
-	{
-		this.corners = new ArrayList<>();
-	}
 
 
 	private Quadrilateral(final List<IVector2> corners)

@@ -8,6 +8,8 @@ import edu.tigers.sumatra.math.line.ILine;
 import edu.tigers.sumatra.math.line.Lines;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 
 import java.util.List;
 
@@ -16,15 +18,9 @@ import java.util.List;
  * Triangle related calculations.
  * Please consider using the methods from {@link ITriangle} instead of these static methods!
  */
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class TriangleMath
 {
-
-	@SuppressWarnings("unused")
-	private TriangleMath()
-	{
-	}
-
-
 	/**
 	 * Create a new triangle by adding a margin.<br>
 	 * The margin triangle is calculated by creating new edge lines that are spaced {@code margin} mm from the original

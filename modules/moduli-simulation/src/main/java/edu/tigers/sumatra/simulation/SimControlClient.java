@@ -5,7 +5,7 @@
 package edu.tigers.sumatra.simulation;
 
 import com.google.protobuf.InvalidProtocolBufferException;
-import edu.tigers.sumatra.network.UdpTransceiver;
+import edu.tigers.sumatra.network.RobustUnicastUdpTransceiver;
 import edu.tigers.sumatra.simulation.SslSimulationControl.SimulatorCommand;
 import edu.tigers.sumatra.simulation.SslSimulationControl.SimulatorResponse;
 import lombok.RequiredArgsConstructor;
@@ -19,7 +19,7 @@ import java.util.function.Consumer;
 @RequiredArgsConstructor
 public class SimControlClient
 {
-	private UdpTransceiver transceiver;
+	private RobustUnicastUdpTransceiver transceiver;
 	@Setter
 	private Consumer<SimulatorResponse> responseConsumer = b -> {
 	};
@@ -27,7 +27,7 @@ public class SimControlClient
 
 	public void start(String host, int port)
 	{
-		transceiver = new UdpTransceiver(host, port);
+		transceiver = new RobustUnicastUdpTransceiver(host, port);
 		transceiver.setResponseConsumer(this::parseResponse);
 		transceiver.start();
 	}

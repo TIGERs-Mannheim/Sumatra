@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.integration;
@@ -9,9 +9,9 @@ import edu.tigers.autoreferee.engine.EAutoRefMode;
 import edu.tigers.autoreferee.module.AutoRefModule;
 import edu.tigers.sumatra.ai.AAgent;
 import edu.tigers.sumatra.ai.AIInfoFrame;
-import edu.tigers.sumatra.ai.AiBerkeleyRecorder;
-import edu.tigers.sumatra.ai.BerkeleyAiFrame;
+import edu.tigers.sumatra.ai.AiPersistenceRecorder;
 import edu.tigers.sumatra.ai.IAIObserver;
+import edu.tigers.sumatra.ai.PersistenceAiFrame;
 import edu.tigers.sumatra.ai.athena.EAIControlState;
 import edu.tigers.sumatra.ai.integration.blocker.AiSimTimeBlocker;
 import edu.tigers.sumatra.ids.BotID;
@@ -19,11 +19,11 @@ import edu.tigers.sumatra.ids.EAiTeam;
 import edu.tigers.sumatra.log.LogEventWatcher;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.model.SumatraModel;
-import edu.tigers.sumatra.persistence.BerkeleyAccessor;
-import edu.tigers.sumatra.persistence.BerkeleyAsyncRecorder;
-import edu.tigers.sumatra.persistence.BerkeleyDb;
-import edu.tigers.sumatra.persistence.log.BerkeleyLogEvent;
-import edu.tigers.sumatra.persistence.log.BerkeleyLogRecorder;
+import edu.tigers.sumatra.persistence.EPersistenceKeyType;
+import edu.tigers.sumatra.persistence.PersistenceAsyncRecorder;
+import edu.tigers.sumatra.persistence.PersistenceDb;
+import edu.tigers.sumatra.persistence.log.PersistenceLogEvent;
+import edu.tigers.sumatra.persistence.log.PersistenceLogRecorder;
 import edu.tigers.sumatra.referee.AReferee;
 import edu.tigers.sumatra.referee.control.GcEventFactory;
 import edu.tigers.sumatra.referee.data.EGameState;
@@ -35,10 +35,10 @@ import edu.tigers.sumatra.referee.proto.SslGcRefereeMessage;
 import edu.tigers.sumatra.sim.SimulationHelper;
 import edu.tigers.sumatra.snapshot.Snapshot;
 import edu.tigers.sumatra.wp.AWorldPredictor;
-import edu.tigers.sumatra.wp.BerkeleyShapeMapFrame;
 import edu.tigers.sumatra.wp.IWorldFrameObserver;
-import edu.tigers.sumatra.wp.ShapeMapBerkeleyRecorder;
-import edu.tigers.sumatra.wp.WfwBerkeleyRecorder;
+import edu.tigers.sumatra.wp.PersistenceShapeMapFrame;
+import edu.tigers.sumatra.wp.ShapeMapPersistenceRecorder;
+import edu.tigers.sumatra.wp.WfwPersistenceRecorder;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
 import edu.tigers.sumatra.wp.data.WorldFrameWrapper;
 import lombok.RequiredArgsConstructor;
@@ -47,12 +47,11 @@ import lombok.extern.log4j.Log4j2;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.LogEvent;
 import org.apache.logging.log4j.message.Message;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.rules.TestName;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.TestInfo;
+import org.junit.jupiter.api.Timeout;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -67,23 +66,23 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 
 @Log4j2
+@Timeout(value = 5, unit = TimeUnit.MINUTES)
 public abstract class AFullSimIntegrationTest implements IWorldFrameObserver, IAIObserver
 {
 	private static final String MODULI_CONFIG = "integration_test.xml";
 	private final LogEventWatcher logEventWatcher = new LogEventWatcher(Level.WARN, Level.ERROR);
 	private final List<IGameEvent> gameEvents = new CopyOnWriteArrayList<>();
-	@Rule
-	public TestName testName = new TestName();
 	protected WorldFrameWrapper lastWorldFrameWrapper;
 	protected boolean testCaseSucceeded;
 	protected boolean stuck;
-	private BerkeleyAsyncRecorder recorder;
+	private PersistenceAsyncRecorder recorder;
 	private RefereeMsg lastRefereeMsg = null;
 	private boolean botMoved;
 
@@ -91,12 +90,20 @@ public abstract class AFullSimIntegrationTest implements IWorldFrameObserver, IA
 
 
 	@SneakyThrows
-	@BeforeClass
+	@BeforeAll
 	public static void beforeClass()
 	{
 		ConfigRegistration.setDefPath("../../config/");
 		SumatraModel.getInstance().setCurrentModuliConfig(MODULI_CONFIG);
-		SumatraModel.getInstance().loadModulesOfConfig(MODULI_CONFIG);
+		SumatraModel.getInstance().loadModules();
+	}
+
+
+	@SneakyThrows
+	@BeforeEach
+	public void before(TestInfo testInfo)
+	{
+		log.debug("Setting up test case {}", testInfo.getDisplayName());
 
 		SumatraModel.getInstance().startModules();
 		SimulationHelper.setSimulateWithMaxSpeed(true);
@@ -106,21 +113,7 @@ public abstract class AFullSimIntegrationTest implements IWorldFrameObserver, IA
 
 		SumatraModel.getInstance().getModule(AAgent.class).changeMode(EAiTeam.YELLOW, EAIControlState.MATCH_MODE);
 		SumatraModel.getInstance().getModule(AAgent.class).changeMode(EAiTeam.BLUE, EAIControlState.MATCH_MODE);
-	}
 
-
-	@AfterClass
-	public static void afterClass()
-	{
-		SumatraModel.getInstance().stopModules();
-	}
-
-
-	@SneakyThrows
-	@Before
-	public void before()
-	{
-		log.debug("Setting up test case {}", testName.getMethodName());
 		lastRefereeMsg = null;
 		lastWorldFrameWrapper = null;
 		stuck = false;
@@ -134,32 +127,32 @@ public abstract class AFullSimIntegrationTest implements IWorldFrameObserver, IA
 
 		SimulationHelper.resetSimulation();
 
-		BerkeleyDb db = BerkeleyDb.withCustomLocation(Paths.get("../../" + BerkeleyDb.getDefaultBasePath(),
-				BerkeleyDb.getDefaultName("FRIENDLY", "NORMAL_FIRST_HALF", "yellow", "blue") + "_"
-						+ testName.getMethodName()));
-		db.add(BerkeleyAiFrame.class, new BerkeleyAccessor<>(BerkeleyAiFrame.class, true));
-		db.add(BerkeleyLogEvent.class, new BerkeleyAccessor<>(BerkeleyLogEvent.class, false));
-		db.add(BerkeleyShapeMapFrame.class, new BerkeleyAccessor<>(BerkeleyShapeMapFrame.class, true));
-		db.add(WorldFrameWrapper.class, new BerkeleyAccessor<>(WorldFrameWrapper.class, true));
+		PersistenceDb db = PersistenceDb.withCustomLocation(Paths.get("../../" + PersistenceDb.getDefaultBasePath(),
+				PersistenceDb.getDefaultName("FRIENDLY", "NORMAL_FIRST_HALF", "yellow", "blue") + "_"
+						+ testInfo.getDisplayName()));
+		db.add(PersistenceAiFrame.class, EPersistenceKeyType.SUMATRA_TIMESTAMP);
+		db.add(PersistenceLogEvent.class, EPersistenceKeyType.ARBITRARY);
+		db.add(PersistenceShapeMapFrame.class, EPersistenceKeyType.SUMATRA_TIMESTAMP);
+		db.add(WorldFrameWrapper.class, EPersistenceKeyType.SUMATRA_TIMESTAMP);
 
-		recorder = new BerkeleyAsyncRecorder(db);
-		recorder.add(new AiBerkeleyRecorder(db));
-		recorder.add(new BerkeleyLogRecorder(db));
-		recorder.add(new WfwBerkeleyRecorder(db));
-		recorder.add(new ShapeMapBerkeleyRecorder(db));
+		recorder = new PersistenceAsyncRecorder(db);
+		recorder.add(new AiPersistenceRecorder(db));
+		recorder.add(new PersistenceLogRecorder(db));
+		recorder.add(new WfwPersistenceRecorder(db));
+		recorder.add(new ShapeMapPersistenceRecorder(db));
 		recorder.start();
 
 		SumatraModel.getInstance().getModule(AWorldPredictor.class).addObserver(this);
 		SumatraModel.getInstance().getModule(AAgent.class).addObserver(this);
-		log.debug("Test case setup done for {}", testName.getMethodName());
+		log.debug("Test case setup done for {}", testInfo.getDisplayName());
 	}
 
 
 	@SneakyThrows
-	@After
-	public void after()
+	@AfterEach
+	public void after(TestInfo testInfo)
 	{
-		log.debug("Cleaning up after test case {}", testName.getMethodName());
+		log.debug("Cleaning up after test case {}", testInfo.getDisplayName());
 		SumatraModel.getInstance().getModule(AWorldPredictor.class).removeObserver(this);
 		SumatraModel.getInstance().getModule(AAgent.class).removeObserver(this);
 
@@ -181,7 +174,9 @@ public abstract class AFullSimIntegrationTest implements IWorldFrameObserver, IA
 		}
 		recorder.getDb().delete();
 
-		log.debug("Test case cleanup done for {}", testName.getMethodName());
+		SumatraModel.getInstance().stopModules();
+
+		log.debug("Test case cleanup done for {}", testInfo.getDisplayName());
 	}
 
 
@@ -359,35 +354,49 @@ public abstract class AFullSimIntegrationTest implements IWorldFrameObserver, IA
 	}
 
 
-	protected boolean ballLeftField(AIInfoFrame frame)
-	{
-		return frame.getRefereeMsg().getGameEvents().stream()
-				.map(IGameEvent::getType)
-				.map(EGameEvent::getType)
-				.anyMatch(e -> e == EGameEventType.BALL_LEFT_FIELD);
-	}
-
-
-	protected boolean gameRunning(AIInfoFrame frame)
-	{
-		return frame.getGameState().isRunning();
-	}
-
-
-	protected boolean gameStopped(AIInfoFrame frame)
-	{
-		return frame.getGameState().getState() == EGameState.STOP;
-	}
-
-
-	protected boolean gameBallPlacement(AIInfoFrame frame)
-	{
-		return frame.getGameState().getState() == EGameState.BALL_PLACEMENT;
-	}
-
-
 	private record InformationPerTeam(boolean firstPassSuccess, boolean ballTouched, BotID firstRobotWithContact)
 	{
+	}
+
+	@RequiredArgsConstructor
+	protected static class GameStateStopCondition implements AiSimTimeBlocker.IStopCondition
+	{
+		private final EGameState gameState;
+
+
+		@Override
+		public boolean stopSimulation(final AIInfoFrame frame)
+		{
+			return frame.getGameState().getState() == gameState;
+		}
+
+
+		@Override
+		public String name()
+		{
+			return AiSimTimeBlocker.IStopCondition.super.name() + "(" + gameState + ")";
+		}
+	}
+
+	protected static class BallLeftFieldStopCondition implements AiSimTimeBlocker.IStopCondition
+	{
+		@Override
+		public boolean stopSimulation(final AIInfoFrame frame)
+		{
+			return frame.getRefereeMsg().getGameEvents().stream()
+					.map(IGameEvent::getType)
+					.map(EGameEvent::getType)
+					.anyMatch(e -> e == EGameEventType.BALL_LEFT_FIELD);
+		}
+
+
+		@Override
+		public String hint(final AIInfoFrame frame)
+		{
+			return "Game events: " + frame.getRefereeMsg().getGameEvents().stream()
+					.map(IGameEvent::getType)
+					.map(EGameEvent::getType).toList();
+		}
 	}
 
 	@RequiredArgsConstructor

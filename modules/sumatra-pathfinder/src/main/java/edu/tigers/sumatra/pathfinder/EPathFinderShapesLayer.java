@@ -33,6 +33,10 @@ public final class EPathFinderShapesLayer
 			F.category(MOVEMENT).category(PATH_FINDER).layerName("Collision check points").persistenceType(DEBUG_PERSIST));
 	public static final IShapeLayerIdentifier ALL_OBSTACLES = F.create(
 			F.category(MOVEMENT).category(PATH_FINDER).layerName("All obstacles"));
+	public static final IShapeLayerIdentifier ADAPTED_DEST_FOR_BOT = F.create(
+			F.category(MOVEMENT).category(PATH_FINDER).layerName("Adapted dest for bot").persistenceType(DEBUG_PERSIST));
+	public static final IShapeLayerIdentifier ADAPTED_DEST = F.create(
+			F.category(MOVEMENT).category(PATH_FINDER).layerName("Adapted dest").persistenceType(DEBUG_PERSIST));
 
 
 	public static IShapeLayerIdentifier obstacleCheckPoints(String obstacleId)
@@ -41,6 +45,7 @@ public final class EPathFinderShapesLayer
 				ShapeLayerIdentifier.builder()
 						.layerName(obstacleId)
 						.orderId(113)
+						.category(MOVEMENT)
 						.category(PATH_FINDER)
 						.category("Check point checked")
 						.persistenceType(DEBUG_PERSIST)
@@ -54,6 +59,7 @@ public final class EPathFinderShapesLayer
 				ShapeLayerIdentifier.builder()
 						.layerName(obstacleId)
 						.orderId(112)
+						.category(MOVEMENT)
 						.category(PATH_FINDER)
 						.category("Check point w/ collision")
 						.persistenceType(DEBUG_PERSIST)
@@ -67,6 +73,7 @@ public final class EPathFinderShapesLayer
 				ShapeLayerIdentifier.builder()
 						.layerName(obstacleId)
 						.orderId(111)
+						.category(MOVEMENT)
 						.category(PATH_FINDER)
 						.category("Check point w/o collision")
 						.persistenceType(DEBUG_PERSIST)
@@ -80,6 +87,7 @@ public final class EPathFinderShapesLayer
 				ShapeLayerIdentifier.builder()
 						.layerName(obstacleId)
 						.orderId(100)
+						.category(MOVEMENT)
 						.category(PATH_FINDER)
 						.category("Obstacles")
 						.persistenceType(DEBUG_PERSIST)

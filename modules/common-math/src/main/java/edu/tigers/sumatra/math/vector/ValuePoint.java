@@ -7,8 +7,6 @@ package edu.tigers.sumatra.math.vector;
 import java.io.Serializable;
 import java.util.Comparator;
 
-import com.sleepycat.persist.model.Persistent;
-
 
 /**
  * This is a point with a specific/arbitrary value.
@@ -20,7 +18,6 @@ import com.sleepycat.persist.model.Persistent;
  * 
  * @author Oliver Steinbrecher <OST1988@aol.com>
  */
-@Persistent
 public class ValuePoint extends Vector2
 {
 	/**  */

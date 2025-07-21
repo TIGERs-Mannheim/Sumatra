@@ -4,7 +4,6 @@
 
 package edu.tigers.sumatra.ai.metis.kicking;
 
-import com.sleepycat.persist.model.Persistent;
 import edu.tigers.sumatra.ai.metis.offense.situation.zone.EOffensiveZone;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -15,7 +14,6 @@ import lombok.Value;
 /**
  * Stores information about a pass that is already on its way.
  */
-@Persistent
 @Value
 @Builder(toBuilder = true)
 @AllArgsConstructor
@@ -29,14 +27,4 @@ public class OngoingPass
 	EOffensiveZone targetZone;
 
 	boolean passLineBeenReachedByReceiver;
-
-	@SuppressWarnings("unused") // berkeley
-	private OngoingPass()
-	{
-		pass = new Pass();
-		kickStartTime = 0;
-		originatingZone = null;
-		targetZone = null;
-		passLineBeenReachedByReceiver = false;
-	}
 }

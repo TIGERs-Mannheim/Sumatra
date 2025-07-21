@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.metis.keeper;
@@ -68,6 +68,7 @@ public class KeeperPassTargetCalc extends ACalculator
 
 
 	private final PassFactory passFactory = new PassFactory();
+	private final KickSpeedFactory kickSpeedFactory = new KickSpeedFactory();
 	private final Supplier<EBallResponsibility> ballResponsibility;
 	private final Supplier<BotDistance> opponentClosestToBall;
 	private final TimestampTimer heldBallTimer = new TimestampTimer(RuleConstraints.getKeeperHeldBallPeriod());
@@ -128,26 +129,45 @@ public class KeeperPassTargetCalc extends ACalculator
 
 	private Pass createKeeperPass(SlackBot passTarget)
 	{
+		var keeper = getWFrame().getBot(getAiFrame().getKeeperId());
 		passFactory.setMaxReceivingBallSpeed(Double.POSITIVE_INFINITY);
+
+		if (kickSpeedFactory.maxChip(keeper) <= 0)
+		{
+			return passFactory.straight(
+					getBall().getPos(),
+					passTarget.target,
+					getAiFrame().getKeeperId(),
+					passTarget.bot.getBotId(),
+					EBallReceiveMode.RECEIVE
+			).orElseThrow();
+		}
+
 		return passFactory.chip(
 				getBall().getPos(),
 				passTarget.target,
 				getAiFrame().getKeeperId(),
 				passTarget.bot.getBotId(),
 				EBallReceiveMode.RECEIVE
-		);
+		).orElseThrow(); // with infinite max receiving speed, this should never fail
 	}
 
 
 	private ICircle createSearchCircle()
 	{
 		var keeper = getWFrame().getBot(getAiFrame().getKeeperId());
-		var chipTrajectory = getBall().getChipConsultant().getChipTrajectory(new KickSpeedFactory().maxChip(keeper));
+		if (kickSpeedFactory.maxChip(keeper) <= 0)
+		{
+			return Circle.createCircle(getBall().getPos(), Geometry.getFieldLength() * 2. / 3.);
+		}
+		var chipTrajectory = getBall().getChipConsultant().getChipTrajectory(kickSpeedFactory.maxChip(keeper));
 		var distanceChip = chipTrajectory.getTouchdownLocations().stream()
 				.mapToDouble(IVector::getLength).max()
 				.orElseThrow();
-		return Circle.createCircle(getBall().getPos(),
-				SumatraMath.min(Geometry.getFieldLength() * 2. / 3., distanceChip + minRollDistanceAfterChip));
+		return Circle.createCircle(
+				getBall().getPos(),
+				SumatraMath.min(Geometry.getFieldLength() * 2. / 3., distanceChip + minRollDistanceAfterChip)
+		);
 	}
 
 
@@ -195,9 +215,11 @@ public class KeeperPassTargetCalc extends ACalculator
 				.orElse(1000000);
 		return getWFrame().getTigerBotsVisible().values().stream()
 				.filter(bot -> !bot.getBotId().equals(getAiFrame().getKeeperId()))
-				.map(bot -> new SlackBot(bot,
+				.map(bot -> new SlackBot(
+						bot,
 						target,
-						minOpponentArrivalTime - generatePositionTrajectory(bot, target).getTotalTime()))
+						minOpponentArrivalTime - generatePositionTrajectory(bot, target).getTotalTime()
+				))
 				.max(Comparator.comparingDouble(bot -> bot.slackTime))
 				.orElse(null);
 	}
@@ -208,11 +230,17 @@ public class KeeperPassTargetCalc extends ACalculator
 		List<IDrawableShape> shapes = getShapes(EAiShapesLayer.KEEPER_BEHAVIOR);
 
 		shapes.add(new DrawableCircle(searchCircle));
-		shapes.add(new DrawableLine(Lines.segmentFromOffset(searchCircle.center(),
-				Vector2.fromAngleLength(AngleMath.deg2rad(searchAngles.angleFactor - searchAngles.angleShift),
-						searchCircle.radius()))));
-		shapes.add(new DrawableLine(Lines.segmentFromOffset(searchCircle.center(),
-				Vector2.fromAngleLength(AngleMath.deg2rad(-searchAngles.angleShift), searchCircle.radius()))));
+		shapes.add(new DrawableLine(Lines.segmentFromOffset(
+				searchCircle.center(),
+				Vector2.fromAngleLength(
+						AngleMath.deg2rad(searchAngles.angleFactor - searchAngles.angleShift),
+						searchCircle.radius()
+				)
+		)));
+		shapes.add(new DrawableLine(Lines.segmentFromOffset(
+				searchCircle.center(),
+				Vector2.fromAngleLength(AngleMath.deg2rad(-searchAngles.angleShift), searchCircle.radius())
+		)));
 
 		if (lastPassTarget != null)
 		{
@@ -234,6 +262,7 @@ public class KeeperPassTargetCalc extends ACalculator
 		return opponentClosestToBall.get().getDist() < minOpponentBotDistToChill
 				&& !Geometry.getPenaltyAreaOur().isPointInShape(getWFrame().getBall().getPos());
 	}
+
 
 	private record AngleRangeLimited(double angleFactor, double angleShift)
 	{

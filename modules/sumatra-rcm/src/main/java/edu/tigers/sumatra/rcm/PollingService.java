@@ -6,11 +6,11 @@ package edu.tigers.sumatra.rcm;
 
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
-import edu.tigers.moduli.exceptions.ModuleNotFoundException;
-import edu.tigers.sumatra.botmanager.bots.ABot;
+import edu.tigers.sumatra.botmanager.botskills.ABotSkill;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.model.SumatraModel;
+import edu.tigers.sumatra.moduli.exceptions.ModuleNotFoundException;
 import edu.tigers.sumatra.proto.BotActionCommandProtos.BotActionCommand;
 import edu.tigers.sumatra.proto.BotColorIdProtos.BotColorId;
 import edu.tigers.sumatra.proto.BotColorIdProtos.BotColorId.Color;
@@ -18,6 +18,7 @@ import edu.tigers.sumatra.rcm.RcmAction.EActionType;
 import edu.tigers.sumatra.skillsystem.ASkillSystem;
 import edu.tigers.sumatra.skillsystem.ESkill;
 import edu.tigers.sumatra.skillsystem.GenericSkillSystem;
+import edu.tigers.sumatra.skillsystem.skills.BotSkillWrapperSkill;
 import edu.tigers.sumatra.skillsystem.skills.ISkill;
 import edu.tigers.sumatra.skillsystem.skills.IdleSkill;
 import edu.tigers.sumatra.skillsystem.skills.ManualControlSkill;
@@ -89,8 +90,17 @@ public class PollingService
 	 */
 	public void interpret(final List<ExtComponent> components)
 	{
+		BotID botId = actionSender.getCmdInterpreter().getBot().getBotId();
 		BotActionCommand cmd = translate(components);
-		actionSender.execute(cmd);
+		ABotSkill skill = actionSender.execute(cmd);
+		if (!botId.isBot())
+		{
+			return;
+		}
+		skillSystem.execute(
+				botId,
+				new BotSkillWrapperSkill(skill)
+		);
 	}
 
 
@@ -333,12 +343,6 @@ public class PollingService
 			case UNASSIGN_BOT:
 				unassignBot(botId);
 				break;
-			case CHARGE_BOT:
-				chargeBots(true);
-				break;
-			case DISCHARGE_BOT:
-				chargeBots(false);
-				break;
 			case UNASSIGNED:
 				break;
 		}
@@ -375,13 +379,6 @@ public class PollingService
 			timeSkillStarted = System.nanoTime();
 		}
 		actionSender.notifyBotUnassigned();
-	}
-
-
-	private void chargeBots(final boolean enable)
-	{
-		ABot bot = actionSender.getCmdInterpreter().getBot();
-		bot.getMatchCtrl().setKickerAutocharge(enable);
 	}
 
 
@@ -445,7 +442,7 @@ public class PollingService
 	{
 		if (execService != null)
 		{
-			actionSender.stopSending();
+			skillSystem.emergencyStop();
 			execService.shutdown();
 			execService = null;
 			lastPressedComponents.clear();

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2024, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.pandora.roles.test.calibrate;
@@ -7,53 +7,69 @@ package edu.tigers.sumatra.ai.pandora.roles.test.calibrate;
 import edu.tigers.sumatra.ai.pandora.roles.ARole;
 import edu.tigers.sumatra.ai.pandora.roles.ERole;
 import edu.tigers.sumatra.botmanager.botskills.data.EKickerDevice;
-import edu.tigers.sumatra.cam.data.CamCalibration;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.math.vector.IVector2;
-import edu.tigers.sumatra.skillsystem.skills.test.KickSampleSkill;
-import edu.tigers.sumatra.statemachine.AState;
-import org.json.simple.JSONArray;
+import edu.tigers.sumatra.math.vector.Vector2;
+import edu.tigers.sumatra.skillsystem.skills.ATouchKickSkill;
+import edu.tigers.sumatra.skillsystem.skills.ESkillState;
+import edu.tigers.sumatra.skillsystem.skills.IdleSkill;
+import edu.tigers.sumatra.skillsystem.skills.ProtectiveGetBallSkill;
+import edu.tigers.sumatra.skillsystem.skills.SingleTouchKickSkill;
+import edu.tigers.sumatra.skillsystem.skills.TouchKickSkill;
 
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
+import java.util.function.Supplier;
 
 
 /**
- * @author AndreR
+ * Base role for sampling kicks for ball calibration.
  */
 public abstract class AKickSamplerRole extends ARole
 {
 	protected final List<SamplePoint> samples = new ArrayList<>();
-	private final boolean halfField;
 
 
-	/**
-	 * Constructor.
-	 *
-	 * @param role
-	 * @param halfField
-	 */
-	protected AKickSamplerRole(final ERole role, final boolean halfField)
+	protected AKickSamplerRole(ERole role, EKickMode kickMode)
 	{
 		super(role);
 
-		this.halfField = halfField;
+		var waitState = new WaitState();
+		var sampleDoneState = new SampleDoneState();
+		waitState.addTransition("ballStopped", waitState::ballStopped, sampleDoneState);
 
-		setInitialState(new DefaultState());
+		if (kickMode == EKickMode.SINGLE_TOUCH)
+		{
+			var touchState = new SingleTouchState();
+			touchState.addTransition("ballMoved", touchState::ballMoved, waitState);
+			sampleDoneState.addTransition("hasMoreSamples", sampleDoneState::hasMoreSamples, touchState);
+
+			setInitialState(touchState);
+		} else if (kickMode == EKickMode.TOUCH)
+		{
+			var getBallState = new GetBallState();
+			var touchState = new TouchState();
+
+			getBallState.addTransition(ESkillState.SUCCESS, touchState);
+			touchState.addTransition("ballMoved", touchState::ballMoved, waitState);
+			sampleDoneState.addTransition("hasMoreSamples", sampleDoneState::hasMoreSamples, touchState);
+
+			setInitialState(getBallState);
+		} else
+		{
+			throw new IllegalArgumentException("Unsupported kick mode: " + kickMode);
+		}
 	}
 
 
-	/**
-	 * Get folder name for data collector.
-	 *
-	 * @return
-	 */
-	protected abstract String getFolderName();
+	private IVector2 getKickTarget()
+	{
+		var sample = samples.getFirst();
+		return sample.kickPos.addNew(Vector2.fromAngleLength(sample.targetAngle, 1000));
+	}
 
-	protected class SamplePoint
+
+	protected static class SamplePoint
 	{
 		IVector2 kickPos;
 		double targetAngle;
@@ -62,76 +78,120 @@ public abstract class AKickSamplerRole extends ARole
 		double rightOffset;
 	}
 
-	private class DefaultState extends AState
+
+	private class ATouchKickState<T extends ATouchKickSkill> extends RoleState<T>
 	{
-		private KickSampleSkill skill;
-		private boolean botLost = false;
+		private IVector2 initBallPos;
 
 
-		@SuppressWarnings("unchecked")
-		private void startSample(final SamplePoint p)
+		public ATouchKickState(Supplier<T> skillSupplier)
 		{
-			skill = new KickSampleSkill(p.kickPos, p.targetAngle, p.device, p.durationMs, p.rightOffset);
+			super(skillSupplier);
+		}
 
-			Map<String, Object> jsonMapping = new LinkedHashMap<>();
 
-			if (halfField)
-			{
-				jsonMapping.put("field", Geometry.getFieldHalfOur().toJSON());
-			} else
-			{
-				jsonMapping.put("field", Geometry.getField().toJSON());
-			}
+		@Override
+		protected void onInit()
+		{
+			initBallPos = getBall().getPos();
+			var sample = samples.getFirst();
+			skill.setTarget(getKickTarget());
+			skill.setKickerDevice(sample.device);
+			skill.setKickArmTime(sample.durationMs);
+			skill.getMoveCon().physicalObstaclesOnly();
+		}
 
-			Collection<CamCalibration> cams = Geometry.getLastCamGeometry().getCameraCalibrations().values();
-			JSONArray camList = new JSONArray();
-			for (CamCalibration c : cams)
-			{
-				camList.add(c.toJSON());
-			}
-			jsonMapping.put("cams", camList);
 
-			skill.setAdditionalJsonData(jsonMapping);
-			skill.setFolderName(getFolderName());
+		@Override
+		protected void onExit()
+		{
+			samples.removeFirst();
+		}
 
-			setNewSkill(skill);
+
+		boolean ballMoved()
+		{
+			return getBall().getPos().distanceTo(initBallPos) > 50;
+		}
+	}
+
+	private class SingleTouchState extends ATouchKickState<SingleTouchKickSkill>
+	{
+		public SingleTouchState()
+		{
+			super(SingleTouchKickSkill::new);
+		}
+	}
+
+
+	private class TouchState extends ATouchKickState<TouchKickSkill>
+	{
+		public TouchState()
+		{
+			super(TouchKickSkill::new);
+		}
+	}
+
+	private class GetBallState extends RoleState<ProtectiveGetBallSkill>
+	{
+		public GetBallState()
+		{
+			super(ProtectiveGetBallSkill::new);
+		}
+
+
+		@Override
+		protected void onInit()
+		{
+			skill.setTarget(getKickTarget());
+			skill.setStrongDribblerContactNeeded(true);
+			skill.getMoveCon().physicalObstaclesOnly();
+		}
+	}
+
+	private class WaitState extends RoleState<IdleSkill>
+	{
+		public WaitState()
+		{
+			super(IdleSkill::new);
+		}
+
+
+		private boolean ballStopped()
+		{
+			return getBall().getVel().getLength() < 0.2 || !Geometry.getField().isPointInShape(getBall().getPos());
+		}
+	}
+
+	private class SampleDoneState extends RoleState<IdleSkill>
+	{
+		public SampleDoneState()
+		{
+			super(IdleSkill::new);
 		}
 
 
 		@Override
 		public void doEntryActions()
 		{
-			startSample(samples.get(0));
+			if (samples.isEmpty())
+			{
+				// note: this triggers doExitActions, even if called from doExitActions!
+				setCompleted();
+			}
 		}
 
 
-		@Override
-		public void doUpdate()
+		private boolean hasMoreSamples()
 		{
-			if (getBot() == null)
-			{
-				botLost = true;
-			}
-
-			if (botLost && (getBot() != null))
-			{
-				botLost = false;
-
-				startSample(samples.get(0));
-			}
-
-			if (skill.getNumSamples() > 0)
-			{
-				samples.remove(0);
-
-				if (samples.isEmpty())
-				{
-					setCompleted();
-				} else
-				{
-					startSample(samples.get(0));
-				}
-			}
+			return !samples.isEmpty();
 		}
+	}
+
+
+	public enum EKickMode
+	{
+		TOUCH,
+		SINGLE_TOUCH,
 	}
 }

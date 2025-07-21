@@ -111,8 +111,8 @@ public class ChipKickSolverNonLin3Direct extends AChipKickSolver
 		{
 			IVector3 kickVel = Vector3.fromArray(point);
 
-			double tKickOffset = records.get(0).gettCapture() - kickTimestamp;
-			double tKick = records.get(0).getCameraCaptureTimestamp() - tKickOffset;
+			long tKickOffset = records.getFirst().getTimestamp() - kickTimestamp;
+			long tKick = records.getFirst().getTimestamp() - tKickOffset;
 
 			var traj = Geometry.getBallFactory()
 					.createTrajectoryFromKickedBallWithoutSpin(kickPosition, kickVel);
@@ -121,7 +121,7 @@ public class ChipKickSolverNonLin3Direct extends AChipKickSolver
 
 			for (CamBall ball : records)
 			{
-				IVector3 trajPos = traj.getMilliStateAtTime((ball.getCameraCaptureTimestamp() - tKick) * 1e-9).getPos();
+				IVector3 trajPos = traj.getMilliStateAtTime((ball.getTimestamp() - tKick) * 1e-9).getPos();
 				IVector2 ground = trajPos.projectToGroundNew(getCameraPosition(ball.getCameraId()));
 
 				error += ball.getFlatPos().distanceTo(ground);

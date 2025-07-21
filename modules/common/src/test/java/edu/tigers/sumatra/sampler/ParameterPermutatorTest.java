@@ -4,12 +4,12 @@
 
 package edu.tigers.sumatra.sampler;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.within;
+import org.junit.jupiter.api.Test;
 
 import java.util.Map;
 
-import org.junit.Test;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.within;
 
 
 public class ParameterPermutatorTest

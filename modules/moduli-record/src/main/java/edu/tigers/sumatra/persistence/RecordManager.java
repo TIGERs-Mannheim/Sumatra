@@ -6,13 +6,11 @@ package edu.tigers.sumatra.persistence;
 
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
-import com.sleepycat.persist.evolve.Mutations;
-import com.sleepycat.persist.evolve.Renamer;
-import edu.tigers.moduli.AModule;
-import edu.tigers.moduli.exceptions.ModuleNotFoundException;
 import edu.tigers.sumatra.model.SumatraModel;
-import edu.tigers.sumatra.persistence.log.BerkeleyLogEvent;
-import edu.tigers.sumatra.persistence.log.BerkeleyLogRecorder;
+import edu.tigers.sumatra.moduli.AModule;
+import edu.tigers.sumatra.moduli.exceptions.ModuleNotFoundException;
+import edu.tigers.sumatra.persistence.log.PersistenceLogEvent;
+import edu.tigers.sumatra.persistence.log.PersistenceLogRecorder;
 import edu.tigers.sumatra.referee.AReferee;
 import edu.tigers.sumatra.referee.IRefereeObserver;
 import edu.tigers.sumatra.referee.proto.SslGcRefereeMessage;
@@ -20,7 +18,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -34,9 +31,9 @@ public class RecordManager extends AModule implements IRefereeObserver
 {
 	private static final Logger log = LogManager.getLogger(RecordManager.class.getName());
 	private final List<IRecordObserver> observers = new CopyOnWriteArrayList<>();
-	private final List<IBerkeleyRecorderHook> hooks = new CopyOnWriteArrayList<>();
+	private final List<IRecorderHook> hooks = new CopyOnWriteArrayList<>();
 	private long lastCommandCounter = -1;
-	private BerkeleyAsyncRecorder recorder = null;
+	private PersistenceAsyncRecorder recorder = null;
 	protected String teamYellow = "";
 	protected String teamBlue = "";
 	protected String matchType = "";
@@ -45,24 +42,12 @@ public class RecordManager extends AModule implements IRefereeObserver
 	@Configurable(defValue = "false", comment = "Automatically compress recordings after they were closed")
 	private static boolean compressOnClose = false;
 
-	@Configurable(defValue = "true", comment = "Automatically record game in productive mode")
+	@Configurable(defValue = "true", comment = "Automatically record game in tournament mode")
 	private static boolean autoRecord = true;
 
 	static
 	{
 		ConfigRegistration.registerClass("user", RecordManager.class);
-	}
-
-
-	protected Mutations getMutations()
-	{
-		Mutations mutations = new Mutations();
-		mutations.addRenamer(new Renamer("edu.tigers.sumatra.referee.gameevent.AttackerInDefenseArea", 0,
-				"edu.tigers.sumatra.referee.gameevent.AttackerTouchedBallInDefenseArea"));
-		mutations.addRenamer(new Renamer("edu.tigers.sumatra.ai.metis.offense.action.moves.OffensiveAction", 3,
-				"edu.tigers.sumatra.ai.metis.offense.action.OffensiveAction"));
-
-		return mutations;
 	}
 
 
@@ -84,13 +69,13 @@ public class RecordManager extends AModule implements IRefereeObserver
 	}
 
 
-	public void addHook(IBerkeleyRecorderHook hook)
+	public void addHook(IRecorderHook hook)
 	{
 		hooks.add(hook);
 	}
 
 
-	public void removeHook(IBerkeleyRecorderHook hook)
+	public void removeHook(IRecorderHook hook)
 	{
 		hooks.remove(hook);
 	}
@@ -119,48 +104,31 @@ public class RecordManager extends AModule implements IRefereeObserver
 
 	private boolean isPreStage(final SslGcRefereeMessage.Referee refMsg)
 	{
-		switch (refMsg.getStage())
+		return switch (refMsg.getStage())
 		{
-			case NORMAL_FIRST_HALF_PRE:
-			case NORMAL_SECOND_HALF_PRE:
-			case EXTRA_FIRST_HALF_PRE:
-			case EXTRA_SECOND_HALF_PRE:
-				return true;
-			default:
-				return false;
-		}
+			case NORMAL_FIRST_HALF_PRE, NORMAL_SECOND_HALF_PRE, EXTRA_FIRST_HALF_PRE, EXTRA_SECOND_HALF_PRE -> true;
+			default -> false;
+		};
 	}
 
 
 	private boolean isGameStage(final SslGcRefereeMessage.Referee refMsg)
 	{
-		switch (refMsg.getStage())
+		return switch (refMsg.getStage())
 		{
-			case NORMAL_FIRST_HALF:
-			case NORMAL_SECOND_HALF:
-			case EXTRA_FIRST_HALF:
-			case EXTRA_SECOND_HALF:
-			case PENALTY_SHOOTOUT:
-				return true;
-			default:
-				return false;
-		}
+			case NORMAL_FIRST_HALF, NORMAL_SECOND_HALF, EXTRA_FIRST_HALF, EXTRA_SECOND_HALF, PENALTY_SHOOTOUT -> true;
+			default -> false;
+		};
 	}
 
 
 	private boolean isNoGameStage(final SslGcRefereeMessage.Referee refMsg)
 	{
-		switch (refMsg.getStage())
+		return switch (refMsg.getStage())
 		{
-			case EXTRA_HALF_TIME:
-			case NORMAL_HALF_TIME:
-			case PENALTY_SHOOTOUT_BREAK:
-			case POST_GAME:
-			case EXTRA_TIME_BREAK:
-				return true;
-			default:
-				return false;
-		}
+			case EXTRA_HALF_TIME, NORMAL_HALF_TIME, PENALTY_SHOOTOUT_BREAK, POST_GAME, EXTRA_TIME_BREAK -> true;
+			default -> false;
+		};
 	}
 
 
@@ -261,11 +229,11 @@ public class RecordManager extends AModule implements IRefereeObserver
 			log.warn("Start recording requested, but there is still an active recorder. Stopping it.");
 			recorder.stop();
 		}
-		recorder = new BerkeleyAsyncRecorder(newBerkeleyDb());
-		recorder.getDb().getEnv().setCompressOnClose(compressOnClose);
-		onNewBerkeleyRecorder(recorder);
+		recorder = new PersistenceAsyncRecorder(newPersistenceDb());
+		recorder.getDb().setCompressOnClose(compressOnClose);
+		onNewPersistanceRecorder(recorder);
 		recorder.start();
-		hooks.forEach(IBerkeleyRecorderHook::start);
+		hooks.forEach(IRecorderHook::start);
 		notifyStartStopRecord(true);
 	}
 
@@ -277,7 +245,7 @@ public class RecordManager extends AModule implements IRefereeObserver
 			log.warn("Record stop requested, but there is no recorder");
 		} else
 		{
-			hooks.forEach(IBerkeleyRecorderHook::stop);
+			hooks.forEach(IRecorderHook::stop);
 			recorder.stop();
 			recorder = null;
 		}
@@ -286,94 +254,51 @@ public class RecordManager extends AModule implements IRefereeObserver
 
 
 	/**
-	 * Open or create a berkeley database with default accessors attached
+	 * Open or create a persistence database with default accessors attached
 	 *
 	 * @param dbPath at this location
 	 * @return a new unopened handle
 	 */
-	public BerkeleyDb newBerkeleyDb(Path dbPath)
+	public PersistenceDb newPersistenceDb(Path dbPath)
 	{
-		BerkeleyDb db = BerkeleyDb.withCustomLocation(dbPath);
-		onNewBerkeleyDb(db);
+		PersistenceDb db = PersistenceDb.withCustomLocation(dbPath);
+		onNewPersistenceDb(db);
 		return db;
 	}
 
 
 	/**
-	 * Create a new berkeley database with default accessors attached
+	 * Create a new persistence database with default accessors attached
 	 *
 	 * @return a new empty database
 	 */
-	private BerkeleyDb newBerkeleyDb()
+	private PersistenceDb newPersistenceDb()
 	{
-		BerkeleyDb db = BerkeleyDb.withDefaultLocation(matchType, matchStage, teamYellow, teamBlue);
-		onNewBerkeleyDb(db);
+		PersistenceDb db = PersistenceDb.withDefaultLocation(matchType, matchStage, teamYellow, teamBlue);
+		onNewPersistenceDb(db);
 		return db;
 	}
 
 
 	/**
-	 * @return the current DB path
-	 */
-	private synchronized String getCurrentDbPath()
-	{
-		if (recorder == null)
-		{
-			return "";
-		}
-		return recorder.getDb().getDbPath();
-	}
-
-
-	/**
-	 * This is called when a new berkeley db will be created
+	 * This is called when a new db will be created
 	 *
 	 * @param db
 	 */
-	protected void onNewBerkeleyDb(BerkeleyDb db)
+	protected void onNewPersistenceDb(PersistenceDb db)
 	{
-		db.add(BerkeleyLogEvent.class, new BerkeleyAccessor<>(BerkeleyLogEvent.class, false));
+		db.add(PersistenceLogEvent.class, EPersistenceKeyType.ARBITRARY);
 	}
 
 
 	/**
-	 * This is called when a new berkeley recorder will be created
+	 * This is called when a new recorder will be created
 	 *
 	 * @param recorder
 	 */
-	protected void onNewBerkeleyRecorder(BerkeleyAsyncRecorder recorder)
+	protected void onNewPersistanceRecorder(PersistenceAsyncRecorder recorder)
 	{
-		recorder.add(new BerkeleyLogRecorder(recorder.getDb()));
-	}
-
-
-	/**
-	 * Notify UI to view a replay window
-	 *
-	 * @param startTime
-	 */
-	public void notifyViewReplay(long startTime)
-	{
-		String dbPath = getCurrentDbPath();
-		if (dbPath.isEmpty())
-		{
-			log.error("No open DB found.");
-			return;
-		}
-		BerkeleyDb db;
-		try
-		{
-			db = newBerkeleyDb(Paths.get(dbPath));
-			db.open();
-		} catch (Exception e)
-		{
-			log.error("Could not open DB", e);
-			return;
-		}
-		for (IRecordObserver observer : observers)
-		{
-			observer.onViewReplay(db, startTime);
-		}
+		recorder.add(new PersistenceLogRecorder(recorder.getDb()));
 	}
 
 

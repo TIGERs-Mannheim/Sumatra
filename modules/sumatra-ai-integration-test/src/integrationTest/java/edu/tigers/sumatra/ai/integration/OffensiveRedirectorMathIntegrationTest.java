@@ -13,8 +13,8 @@ import edu.tigers.sumatra.ids.ETeamColor;
 import edu.tigers.sumatra.math.vector.Vector2f;
 import edu.tigers.sumatra.referee.data.GameState;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -54,7 +54,7 @@ public class OffensiveRedirectorMathIntegrationTest extends AAiIntegrationTest
 
 
 	@Test
-	@Ignore("Not working in GitHub Actions currently")
+	@Disabled("Test is flaky")
 	public void calcBestRedirectPassTarget2() throws IOException
 	{
 		loadSnapshot("snapshots/offensiveBestRedirectPass2.snap");

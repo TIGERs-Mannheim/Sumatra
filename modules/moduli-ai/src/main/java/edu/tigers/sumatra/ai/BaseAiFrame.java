@@ -3,7 +3,7 @@
  */
 package edu.tigers.sumatra.ai;
 
-import edu.tigers.sumatra.botmanager.botskills.data.MultimediaControl;
+import edu.tigers.sumatra.botmanager.data.MultimediaControl;
 import edu.tigers.sumatra.drawable.IDrawableShape;
 import edu.tigers.sumatra.drawable.IShapeLayerIdentifier;
 import edu.tigers.sumatra.drawable.ShapeMap;

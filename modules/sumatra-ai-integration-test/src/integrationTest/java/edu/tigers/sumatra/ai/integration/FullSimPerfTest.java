@@ -21,9 +21,10 @@ import edu.tigers.sumatra.skillsystem.skills.MoveToSkill;
 import edu.tigers.sumatra.snapshot.Snapshot;
 import edu.tigers.sumatra.wp.data.WorldFrameWrapper;
 import lombok.SneakyThrows;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -35,7 +36,7 @@ import java.util.Map;
 /**
  * Run tests in a full simulation environment
  */
-@Ignore // uncomment if you want to run it
+@Disabled // uncomment if you want to run it
 public class FullSimPerfTest extends AFullSimIntegrationTest
 {
 	private MoveToSkill skill;
@@ -43,11 +44,11 @@ public class FullSimPerfTest extends AFullSimIntegrationTest
 	private List<Double> averageExecutionTimes;
 
 
-	@Before
+	@BeforeEach
 	@Override
-	public void before()
+	public void before(TestInfo testInfo)
 	{
-		super.before();
+		super.before(testInfo);
 		SumatraModel.getInstance().getModule(AAgent.class).changeMode(EAIControlState.OFF);
 	}
 

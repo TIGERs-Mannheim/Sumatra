@@ -13,22 +13,27 @@ dependencies {
     api project(':common-math')
 
     implementation(libs.com.github.TIGERs.mannheim.matlabcontrol)
-    implementation(libs.com.github.g3force.string2ValueConverter)
 
     implementation(libs.commons.lang)
+    implementation(libs.commons.configuration)
     implementation(libs.org.apache.commons.commons.math3)
+    runtimeOnly(libs.commons.collections)
 
     implementation(libs.org.apache.logging.log4j.log4j.api)
     implementation(libs.org.apache.logging.log4j.log4j.core)
     annotationProcessor(libs.org.apache.logging.log4j.log4j.core)
 
-    implementation(libs.com.sleepycat.je)
     implementation(libs.gov.nist.math.jama)
     implementation(libs.net.jafama)
-    implementation(libs.com.googlecode.json.simple)
+    implementation(libs.com.github.cliftonlabs.json.simple)
+    implementation(libs.org.jgraph.jgraph.core)
+
+    testImplementation(libs.org.assertj.assertj.core)
 
     testImplementation(libs.org.hamcrest)
+    testImplementation(libs.org.assertj.assertj.core)
     testImplementation(libs.org.openjdk.jmh.jmh.core)
+    testRuntimeOnly(libs.commons.collections)
     testAnnotationProcessor(libs.org.openjdk.jmh.jmh.generator.annprocess)
 }
 

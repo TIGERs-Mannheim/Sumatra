@@ -6,16 +6,13 @@ package edu.tigers.sumatra.persistence;
 
 import edu.tigers.sumatra.ai.AIInfoFrame;
 import edu.tigers.sumatra.ai.Ai;
-import edu.tigers.sumatra.ai.BerkeleyAiFrame;
 import edu.tigers.sumatra.ai.VisualizationFrame;
 import edu.tigers.sumatra.ai.metis.ballpossession.EBallPossession;
 import edu.tigers.sumatra.ai.metis.statistics.stats.MatchStats;
 import edu.tigers.sumatra.ids.EAiTeam;
 import edu.tigers.sumatra.ids.ETeamColor;
-import edu.tigers.sumatra.persistence.log.BerkeleyLogEvent;
 import edu.tigers.sumatra.skillsystem.ASkillSystem;
 import edu.tigers.sumatra.skillsystem.GenericSkillSystem;
-import edu.tigers.sumatra.wp.data.BerkeleyCamDetectionFrame;
 import edu.tigers.sumatra.wp.data.WorldFrameWrapper;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -61,11 +58,9 @@ public class ReplayAnalyzer
 		String basePath = "data/record";
 		String recordDbPath = "2016-04-08_10-59-59";
 
-		BerkeleyDb db = BerkeleyDb.withCustomLocation(Paths.get(basePath, recordDbPath));
-		db.add(BerkeleyAiFrame.class, new BerkeleyAccessor<>(BerkeleyAiFrame.class, true));
-		db.add(BerkeleyCamDetectionFrame.class, new BerkeleyAccessor<>(BerkeleyCamDetectionFrame.class, true));
-		db.add(BerkeleyLogEvent.class, new BerkeleyAccessor<>(BerkeleyLogEvent.class, true));
-		db.open();
+		PersistenceDb db = PersistenceDb.withCustomLocation(Paths.get(basePath, recordDbPath));
+		db.add(WorldFrameWrapper.class, EPersistenceKeyType.SUMATRA_TIMESTAMP);
+		PersistenceTable<WorldFrameWrapper> wfwTable = db.getTable(WorldFrameWrapper.class);
 
 		ASkillSystem skillSystem = GenericSkillSystem.forAnalysis();
 		agents.put(ETeamColor.YELLOW, new Ai(EAiTeam.YELLOW, skillSystem));
@@ -75,7 +70,7 @@ public class ReplayAnalyzer
 
 		do
 		{
-			WorldFrameWrapper wfw = db.get(WorldFrameWrapper.class, key);
+			WorldFrameWrapper wfw = wfwTable.get(key);
 
 			for (ETeamColor teamColor : ETeamColor.yellowBlueValues())
 			{

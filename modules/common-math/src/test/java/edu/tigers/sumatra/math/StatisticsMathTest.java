@@ -4,20 +4,20 @@
 
 package edu.tigers.sumatra.math;
 
-import java.util.Arrays;
-
 import org.assertj.core.api.Assertions;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+
+import java.util.Arrays;
 
 
 /**
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  */
-public class StatisticsMathTest
+class StatisticsMathTest
 {
 	
 	@Test
-	public void testMean()
+	void testMean()
 	{
 		Assertions.assertThat(StatisticsMath.mean(Arrays.asList(1))).isEqualTo(1);
 		Assertions.assertThat(StatisticsMath.mean(Arrays.asList(1, 1))).isEqualTo(1);
@@ -31,7 +31,7 @@ public class StatisticsMathTest
 	
 	
 	@Test
-	public void testVariance()
+	void testVariance()
 	{
 		Assertions.assertThat(StatisticsMath.variance(Arrays.asList(42, 42, 42))).isEqualTo(0);
 		Assertions.assertThat(StatisticsMath.variance(Arrays.asList(43, 42, 41))).isEqualTo(2.0 / 3.0);
@@ -39,7 +39,7 @@ public class StatisticsMathTest
 	
 	
 	@Test
-	public void testStd()
+	void testStd()
 	{
 		Assertions.assertThat(StatisticsMath.std(Arrays.asList(12, 19, 42, 1337))).isCloseTo(
 				SumatraMath.sqrt(StatisticsMath.variance(Arrays.asList(12, 19, 42, 1337))),

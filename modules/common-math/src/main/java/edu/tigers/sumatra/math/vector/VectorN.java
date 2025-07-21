@@ -4,7 +4,6 @@
 
 package edu.tigers.sumatra.math.vector;
 
-import com.sleepycat.persist.model.Persistent;
 import org.apache.commons.math3.linear.RealVector;
 
 import java.util.function.Function;
@@ -17,7 +16,6 @@ import java.util.function.Function;
  * 
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  */
-@Persistent
 public class VectorN extends AVectorN
 {
 	private double[] data;

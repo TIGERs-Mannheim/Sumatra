@@ -10,118 +10,28 @@ import edu.tigers.sumatra.ids.ETeamColor;
 import edu.tigers.sumatra.math.vector.IVector3;
 import edu.tigers.sumatra.trajectory.TrajectoryWithTime;
 
-import java.util.Map;
 import java.util.Optional;
 
 
 /**
- * @author Nicolai Ommer <nicolai.ommer@gmail.com>
+ * Interface for a (real) robot.
  */
 public interface IBot
 {
-
-	/**
-	 * @return battery level between 0 and 1
-	 */
-	double getBatteryRelative();
-
-
-	/**
-	 * @return battery level
-	 */
-	default double getBatteryAbsolute()
-	{
-		return 0;
-	}
-
-
-	/**
-	 * @return
-	 */
-	double getKickerLevel();
-
-
-	/**
-	 * The absolute maximum kicker level possible for the bot (not the currently set max cap!)
-	 *
-	 * @return [V]
-	 */
-	double getKickerLevelMax();
-
-
-	/**
-	 * Each bot has its own hardware id that uniquely identifies a robot by hardware (mainboard)
-	 *
-	 * @return
-	 */
-	int getHardwareId();
-
-
-	/**
-	 * @return
-	 */
-	boolean isAvailableToAi();
-
-
 	/**
 	 * @return
 	 */
 	EBotType getType();
-
-
-	/**
-	 * @return the botFeatures
-	 */
-	Map<EFeature, EFeatureState> getBotFeatures();
-
-
-	/**
-	 * @return the controlledBy
-	 */
-	String getControlledBy();
-
-
-	/**
-	 * @return the color
-	 */
-	ETeamColor getColor();
-
-
-	EDribblerTemperature getDribblerTemperature();
-
-	EDribbleTractionState getDribbleTractionState();
-
-	EBallObservationState getBallObservationState();
-
-
-	/**
-	 * @return the manualControl
-	 */
-	boolean isBlocked();
-
 
 	/**
 	 * @return the botId
 	 */
 	BotID getBotId();
 
-
 	/**
 	 * @return
 	 */
-	default double getCenter2DribblerDist()
-	{
-		return getBotParams().getDimensions().getCenter2DribblerDist();
-	}
-
-
-	/**
-	 * Get internal state from sensory data
-	 *
-	 * @return
-	 */
-	Optional<BotState> getSensoryState();
-
+	IBotParams getBotParams();
 
 	/**
 	 * @return the current bot trajectory in the coordinate system of the AI (you may have to mirror it when accessing
@@ -132,32 +42,33 @@ public interface IBot
 		return Optional.empty();
 	}
 
+	/**
+	 * @return the controlledBy
+	 */
+	String getControlledBy();
 
 	/**
 	 * @return
 	 */
-	IBotParams getBotParams();
+	boolean isAvailableToAi();
 
 
 	/**
-	 * @return
+	 * @return the color
 	 */
-	boolean isBarrierInterrupted();
+	ETeamColor getColor();
 
 
 	/**
-	 * @return
+	 * @return the manualControl
 	 */
-	ERobotMode getRobotMode();
-
+	boolean isBlocked();
 
 	/**
-	 * Is true iff the bot is completely okay. (Used for automatic interchange)
-	 *
+	 * Simplified health state, mainly used for automatic interchange.
 	 * @return
 	 */
-	boolean isHealthy();
-
+	ERobotHealthState getHealthState();
 
 	/**
 	 * Get version string.
@@ -168,11 +79,4 @@ public interface IBot
 	{
 		return "No versioning";
 	}
-
-	/**
-	 * Get ball state as seen/estimated by robot.
-	 *
-	 * @return Empty if the robot does not detect a ball.
-	 */
-	default Optional<BotBallState> getBallState() { return Optional.empty(); }
 }

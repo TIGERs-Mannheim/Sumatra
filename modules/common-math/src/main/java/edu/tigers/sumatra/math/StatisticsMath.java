@@ -4,25 +4,22 @@
 
 package edu.tigers.sumatra.math;
 
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
+
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.function.ToDoubleFunction;
+import java.util.stream.Stream;
 
 
 /**
  * Utility for statistics math
- *
- * @author nicolai.ommer
  */
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class StatisticsMath
 {
-
-	@SuppressWarnings("unused")
-	private StatisticsMath()
-	{
-	}
-
-
 	/**
 	 * Calculate mean value
 	 *
@@ -35,6 +32,17 @@ public final class StatisticsMath
 		for (Number f : values)
 		{
 			sum += f.doubleValue();
+		}
+		return sum / values.size();
+	}
+
+
+	public static <T> double mean(List<T> values, ToDoubleFunction<T> valueExtractor)
+	{
+		double sum = 0;
+		for (T f : values)
+		{
+			sum += valueExtractor.applyAsDouble(f);
 		}
 		return sum / values.size();
 	}
@@ -84,6 +92,19 @@ public final class StatisticsMath
 	}
 
 
+	public static <T> double variance(List<T> values, ToDoubleFunction<T> valueExtractor)
+	{
+		double mu = mean(values, valueExtractor);
+		List<Number> val2 = new ArrayList<>(values.size());
+		for (T f : values)
+		{
+			double diff = valueExtractor.applyAsDouble(f) - mu;
+			val2.add(diff * diff);
+		}
+		return mean(val2);
+	}
+
+
 	/**
 	 * Calculate standard deviation
 	 *
@@ -93,5 +114,63 @@ public final class StatisticsMath
 	public static <T extends Number> double std(final List<T> values)
 	{
 		return SumatraMath.sqrt(variance(values));
+	}
+
+
+	public static <T> double std(List<T> values, ToDoubleFunction<T> valueExtractor)
+	{
+		return SumatraMath.sqrt(variance(values, valueExtractor));
+	}
+
+
+	/**
+	 * Calculate signal-to-noise ratio
+	 *
+	 * @param values all values
+	 * @return the snr of all values
+	 */
+	public static <T extends Number> double snr(final List<T> values)
+	{
+		double mu = mean(values);
+		double std = std(values);
+		return Math.abs(mu) / std;
+	}
+
+
+	public static <T> double snr(List<T> values, ToDoubleFunction<T> valueExtractor)
+	{
+		double mu = mean(values, valueExtractor);
+		double std = std(values, valueExtractor);
+		return Math.abs(mu) / std;
+	}
+
+
+	/**
+	 * Given a list of probabilities describing if their respective events occurs, calculates the probability that any one of the events occurs:
+	 * pAny = 1 - (1-p1) * (1-p2) * ...
+	 *
+	 * @param probabilities List of probabilities p1, p2, ... in the range of 0..1
+	 * @return
+	 */
+	public static double anyOccurs(List<Double> probabilities)
+	{
+		return anyOccurs(probabilities.stream());
+	}
+
+
+	/**
+	 * Given a list of probabilities describing if their respective events occurs, calculates the probability that any one of the events occurs:
+	 * pAny = 1 - (1-p1) * (1-p2) * ...
+	 *
+	 * @param probabilities List of probabilities p1, p2, ... in the range of 0..1
+	 * @return
+	 */
+	public static double anyOccurs(Stream<Double> probabilities)
+	{
+		// Using a computationally more stable way
+		// pAny = 1 - (1-p1) * (1-p2) * ...
+		// pAny = 1 - exp(log((1-p1) * (1-p2) * ...))
+		// pAny = 1 - exp(log(1-p1) + log(1-p2) + ...)
+		return 1.0 - Math.exp(probabilities.mapToDouble(t -> 1.0 - t).map(Math::log).sum());
 	}
 }

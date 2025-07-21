@@ -8,23 +8,25 @@
  */
 package edu.tigers.sumatra.filter.tracking;
 
-import java.util.Random;
-
 import org.apache.commons.math3.linear.Array2DRowRealMatrix;
 import org.apache.commons.math3.linear.ArrayRealVector;
 import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.linear.RealVector;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+
+import java.util.Random;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
 /**
  * @author AndreR <andre@ryll.cc>
  */
-public class TrackingFilterPosVel1DTest
+class TrackingFilterPosVel1DTest
 {
 	@Test
-	public void constantPositionTest()
+	void constantPositionTest()
 	{
 		final int numSamples = 100;
 		Random gen = new Random(0);
@@ -49,16 +51,16 @@ public class TrackingFilterPosVel1DTest
 		}
 		
 		double[] lastRow = result.getRow(result.getRowDimension() - 1);
-		
-		Assert.assertEquals(lastRow[0], 0, 10);
-		Assert.assertEquals(lastRow[1], 0, 100);
-		Assert.assertEquals(lastRow[2], 0, 10);
-		Assert.assertEquals(lastRow[3], 0, 10);
+
+		assertEquals(0, lastRow[0], 10);
+		assertEquals(0, lastRow[1], 100);
+		assertEquals(0, lastRow[2], 10);
+		assertEquals(0, lastRow[3], 10);
 	}
 	
 	
 	@Test
-	public void constantVelocityTest()
+	void constantVelocityTest()
 	{
 		final int numSamples = 101;
 		final double velocity = 1000; // [mm/s]
@@ -84,16 +86,16 @@ public class TrackingFilterPosVel1DTest
 		}
 		
 		double[] lastRow = result.getRow(result.getRowDimension() - 1);
-		
-		Assert.assertEquals(lastRow[0], velocity, 5);
-		Assert.assertEquals(lastRow[1], velocity, 50);
-		Assert.assertEquals(lastRow[2], 0, 10);
-		Assert.assertEquals(lastRow[3], 0, 10);
+
+		assertEquals(velocity, lastRow[0], 5);
+		assertEquals(velocity, lastRow[1], 50);
+		assertEquals(0, lastRow[2], 10);
+		assertEquals(0, lastRow[3], 10);
 	}
 	
 	
 	@Test
-	public void missingUpdatesTest()
+	void missingUpdatesTest()
 	{
 		final int numSamples = 100;
 		Random gen = new Random(0);
@@ -110,12 +112,12 @@ public class TrackingFilterPosVel1DTest
 			if ((i > 50) && (i < 70))
 			{
 				filter.predict(time);
-				Assert.assertTrue(filter.getPositionUncertainty() > lastUnc);
+				assertTrue(filter.getPositionUncertainty() > lastUnc);
 			} else if (i == 70)
 			{
 				filter.predict(time);
 				filter.correct(pos);
-				Assert.assertTrue(filter.getPositionUncertainty() < lastUnc);
+				assertTrue(filter.getPositionUncertainty() < lastUnc);
 			} else
 			{
 				filter.predict(time);

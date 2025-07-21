@@ -10,8 +10,9 @@ import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.math.vector.Vector2f;
 import edu.tigers.sumatra.math.vector.VectorMath;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
+import lombok.extern.log4j.Log4j2;
 
 import java.util.Optional;
 
@@ -20,17 +21,10 @@ import java.util.Optional;
  * This class groups all Line related calculations.
  * Please consider using the methods from {@link ILine} instead of these static methods!
  */
+@Log4j2
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class LineMath
 {
-	private static final Logger log = LogManager.getLogger(LineMath.class.getName());
-
-
-	@SuppressWarnings("unused")
-	private LineMath()
-	{
-	}
-
-
 	/**
 	 * calculates a point on a line between start and end, that is stepSize away from start
 	 * calculation is based on Intercept theorem (Strahlensatz)

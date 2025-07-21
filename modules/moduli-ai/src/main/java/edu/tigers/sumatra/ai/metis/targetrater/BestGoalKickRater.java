@@ -31,6 +31,7 @@ import lombok.Setter;
 import java.awt.Color;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -57,6 +58,12 @@ public class BestGoalKickRater
 
 	@Configurable(comment = "[0-1] Defender might not be able to drive perfectly as soon as kick detected (1 -> perfect driving)", defValue = "0.9")
 	private static double noneOptimalDriveFactor = 0.9;
+
+	@Configurable(comment = "[0-1] shorten the goal by this factor", defValue = "0.05")
+	private static double shortenGoalFactor = 0.05;
+
+	@Configurable(defValue = "1.3", comment = "Rotation time multiplier")
+	private static double rotationTimeMultiplier = 1.3;
 
 	static
 	{
@@ -89,20 +96,31 @@ public class BestGoalKickRater
 		this.previousBestGoalKickPerBot = bestGoalKickPerBot;
 		this.worldFrame = worldFrame;
 		kickFactory.update(worldFrame);
-		angleRangeRater = AngleRangeRater.forGoal(Geometry.getGoalTheir());
+
+		// we create a shortened goal line to prevent kicks very close to the goal post.
+		var goalStart = Geometry.getGoalTheir().getLineSegment().getPathStart();
+		var goalEnd = Geometry.getGoalTheir().getLineSegment().getPathEnd();
+		var startToEnd = goalEnd.subtractNew(goalStart);
+		var shortenedStart = goalStart.addNew(startToEnd.multiplyNew(shortenGoalFactor / 2.0));
+		var shortenedEnd = goalEnd.addNew(startToEnd.multiplyNew(-shortenGoalFactor / 2.0));
+		var shortenedGoalLineSegment = Lines.segmentFromPoints(shortenedStart, shortenedEnd);
+		angleRangeRater = AngleRangeRater.forLineSegment(shortenedGoalLineSegment);
+
 		angleRangeRater.setNoneOptimalDriveFactor(noneOptimalDriveFactor);
 	}
 
 
-	public Optional<GoalKick> rateKickOrigin(final KickOrigin kickOrigin)
+	public BestGoalKicks rateKickOrigin(final KickOrigin kickOrigin)
 	{
 		angleRangeRater.setObstacles(
-				Stream.concat(worldFrame.getOpponentBots().values().stream(),
+				Stream.concat(
+						worldFrame.getOpponentBots().values().stream(),
 						worldFrame.getTigerBotsAvailable().values().stream()
-								.filter(e -> e.getBotId() != kickOrigin.getShooter())).toList());
-		Optional<GoalKick> goalKick = rateKickOriginComplex(kickOrigin);
-		goalKick.ifPresent(this::drawBestKick);
-		return goalKick;
+								.filter(e -> e.getBotId() != kickOrigin.getShooter())
+				).toList());
+		var goalKicks = rateKickOriginComplex(kickOrigin);
+		goalKicks.goalKick().ifPresent(this::drawBestKick);
+		return goalKicks;
 	}
 
 
@@ -119,31 +137,57 @@ public class BestGoalKickRater
 	}
 
 
-	private Optional<GoalKick> rateKickOriginComplex(final KickOrigin kickOrigin)
+	private BestGoalKicks rateKickOriginComplex(final KickOrigin kickOrigin)
 	{
 		var data = generateBestGoalKickRaterData(kickOrigin);
 
 		List<GoalKick> goalKicks = new ArrayList<>();
+		List<GoalKick> redirectGoalKicks = new ArrayList<>();
 
-		goalKicks.addAll(simulateRotation(ERotationDirection.CLOCKWISE, data));
-		goalKicks.addAll(simulateRotation(ERotationDirection.COUNTER_CLOCKWISE, data));
+		var goalKickCandidatesClockwise = simulateRotation(ERotationDirection.CLOCKWISE, data);
+		goalKicks.addAll(goalKickCandidatesClockwise.directGoalKicks);
+		redirectGoalKicks.addAll(goalKickCandidatesClockwise.redirectGoalKicks);
+
+		var goalKickCandidatesCounterClockwise = simulateRotation(ERotationDirection.COUNTER_CLOCKWISE, data);
+		goalKicks.addAll(goalKickCandidatesCounterClockwise.directGoalKicks);
+		redirectGoalKicks.addAll(goalKickCandidatesCounterClockwise.redirectGoalKicks);
+
+		var redirectGoalKicksFiltered = redirectGoalKicks.stream()
+				.filter(e -> calcRotationTime(data, e.getRatedTarget()) * rotationTimeMultiplier < data.kickOrigin.getImpactTime())
+				.toList();
+
 		shapes.addAll(angleRangeRater.createDebugShapes());
 
 		shapes
-				.add(new DrawableAnnotation(kickOrigin.getPos(),
-						String.format("Found %d GoalKickTargets", goalKicks.size())).withOffset(Vector2f.fromY(200)));
+				.add(new DrawableAnnotation(
+						kickOrigin.getPos(),
+						String.format("Found %d GoalKickTargets", goalKicks.size())
+				).withOffset(Vector2f.fromY(200)));
 		var closestPerfectGoalKick = goalKicks.stream()
 				.filter(goalKick -> goalKick.getRatedTarget().getScore() >= 1.0)
 				.min(Comparator.comparingDouble(goalKick -> calcRotationTime(data, goalKick.getRatedTarget())));
 
-		return closestPerfectGoalKick.or(
+		var closestPerfectRedirectGoalKick = redirectGoalKicksFiltered.stream()
+				.filter(goalKick -> goalKick.getRatedTarget().getScore() >= 1.0)
+				.min(Comparator.comparingDouble(goalKick -> calcRotationTime(data, goalKick.getRatedTarget())));
+
+		var bestGoalKick = closestPerfectGoalKick.or(
 				() -> goalKicks.stream().max(Comparator.comparingDouble(goalKick -> goalKick.getRatedTarget().getScore()))
 		);
+
+		var bestRedirectGoalKick = closestPerfectRedirectGoalKick.or(
+				() -> redirectGoalKicksFiltered.stream()
+						.max(Comparator.comparingDouble(goalKick -> goalKick.getRatedTarget().getScore()))
+		);
+
+		return new BestGoalKicks(bestGoalKick, bestRedirectGoalKick);
 	}
 
 
-	private GoalKick generateGoalKick(final KickOrigin kickOrigin, final IRatedTarget ratedTarget,
-			final double aimingTolerance)
+	private GoalKick generateGoalKick(
+			final KickOrigin kickOrigin, final IRatedTarget ratedTarget,
+			final double aimingTolerance
+	)
 	{
 		kickFactory.setAimingTolerance(aimingTolerance);
 		return new GoalKick(
@@ -163,32 +207,48 @@ public class BestGoalKickRater
 
 	private BestGoalKickRaterData generateBestGoalKickRaterData(final KickOrigin kickOrigin)
 	{
-
 		final ITrackedBot bot = worldFrame.getBot(kickOrigin.getShooter());
 		final double botCurrentRotation = bot.getAngleByTime(0);
 		return new BestGoalKickRaterData(kickOrigin, bot, botCurrentRotation);
 	}
 
 
-	private List<GoalKick> simulateRotation(final ERotationDirection wantedRotationDirection,
-			final BestGoalKickRaterData data)
+	private GoalKickCandidates simulateRotation(
+			final ERotationDirection wantedRotationDirection,
+			final BestGoalKickRaterData data
+	)
 	{
 		var step = 0;
 		List<GoalKick> goalKicks = new ArrayList<>();
+		List<GoalKick> redirectGoalKicks = new ArrayList<>();
 		for (var angle : generateSimulationAngleSteps(wantedRotationDirection, data))
 		{
-			var ratedTarget = getReachableRatedTargetForAngle(wantedRotationDirection, data, angle);
+			var ratedTargets = getReachableRatedTargetForAngle(wantedRotationDirection, data, angle);
+
+			// get best max score target for direct kick
+			var ratedTarget = ratedTargets.stream().max(Comparator.comparingDouble(IRatedTarget::getScore));
+
+			// get max score target for redirect
+			var ratedRedirectTarget = ratedTargets.stream()
+					.filter(e -> isBallRedirectReasonable(data.kickOrigin, e.getTarget()))
+					.max(Comparator.comparingDouble(IRatedTarget::getScore));
+
 			drawSimStep(data.kickOrigin.getPos(), ratedTarget.orElse(null), angle, calcRotationTime(data, angle), step);
 			ratedTarget.ifPresent(
 					target -> goalKicks.add(generateGoalKick(data.kickOrigin, target, calcAimingTolerance(target))));
+
+			ratedRedirectTarget.ifPresent(
+					target -> redirectGoalKicks.add(generateGoalKick(data.kickOrigin, target, calcAimingTolerance(target))));
 			step++;
 		}
-		return goalKicks;
+		return new GoalKickCandidates(goalKicks, redirectGoalKicks);
 	}
 
 
-	private List<Double> generateSimulationAngleSteps(final ERotationDirection wantedRotationDirection,
-			final BestGoalKickRaterData data)
+	private List<Double> generateSimulationAngleSteps(
+			final ERotationDirection wantedRotationDirection,
+			final BestGoalKickRaterData data
+	)
 	{
 		final IVector2 firstReachedGoalPost = wantedRotationDirection == ERotationDirection.COUNTER_CLOCKWISE ?
 				Geometry.getGoalTheir().getRightPost() :
@@ -211,45 +271,53 @@ public class BestGoalKickRater
 							.diffAbs(botAngle, origin2secondAngle) ?
 							botAngle :
 							origin2firstAngle,
-					origin2secondAngle, maxIterationsForPrediction);
+					origin2secondAngle, maxIterationsForPrediction
+			);
 		}
 		return List.of();
 	}
 
 
-	private boolean isTurnReasonable(ERotationDirection wantedRotationDirection, double botAngle,
+	private boolean isTurnReasonable(
+			ERotationDirection wantedRotationDirection, double botAngle,
 			double origin2firstAngle,
-			double origin2secondAngle)
+			double origin2secondAngle
+	)
 	{
 		return AngleMath.rotationDirection(botAngle, origin2firstAngle) == wantedRotationDirection
 				|| AngleMath.rotationDirection(botAngle, origin2secondAngle) == wantedRotationDirection;
 	}
 
 
-	private void drawSimStep(final IVector2 origin, final IRatedTarget target, final double angle,
-			final double time, final int step)
+	private void drawSimStep(
+			final IVector2 origin, final IRatedTarget target, final double angle,
+			final double time, final int step
+	)
 	{
 		if (target != null)
 		{
 			ILineSegment line = Lines.segmentFromPoints(origin, target.getTarget());
 			shapes.add(new DrawableLine(line, Color.BLACK));
-			shapes.add(new DrawableAnnotation(line.getPathEnd(),
+			shapes.add(new DrawableAnnotation(
+					line.getPathEnd(),
 					String.format("%d: ", step) + DF.format(target.getScore()) + " | " + DF.format(angle) + " | " + DF
-							.format(time)).withOffset(Vector2f.fromX(100.0)));
+							.format(time)
+			).withOffset(Vector2f.fromX(100.0)));
 		}
 	}
 
 
-	private Optional<IRatedTarget> getReachableRatedTargetForAngle(
+	private List<IRatedTarget> getReachableRatedTargetForAngle(
 			final ERotationDirection botRotationDirection, final BestGoalKickRaterData data,
-			final double targetAngle)
+			final double targetAngle
+	)
 	{
 		final double timeToKick = calcRotationTime(data, targetAngle);
 		setAngleRangeRaterTimeToKick(data, timeToKick);
 		var potentialGoalTime = potentialGoalTimeCalc(data, timeToKick);
 		if (waitTime - potentialGoalTime > 0)
 		{
-			return Optional.empty();
+			return Collections.emptyList();
 		}
 		var reachableTargets = angleRangeRater.rateMultiple(data.kickOrigin.getPos()).stream()
 				.filter(ratedTarget -> willRatedTargetBeReached(botRotationDirection, data, targetAngle, ratedTarget))
@@ -258,11 +326,8 @@ public class BestGoalKickRater
 		var closestPerfectTarget = reachableTargets.stream()
 				.filter(target -> target.getScore() >= 1.0)
 				.min(Comparator.comparingDouble(target -> calcRotationTime(data, target)));
-		if (closestPerfectTarget.isPresent())
-		{
-			return closestPerfectTarget;
-		}
-		return reachableTargets.stream().max(Comparator.comparingDouble(IRatedTarget::getScore));
+
+		return closestPerfectTarget.map(List::of).orElse(reachableTargets);
 	}
 
 
@@ -271,12 +336,14 @@ public class BestGoalKickRater
 		final double freeTimeToRotate = Double.isInfinite(data.kickOrigin.getImpactTime()) ?
 				0.0 :
 				data.kickOrigin.getImpactTime();
-		var rotationTime = Math.max(0.0, timeToKick - freeTimeToRotate);
-		return rotationTime + freeTimeToRotate;
+		return Math.max(timeToKick, freeTimeToRotate);
 	}
 
-	private boolean willRatedTargetBeReached(final ERotationDirection botRotationDirection,
-			final BestGoalKickRaterData data, final double futureBotAngle, final IRatedTarget ratedTarget)
+
+	private boolean willRatedTargetBeReached(
+			final ERotationDirection botRotationDirection,
+			final BestGoalKickRaterData data, final double futureBotAngle, final IRatedTarget ratedTarget
+	)
 	{
 		final double targetAngle = Vector2.fromPoints(data.kickOrigin.getPos(), ratedTarget.getTarget()).getAngle();
 
@@ -286,8 +353,10 @@ public class BestGoalKickRater
 	}
 
 
-	private boolean isCoveredDuringRotation(ERotationDirection botRotationDirection, BestGoalKickRaterData data,
-			double futureBotAngle, double targetAngle)
+	private boolean isCoveredDuringRotation(
+			ERotationDirection botRotationDirection, BestGoalKickRaterData data,
+			double futureBotAngle, double targetAngle
+	)
 	{
 		return AngleMath.rotationDirection(data.botCurrentAngle, targetAngle) == botRotationDirection
 				&& AngleMath.rotationDirection(futureBotAngle, targetAngle) != botRotationDirection;
@@ -330,15 +399,26 @@ public class BestGoalKickRater
 					.orElse(false);
 		}
 
+		if (Double.isInfinite(kickOrigin.getImpactTime()))
+		{
+			// ball is not moving. Therefore, it cannot be redirected!
+			return false;
+		}
+
 		var originToBall = worldFrame.getBall().getPos().subtractNew(kickOrigin.getPos());
 		var originToTarget = target.subtractNew(kickOrigin.getPos());
 		var redirectAngle = originToBall.angleToAbs(originToTarget).orElse(Math.PI);
-		double maxAngle = maximumReasonableRedirectAngle - (couldBeRedirected ? 0 : 0.3);
+		double maxAngle = maximumReasonableRedirectAngle - (couldBeRedirected ? 0 : 0.1);
 		return redirectAngle <= maxAngle;
 	}
 
 
 	private record BestGoalKickRaterData(KickOrigin kickOrigin, ITrackedBot bot, double botCurrentAngle)
 	{
+	}
+
+	private record GoalKickCandidates(List<GoalKick> directGoalKicks, List<GoalKick> redirectGoalKicks)
+	{
+
 	}
 }

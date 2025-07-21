@@ -4,7 +4,6 @@
 
 package edu.tigers.sumatra.drawable;
 
-import com.sleepycat.persist.model.Persistent;
 import org.apache.commons.lang.builder.EqualsBuilder;
 import org.apache.commons.lang.builder.HashCodeBuilder;
 import org.apache.commons.lang.builder.ToStringBuilder;
@@ -21,7 +20,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 /**
  * Data structure that contains shapes, organized in layers.
  */
-@Persistent
 public class ShapeMap
 {
 	private final Map<String, ShapeLayer> categories;
@@ -148,20 +146,11 @@ public class ShapeMap
 		DEBUG_PERSIST
 	}
 
-	@Persistent
 	public static class ShapeLayer implements Comparable<ShapeLayer>
 	{
 		final IShapeLayerIdentifier identifier;
 		final List<IDrawableShape> shapes;
 		boolean inverted = false;
-
-
-		@SuppressWarnings("unused")
-		private ShapeLayer()
-		{
-			identifier = ShapeLayerIdentifier.builder().build();
-			shapes = Collections.emptyList();
-		}
 
 
 		/**

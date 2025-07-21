@@ -27,14 +27,10 @@ public class FreeSkirmishRole extends ARole
 		@Override
 		public void doEntryActions()
 		{
-			IVector2 target = getAiFrame().getTacticalField().getSkirmishInformation().getSupportiveCircleCatchPos();
-			double angle = 0;
-			if (target != null)
-			{
-				IVector2 ballToTarget = target.subtractNew(getWFrame().getBall().getPos());
-				IVector2 meToBall = getWFrame().getBall().getPos().subtractNew(getPos());
-				angle = meToBall.angleTo(ballToTarget).orElse(0.0);
-			}
+			IVector2 target = getAiFrame().getTacticalField().getSkirmishRipFreeTarget();
+			IVector2 ballToTarget = target.subtractNew(getWFrame().getBall().getPos());
+			IVector2 meToBall = getWFrame().getBall().getPos().subtractNew(getPos());
+			double angle = meToBall.angleTo(ballToTarget).orElse(0.0);
 
 			RotationSkill skill;
 			if (angle > 0)

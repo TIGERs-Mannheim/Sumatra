@@ -13,6 +13,8 @@ import edu.tigers.sumatra.ids.AObjectID;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.SumatraMath;
 import edu.tigers.sumatra.math.line.ILineSegment;
+import edu.tigers.sumatra.math.line.Lines;
+import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
 
 import java.util.Collections;
@@ -30,14 +32,17 @@ import java.util.stream.Collectors;
  */
 public class DesiredDefendersCalcUtil
 {
-	@Configurable(comment = "Min threshold [mm]", defValue = "140.0")
-	private static double interceptionDistanceHysteresisMin = 140.0;
+	@Configurable(comment = " [mm] Min threshold - multiplied with num bots requested", defValue = "70.0")
+	private static double interceptionDistanceHysteresisMinPerBot = 70.0;
 
 	@Configurable(comment = "Min + this [mm] * botVel [m/s] is the threshold for switching to another threat", defValue = "300.0")
 	private static double interceptionDistanceHysteresis = 300.0;
 
 	@Configurable(comment = "[%] maximum portion of the interception rating influenced by the velocity", defValue = "0.67")
 	private static double interceptionRatingMaxVelocityPortion = 0.67;
+
+	@Configurable(comment = "[mm] Distance to start reducing threat velocity impact", defValue = "2000.0")
+	private static double threatVelocityImpactReductionDistance = 2000.0;
 
 	static
 	{
@@ -64,7 +69,7 @@ public class DesiredDefendersCalcUtil
 		{
 			return Collections.emptySet();
 		}
-		return interceptionRatings(threat, remainingDefenders).stream()
+		return interceptionRatings(threat, remainingDefenders, numDefenders).stream()
 				.sorted(Comparator.comparingDouble(InterceptionRating::adjustedDistance))
 				.limit(numDefenders)
 				.map(InterceptionRating::defender)
@@ -94,8 +99,8 @@ public class DesiredDefendersCalcUtil
 	}
 
 
-	private List<InterceptionRating> interceptionRatings(final IDefenseThreat threat,
-			final List<BotID> remainingDefenders)
+	private List<InterceptionRating> interceptionRatings(IDefenseThreat threat, List<BotID> remainingDefenders,
+			int numDefenders)
 	{
 		final ILineSegment protectionLine = threat.getProtectionLine()
 				.orElseGet(() -> getThreatDefendingLineForCenterBack(threat.getThreatLine()));
@@ -103,7 +108,7 @@ public class DesiredDefendersCalcUtil
 		return remainingDefenders.stream()
 				.map(botID -> getAiFrame().getWorldFrame().getBot(botID))
 				.filter(Objects::nonNull)
-				.map(bot -> rateInterceptability(threat, protectionLine, bot))
+				.map(bot -> rateInterceptability(threat, protectionLine, bot, numDefenders))
 				.toList();
 	}
 
@@ -117,29 +122,62 @@ public class DesiredDefendersCalcUtil
 	}
 
 
-	private InterceptionRating rateInterceptability(IDefenseThreat threat, ILineSegment protectionLine, ITrackedBot bot)
+	private ILineSegment getDefenderToThreatLine(IDefenseThreat threat, ILineSegment protectionLine, IVector2 botPos)
 	{
-		double rawDistance;
 		if (protectionLine.getLength() > 1)
 		{
-			rawDistance = protectionLine.distanceTo(bot.getPos());
+			return Lines.segmentFromPoints(botPos, protectionLine.closestPointOnPath(botPos));
 		} else
 		{
-			rawDistance = threat.getPos().distanceTo(bot.getPos());
+			return Lines.segmentFromPoints(botPos, threat.getPos());
 		}
+	}
 
-		double adjusted = rawDistance - assignedLastFrameBonus(threat, bot);
 
-		var botVel = bot.getVel().normalizeNew();
-		var threatVel = threat.getVel().normalizeNew();
+	private double rawDistanceFromDefenderToThreatLine(ILineSegment defenderToThreatLine)
+	{
+		var intersectionsWithPenaltyArea = Geometry.getPenaltyAreaOur().intersectPerimeterPath(defenderToThreatLine);
+		if (intersectionsWithPenaltyArea.size() == 2)
+		{
+			// Distances within our PenaltyArea count twice
+			return defenderToThreatLine.getLength() + intersectionsWithPenaltyArea.getFirst()
+					.distanceTo(intersectionsWithPenaltyArea.getLast());
+		}
+		return defenderToThreatLine.getLength();
+	}
+
+
+	private IVector2 futureMovementDirectionRelevantForDefense(ILineSegment defenderToThreat, IVector2 threatVelocity)
+	{
+		var threatVelocityImpact = 1 - SumatraMath.cap(
+				(defenderToThreat.getLength() - threatVelocityImpactReductionDistance)
+						/ threatVelocityImpactReductionDistance, 0, 1);
+
+		return threatVelocity.normalizeNew().multiply(threatVelocityImpact)
+				.add(defenderToThreat.directionVector().normalizeNew().multiplyNew(1 - threatVelocityImpact))
+				.normalizeNew();
+
+	}
+
+
+	private InterceptionRating rateInterceptability(IDefenseThreat threat, ILineSegment protectionLine, ITrackedBot bot,
+			int numDefenders)
+	{
+		var defenderToThreatLine = getDefenderToThreatLine(threat, protectionLine, bot.getPos());
+		var rawDistance = rawDistanceFromDefenderToThreatLine(defenderToThreatLine);
+
+		double adjusted = rawDistance - assignedLastFrameBonus(threat, bot, numDefenders);
+
+		var botMovementDir = bot.getVel().normalizeNew();
+		var futureMovementDir = futureMovementDirectionRelevantForDefense(defenderToThreatLine, threat.getVel());
 		// 1 -> same direction, 0 -> opposite direction
-		var directionFactor = -0.5 * (botVel.scalarProduct(threatVel) + 1);
+		var directionFactor = -0.5 * (botMovementDir.scalarProduct(futureMovementDir) + 1);
 		// Square it to penalize opposite same direction even more
 		directionFactor = directionFactor * directionFactor;
 		// Invert it same direction is good -> 0, opposite is bad -> 1
 		directionFactor = 1 - directionFactor;
 
-		var velocitiesAdded = bot.getVel().getLength() + threatVel.getLength();
+		var velocitiesAdded = bot.getVel().getLength() + futureMovementDir.getLength();
 		// If both are fast or one extremely fast -> up to 2/3 of distance are influenced by velocity direction
 		// If both are slow velocity direction will take close to no influence and overall distance is more important
 		var velocityPortion = interceptionRatingMaxVelocityPortion * SumatraMath.relative(velocitiesAdded, 0, 5);
@@ -155,13 +193,13 @@ public class DesiredDefendersCalcUtil
 	}
 
 
-	private double assignedLastFrameBonus(IDefenseThreat threat, ITrackedBot bot)
+	private double assignedLastFrameBonus(IDefenseThreat threat, ITrackedBot bot, int numDefenders)
 	{
 		if (wasAssignedLastFrame(bot.getBotId(), threat))
 		{
 			// velocity based hysteresis:
 			// slow -> low threshold for changing
-			return interceptionDistanceHysteresisMin
+			return interceptionDistanceHysteresisMinPerBot * numDefenders
 					+ interceptionDistanceHysteresis * bot.getVel().getLength2();
 		}
 		return 0;

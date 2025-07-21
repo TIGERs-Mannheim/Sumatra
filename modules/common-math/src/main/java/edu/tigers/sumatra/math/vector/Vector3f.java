@@ -4,9 +4,6 @@
 
 package edu.tigers.sumatra.math.vector;
 
-import com.sleepycat.persist.model.Persistent;
-
-
 /**
  * Immutable 3-dimensional vector
  *
@@ -17,7 +14,6 @@ import com.sleepycat.persist.model.Persistent;
  * @see IVector3
  * @author Gero
  */
-@Persistent
 public final class Vector3f extends AVector3
 {
 	/** Vector3f(1,0,0) */

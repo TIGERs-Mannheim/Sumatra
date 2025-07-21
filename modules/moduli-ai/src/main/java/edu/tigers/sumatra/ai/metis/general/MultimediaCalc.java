@@ -8,7 +8,7 @@ import edu.tigers.sumatra.ai.metis.offense.strategy.OffensiveStrategy;
 import edu.tigers.sumatra.ai.pandora.plays.EPlay;
 import edu.tigers.sumatra.botmanager.botskills.data.ELedColor;
 import edu.tigers.sumatra.botmanager.botskills.data.ESong;
-import edu.tigers.sumatra.botmanager.botskills.data.MultimediaControl;
+import edu.tigers.sumatra.botmanager.data.MultimediaControl;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.AObjectID;
 import edu.tigers.sumatra.ids.BotID;

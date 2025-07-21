@@ -4,7 +4,6 @@
 
 package edu.tigers.sumatra.drawable;
 
-import com.sleepycat.persist.model.Persistent;
 import edu.tigers.sumatra.math.line.ILineSegment;
 import edu.tigers.sumatra.math.quadrilateral.IQuadrilateral;
 import edu.tigers.sumatra.math.vector.IVector2;
@@ -16,20 +15,12 @@ import java.awt.Graphics2D;
 /**
  * Drawable quadrilateral.
  */
-@Persistent
 public class DrawableQuadrilateral extends ADrawableWithStroke
 {
 
 	private final IQuadrilateral quadrilateral;
 
 	private boolean fill = false;
-
-
-	@SuppressWarnings("unused")
-	private DrawableQuadrilateral()
-	{
-		quadrilateral = null;
-	}
 
 
 	/**

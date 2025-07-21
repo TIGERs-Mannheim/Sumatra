@@ -105,7 +105,7 @@ public class OpponentInterceptionRole extends ARole
 
 			if (smartDistanceCalcAllowedForInterceptor)
 			{
-				double distance = calcDistancToOpponent();
+				double distance = calcDistanceToOpponent();
 				skill.setDistanceToBall(distance);
 			}
 
@@ -116,7 +116,7 @@ public class OpponentInterceptionRole extends ARole
 		}
 
 
-		private double calcDistancToOpponent()
+		private double calcDistanceToOpponent()
 		{
 			final double searchRadius = 1500;
 			Triangle triangle = Triangle.fromCorners(getWFrame().getBall().getPos(), Geometry.getGoalOur().getLeftPost(),

@@ -24,10 +24,9 @@ public class GameLogWriter
 {
 	private static final String GAMELOG_PATH = "data/gamelog";
 	private static final int VERSION = 1;
+	private static final String FILE_TYPE = "SSL_LOG_FILE";
 
 	private DataOutputStream outputStream;
-
-	private final GameLogType fileType;
 
 
 	/**
@@ -37,7 +36,8 @@ public class GameLogWriter
 	{
 		SimpleDateFormat dt = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss");
 		dt.setTimeZone(TimeZone.getDefault());
-		String filename = dt.format(new Date()) + String.format("-%s-%s-%s-vs-%s", matchType, stage, teamYellow, teamBlue);
+		String filename =
+				dt.format(new Date()) + String.format("-%s-%s-%s-vs-%s", matchType, stage, teamYellow, teamBlue);
 		open(filename);
 	}
 
@@ -77,7 +77,7 @@ public class GameLogWriter
 	 * @param fullName
 	 */
 	@SuppressWarnings({ "squid:S2095", "squid:S899" })
-	public void openPath(final String fullName)
+	public synchronized void openPath(final String fullName)
 	{
 		try
 		{
@@ -91,11 +91,13 @@ public class GameLogWriter
 		}
 	}
 
+
 	private void writeHeader() throws IOException
 	{
-		outputStream.writeBytes(fileType.getHeader());
+		outputStream.writeBytes(FILE_TYPE);
 		outputStream.writeInt(VERSION);
 	}
+
 
 	/**
 	 * @return

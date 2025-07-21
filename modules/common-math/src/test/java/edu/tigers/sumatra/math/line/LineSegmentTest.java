@@ -12,7 +12,7 @@ import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.math.vector.Vector2f;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import nl.jqno.equalsverifier.Warning;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static edu.tigers.sumatra.math.line.Lines.segmentFromPoints;
 import static edu.tigers.sumatra.math.vector.Vector2.fromXY;

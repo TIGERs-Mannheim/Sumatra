@@ -4,7 +4,6 @@
 
 package edu.tigers.sumatra.ai.metis.offense.dribble;
 
-import com.sleepycat.persist.model.Persistent;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.circle.ICircle;
 import edu.tigers.sumatra.math.vector.IVector2;
@@ -13,7 +12,6 @@ import lombok.Value;
 
 
 @Value
-@Persistent
 @AllArgsConstructor
 public class DribblingInformation
 {

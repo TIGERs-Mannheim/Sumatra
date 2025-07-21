@@ -4,13 +4,9 @@
 
 package edu.tigers.sumatra.trajectory;
 
-import com.sleepycat.persist.model.Persistent;
-
-
 /**
  * Part of a trajectory
  */
-@Persistent
 class BBTrajectoryPart
 {
 	float tEnd;

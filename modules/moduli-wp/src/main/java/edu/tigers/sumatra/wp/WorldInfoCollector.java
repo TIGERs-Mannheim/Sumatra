@@ -8,7 +8,6 @@ import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
 import com.github.g3force.configurable.IConfigClient;
 import com.github.g3force.configurable.IConfigObserver;
-import edu.tigers.moduli.exceptions.StartModuleException;
 import edu.tigers.sumatra.ball.BallState;
 import edu.tigers.sumatra.bot.BotState;
 import edu.tigers.sumatra.bot.RobotInfo;
@@ -41,7 +40,6 @@ import edu.tigers.sumatra.referee.proto.SslGcRefereeMessage;
 import edu.tigers.sumatra.referee.source.ERefereeMessageSource;
 import edu.tigers.sumatra.util.Safe;
 import edu.tigers.sumatra.vision.AVisionFilter;
-import edu.tigers.sumatra.vision.IVisionFilterObserver;
 import edu.tigers.sumatra.vision.data.FilteredVisionBall;
 import edu.tigers.sumatra.vision.data.FilteredVisionBot;
 import edu.tigers.sumatra.vision.data.FilteredVisionFrame;
@@ -65,7 +63,6 @@ import edu.tigers.sumatra.wp.vis.EWpShapesLayer;
 import lombok.extern.log4j.Log4j2;
 
 import java.awt.Color;
-import java.io.IOException;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -83,7 +80,7 @@ import java.util.stream.Collectors;
  */
 @Log4j2
 public class WorldInfoCollector extends AWorldPredictor
-		implements IRefereeObserver, IVisionFilterObserver, ICamFrameObserver
+		implements IRefereeObserver, ICamFrameObserver
 {
 	private static final ShapeMapSource WP_SHAPE_MAP_SOURCE = ShapeMapSource.of("World Frame");
 	private static final ShapeMapSource VISION_SHAPE_MAP_SOURCE = ShapeMapSource.of("Vision");
@@ -112,18 +109,20 @@ public class WorldInfoCollector extends AWorldPredictor
 		ConfigRegistration.registerClass("wp", WorldInfoCollector.class);
 		String env = SumatraModel.getInstance().getEnvironment();
 		ConfigRegistration.applySpezi("wp", env);
-		ConfigRegistration.registerConfigurableCallback("wp", new IConfigObserver()
-		{
-			@Override
-			public void afterApply(IConfigClient configClient)
-			{
-				String env = SumatraModel.getInstance().getEnvironment();
-				ConfigRegistration.applySpezi("wp", env);
-			}
-		});
+		ConfigRegistration.registerConfigurableCallback(
+				"wp", new IConfigObserver()
+				{
+					@Override
+					public void afterApply(IConfigClient configClient)
+					{
+						String env = SumatraModel.getInstance().getEnvironment();
+						ConfigRegistration.applySpezi("wp", env);
+					}
+				}
+		);
 	}
 
-	private final BerkeleyAutoPauseHook berkeleyAutoPauseHook = new BerkeleyAutoPauseHook();
+	private final AutoPauseHook autoPauseHook = new AutoPauseHook();
 	private final TimestampBasedBuffer<ITrackedBall> ballBuffer = new TimestampBasedBuffer<>(0.3);
 	private final GameStateCalculator gameStateCalculator = new GameStateCalculator();
 	private final WorldFrameVisualization worldFrameVisualization = new WorldFrameVisualization();
@@ -145,7 +144,8 @@ public class WorldInfoCollector extends AWorldPredictor
 		return visionBots.stream()
 				.collect(Collectors.toMap(
 						FilteredVisionBot::getBotID,
-						FilteredVisionBot::toBotState));
+						FilteredVisionBot::toBotState
+				));
 	}
 
 
@@ -154,7 +154,8 @@ public class WorldInfoCollector extends AWorldPredictor
 		return visionBots.stream()
 				.collect(Collectors.toMap(
 						FilteredVisionBot::getBotID,
-						Function.identity()));
+						Function.identity()
+				));
 	}
 
 
@@ -166,7 +167,8 @@ public class WorldInfoCollector extends AWorldPredictor
 				.map(Optional::get)
 				.collect(Collectors.toMap(
 						BotState::getBotId,
-						Function.identity()));
+						Function.identity()
+				));
 	}
 
 
@@ -198,7 +200,8 @@ public class WorldInfoCollector extends AWorldPredictor
 			BotState filterState,
 			BotState internalState,
 			FilteredVisionBot filteredVisionBot,
-			Map<BotID, BotState> botStates)
+			Map<BotID, BotState> botStates
+	)
 	{
 		if (filterState == null && internalState == null)
 		{
@@ -224,17 +227,20 @@ public class WorldInfoCollector extends AWorldPredictor
 
 	private Map<BotID, ITrackedBot> collectTrackedBots(
 			final List<FilteredVisionBot> filteredVisionBots,
-			final Collection<RobotInfo> robotInfo)
+			final Collection<RobotInfo> robotInfo
+	)
 	{
 		Map<BotID, BotState> filteredBotStates = getFilteredBotStates(filteredVisionBots);
 		Map<BotID, BotState> internalBotStates = getInternalBotStates(robotInfo);
 		Map<BotID, FilteredVisionBot> filteredVisionBotMap = getFilteredBots(filteredVisionBots);
 
 		Map<BotID, ITrackedBot> trackedBots = robotInfo.stream()
-				.map(r -> createTrackedBot(r, filteredBotStates.get(r.getBotId()),
+				.map(r -> createTrackedBot(
+						r, filteredBotStates.get(r.getBotId()),
 						internalBotStates.get(r.getBotId()),
 						filteredVisionBotMap.get(r.getBotId()),
-						filteredBotStates))
+						filteredBotStates
+				))
 				.filter(Objects::nonNull)
 				.collect(Collectors.toMap(ITrackedBot::getBotId, Function.identity()));
 		return new HashMap<>(trackedBots);
@@ -250,7 +256,8 @@ public class WorldInfoCollector extends AWorldPredictor
 				.map(robotInfoProvider::getRobotInfo)
 				.collect(Collectors.toMap(
 						RobotInfo::getBotId,
-						Function.identity()));
+						Function.identity()
+				));
 	}
 
 
@@ -385,7 +392,7 @@ public class WorldInfoCollector extends AWorldPredictor
 
 
 	@Override
-	public void startModule() throws StartModuleException
+	public void startModule()
 	{
 		super.startModule();
 
@@ -393,14 +400,7 @@ public class WorldInfoCollector extends AWorldPredictor
 		{
 			int port = getSubnodeConfiguration().getInt("ci-port", 11009);
 			ciGameControllerConnector = new CiGameControllerConnector(port);
-			try
-			{
-				ciGameControllerConnector.start();
-			} catch (IOException e)
-			{
-				log.error("Failed to start game controller", e);
-				ciGameControllerConnector = null;
-			}
+			ciGameControllerConnector.start();
 		}
 	}
 
@@ -426,7 +426,7 @@ public class WorldInfoCollector extends AWorldPredictor
 		if (SumatraModel.getInstance().isModuleLoaded(RecordManager.class))
 		{
 			RecordManager recordManager = SumatraModel.getInstance().getModule(RecordManager.class);
-			recordManager.addHook(berkeleyAutoPauseHook);
+			recordManager.addHook(autoPauseHook);
 		}
 	}
 
@@ -436,7 +436,7 @@ public class WorldInfoCollector extends AWorldPredictor
 		if (SumatraModel.getInstance().isModuleLoaded(RecordManager.class))
 		{
 			RecordManager recordManager = SumatraModel.getInstance().getModule(RecordManager.class);
-			recordManager.removeHook(berkeleyAutoPauseHook);
+			recordManager.removeHook(autoPauseHook);
 		}
 	}
 
@@ -444,7 +444,8 @@ public class WorldInfoCollector extends AWorldPredictor
 	private void registerToVisionFilterModule()
 	{
 		visionFilter = SumatraModel.getInstance().getModule(AVisionFilter.class);
-		visionFilter.addObserver(this);
+		visionFilter.getFilteredVisionFrame().subscribe(getClass().getCanonicalName(), this::onNewFilteredVisionFrame);
+		visionFilter.getFilteredVisionFrame().subscribeClear(getClass().getCanonicalName(), this::reset);
 	}
 
 
@@ -452,7 +453,8 @@ public class WorldInfoCollector extends AWorldPredictor
 	{
 		if (visionFilter != null)
 		{
-			visionFilter.removeObserver(this);
+			visionFilter.getFilteredVisionFrame().unsubscribe(getClass().getCanonicalName());
+			visionFilter.getFilteredVisionFrame().unsubscribeClear(getClass().getCanonicalName());
 		}
 	}
 
@@ -525,8 +527,7 @@ public class WorldInfoCollector extends AWorldPredictor
 	}
 
 
-	@Override
-	public void onNewFilteredVisionFrame(final FilteredVisionFrame filteredVisionFrame)
+	private void onNewFilteredVisionFrame(final FilteredVisionFrame filteredVisionFrame)
 	{
 		processFilteredVisionFrame(filteredVisionFrame);
 		notifyNewShapeMap(lastWFTimestamp, filteredVisionFrame.getShapeMap(), VISION_FILTER_SHAPE_MAP_SOURCE);

@@ -3,6 +3,7 @@
  */
 package edu.tigers.autoreferee;
 
+import edu.tigers.autoreferee.engine.EAutoRefMode;
 import edu.tigers.autoreferee.generic.BotPosition;
 import edu.tigers.autoreferee.module.AutoRefModule;
 import edu.tigers.sumatra.drawable.DrawableBorderText;
@@ -42,11 +43,15 @@ public class AutoRefFrame implements IAutoRefFrame
 	{
 		this.previousFrame = previousFrame;
 		this.worldFrameWrapper = worldFrameWrapper;
+		Color autoRefWarning = SumatraModel.getInstance().getModule(AutoRefModule.class).getMode() == EAutoRefMode.OFF
+				? Color.RED
+				: Color.WHITE;
 		shapes.get(EAutoRefShapesLayer.MODE).add(
 				new DrawableBorderText(
 						Vector2.fromXY(1, 6),
-						"AutoRef: " + SumatraModel.getInstance().getModule(AutoRefModule.class).getMode().toString())
-						.setColor(Color.WHITE));
+						"AutoRef: " + SumatraModel.getInstance().getModule(AutoRefModule.class).getMode().toString()
+				)
+						.setColor(autoRefWarning));
 	}
 
 

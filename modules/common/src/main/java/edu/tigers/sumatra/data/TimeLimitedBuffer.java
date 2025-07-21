@@ -6,8 +6,10 @@ package edu.tigers.sumatra.data;
 
 import lombok.Setter;
 import lombok.Value;
+import lombok.experimental.Accessors;
 
 import java.util.ArrayDeque;
+import java.util.Comparator;
 import java.util.Deque;
 import java.util.List;
 import java.util.Optional;
@@ -22,8 +24,10 @@ public class TimeLimitedBuffer<T>
 {
 	private final Deque<Entry<T>> data = new ArrayDeque<>();
 	@Setter
+	@Accessors(chain = true)
 	private int maxElements;
 	@Setter
+	@Accessors(chain = true)
 	private double maxDuration;
 
 
@@ -61,6 +65,22 @@ public class TimeLimitedBuffer<T>
 		return data.isEmpty() ? Optional.empty() : Optional.of(data.getFirst().value);
 	}
 
+
+	public Optional<T> getClosest(long timestamp)
+	{
+		return data.stream().min(Comparator.comparing(e -> Math.abs(timestamp - e.getTimestamp())))
+				.map(Entry::getValue);
+	}
+
+
+	public Optional<T> getClosest(long timestamp, double threshold)
+	{
+		return data.stream().min(Comparator.comparing(e -> Math.abs(timestamp - e.getTimestamp())))
+				.filter(e -> Math.abs(timestamp - e.getTimestamp()) / 1e9 < threshold)
+				.map(Entry::getValue);
+	}
+
+
 	public T getValuePercentile(double percentile)
 	{
 		return data.stream()
@@ -88,13 +108,14 @@ public class TimeLimitedBuffer<T>
 
 	private void reduceByDuration()
 	{
-		if(data.isEmpty())
+		if (data.isEmpty())
 		{
 			return;
 		}
 
 		reduceByAbsoluteDuration(data.getLast().timestamp);
 	}
+
 
 	public void reduceByAbsoluteDuration(long currentTimestamp)
 	{
@@ -110,10 +131,12 @@ public class TimeLimitedBuffer<T>
 		}
 	}
 
+
 	public void reset()
 	{
 		data.clear();
 	}
+
 
 	@Value
 	private static class Entry<T> implements Comparable<Entry<T>>

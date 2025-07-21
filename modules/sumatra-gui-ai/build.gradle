@@ -22,9 +22,6 @@ dependencies {
     implementation project(':moduli-geometry')
     implementation project(':moduli-wp')
 
-    implementation(libs.com.github.g3force.configurable)
-    implementation(libs.com.github.g3force.instanceables)
-
     implementation(libs.org.apache.logging.log4j.log4j.api)
 
     implementation(libs.commons.lang)
@@ -32,4 +29,6 @@ dependencies {
     implementation(libs.org.swinglabs.swingx.swingx.all)
     implementation(libs.com.miglayout.miglayout.swing)
     implementation(libs.com.miglayout.miglayout.core)
+    implementation(libs.jfreechart)
+
 }

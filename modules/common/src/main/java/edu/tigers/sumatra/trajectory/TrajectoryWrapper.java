@@ -3,7 +3,6 @@
  */
 package edu.tigers.sumatra.trajectory;
 
-import com.sleepycat.persist.model.Persistent;
 import lombok.RequiredArgsConstructor;
 
 import java.util.List;
@@ -14,7 +13,6 @@ import java.util.List;
  *
  * @param <R> return type
  */
-@Persistent
 @RequiredArgsConstructor
 public class TrajectoryWrapper<R> implements ITrajectory<R>
 {
@@ -22,15 +20,6 @@ public class TrajectoryWrapper<R> implements ITrajectory<R>
 	private final ITrajectory<R> traj;
 	private final double tStart;
 	private final double tEnd;
-
-
-	@SuppressWarnings("unused") // berkeley
-	private TrajectoryWrapper()
-	{
-		traj = new StubTrajectory<>();
-		tStart = 0;
-		tEnd = 0;
-	}
 
 
 	private double getTime(final double t)

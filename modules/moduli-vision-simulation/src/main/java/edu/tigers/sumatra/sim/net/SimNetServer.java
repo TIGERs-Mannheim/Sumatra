@@ -127,7 +127,8 @@ public class SimNetServer
 
 		for (SimulatedBot bot : simState.getSimulatedBots().values())
 		{
-			var vel = Vector3f.from2d(bot.getState().getVel().getXYVector().multiplyNew(1e-3), bot.getState().getVel().z());
+			var vel = Vector3f.from2d(bot.getState().getVel().getXYVector().multiplyNew(1e-3),
+					bot.getState().getVel().z());
 			stateBuilder.addBotState(SimState.SimBotState.newBuilder()
 					.setBotId(LocalToProtoMapper.mapBotId(bot.getBotId()))
 					.setPose(LocalToProtoMapper.mapPose(bot.getState().getPose()))
@@ -195,7 +196,14 @@ public class SimNetServer
 				}
 			} catch (IOException e)
 			{
-				log.warn("Could not read from client", e);
+				if (e.getMessage().equalsIgnoreCase("Socket closed") ||
+						e.getMessage().equalsIgnoreCase("Socket is closed"))
+				{
+					log.debug("Socket closed");
+				} else
+				{
+					log.warn("Could not read from client", e);
+				}
 				closeClientSocket(socket);
 			}
 		}
@@ -252,6 +260,7 @@ public class SimNetServer
 		clientSockets.removeIf(Socket::isClosed);
 	}
 
+
 	private class Listener implements Runnable
 	{
 		private ServerSocket serverSocket;
@@ -293,7 +302,7 @@ public class SimNetServer
 				serverSocket = new ServerSocket(port);
 			} catch (IOException e)
 			{
-				log.error("Could not listen for simulation clients on port " + port, e);
+				log.error("Could not listen for simulation clients on port {}", port, e);
 			}
 		}
 
@@ -320,12 +329,12 @@ public class SimNetServer
 			{
 				if (simRegister.getTeamColorList().contains(LocalToProtoMapper.mapTeamColor(teamColor)))
 				{
-					log.warn("Someone tried to register with team color " + teamColor + ", but that is already registered");
+					log.warn("Someone tried to register with team color {}, but that is already registered", teamColor);
 					socket.close();
 					return;
 				}
 			}
-			log.info("Someone registered for team colors " + simRegister.getTeamColorList());
+			log.info("Someone registered for team colors {}", simRegister.getTeamColorList());
 			simRegister.getTeamColorList().stream().map(ProtoToLocalMapper::mapTeamColor)
 					.forEach(t -> registeredTeams.put(t, socket));
 
@@ -351,6 +360,7 @@ public class SimNetServer
 	{
 		observers.remove(o);
 	}
+
 
 	public interface ISimNetObserver
 	{

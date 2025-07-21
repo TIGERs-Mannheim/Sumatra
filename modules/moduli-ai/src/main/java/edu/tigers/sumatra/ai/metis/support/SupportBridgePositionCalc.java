@@ -25,8 +25,8 @@ import edu.tigers.sumatra.math.line.Lines;
 import edu.tigers.sumatra.math.vector.IVector;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
-import edu.tigers.sumatra.movingrobot.AcceleratingRobotFactory;
 import edu.tigers.sumatra.movingrobot.IMovingRobot;
+import edu.tigers.sumatra.movingrobot.MovingRobotFactory;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -216,7 +216,7 @@ public class SupportBridgePositionCalc extends ACalculator
 		Map<BotID, IMovingRobot> movingRobots = getAiFrame().getWorldFrame().getOpponentBots().values().stream()
 				.filter(b -> b.getPos().distanceTo(center) < radius)
 				.collect(Collectors.toMap(ITrackedBot::getBotId,
-						bot -> AcceleratingRobotFactory.create(
+						bot -> MovingRobotFactory.acceleratingRobot(
 								bot.getPos(),
 								bot.getVel(),
 								bot.getRobotInfo().getBotParams().getMovementLimits().getVelMax(),

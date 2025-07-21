@@ -6,17 +6,23 @@ package edu.tigers.sumatra.ai.metis.offense;
 
 import com.github.g3force.configurable.Configurable;
 import edu.tigers.sumatra.ai.metis.ACalculator;
+import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
 import edu.tigers.sumatra.ai.metis.ballinterception.RatedBallInterception;
 import edu.tigers.sumatra.ai.metis.ballresponsibility.EBallResponsibility;
 import edu.tigers.sumatra.ai.metis.botdistance.BotDistance;
+import edu.tigers.sumatra.drawable.DrawableAnnotation;
+import edu.tigers.sumatra.drawable.DrawableArrow;
+import edu.tigers.sumatra.drawable.DrawableCircle;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.AngleMath;
 import edu.tigers.sumatra.math.Hysteresis;
+import edu.tigers.sumatra.math.SumatraMath;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.pathfinder.TrajectoryGenerator;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
+import java.awt.Color;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -53,8 +59,10 @@ public class BallHandlingBotCalc extends ACalculator
 	private final Supplier<Map<BotID, RatedBallInterception>> ballInterceptions;
 	private final Supplier<List<BotDistance>> tigersToBallDist;
 
-	private Hysteresis ballSpeedHysteresis = new Hysteresis(OffensiveConstants.getAbortBallInterceptionVelThreshold(),
-			OffensiveConstants.getBallIsRollingThreshold());
+	private Hysteresis ballSpeedHysteresis = new Hysteresis(
+			OffensiveConstants.getAbortBallInterceptionVelThreshold(),
+			OffensiveConstants.getBallIsRollingThreshold()
+	);
 
 	@Getter
 	private List<BotID> ballHandlingBots;
@@ -93,7 +101,8 @@ public class BallHandlingBotCalc extends ACalculator
 		{
 			// in this case a interception exists. However in some cases we rather want to activate another bot that
 			// can use approach and stop ball.
-			var fastestRobotThatCanReachCurrentBallLocation = potentialOffensiveBots.get().stream()
+			var fastestRobotThatCanReachCurrentBallLocation = potentialOffensiveBots.get()
+					.stream()
 					.filter(bot -> ballMovesAwayFromBot(getWFrame().getBot(bot).getPos()))
 					.min(Comparator.comparingDouble(
 							bot -> TrajectoryGenerator.generatePositionTrajectory(getWFrame().getBot(bot), getBall().getPos())
@@ -103,10 +112,17 @@ public class BallHandlingBotCalc extends ACalculator
 			if (fastestRobotThatCanReachCurrentBallLocation.isPresent() && getBall().getVel().getLength() < 2.0)
 			{
 				var bot = fastestRobotThatCanReachCurrentBallLocation.get();
-				double distance = bot.getPos().distanceTo(getBall().getPos());
+				double distanceInMeters = bot.getPos().distanceTo(getBall().getPos()) / 1000.0;
 
-				// we assume we can catch up to the ball with 0.5m/s
-				double timeToCatchUp = distance / estimatedApproachAndStopBallCatchUpSpeed + approachAndStopBallTimePenalty;
+				getShapes(EAiShapesLayer.OFFENSE_PROTECT_KICK).add(
+						new DrawableArrow(bot.getPos(), getBall().getPos().subtractNew(bot.getPos())));
+
+				// we assume we can catch up to the ball with estimatedApproachAndStopBallCatchUpSpeed
+				double timeToCatchUp =
+						distanceInMeters / estimatedApproachAndStopBallCatchUpSpeed + approachAndStopBallTimePenalty;
+
+				getShapes(EAiShapesLayer.OFFENSE_PROTECT_KICK).add(
+						new DrawableAnnotation(bot.getPos(), String.format("%.2f", timeToCatchUp)));
 
 				var interceptions = findFastestInterceptableInterceptions(ballInterceptions.get());
 				if (!interceptions.isEmpty())
@@ -134,13 +150,15 @@ public class BallHandlingBotCalc extends ACalculator
 		tigersToBallDist.get().forEach(d -> closestBots.put(d.getBotId(), d));
 
 		double distHysteresis = 500;
-		ballHandlingBots.stream()
+		ballHandlingBots
+				.stream()
 				.map(b -> getWFrame().getBot(b))
 				.filter(Objects::nonNull)
 				.map(b -> new BotDistance(b.getBotId(), b.getPos().distanceTo(getBall().getPos()) - distHysteresis))
 				.forEach(d -> closestBots.put(d.getBotId(), d));
 
-		return closestBots.values().stream()
+		return closestBots.values()
+				.stream()
 				.filter(d -> potentialOffensiveBots.get().contains(d.getBotId()))
 				.min(Comparator.comparingDouble(BotDistance::getDist))
 				.map(BotDistance::getBotId)
@@ -151,7 +169,8 @@ public class BallHandlingBotCalc extends ACalculator
 
 	private List<BotID> getBestPrimariesForNonInterceptableBall()
 	{
-		return getBotToBallTimes().entrySet().stream()
+		return getBotToBallTimes().entrySet()
+				.stream()
 				.sorted(Comparator.comparingDouble(Map.Entry::getValue))
 				.limit(numBotsForNonInterceptableBall)
 				.map(Map.Entry::getKey)
@@ -165,7 +184,21 @@ public class BallHandlingBotCalc extends ACalculator
 		for (var botId : potentialOffensiveBots.get())
 		{
 			var bot = getWFrame().getBot(botId);
-			var trajectoryTime = TrajectoryGenerator.generatePositionTrajectory(bot, getBall().getPos()).getTotalTime();
+
+			IVector2 dest;
+			if (getBall().getVel().getLength() < 0.5)
+			{
+				dest = getBall().getPos();
+			} else
+			{
+				var wantedVelocity = getBall().getVel().addMagnitude(0.6);
+				var velLength = wantedVelocity.getLength2();
+				var breakDistance =
+						1000 * (0.5f * velLength * velLength / getWFrame().getBot(botId).getMoveConstraints().getAccMax());
+				dest = getBall().getPos().addNew(wantedVelocity.scaleToNew(breakDistance));
+			}
+
+			var trajectoryTime = TrajectoryGenerator.generatePositionTrajectory(bot, dest).getTotalTime();
 			if (bot.getBallContact().hadRecentContact())
 			{
 				trajectoryTime = 0;
@@ -177,6 +210,13 @@ public class BallHandlingBotCalc extends ACalculator
 				trajectoryTime = Math.max(0, trajectoryTime - hystTimeOffsetForNonMovingBall);
 			}
 			trajectoryTimes.put(bot.getBotId(), trajectoryTime);
+
+			var dc = new DrawableCircle(dest, 50).setFill(true).setColor(Color.BLUE);
+			var da = new DrawableAnnotation(bot.getPos(), String.format("%.2f", trajectoryTime));
+			var dl = new DrawableArrow(bot.getPos(), dest.subtractNew(bot.getPos())).setColor(Color.BLUE);
+			getShapes(EAiShapesLayer.OFFENSE_BALL_INTERCEPTION).add(dc);
+			getShapes(EAiShapesLayer.OFFENSE_BALL_INTERCEPTION).add(da);
+			getShapes(EAiShapesLayer.OFFENSE_BALL_INTERCEPTION).add(dl);
 		}
 		return trajectoryTimes;
 	}
@@ -202,20 +242,32 @@ public class BallHandlingBotCalc extends ACalculator
 
 
 	private List<RatedBallInterception> findFastestInterceptableInterceptions(
-			Map<BotID, RatedBallInterception> interceptions)
+			Map<BotID, RatedBallInterception> interceptions
+	)
 	{
-		return interceptions
-				.values()
+		return interceptions.values()
 				.stream()
-				.sorted(Comparator.comparing(this::getBallContactTimeWithHyst))
+				.sorted(this::compareRatedBallInterception)
 				.toList();
+	}
+
+
+	private int compareRatedBallInterception(RatedBallInterception it1, RatedBallInterception it2)
+	{
+		var ballContactTime1 = getBallContactTimeWithHyst(it1);
+		var ballContactTime2 = getBallContactTimeWithHyst(it2);
+
+		if (SumatraMath.isEqual(ballContactTime1, ballContactTime2))
+		{
+			return it1.getMinCorridorSlackTime() < it2.getMinCorridorSlackTime() ? -1 : 1;
+		}
+		return ballContactTime1 < ballContactTime2 ? -1 : 1;
 	}
 
 
 	private double getBallContactTimeWithHyst(RatedBallInterception ballInterception)
 	{
-		var filteredInterceptionsFromlastFrame = getAiFrame().getPrevFrame().getTacticalField()
-				.getBallInterceptions()
+		var filteredInterceptionsFromlastFrame = getAiFrame().getPrevFrame().getTacticalField().getBallInterceptions()
 				.values()
 				.stream()
 				.sorted(Comparator.comparing(i -> i.getBallInterception().getBallContactTime()))
@@ -223,10 +275,10 @@ public class BallHandlingBotCalc extends ACalculator
 				.limit(2)
 				.toList();
 
-		if (filteredInterceptionsFromlastFrame
-				.stream()
+		if (filteredInterceptionsFromlastFrame.stream()
 				.filter(e -> ballHandlingBots.contains(e.getBallInterception().getBotID()))
-				.map(i -> i.getBallInterception().getBotID()).toList()
+				.map(i -> i.getBallInterception().getBotID())
+				.toList()
 				.contains(ballInterception.getBallInterception().getBotID()))
 		{
 			return Math.max(0, ballInterception.getBallInterception().getBallContactTime() - hystTimeOffsetForMovingBall);

@@ -17,6 +17,7 @@ public enum EAttackerState implements IEvent
 	FREE_KICK,
 	KICK,
 	PROTECT,
+	SKIRMISH,
 	RECEIVE,
 	REDIRECT
 }

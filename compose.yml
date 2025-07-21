@@ -1,0 +1,78 @@
+# Note: Use simulation/runDockerSimulation.sh to run multiple simulations in parallel
+
+services:
+  simulator:
+    image: registry.gitlab.tigers-mannheim.de/main/sumatra:${SUMATRA_IMAGE_TAG_SIMULATOR:-latest}
+    volumes:
+      - "simulator_build:/Sumatra/build"
+      - "simulator:/Sumatra/data"
+    environment:
+      - SUMATRA_HEADLESS=true
+      - SUMATRA_MODULI=sim_server
+      - SUMATRA_AUTOREF=true
+      - SUMATRA_MAX_SPEED=true
+      - SUMATRA_WAIT_FOR_AIS=true
+      - SUMATRA_INITIAL_COMMAND=PREPARE_KICKOFF_BLUE
+      - SUMATRA_TIMEOUT=900
+      - SUMATRA_STOP_AT_STAGE_TIME=0
+      - LOG_LEVEL=info
+
+  ai-yellow:
+    image: registry.gitlab.tigers-mannheim.de/main/sumatra:${SUMATRA_IMAGE_TAG_YELLOW:-latest}
+    volumes:
+      - "ai_yellow:/Sumatra/data"
+    environment:
+      - SUMATRA_HEADLESS=true
+      - SUMATRA_MODULI=sim_client
+      - SUMATRA_HOST=simulator
+      - SUMATRA_AI_YELLOW=true
+      - SUMATRA_TOURNAMENT_MODE=false
+      - SUMATRA_MATCH_STATS=true
+      - SUMATRA_INFLUX_DB_URL=http://host.docker.internal:8086
+    extra_hosts:
+      - host.docker.internal:host-gateway
+
+  ai-blue:
+    image: registry.gitlab.tigers-mannheim.de/main/sumatra:${SUMATRA_IMAGE_TAG_BLUE:-latest}
+    volumes:
+      - "ai_blue:/Sumatra/data"
+    environment:
+      - SUMATRA_HEADLESS=true
+      - SUMATRA_MODULI=sim_client
+      - SUMATRA_HOST=simulator
+      - SUMATRA_AI_BLUE=true
+      - SUMATRA_TOURNAMENT_MODE=false
+      - SUMATRA_MATCH_STATS=true
+      - SUMATRA_INFLUX_DB_URL=http://host.docker.internal:8086
+    extra_hosts:
+      - host.docker.internal:host-gateway
+
+  ssl-vision-client:
+    image: robocupssl/ssl-vision-client:latest
+    command: -visionAddress 224.5.23.2:11006 -refereeAddress 224.5.23.2:11003 -visualizationAddress 224.5.23.2:11011
+    ports:
+      - "8082:8082"
+    profiles:
+      - watch
+
+  ssl-game-controller:
+    image: alpine/socat:latest
+    command: 'TCP4-LISTEN:8083,fork TCP4:simulator:11000'
+    ports:
+      - "8083:8083"
+    profiles:
+      - watch
+
+  ssl-status-board:
+    image: robocupssl/ssl-status-board:latest
+    command: -refereeAddress 224.5.23.1:11003
+    ports:
+      - "8084:8082"
+    profiles:
+      - watch
+
+volumes:
+  simulator:
+  simulator_build:
+  ai_yellow:
+  ai_blue:

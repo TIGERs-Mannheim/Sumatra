@@ -19,14 +19,15 @@ import edu.tigers.sumatra.wp.data.ITrackedBot;
 import lombok.Builder;
 import lombok.Value;
 import lombok.extern.log4j.Log4j2;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.TestInfo;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -34,12 +35,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * Run tests in a full simulation environment
  */
-@RunWith(Parameterized.class)
 @Log4j2
 public class OffensiveGoalShotFullSimIntegrationTest extends AFullSimIntegrationTest implements IAIObserver
 {
-	private final TestCaseParameters testCaseParameters;
-
 	@Value
 	@Builder
 	private static class TestCaseParameters
@@ -57,17 +55,11 @@ public class OffensiveGoalShotFullSimIntegrationTest extends AFullSimIntegration
 	}
 
 
-	public OffensiveGoalShotFullSimIntegrationTest(TestCaseParameters parameters)
-	{
-		this.testCaseParameters = parameters;
-	}
-
-
-	@Before
+	@BeforeEach
 	@Override
-	public void before()
+	public void before(TestInfo testInfo)
 	{
-		super.before();
+		super.before(testInfo);
 
 		SumatraModel.getInstance().getModule(AAgent.class).changeMode(EAiTeam.YELLOW, EAIControlState.MATCH_MODE);
 		SumatraModel.getInstance().getModule(AAgent.class).changeMode(EAiTeam.BLUE, EAIControlState.OFF);
@@ -75,8 +67,7 @@ public class OffensiveGoalShotFullSimIntegrationTest extends AFullSimIntegration
 	}
 
 
-	@Parameterized.Parameters(name = "{0}")
-	public static List<TestCaseParameters> testInput()
+	private static Stream<TestCaseParameters> testInput()
 	{
 		List<TestCaseParameters> snapshots = new ArrayList<>();
 		snapshots.add(TestCaseParameters.builder()
@@ -95,14 +86,15 @@ public class OffensiveGoalShotFullSimIntegrationTest extends AFullSimIntegration
 				.expectedShooter(BotID.createBotId(3, ETeamColor.YELLOW))
 				.build());
 
-		return snapshots;
+		return snapshots.stream();
 	}
 
 
-	@Test
-	public void testGoalKickActionIsSet()
+	@ParameterizedTest
+	@MethodSource("testInput")
+	void testGoalKickActionIsSet(TestCaseParameters parameters)
 	{
-		var snapshot = readSnapshot(testCaseParameters.snapShotPath)
+		var snapshot = readSnapshot(parameters.snapShotPath)
 				.toBuilder()
 				.command(SslGcRefereeMessage.Referee.Command.FORCE_START)
 				.build();
@@ -113,10 +105,10 @@ public class OffensiveGoalShotFullSimIntegrationTest extends AFullSimIntegration
 
 		double timeout = 5;
 		double attackerReachedBallLineDuration = defaultSimTimeBlocker(timeout)
-				.addStopCondition(this::ballLeftField)
+				.addStopCondition(new BallLeftFieldStopCondition())
 				.addStopCondition(this::ballMoves)
 				.addStopCondition(w -> stuck)
-				.addHook(this::checkAttackerAssignment)
+				.addHook(aiFrame -> checkAttackerAssignment(aiFrame, parameters.expectedShooter))
 				.addHook(this::checkOffensiveActionIsGoalShot)
 				.await()
 				.getDuration();
@@ -151,11 +143,11 @@ public class OffensiveGoalShotFullSimIntegrationTest extends AFullSimIntegration
 	}
 
 
-	private void checkAttackerAssignment(AIInfoFrame frame)
+	private void checkAttackerAssignment(AIInfoFrame frame, BotID expectedShooter)
 	{
 		getAttacker(frame).ifPresent(b -> assertThat(b.getBotId())
 				.as("Correct attacker should be selected")
-				.isEqualTo(testCaseParameters.expectedShooter));
+				.isEqualTo(expectedShooter));
 	}
 
 

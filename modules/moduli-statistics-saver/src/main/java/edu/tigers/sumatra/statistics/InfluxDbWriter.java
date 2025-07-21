@@ -4,10 +4,6 @@
 
 package edu.tigers.sumatra.statistics;
 
-import static org.apache.commons.lang.builder.ToStringStyle.SHORT_PREFIX_STYLE;
-
-import java.util.concurrent.TimeUnit;
-
 import org.apache.commons.lang.builder.ToStringBuilder;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -16,6 +12,10 @@ import org.influxdb.InfluxDB;
 import org.influxdb.InfluxDBFactory;
 import org.influxdb.dto.Point;
 import org.influxdb.dto.Query;
+
+import java.util.concurrent.TimeUnit;
+
+import static org.apache.commons.lang.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
 
 /**
@@ -37,6 +37,10 @@ public class InfluxDbWriter implements ITimeSeriesWriter
 	@Override
 	public void add(final TimeSeriesStatsEntry entry)
 	{
+		if (entry.getFieldSet().isEmpty())
+		{
+			return;
+		}
 		final Point.Builder builder = Point.measurement(entry.getMeasurement())
 				.time(entry.getTimestamp(), TimeUnit.NANOSECONDS)
 				.tag(entry.getTagSet())
@@ -55,7 +59,8 @@ public class InfluxDbWriter implements ITimeSeriesWriter
 					connectionParameters.getUsername(),
 					connectionParameters.getPassword()
 			);
-		} else {
+		} else
+		{
 			influxDB = InfluxDBFactory.connect(
 					connectionParameters.getUrl()
 			);

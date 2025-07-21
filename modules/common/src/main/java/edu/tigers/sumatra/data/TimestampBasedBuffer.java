@@ -36,7 +36,7 @@ public class TimestampBasedBuffer<T extends ITimestampBased>
 		{
 			return;
 		}
-		long latestTimestamp = buffer.get(buffer.size() - 1).getTimestamp();
+		long latestTimestamp = buffer.getLast().getTimestamp();
 		buffer.removeIf(d -> (latestTimestamp - d.getTimestamp()) > bufferDuration);
 	}
 	
@@ -78,6 +78,6 @@ public class TimestampBasedBuffer<T extends ITimestampBased>
 		{
 			return Optional.empty();
 		}
-		return Optional.of(buffer.get(buffer.size() - 1));
+		return Optional.of(buffer.getLast());
 	}
 }

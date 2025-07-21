@@ -4,7 +4,6 @@
 
 package edu.tigers.sumatra.drawable;
 
-import com.sleepycat.persist.model.Persistent;
 import lombok.RequiredArgsConstructor;
 import lombok.Value;
 import org.apache.commons.lang.ObjectUtils;
@@ -17,20 +16,11 @@ import java.util.List;
  * A source for a shape map, with a name and an optional list of categories.
  */
 @Value
-@Persistent
 @RequiredArgsConstructor
 public class ShapeMapSource implements Comparable<ShapeMapSource>
 {
 	String name;
 	ShapeMapSource parent;
-
-
-	@SuppressWarnings("unused") // for berkeley
-	private ShapeMapSource()
-	{
-		name = null;
-		parent = null;
-	}
 
 
 	public static ShapeMapSource of(String name)

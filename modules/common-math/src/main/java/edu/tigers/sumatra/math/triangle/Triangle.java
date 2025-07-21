@@ -4,7 +4,6 @@
 
 package edu.tigers.sumatra.math.triangle;
 
-import com.sleepycat.persist.model.Persistent;
 import edu.tigers.sumatra.math.IBoundedPath;
 import edu.tigers.sumatra.math.line.ILine;
 import edu.tigers.sumatra.math.line.ILineSegment;
@@ -21,26 +20,13 @@ import static edu.tigers.sumatra.math.SumatraMath.sqrt;
 
 /**
  * Immutable implementation of {@link ITriangle}.
- *
- * @author Malte
  */
-@Persistent
 public final class Triangle implements ITriangle
 {
 	private final IVector2 a;
 	private final IVector2 b;
 	private final IVector2 c;
 	private final List<IVector2> corners;
-
-
-	@SuppressWarnings("unused")
-	private Triangle()
-	{
-		a = null;
-		b = null;
-		c = null;
-		corners = null;
-	}
 
 
 	/**

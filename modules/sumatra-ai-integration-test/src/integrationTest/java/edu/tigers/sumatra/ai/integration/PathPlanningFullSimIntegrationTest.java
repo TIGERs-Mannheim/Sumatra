@@ -24,15 +24,15 @@ import edu.tigers.sumatra.skillsystem.skills.MoveToSkill;
 import edu.tigers.sumatra.snapshot.SnapObject;
 import edu.tigers.sumatra.snapshot.Snapshot;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 
 public class PathPlanningFullSimIntegrationTest extends AFullSimIntegrationTest
 {
-	@Before
+	@BeforeEach
 	public void prepare()
 	{
 		// turn of AIs

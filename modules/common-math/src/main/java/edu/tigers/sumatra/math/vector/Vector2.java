@@ -5,11 +5,8 @@
 package edu.tigers.sumatra.math.vector;
 
 
-import org.apache.commons.math3.linear.RealVector;
-
-import com.sleepycat.persist.model.Persistent;
-
 import edu.tigers.sumatra.math.SumatraMath;
+import org.apache.commons.math3.linear.RealVector;
 
 
 /**
@@ -22,7 +19,6 @@ import edu.tigers.sumatra.math.SumatraMath;
  * @see IVector3
  * @author Gero
  */
-@Persistent
 public class Vector2 extends AVector2
 {
 	/** */

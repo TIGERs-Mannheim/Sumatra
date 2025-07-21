@@ -20,6 +20,7 @@ import edu.tigers.sumatra.pathfinder.finder.PathFinderResult;
 import edu.tigers.sumatra.pathfinder.finder.TrajPath;
 import edu.tigers.sumatra.pathfinder.obstacles.IObstacle;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.log4j.Log4j2;
 
 import java.awt.Color;
 import java.util.ArrayList;
@@ -28,6 +29,7 @@ import java.util.List;
 import java.util.Optional;
 
 
+@Log4j2
 @RequiredArgsConstructor
 public class SubPathCollisionChecker
 {
@@ -142,6 +144,12 @@ public class SubPathCollisionChecker
 		);
 
 		double subTotalTime = motionLessSubPathCollisionChecker.getPath().getTotalTime();
+		if (subTotalTime > 100)
+		{
+			log.warn("Sub path is too long: {}", motionLessSubPathCollisionChecker.getPath());
+			return Optional.empty();
+		}
+
 		int subDestCtr = 0;
 		for (double switchTime = stepSizeOnSubPath + initialTimeOffset;
 		     switchTime < subTotalTime;
@@ -188,7 +196,8 @@ public class SubPathCollisionChecker
 			if (subDestCtr++ > 1000)
 			{
 				throw new IllegalStateException(
-						"Possible endless loop detected in SubPathCollisionChecker.findAcceptablePath()");
+						"Possible endless loop detected in SubPathCollisionChecker.findAcceptablePath(): " +
+								switchTime + " " + subTotalTime + " " + initialTimeOffset);
 			}
 		}
 		return Optional.empty();

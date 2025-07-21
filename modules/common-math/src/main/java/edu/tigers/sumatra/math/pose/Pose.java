@@ -4,12 +4,10 @@
 
 package edu.tigers.sumatra.math.pose;
 
-import com.sleepycat.persist.model.Persistent;
 import edu.tigers.sumatra.math.AngleMath;
 import edu.tigers.sumatra.math.IMirrorable;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.IVector3;
-import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.math.vector.Vector3;
 import edu.tigers.sumatra.math.vector.Vector3f;
 import lombok.Data;
@@ -20,7 +18,6 @@ import lombok.RequiredArgsConstructor;
 /**
  * A pose consists of a position and an orientation.
  */
-@Persistent
 @Data
 @RequiredArgsConstructor(staticName = "from")
 public class Pose implements IMirrorable<Pose>
@@ -35,14 +32,6 @@ public class Pose implements IMirrorable<Pose>
 	 * [rad]
 	 **/
 	private final double orientation;
-
-
-	@SuppressWarnings("unused") // berkeley
-	private Pose()
-	{
-		pos = Vector2.zero();
-		orientation = 0;
-	}
 
 
 	/**

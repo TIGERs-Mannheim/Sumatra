@@ -3,14 +3,16 @@
  */
 package edu.tigers.sumatra.trajectory;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
 /**
  * Test 1D bang bang trajectories.
  */
-public class BangBangTrajectory1DTest
+class BangBangTrajectory1DTest
 {
 	private final BangBangTrajectoryFactory trajectoryFactory = new BangBangTrajectoryFactory();
 
@@ -20,7 +22,7 @@ public class BangBangTrajectory1DTest
 		double tLast = 0.0;
 		for (int i = 0; i < traj.numParts; i++)
 		{
-			Assert.assertTrue(traj.parts[i].tEnd >= tLast);
+			assertTrue(traj.parts[i].tEnd >= tLast);
 			tLast = traj.parts[i].tEnd;
 		}
 	}
@@ -30,30 +32,30 @@ public class BangBangTrajectory1DTest
 	{
 		for (BBTrajectoryPart part : traj.parts)
 		{
-			Assert.assertTrue(Math.abs(part.v0) <= vMax);
+			assertTrue(Math.abs(part.v0) <= vMax);
 		}
 	}
 
 
 	@Test
-	public void testCaseA()
+	void testCaseA()
 	{
 		var traj = trajectoryFactory.singleDim(0f, 0.5f, 0.5f, 2, 3);
 
 		checkTimeOrder(traj);
 
 		// check number of used elements is 2
-		Assert.assertEquals(2, traj.numParts);
+		assertEquals(2, traj.numParts);
 
 		// check final position is reached
-		Assert.assertEquals(traj.getPosition(traj.getTotalTime()), 0.5, 1e-6f);
+		assertEquals(0.5, traj.getPosition(traj.getTotalTime()), 1e-6f);
 
 		// check final velocity is zero
-		Assert.assertEquals(traj.getVelocity(traj.getTotalTime()), 0.0, 1e-6f);
+		assertEquals(0.0, traj.getVelocity(traj.getTotalTime()), 1e-6f);
 
 		// check accelerations for this case
-		Assert.assertEquals(3.0, traj.parts[0].acc, 0.0);
-		Assert.assertEquals(traj.parts[1].acc, -3.0f, 0.0);
+		assertEquals(3.0, traj.parts[0].acc, 0.0);
+		assertEquals(-3.0f, traj.parts[1].acc, 0.0);
 
 		// check if max velocity is exceeded
 		checkVelocity(traj, 2.0);
@@ -61,25 +63,25 @@ public class BangBangTrajectory1DTest
 
 
 	@Test
-	public void testCaseB()
+	void testCaseB()
 	{
 		var traj = trajectoryFactory.singleDim(0f, 2.0f, 0.5f, 2, 3);
 
 		checkTimeOrder(traj);
 
 		// check number of used elements is 3
-		Assert.assertEquals(3, traj.numParts);
+		assertEquals(3, traj.numParts);
 
 		// check final position is reached
-		Assert.assertEquals(traj.getPosition(traj.getTotalTime()), 2.0, 1e-6f);
+		assertEquals(2.0, traj.getPosition(traj.getTotalTime()), 1e-6f);
 
 		// check final velocity is zero
-		Assert.assertEquals(traj.getVelocity(traj.getTotalTime()), 0.0, 1e-6f);
+		assertEquals(0.0, traj.getVelocity(traj.getTotalTime()), 1e-6f);
 
 		// check accelerations for this case
-		Assert.assertEquals(3.0, traj.parts[0].acc, 0.0);
-		Assert.assertEquals(0.0, traj.parts[1].acc, 0.0);
-		Assert.assertEquals(traj.parts[2].acc, -3.0, 0.0);
+		assertEquals(3.0, traj.parts[0].acc, 0.0);
+		assertEquals(0.0, traj.parts[1].acc, 0.0);
+		assertEquals(-3.0, traj.parts[2].acc, 0.0);
 
 		// check if max velocity is exceeded
 		checkVelocity(traj, 2.0);
@@ -87,47 +89,47 @@ public class BangBangTrajectory1DTest
 
 
 	@Test
-	public void testCaseC()
+	void testCaseC()
 	{
 		var traj = trajectoryFactory.singleDim(0f, 2.0f, 2.5f, 2, 3);
 
 		checkTimeOrder(traj);
 
 		// check number of used elements is 3
-		Assert.assertEquals(3, traj.numParts);
+		assertEquals(3, traj.numParts);
 
 		// check final position is reached
-		Assert.assertEquals(traj.getPosition(traj.getTotalTime()), 2.0, 1e-6f);
+		assertEquals(2.0, traj.getPosition(traj.getTotalTime()), 1e-6f);
 
 		// check final velocity is zero
-		Assert.assertEquals(traj.getVelocity(traj.getTotalTime()), 0.0, 1e-6f);
+		assertEquals(0.0, traj.getVelocity(traj.getTotalTime()), 1e-6f);
 
 		// check accelerations for this case
-		Assert.assertEquals(traj.parts[0].acc, -3.0f, 0.0);
-		Assert.assertEquals(0.0, traj.parts[1].acc, 0.0);
-		Assert.assertEquals(traj.parts[2].acc, -3.0f, 0.0);
+		assertEquals(-3.0f, traj.parts[0].acc, 0.0);
+		assertEquals(0.0, traj.parts[1].acc, 0.0);
+		assertEquals(-3.0f, traj.parts[2].acc, 0.0);
 	}
 
 
 	@Test
-	public void testCaseD()
+	void testCaseD()
 	{
 		var traj = trajectoryFactory.singleDim(0f, 0.5f, -1.0f, 2, 3);
 
 		checkTimeOrder(traj);
 
 		// check number of used elements is 2
-		Assert.assertEquals(2, traj.numParts);
+		assertEquals(2, traj.numParts);
 
 		// check final position is reached
-		Assert.assertEquals(traj.getPosition(traj.getTotalTime()), 0.5, 1e-6f);
+		assertEquals(0.5, traj.getPosition(traj.getTotalTime()), 1e-6f);
 
 		// check final velocity is zero
-		Assert.assertEquals(traj.getVelocity(traj.getTotalTime()), 0.0, 1e-6f);
+		assertEquals(0.0, traj.getVelocity(traj.getTotalTime()), 1e-6f);
 
 		// check accelerations for this case
-		Assert.assertEquals(3.0, traj.parts[0].acc, 0.0);
-		Assert.assertEquals(traj.parts[1].acc, -3.0, 0.0);
+		assertEquals(3.0, traj.parts[0].acc, 0.0);
+		assertEquals(-3.0, traj.parts[1].acc, 0.0);
 
 		// check if max velocity is exceeded
 		checkVelocity(traj, 2.0);
@@ -135,22 +137,22 @@ public class BangBangTrajectory1DTest
 
 
 	@Test
-	public void testCaseE()
+	void testCaseE()
 	{
 		var traj = trajectoryFactory.singleDim(0f, 2.0f, -1.0f, 2, 3);
 
 		checkTimeOrder(traj);
 
 		// check final position is reached
-		Assert.assertEquals(traj.getPosition(traj.getTotalTime()), 2.0, 1e-6f);
+		assertEquals(2.0, traj.getPosition(traj.getTotalTime()), 1e-6f);
 
 		// check final velocity is zero
-		Assert.assertEquals(traj.getVelocity(traj.getTotalTime()), 0.0, 1e-6f);
+		assertEquals(0.0, traj.getVelocity(traj.getTotalTime()), 1e-6f);
 
 		// check accelerations for this case
-		Assert.assertEquals(3.0, traj.parts[0].acc, 0.0);
-		Assert.assertEquals(0.0, traj.parts[1].acc, 0.0);
-		Assert.assertEquals(traj.parts[2].acc, -3.0f, 0.0);
+		assertEquals(3.0, traj.parts[0].acc, 0.0);
+		assertEquals(0.0, traj.parts[1].acc, 0.0);
+		assertEquals(-3.0f, traj.parts[2].acc, 0.0);
 
 		// check if max velocity is exceeded
 		checkVelocity(traj, 2.0);
@@ -158,43 +160,43 @@ public class BangBangTrajectory1DTest
 
 
 	@Test
-	public void testCaseF()
+	void testCaseF()
 	{
 		var traj = trajectoryFactory.singleDim(0f, 0.5f, 3.0f, 2, 3);
 
 		checkTimeOrder(traj);
 
 		// check number of used elements is 2
-		Assert.assertEquals(2, traj.numParts);
+		assertEquals(2, traj.numParts);
 
 		// check final position is reached
-		Assert.assertEquals(traj.getPosition(traj.getTotalTime()), 0.5, 1e-6f);
+		assertEquals(0.5, traj.getPosition(traj.getTotalTime()), 1e-6f);
 
 		// check final velocity is zero
-		Assert.assertEquals(traj.getVelocity(traj.getTotalTime()), 0.0, 1e-6f);
+		assertEquals(0.0, traj.getVelocity(traj.getTotalTime()), 1e-6f);
 
 		// check accelerations for this case
-		Assert.assertEquals(traj.parts[0].acc, -3.0f, 0.0);
-		Assert.assertEquals(3.0f, traj.parts[1].acc, 0.0);
+		assertEquals(-3.0f, traj.parts[0].acc, 0.0);
+		assertEquals(3.0f, traj.parts[1].acc, 0.0);
 	}
 
 
 	@Test
-	public void testCaseG()
+	void testCaseG()
 	{
 		var traj = trajectoryFactory.singleDim(0f, 0.5f, 5.0f, 2, 3);
 
 		checkTimeOrder(traj);
 
 		// check final position is reached
-		Assert.assertEquals(traj.getPosition(traj.getTotalTime()), 0.5, 1e-6f);
+		assertEquals(0.5, traj.getPosition(traj.getTotalTime()), 1e-6f);
 
 		// check final velocity is zero
-		Assert.assertEquals(traj.getVelocity(traj.getTotalTime()), 0.0, 1e-6f);
+		assertEquals(0.0, traj.getVelocity(traj.getTotalTime()), 1e-6f);
 
 		// check accelerations for this case
-		Assert.assertEquals(traj.parts[0].acc, -3.0f, 0.0);
-		Assert.assertEquals(0.0f, traj.parts[1].acc, 0.0);
-		Assert.assertEquals(3.0, traj.parts[2].acc, 0.0);
+		assertEquals(-3.0f, traj.parts[0].acc, 0.0);
+		assertEquals(0.0f, traj.parts[1].acc, 0.0);
+		assertEquals(3.0, traj.parts[2].acc, 0.0);
 	}
 }

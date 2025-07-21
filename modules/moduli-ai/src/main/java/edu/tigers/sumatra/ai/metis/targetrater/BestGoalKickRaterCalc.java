@@ -10,14 +10,10 @@ import edu.tigers.sumatra.ai.metis.pass.KickOrigin;
 import edu.tigers.sumatra.geometry.RuleConstraints;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.SumatraMath;
-import edu.tigers.sumatra.referee.gameevent.AttackerTouchedBallInDefenseArea;
-import edu.tigers.sumatra.referee.gameevent.BotCrashUnique;
-import edu.tigers.sumatra.referee.gameevent.BotKickedBallTooFast;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Supplier;
@@ -37,7 +33,7 @@ public class BestGoalKickRaterCalc extends ACalculator
 	private Map<BotID, GoalKick> bestGoalKickPerBot = Collections.emptyMap();
 
 	@Getter
-	private GoalKick bestGoalKick;
+	private Map<BotID, GoalKick> bestRedirectableGoalKickPerBot = Collections.emptyMap();
 
 	private BestGoalKickRater rater = new BestGoalKickRater();
 
@@ -45,19 +41,25 @@ public class BestGoalKickRaterCalc extends ACalculator
 	@Override
 	public void doCalc()
 	{
-
 		rater.update(getWFrame(), bestGoalKickPerBot);
 		rater.setWaitTime(waitTimeToNextValidGoal());
-		bestGoalKickPerBot = kickOrigins.get().values().stream()
-				.map(rater::rateKickOrigin)
+
+		var bestGoalKicks = kickOrigins.get().values().stream()
+				.map(rater::rateKickOrigin).toList();
+
+		bestGoalKickPerBot = bestGoalKicks
+				.stream()
+				.map(BestGoalKicks::goalKick)
 				.filter(Optional::isPresent)
 				.map(Optional::get)
 				.collect(Collectors.toUnmodifiableMap(e -> e.getKickOrigin().getShooter(), e -> e));
 
-
-		bestGoalKick = bestGoalKickPerBot.values().stream()
-				.max(Comparator.comparingDouble(g -> g.getRatedTarget().getScore()))
-				.orElse(null);
+		bestRedirectableGoalKickPerBot = bestGoalKicks
+				.stream()
+				.map(BestGoalKicks::redirectGoalKick)
+				.filter(Optional::isPresent)
+				.map(Optional::get)
+				.collect(Collectors.toUnmodifiableMap(e -> e.getKickOrigin().getShooter(), e -> e));
 
 		getShapes(EAiShapesLayer.AI_BEST_GOAL_KICK).addAll(rater.getShapes());
 	}
@@ -68,17 +70,15 @@ public class BestGoalKickRaterCalc extends ACalculator
 		for (var event : getAiFrame().getRefereeMsg().getGameEvents())
 		{
 			var team = switch (event.getType())
-					{
-						case ATTACKER_TOUCHED_BALL_IN_DEFENSE_AREA -> ((AttackerTouchedBallInDefenseArea) event).getTeam();
-						case BOT_KICKED_BALL_TOO_FAST -> ((BotKickedBallTooFast) event).getTeam();
-						case BOT_CRASH_UNIQUE -> ((BotCrashUnique) event).getTeam();
-						case BOT_CRASH_DRAWN -> getWFrame().getTeamColor();
-						default -> getWFrame().getTeamColor().opposite();
-					};
+			{
+				case ATTACKER_TOUCHED_BALL_IN_DEFENSE_AREA, BOT_KICKED_BALL_TOO_FAST, BOT_CRASH_UNIQUE -> event.getTeam();
+				case BOT_CRASH_DRAWN -> getWFrame().getTeamColor();
+				default -> getWFrame().getTeamColor().opposite();
+			};
 			if (team.equals(getWFrame().getTeamColor()))
 			{
 				long created = event.getCreatedTimestamp();
-				long now = getWFrame().getTimestamp();
+				long now = getAiFrame().getRefereeMsg().getPacketTimestamp() * 1000;
 				double alreadyWaited = (now - created) * 1e-9;
 				if (alreadyWaited > RuleConstraints.getGracePeriod())
 				{

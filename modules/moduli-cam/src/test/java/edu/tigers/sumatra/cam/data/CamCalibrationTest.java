@@ -3,28 +3,25 @@
  */
 package edu.tigers.sumatra.cam.data;
 
-import org.apache.commons.math3.complex.Quaternion;
-import org.junit.Assert;
-import org.junit.Test;
-
 import edu.tigers.sumatra.math.vector.IVector3;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.math.vector.Vector3;
+import org.apache.commons.math3.complex.Quaternion;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
-/**
- * @author AndreR <andre@ryll.cc>
- */
-public class CamCalibrationTest
+class CamCalibrationTest
 {
 	@Test
-	public void cameraToWorldTest()
+	void cameraToWorldTest()
 	{
 		CamCalibration cam = getCamera();
 		
 		IVector3 pos = cam.getCameraPosition();
-		
-		Assert.assertTrue(pos.isCloseTo(getKnownDerivedCameraWorld(), 1.0));
+
+		assertTrue(pos.isCloseTo(getKnownDerivedCameraWorld(), 1.0));
 	}
 	
 	

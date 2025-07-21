@@ -1,9 +1,10 @@
 /*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.skillsystem.skills;
 
+import com.github.g3force.configurable.Configurable;
 import edu.tigers.sumatra.botmanager.botskills.data.EKickerDevice;
 import edu.tigers.sumatra.drawable.DrawableAnnotation;
 import edu.tigers.sumatra.drawable.DrawableLine;
@@ -15,6 +16,7 @@ import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.skillsystem.ESkillShapesLayer;
 import edu.tigers.sumatra.skillsystem.skills.redirect.IRedirectConsultant;
 import edu.tigers.sumatra.skillsystem.skills.redirect.RedirectConsultantFactory;
+import edu.tigers.sumatra.skillsystem.skills.util.EDribblerMode;
 import edu.tigers.sumatra.skillsystem.skills.util.KickParams;
 import edu.tigers.sumatra.time.TimestampTimer;
 import lombok.NoArgsConstructor;
@@ -28,6 +30,9 @@ public class RedirectBallSkill extends ABallArrivalSkill
 {
 	private final TimestampTimer redirectDoneTimer = new TimestampTimer(0.1);
 	private final IRedirectConsultant redirectConsultant = RedirectConsultantFactory.createDefault();
+
+	@Configurable(defValue = "DEFAULT")
+	private static EDribblerMode dribblerMode = EDribblerMode.DEFAULT;
 
 	@Setter
 	private IVector2 target;
@@ -70,7 +75,8 @@ public class RedirectBallSkill extends ABallArrivalSkill
 
 		if (isRoughlyTargeted(desiredTargetAngle))
 		{
-			setKickParams(KickParams.of(desiredKickParams.getDevice(), desiredKickSpeed));
+			setKickParams(KickParams.of(desiredKickParams.getDevice(), desiredKickSpeed)
+					.withDribblerMode(dribblerMode));
 		} else
 		{
 			setKickParams(KickParams.disarm());
@@ -81,19 +87,24 @@ public class RedirectBallSkill extends ABallArrivalSkill
 		var turnDiff = AngleMath.diffAbs(desiredTargetAngle, getAngle());
 		var offsetDiff = AngleMath.diffAbs(desiredTargetAngle, bot2Target);
 		getShapes().get(ESkillShapesLayer.BALL_ARRIVAL_SKILL)
-				.add(new DrawableAnnotation(getPos(),
-						String.format("turnDiff: %.3f, offsetDiff: %.3f", turnDiff, offsetDiff))
-						.withOffset(Vector2.fromY(150)));
+				.add(new DrawableAnnotation(
+						getPos(),
+						String.format("turnDiff: %.3f, offsetDiff: %.3f", turnDiff, offsetDiff)
+				).withOffset(Vector2.fromY(150)));
 
 		// bot to target
 		getShapes().get(ESkillShapesLayer.BALL_ARRIVAL_SKILL)
-				.add(new DrawableLine(getTBot().getBotKickerPos(Geometry.getBallRadius()), target,
-						getBotId().getTeamColor().getColor()));
+				.add(new DrawableLine(
+						getTBot().getBotKickerPos(Geometry.getBallRadius()), target,
+						getBotId().getTeamColor().getColor()
+				));
 
 		// current angle
 		getShapes().get(ESkillShapesLayer.BALL_ARRIVAL_SKILL)
-				.add(new DrawableLine(Lines.segmentFromOffset(getPos(), Vector2.fromAngle(getAngle()).scaleTo(200)),
-						Color.black));
+				.add(new DrawableLine(
+						Lines.segmentFromOffset(getPos(), Vector2.fromAngle(getAngle()).scaleTo(200)),
+						Color.black
+				));
 
 		super.doUpdate();
 		setSkillState(calcSkillState());

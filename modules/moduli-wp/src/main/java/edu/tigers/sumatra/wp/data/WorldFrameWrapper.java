@@ -4,15 +4,13 @@
 
 package edu.tigers.sumatra.wp.data;
 
-import java.util.EnumMap;
-import java.util.Map;
-
-import com.sleepycat.persist.model.Entity;
-import com.sleepycat.persist.model.PrimaryKey;
-
 import edu.tigers.sumatra.ids.EAiTeam;
+import edu.tigers.sumatra.persistence.PersistenceTable;
 import edu.tigers.sumatra.referee.data.GameState;
 import edu.tigers.sumatra.referee.data.RefereeMsg;
+
+import java.util.EnumMap;
+import java.util.Map;
 
 
 /**
@@ -20,10 +18,8 @@ import edu.tigers.sumatra.referee.data.RefereeMsg;
  * 
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  */
-@Entity
-public class WorldFrameWrapper
+public class WorldFrameWrapper implements PersistenceTable.IEntry<WorldFrameWrapper>
 {
-	@PrimaryKey
 	private final long timestamp;
 	
 	private final long timestampMs = System.currentTimeMillis();
@@ -34,8 +30,8 @@ public class WorldFrameWrapper
 	private final transient Map<EAiTeam, WorldFrame> worldFrames = new EnumMap<>(EAiTeam.class);
 	
 	
-	@SuppressWarnings("unused")
-	private WorldFrameWrapper()
+	@SuppressWarnings("unused") // Required (to be public) by Fury for transient field initialization.
+	public WorldFrameWrapper()
 	{
 		timestamp = 0;
 		simpleWorldFrame = null;
@@ -140,5 +136,19 @@ public class WorldFrameWrapper
 	public final GameState getGameState()
 	{
 		return gameState;
+	}
+
+
+	@Override
+	public long getKey()
+	{
+		return getTimestamp();
+	}
+
+
+	@Override
+	public void merge(WorldFrameWrapper other)
+	{
+		worldFrames.putAll(other.worldFrames);
 	}
 }

@@ -46,6 +46,7 @@ import java.awt.Color;
 import java.awt.geom.Arc2D;
 import java.security.InvalidParameterException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -80,7 +81,7 @@ public class PenaltyAreaAttackerBehavior extends ASupportBehavior
 
 	private final Supplier<OffensiveStrategy> offensiveStrategy;
 	private final Supplier<Map<BotID, KickOrigin>> kickOrigins;
-	private final Supplier<GoalKick> bestGoalKick;
+	private final Supplier<Map<BotID, GoalKick>> bestGoalKickPerBot;
 	private final Supplier<BallPossession> ballPossession;
 
 
@@ -88,7 +89,8 @@ public class PenaltyAreaAttackerBehavior extends ASupportBehavior
 	public SupportBehaviorPosition calculatePositionForRobot(BotID botID)
 	{
 		passFactory.update(getWFrame());
-		ratedPassFactory.update(getWFrame().getOpponentBots().values(), getWFrame().getOpponentBots().values());
+		ratedPassFactory.update(getWFrame().getOpponentBots().values(), getWFrame().getOpponentBots().values(),
+				Collections.emptyList());
 
 		return kickOrigins.get().values().stream()
 				.map(kickOrigin -> calculatePositionForKickOrigin(botID, kickOrigin.getPos()))
@@ -359,13 +361,13 @@ public class PenaltyAreaAttackerBehavior extends ASupportBehavior
 			return SupportBehaviorPosition.notAvailable();
 		}
 
-		GoalKick goalKick = bestGoalKick.get();
-		if (goalKick == null)
+		var goalKick = bestGoalKickPerBot.get().values().stream().findAny();
+		if (goalKick.isEmpty())
 		{
 			return SupportBehaviorPosition.notAvailable();
 		}
 
-		IRatedTarget ratedTarget = goalKick.getRatedTarget();
+		IRatedTarget ratedTarget = goalKick.get().getRatedTarget();
 		IPenaltyArea penAreaWithMargin = getPenaltyAreaWithSafetyMargin();
 		IVector2 pos = createPositionReboundIntersectPenArea(kickOrigin, ratedTarget.getTarget(), penAreaWithMargin);
 		if (pos == null)

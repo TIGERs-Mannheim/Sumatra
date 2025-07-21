@@ -4,7 +4,6 @@
 
 package edu.tigers.sumatra.math.circle;
 
-import com.sleepycat.persist.model.Persistent;
 import edu.tigers.sumatra.math.AngleMath;
 import edu.tigers.sumatra.math.IBoundedPath;
 import edu.tigers.sumatra.math.SumatraMath;
@@ -24,26 +23,12 @@ import java.util.List;
 /**
  * Implementation of {@link IArc}
  */
-@Persistent
 public class Arc implements IArc
 {
 	private final double startAngle;
 	private final double rotation;
 	private final Vector2f center;
 	private final double radius;
-
-
-	/**
-	 * Used by berkely
-	 */
-	@SuppressWarnings("unused")
-	protected Arc()
-	{
-		center = Vector2f.ZERO_VECTOR;
-		radius = 1;
-		startAngle = 0;
-		rotation = 1;
-	}
 
 
 	/**

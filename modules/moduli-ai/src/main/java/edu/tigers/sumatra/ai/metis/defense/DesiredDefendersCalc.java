@@ -9,7 +9,6 @@ import edu.tigers.sumatra.ai.metis.defense.data.DefenseBallThreat;
 import edu.tigers.sumatra.ai.metis.defense.data.DefenseBotThreat;
 import edu.tigers.sumatra.ai.metis.defense.data.DefensePassDisruptionAssignment;
 import edu.tigers.sumatra.ai.metis.defense.data.DefenseThreatAssignment;
-import edu.tigers.sumatra.ai.metis.defense.data.IDefenseThreat;
 import edu.tigers.sumatra.ai.metis.general.ADesiredBotCalc;
 import edu.tigers.sumatra.ai.pandora.plays.EPlay;
 import edu.tigers.sumatra.drawable.DrawableLine;
@@ -19,18 +18,19 @@ import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.line.ILineSegment;
 import edu.tigers.sumatra.math.line.Lines;
 import lombok.Getter;
+import org.apache.commons.lang.Validate;
 
 import java.awt.Color;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 
 /**
@@ -44,14 +44,15 @@ public class DesiredDefendersCalc extends ADesiredBotCalc
 	private final Supplier<DefenseBallThreat> ballThreat;
 	private final Supplier<Optional<DefenseBallThreat>> secondaryBallThreat;
 	private final Supplier<List<DefenseBotThreat>> defenseBotThreats;
-	private final Supplier<Set<BotID>> crucialDefender;
+	private final Supplier<ECrucialDefenderStrategy> crucialDefenderStrategy;
 	private final Supplier<Integer> numDefenderForBall;
 	private final Supplier<DefensePassDisruptionAssignment> defensePassDisruptionAssignment;
 
 	@Getter
-	private List<DefenseThreatAssignment> defenseRawThreatAssignments;
+	private List<DefenseThreatAssignment> defenseRawThreatAssignments = List.of();
 
-	private boolean disruptorActive = false;
+	@Getter
+	private DefensePassDisruptionAssignment desiredPassDisruptionAssignment = null;
 
 
 	public DesiredDefendersCalc(
@@ -60,7 +61,7 @@ public class DesiredDefendersCalc extends ADesiredBotCalc
 			Supplier<DefenseBallThreat> ballThreat,
 			Supplier<Optional<DefenseBallThreat>> secondaryBallThreat,
 			Supplier<List<DefenseBotThreat>> defenseBotThreats,
-			Supplier<Set<BotID>> crucialDefender,
+			Supplier<ECrucialDefenderStrategy> crucialDefenderStrategy,
 			Supplier<Integer> numDefenderForBall,
 			Supplier<DefensePassDisruptionAssignment> defensePassDisruptionAssignment)
 	{
@@ -69,7 +70,7 @@ public class DesiredDefendersCalc extends ADesiredBotCalc
 		this.ballThreat = ballThreat;
 		this.secondaryBallThreat = secondaryBallThreat;
 		this.defenseBotThreats = defenseBotThreats;
-		this.crucialDefender = crucialDefender;
+		this.crucialDefenderStrategy = crucialDefenderStrategy;
 		this.numDefenderForBall = numDefenderForBall;
 		this.defensePassDisruptionAssignment = defensePassDisruptionAssignment;
 	}
@@ -78,36 +79,47 @@ public class DesiredDefendersCalc extends ADesiredBotCalc
 	@Override
 	public void doCalc()
 	{
-		disruptorActive = isDisruptorActive();
 		util.update(getAiFrame());
 
-		var defender = new ArrayList<>(getUnassignedBots());
-		List<DefenseThreatAssignment> assignments = new ArrayList<>();
+		List<DefenseThreatAssignment> allAssignments = new ArrayList<>();
+		List<BotID> desiredDefenders = new ArrayList<>();
 
-		EnumMap<EDefenseThreatAssignment, List<BotID>> selectedBots = new EnumMap<>(
-				EDefenseThreatAssignment.class);
-		// Note the different ordering of EAssignmentType
-		put(selectedBots, EDefenseThreatAssignment.PASS_DISRUPTION, getPassDisruptorIDs(defender), defender);
-		put(selectedBots, EDefenseThreatAssignment.BLOCKING_BALL, createBallThreatAssignment(defender, assignments),
-				defender);
-		put(selectedBots, EDefenseThreatAssignment.BLOCKING_SECONDARY_BALL,
-				createSecondaryBallThreatAssignment(defender, assignments), defender);
-		put(selectedBots, EDefenseThreatAssignment.BLOCKING_BOT, createBotThreatAssignments(defender, assignments),
-				defender);
+		desiredPassDisruptionAssignment = null;
+		var availableDefender = new ArrayList<>(getUnassignedBots());
+		for (var selector : getSelectorsOrderedByPriority(crucialDefenderStrategy.get()))
+		{
+			var result = selector.selectBestDefender(util, Collections.unmodifiableList(availableDefender));
+			var selectedBots = result.selectedBots();
+			Validate.isTrue(availableDefender.containsAll(selectedBots));
+			availableDefender.removeAll(selectedBots);
 
-		defenseRawThreatAssignments = Collections.unmodifiableList(assignments);
+			desiredDefenders.addAll(selectedBots);
+			result.threatAssignment.ifPresent(allAssignments::add);
+			result.disruptionAssignment.ifPresent(a -> Validate.isTrue(desiredPassDisruptionAssignment == null));
+			result.disruptionAssignment.ifPresent(assignment -> desiredPassDisruptionAssignment = assignment);
+		}
+		desiredDefenders.addAll(availableDefender);
+
+		defenseRawThreatAssignments = allAssignments.stream()
+				.filter(assignment -> !assignment.getBotIds().isEmpty())
+				.toList();
 		defenseRawThreatAssignments.forEach(this::drawThreatAssignment);
-		defender.sort(Comparator.comparingDouble(
+		availableDefender.sort(Comparator.comparingDouble(
 				o -> getWFrame().getBot(o).getPos().distanceTo(Geometry.getGoalOur().getCenter())));
 
 
-		List<BotID> desiredDefenders = new ArrayList<>();
-		// Note the different ordering of EAssignmentType
-		desiredDefenders.addAll(selectedBots.get(EDefenseThreatAssignment.BLOCKING_BALL));
-		desiredDefenders.addAll(selectedBots.get(EDefenseThreatAssignment.PASS_DISRUPTION));
-		desiredDefenders.addAll(selectedBots.get(EDefenseThreatAssignment.BLOCKING_SECONDARY_BALL));
-		desiredDefenders.addAll(selectedBots.get(EDefenseThreatAssignment.BLOCKING_BOT));
-		desiredDefenders.addAll(defender);
+		for (var assignment : defenseRawThreatAssignments)
+		{
+			for (var other : defenseRawThreatAssignments)
+			{
+				if (assignment.equals(other))
+				{
+					continue;
+				}
+				Validate.isTrue(other.getBotIds().stream().noneMatch(o -> assignment.getBotIds().contains(o)));
+				Validate.isTrue(assignment.getBotIds().stream().noneMatch(a -> other.getBotIds().contains(a)));
+			}
+		}
 
 		addDesiredBots(EPlay.DEFENSIVE,
 				desiredDefenders.stream().distinct()
@@ -117,108 +129,31 @@ public class DesiredDefendersCalc extends ADesiredBotCalc
 	}
 
 
-	private void put(
-			EnumMap<EDefenseThreatAssignment, List<BotID>> selectedBotsPerAssignmentType,
-			EDefenseThreatAssignment type,
-			List<BotID> selectedDefenders, List<BotID> availableBots)
+	private List<IDefenderSelector> getSelectorsOrderedByPriority(ECrucialDefenderStrategy strategy)
 	{
-		selectedBotsPerAssignmentType.put(type, selectedDefenders);
-		availableBots.removeAll(selectedDefenders);
-	}
-
-
-	private boolean isDisruptorActive()
-	{
-		return defensePassDisruptionAssignment.get() != null
-				&& getUnassignedBots().contains(defensePassDisruptionAssignment.get().getDefenderId());
-	}
-
-
-	public DefensePassDisruptionAssignment getDefensePassDisruptionAssignment()
-	{
-		return disruptorActive ? defensePassDisruptionAssignment.get() : null;
-	}
-
-
-	private List<BotID> getPassDisruptorIDs(List<BotID> availableBots)
-	{
-		if (!disruptorActive)
+		Stream<IDefenderSelector> ballAndPassDisrupt = switch (strategy)
 		{
-			return List.of();
-		}
-		availableBots.remove(defensePassDisruptionAssignment.get().getDefenderId());
-		return List.of(defensePassDisruptionAssignment.get().getDefenderId());
-	}
+			case ONLY_BLOCKING -> Stream.of(
+					new BallThreatSelector(ballThreat.get(), numDefenderForBall.get()),
+					new SecondaryBallThreatSelector(secondaryBallThreat.get(), numDefenderForBall.get())
+			);
+			case NO_CRUCIAL_DEFENDER, DISRUPT_PREFERRED_OVER_BLOCKING -> Stream.of(
+					new PassDisruptionSelector(Optional.ofNullable(defensePassDisruptionAssignment.get())),
+					new BallThreatSelector(ballThreat.get(), numDefenderForBall.get()),
+					new SecondaryBallThreatSelector(secondaryBallThreat.get(), numDefenderForBall.get())
+			);
+			case BLOCKING_PREFERRED_OVER_DISRUPT -> Stream.of(
+					new BallThreatSelector(ballThreat.get(), numDefenderForBall.get()),
+					new PassDisruptionSelector(Optional.ofNullable(defensePassDisruptionAssignment.get())),
+					new SecondaryBallThreatSelector(secondaryBallThreat.get(), numDefenderForBall.get())
+			);
+		};
 
-
-	private List<BotID> createBallThreatAssignment(List<BotID> availableBots, List<DefenseThreatAssignment> assignments)
-	{
-		Set<BotID> bestDefenders;
-		if (defensePassDisruptionAssignment.get() == null)
-		{
-			bestDefenders = crucialDefender.get().stream()
-					.filter(availableBots::contains)
-					.collect(Collectors.toSet());
-		} else
-		{
-			bestDefenders = crucialDefender.get().stream()
-					.filter(availableBots::contains)
-					.filter(bot -> defensePassDisruptionAssignment.get().getDefenderId() != bot)
-					.collect(Collectors.toSet());
-		}
-
-		var numMissingDefender = numDefenderForBall.get() - bestDefenders.size();
-		bestDefenders.addAll(util.nextBestDefenders(ballThreat.get(), availableBots, numMissingDefender));
-		assignments.add(createSingleThreatAssignment(ballThreat.get(), availableBots, bestDefenders));
-		return bestDefenders.stream().toList();
-	}
-
-
-	private List<BotID> createSecondaryBallThreatAssignment(
-			List<BotID> availableBots,
-			List<DefenseThreatAssignment> assignments
-	)
-	{
-		return secondaryBallThreat.get().map(
-						secondary -> {
-							var bestDefenders = util.nextBestDefenders(secondary, availableBots, numDefenderForBall.get());
-							assignments.add(createSingleThreatAssignment(secondary, availableBots, bestDefenders));
-							return bestDefenders.stream().toList();
-						}
-				)
-				.orElseGet(List::of);
-	}
-
-
-	private List<BotID> createBotThreatAssignments(
-			List<BotID> availableBots,
-			List<DefenseThreatAssignment> assignments)
-	{
-		var botAssignments = defenseBotThreats.get().stream()
-				.map(t -> createSingleBotThreatAssignment(t, availableBots))
-				.toList();
-		assignments.addAll(botAssignments);
-		return botAssignments.stream().flatMap(a -> a.getBotIds().stream()).toList();
-	}
-
-
-	private DefenseThreatAssignment createSingleBotThreatAssignment(
-			IDefenseThreat threat,
-			List<BotID> remainingDefenders)
-	{
-		var bestDefenders = util.nextBestDefenders(threat, remainingDefenders, 1);
-
-		return createSingleThreatAssignment(threat, remainingDefenders, bestDefenders);
-	}
-
-
-	private DefenseThreatAssignment createSingleThreatAssignment(
-			IDefenseThreat threat,
-			List<BotID> remainingDefenders,
-			Set<BotID> bestDefenders)
-	{
-		remainingDefenders.removeAll(bestDefenders);
-		return new DefenseThreatAssignment(threat, bestDefenders);
+		return Stream.concat(
+				ballAndPassDisrupt,
+				defenseBotThreats.get().stream()
+						.map(BotThreatSelector::new)
+		).toList();
 	}
 
 
@@ -236,13 +171,89 @@ public class DesiredDefendersCalc extends ADesiredBotCalc
 	}
 
 
-	public enum EDefenseThreatAssignment
+	private interface IDefenderSelector
 	{
-		PASS_DISRUPTION,
-		BLOCKING_BALL,
-		BLOCKING_BOT,
-		BLOCKING_SECONDARY_BALL
+		SelectorResult selectBestDefender(DesiredDefendersCalcUtil util, List<BotID> availableBots);
 	}
 
+	private record SelectorResult(Optional<DefenseThreatAssignment> threatAssignment,
+	                              Optional<DefensePassDisruptionAssignment> disruptionAssignment)
+	{
+		static SelectorResult ofThreat(DefenseThreatAssignment assignment)
+		{
+			return new SelectorResult(Optional.of(assignment), Optional.empty());
+		}
+
+
+		static SelectorResult ofDisruption(DefensePassDisruptionAssignment disruptionAssignment)
+		{
+			return new SelectorResult(Optional.empty(), Optional.of(disruptionAssignment));
+		}
+
+
+		static SelectorResult empty()
+		{
+			return new SelectorResult(Optional.empty(), Optional.empty());
+		}
+
+
+		List<BotID> selectedBots()
+		{
+			return Stream.concat(
+					threatAssignment.stream()
+							.map(DefenseThreatAssignment::getBotIds)
+							.flatMap(Set::stream),
+					disruptionAssignment.stream()
+							.map(DefensePassDisruptionAssignment::getDefenderId)
+			).distinct().toList();
+		}
+	}
+
+	private record BallThreatSelector(DefenseBallThreat threat, int numDefender) implements IDefenderSelector
+	{
+		@Override
+		public SelectorResult selectBestDefender(DesiredDefendersCalcUtil util, List<BotID> availableBots)
+		{
+			return SelectorResult.ofThreat(
+					new DefenseThreatAssignment(threat, util.nextBestDefenders(threat, availableBots, numDefender))
+			);
+		}
+	}
+
+	private record PassDisruptionSelector(Optional<DefensePassDisruptionAssignment> assignment)
+			implements IDefenderSelector
+	{
+		@Override
+		public SelectorResult selectBestDefender(DesiredDefendersCalcUtil util, List<BotID> availableBots)
+		{
+			return assignment.filter(assignment -> availableBots.contains(assignment.getDefenderId()))
+					.map(SelectorResult::ofDisruption)
+					.orElseGet(SelectorResult::empty);
+		}
+	}
+
+
+	private record SecondaryBallThreatSelector(Optional<DefenseBallThreat> threat, int numDefender)
+			implements IDefenderSelector
+	{
+		@Override
+		public SelectorResult selectBestDefender(DesiredDefendersCalcUtil util, List<BotID> availableBots)
+		{
+			return threat.map(t -> new DefenseThreatAssignment(t, util.nextBestDefenders(t, availableBots, numDefender)))
+					.map(SelectorResult::ofThreat)
+					.orElseGet(SelectorResult::empty);
+		}
+	}
+
+	private record BotThreatSelector(DefenseBotThreat threat) implements IDefenderSelector
+	{
+		@Override
+		public SelectorResult selectBestDefender(DesiredDefendersCalcUtil util, List<BotID> availableBots)
+		{
+			return SelectorResult.ofThreat(
+					new DefenseThreatAssignment(threat, util.nextBestDefenders(threat, availableBots, 1))
+			);
+		}
+	}
 
 }

@@ -15,6 +15,7 @@ import edu.tigers.sumatra.skillsystem.skills.util.KickParams;
 import edu.tigers.sumatra.statemachine.AState;
 import edu.tigers.sumatra.wp.data.DynamicPosition;
 import edu.tigers.sumatra.wp.data.ITrackedObject;
+import lombok.Setter;
 
 
 /**
@@ -24,6 +25,8 @@ import edu.tigers.sumatra.wp.data.ITrackedObject;
 public class MoveRole extends ARole
 {
 	private final MoveToSkill skill;
+	@Setter
+	private DestinationAdjuster destinationAdjuster = (aiFrame, destination, botID) -> destination;
 
 
 	/**
@@ -75,7 +78,7 @@ public class MoveRole extends ARole
 	public void updateDestination(final IVector2 destination)
 	{
 		activateMotors();
-		skill.updateDestination(destination);
+		skill.updateDestination(destinationAdjuster.adjustDestination(getAiFrame(), destination, getBotID()));
 	}
 
 

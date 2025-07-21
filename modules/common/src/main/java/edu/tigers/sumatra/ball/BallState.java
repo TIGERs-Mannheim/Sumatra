@@ -4,7 +4,6 @@
 
 package edu.tigers.sumatra.ball;
 
-import com.sleepycat.persist.model.Persistent;
 import edu.tigers.sumatra.math.IMirrorable;
 import edu.tigers.sumatra.math.SumatraMath;
 import edu.tigers.sumatra.math.vector.IVector2;
@@ -24,7 +23,6 @@ import lombok.Value;
  * <br>
  * <b>WARNING: Units of this class are [mm], [mm/s] ([rad/s]), [mm/s^2] !!!</b>
  */
-@Persistent
 @Value
 @Builder(setterPrefix = "with", toBuilder = true)
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
@@ -56,7 +54,7 @@ public class BallState implements IMirrorable<BallState>
 
 
 	/**
-	 * Create an empty default state. Required for {@link Persistent}.
+	 * Create an empty default state.
 	 */
 	public BallState()
 	{

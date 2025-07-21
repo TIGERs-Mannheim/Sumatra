@@ -3,15 +3,11 @@
  */
 package edu.tigers.sumatra.ids;
 
-import com.sleepycat.persist.model.Persistent;
-
-
 /**
  * Object identifier.
  * 
  * @author Oliver Steinbrecher
  */
-@Persistent
 public abstract class AObjectID implements Comparable<AObjectID>
 {
 	/** needs to be 255 thus the bot firmware can perform a deinitialization of the network interface */

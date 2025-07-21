@@ -3,8 +3,9 @@
  */
 package edu.tigers.sumatra.rcm;
 
-import edu.tigers.sumatra.proto.BotActionCommandProtos.BotActionCommand;
 import edu.tigers.sumatra.botmanager.bots.ABot;
+import edu.tigers.sumatra.botmanager.botskills.ABotSkill;
+import edu.tigers.sumatra.proto.BotActionCommandProtos.BotActionCommand;
 
 
 /**
@@ -16,15 +17,7 @@ public interface ICommandInterpreter
 	/**
 	 * @param command
 	 */
-	void interpret(BotActionCommand command);
-	
-	
-	/**
-	 * send a move, dribble and kick cmd to stop everything
-	 */
-	default void stopAll()
-	{
-	}
+	ABotSkill interpret(BotActionCommand command);
 	
 	
 	/**
@@ -43,14 +36,8 @@ public interface ICommandInterpreter
 	 * @param highSpeedMode the highSpeedMode to set
 	 */
 	void setHighSpeedMode(boolean highSpeedMode);
-	
-	
-	/**
-	 * @return the paused
-	 */
-	boolean isPaused();
-	
-	
+
+
 	/**
 	 * @param paused the paused to set
 	 */

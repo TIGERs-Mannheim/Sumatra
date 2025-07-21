@@ -4,7 +4,6 @@
 
 package edu.tigers.sumatra.referee.gameevent;
 
-import com.sleepycat.persist.model.Persistent;
 import edu.tigers.sumatra.ids.ETeamColor;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.referee.proto.SslGcGameEvent;
@@ -12,21 +11,12 @@ import lombok.EqualsAndHashCode;
 import lombok.Value;
 
 
-@Persistent
 @Value
 @EqualsAndHashCode(callSuper = true)
 public class PenaltyKickFailed extends AGameEvent
 {
 	ETeamColor team;
 	IVector2 location;
-
-
-	@SuppressWarnings("unsued") // used by berkeley
-	protected PenaltyKickFailed()
-	{
-		team = null;
-		location = null;
-	}
 
 
 	/**

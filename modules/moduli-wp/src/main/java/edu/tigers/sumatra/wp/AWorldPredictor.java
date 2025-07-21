@@ -5,10 +5,10 @@
 package edu.tigers.sumatra.wp;
 
 import com.github.g3force.configurable.IConfigObserver;
-import edu.tigers.moduli.AModule;
 import edu.tigers.sumatra.cam.ICamFrameObserver;
 import edu.tigers.sumatra.drawable.ShapeMap;
 import edu.tigers.sumatra.drawable.ShapeMapSource;
+import edu.tigers.sumatra.moduli.AModule;
 import edu.tigers.sumatra.wp.util.IRobotInfoProvider;
 
 import java.util.List;

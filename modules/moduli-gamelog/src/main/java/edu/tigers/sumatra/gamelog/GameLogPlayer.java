@@ -4,8 +4,7 @@
 
 package edu.tigers.sumatra.gamelog;
 
-import edu.tigers.moduli.AModule;
-import edu.tigers.moduli.exceptions.StartModuleException;
+import edu.tigers.sumatra.moduli.AModule;
 import lombok.Setter;
 import lombok.extern.log4j.Log4j2;
 
@@ -49,9 +48,10 @@ public class GameLogPlayer extends AModule
 
 
 	@Override
-	public void startModule() throws StartModuleException
+	public void startModule()
 	{
 		player = new Thread(this::play, "GameLogPlayer");
+		player.setUncaughtExceptionHandler((t, e) -> log.error("Uncaught exception in log player", e));
 		player.start();
 	}
 
@@ -135,6 +135,7 @@ public class GameLogPlayer extends AModule
 			}
 		}
 	}
+
 
 	public void playlogFast(final GameLogReader log)
 	{
@@ -267,13 +268,15 @@ public class GameLogPlayer extends AModule
 	}
 
 
-	private int findFrameWithCondition(final GameLogReader currentLog, final int startFrame,
-			final Function<GameLogMessage, GameLogCompareResult> condition, GameLogCompareResult requiredVerdict)
+	private int findFrameWithCondition(
+			final GameLogReader currentLog, final int startFrame,
+			final Function<GameLogMessage, GameLogCompareResult> condition, GameLogCompareResult requiredVerdict
+	)
 	{
 		for (int frame = startFrame; frame < currentLog.getMessages().size(); frame++)
 		{
 			GameLogMessage msg = currentLog.getMessages().get(frame);
-			if(condition.apply(msg) == requiredVerdict)
+			if (condition.apply(msg) == requiredVerdict)
 			{
 				return frame;
 			}

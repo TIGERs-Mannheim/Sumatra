@@ -4,7 +4,6 @@
 
 package edu.tigers.sumatra.math.rectangle;
 
-import com.sleepycat.persist.model.Persistent;
 import edu.tigers.sumatra.math.AngleMath;
 import edu.tigers.sumatra.math.SumatraMath;
 import edu.tigers.sumatra.math.line.ILineSegment;
@@ -19,7 +18,6 @@ import org.apache.commons.lang.builder.HashCodeBuilder;
  * @author Malte
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  */
-@Persistent
 public class Rectangle extends ARectangle
 {
 	private final Vector2f center;

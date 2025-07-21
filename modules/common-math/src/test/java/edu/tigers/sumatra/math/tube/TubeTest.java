@@ -12,16 +12,18 @@ import edu.tigers.sumatra.math.circle.Circle;
 import edu.tigers.sumatra.math.line.Lines;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.within;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
-public class TubeTest
+class TubeTest
 {
 	private IVector2 startCenter = Vector2.zero();
 	private IVector2 endCenter = Vector2.fromXY(1000, 0);
@@ -29,40 +31,40 @@ public class TubeTest
 
 
 	@Test
-	public void testIsPointInShape()
+	void testIsPointInShape()
 	{
 		ITube tube = Tube.create(startCenter, endCenter, radius);
 		ITube tubeZeroLength = Tube.create(startCenter, startCenter, radius);
 
-		Assert.assertTrue(tube.isPointInShape(startCenter));
-		Assert.assertTrue(tube.isPointInShape(endCenter));
-		Assert.assertTrue(tube.isPointInShape(Vector2.fromXY(-9, 0)));
-		Assert.assertTrue(tube.isPointInShape(Vector2.fromXY(1009, 0)));
-		Assert.assertTrue(tube.isPointInShape(Vector2.fromXY(0, 9)));
-		Assert.assertTrue(tube.isPointInShape(Vector2.fromXY(1000, -9)));
-		Assert.assertTrue((tube.isPointInShape(Vector2.fromXY(500, 0))));
-		Assert.assertTrue(tube.isPointInShape(Vector2.fromXY(800, 9)));
+		assertTrue(tube.isPointInShape(startCenter));
+		assertTrue(tube.isPointInShape(endCenter));
+		assertTrue(tube.isPointInShape(Vector2.fromXY(-9, 0)));
+		assertTrue(tube.isPointInShape(Vector2.fromXY(1009, 0)));
+		assertTrue(tube.isPointInShape(Vector2.fromXY(0, 9)));
+		assertTrue(tube.isPointInShape(Vector2.fromXY(1000, -9)));
+		assertTrue((tube.isPointInShape(Vector2.fromXY(500, 0))));
+		assertTrue(tube.isPointInShape(Vector2.fromXY(800, 9)));
 
-		Assert.assertTrue(tubeZeroLength.isPointInShape(startCenter));
-		Assert.assertTrue(tubeZeroLength.isPointInShape(Vector2.fromXY(-9, 0)));
-		Assert.assertTrue(tubeZeroLength.isPointInShape(Vector2.fromXY(0, 9)));
+		assertTrue(tubeZeroLength.isPointInShape(startCenter));
+		assertTrue(tubeZeroLength.isPointInShape(Vector2.fromXY(-9, 0)));
+		assertTrue(tubeZeroLength.isPointInShape(Vector2.fromXY(0, 9)));
 
-		Assert.assertFalse(tube.isPointInShape(Vector2.fromXY(-11, 0)));
-		Assert.assertFalse(tube.isPointInShape(Vector2.fromXY(0, -11)));
-		Assert.assertFalse(tube.isPointInShape(Vector2.fromXY(-1000, 0)));
-		Assert.assertFalse(tube.isPointInShape(Vector2.fromXY(500, 11)));
-		Assert.assertFalse(tube.isPointInShape(Vector2.fromXY(1000, 11)));
-		Assert.assertFalse(tube.isPointInShape(Vector2.fromXY(1011, 0)));
+		assertFalse(tube.isPointInShape(Vector2.fromXY(-11, 0)));
+		assertFalse(tube.isPointInShape(Vector2.fromXY(0, -11)));
+		assertFalse(tube.isPointInShape(Vector2.fromXY(-1000, 0)));
+		assertFalse(tube.isPointInShape(Vector2.fromXY(500, 11)));
+		assertFalse(tube.isPointInShape(Vector2.fromXY(1000, 11)));
+		assertFalse(tube.isPointInShape(Vector2.fromXY(1011, 0)));
 
-		Assert.assertFalse(tubeZeroLength.isPointInShape(Vector2.fromXY(-11, 0)));
-		Assert.assertFalse(tubeZeroLength.isPointInShape(Vector2.fromXY(0, -11)));
-		Assert.assertFalse(tubeZeroLength.isPointInShape(Vector2.fromXY(11, 0)));
-		Assert.assertFalse(tubeZeroLength.isPointInShape(Vector2.fromXY(0, 11)));
+		assertFalse(tubeZeroLength.isPointInShape(Vector2.fromXY(-11, 0)));
+		assertFalse(tubeZeroLength.isPointInShape(Vector2.fromXY(0, -11)));
+		assertFalse(tubeZeroLength.isPointInShape(Vector2.fromXY(11, 0)));
+		assertFalse(tubeZeroLength.isPointInShape(Vector2.fromXY(0, 11)));
 	}
 
 
 	@Test
-	public void testIsIntersectingWithLine()
+	void testIsIntersectingWithLine()
 	{
 		ITube tube = Tube.create(startCenter, endCenter, radius);
 		ITube tubeZeroLength = Tube.create(startCenter, startCenter, radius);
@@ -76,29 +78,29 @@ public class TubeTest
 		IVector2 p7 = Vector2.fromXY(-10, -10);
 		IVector2 p8 = Vector2.fromXY(1000, 10);
 
-		Assert.assertTrue(tube.isIntersectingWithPath(Lines.lineFromPoints(p1, p2)));
-		Assert.assertTrue(tube.isIntersectingWithPath(Lines.lineFromPoints(p2, p3)));
-		Assert.assertTrue(tube.isIntersectingWithPath(Lines.lineFromPoints(p1, p5)));
-		Assert.assertTrue(tube.isIntersectingWithPath(Lines.lineFromPoints(p4, p3)));
-		Assert.assertTrue(tube.isIntersectingWithPath(Lines.lineFromPoints(p6, p7)));
-		Assert.assertTrue(tube.isIntersectingWithPath(Lines.lineFromPoints(p6, p8)));
-		Assert.assertTrue(tube.isIntersectingWithPath(Lines.lineFromPoints(p1, p8)));
+		assertTrue(tube.isIntersectingWithPath(Lines.lineFromPoints(p1, p2)));
+		assertTrue(tube.isIntersectingWithPath(Lines.lineFromPoints(p2, p3)));
+		assertTrue(tube.isIntersectingWithPath(Lines.lineFromPoints(p1, p5)));
+		assertTrue(tube.isIntersectingWithPath(Lines.lineFromPoints(p4, p3)));
+		assertTrue(tube.isIntersectingWithPath(Lines.lineFromPoints(p6, p7)));
+		assertTrue(tube.isIntersectingWithPath(Lines.lineFromPoints(p6, p8)));
+		assertTrue(tube.isIntersectingWithPath(Lines.lineFromPoints(p1, p8)));
 
-		Assert.assertTrue(tubeZeroLength.isIntersectingWithPath(Lines.lineFromPoints(p1, p2)));
-		Assert.assertTrue(tubeZeroLength.isIntersectingWithPath(Lines.lineFromPoints(p1, p5)));
-		Assert.assertTrue(tubeZeroLength.isIntersectingWithPath(Lines.lineFromPoints(p6, p7)));
-		Assert.assertTrue(tubeZeroLength.isIntersectingWithPath(Lines.lineFromPoints(p6, p8)));
+		assertTrue(tubeZeroLength.isIntersectingWithPath(Lines.lineFromPoints(p1, p2)));
+		assertTrue(tubeZeroLength.isIntersectingWithPath(Lines.lineFromPoints(p1, p5)));
+		assertTrue(tubeZeroLength.isIntersectingWithPath(Lines.lineFromPoints(p6, p7)));
+		assertTrue(tubeZeroLength.isIntersectingWithPath(Lines.lineFromPoints(p6, p8)));
 
-		Assert.assertFalse(tube.isIntersectingWithPath(Lines.lineFromPoints(p1, p3)));
-		Assert.assertFalse(tube.isIntersectingWithPath(Lines.lineFromPoints(p5, p4)));
+		assertFalse(tube.isIntersectingWithPath(Lines.lineFromPoints(p1, p3)));
+		assertFalse(tube.isIntersectingWithPath(Lines.lineFromPoints(p5, p4)));
 
-		Assert.assertFalse(tubeZeroLength.isIntersectingWithPath(Lines.lineFromPoints(p1, p3)));
-		Assert.assertFalse(tubeZeroLength.isIntersectingWithPath(Lines.lineFromPoints(p8, p3)));
+		assertFalse(tubeZeroLength.isIntersectingWithPath(Lines.lineFromPoints(p1, p3)));
+		assertFalse(tubeZeroLength.isIntersectingWithPath(Lines.lineFromPoints(p8, p3)));
 	}
 
 
 	@Test
-	public void testNearestPointOutside()
+	void testNearestPointOutside()
 	{
 		ITube tube = Tube.create(startCenter, endCenter, radius);
 		ITube tubeZeroLength = Tube.create(startCenter, startCenter, radius);
@@ -106,14 +108,14 @@ public class TubeTest
 		IVector2 pInside = Vector2.fromXY(0, 1);
 		IVector2 nearestPointOutside = Vector2.fromXY(0, 10);
 
-		Assert.assertEquals(tube.nearestPointOutside(pInside), nearestPointOutside);
-		Assert.assertEquals(tube.nearestPointOutside(nearestPointOutside), nearestPointOutside);
-		Assert.assertEquals(tubeZeroLength.nearestPointOutside(pInside), nearestPointOutside);
+		assertEquals(tube.nearestPointOutside(pInside), nearestPointOutside);
+		assertEquals(tube.nearestPointOutside(nearestPointOutside), nearestPointOutside);
+		assertEquals(tubeZeroLength.nearestPointOutside(pInside), nearestPointOutside);
 	}
 
 
 	@Test
-	public void testNearestPointInside()
+	void testNearestPointInside()
 	{
 		ITube tube = Tube.create(startCenter, endCenter, radius);
 		ITube tubeZeroLength = Tube.create(startCenter, startCenter, radius);
@@ -121,14 +123,14 @@ public class TubeTest
 		IVector2 nearestPointInside = Vector2.fromXY(0, 10);
 		IVector2 pOutside = Vector2.fromXY(0, 11);
 
-		Assert.assertEquals(tube.nearestPointInside(pOutside), nearestPointInside);
-		Assert.assertEquals(tube.nearestPointInside(nearestPointInside), nearestPointInside);
-		Assert.assertEquals(tubeZeroLength.nearestPointInside(pOutside), nearestPointInside);
+		assertEquals(tube.nearestPointInside(pOutside), nearestPointInside);
+		assertEquals(tube.nearestPointInside(nearestPointInside), nearestPointInside);
+		assertEquals(tubeZeroLength.nearestPointInside(pOutside), nearestPointInside);
 	}
 
 
 	@Test
-	public void testLineIntersections()
+	void testLineIntersections()
 	{
 		final Vector2 start = Vector2.fromXY(1, 5);
 		final Vector2 end = Vector2.fromXY(-2, 5);
@@ -187,7 +189,7 @@ public class TubeTest
 
 
 	@Test
-	public void testWithMargin()
+	void testWithMargin()
 	{
 		var tube = buildTube();
 		var margin = 1;
@@ -208,7 +210,7 @@ public class TubeTest
 
 
 	@Test
-	public void testGetPerimeterPath()
+	void testGetPerimeterPath()
 	{
 		var corners = List.of(
 				Vector2.fromXY(-10, 8),
@@ -229,7 +231,7 @@ public class TubeTest
 
 
 	@Test
-	public void testPerimeterPathOrder()
+	void testPerimeterPathOrder()
 	{
 		var perimeter = buildTube().getPerimeterPath();
 		IBoundedPath lastPath = null;
@@ -245,14 +247,14 @@ public class TubeTest
 
 
 	@Test
-	public void testGetPerimeterLength()
+	void testGetPerimeterLength()
 	{
 		assertThat(buildTube().getPerimeterLength()).isCloseTo(40 + 4 * AngleMath.PI_TWO, within(1e-10));
 	}
 
 
 	@Test
-	public void testPointsAroundPerimeter()
+	void testPointsAroundPerimeter()
 	{
 		var tube = buildTube();
 
@@ -281,7 +283,7 @@ public class TubeTest
 
 
 	@Test
-	public void testIntersectPerimeterPathCircle()
+	void testIntersectPerimeterPathCircle()
 	{
 		var tube = buildTube();
 		var circle = Circle.createCircle(Vector2.fromY(4), 10);
@@ -295,7 +297,7 @@ public class TubeTest
 
 
 	@Test
-	public void testIntersectPerimeterPathArc()
+	void testIntersectPerimeterPathArc()
 	{
 		var tube = buildTube();
 		var arc = Arc.createArc(Vector2.fromY(4), 10, 0, AngleMath.PI);
@@ -311,7 +313,7 @@ public class TubeTest
 	}
 
 	@Test
-	public void testCompliance()
+	void testCompliance()
 	{
 		I2DShapeComplianceChecker.checkCompliance(buildTube(), true);
 	}

@@ -4,27 +4,17 @@
 
 package edu.tigers.sumatra.referee.data;
 
-import java.util.List;
-
-import com.sleepycat.persist.model.Persistent;
-
 import edu.tigers.sumatra.referee.gameevent.IGameEvent;
+
+import java.util.List;
 
 
 /**
  * A proposed game event.
  */
-@Persistent
 public class GameEventProposalGroup
 {
 	private final List<IGameEvent> gameEvents;
-
-
-	@SuppressWarnings("unused") // used by berkeley
-	private GameEventProposalGroup()
-	{
-		gameEvents = null;
-	}
 
 
 	public GameEventProposalGroup(final List<IGameEvent> gameEvents)

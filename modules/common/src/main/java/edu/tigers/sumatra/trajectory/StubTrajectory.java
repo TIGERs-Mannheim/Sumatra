@@ -4,7 +4,6 @@
 
 package edu.tigers.sumatra.trajectory;
 
-import com.sleepycat.persist.model.Persistent;
 import edu.tigers.sumatra.math.AngleMath;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.IVector3;
@@ -20,7 +19,6 @@ import java.util.List;
 /**
  * @param <T> Type of Trajectory
  */
-@Persistent
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class StubTrajectory<T> implements ITrajectory<T>
 {

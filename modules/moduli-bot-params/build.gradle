@@ -8,11 +8,11 @@ plugins {
 }
 
 dependencies {
+    implementation project(':common')
     implementation project(':common-bot')
     implementation project(':sumatra-model')
     implementation project(':moduli-referee')
 
-    implementation(libs.com.github.TIGERs.mannheim.moduli)
     implementation(libs.org.apache.logging.log4j.log4j.api)
 
     implementation(libs.commons.lang)

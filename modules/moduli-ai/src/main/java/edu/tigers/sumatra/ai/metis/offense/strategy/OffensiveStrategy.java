@@ -4,7 +4,6 @@
 
 package edu.tigers.sumatra.ai.metis.offense.strategy;
 
-import com.sleepycat.persist.model.Persistent;
 import edu.tigers.sumatra.ids.BotID;
 import lombok.AllArgsConstructor;
 import lombok.Value;
@@ -17,7 +16,6 @@ import java.util.Optional;
 /**
  * A offensive strategy holds information of the global strategy
  */
-@Persistent(version = 3)
 @Value
 @AllArgsConstructor
 public class OffensiveStrategy

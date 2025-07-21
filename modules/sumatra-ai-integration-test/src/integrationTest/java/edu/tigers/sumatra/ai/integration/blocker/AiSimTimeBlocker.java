@@ -16,13 +16,12 @@ import java.util.List;
 import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 
 @Log4j2
 public class AiSimTimeBlocker extends SimTimeBlocker implements IAIObserver
 {
-	private final BlockingDeque<AIInfoFrame> queue = new LinkedBlockingDeque<>(1);
+	private final BlockingDeque<AIInfoFrame> queue = new LinkedBlockingDeque<>(2);
 	private final List<IStopCondition> stopConditions = new ArrayList<>();
 	private final List<IAiFrameHook> hooks = new ArrayList<>();
 
@@ -90,10 +89,19 @@ public class AiSimTimeBlocker extends SimTimeBlocker implements IAIObserver
 
 				var matchingStopConditions = stopConditions.stream()
 						.filter(c -> c.stopSimulation(frame))
-						.collect(Collectors.toList());
+						.toList();
 				if (!matchingStopConditions.isEmpty())
 				{
-					log.info("Stop condition(s) match: {}", matchingStopConditions);
+					var names = matchingStopConditions.stream().map(IStopCondition::name).toList();
+					log.info("Stop condition(s) match: {}", names);
+					for (var c : matchingStopConditions)
+					{
+						var hint = c.hint(frame);
+						if (!hint.isEmpty())
+						{
+							log.info("Hint for {}: {}", c.name(), hint);
+						}
+					}
 					return this;
 				}
 
@@ -127,6 +135,16 @@ public class AiSimTimeBlocker extends SimTimeBlocker implements IAIObserver
 	public interface IStopCondition
 	{
 		boolean stopSimulation(final AIInfoFrame frame);
+
+		default String name()
+		{
+			return getClass().getSimpleName();
+		}
+
+		default String hint(final AIInfoFrame frame)
+		{
+			return "";
+		}
 	}
 
 	@FunctionalInterface

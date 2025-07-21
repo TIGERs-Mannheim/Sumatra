@@ -4,12 +4,10 @@
 
 package edu.tigers.sumatra.math.penaltyarea;
 
-import com.sleepycat.persist.model.Persistent;
 import edu.tigers.sumatra.math.IBoundedPath;
 import edu.tigers.sumatra.math.line.Lines;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
-import edu.tigers.sumatra.math.vector.Vector2f;
 
 import java.util.List;
 
@@ -17,19 +15,8 @@ import java.util.List;
 /**
  * Class representing a rectangular penalty area
  */
-@Persistent
 public class PenaltyArea extends APenaltyArea
 {
-	/**
-	 * Used by berkely
-	 */
-	@SuppressWarnings("unused")
-	private PenaltyArea()
-	{
-		super(Vector2f.ZERO_VECTOR, 1, 2);
-	}
-
-
 	/**
 	 * Creates a PenaltyArea
 	 *

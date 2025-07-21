@@ -4,18 +4,15 @@
 
 package edu.tigers.sumatra.math.penaltyarea;
 
-import com.sleepycat.persist.model.Persistent;
 import edu.tigers.sumatra.math.SumatraMath;
 import edu.tigers.sumatra.math.line.Lines;
 import edu.tigers.sumatra.math.rectangle.IRectangle;
 import edu.tigers.sumatra.math.rectangle.Rectangle;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
-import edu.tigers.sumatra.math.vector.Vector2f;
 import lombok.Getter;
 
 
-@Persistent
 public abstract class APenaltyArea implements IPenaltyArea
 {
 	@Getter
@@ -24,16 +21,6 @@ public abstract class APenaltyArea implements IPenaltyArea
 	protected final IVector2 goalCenter;
 	private final double length;
 	private final double depth;
-
-
-	/**
-	 * Used by berkely
-	 */
-	@SuppressWarnings("unused")
-	private APenaltyArea()
-	{
-		this(Vector2f.ZERO_VECTOR, 1, 2);
-	}
 
 
 	/**

@@ -3,7 +3,6 @@
  */
 package edu.tigers.sumatra.trajectory;
 
-import com.sleepycat.persist.model.Persistent;
 import lombok.RequiredArgsConstructor;
 import lombok.ToString;
 
@@ -13,21 +12,12 @@ import lombok.ToString;
  *
  * @param <T>
  */
-@Persistent
 @RequiredArgsConstructor
 @ToString
 public class TrajectoryWithTime<T>
 {
 	private final ITrajectory<T> trajectory;
 	private final long tStart;
-
-
-	@SuppressWarnings("unused") // berkeley
-	private TrajectoryWithTime()
-	{
-		trajectory = new StubTrajectory<>();
-		tStart = 0;
-	}
 
 
 	/**

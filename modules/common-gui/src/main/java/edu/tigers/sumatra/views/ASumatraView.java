@@ -3,15 +3,11 @@
  */
 package edu.tigers.sumatra.views;
 
-import edu.tigers.sumatra.model.ModuliStateAdapter;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
-import lombok.Setter;
 import lombok.ToString;
 import lombok.extern.log4j.Log4j2;
 import net.infonode.docking.View;
 
-import java.awt.Component;
 import java.util.stream.Stream;
 
 
@@ -20,79 +16,121 @@ import java.util.stream.Stream;
  */
 @Log4j2
 @Getter
-@ToString
-@RequiredArgsConstructor
+@ToString(of = "type")
 public abstract class ASumatraView
 {
 	private final ESumatraViewType type;
+	private final View view;
 	private ISumatraViewPresenter presenter;
-	private View view = null;
-	@Setter
-	private EViewMode mode = EViewMode.NORMAL;
+
+	private boolean started = false;
+	private boolean moduliStarted = false;
+
+
+	protected ASumatraView(ESumatraViewType type)
+	{
+		this.type = type;
+		view = new View(getType().getTitle(), new ViewIcon(), null);
+	}
 
 
 	/**
 	 * Create presenter if not already done yet
 	 */
-	public final void ensureInitialized()
+	public final synchronized void ensureInitialized()
 	{
 		if (presenter == null)
 		{
-			log.trace("Creating presenter for view {}", type.getTitle());
+			log.trace("Creating presenter for view {}", this);
 			presenter = createPresenter();
 			getView().setComponent(presenter.getViewPanel());
-			if (mode == EViewMode.NORMAL)
+			if (started)
 			{
-				ModuliStateAdapter stateAdapter = ModuliStateAdapter.getInstance();
-				presenter.getChildPresenters().forEach(stateAdapter::addObserver);
-				stateAdapter.addObserver(presenter);
+				log.trace("Notify start to view {}", this);
+				presenter.onStart();
+				presenter.getChildPresenters().forEach(ISumatraPresenter::onStart);
 			}
-			log.trace("Presenter created for view {}", type.getTitle());
+			if (moduliStarted)
+			{
+				log.trace("Notify moduli start to view {}", this);
+				presenter.onModuliStarted();
+				presenter.getChildPresenters().forEach(ISumatraPresenter::onModuliStarted);
+			}
+
+			log.trace("Created presenter for view {}", this);
 		}
 	}
 
 
-	/**
-	 * The component which is to be displayed in the view panel.
-	 * This can be anything that extends from Component (e.g. JPanel).
-	 *
-	 * @return View component.
-	 */
-	public final synchronized Component getComponent()
+	public synchronized void start()
 	{
-		ensureInitialized();
-		return presenter.getViewPanel();
-	}
-
-
-	public final ISumatraViewPresenter getPresenter()
-	{
-		ensureInitialized();
-		return presenter;
-	}
-
-
-	/**
-	 * @return the view
-	 */
-	public final synchronized View getView()
-	{
-		if (view == null)
+		if (started)
 		{
-			view = new View(getType().getTitle(), new ViewIcon(), null);
+			log.warn("View {} already started", this);
+			return;
 		}
-		return view;
+		started = true;
+
+		if (presenter != null)
+		{
+			log.trace("Starting view {}", this);
+			presenter.onStart();
+			presenter.getChildPresenters().forEach(ISumatraPresenter::onStart);
+		}
 	}
 
 
-	/**
-	 * Check if both, presenter and view were created
-	 *
-	 * @return
-	 */
-	public final synchronized boolean isInitialized()
+	public synchronized void stop()
 	{
-		return (presenter != null) && (view != null);
+		if (!started)
+		{
+			log.warn("View {} not started, cannot stop", this);
+			return;
+		}
+		started = false;
+
+		if (presenter != null)
+		{
+			log.trace("Stopping view {}", this);
+			presenter.onStop();
+			presenter.getChildPresenters().forEach(ISumatraPresenter::onStop);
+		}
+	}
+
+
+	public synchronized void onModuliStarted()
+	{
+		if (moduliStarted)
+		{
+			log.warn("View {} already started moduli", this);
+			return;
+		}
+		moduliStarted = true;
+
+		if (presenter != null)
+		{
+			log.trace("Starting moduli for view {}", this);
+			presenter.onModuliStarted();
+			presenter.getChildPresenters().forEach(ISumatraPresenter::onModuliStarted);
+		}
+	}
+
+
+	public synchronized void onModuliStopped()
+	{
+		if (!moduliStarted)
+		{
+			log.warn("View {} not started moduli, cannot stop", this);
+			return;
+		}
+		moduliStarted = false;
+
+		if (presenter != null)
+		{
+			log.trace("Stopping moduli for view {}", this);
+			presenter.onModuliStopped();
+			presenter.getChildPresenters().forEach(ISumatraPresenter::onModuliStopped);
+		}
 	}
 
 
@@ -102,7 +140,7 @@ public abstract class ASumatraView
 	public final Stream<ISumatraPresenter> getPresenters()
 	{
 		ensureInitialized();
-		return gatherPresenters(presenter);
+		return gatherPresenters(getPresenter());
 	}
 
 

@@ -4,40 +4,36 @@
 
 package edu.tigers.sumatra.math.vector;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.assertj.core.api.Assertions.within;
-import static org.assertj.core.api.Assertions.withinPercentage;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import edu.tigers.sumatra.math.AngleMath;
+import edu.tigers.sumatra.math.StatisticsMath;
+import nl.jqno.equalsverifier.EqualsVerifier;
+import nl.jqno.equalsverifier.Warning;
+import org.apache.commons.math3.linear.ArrayRealVector;
+import org.apache.commons.math3.linear.RealVector;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.apache.commons.math3.linear.ArrayRealVector;
-import org.apache.commons.math3.linear.RealVector;
-import org.junit.Test;
-
-import edu.tigers.sumatra.math.AngleMath;
-import edu.tigers.sumatra.math.StatisticsMath;
-import nl.jqno.equalsverifier.EqualsVerifier;
-import nl.jqno.equalsverifier.Warning;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.within;
+import static org.assertj.core.api.Assertions.withinPercentage;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
 /**
  * Class for testing several functions provided by {@link AVectorN} and {@link VectorN}
- *
- * @author Malte
- * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  */
-public class VectorNTest
+class VectorNTest
 {
 	private static final double ACCURACY = 0.001;
 	
 	
 	@Test
-	public void testAdd()
+	void testAdd()
 	{
 		VectorN vec1 = VectorN.from(2, 1, 5);
 		VectorN vec2 = VectorN.from(3, 4, 7);
@@ -57,7 +53,7 @@ public class VectorNTest
 	
 	
 	@Test
-	public void testAddNew()
+	void testAddNew()
 	{
 		VectorN vec1 = VectorN.from(5, 7, 3);
 		VectorN vec2 = VectorN.from(1, 2, 1);
@@ -77,7 +73,7 @@ public class VectorNTest
 	
 	
 	@Test
-	public void testMultiply()
+	void testMultiply()
 	{
 		VectorN vec1 = VectorN.from(4, 7, -2);
 		double factor = 4.5;
@@ -103,7 +99,7 @@ public class VectorNTest
 	
 	
 	@Test
-	public void testMultiplyNewFactor()
+	void testMultiplyNewFactor()
 	{
 		VectorN vec1 = VectorN.from(4, 7, 1);
 		double factor = 4.5;
@@ -130,7 +126,7 @@ public class VectorNTest
 	
 	
 	@Test
-	public void testMultiplyNewVector()
+	void testMultiplyNewVector()
 	{
 		assertThat(VectorN.zero(3).multiplyNew(VectorN.from(1, 1, 1))).isEqualTo(VectorN.zero(3));
 		assertThat(VectorN.from(1, 1, 1).multiplyNew(VectorN.from(1, 1, 1))).isEqualTo(VectorN.from(1, 1, 1));
@@ -140,7 +136,7 @@ public class VectorNTest
 	
 	
 	@Test
-	public void testSubtract()
+	void testSubtract()
 	{
 		VectorN vec1 = VectorN.from(4, 2, 1);
 		VectorN vec2 = VectorN.from(3, 5, 2);
@@ -160,7 +156,7 @@ public class VectorNTest
 	
 	
 	@Test
-	public void testSubtractNew()
+	void testSubtractNew()
 	{
 		VectorN vec1 = VectorN.from(5, 7, 2);
 		VectorN vec2 = VectorN.from(1, 2, -1);
@@ -181,7 +177,7 @@ public class VectorNTest
 	
 	
 	@Test
-	public void testNormalize()
+	void testNormalize()
 	{
 		assertThat(VectorN.from(42, 1337, 3.14).normalizeNew().getLength()).isCloseTo(1, within(1e-6));
 		assertThat(VectorN.zero(3).normalizeNew().getLength()).isCloseTo(0, within(1e-6));
@@ -189,7 +185,7 @@ public class VectorNTest
 	
 	
 	@Test
-	public void testGetLength()
+	void testGetLength()
 	{
 		assertThat(VectorN.from(42, 0, 0).getLength2()).isEqualTo(42);
 		assertThat(VectorN.from(-42, 0, 0).getLength2()).isEqualTo(42);
@@ -200,7 +196,7 @@ public class VectorNTest
 	
 	
 	@Test
-	public void testEquals()
+	void testEquals()
 	{
 		VectorN vec1 = VectorN.from(5, 0, -2);
 		VectorN vec2 = VectorN.from(5, 0, -2);
@@ -224,7 +220,7 @@ public class VectorNTest
 	
 	
 	@Test
-	public void testValueOf()
+	void testValueOf()
 	{
 		assertThat(VectorN.valueOf("0,0,0").isCloseTo(VectorN.zero(3))).isTrue();
 		assertThat(VectorN.valueOf("42,21,1").isCloseTo(VectorN.from(42, 21, 1))).isTrue();
@@ -235,7 +231,7 @@ public class VectorNTest
 	
 	
 	@Test
-	public void testSet()
+	void testSet()
 	{
 		VectorN vector = VectorN.zero(3);
 		vector.set(0, 42);
@@ -249,7 +245,7 @@ public class VectorNTest
 	
 	
 	@Test
-	public void testIsZeroVector()
+	void testIsZeroVector()
 	{
 		assertThat(VectorN.from(0, 0, 0).isZeroVector()).isTrue();
 		assertThat(VectorN.from(1e-8, 0, 0).isZeroVector()).isTrue();
@@ -259,7 +255,7 @@ public class VectorNTest
 	
 	
 	@Test
-	public void testIsFinite()
+	void testIsFinite()
 	{
 		assertThat(VectorN.from(0, 1, 2).isFinite()).isTrue();
 		assertThat(VectorN.from(Double.NaN, 0, 0).isFinite()).isFalse();
@@ -268,7 +264,7 @@ public class VectorNTest
 	
 	
 	@Test
-	public void testGetSaveableString()
+	void testGetSaveableString()
 	{
 		assertThat(VectorN.from(42, 1337, 3.14).getSaveableString())
 				.isEqualTo(42d + ";" + 1337d + ";" + 3.14);
@@ -276,7 +272,7 @@ public class VectorNTest
 	
 	
 	@Test
-	public void testNumberList()
+	void testNumberList()
 	{
 		IVectorN vector = VectorN.from(42, 1337, 3.14, 1.0);
 		List<Number> nbrList = vector.getNumberList();
@@ -287,7 +283,7 @@ public class VectorNTest
 	
 	
 	@Test
-	public void testToArray()
+	void testToArray()
 	{
 		IVectorN vector = VectorN.from(42, 1337, 3.14);
 		assertThat(vector.toArray()).isEqualTo(new double[] { 42d, 1337d, 3.14 });
@@ -295,7 +291,7 @@ public class VectorNTest
 	
 	
 	@Test
-	public void testToString()
+	void testToString()
 	{
 		IVectorN vector1 = VectorN.from(0, 0, 2.5);
 		assertThat(vector1.toString()).isEqualTo("[0.000,0.000,2.500|l=2.500]");
@@ -307,22 +303,22 @@ public class VectorNTest
 	
 	
 	@Test
-	public void testToJSON()
+	void testToJSON()
 	{
-		assertThat(VectorN.from(42, 1337, 1).toJSON().toJSONString())
+		assertThat(VectorN.from(42, 1337, 1).toJSON().toJson())
 				.isEqualTo("{\"dim2\":1.0,\"dim1\":1337.0,\"dim0\":42.0}");
 	}
 	
 	
 	@Test
-	public void testToJSONArray()
+	void testToJsonArray()
 	{
-		assertThat(VectorN.from(42, 1337, 1).toJSONArray().toJSONString()).isEqualTo("[42.0,1337.0,1.0]");
+		assertThat(VectorN.from(42, 1337, 1).toJsonArray().toJson()).isEqualTo("[42.0,1337.0,1.0]");
 	}
 	
 	
 	@Test
-	public void testIsCloseTo()
+	void testIsCloseTo()
 	{
 		assertThat(VectorN.zero(3).isCloseTo(VectorN.zero(3), 0)).isTrue();
 		assertThat(VectorN.zero(3).isCloseTo(VectorN.from(1, 0, 0), 0.1)).isFalse();
@@ -332,7 +328,7 @@ public class VectorNTest
 	
 	
 	@Test
-	public void testMeanVector()
+	void testMeanVector()
 	{
 		List<IVectorN> list = new ArrayList<>();
 		list.add(VectorN.from(24, 234, -4));
@@ -349,7 +345,7 @@ public class VectorNTest
 	
 	
 	@Test
-	public void testVarianceVector()
+	void testVarianceVector()
 	{
 		List<IVector> list = new ArrayList<>();
 		list.add(VectorN.from(24, 0, 9));
@@ -366,7 +362,7 @@ public class VectorNTest
 	
 	
 	@Test
-	public void testStdVector()
+	void testStdVector()
 	{
 		List<IVector> list = new ArrayList<>();
 		list.add(VectorN.from(24, 0, -1));
@@ -383,7 +379,7 @@ public class VectorNTest
 	
 	
 	@Test
-	public void testGet()
+	void testGet()
 	{
 		IVectorN vector = VectorN.from(42, 1337, 2);
 		assertThat(vector.get(0)).isEqualTo(vector.x());
@@ -393,7 +389,7 @@ public class VectorNTest
 	
 	
 	@Test
-	public void testAbs()
+	void testAbs()
 	{
 		assertThat(VectorN.from(42, 1337, 2).absNew()).isEqualTo(VectorN.from(42, 1337, 2));
 		assertThat(VectorN.from(-42, 1337, 2).absNew()).isEqualTo(VectorN.from(42, 1337, 2));
@@ -402,14 +398,14 @@ public class VectorNTest
 	
 	
 	@Test
-	public void testGetXYVector()
+	void testGetXYVector()
 	{
 		assertThat(VectorN.from(42, 1337, 0).getXYVector()).isEqualTo(Vector2.fromXY(42, 1337));
 	}
 	
 	
 	@Test
-	public void testGetXYZVector()
+	void testGetXYZVector()
 	{
 		VectorN vector = VectorN.from(42, 1337, 3.14);
 		assertThat(vector.getXYZVector()).isEqualTo(Vector3.fromXYZ(42, 1337, 3.14));
@@ -417,14 +413,14 @@ public class VectorNTest
 	
 	
 	@Test
-	public void testApply()
+	void testApply()
 	{
 		assertThat(VectorN.from(1, -2, 3).apply(v -> Math.abs(v * 3))).isEqualTo(VectorN.from(3, 6, 9));
 	}
 	
 	
 	@Test
-	public void testRealVector()
+	void testRealVector()
 	{
 		RealVector realVector = new ArrayRealVector(4);
 		assertThat(VectorN.fromReal(realVector).isCloseTo(VectorN.zero(4))).isTrue();

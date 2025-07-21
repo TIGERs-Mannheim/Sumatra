@@ -66,7 +66,7 @@ public class MergeTool
 	/**
 	 * Merge files.
 	 */
-	public void mergeBlocking()
+	private void mergeBlocking()
 	{
 		if ((inputs == null) || (output == null))
 		{
@@ -82,7 +82,7 @@ public class MergeTool
 					reader.loadFileBlocking(i);
 					return reader.getMessages();
 				})
-				.sorted(Comparator.comparingLong(l -> l.get(0).getTimestampNs()))
+				.sorted(Comparator.comparingLong(l -> l.getFirst().getTimestampNs()))
 				.flatMap(List::stream)
 				.collect(Collectors.toCollection(LinkedList::new));
 
@@ -95,7 +95,7 @@ public class MergeTool
 
 		log.info("Processing complete. Writing output file.");
 
-		GameLogWriter writer = new GameLogWriter(GameLogType.LOG_FILE);
+		GameLogWriter writer = new GameLogWriter();
 		writer.openPath(output);
 		fullLog.forEach(writer::write);
 		writer.close();

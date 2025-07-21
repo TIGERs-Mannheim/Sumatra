@@ -9,8 +9,6 @@ import edu.tigers.sumatra.ai.metis.defense.data.DefenseBallThreat;
 import edu.tigers.sumatra.ai.metis.defense.data.DefenseBotThreatDefStrategyData;
 import edu.tigers.sumatra.ai.metis.defense.data.EDefenseBotThreatDefStrategy;
 import edu.tigers.sumatra.geometry.Geometry;
-import edu.tigers.sumatra.ids.BotID;
-import edu.tigers.sumatra.math.Hysteresis;
 import edu.tigers.sumatra.math.line.ILineSegment;
 import edu.tigers.sumatra.math.line.Lines;
 import edu.tigers.sumatra.math.vector.IVector2;
@@ -18,9 +16,7 @@ import edu.tigers.sumatra.wp.data.ITrackedBot;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.function.Supplier;
 
@@ -33,8 +29,8 @@ public class DefenseBotThreatDefStrategyCenterBackCalc extends ADefenseThreatCal
 {
 	@Configurable(comment = "[mm] The distance at which opponents are considered close to ball", defValue = "350.0")
 	private static double opponentsCloseToBallDistance = 350.0;
-
-	private final Map<BotID, Hysteresis> opponentDangerZoneHysteresis = new HashMap<>();
+	@Configurable(comment = "[mm] The distance at which opponents are considered close to their own PenArea and therefore completely ignored from any sort of defense", defValue = "500.0")
+	private static double opponentsCloseToPenAreaDistance = 500.0;
 
 
 	private final Supplier<DefenseBallThreat> defenseBallThreat;
@@ -47,10 +43,9 @@ public class DefenseBotThreatDefStrategyCenterBackCalc extends ADefenseThreatCal
 	@Override
 	public void doCalc()
 	{
-		updateOpponentDangerZoneHystereses();
-
 		centerBackDefData = getWFrame().getOpponentBots().values().stream()
-				.filter(this::movingInDangerZone)
+				.filter(this::isNotCloseToPenArea)
+				.filter(bot -> !getAiFrame().getKeeperOpponentId().equals(bot.getId()))
 				.filter(this::noPassReceiver)
 				.filter(this::notCloseToBall)
 				.map(this::buildDefenseBotThreatDefStrategyData)
@@ -59,22 +54,9 @@ public class DefenseBotThreatDefStrategyCenterBackCalc extends ADefenseThreatCal
 	}
 
 
-	private void updateOpponentDangerZoneHystereses()
+	private boolean isNotCloseToPenArea(ITrackedBot opponent)
 	{
-		for (ITrackedBot bot : getWFrame().getOpponentBots().values())
-		{
-			final Hysteresis hysteresis = opponentDangerZoneHysteresis.computeIfAbsent(bot.getBotId(),
-					botID -> new Hysteresis(0, 1));
-			hysteresis.setLowerThreshold(DefenseThreatRater.getDangerDropOffX() - 100);
-			hysteresis.setUpperThreshold(DefenseThreatRater.getDangerDropOffX() + 100);
-			hysteresis.update(predictedOpponentPos(bot).x());
-		}
-	}
-
-
-	private boolean movingInDangerZone(final ITrackedBot bot)
-	{
-		return opponentDangerZoneHysteresis.get(bot.getBotId()).isLower();
+		return Geometry.getPenaltyAreaTheir().distanceTo(opponent.getPos()) > opponentsCloseToPenAreaDistance;
 	}
 
 
@@ -107,15 +89,13 @@ public class DefenseBotThreatDefStrategyCenterBackCalc extends ADefenseThreatCal
 		var threatLine = threatLineCenterBack(bot);
 		var protectionLine = centerBackProtectionLine(threatLine, Geometry.getBotRadius() * 2);
 
-		return new DefenseBotThreatDefStrategyData(
-				bot.getBotId(),
+		return DefenseBotThreatDefStrategyData.create(
+				EDefenseBotThreatDefStrategy.CENTER_BACK,
+				bot,
+				threatLine.getPathStart(),
 				threatLine,
 				protectionLine.orElse(null),
-				threatLine.getPathStart(),
-				bot.getVel(),
-				protectionLine.map(ILineSegment::getPathStart).orElse(null),
-				EDefenseBotThreatDefStrategy.CENTER_BACK
+				defenseBallThreat.get()
 		);
 	}
-
 }

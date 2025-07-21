@@ -11,6 +11,7 @@ import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.IVector3;
 import edu.tigers.sumatra.vision.kick.estimators.EBallModelIdentType;
 import edu.tigers.sumatra.vision.kick.estimators.IBallModelIdentResult;
+import lombok.Getter;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.math3.analysis.MultivariateFunction;
 import org.apache.commons.math3.exception.MathIllegalArgumentException;
@@ -57,26 +58,48 @@ public class StraightKickSolverNonLinIdentDirect
 		double accRoll = Geometry.getBallParameters().getAccRoll();
 		double kSwitch = Geometry.getBallParameters().getKSwitch();
 
-		double[] initialGuess = new double[] { velocities.get(0).getVelocity(), accSlide, accRoll, kSwitch };
-		double[] lowerBounds = new double[] { 100, -20000, -2000, 0.5 };
-		double[] upperBounds = new double[] { 12000, -100, -10, 0.8 };
+		double[] initialGuess = new double[] { velocities.getFirst().getVelocity(), accSlide, accRoll, kSwitch };
+		double[] lowerBounds = new double[] { 100, -8000, -2000, 0.5 };
+		double[] upperBounds = new double[] { 10000, -100, -10, 0.85 };
 
-		CMAESOptimizer optimizer = new CMAESOptimizer(10000, 0.1, true, 10, 0, new MersenneTwister(), false, null);
+		CMAESOptimizer optimizer = new CMAESOptimizer(10000, 0.01, true, 10, 0, new MersenneTwister(), false, null);
 
 		try
 		{
+			var model = new StraightBallModel(velocities);
 			final PointValuePair optimum = optimizer.optimize(
 					new MaxEval(20000),
-					new ObjectiveFunction(new StraightBallModel(velocities)),
+					new ObjectiveFunction(model),
 					GoalType.MINIMIZE,
 					new InitialGuess(initialGuess),
 					new SimpleBounds(lowerBounds, upperBounds),
 					new CMAESOptimizer.Sigma(new double[] { 10, 10, 1, 0.01 }),
 					new CMAESOptimizer.PopulationSize(50));
 
+			double error = model.value(optimum.getPointRef());
+			log.debug(
+					"Optimizer used {} evaluations, {} iterations, error: {}",
+					optimizer.getEvaluations(), optimizer.getIterations(), error
+			);
+
+			// Parameters: kickVel (abs), accSlide, accRoll, kSwitch
+			for (int i = 0; i < lowerBounds.length; i++)
+			{
+				double val = optimum.getPointRef()[i];
+				if (val <= lowerBounds[i] || val >= upperBounds[i])
+				{
+					log.debug("Solution discarded, value {} with index {} is at boundary.", val, i);
+					return Optional.empty();
+				}
+			}
+
 			return Optional.of(new StraightModelIdentResult(
-					kickLine.get().directionVector(), records.get(0).getFlatPos(),
-					records.get(0).gettCapture(), optimum.getPointRef()));
+					kickLine.get().directionVector(),
+					records.getFirst().getFlatPos(),
+					records.getFirst().getTimestamp(),
+					optimum.getPointRef(),
+					records.size())
+			);
 		} catch (IllegalStateException | MathIllegalArgumentException e)
 		{
 			log.debug("No solution found", e);
@@ -99,13 +122,13 @@ public class StraightKickSolverNonLinIdentDirect
 				CamBall prev = ballList.get(i - 1);
 				CamBall next = ballList.get(i);
 				double deltaPos = prev.getFlatPos().distanceTo(next.getFlatPos());
-				double deltaTime = (next.getCameraCaptureTimestamp() - prev.getCameraCaptureTimestamp()) * 1e-9;
+				double deltaTime = (next.getTimestamp() - prev.getTimestamp()) * 1e-9;
 				if (deltaTime < 1e-3)
 				{
 					continue;
 				}
 
-				long centralTime = (next.getCameraCaptureTimestamp() + prev.getCameraCaptureTimestamp()) / 2;
+				long centralTime = (next.getTimestamp() + prev.getTimestamp()) / 2;
 
 				timestampVelocityList.add(new TimeVelocityPair(centralTime, deltaPos / deltaTime));
 			}
@@ -127,6 +150,9 @@ public class StraightKickSolverNonLinIdentDirect
 		private final double accRoll;
 		private final double kSwitch;
 
+		@Getter
+		private final int sampleAmount;
+
 
 		/**
 		 * @param kickDir
@@ -135,7 +161,7 @@ public class StraightKickSolverNonLinIdentDirect
 		 * @param params
 		 */
 		public StraightModelIdentResult(final IVector2 kickDir, final IVector2 kickPos, final long kickTimestamp,
-				final double[] params)
+				final double[] params, final int sampleAmount)
 		{
 			kickVel = kickDir.scaleToNew(params[0]).getXYZVector();
 			this.kickPos = kickPos;
@@ -143,6 +169,7 @@ public class StraightKickSolverNonLinIdentDirect
 			accSlide = params[1];
 			accRoll = params[2];
 			kSwitch = params[3];
+			this.sampleAmount = sampleAmount;
 		}
 
 
@@ -259,7 +286,7 @@ public class StraightKickSolverNonLinIdentDirect
 
 			final double vSwitch = vKick * cSw;
 			final double tSwitch = (vKick * (cSw - 1)) / accSlide;
-			final long tZero = velocities.get(0).getTimestamp();
+			final long tZero = velocities.getFirst().getTimestamp();
 
 			double error = 0;
 
@@ -276,10 +303,11 @@ public class StraightKickSolverNonLinIdentDirect
 					modelVel = vSwitch + ((t - tSwitch) * accRoll);
 				}
 
-				error += Math.abs(entry.getVelocity() - modelVel);
+				error += Math.pow(entry.getVelocity() - modelVel, 2);
 			}
 
-			return error;
+			error = Math.sqrt(error);
+			return error / velocities.size();
 		}
 	}
 }

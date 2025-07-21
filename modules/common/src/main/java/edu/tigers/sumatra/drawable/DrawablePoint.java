@@ -4,7 +4,6 @@
 
 package edu.tigers.sumatra.drawable;
 
-import com.sleepycat.persist.model.Persistent;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2f;
 
@@ -15,7 +14,6 @@ import java.awt.Graphics2D;
 /**
  * A simple drawable point
  */
-@Persistent
 public class DrawablePoint extends ADrawable
 {
 	private final IVector2 point;
@@ -24,12 +22,6 @@ public class DrawablePoint extends ADrawable
 	 */
 	private double pointSize = 25;
 
-
-	@SuppressWarnings("unused")
-	private DrawablePoint()
-	{
-		point = null;
-	}
 
 
 	/**

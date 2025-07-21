@@ -23,14 +23,9 @@ dependencies {
     implementation project(':moduli-vision')
 
     implementation(libs.com.github.TIGERs.mannheim.matlabcontrol)
-    implementation(libs.com.github.TIGERs.mannheim.moduli)
-    implementation(libs.com.github.g3force.instanceables)
-    implementation(libs.com.github.g3force.configurable)
 
     implementation(libs.org.apache.logging.log4j.log4j.api)
 
     implementation(libs.commons.lang)
     implementation(libs.org.apache.commons.commons.math3)
-
-    implementation(libs.com.sleepycat.je)
 }

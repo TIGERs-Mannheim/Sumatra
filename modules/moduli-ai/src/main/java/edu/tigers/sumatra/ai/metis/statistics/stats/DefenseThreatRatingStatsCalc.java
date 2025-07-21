@@ -77,7 +77,7 @@ public class DefenseThreatRatingStatsCalc extends AStatsCalc
 		botRatingRaw = defenseThreatRatingForNumDefender.get().getOrDefault(0, 0.0);
 		botRatingWanted = defenseThreatRatingForNumDefender.get().getOrDefault(defenderIDs.size(), 0.0);
 		botRatingActual = defenseThreatReductionRater.calcThreatRatingActual(defenseBotThreats.get(), defenders,
-				defenseThreatAssignments.get(), baseAiFrame.getWorldFrame().getBall().getPos());
+				defenseThreatAssignments.get());
 		botRatingRawAverage.add(botRatingRaw);
 		botRatingWantedAverage.add(botRatingWanted);
 		botRatingActualAverage.add(botRatingActual);

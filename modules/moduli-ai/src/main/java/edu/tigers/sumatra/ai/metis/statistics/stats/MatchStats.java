@@ -4,10 +4,8 @@
 
 package edu.tigers.sumatra.ai.metis.statistics.stats;
 
-import com.sleepycat.persist.model.Persistent;
 import edu.tigers.sumatra.ai.metis.ballpossession.EBallPossession;
 import lombok.Value;
-import org.json.simple.JSONObject;
 
 import java.util.Collection;
 import java.util.EnumMap;
@@ -19,7 +17,6 @@ import java.util.stream.Collectors;
 /**
  * Data holder for MatchStatisticsCalc elements.
  */
-@Persistent
 @Value
 public class MatchStats
 {
@@ -57,25 +54,5 @@ public class MatchStats
 				.map(StatisticData::getContainedBotIds)
 				.flatMap(Collection::stream)
 				.collect(Collectors.toSet());
-	}
-
-
-	@SuppressWarnings("unchecked")
-	public JSONObject toJSON()
-	{
-		JSONObject jsonObject = new JSONObject();
-		for (Map.Entry<EBallPossession, Percentage> entry : ballPossessionGeneral.entrySet())
-		{
-			jsonObject.put(entry.getKey().name(), Double.toString(entry.getValue().getPercent()));
-		}
-		for (Map.Entry<EMatchStatistics, StatisticData> entry : statistics.entrySet())
-		{
-			jsonObject.put(entry.getKey(), entry.getValue().formattedGeneralStatistic());
-			for (Map.Entry<Integer, String> e : entry.getValue().formattedBotStatistics().entrySet())
-			{
-				jsonObject.put(entry.getKey().toString() + e.getKey().toString(), e.getValue());
-			}
-		}
-		return jsonObject;
 	}
 }

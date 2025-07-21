@@ -10,10 +10,12 @@ import edu.tigers.sumatra.ai.metis.pass.KickOrigin;
 import edu.tigers.sumatra.bot.MoveConstraints;
 import edu.tigers.sumatra.drawable.DrawableAnnotation;
 import edu.tigers.sumatra.drawable.DrawableCircle;
+import edu.tigers.sumatra.drawable.DrawableLine;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.SumatraMath;
 import edu.tigers.sumatra.math.circle.Circle;
+import edu.tigers.sumatra.math.line.ILineSegment;
 import edu.tigers.sumatra.math.line.Lines;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
@@ -39,14 +41,11 @@ import java.util.function.Supplier;
 @RequiredArgsConstructor
 public class RedirectorDetectionCalc extends ACalculator
 {
-	private final Supplier<Map<BotID, KickOrigin>> kickOrigins;
-
 	@Configurable(defValue = "0.3", comment = "[s]")
 	private static double opponentRequiredSlackTime = 0.3;
-
 	@Configurable(comment = "Enable double attacker", defValue = "true")
 	private static boolean enableDoubleAttacker = true;
-
+	private final Supplier<Map<BotID, KickOrigin>> kickOrigins;
 	@Getter
 	private RedirectorDetectionInformation redirectorDetectionInformation;
 
@@ -96,7 +95,7 @@ public class RedirectorDetectionCalc extends ACalculator
 		redirectorDetectionInformation.setFriendlyReceiver(kickOrigin.getKey());
 		redirectorDetectionInformation.setFriendlyReceiverPos(receivePos);
 		redirectorDetectionInformation.setFriendlyBotReceiving(true);
-		if (getBall().getTrajectory().closestPointTo(getWFrame().getBot(kickOrigin.getKey()).getBotKickerPos())
+		if (getBall().getTrajectory().closestPointToRolling(getWFrame().getBot(kickOrigin.getKey()).getBotKickerPos())
 				.distanceTo(getWFrame().getBot(kickOrigin.getKey()).getBotKickerPos()) > Geometry.getBotRadius() * 4)
 		{
 			redirectorDetectionInformation.setFriendlyStillApproaching(true);
@@ -109,29 +108,35 @@ public class RedirectorDetectionCalc extends ACalculator
 				.filter(e -> getBall().getTrajectory().getTravelLineSegment().distanceTo(e.getPos()) < 4000)
 				.toList();
 
-		IVector2 startPos = getBall().getPos();
-		IVector2 endPos = receivePos;
-		var sampleLine = Lines.segmentFromPoints(startPos, endPos);
-		List<IVector2> baseSamples = sampleLine.getSteps(300);
+		var possibleInterceptSegments = getBall().getTrajectory().getTravelLinesInterceptableByRobot();
 		Map<BotID, Pair<IVector2, Double>> bestBotInterceptions = new HashMap<>();
-		for (var opponent : consideredOpponentBots)
+		drawInterceptPotentialPossible(possibleInterceptSegments);
+		for (var interSeptSegment : possibleInterceptSegments)
 		{
-			List<IVector2> samples = new ArrayList<>(baseSamples);
-			samples.add(sampleLine.closestPointOnPath(opponent.getPos()));
-			sampleLine.intersect(Lines.halfLineFromDirection(opponent.getPos(), opponent.getVel()))
-					.asOptional()
-					.ifPresent(samples::add);
+			IVector2 startPos = interSeptSegment.getPathStart();
+			IVector2 endPos = interSeptSegment.getPathEnd();
+			var sampleLine = Lines.segmentFromPoints(startPos, endPos);
+			drawStartEndSegment(startPos, endPos);
+			List<IVector2> baseSamples = sampleLine.getSteps(300);
+			for (var opponent : consideredOpponentBots)
+			{
+				List<IVector2> samples = new ArrayList<>(baseSamples);
+				samples.add(sampleLine.closestPointOnPath(opponent.getPos()));
+				sampleLine.intersect(Lines.halfLineFromDirection(opponent.getPos(), opponent.getVel()))
+						.asOptional()
+						.ifPresent(samples::add);
 
-			var bestOpponentInterception
-					= samples
-					.stream()
-					.map(e -> Pair.create(e, generateTrajectory(opponent, e).getTotalTime()))
-					// check that opponent is faster than ball
-					.filter(e -> opponentCanReceiveBall(opponent, e))
-					.min(Comparator.comparingDouble(Pair::getSecond));
+				var bestOpponentInterception
+						= samples
+						.stream()
+						.map(e -> Pair.create(e, generateTrajectory(opponent, e).getTotalTime()))
+						// check that opponent is faster than ball
+						.filter(e -> opponentCanReceiveBall(opponent, e))
+						.min(Comparator.comparingDouble(Pair::getSecond));
 
-			bestOpponentInterception.ifPresent(
-					iVector2DoublePair -> bestBotInterceptions.put(opponent.getBotId(), iVector2DoublePair));
+				bestOpponentInterception.ifPresent(
+						iVector2DoublePair -> bestBotInterceptions.put(opponent.getBotId(), iVector2DoublePair));
+			}
 		}
 
 		var fastestOpponentReceiver = bestBotInterceptions.entrySet().stream()
@@ -190,9 +195,9 @@ public class RedirectorDetectionCalc extends ACalculator
 
 	private ERecommendedReceiverAction determineAction(RedirectorDetectionInformation information)
 	{
-		double distFromBallToOpponentReceivePos = getBall().getTrajectory().closestPointTo(
+		double distFromBallToOpponentReceivePos = getBall().getTrajectory().closestPointToRolling(
 				information.getOpponentReceiverPos()).distanceTo(getBall().getPos());
-		double distFromBallToFriendlyReceivePos = getBall().getTrajectory().closestPointTo(
+		double distFromBallToFriendlyReceivePos = getBall().getTrajectory().closestPointToRolling(
 				information.getFriendlyReceiverPos()).distanceTo(getBall().getPos());
 
 		double timeToImpactOpponent = getBall().getTrajectory().getTimeByDist(distFromBallToOpponentReceivePos);
@@ -228,6 +233,31 @@ public class RedirectorDetectionCalc extends ACalculator
 	}
 
 
+	private void drawInterceptPotentialPossible(List<ILineSegment> possibleInterceptSegments)
+	{
+		// draw receiving shapes
+
+		for (var segment : possibleInterceptSegments)
+		{
+			var segmentLine = new DrawableLine(segment).setColor(Color.CYAN).setFill(true).setStrokeWidth(9);
+			getShapes(EAiShapesLayer.AI_REDIRECTOR_DETECTION).add(segmentLine);
+		}
+	}
+
+
+	private void drawStartEndSegment(IVector2 startPos, IVector2 endPos)
+	{
+		var sp = new DrawableCircle(Circle.createCircle(
+				startPos, 40));
+		sp.setColor(Color.BLUE);
+		var ep = new DrawableCircle(Circle.createCircle(
+				endPos, 40));
+		ep.setColor(Color.magenta);
+		getShapes(EAiShapesLayer.AI_REDIRECTOR_DETECTION).add(sp);
+		getShapes(EAiShapesLayer.AI_REDIRECTOR_DETECTION).add(ep);
+	}
+
+
 	private void drawInfoShapes(RedirectorDetectionInformation information)
 	{
 		DrawableAnnotation df = new DrawableAnnotation(
@@ -235,7 +265,8 @@ public class RedirectorDetectionCalc extends ACalculator
 				"TimeToImpactFriendly: " + information.getTimeToImpactToFriendlyBot() + "\n" +
 						"TimeToImpactOpponent: " + information.getTimeToImpactToOpponent() + "\n" +
 						"RecAction: " + information.getRecommendedAction() + "\n" +
-						"certainty: " + information.getCertainty())
+						"certainty: " + information.getCertainty()
+		)
 				.withOffset(Vector2.fromXY(-200, 0));
 		getShapes(EAiShapesLayer.AI_REDIRECTOR_DETECTION).add(df);
 	}
@@ -307,7 +338,8 @@ public class RedirectorDetectionCalc extends ACalculator
 		{
 			dc = new DrawableCircle(Circle.createCircle(
 					information.getOpponentReceiverPos().addNew(information.getFriendlyReceiverPos()).multiplyNew(0.5),
-					2 + 500 * certainty));
+					2 + 500 * certainty
+			));
 			dc.setColor(new Color((int) (255 * certainty), 57, 0, (int) (100 * certainty)));
 		} else
 		{
@@ -328,10 +360,13 @@ public class RedirectorDetectionCalc extends ACalculator
 			// draw receiving shapes
 			DrawableCircle dc = new DrawableCircle(
 					Circle.createCircle(redirectorDetectionInformation.getOpponentReceiverPos(), 150),
-					new Color(0, 113, 214, 152));
+					new Color(0, 113, 214, 152)
+			);
 			dc.setFill(true);
-			DrawableAnnotation da = new DrawableAnnotation(redirectorDetectionInformation.getOpponentReceiverPos(),
-					"Opponent is receiving");
+			DrawableAnnotation da = new DrawableAnnotation(
+					redirectorDetectionInformation.getOpponentReceiverPos(),
+					"Opponent is receiving"
+			);
 
 			getShapes(EAiShapesLayer.AI_REDIRECTOR_DETECTION).add(dc);
 			getShapes(EAiShapesLayer.AI_REDIRECTOR_DETECTION).add(da);
@@ -342,10 +377,13 @@ public class RedirectorDetectionCalc extends ACalculator
 			// draw receiving shapes
 			DrawableCircle dc = new DrawableCircle(
 					Circle.createCircle(redirectorDetectionInformation.getFriendlyReceiverPos(), 150),
-					new Color(0, 113, 214, 152));
+					new Color(0, 113, 214, 152)
+			);
 			dc.setFill(true);
-			DrawableAnnotation da = new DrawableAnnotation(redirectorDetectionInformation.getFriendlyReceiverPos(),
-					"Friendly is receiving");
+			DrawableAnnotation da = new DrawableAnnotation(
+					redirectorDetectionInformation.getFriendlyReceiverPos(),
+					"Friendly is receiving"
+			);
 
 			getShapes(EAiShapesLayer.AI_REDIRECTOR_DETECTION).add(dc);
 			getShapes(EAiShapesLayer.AI_REDIRECTOR_DETECTION).add(da);

@@ -5,15 +5,11 @@
 package edu.tigers.sumatra.ids;
 
 
-import com.sleepycat.persist.model.Persistent;
-
-
 /**
  * Identifier for balls
  * 
  * @author Oliver Steinbrecher
  */
-@Persistent
 public class BallID extends AObjectID
 {
 	private static final BallID DEFAULT_INSTANCE = new BallID();
@@ -31,5 +27,12 @@ public class BallID extends AObjectID
 	public static BallID instance()
 	{
 		return DEFAULT_INSTANCE;
+	}
+
+
+	@Override
+	public String toString()
+	{
+		return "BallID";
 	}
 }

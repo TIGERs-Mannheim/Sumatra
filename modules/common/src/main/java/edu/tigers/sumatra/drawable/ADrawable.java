@@ -4,8 +4,6 @@
 
 package edu.tigers.sumatra.drawable;
 
-import com.sleepycat.persist.model.Persistent;
-
 import java.awt.Color;
 import java.awt.Graphics2D;
 
@@ -13,7 +11,6 @@ import java.awt.Graphics2D;
 /**
  * Abstract base drawable class.
  */
-@Persistent
 public abstract class ADrawable implements IDrawableShape
 {
 	private Color color = Color.black;

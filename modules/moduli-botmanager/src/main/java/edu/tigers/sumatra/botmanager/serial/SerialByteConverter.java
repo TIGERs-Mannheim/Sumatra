@@ -9,17 +9,6 @@ public final class SerialByteConverter
 
 
 	/**
-	 * @param b
-	 * @return
-	 */
-	public static int byte2Int(final byte b)
-	{
-		// & 0xFFFFFFFF); <-- Has no effect
-		return b;
-	}
-
-
-	/**
 	 * @param v
 	 * @param offset
 	 * @return
@@ -255,5 +244,57 @@ public final class SerialByteConverter
 		return sign | ((((fbits & 0x7fffff) | 0x800000) // add subnormal bit
 				+ (0x800000 >>> (val - 102)) // round depending on cut off
 		) >>> (126 - val)); // div by 2^(1-(exp-127+15)) and >> 13 | exp=0
+	}
+
+
+	/**
+	 * Pack a value at an arbitrary bit position of an array.
+	 *
+	 * @param dst        Destination data array.
+	 * @param bitsOffset Where to put the value.
+	 * @param bitsWidth  How many bits to put from value.
+	 * @param value      The value to pack.
+	 * @note This method does not do any bounds checking!
+	 */
+	public static void packBits(final byte[] dst, final int bitsOffset, final int bitsWidth, final int value)
+	{
+		int srcBitIndex = 0;
+
+		for (int dstBitIndex = bitsOffset; dstBitIndex < (bitsOffset + bitsWidth); dstBitIndex++)
+		{
+			int dstByte = dstBitIndex / 8;
+			int dstBit = dstBitIndex % 8;
+
+			dst[dstByte] &= (byte) ~(1 << dstBit);
+			dst[dstByte] |= (byte) (((value >> srcBitIndex) & 0x01) << dstBit);
+
+			srcBitIndex++;
+		}
+	}
+
+
+	/**
+	 * Unpack a value from an arbitrary bit position from an array.
+	 *
+	 * @param src Source data array.
+	 * @param bitsOffset Where to get the value.
+	 * @param bitsWidth How many bits to get.
+	 * @return The unpacked value.
+	 */
+	public static int unpackBits(final byte[] src, int bitsOffset, int bitsWidth)
+	{
+		int result = 0;
+		int dstBitIndex = 0;
+
+		for (int srcBitIndex = bitsOffset; srcBitIndex < (bitsOffset + bitsWidth); srcBitIndex++)
+		{
+			int srcByte = srcBitIndex / 8;
+			int srcBit = srcBitIndex % 8;
+
+			result |= ((src[srcByte] >> srcBit) & 0x01) << dstBitIndex;
+			dstBitIndex++;
+		}
+
+		return result;
 	}
 }

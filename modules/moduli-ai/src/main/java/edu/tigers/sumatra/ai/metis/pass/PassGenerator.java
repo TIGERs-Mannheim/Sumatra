@@ -29,6 +29,7 @@ import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.AngleMath;
 import edu.tigers.sumatra.math.SumatraMath;
 import edu.tigers.sumatra.math.circle.Arc;
+import edu.tigers.sumatra.math.circle.Circle;
 import edu.tigers.sumatra.math.circle.ICircle;
 import edu.tigers.sumatra.math.circle.ICircular;
 import edu.tigers.sumatra.math.line.IHalfLine;
@@ -37,7 +38,7 @@ import edu.tigers.sumatra.math.line.Lines;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.math.vector.Vector2f;
-import edu.tigers.sumatra.movingrobot.StoppingRobotFactory;
+import edu.tigers.sumatra.movingrobot.MovingRobotFactory;
 import edu.tigers.sumatra.pathfinder.IPathFinder;
 import edu.tigers.sumatra.pathfinder.MovementCon;
 import edu.tigers.sumatra.pathfinder.finder.PathFinder;
@@ -165,7 +166,10 @@ public class PassGenerator
 		Map<BotID, ICircle> dynamicGenerationCircles = new HashMap<>();
 		consideredBots.forEach(botId -> dynamicGenerationCircles.put(botId, createDynamicGenerationCircle(botId)));
 
+		// adds the (best) selected pass from last frame
 		List<PassTargetCandidate> candidates = new ArrayList<>(candidatesFromPreviousFrame(dynamicGenerationCircles));
+
+		// generates new passes + previous passes for each bot
 		candidates.addAll(newCandidates(dynamicGenerationCircles));
 
 		dynamicGenerationCircles.values().forEach(circle -> getShapes(EAiShapesLayer.PASS_GENERATION).add(
@@ -185,8 +189,10 @@ public class PassGenerator
 	}
 
 
-	private PathFinderInput getPathFinderInput(IVector2 destination, BotID botID, MoveConstraints currentMoveConstraints,
-			List<IObstacle> obstacles)
+	private PathFinderInput getPathFinderInput(
+			IVector2 destination, BotID botID, MoveConstraints currentMoveConstraints,
+			List<IObstacle> obstacles
+	)
 	{
 		var tBot = getWFrame().getBot(botID);
 		long timestamp = getWFrame().getTimestamp();
@@ -210,8 +216,10 @@ public class PassGenerator
 		moveCon.update(receiver);
 		List<IObstacle> obstacles = obstacleGen.generateObstacles(getWFrame(), receiverId, getAiFrame().getGameState());
 
-		PathFinderInput pathFinderInput = getPathFinderInput(pos, receiverId, receiver.getMoveConstraints(),
-				obstacles);
+		PathFinderInput pathFinderInput = getPathFinderInput(
+				pos, receiverId, receiver.getMoveConstraints(),
+				obstacles
+		);
 
 		var path = finder.calcValidDirectPath(pathFinderInput);
 		return path.map(PathFinderResult::isCollisionFree).orElse(false);
@@ -327,7 +335,8 @@ public class PassGenerator
 
 
 	private List<PassTargetCandidate> candidatesFromPreviousFrame(
-			Map<BotID, ICircle> dynamicGenerationCircles)
+			Map<BotID, ICircle> dynamicGenerationCircles
+	)
 	{
 		return getAiFrame().getPrevFrame().getTacticalField().getSelectedPasses().values().stream()
 				.filter(p -> consideredBots.contains(p.getPass().getReceiver()))
@@ -402,14 +411,17 @@ public class PassGenerator
 		ITrackedBot bot = getWFrame().getBot(botID);
 		var minApproxPassDuration = passFactory
 				.straight(kickOrigin.getPos(), bot.getPos(), kickOrigin.getShooter(), botID, EBallReceiveMode.DONT_CARE)
-				.getDuration();
-		var t = Math.min(maxBotHorizon,
-				minApproxPassDuration + kickOrigin.impactTimeOrZero() - minSlackTimeForPassReception) * relativeBotHorizon;
+				.map(Pass::getDuration)
+				.orElse(Double.POSITIVE_INFINITY);
+		var t = Math.min(
+				maxBotHorizon,
+				minApproxPassDuration + kickOrigin.impactTimeOrZero() - minSlackTimeForPassReception
+		) * relativeBotHorizon;
 
 		double aLimit = bot.getMoveConstraints().getAccMax();
 		double vLimit = bot.getMoveConstraints().getVelMax();
 
-		return StoppingRobotFactory.create(
+		return MovingRobotFactory.stoppingRobot(
 				bot.getBotKickerPos(Geometry.getBallRadius()),
 				bot.getVel(),
 				vLimit,
@@ -452,7 +464,10 @@ public class PassGenerator
 		var previousPasses = aiFrame.getPrevFrame().getTacticalField().getFilteredAndRatedPassesMap();
 		for (var entry : previousPasses.entrySet())
 		{
-			passTargets.addAll(getPreviousPassTargets(botID, circle, entry.getValue()));
+			var prevTargets = getPreviousPassTargets(botID, circle, entry.getValue());
+			prevTargets.forEach(e -> getShapes(EAiShapesLayer.PASS_GENERATION).add(
+					new DrawableCircle(Circle.createCircle(e.pos, 65)).setColor(Color.RED)));
+			passTargets.addAll(prevTargets);
 		}
 		return passTargets;
 	}

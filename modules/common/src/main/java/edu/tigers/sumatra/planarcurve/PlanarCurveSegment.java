@@ -5,33 +5,43 @@ package edu.tigers.sumatra.planarcurve;
 
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2f;
+import lombok.Getter;
+import lombok.Setter;
 import org.apache.commons.math3.util.Pair;
 
 
 /**
  * A planar curve segment restricts a curve to a specific time frame.
- * 
+ *
  * @author AndreR <andre@ryll.cc>
  */
 public class PlanarCurveSegment
 {
-	private final EPlanarCurveSegmentType	type;
-	
-	private final IVector2						pos;			// [mm]
-	private final IVector2						vel;			// [mm/s]
-	private final IVector2						acc;			// [mm/s^2]
-	
-	private final double							startTime;
-	private double									endTime;
-	
-	
+	private final EPlanarCurveSegmentType type;
+
+	private final IVector2 pos;         // [mm]
+	private final IVector2 vel;         // [mm/s]
+	private final IVector2 acc;         // [mm/s^2]
+
+	private final double startTime;
+	@Setter
+	private double endTime;
+
+	@Setter
+	@Getter
+	private double airtime;
+	@Setter
+	@Getter
+	private double hopHeight;
+
+
 	/**
 	 * @param type
-	 * @param pos [mm]
-	 * @param vel [mm/s]
-	 * @param acc [mm/s^2]
+	 * @param pos       [mm]
+	 * @param vel       [mm/s]
+	 * @param acc       [mm/s^2]
 	 * @param startTime [s]
-	 * @param endTime [s]
+	 * @param endTime   [s]
 	 */
 	private PlanarCurveSegment(final EPlanarCurveSegmentType type, final IVector2 pos, final IVector2 vel,
 			final IVector2 acc,
@@ -44,13 +54,15 @@ public class PlanarCurveSegment
 		this.acc = acc;
 		this.startTime = startTime;
 		this.endTime = endTime;
+		this.airtime = 0;
+		this.hopHeight = 0;
 	}
-	
-	
+
+
 	/**
 	 * Create planar curve segment from point.
-	 * 
-	 * @param pos [mm]
+	 *
+	 * @param pos    [mm]
 	 * @param tStart
 	 * @param tEnd
 	 * @return
@@ -61,13 +73,13 @@ public class PlanarCurveSegment
 				tStart,
 				tEnd);
 	}
-	
-	
+
+
 	/**
 	 * Create planar curve segment from first order function.
-	 * 
-	 * @param pos [mm]
-	 * @param vel [mm/s]
+	 *
+	 * @param pos    [mm]
+	 * @param vel    [mm/s]
 	 * @param tStart
 	 * @param tEnd
 	 * @return
@@ -78,14 +90,14 @@ public class PlanarCurveSegment
 		return new PlanarCurveSegment(EPlanarCurveSegmentType.FIRST_ORDER, pos, vel, Vector2f.ZERO_VECTOR, tStart,
 				tEnd);
 	}
-	
-	
+
+
 	/**
 	 * Create planar curve segment from second order function.
-	 * 
-	 * @param pos [mm]
-	 * @param vel [mm/s]
-	 * @param acc [mm/s^2]
+	 *
+	 * @param pos    [mm]
+	 * @param vel    [mm/s]
+	 * @param acc    [mm/s^2]
 	 * @param tStart
 	 * @param tEnd
 	 * @return
@@ -96,38 +108,22 @@ public class PlanarCurveSegment
 		return new PlanarCurveSegment(EPlanarCurveSegmentType.SECOND_ORDER, pos, vel, acc, tStart,
 				tEnd);
 	}
-	
-	
-	void setEndTime(final double tEnd)
-	{
-		endTime = tEnd;
-	}
-	
-	
+
+
 	/**
 	 * Position in [mm] at time t.
-	 * 
+	 *
 	 * @param t
 	 * @return
 	 */
 	public IVector2 getPosition(final double t)
 	{
-		final IVector2 posNow;
-		
-		switch (type)
+		return switch (type)
 		{
-			case FIRST_ORDER:
-				posNow = pos.addNew(vel.multiplyNew(t));
-				break;
-			case SECOND_ORDER:
-				posNow = pos.addNew(vel.multiplyNew(t)).add(acc.multiplyNew(0.5 * t * t));
-				break;
-			default:
-				posNow = pos;
-				break;
-		}
-
-		return posNow;
+			case FIRST_ORDER -> pos.addNew(vel.multiplyNew(t));
+			case SECOND_ORDER -> pos.addNew(vel.multiplyNew(t)).add(acc.multiplyNew(0.5 * t * t));
+			default -> pos;
+		};
 	}
 
 
@@ -161,32 +157,25 @@ public class PlanarCurveSegment
 		if (tSplit >= endTime)
 		{
 			double t = endTime - startTime;
-			final IVector2 posNow;
-			
-			switch (type)
+			final IVector2 posNow = switch (type)
 			{
-				case FIRST_ORDER:
-					posNow = pos.addNew(vel.multiplyNew(t));
-					break;
-				case SECOND_ORDER:
-					posNow = pos.addNew(vel.multiplyNew(t)).add(acc.multiplyNew(0.5 * t * t));
-					break;
-				default:
-					posNow = pos;
-					break;
-			}
-			
+				case FIRST_ORDER -> pos.addNew(vel.multiplyNew(t));
+				case SECOND_ORDER -> pos.addNew(vel.multiplyNew(t)).add(acc.multiplyNew(0.5 * t * t));
+				default -> pos;
+			};
+
 			return new Pair<>(this, PlanarCurveSegment.fromPoint(posNow, endTime, tSplit));
 		}
-		
+
 		double t = tSplit - startTime;
-		
+
 		PlanarCurveSegment first = new PlanarCurveSegment(type, pos, vel, acc, startTime, tSplit);
-		
+
+		IVector2 posNow;
 		switch (type)
 		{
 			case FIRST_ORDER:
-				IVector2 posNow = pos.addNew(vel.multiplyNew(t));
+				posNow = pos.addNew(vel.multiplyNew(t));
 				return new Pair<>(first, PlanarCurveSegment.fromFirstOrder(posNow, vel, tSplit, endTime));
 			case SECOND_ORDER:
 				posNow = pos.addNew(vel.multiplyNew(t)).add(acc.multiplyNew(0.5 * t * t));
@@ -224,29 +213,29 @@ public class PlanarCurveSegment
 
 	/**
 	 * Position at time 0.
-	 * 
+	 *
 	 * @return Position in [mm].
 	 */
 	public IVector2 getPos()
 	{
 		return pos;
 	}
-	
-	
+
+
 	/**
 	 * Velocity in [mm/s].
-	 * 
+	 *
 	 * @return
 	 */
 	public IVector2 getVel()
 	{
 		return vel;
 	}
-	
-	
+
+
 	/**
 	 * Acceleration in [mm/s^2].
-	 * 
+	 *
 	 * @return
 	 */
 	public IVector2 getAcc()

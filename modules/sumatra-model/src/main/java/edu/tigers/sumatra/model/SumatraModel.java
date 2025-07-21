@@ -1,13 +1,13 @@
 /*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.model;
 
-import edu.tigers.moduli.Moduli;
-import edu.tigers.moduli.exceptions.DependencyException;
-import edu.tigers.moduli.exceptions.LoadModulesException;
-import edu.tigers.moduli.listenerVariables.ModulesState;
+import edu.tigers.sumatra.moduli.ModulesState;
+import edu.tigers.sumatra.moduli.Moduli;
+import edu.tigers.sumatra.moduli.exceptions.DependencyException;
+import edu.tigers.sumatra.moduli.exceptions.LoadModulesException;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.log4j.Log4j2;
@@ -19,6 +19,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Path;
 import java.util.Properties;
 
 
@@ -39,21 +40,21 @@ public final class SumatraModel extends Moduli
 	// --- version ---
 	private static final String VERSION = getVersionNameFromManifest();
 
-	// --- singleton ---
-	private static final SumatraModel INSTANCE = new SumatraModel();
-
 	/**
 	 * These {@link Properties} contain the information necessary for the application to run properly (e.g., file paths)
 	 */
 	private Properties userSettings = new Properties();
 
+	private static final Path CONFIG_PATH = Path.of("config");
+
 	// --- moduli config ---
 	private static final String KEY_MODULI_CONFIG = SumatraModel.class.getName() + ".moduliConfig";
-	public static final String MODULI_CONFIG_PATH = "./config/moduli/";
-	public static final String MODULI_CONFIG_FILE_DEFAULT = "sim.xml";
+	private static final Path MODULI_CONFIG_PATH = CONFIG_PATH.resolve("moduli");
+	private static final String MODULI_CONFIG_FILE_DEFAULT = "sim.xml";
 
-	// Application Properties
-	private static final String CONFIG_SETTINGS_PATH = "./config/";
+	// --- singleton ---
+	private static final SumatraModel INSTANCE = new SumatraModel();
+
 
 	@Getter
 	@Setter
@@ -86,8 +87,18 @@ public final class SumatraModel extends Moduli
 	}
 
 
-	@SuppressWarnings("java:S1181") // catching Throwables intentionally here
-	public void startUp(final String moduliConfig)
+	/**
+	 * Start the application with the given moduli config on a separate thread.
+	 *
+	 * @param moduliConfig the moduli config
+	 */
+	public void startUpAsync(final String moduliConfig)
+	{
+		new Thread(() -> startUp(moduliConfig), "moduli-startup").start();
+	}
+
+
+	private synchronized void startUp(final String moduliConfig)
 	{
 		try
 		{
@@ -96,7 +107,7 @@ public final class SumatraModel extends Moduli
 				stopModules();
 			}
 			SumatraModel.getInstance().setCurrentModuliConfig(moduliConfig);
-			loadModulesOfConfig(getCurrentModuliConfig());
+			loadModules();
 			startModules();
 		} catch (Exception e)
 		{
@@ -129,21 +140,21 @@ public final class SumatraModel extends Moduli
 	/**
 	 * Load modules of the given config file. The config path is appended by this method and must not be prepended.
 	 *
-	 * @param configFileName the config file name
 	 * @throws DependencyException
 	 * @throws LoadModulesException
 	 */
 	@SuppressWarnings("squid:S1160") // throwing two exceptions, because this is only a proxy method
-	public void loadModulesOfConfig(final String configFileName) throws DependencyException, LoadModulesException
+	public void loadModules() throws DependencyException, LoadModulesException
 	{
+		var configFileName = getCurrentModuliConfig();
 		try
 		{
-			super.loadModules(MODULI_CONFIG_PATH + configFileName);
+			super.loadModules(MODULI_CONFIG_PATH.resolve(configFileName).toString());
 		} catch (LoadModulesException e)
 		{
 			log.error("Could not load moduli config {}. Trying default one.", configFileName, e);
 			setCurrentModuliConfig(MODULI_CONFIG_FILE_DEFAULT);
-			super.loadModules(MODULI_CONFIG_PATH + MODULI_CONFIG_FILE_DEFAULT);
+			super.loadModules(MODULI_CONFIG_PATH.resolve(MODULI_CONFIG_FILE_DEFAULT).toString());
 		}
 		updateInternalStateFromGlobalConfig();
 	}
@@ -157,7 +168,7 @@ public final class SumatraModel extends Moduli
 	 */
 	public void loadModulesOfConfigSafe(final String configFileName)
 	{
-		super.loadModulesSafe(MODULI_CONFIG_PATH + configFileName);
+		super.loadModulesSafe(MODULI_CONFIG_PATH.resolve(configFileName).toString());
 		updateInternalStateFromGlobalConfig();
 	}
 
@@ -175,10 +186,9 @@ public final class SumatraModel extends Moduli
 	 */
 	private File getUserPropertiesFile()
 	{
-		final String userName = System.getProperty("user.name");
-		final String filename = CONFIG_SETTINGS_PATH + userName + ".props";
-
-		return new File(filename);
+		String userName = System.getProperty("user.name");
+		Path path = CONFIG_PATH.resolve(userName + ".props");
+		return path.toFile();
 	}
 
 
@@ -390,6 +400,25 @@ public final class SumatraModel extends Moduli
 
 
 	/**
+	 * Calls {@link Properties#getProperty(String)} and parses value to int
+	 *
+	 * @param type
+	 * @param key
+	 * @param def
+	 * @return The int associated with the given key
+	 */
+	public int getUserProperty(Class<?> type, String key, int def)
+	{
+		String val = getUserProperty(type, key);
+		if (val == null)
+		{
+			return def;
+		}
+		return Integer.parseInt(val);
+	}
+
+
+	/**
 	 * Sumatra version
 	 *
 	 * @return
@@ -469,6 +498,18 @@ public final class SumatraModel extends Moduli
 	public boolean isSimulation()
 	{
 		return simulation;
+	}
+
+
+	public Path getConfigPath()
+	{
+		return CONFIG_PATH;
+	}
+
+
+	public Path getConfigModuliPath()
+	{
+		return MODULI_CONFIG_PATH;
 	}
 
 

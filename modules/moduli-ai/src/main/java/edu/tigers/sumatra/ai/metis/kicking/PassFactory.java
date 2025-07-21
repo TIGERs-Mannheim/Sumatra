@@ -13,6 +13,8 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.util.List;
+import java.util.Optional;
+import java.util.stream.Stream;
 
 
 public class PassFactory
@@ -24,6 +26,9 @@ public class PassFactory
 	@Getter
 	@Configurable(defValue = "2.5", comment = "Default maximum ball speed when receiving the ball")
 	private static double defaultMaxReceivingBallSpeedChip = 2.5;
+
+	@Configurable(defValue = "0.1", comment = "Minimum receiving speed")
+	private static double minReceivingSpeed = 0.1;
 
 	static
 	{
@@ -49,6 +54,7 @@ public class PassFactory
 	{
 		return maxReceivingBallSpeed == null ? defaultMaxReceivingBallSpeedStraight : maxReceivingBallSpeed;
 	}
+
 
 	private double getMaxReceivingBallSpeedChip()
 	{
@@ -83,9 +89,12 @@ public class PassFactory
 			EBallReceiveMode receiveMode
 	)
 	{
-		Pass straightPass = straight(source, target, shooter, receiver, minPassDuration, preparationTime, receiveMode);
-		Pass chipPass = chip(source, target, shooter, receiver, minPassDuration, preparationTime, receiveMode);
-		return List.of(straightPass, chipPass);
+		var straightPass = straight(source, target, shooter, receiver, minPassDuration, preparationTime, receiveMode);
+		var chipPass = chip(source, target, shooter, receiver, minPassDuration, preparationTime, receiveMode);
+		return Stream.of(straightPass, chipPass)
+				.filter(Optional::isPresent)
+				.map(Optional::get)
+				.toList();
 	}
 
 
@@ -98,7 +107,8 @@ public class PassFactory
 	 * @param receiver the robot that receives the pass
 	 * @return
 	 */
-	public Pass chip(IVector2 source, IVector2 target, BotID shooter, BotID receiver, EBallReceiveMode receiveMode)
+	public Optional<Pass> chip(IVector2 source, IVector2 target, BotID shooter, BotID receiver,
+			EBallReceiveMode receiveMode)
 	{
 		return chip(source, target, shooter, receiver, 0.0, 0.0, receiveMode);
 	}
@@ -115,7 +125,7 @@ public class PassFactory
 	 * @param preparationTime the time that the shooter will need to prepare the pass
 	 * @return
 	 */
-	public Pass chip(
+	public Optional<Pass> chip(
 			IVector2 source,
 			IVector2 target,
 			BotID shooter,
@@ -133,9 +143,15 @@ public class PassFactory
 		var duration = consultant.getTimeForKick(distance, speed);
 		var receivingSpeed = consultant.getVelForKickByTime(speed, duration);
 
+		if (duration < minPassDuration
+				|| receivingSpeed < minReceivingSpeed)
+		{
+			return Optional.empty();
+		}
+
 		var kick = kickFactory.chip(source, target, speed);
 
-		return new Pass(
+		return Optional.of(new Pass(
 				kick,
 				receiver,
 				shooter,
@@ -143,7 +159,7 @@ public class PassFactory
 				duration,
 				preparationTime,
 				receiveMode
-		);
+		));
 	}
 
 
@@ -156,7 +172,8 @@ public class PassFactory
 	 * @param receiver the robot that receives the pass
 	 * @return
 	 */
-	public Pass straight(IVector2 source, IVector2 target, BotID shooter, BotID receiver, EBallReceiveMode receiveMode)
+	public Optional<Pass> straight(IVector2 source, IVector2 target, BotID shooter, BotID receiver,
+			EBallReceiveMode receiveMode)
 	{
 		return straight(source, target, shooter, receiver, 0.0, 0.0, receiveMode);
 	}
@@ -173,7 +190,7 @@ public class PassFactory
 	 * @param preparationTime the time that the shooter will need to prepare the pass
 	 * @return
 	 */
-	public Pass straight(
+	public Optional<Pass> straight(
 			IVector2 source,
 			IVector2 target,
 			BotID shooter,
@@ -190,9 +207,15 @@ public class PassFactory
 		var duration = worldFrame.getBall().getStraightConsultant().getTimeForKick(distance, speed);
 		var receivingSpeed = worldFrame.getBall().getStraightConsultant().getVelForKickByTime(speed, duration);
 
+		if (duration + 0.01 < minPassDuration
+				|| receivingSpeed < minReceivingSpeed)
+		{
+			return Optional.empty();
+		}
+
 		var kick = kickFactory.straight(source, target, speed);
 
-		return new Pass(
+		return Optional.of(new Pass(
 				kick,
 				receiver,
 				shooter,
@@ -200,6 +223,6 @@ public class PassFactory
 				duration,
 				preparationTime,
 				receiveMode
-		);
+		));
 	}
 }

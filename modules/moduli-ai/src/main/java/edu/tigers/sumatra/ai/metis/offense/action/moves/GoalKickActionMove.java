@@ -16,6 +16,7 @@ import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.penaltyarea.IPenaltyArea;
 import lombok.RequiredArgsConstructor;
 
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Supplier;
 
@@ -32,7 +33,7 @@ public class GoalKickActionMove extends AOffensiveActionMove
 	@Configurable(defValue = "0.1")
 	private static double minGoalChanceForPartiallyViability = 0.1;
 
-	private final Supplier<GoalKick> bestGoalKick;
+	private final Supplier<Map<BotID, GoalKick>> bestGoalKickTargets;
 
 
 	private OffensiveActionViability calcViability(GoalKick goalKick, BotID botId)
@@ -42,19 +43,28 @@ public class GoalKickActionMove extends AOffensiveActionMove
 			return new OffensiveActionViability(EActionViability.FALSE, 0.0);
 		}
 
-		var ratedTargetScore = Math.min(1,
-				goalKick.getRatedTarget().getScore() + getAntiToggleValue(botId, EOffensiveActionMove.GOAL_KICK, 0.1));
+		var ratedTargetScore = Math.min(
+				1,
+				goalKick.getRatedTarget().getScore() + getAntiToggleValue(botId, EOffensiveActionMove.GOAL_KICK, 0.1)
+		);
 		var clearGoalShotChance = ratedTargetScore > OffensiveConstants.getMinBotShouldDoGoalShotScore();
 
-		if (clearGoalShotChance || (isBallVeryCloseToPenaltyArea() && getBall().getVel().getLength2() < 0.5))
+		var oldActions = getAiFrame().getPrevFrame().getTacticalField().getOffensiveActions();
+		boolean oldActionValid = oldActions.containsKey(botId);
+		var lastActionMoveWasAFinisher =
+				oldActionValid && oldActions.get(botId).getMove() == EOffensiveActionMove.FINISHER;
+		if (clearGoalShotChance && !lastActionMoveWasAFinisher)
 		{
+			// in case a finisher is active. Then it already tries to score a goal. Thus we dont need to switch to GOAL_KICK
 			return new OffensiveActionViability(EActionViability.TRUE, applyMultiplier(ratedTargetScore));
 		}
 
 		if (ratedTargetScore > minGoalChanceForPartiallyViability)
 		{
-			return new OffensiveActionViability(EActionViability.PARTIALLY,
-					Math.max(0, applyMultiplier(ratedTargetScore) - 1e-3));
+			return new OffensiveActionViability(
+					EActionViability.PARTIALLY,
+					Math.max(0, applyMultiplier(ratedTargetScore) - 1e-3)
+			);
 		}
 		return new OffensiveActionViability(EActionViability.FALSE, 0.0);
 	}
@@ -71,7 +81,12 @@ public class GoalKickActionMove extends AOffensiveActionMove
 	@Override
 	public Optional<RatedOffensiveAction> calcAction(BotID botId)
 	{
-		var goalKick = bestGoalKick.get();
+		if (!bestGoalKickTargets.get().containsKey(botId))
+		{
+			return Optional.empty();
+		}
+
+		var goalKick = bestGoalKickTargets.get().get(botId);
 		if (goalKick == null)
 		{
 			return Optional.empty();
@@ -81,6 +96,7 @@ public class GoalKickActionMove extends AOffensiveActionMove
 		return Optional.of(RatedOffensiveAction.buildKick(
 				EOffensiveActionMove.GOAL_KICK,
 				calcViability(goalKick, botId),
-				kick));
+				kick
+		));
 	}
 }

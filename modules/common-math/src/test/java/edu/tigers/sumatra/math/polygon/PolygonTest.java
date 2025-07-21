@@ -14,8 +14,7 @@ import edu.tigers.sumatra.math.line.Lines;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.math.vector.Vector2f;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import javax.imageio.ImageIO;
 import java.awt.Color;
@@ -25,12 +24,15 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.within;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
 /**
  * @author KaiE
  */
-public class PolygonTest
+class PolygonTest
 {
 
 
@@ -65,7 +67,7 @@ public class PolygonTest
 
 
 	@Test
-	public void testPointInShape()
+	void testPointInShape()
 	{
 		PolygonBuilder b = new PolygonBuilder();
 		b.addPoint(Vector2.fromXY(0, 0));
@@ -74,18 +76,18 @@ public class PolygonTest
 		b.addPoint(Vector2.fromXY(0, 1));
 		Polygon p = b.build();
 
-		Assert.assertTrue(p.isPointInShape(Vector2.fromXY(0, 0)));
-		Assert.assertTrue(p.isPointInShape(Vector2.fromXY(1, 0)));
-		Assert.assertTrue(p.isPointInShape(Vector2.fromXY(1, 1)));
-		Assert.assertTrue(p.isPointInShape(Vector2.fromXY(0, 1)));
-		Assert.assertTrue(p.isPointInShape(Vector2.fromXY(0.5, 0.5)));
-		Assert.assertFalse(p.isPointInShape(Vector2.fromXY(2, 2)));
-		Assert.assertTrue(p.withMargin(1).isPointInShape(Vector2.fromXY(2, 2)));
+		assertTrue(p.isPointInShape(Vector2.fromXY(0, 0)));
+		assertTrue(p.isPointInShape(Vector2.fromXY(1, 0)));
+		assertTrue(p.isPointInShape(Vector2.fromXY(1, 1)));
+		assertTrue(p.isPointInShape(Vector2.fromXY(0, 1)));
+		assertTrue(p.isPointInShape(Vector2.fromXY(0.5, 0.5)));
+		assertFalse(p.isPointInShape(Vector2.fromXY(2, 2)));
+		assertTrue(p.withMargin(1).isPointInShape(Vector2.fromXY(2, 2)));
 	}
 
 
 	@Test
-	public void testNearestPointOutside()
+	void testNearestPointOutside()
 	{
 
 		PolygonBuilder b = new PolygonBuilder();
@@ -97,12 +99,12 @@ public class PolygonTest
 
 		// nearest point is the most left point as the distance is always the same... -> first edge is taken
 		IVector2 res1 = p.nearestPointOutside(Vector2f.ZERO_VECTOR);
-		Assert.assertEquals(0, res1.x(), 0.0);
-		Assert.assertEquals(-1, res1.y(), 0.0);
+		assertEquals(0, res1.x(), 0.0);
+		assertEquals(-1, res1.y(), 0.0);
 
 		IVector2 res2 = p.withMargin(1).nearestPointOutside(Vector2f.X_AXIS);
-		Assert.assertEquals(2, res2.x(), 0.0);
-		Assert.assertEquals(0, res2.y(), 0.0);
+		assertEquals(2, res2.x(), 0.0);
+		assertEquals(0, res2.y(), 0.0);
 	}
 
 
@@ -128,7 +130,7 @@ public class PolygonTest
 
 
 	@Test
-	public void testIsPointInShape()
+	void testIsPointInShape()
 	{
 		var polygon = buildPolygon();
 		List.of(
@@ -147,7 +149,7 @@ public class PolygonTest
 
 
 	@Test
-	public void testWithMargin()
+	void testWithMargin()
 	{
 		var polygon = buildPolygon();
 		var margin = 0.1;
@@ -175,7 +177,7 @@ public class PolygonTest
 
 
 	@Test
-	public void testGetPerimeterPath()
+	void testGetPerimeterPath()
 	{
 		var polygon = buildPolygon();
 		var path = polygon.getPerimeterPath();
@@ -189,7 +191,7 @@ public class PolygonTest
 
 
 	@Test
-	public void testPerimeterPathOrder()
+	void testPerimeterPathOrder()
 	{
 		var perimeter = buildPolygon().getPerimeterPath();
 		IBoundedPath lastPath = null;
@@ -205,14 +207,14 @@ public class PolygonTest
 
 
 	@Test
-	public void testGetPerimeterLength()
+	void testGetPerimeterLength()
 	{
 		assertThat(buildPolygon().getPerimeterLength()).isCloseTo(18.9313435515, within(1e-10));
 	}
 
 
 	@Test
-	public void testPointsAroundPerimeter()
+	void testPointsAroundPerimeter()
 	{
 		var polygon = buildPolygon();
 
@@ -239,7 +241,7 @@ public class PolygonTest
 
 
 	@Test
-	public void testIntersectPerimeterPathLine()
+	void testIntersectPerimeterPathLine()
 	{
 		var polygon = buildPolygon();
 		var line = Lines.lineFromPoints(Vector2.fromXY(1, -1), Vector2.fromXY(3, 4));
@@ -253,7 +255,7 @@ public class PolygonTest
 
 
 	@Test
-	public void testIntersectPerimeterPathHalfLine()
+	void testIntersectPerimeterPathHalfLine()
 	{
 		var polygon = buildPolygon();
 		var halfLine = Lines.halfLineFromPoints(Vector2.fromXY(1, -1), Vector2.fromXY(3, 4));
@@ -266,7 +268,7 @@ public class PolygonTest
 
 
 	@Test
-	public void testIntersectPerimeterPathLineSegment()
+	void testIntersectPerimeterPathLineSegment()
 	{
 		var polygon = buildPolygon();
 		var segment = Lines.segmentFromPoints(Vector2.fromXY(1, -1), Vector2.fromXY(3, 4));
@@ -279,7 +281,7 @@ public class PolygonTest
 
 
 	@Test
-	public void testIntersectPerimeterPathCircle()
+	void testIntersectPerimeterPathCircle()
 	{
 		var polygon = buildPolygon();
 		var circle = Circle.createCircle(Vector2.fromY(2), 2);
@@ -293,7 +295,7 @@ public class PolygonTest
 
 
 	@Test
-	public void testIntersectPerimeterPathArc()
+	void testIntersectPerimeterPathArc()
 	{
 		var polygon = buildPolygon();
 		var arc = Arc.createArc(Vector2.fromY(2), 2, 0, -AngleMath.PI);
@@ -313,7 +315,7 @@ public class PolygonTest
 
 
 	@Test
-	public void testCompliance()
+	void testCompliance()
 	{
 		I2DShapeComplianceChecker.checkCompliance(buildPolygon(), true);
 	}

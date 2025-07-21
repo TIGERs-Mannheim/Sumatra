@@ -13,17 +13,14 @@ import edu.tigers.sumatra.math.vector.Vector3f;
 import edu.tigers.sumatra.trajectory.BangBangTrajectoryFactory;
 import edu.tigers.sumatra.trajectory.ITrajectory;
 import edu.tigers.sumatra.trajectory.PlanarCurveFactory;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
-/**
- * @author AndreR <andre@ryll.cc>
- */
-public class FlatBallTrajectoryTest
+class FlatBallTrajectoryTest
 {
 	private final BangBangTrajectoryFactory trajectoryFactory = new BangBangTrajectoryFactory();
 	private final PlanarCurveFactory planarCurveFactory = new PlanarCurveFactory();
@@ -35,8 +32,8 @@ public class FlatBallTrajectoryTest
 	private IBallTrajectory trajectory;
 
 
-	@Before
-	public void setup()
+	@BeforeEach
+	void setup()
 	{
 		params = BallParameters.builder()
 				.withBallRadius(21.5)
@@ -55,7 +52,7 @@ public class FlatBallTrajectoryTest
 
 
 	@Test
-	public void testGetTimeByPos()
+	void testGetTimeByPos()
 	{
 		// first test with a trajectory created from kick
 		IVector2 kickPos = Vector2.fromXY(27, 6);
@@ -81,7 +78,7 @@ public class FlatBallTrajectoryTest
 
 
 	@Test
-	public void testGetPos3ByTime()
+	void testGetPos3ByTime()
 	{
 		IVector3 pos = trajectory.getPosByTime(0.1).getXYZVector();
 
@@ -101,7 +98,7 @@ public class FlatBallTrajectoryTest
 
 
 	@Test
-	public void testGetVel3ByTime()
+	void testGetVel3ByTime()
 	{
 		IVector3 vel = trajectory.getVelByTime(0.2).getXYZVector();
 
@@ -122,7 +119,7 @@ public class FlatBallTrajectoryTest
 	}
 
 	@Test
-	public void testGetAcc3ByTime()
+	void testGetAcc3ByTime()
 	{
 		IVector3 acc = trajectory.getAccByTime(0.1).getXYZVector();
 
@@ -146,7 +143,7 @@ public class FlatBallTrajectoryTest
 
 
 	@Test
-	public void testGetTimeByFixDist()
+	void testGetTimeByFixDist()
 	{
 		double time = trajectory.getTimeByDist(1000);
 
@@ -155,7 +152,7 @@ public class FlatBallTrajectoryTest
 
 
 	@Test
-	public void testGetTimeByDist()
+	void testGetTimeByDist()
 	{
 		double tTotal = trajectory.getTimeByVel(0);
 		double dTotal = trajectory.getDistByTime(tTotal);
@@ -173,7 +170,7 @@ public class FlatBallTrajectoryTest
 
 
 	@Test
-	public void testGetMinimumDistanceTrajBall()
+	void testGetMinimumDistanceTrajBall()
 	{
 		IVector2 initialPos1 = Vector2.fromXY(2, -2);
 		IVector2 finalPos1 = Vector2.fromXY(2, 4);

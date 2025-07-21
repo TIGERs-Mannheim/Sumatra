@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.autoref.presenter;
@@ -11,7 +11,6 @@ import edu.tigers.autoref.model.ballspeed.BallSpeedModel;
 import edu.tigers.autoref.view.ballspeed.BallSpeedPanel;
 import edu.tigers.autoref.view.ballspeed.IBallSpeedPanelListener;
 import edu.tigers.autoref.view.generic.FixedTimeRangeChartPanel;
-import edu.tigers.moduli.IModuliStateObserver;
 import edu.tigers.sumatra.geometry.RuleConstraints;
 import edu.tigers.sumatra.model.SumatraModel;
 import edu.tigers.sumatra.referee.data.EGameState;
@@ -21,8 +20,8 @@ import edu.tigers.sumatra.wp.IWorldFrameObserver;
 import edu.tigers.sumatra.wp.data.WorldFrameWrapper;
 import lombok.Getter;
 
+import javax.swing.SwingUtilities;
 import javax.swing.Timer;
-import java.awt.EventQueue;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.concurrent.TimeUnit;
@@ -40,8 +39,8 @@ import java.util.concurrent.TimeUnit;
  * consecutive frames. To avoid gaps the timestamp value is not updated when the plot is paused. Because of this new
  * data points are displayed directly after the last points before the pause.
  */
-public class BallSpeedPresenter implements ISumatraViewPresenter, IWorldFrameObserver, IModuliStateObserver,
-		IBallSpeedPanelListener, ActionListener
+public class BallSpeedPresenter
+		implements ISumatraViewPresenter, IWorldFrameObserver, IBallSpeedPanelListener, ActionListener
 {
 	/**
 	 * The period in ms at the end of which the chart is updated
@@ -55,7 +54,7 @@ public class BallSpeedPresenter implements ISumatraViewPresenter, IWorldFrameObs
 	 * The absolute time range displayed in the chart in seconds
 	 */
 	private int timeRange = 20;
-	private boolean pauseWhenNotRunning = false;
+	private boolean pauseWhenNotRunning = true;
 	private boolean pauseRequested = false;
 	private boolean resumeRequested = false;
 	private PauseState chartState = PauseState.RUNNING;
@@ -64,9 +63,6 @@ public class BallSpeedPresenter implements ISumatraViewPresenter, IWorldFrameObs
 	private Timer chartTimer;
 
 
-	/**
-	 * Default constructor
-	 */
 	public BallSpeedPresenter()
 	{
 		viewPanel = new BallSpeedPanel(getTimeRange(), TimeUnit.MILLISECONDS.toNanos(CHART_UPDATE_PERIOD));
@@ -75,14 +71,16 @@ public class BallSpeedPresenter implements ISumatraViewPresenter, IWorldFrameObs
 		chartTimer = new Timer(CHART_UPDATE_PERIOD, this);
 		chartTimer.setDelay(CHART_UPDATE_PERIOD);
 
-		ConfigRegistration.registerConfigurableCallback("autoreferee", new IConfigObserver()
-		{
-			@Override
-			public void afterApply(final IConfigClient configClient)
-			{
-				viewPanel.setMaxBallVelocityLine(RuleConstraints.getMaxBallSpeed());
-			}
-		});
+		ConfigRegistration.registerConfigurableCallback(
+				"autoreferee", new IConfigObserver()
+				{
+					@Override
+					public void afterApply(final IConfigClient configClient)
+					{
+						viewPanel.setMaxBallVelocityLine(RuleConstraints.getMaxBallSpeed());
+					}
+				}
+		);
 	}
 
 
@@ -96,21 +94,16 @@ public class BallSpeedPresenter implements ISumatraViewPresenter, IWorldFrameObs
 
 
 	@Override
-	public void onStartModuli()
+	public void onModuliStarted()
 	{
-		ISumatraViewPresenter.super.onStartModuli();
-		SumatraModel.getInstance().getModuleOpt(AWorldPredictor.class).ifPresent(predictor -> {
-			predictor.addObserver(this);
-			chartTimer.start();
-		});
+		SumatraModel.getInstance().getModuleOpt(AWorldPredictor.class)
+				.ifPresent(predictor -> predictor.addObserver(this));
 	}
 
 
 	@Override
-	public void onStopModuli()
+	public void onModuliStopped()
 	{
-		ISumatraViewPresenter.super.onStopModuli();
-		chartTimer.stop();
 		SumatraModel.getInstance().getModuleOpt(AWorldPredictor.class).ifPresent(
 				predictor -> predictor.removeObserver(this)
 		);
@@ -120,23 +113,23 @@ public class BallSpeedPresenter implements ISumatraViewPresenter, IWorldFrameObs
 	@Override
 	public void onStart()
 	{
-		ISumatraViewPresenter.super.onStart();
 		viewPanel.addObserver(this);
+		chartTimer.start();
 	}
 
 
 	@Override
 	public void onStop()
 	{
-		ISumatraViewPresenter.super.onStop();
 		viewPanel.removeObserver(this);
+		chartTimer.stop();
 	}
 
 
 	@Override
 	public void onNewWorldFrame(final WorldFrameWrapper wFrameWrapper)
 	{
-		EventQueue.invokeLater(() -> model.update(wFrameWrapper));
+		SwingUtilities.invokeLater(() -> model.update(wFrameWrapper));
 	}
 
 

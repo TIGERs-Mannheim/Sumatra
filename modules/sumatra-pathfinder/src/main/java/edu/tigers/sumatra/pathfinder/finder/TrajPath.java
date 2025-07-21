@@ -3,13 +3,11 @@
  */
 package edu.tigers.sumatra.pathfinder.finder;
 
-import com.sleepycat.persist.model.Persistent;
 import edu.tigers.sumatra.bot.IMoveConstraints;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.pathfinder.TrajectoryGenerator;
 import edu.tigers.sumatra.trajectory.ITrajectory;
-import edu.tigers.sumatra.trajectory.StubTrajectory;
 import lombok.Getter;
 
 import java.text.DecimalFormat;
@@ -21,21 +19,11 @@ import java.util.stream.Stream;
  * A path of connected segments, based on trajectories.
  */
 @Getter
-@Persistent
 public class TrajPath implements ITrajectory<IVector2>
 {
 	private final ITrajectory<IVector2> trajectory;
 	private final double tEnd;
 	private final TrajPath child;
-
-
-	@SuppressWarnings("unused") // berkeley
-	private TrajPath()
-	{
-		trajectory = new StubTrajectory<>();
-		tEnd = 0;
-		child = null;
-	}
 
 
 	private TrajPath(final ITrajectory<IVector2> trajectory, final double tEnd, final TrajPath child)

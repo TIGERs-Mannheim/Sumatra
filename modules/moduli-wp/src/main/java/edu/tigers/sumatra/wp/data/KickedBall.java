@@ -4,7 +4,6 @@
 
 package edu.tigers.sumatra.wp.data;
 
-import com.sleepycat.persist.model.Persistent;
 import edu.tigers.sumatra.ball.trajectory.IBallTrajectory;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.IMirrorable;
@@ -18,7 +17,6 @@ import lombok.Value;
 
 
 @Value
-@Persistent
 @Builder
 @AllArgsConstructor
 public class KickedBall implements IMirrorable<KickedBall>
@@ -31,17 +29,6 @@ public class KickedBall implements IMirrorable<KickedBall>
 
 	@EqualsAndHashCode.Exclude
 	IBallTrajectory ballTrajectory;
-
-
-	@SuppressWarnings("unused") // berkeley
-	private KickedBall()
-	{
-		kickTimestamp = 0;
-		trajectoryStartTime = 0;
-		kickingBot = BotID.noBot();
-		kickingBotPose = Pose.zero();
-		ballTrajectory = null;
-	}
 
 
 	public IVector3 getKickVel()

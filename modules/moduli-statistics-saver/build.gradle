@@ -8,9 +8,8 @@ plugins {
 }
 
 dependencies {
+    implementation project(':common')
     implementation project(':sumatra-model')
-
-    implementation(libs.com.github.TIGERs.mannheim.moduli)
 
     implementation(libs.org.apache.logging.log4j.log4j.api)
 

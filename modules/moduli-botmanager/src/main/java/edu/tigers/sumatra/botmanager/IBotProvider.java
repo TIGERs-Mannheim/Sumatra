@@ -4,17 +4,18 @@
 
 package edu.tigers.sumatra.botmanager;
 
-import java.util.Map;
-import java.util.Optional;
-
 import edu.tigers.sumatra.botmanager.bots.ABot;
 import edu.tigers.sumatra.ids.BotID;
 
+import java.util.Map;
+import java.util.Optional;
 
+
+@SuppressWarnings("java:S1452") // Use generic wildcards to allow overriding bot type in specialized bot managers
 public interface IBotProvider
 {
-	Optional<ABot> getBot(BotID botID);
-	
-	
-	Map<BotID, ABot> getBots();
+	Optional<? extends ABot> getBot(BotID botID);
+
+
+	Map<BotID, ? extends ABot> getBots();
 }

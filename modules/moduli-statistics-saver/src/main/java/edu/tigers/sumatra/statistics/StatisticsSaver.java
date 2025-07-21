@@ -4,12 +4,12 @@
 
 package edu.tigers.sumatra.statistics;
 
-import edu.tigers.moduli.AModule;
-import edu.tigers.moduli.exceptions.StartModuleException;
 import edu.tigers.sumatra.model.SumatraModel;
+import edu.tigers.sumatra.moduli.AModule;
 import org.apache.commons.lang.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.influxdb.InfluxDBException;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -27,7 +27,7 @@ public class StatisticsSaver extends AModule
 
 
 	@Override
-	public void startModule() throws StartModuleException
+	public void startModule()
 	{
 		super.startModule();
 
@@ -39,24 +39,8 @@ public class StatisticsSaver extends AModule
 
 		EOperationMode operationMode = EOperationMode
 				.valueOf(getSubnodeConfiguration().getString("operation-mode", EOperationMode.OFF.name()));
-		EOperationMode operationModeFallback = EOperationMode
-				.valueOf(getSubnodeConfiguration().getString("operation-mode-fallback", EOperationMode.OFF.name()));
-		final InfluxDbConnectionParameters influxDbConnectionParameters = readInfluxDbConnectionParameters();
 
-		if (operationMode == EOperationMode.INFLUX_DB && !influxDbConnectionParameters.isComplete())
-		{
-			log.info("Can not connect to InfluxDB. Missing connection parameters: {}", influxDbConnectionParameters);
-			timeSeriesWriter = createTimeSeriesWriter(operationModeFallback, influxDbConnectionParameters);
-		} else
-		{
-			timeSeriesWriter = createTimeSeriesWriter(operationMode, influxDbConnectionParameters);
-		}
-
-		if (this.timeSeriesWriter != null)
-		{
-			this.timeSeriesWriter.start();
-			log.info("Started {} with {}", identifierBase, this.timeSeriesWriter);
-		}
+		startInfluxDbWriter(operationMode);
 	}
 
 
@@ -107,21 +91,49 @@ public class StatisticsSaver extends AModule
 	}
 
 
-	private ITimeSeriesWriter createTimeSeriesWriter(
-			final EOperationMode operationMode,
-			final InfluxDbConnectionParameters influxDbConnectionParameters)
+	private ITimeSeriesWriter createTimeSeriesWriter(EOperationMode operationMode)
 	{
-		switch (operationMode)
+		return switch (operationMode)
 		{
-			case FILE_LINE_PROTOCOL:
-				return new TimeSeriesFileWriter();
-			case INFLUX_DB:
-				return new InfluxDbWriter(influxDbConnectionParameters);
-			case OFF:
-			default:
-				break;
+			case FILE_LINE_PROTOCOL -> new TimeSeriesFileWriter();
+			case INFLUX_DB ->
+			{
+				InfluxDbConnectionParameters influxDbConnectionParameters = readInfluxDbConnectionParameters();
+				if (influxDbConnectionParameters.isComplete())
+				{
+					yield new InfluxDbWriter(influxDbConnectionParameters);
+				}
+				yield null;
+			}
+			default -> null;
+		};
+	}
+
+
+	private void startInfluxDbWriter(EOperationMode operationMode)
+	{
+		timeSeriesWriter = createTimeSeriesWriter(operationMode);
+
+		if (timeSeriesWriter != null)
+		{
+			try
+			{
+				timeSeriesWriter.start();
+				log.info("Started {} with {}", identifierBase, timeSeriesWriter);
+				return;
+			} catch (InfluxDBException e)
+			{
+				log.debug("Failed to connect to InfluxDB", e);
+			}
 		}
-		return null;
+
+		EOperationMode operationModeFallback = EOperationMode
+				.valueOf(getSubnodeConfiguration().getString("operation-mode-fallback", EOperationMode.OFF.name()));
+		if (operationModeFallback == EOperationMode.FILE_LINE_PROTOCOL)
+		{
+			log.info("Failed to connect to InfluxDB. Falling back to {}", operationModeFallback);
+			startInfluxDbWriter(EOperationMode.FILE_LINE_PROTOCOL);
+		}
 	}
 
 

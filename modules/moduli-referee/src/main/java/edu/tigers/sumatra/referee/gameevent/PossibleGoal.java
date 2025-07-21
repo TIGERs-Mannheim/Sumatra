@@ -4,7 +4,6 @@
 
 package edu.tigers.sumatra.referee.gameevent;
 
-import com.sleepycat.persist.model.Persistent;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.ids.ETeamColor;
 import edu.tigers.sumatra.math.vector.IVector2;
@@ -13,7 +12,6 @@ import lombok.EqualsAndHashCode;
 import lombok.Value;
 
 
-@Persistent
 @Value
 @EqualsAndHashCode(callSuper = true)
 public class PossibleGoal extends AGameEvent
@@ -27,21 +25,6 @@ public class PossibleGoal extends AGameEvent
 	Integer numRobotsByTeam;
 	Long lastTouchedByTeam;
 	String message;
-
-
-	@SuppressWarnings("unsued") // used by berkeley
-	protected PossibleGoal()
-	{
-		team = null;
-		kickingTeam = null;
-		kickingBot = null;
-		location = null;
-		kickLocation = null;
-		maxBallHeight = null;
-		numRobotsByTeam = null;
-		lastTouchedByTeam = null;
-		message = null;
-	}
 
 
 	/**

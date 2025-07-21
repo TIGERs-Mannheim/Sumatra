@@ -4,10 +4,10 @@
 
 package edu.tigers.sumatra.timer;
 
+import edu.tigers.sumatra.moduli.AModule;
+
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
-
-import edu.tigers.moduli.AModule;
 
 
 /**

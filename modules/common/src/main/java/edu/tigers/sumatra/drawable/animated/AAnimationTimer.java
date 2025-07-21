@@ -3,13 +3,9 @@
  */
 package edu.tigers.sumatra.drawable.animated;
 
-import com.sleepycat.persist.model.Persistent;
-
-
 /**
  * @author AndreR <andre@ryll.cc>
  */
-@Persistent
 public abstract class AAnimationTimer implements IAnimationTimer
 {
 	private final double period;

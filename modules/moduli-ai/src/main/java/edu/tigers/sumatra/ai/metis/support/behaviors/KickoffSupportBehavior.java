@@ -19,6 +19,7 @@ import edu.tigers.sumatra.math.vector.IVector2;
 import lombok.RequiredArgsConstructor;
 
 import java.awt.Color;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.function.Supplier;
@@ -53,7 +54,7 @@ public class KickoffSupportBehavior extends ASupportBehavior
 		}
 
 		passFactory.update(getWFrame());
-		ratedPassFactory.update(getWFrame().getOpponentBots().values(), getWFrame().getOpponentBots().values());
+		ratedPassFactory.update(getWFrame().getOpponentBots().values(), getWFrame().getOpponentBots().values(), Collections.emptyList());
 
 		return possibleSupporterKickoffPositions.get().stream()
 				.sorted(Comparator.comparingDouble(point -> point.distanceToSqr(getWFrame().getBot(botID).getPos())))
@@ -72,8 +73,13 @@ public class KickoffSupportBehavior extends ASupportBehavior
 		getAiFrame().getShapeMap().get(EAiShapesLayer.SUPPORT_KICKOFF)
 				.add(new DrawableLine(getWFrame().getBot(botID).getPos(), destination, Color.ORANGE));
 
-		var pass = passFactory.straight(getWFrame().getBall().getPos(), destination, BotID.noBot(), botID, EBallReceiveMode.DONT_CARE);
-		var rating = ratedPassFactory.rateMaxCombined(pass, EPassRating.PASSABILITY, EPassRating.INTERCEPTION);
+		var pass = passFactory.straight(getWFrame().getBall().getPos(), destination, BotID.noBot(), botID,
+				EBallReceiveMode.DONT_CARE);
+		if (pass.isEmpty())
+		{
+			return SupportBehaviorPosition.notAvailable();
+		}
+		var rating = ratedPassFactory.rateMaxCombined(pass.get(), EPassRating.PASSABILITY, EPassRating.INTERCEPTION);
 
 		if (rating < passScoreThreshold)
 		{
@@ -81,6 +87,7 @@ public class KickoffSupportBehavior extends ASupportBehavior
 		}
 		return SupportBehaviorPosition.fromDestination(destination, rating);
 	}
+
 
 	@Override
 	public boolean isEnabled()

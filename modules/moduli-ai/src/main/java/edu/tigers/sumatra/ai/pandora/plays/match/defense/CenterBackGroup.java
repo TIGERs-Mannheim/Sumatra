@@ -13,7 +13,7 @@ import edu.tigers.sumatra.ai.metis.defense.data.IDefenseThreat;
 import edu.tigers.sumatra.ai.pandora.roles.ARole;
 import edu.tigers.sumatra.ai.pandora.roles.ERole;
 import edu.tigers.sumatra.ai.pandora.roles.defense.CenterBackRole;
-import edu.tigers.sumatra.ai.pandora.roles.defense.CenterBackRole.CoverMode;
+import edu.tigers.sumatra.ai.pandora.roles.defense.CoverMode;
 import edu.tigers.sumatra.drawable.DrawableAnnotation;
 import edu.tigers.sumatra.drawable.DrawableCircle;
 import edu.tigers.sumatra.drawable.DrawableLine;
@@ -22,10 +22,15 @@ import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.AngleMath;
 import edu.tigers.sumatra.math.Hysteresis;
+import edu.tigers.sumatra.math.SumatraMath;
+import edu.tigers.sumatra.math.circle.Circle;
 import edu.tigers.sumatra.math.line.ILineSegment;
+import edu.tigers.sumatra.math.line.LineMath;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.pathfinder.TrajectoryGenerator;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.awt.Color;
 import java.util.ArrayList;
@@ -35,17 +40,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import static edu.tigers.sumatra.ai.pandora.roles.defense.CenterBackRole.CoverMode.CENTER;
-import static edu.tigers.sumatra.ai.pandora.roles.defense.CenterBackRole.CoverMode.LEFT_0_5;
-import static edu.tigers.sumatra.ai.pandora.roles.defense.CenterBackRole.CoverMode.LEFT_1;
-import static edu.tigers.sumatra.ai.pandora.roles.defense.CenterBackRole.CoverMode.LEFT_1_5;
-import static edu.tigers.sumatra.ai.pandora.roles.defense.CenterBackRole.CoverMode.LEFT_2;
-import static edu.tigers.sumatra.ai.pandora.roles.defense.CenterBackRole.CoverMode.LEFT_2_5;
-import static edu.tigers.sumatra.ai.pandora.roles.defense.CenterBackRole.CoverMode.RIGHT_0_5;
-import static edu.tigers.sumatra.ai.pandora.roles.defense.CenterBackRole.CoverMode.RIGHT_1;
-import static edu.tigers.sumatra.ai.pandora.roles.defense.CenterBackRole.CoverMode.RIGHT_1_5;
-import static edu.tigers.sumatra.ai.pandora.roles.defense.CenterBackRole.CoverMode.RIGHT_2;
-import static edu.tigers.sumatra.ai.pandora.roles.defense.CenterBackRole.CoverMode.RIGHT_2_5;
+import static edu.tigers.sumatra.ai.pandora.roles.defense.CoverMode.CENTER;
+import static edu.tigers.sumatra.ai.pandora.roles.defense.CoverMode.LEFT_0_5;
+import static edu.tigers.sumatra.ai.pandora.roles.defense.CoverMode.LEFT_1;
+import static edu.tigers.sumatra.ai.pandora.roles.defense.CoverMode.LEFT_1_5;
+import static edu.tigers.sumatra.ai.pandora.roles.defense.CoverMode.LEFT_2;
+import static edu.tigers.sumatra.ai.pandora.roles.defense.CoverMode.LEFT_2_5;
+import static edu.tigers.sumatra.ai.pandora.roles.defense.CoverMode.RIGHT_0_5;
+import static edu.tigers.sumatra.ai.pandora.roles.defense.CoverMode.RIGHT_1;
+import static edu.tigers.sumatra.ai.pandora.roles.defense.CoverMode.RIGHT_1_5;
+import static edu.tigers.sumatra.ai.pandora.roles.defense.CoverMode.RIGHT_2;
+import static edu.tigers.sumatra.ai.pandora.roles.defense.CoverMode.RIGHT_2_5;
 
 
 /**
@@ -53,25 +58,28 @@ import static edu.tigers.sumatra.ai.pandora.roles.defense.CenterBackRole.CoverMo
  */
 public class CenterBackGroup extends ADefenseGroup
 {
-	private static final Map<Integer, List<CenterBackRole.CoverMode>> COVER_MODES = new HashMap<>();
+	private static final Map<Integer, List<CoverMode>> COVER_MODES = new HashMap<>();
 	private static final Comparator<TimedCenterBackRole> SORT_BY_SLOWEST_FIRST = Comparator.comparing(
 			timed -> -timed.time);
 	private static final Comparator<TimedCenterBackRole> SORT_BY_COVER_MODE = Comparator.comparing(
 			timed -> timed.role.getCoverMode());
-	@Configurable(comment = "[s] time for Bots in Group to give place to new arriving Bots, hysteresis upper limit", defValue = "0.35")
-	private static double minTimeToGivePlaceUpper = 0.35;
-	@Configurable(comment = "[s] time for Bots in Group to give place to new arriving Bots, hysteresis lower limit", defValue = "0.3")
-	private static double minTimeToGivePlaceLower = 0.3;
+	@Configurable(comment = "[s] time for Bots in Group to give place to new arriving Bots, hysteresis upper limit", defValue = "0.3")
+	private static double minTimeToGivePlaceUpper = 0.3;
+	@Configurable(comment = "[s] time for Bots in Group to give place to new arriving Bots, hysteresis lower limit", defValue = "0.25")
+	private static double minTimeToGivePlaceLower = 0.25;
 	@Configurable(comment = "[Bot Radius] if robot is closer than this to it's final destination, make room for it", defValue = "3.0")
 	private static double minDistanceToGivePlaceSufficient = 3;
 	@Configurable(comment = "[mm] Robot needs to be at least this distance close to the fastest defender to be considered close", defValue = "1000.0")
 	private static double minDistanceToGivePlaceNecessary = 1000;
+	@Getter
 	@Configurable(comment = "[mm] The space between the bots (actual distance = configured distance + bot diameter)", defValue = "10.0")
 	private static double distanceBetweenBots = 10;
 	@Configurable(comment = "[rad] CoverModes will stay the same from the last frame, until the angle diff is larger than this", defValue = "0.1")
 	private static double angleDifferenceHysteresis = 0.1;
 	@Configurable(comment = "[s] Time to project position in the future for decision making", defValue = "0.2")
 	private static double lookahead = 0.2;
+	@Configurable(comment = "[m/s] the speed the centerbacks will back off with as soon as more closeRoles arrived", defValue = "0.25")
+	private static double backOffSpeed = 0.25;
 
 	static
 	{
@@ -90,9 +98,12 @@ public class CenterBackGroup extends ADefenseGroup
 		COVER_MODES.put(6, List.of(RIGHT_2_5, RIGHT_1_5, RIGHT_0_5, LEFT_0_5, LEFT_1_5, LEFT_2_5));
 	}
 
+	@Getter
 	private final IDefenseThreat threat;
 	private List<IDrawableShape> shapes;
-	private Map<BotID, Hysteresis> timeToGivePlaceHysteresis = new HashMap<>();
+
+	@Setter
+	private CenterBackGroupState state;
 
 
 	/**
@@ -113,7 +124,7 @@ public class CenterBackGroup extends ADefenseGroup
 				.filter(sdr -> sdr.getOriginalRole().getType() != ERole.CENTER_BACK)
 				.forEach(sdr -> {
 					var hysteresis = new Hysteresis(minTimeToGivePlaceLower, minTimeToGivePlaceUpper);
-					timeToGivePlaceHysteresis.put(sdr.getOriginalRole().getBotID(), hysteresis);
+					state.timeToGivePlaceHysteresis.put(sdr.getOriginalRole().getBotID(), hysteresis);
 					sdr.setNewRole(new CenterBackRole());
 				});
 	}
@@ -133,29 +144,42 @@ public class CenterBackGroup extends ADefenseGroup
 		var timedRoles = createTimedRoles(center, allRoles);
 		var closeRoles = extractCloseRoles(timedRoles);
 		assignCoverModes(center, timedRoles, closeRoles);
-		var intermediateCenter = idealProtectionPoint(closeRoles.size());
+		var idealOnlyCloseProtectionPoint = idealProtectionPoint(closeRoles.size());
+		var intermediateCenter = intermediateProtectionPoint(idealOnlyCloseProtectionPoint, aiFrame);
 		assignDefendingPositions(center, intermediateCenter, closeRoles, allRoles);
 		assignCompanions(closeRoles, allRoles);
 		allRoles.forEach(r -> r.setThreat(threat));
 
-		draw(center, timedRoles, closeRoles);
+		draw(center, timedRoles, closeRoles, idealOnlyCloseProtectionPoint, intermediateCenter);
 	}
 
 
-	private void draw(IVector2 center, List<TimedCenterBackRole> timedRoles, List<TimedCenterBackRole> closeRoles)
+	private void draw(
+			IVector2 center,
+			List<TimedCenterBackRole> timedRoles,
+			List<TimedCenterBackRole> closeRoles,
+			IVector2 idealOnlyCloseProtectionPoint,
+			IVector2 intermediateCenter
+	)
 	{
 		shapes.add(new DrawableLine(threat.getPos(), center, Color.PINK));
 		timedRoles.forEach(timed -> {
 			shapes.add(new DrawableLine(timed.role.getPos(), center, Color.PINK));
-			shapes.add(new DrawableAnnotation(timed.role.getPos().addNew(Vector2.fromY(-250)),
-					String.format("%s%n%.3f s", timed.role.getCoverMode().toString(), timed.time), Color.PINK));
+			shapes.add(new DrawableAnnotation(
+					timed.role.getPos().addNew(Vector2.fromY(-250)),
+					String.format("%s%n%.3f s", timed.role.getCoverMode().toString(), timed.time), Color.PINK
+			));
 		});
 		var offset = protectionLine().directionVector().getNormalVector();
 		COVER_MODES.get(getRoles().size()).forEach(cm -> shapes.add(
-				new DrawableCircle(center.addNew(offset.scaleToNew(getDistanceToProtectionLine(cm))),
-						Geometry.getBotRadius() + 0.5 * distanceBetweenBots, Color.PINK)));
+				new DrawableCircle(
+						center.addNew(offset.scaleToNew(getDistanceToProtectionLine(cm))),
+						Geometry.getBotRadius() + 0.5 * distanceBetweenBots, Color.PINK
+				)));
 		closeRoles.forEach(
 				timed -> shapes.add(new DrawableCircle(timed.role.getPos(), Geometry.getBotRadius() + 25, Color.RED)));
+		shapes.add(new DrawableCircle(Circle.createCircle(idealOnlyCloseProtectionPoint, 20), Color.CYAN.darker()));
+		shapes.add(new DrawableCircle(Circle.createCircle(intermediateCenter, 30), Color.CYAN.brighter()));
 	}
 
 
@@ -206,8 +230,10 @@ public class CenterBackGroup extends ADefenseGroup
 			return false;
 		}
 		double timeAdapted = timedRole.time - fastest.time;
-		var hysteresis = timeToGivePlaceHysteresis.computeIfAbsent(timedRole.role.getBotID(),
-				botID -> new Hysteresis(minTimeToGivePlaceLower, minTimeToGivePlaceUpper));
+		var hysteresis = state.timeToGivePlaceHysteresis.computeIfAbsent(
+				timedRole.role.getBotID(),
+				botID -> new Hysteresis(minTimeToGivePlaceLower, minTimeToGivePlaceUpper)
+		);
 		hysteresis.update(timeAdapted);
 		double distanceToFastestSqr = fastest.role.getBot().getPosByTime(lookahead)
 				.distanceToSqr(timedRole.role.getBot().getPosByTime(lookahead));
@@ -226,8 +252,10 @@ public class CenterBackGroup extends ADefenseGroup
 	}
 
 
-	private void assignCoverModes(IVector2 center, List<TimedCenterBackRole> timedRoles,
-			List<TimedCenterBackRole> closeRoles)
+	private void assignCoverModes(
+			IVector2 center, List<TimedCenterBackRole> timedRoles,
+			List<TimedCenterBackRole> closeRoles
+	)
 	{
 		var rolesToAssign = timedRoles.stream()
 				.filter(r -> !isRoleAssigned(r))
@@ -307,15 +335,50 @@ public class CenterBackGroup extends ADefenseGroup
 
 	private IVector2 idealProtectionPoint(int numDefender)
 	{
-		var goal = Geometry.getGoalOur();
-
-		IVector2 idealProtectionPoint = DefenseMath.calculateLineDefPoint(
+		IVector2 idealProtectionPoint = DefenseMath.calculateGoalDefPoint(
 				threat.getPos(),
-				goal.getLeftPost(),
-				goal.getRightPost(),
-				Geometry.getBotRadius() * numDefender);
+				Geometry.getBotRadius() * numDefender
+		);
 
 		return protectionLine().closestPointOnPath(idealProtectionPoint);
+	}
+
+
+	private IVector2 intermediateProtectionPoint(IVector2 idealOnlyCloseProtectionPoint, AthenaAiFrame aiFrame)
+	{
+		var threatLine = threat.getThreatLine();
+		var threatPos = threatLine.getPathStart();
+		var threatTarget = threatLine.getPathEnd();
+
+		var now = aiFrame.getWorldFrame().getTimestamp();
+		var timeSinceLastCalculation = (now - state.lastDistanceCalculationTimestamp) * 1e-9;
+
+		var wantedDistanceFromThreatTarget = threatTarget.distanceTo(idealOnlyCloseProtectionPoint);
+		if (state.lastDistanceCalculationTimestamp == 0
+				|| wantedDistanceFromThreatTarget > state.currentDistanceFromThreatTarget)
+		{
+			state.currentDistanceFromThreatTarget = wantedDistanceFromThreatTarget;
+		} else
+		{
+			state.currentDistanceFromThreatTarget -= backOffSpeed * timeSinceLastCalculation * 1e3;
+			state.currentDistanceFromThreatTarget = Math.max(
+					state.currentDistanceFromThreatTarget,
+					wantedDistanceFromThreatTarget
+			);
+		}
+
+		state.lastDistanceCalculationTimestamp = aiFrame.getWorldFrame().getTimestamp();
+
+		var closestDefensePos = protectionLine().getPathEnd();
+		var minDistance = threatTarget.distanceTo(closestDefensePos);
+		var maxDistance = threatLine.getLength();
+
+		state.currentDistanceFromThreatTarget = SumatraMath.cap(
+				state.currentDistanceFromThreatTarget,
+				minDistance,
+				maxDistance
+		);
+		return LineMath.stepAlongLine(threatTarget, threatPos, state.currentDistanceFromThreatTarget);
 	}
 
 
@@ -378,12 +441,17 @@ public class CenterBackGroup extends ADefenseGroup
 
 	private double getRoleToThreatAngle(ARole role)
 	{
-		return getRoleToThreatAngle(role.getBot().getPosByTime(lookahead), threat.getPos());
+		IVector2 goalCenter = Geometry.getGoalOur().getCenter();
+		IVector2 goal2Role = role.getBot().getPosByTime(lookahead).subtractNew(goalCenter);
+		IVector2 goal2Threat = threat.getPos().subtractNew(goalCenter);
+		return goal2Threat.angleTo(goal2Role).orElse(0.0);
 	}
 
 
-	private void assignDefendingPositions(IVector2 idealProtectionPoint, IVector2 intermediateProtectionPoint,
-			List<TimedCenterBackRole> closeRoles, List<CenterBackRole> allRoles)
+	private void assignDefendingPositions(
+			IVector2 idealProtectionPoint, IVector2 intermediateProtectionPoint,
+			List<TimedCenterBackRole> closeRoles, List<CenterBackRole> allRoles
+	)
 	{
 		var coverModes = new ArrayList<>(COVER_MODES.get(closeRoles.size()));
 		var closeIDs = closeRoles.stream().map(TimedCenterBackRole::role).map(ARole::getBotID).toList();
@@ -393,33 +461,40 @@ public class CenterBackGroup extends ADefenseGroup
 			if (closeIDs.contains(role.getBotID()))
 			{
 				role.setIdealProtectionPoint(intermediateProtectionPoint);
-				role.setDistanceToProtectionLine(getDistanceToProtectionLine(coverModes.removeFirst()));
+				setDistancesToProtectionLine(role, coverModes.removeFirst());
+
 			} else
 			{
 				role.setIdealProtectionPoint(idealProtectionPoint);
-				role.setDistanceToProtectionLine(getDistanceToProtectionLine(role.getCoverMode()));
+				setDistancesToProtectionLine(role, role.getCoverMode());
 			}
 		}
 	}
 
 
+	private void setDistancesToProtectionLine(CenterBackRole role, CoverMode coverMode)
+	{
+		role.setDistanceToProtectionLine(getDistanceToProtectionLine(coverMode));
+		role.setDistanceToProtectionLineIntercept(getDistanceToProtectionLineIntercept(coverMode));
+	}
+
+
 	private double getDistanceToProtectionLine(CoverMode coverMode)
 	{
-		var distance = (Geometry.getBotRadius() * 2) + distanceBetweenBots;
-		return switch (coverMode)
-		{
-			case RIGHT_2_5 -> -2.5 * distance;
-			case RIGHT_2 -> -2 * distance;
-			case RIGHT_1_5 -> -1.5 * distance;
-			case RIGHT_1 -> -distance;
-			case RIGHT_0_5 -> -0.5 * distance;
-			case CENTER -> 0.0;
-			case LEFT_0_5 -> 0.5 * distance;
-			case LEFT_1 -> distance;
-			case LEFT_1_5 -> 1.5 * distance;
-			case LEFT_2 -> 2 * distance;
-			case LEFT_2_5 -> 2.5 * distance;
-		};
+		return getDistanceToProtectionLine(coverMode, distanceBetweenBots);
+	}
+
+
+	private double getDistanceToProtectionLineIntercept(CoverMode coverMode)
+	{
+		return getDistanceToProtectionLine(coverMode, -distanceBetweenBots);
+	}
+
+
+	private double getDistanceToProtectionLine(CoverMode coverMode, double marginBetweenBots)
+	{
+		var distance = (Geometry.getBotRadius() * 2) + marginBetweenBots;
+		return coverMode.getDistanceFactor() * distance;
 	}
 
 
@@ -441,5 +516,12 @@ public class CenterBackGroup extends ADefenseGroup
 
 	private record TimedCenterBackRole(CenterBackRole role, double time, double distanceToDestSqr)
 	{
+	}
+
+	public static class CenterBackGroupState
+	{
+		private final Map<BotID, Hysteresis> timeToGivePlaceHysteresis = new HashMap<>();
+		private double currentDistanceFromThreatTarget = 0;
+		private long lastDistanceCalculationTimestamp = 0;
 	}
 }

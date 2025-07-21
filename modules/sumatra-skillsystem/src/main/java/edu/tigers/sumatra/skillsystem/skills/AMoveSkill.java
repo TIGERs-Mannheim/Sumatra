@@ -1,11 +1,12 @@
 /*
- * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.skillsystem.skills;
 
 import com.github.g3force.configurable.Configurable;
 import edu.tigers.sumatra.ai.data.BotAiInformation;
+import edu.tigers.sumatra.bot.EDribbleTractionState;
 import edu.tigers.sumatra.bot.IMoveConstraints;
 import edu.tigers.sumatra.bot.MoveConstraints;
 import edu.tigers.sumatra.botmanager.bots.ABot;
@@ -16,8 +17,10 @@ import edu.tigers.sumatra.botmanager.botskills.BotSkillGlobalVelocity;
 import edu.tigers.sumatra.botmanager.botskills.BotSkillLocalForce;
 import edu.tigers.sumatra.botmanager.botskills.BotSkillLocalVelocity;
 import edu.tigers.sumatra.botmanager.botskills.BotSkillMotorsOff;
+import edu.tigers.sumatra.botmanager.botskills.data.EKickerDevice;
 import edu.tigers.sumatra.botmanager.botskills.data.EKickerMode;
 import edu.tigers.sumatra.botmanager.botskills.data.KickerDribblerCommands;
+import edu.tigers.sumatra.botmanager.data.MatchCommand;
 import edu.tigers.sumatra.drawable.DrawableAnnotation;
 import edu.tigers.sumatra.drawable.DrawableBot;
 import edu.tigers.sumatra.drawable.DrawablePlanarCurve;
@@ -25,6 +28,7 @@ import edu.tigers.sumatra.drawable.ShapeMap;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.EAiTeam;
 import edu.tigers.sumatra.math.AngleMath;
+import edu.tigers.sumatra.math.SumatraMath;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.IVector3;
 import edu.tigers.sumatra.math.vector.Vector2;
@@ -89,10 +93,12 @@ public abstract class AMoveSkill extends ASkill
 		getShapes().get(ESkillShapesLayer.PATH_DEBUG).add(new DrawablePlanarCurve(trajectory).setColor(Color.BLACK));
 
 		getShapes().get(ESkillShapesLayer.PATH_DEBUG)
-				.add(new DrawableBot(destination, targetAngle,
+				.add(new DrawableBot(
+						destination, targetAngle,
 						Color.red,
 						Geometry.getBotRadius() + 20,
-						Geometry.getBotRadius() + 20));
+						Geometry.getBotRadius() + 20
+				));
 	}
 
 
@@ -195,7 +201,6 @@ public abstract class AMoveSkill extends ASkill
 
 	private void handleVelocityLimitation()
 	{
-		getMatchCtrl().setStrictVelocityLimit(getGameState().isVelocityLimited());
 		if (getGameState().isVelocityLimited())
 		{
 			switch (getMatchCtrl().getSkill().getType())
@@ -275,9 +280,21 @@ public abstract class AMoveSkill extends ASkill
 		{
 			return;
 		}
-		double kickSpeed = kickParams.getKickSpeed();
-		kickerDribblerOutput.setKick(kickSpeed, kickParams.getDevice(),
-				kickSpeed > 0 ? EKickerMode.ARM : EKickerMode.DISARM);
+		if (kickParams.getArmDuration() > 0)
+		{
+			kickerDribblerOutput.setKick(kickParams.getArmDuration(), kickParams.getDevice(), EKickerMode.ARM_TIME);
+		} else
+		{
+			double kickSpeed = kickParams.getKickSpeed();
+			double maxKickSpeed = kickParams.getDevice() == EKickerDevice.STRAIGHT
+					? getTBot().getRobotInfo().getBotParams().getKickerSpecs().getMaxAbsoluteStraightVelocity()
+					: getTBot().getRobotInfo().getBotParams().getKickerSpecs().getMaxAbsoluteChipVelocity();
+			kickerDribblerOutput.setKick(
+					SumatraMath.cap(kickSpeed, 0, maxKickSpeed),
+					kickParams.getDevice(),
+					kickSpeed > 0 ? EKickerMode.ARM : EKickerMode.DISARM
+			);
+		}
 
 		var dribblerSpecs = getBot().getBotParams().getDribblerSpecs();
 
@@ -328,9 +345,10 @@ public abstract class AMoveSkill extends ASkill
 
 
 	@Override
-	public final void update(final WorldFrameWrapper wfw, final ABot bot, final ShapeMap shapeMap)
+	public final void update(
+			final WorldFrameWrapper wfw, final ABot bot, final ShapeMap shapeMap, MatchCommand matchCommand)
 	{
-		super.update(wfw, bot, shapeMap);
+		super.update(wfw, bot, shapeMap, matchCommand);
 		Validate.notNull(wfw, "WorldFrameWrapper must be non-null for move-skills!");
 		worldFrame = wfw.getWorldFrame(EAiTeam.primary(bot.getColor()));
 		Validate.notNull(worldFrame, "WorldFrame must be non-null");
@@ -350,8 +368,23 @@ public abstract class AMoveSkill extends ASkill
 	{
 		BotAiInformation aiInfo = super.getBotAiInfo();
 
-		String ballContact = getTBot().getRobotInfo().isBarrierInterrupted() ? "BARRIER" : "NO BARRIER";
-		ballContact = getTBot().getBallContact().hasContactFromVision() ? "CONTACT|" + ballContact : ballContact;
+		String ballContact = "";
+		if (getTBot().getRobotInfo().isBarrierInterrupted())
+		{
+			ballContact += "BARRIER";
+		}
+
+		if (getTBot().getRobotInfo().getDribbleTraction() == EDribbleTractionState.LIGHT
+				|| getTBot().getRobotInfo().getDribbleTraction() == EDribbleTractionState.STRONG)
+		{
+			ballContact += " DRIBBLER";
+		}
+
+		if (getTBot().getBallContact().hasContactFromVision())
+		{
+			ballContact += " VISION";
+		}
+
 		aiInfo.setBallContact(ballContact);
 
 		double curVel = getVel().getLength2();
@@ -382,5 +415,11 @@ public abstract class AMoveSkill extends ASkill
 	protected final ITrackedBall getBall()
 	{
 		return getWorldFrame().getBall();
+	}
+
+
+	protected final long getTimestamp()
+	{
+		return getWorldFrame().getTimestamp();
 	}
 }

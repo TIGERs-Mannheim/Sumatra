@@ -4,18 +4,17 @@
 
 package edu.tigers.sumatra.bot;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-import org.junit.Test;
-
 import edu.tigers.sumatra.math.pose.Pose;
 import edu.tigers.sumatra.math.vector.Vector3;
+import org.junit.jupiter.api.Test;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 
-public class StateTest
+class StateTest
 {
 	@Test
-	public void interpolate()
+	void interpolate()
 	{
 		State state1 = State.of(Pose.zero(), Vector3.fromXYZ(2, 10, 0));
 		State state2 = State.of(Pose.zero(), Vector3.fromXYZ(4, 12, 2));

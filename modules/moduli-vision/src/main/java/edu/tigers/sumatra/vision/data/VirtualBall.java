@@ -47,7 +47,9 @@ public class VirtualBall
 
 	public CamBall toCamBall(final int camId, final long frameId)
 	{
-		return new CamBall(0, 0, position, Vector2f.ZERO_VECTOR,
-				timestamp, timestamp, timestamp, camId, frameId);
+		return new CamBall(
+				0, 0, position, Vector2f.ZERO_VECTOR,
+				timestamp, camId, frameId
+		);
 	}
 }

@@ -4,6 +4,13 @@
 
 package edu.tigers.sumatra.data.collector;
 
+import com.github.cliftonlabs.json_simple.JsonObject;
+import edu.tigers.sumatra.export.CSVExporter;
+import edu.tigers.sumatra.thread.NamedThreadFactory;
+import org.apache.commons.lang.Validate;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -17,14 +24,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-
-import org.apache.commons.lang.Validate;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.json.simple.JSONObject;
-
-import edu.tigers.sumatra.export.CSVExporter;
-import edu.tigers.sumatra.thread.NamedThreadFactory;
 
 
 /**
@@ -226,11 +225,11 @@ public class TimeSeriesDataCollector implements Runnable
 		dataProviders.forEach(provider -> provider.onAddMetadata(jsonMapping));
 		observers.forEach(provider -> provider.onAddMetadata(jsonMapping));
 
-		JSONObject jsonObj = new JSONObject(jsonMapping);
+		JsonObject jsonObj = new JsonObject(jsonMapping);
 		String fullFileName = baseFolder + "/info.json";
 		try
 		{
-			Files.write(Paths.get(fullFileName), jsonObj.toJSONString().getBytes());
+			Files.write(Paths.get(fullFileName), jsonObj.toJson().getBytes());
 		} catch (IOException err)
 		{
 			log.error("Could not write file!", err);

@@ -103,7 +103,7 @@ public class DefensePenAreaTargetGroupFinderCalc extends ACalculator
 			{
 				return reducedTargets;
 			}
-			reducedAssignments.remove(reducedAssignments.size() - 1);
+			reducedAssignments.removeLast();
 			++count;
 			if (count > 50)
 			{
@@ -165,8 +165,8 @@ public class DefensePenAreaTargetGroupFinderCalc extends ACalculator
 				targetClusters.add(targetCluster);
 			} else
 			{
-				List<DefenseThreatAssignment> lastTargetCluster = targetClusters.get(targetClusters.size() - 1);
-				DefenseThreatAssignment lastThreatAssignment = lastTargetCluster.get(lastTargetCluster.size() - 1);
+				List<DefenseThreatAssignment> lastTargetCluster = targetClusters.getLast();
+				DefenseThreatAssignment lastThreatAssignment = lastTargetCluster.getLast();
 				IVector2 lastThreat = getTargetOnPenaltyArea(lastThreatAssignment.getThreat());
 				int nDefender = threatAssignment.getBotIds().size() + lastThreatAssignment.getBotIds().size();
 				double sameClusterDistance = (Geometry.getBotRadius() + clusterDistanceOffset) * nDefender;
@@ -209,7 +209,7 @@ public class DefensePenAreaTargetGroupFinderCalc extends ACalculator
 			var subTargets = subTargetsAroundCenter(target, numBotsToUse);
 			var threats = targetCluster.stream().map(DefenseThreatAssignment::getThreat).toList();
 			var velAdaptedMoveDest = mimicThreatGroupVelocity(threats, subTargets);
-			var velAdaptedCenterDest = mimicThreatGroupVelocity(threats, List.of(target)).get(0);
+			var velAdaptedCenterDest = mimicThreatGroupVelocity(threats, List.of(target)).getFirst();
 			var targetGroup = DefensePenAreaTargetGroup.fromTargetCluster(target, velAdaptedCenterDest, subTargets,
 					velAdaptedMoveDest, threats, priority++);
 			reducedTargets.add(targetGroup);
@@ -287,8 +287,8 @@ public class DefensePenAreaTargetGroupFinderCalc extends ACalculator
 			// if the ball is part of the threat cluster, focus on the ball, not the center of all threats
 			return ballAssignment.get().getThreat().getPos();
 		}
-		IVector2 first = targetCluster.get(0).getThreat().getPos();
-		IVector2 last = targetCluster.get(targetCluster.size() - 1).getThreat().getPos();
+		IVector2 first = targetCluster.getFirst().getThreat().getPos();
+		IVector2 last = targetCluster.getLast().getThreat().getPos();
 		double distance = first.distanceTo(last);
 		return LineMath.stepAlongLine(first, last, distance / 2);
 	}
@@ -360,7 +360,7 @@ public class DefensePenAreaTargetGroupFinderCalc extends ACalculator
 	private List<PenAreaSpaces> penAreaMarkersToSpaces(final List<IVector2> penAreaMarkers)
 	{
 		List<PenAreaSpaces> spaces = new ArrayList<>();
-		IVector2 lastMarker = penAreaMarkers.remove(0);
+		IVector2 lastMarker = penAreaMarkers.removeFirst();
 		for (IVector2 marker : penAreaMarkers)
 		{
 			spaces.add(new PenAreaSpaces(lastMarker, marker));
@@ -378,7 +378,7 @@ public class DefensePenAreaTargetGroupFinderCalc extends ACalculator
 		for (int i = 0; i < remainingDefender; i++)
 		{
 			spaces.sort(Comparator.comparingDouble(PenAreaSpaces::distByNumTargets).reversed());
-			spaces.get(0).numTargets++;
+			spaces.getFirst().numTargets++;
 		}
 	}
 

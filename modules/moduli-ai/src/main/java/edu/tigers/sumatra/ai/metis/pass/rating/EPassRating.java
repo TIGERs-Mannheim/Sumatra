@@ -30,6 +30,11 @@ public enum EPassRating
 	REFLECT_GOAL_KICK("r"),
 
 	/**
+	 * Scoring goals by redirect from the pass target
+	 */
+	FINISHER("f"),
+
+	/**
 	 * Scoring goals by kicking stopped ball from the pass target
 	 */
 	GOAL_KICK("g"),

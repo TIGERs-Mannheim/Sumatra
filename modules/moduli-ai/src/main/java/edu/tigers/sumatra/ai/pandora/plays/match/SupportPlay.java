@@ -4,7 +4,6 @@
 
 package edu.tigers.sumatra.ai.pandora.plays.match;
 
-import com.github.g3force.configurable.Configurable;
 import edu.tigers.sumatra.ai.metis.support.behaviors.ESupportBehavior;
 import edu.tigers.sumatra.ai.pandora.plays.APlay;
 import edu.tigers.sumatra.ai.pandora.plays.EPlay;
@@ -19,10 +18,6 @@ import edu.tigers.sumatra.ai.pandora.roles.support.SupportRole;
  */
 public class SupportPlay extends APlay
 {
-	@Configurable(defValue = "3000.0", comment = "[mm] Supporter want to avoid a planned kick with an obstacle (max length)")
-	private static double maxPlannedKickObstacleLength = 3000.0;
-
-
 	public SupportPlay()
 	{
 		super(EPlay.SUPPORT);
@@ -39,7 +34,6 @@ public class SupportPlay extends APlay
 			role.setBehavior(behavior);
 			role.setTarget(target);
 			role.setAvoidPassesFromOffensive(avoidPassesFromOffensive(behavior));
-			role.setMaxPlannedKickObstacleLength(maxPlannedKickObstacleLength);
 		}
 	}
 

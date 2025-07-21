@@ -20,6 +20,7 @@ import lombok.Setter;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 
@@ -119,6 +120,12 @@ public abstract class AOuterDefenseRole extends ADefenseRole
 	}
 
 
+	protected Optional<EObstacleAvoidanceMode> forceObstacleAvoidanceMode()
+	{
+		return Optional.empty();
+	}
+
+
 	protected class DefendState extends MoveState
 	{
 		@Override
@@ -138,15 +145,16 @@ public abstract class AOuterDefenseRole extends ADefenseRole
 			{
 				skill.getMoveCon().setCustomObstacles(List.of());
 			}
+			skill.getMoveCon().setBallObstacle(false);
 
-			if (threat.getObjectId().isBall())
+			if (!threat.getObjectId().isBall())
 			{
 				skill.getMoveCon().setObstacleAvoidanceMode(EObstacleAvoidanceMode.AGGRESSIVE);
 			} else
 			{
 				skill.getMoveCon().setObstacleAvoidanceMode(EObstacleAvoidanceMode.NORMAL);
 			}
-
+			forceObstacleAvoidanceMode().ifPresent(mode -> skill.getMoveCon().setObstacleAvoidanceMode(mode));
 			skill.getMoveConstraints().setFastMove(useFastMove());
 		}
 

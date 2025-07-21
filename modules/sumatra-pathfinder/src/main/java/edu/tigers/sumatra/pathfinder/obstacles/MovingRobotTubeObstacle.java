@@ -26,7 +26,8 @@ public class MovingRobotTubeObstacle extends AMovingRobotObstacle
 	@Override
 	public double distanceTo(CollisionInput input)
 	{
-		ITube movingHorizon = movingRobot.getMovingHorizonTube(input.getTimeOffset());
+		double tOffset = Math.min(input.getTimeOffset(), maxHorizon);
+		ITube movingHorizon = movingRobot.getMovingHorizonTube(tOffset);
 		return movingHorizon.distanceTo(input.getRobotPos());
 	}
 

@@ -14,9 +14,7 @@ import java.io.EOFException;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
 import java.util.zip.GZIPInputStream;
 
 
@@ -27,9 +25,7 @@ import java.util.zip.GZIPInputStream;
 public class GameLogReader
 {
 	@Getter
-	private GameLogType fileType = GameLogType.UNKNOWN;
-	@Getter
-	private int versionNumber = 0;
+	private int versionNumber;
 
 	@Getter
 	private List<GameLogMessage> messages = new ArrayList<>();
@@ -47,7 +43,7 @@ public class GameLogReader
 	 *
 	 * @param path
 	 */
-	public void loadFile(final String path)
+	private void loadFile(final String path)
 	{
 		new Thread(() -> loadFileBlocking(path), "Loader").start();
 	}
@@ -88,14 +84,15 @@ public class GameLogReader
 
 			fileStream.close();
 			notifyLoadComplete(true);
+			log.info("Loading logfile {} complete", path);
 		} catch (EOFException e1)
 		{
 			notifyLoadComplete(true);
-			log.info("Loading logfile complete", e1);
+			log.info("Loading logfile {} complete", path, e1);
 		} catch (IOException e1)
 		{
 			notifyLoadComplete(false);
-			log.error("Loading logfile failed", e1);
+			log.error("Loading logfile {} failed", path, e1);
 		}
 	}
 
@@ -112,6 +109,8 @@ public class GameLogReader
 		fileStream.readFully(nextBytes);
 		String startHeader = new String(nextBytes).toUpperCase();
 
+		// Due to a race condition, that should be fixed by now, the header might be incomplete.
+		// The following code can be simplified later, when old gamelogs are not needed anymore.
 		if (!"SSL_".equals(startHeader))
 		{
 			log.warn("Unknown header: {}", startHeader);
@@ -133,14 +132,8 @@ public class GameLogReader
 		String headerString =
 				startHeader + new String(Bytes.toArray(middleHeaderBuilder)).toUpperCase() + "_" + endHeader;
 
-		Optional<GameLogType> optionalLogFileType = Arrays.stream(GameLogType.values())
-				.filter(logFileType -> logFileType.getHeader().equals(headerString)).findFirst();
-
-
 		versionNumber = fileStream.readInt();
 		log.info("Logfile header: {}, Version: {}", headerString, versionNumber);
-
-		fileType = optionalLogFileType.orElse(GameLogType.UNKNOWN);
 
 		return true;
 	}

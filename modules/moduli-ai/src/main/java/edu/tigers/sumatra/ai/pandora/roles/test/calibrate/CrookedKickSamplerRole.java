@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.pandora.roles.test.calibrate;
@@ -14,18 +14,10 @@ import edu.tigers.sumatra.math.vector.IVector2;
  */
 public class CrookedKickSamplerRole extends AKickSamplerRole
 {
-	/**
-	 * @param kickPos
-	 * @param kickOrientation
-	 * @param durationMs
-	 * @param offset
-	 * @param numSamples
-	 * @param cont
-	 */
 	public CrookedKickSamplerRole(final IVector2 kickPos, final double kickOrientation, final double durationMs,
 			final double offset, final int numSamples, final boolean cont)
 	{
-		super(ERole.CROOKED_KICK_SAMPLER, false);
+		super(ERole.CROOKED_KICK_SAMPLER, EKickMode.SINGLE_TOUCH);
 
 		if (cont && !samples.isEmpty())
 		{
@@ -49,12 +41,5 @@ public class CrookedKickSamplerRole extends AKickSamplerRole
 
 			samples.add(p);
 		}
-	}
-
-
-	@Override
-	protected String getFolderName()
-	{
-		return "crookedKick";
 	}
 }

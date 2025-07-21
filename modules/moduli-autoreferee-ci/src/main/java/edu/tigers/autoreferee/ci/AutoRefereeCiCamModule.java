@@ -4,7 +4,6 @@
 
 package edu.tigers.autoreferee.ci;
 
-import edu.tigers.moduli.exceptions.StartModuleException;
 import edu.tigers.sumatra.cam.ACam;
 import edu.tigers.sumatra.cam.SSLVisionCamGeometryTranslator;
 import edu.tigers.sumatra.cam.data.CamGeometry;
@@ -41,7 +40,7 @@ public class AutoRefereeCiCamModule extends ACam implements IWorldFrameObserver
 
 
 	@Override
-	public void startModule() throws StartModuleException
+	public void startModule()
 	{
 		super.startModule();
 		SumatraModel.getInstance().getModule(WorldInfoCollector.class).addObserver(this);

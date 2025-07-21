@@ -1,14 +1,14 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.replay;
 
-import edu.tigers.sumatra.ai.BerkeleyAiFrame;
 import edu.tigers.sumatra.ai.IVisualizationFrameObserver;
+import edu.tigers.sumatra.ai.PersistenceAiFrame;
 import edu.tigers.sumatra.ai.VisualizationFrame;
-import edu.tigers.sumatra.persistence.BerkeleyDb;
-import edu.tigers.sumatra.presenter.replay.IReplayController;
+import edu.tigers.sumatra.gui.replay.presenter.IReplayController;
+import edu.tigers.sumatra.persistence.PersistenceDb;
 import edu.tigers.sumatra.views.ASumatraView;
 
 import java.util.List;
@@ -33,9 +33,9 @@ public class ReplayAiController implements IReplayController
 
 
 	@Override
-	public void update(final BerkeleyDb db, final long sumatraTimestampNs)
+	public void update(final PersistenceDb db, final long sumatraTimestampNs)
 	{
-		BerkeleyAiFrame frame = db.get(BerkeleyAiFrame.class, sumatraTimestampNs);
+		PersistenceAiFrame frame = db.getTable(PersistenceAiFrame.class).get(sumatraTimestampNs);
 		if (frame == null)
 		{
 			return;

@@ -14,7 +14,7 @@ import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.referee.data.GameState;
 import edu.tigers.sumatra.skillsystem.skills.MoveToSkill;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.Objects;

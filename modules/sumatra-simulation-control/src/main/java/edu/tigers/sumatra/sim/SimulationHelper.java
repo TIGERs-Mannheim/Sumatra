@@ -4,7 +4,6 @@
 
 package edu.tigers.sumatra.sim;
 
-import edu.tigers.moduli.exceptions.ModuleNotFoundException;
 import edu.tigers.sumatra.ai.AAgent;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.BotID;
@@ -13,6 +12,7 @@ import edu.tigers.sumatra.math.pose.Pose;
 import edu.tigers.sumatra.math.vector.IVector3;
 import edu.tigers.sumatra.math.vector.Vector3;
 import edu.tigers.sumatra.model.SumatraModel;
+import edu.tigers.sumatra.moduli.exceptions.ModuleNotFoundException;
 import edu.tigers.sumatra.referee.AReferee;
 import edu.tigers.sumatra.referee.control.GcEventFactory;
 import edu.tigers.sumatra.skillsystem.ASkillSystem;
@@ -146,7 +146,7 @@ public final class SimulationHelper
 	{
 		if (state)
 		{
-			getSumatraSimulator().setSimSpeed(100);
+			getSumatraSimulator().setSimSpeed(Double.POSITIVE_INFINITY);
 		} else
 		{
 			getSumatraSimulator().setSimSpeed(1);

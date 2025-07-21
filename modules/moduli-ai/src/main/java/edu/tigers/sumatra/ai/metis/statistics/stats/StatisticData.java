@@ -4,8 +4,6 @@
 
 package edu.tigers.sumatra.ai.metis.statistics.stats;
 
-import com.sleepycat.persist.model.Persistent;
-
 import java.text.DecimalFormat;
 import java.util.HashMap;
 import java.util.Map;
@@ -15,19 +13,10 @@ import java.util.Set;
 /**
  * Statistics for a single metric with optional per-bot values.
  */
-@Persistent(version = 2)
 public class StatisticData
 {
 	private final Map<Integer, ?> botSpecificStatistics;
 	private final Object generalStatistic;
-
-
-	@SuppressWarnings("unused")
-	private StatisticData()
-	{
-		botSpecificStatistics = new HashMap<>();
-		generalStatistic = null;
-	}
 
 
 	/**

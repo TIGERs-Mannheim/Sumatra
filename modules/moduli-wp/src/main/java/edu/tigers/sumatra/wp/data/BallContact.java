@@ -6,7 +6,6 @@ package edu.tigers.sumatra.wp.data;
 
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
-import com.sleepycat.persist.model.Persistent;
 import lombok.AllArgsConstructor;
 import lombok.Value;
 
@@ -14,7 +13,6 @@ import lombok.Value;
 /**
  * Encode the contact (time/duration) to the ball.
  */
-@Persistent
 @Value
 @AllArgsConstructor
 public class BallContact

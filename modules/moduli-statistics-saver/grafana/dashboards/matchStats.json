@@ -21,7 +21,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 2,
-  "iteration": 1657448086623,
+  "iteration": 1743189922287,
   "links": [],
   "liveNow": false,
   "panels": [
@@ -83,7 +83,7 @@
       },
       "gridPos": {
         "h": 5,
-        "w": 24,
+        "w": 12,
         "x": 0,
         "y": 0
       },
@@ -145,7 +145,7 @@
       },
       "gridPos": {
         "h": 8,
-        "w": 24,
+        "w": 12,
         "x": 0,
         "y": 5
       },
@@ -233,7 +233,7 @@
       },
       "gridPos": {
         "h": 8,
-        "w": 24,
+        "w": 12,
         "x": 0,
         "y": 13
       },
@@ -329,7 +329,7 @@
       },
       "gridPos": {
         "h": 8,
-        "w": 24,
+        "w": 12,
         "x": 0,
         "y": 21
       },
@@ -440,7 +440,7 @@
       },
       "gridPos": {
         "h": 9,
-        "w": 24,
+        "w": 12,
         "x": 0,
         "y": 29
       },
@@ -534,7 +534,7 @@
       },
       "gridPos": {
         "h": 8,
-        "w": 24,
+        "w": 12,
         "x": 0,
         "y": 38
       },
@@ -628,7 +628,7 @@
       },
       "gridPos": {
         "h": 8,
-        "w": 24,
+        "w": 12,
         "x": 0,
         "y": 46
       },
@@ -722,7 +722,7 @@
       },
       "gridPos": {
         "h": 8,
-        "w": 24,
+        "w": 12,
         "x": 0,
         "y": 54
       },
@@ -816,7 +816,7 @@
       },
       "gridPos": {
         "h": 8,
-        "w": 24,
+        "w": 12,
         "x": 0,
         "y": 62
       },
@@ -1134,13 +1134,17 @@
       "links": [],
       "options": {
         "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom"
+          "calcs": [
+            "mean"
+          ],
+          "displayMode": "table",
+          "placement": "right",
+          "sortBy": "Mean",
+          "sortDesc": true
         },
         "tooltip": {
           "mode": "multi",
-          "sort": "none"
+          "sort": "asc"
         }
       },
       "pluginVersion": "8.4.3",
@@ -1218,7 +1222,7 @@
     "list": [
       {
         "current": {
-          "selected": false,
+          "selected": true,
           "text": "matchStats",
           "value": "matchStats"
         },
@@ -1237,9 +1241,13 @@
       },
       {
         "current": {
-          "selected": false,
-          "text": "277",
-          "value": "277"
+          "selected": true,
+          "text": [
+            "664-3-ga3dd251796"
+          ],
+          "value": [
+            "664-3-ga3dd251796"
+          ]
         },
         "datasource": {
           "type": "influxdb",
@@ -1264,9 +1272,13 @@
       },
       {
         "current": {
-          "selected": false,
-          "text": "BLUE_AI",
-          "value": "BLUE_AI"
+          "selected": true,
+          "text": [
+            "BLUE_AI"
+          ],
+          "value": [
+            "BLUE_AI"
+          ]
         },
         "datasource": {
           "type": "influxdb",
@@ -1291,9 +1303,13 @@
       },
       {
         "current": {
-          "selected": false,
-          "text": "blue",
-          "value": "blue"
+          "selected": true,
+          "text": [
+            "blue"
+          ],
+          "value": [
+            "blue"
+          ]
         },
         "datasource": {
           "type": "influxdb",

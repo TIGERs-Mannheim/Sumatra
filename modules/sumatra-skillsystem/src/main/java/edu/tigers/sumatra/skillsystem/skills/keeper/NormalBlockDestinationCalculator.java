@@ -31,7 +31,7 @@ public class NormalBlockDestinationCalculator extends AKeeperDestinationCalculat
 {
 
 	@Override
-	public IVector2 calcDestination()
+	public KeeperDestination calcDestination()
 	{
 		IVector2 goalPost;
 		IVector2 usedCornerPoint;
@@ -69,7 +69,7 @@ public class NormalBlockDestinationCalculator extends AKeeperDestinationCalculat
 				Math.max(defensePos.x(), Geometry.getGoalOur().getCenter().x() + Geometry.getBotRadius()),
 				defensePos.y()
 		);
-		return defensePos;
+		return KeeperDestination.fromDestination(getTBot(), defensePos);
 	}
 
 

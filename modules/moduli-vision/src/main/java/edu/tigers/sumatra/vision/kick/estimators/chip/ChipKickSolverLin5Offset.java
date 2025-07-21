@@ -77,14 +77,14 @@ public class ChipKickSolverLin5Offset extends AChipKickSolver
 		RealMatrix matA = new Array2DRowRealMatrix(numRecords * 2, 5);
 		RealVector b = new ArrayRealVector(numRecords * 2);
 
-		final long tZero = records.get(0).getCameraCaptureTimestamp();
+		final long tZero = records.get(0).getTimestamp();
 		final double a = 9810;
 
 		for (int i = 0; i < numRecords; i++)
 		{
 			CamBall record = records.get(i);
 
-			double t = ((record.getCameraCaptureTimestamp() - tZero) * 1e-9) + tOffset;
+			double t = ((record.getTimestamp() - tZero) * 1e-9) + tOffset;
 			IVector3 f = getCameraPosition(record.getCameraId());
 			IVector2 g = record.getPos().getXYVector();
 
@@ -177,12 +177,12 @@ public class ChipKickSolverLin5Offset extends AChipKickSolver
 			return Optional.empty();
 		}
 
-		kickTimestamp = records.get(0).getCameraCaptureTimestamp() - (long) (bestResult.tOffset * 1e9);
+		kickTimestamp = records.get(0).getTimestamp() - (long) (bestResult.tOffset * 1e9);
 
 		double l1Error = 0;
 		for (CamBall b : records)
 		{
-			double t = (b.getCameraCaptureTimestamp() - kickTimestamp) * 1e-9;
+			double t = (b.getTimestamp() - kickTimestamp) * 1e-9;
 			IVector3 posNow = kickPos.addNew(kickVelEst.multiplyNew(t)).add(acc.multiplyNew(t * t));
 			IVector2 ground = posNow.projectToGroundNew(getCameraPosition(b.getCameraId()));
 			l1Error += ground.subtractNew(b.getFlatPos()).getL1Norm();
@@ -191,7 +191,8 @@ public class ChipKickSolverLin5Offset extends AChipKickSolver
 		lastL1Error = l1Error;
 
 		return Optional.of(new KickSolverResult(kickPosition, kickVelEst,
-				records.get(0).gettCapture() - (long) (bestResult.tOffset * 1e9), getClass().getSimpleName()));
+				records.get(0).getTimestamp() - (long) (bestResult.tOffset * 1e9), getClass().getSimpleName()
+		));
 	}
 
 

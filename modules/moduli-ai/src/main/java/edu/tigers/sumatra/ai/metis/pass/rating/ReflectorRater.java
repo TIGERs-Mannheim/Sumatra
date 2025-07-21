@@ -10,11 +10,11 @@ import edu.tigers.sumatra.ai.metis.kicking.Pass;
 import edu.tigers.sumatra.ai.metis.offense.OffensiveMath;
 import edu.tigers.sumatra.ai.metis.targetrater.AngleRangeRater;
 import edu.tigers.sumatra.ai.metis.targetrater.IRatedTarget;
-import edu.tigers.sumatra.ai.metis.targetrater.RatedTarget;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
 
 import java.util.Collection;
+import java.util.Comparator;
 
 import static edu.tigers.sumatra.math.SumatraMath.relative;
 
@@ -33,6 +33,9 @@ public class ReflectorRater extends APassRater
 
 	@Configurable(defValue = "0.5")
 	private static double bestImprovement = 0.5;
+
+	@Configurable(defValue = "0.5")
+	private static double timeToKickFactor = 0.5;
 
 	static
 	{
@@ -53,26 +56,30 @@ public class ReflectorRater extends APassRater
 	@Override
 	public double rate(Pass pass)
 	{
+		rater.setTimeToKick(pass.getPreparationTime() + pass.getDuration() * timeToKickFactor);
 		rater.setObstacles(obstacles);
-		var ratedTarget = rater.rate(pass.getKick().getTarget())
-				.orElseGet(() -> RatedTarget.ratedPoint(Geometry.getGoalTheir().getCenter(), 0));
-		double goalKickScore = rateGoalKick(pass, ratedTarget);
+
+		var sourceScore = rater.rate(pass.getKick().getSource())
+				.map(IRatedTarget::getScore).orElse(0.0);
+
+		return rater.rateMultiple(pass.getKick().getTarget())
+				.stream()
+				.map(e -> rateTarget(sourceScore, e.getScore(), pass, e))
+				.max(Comparator.comparingDouble(e -> e))
+				.orElse(0.0);
+	}
+
+
+	private double rateTarget(double sourceScore, double targetScore, Pass pass, IRatedTarget target)
+	{
+		var improvement = targetScore - sourceScore;
+		double improvementScore = Math.min(relative(improvement, 0, bestImprovement), targetScore);
 
 		var angle = OffensiveMath.getRedirectAngle(
 				pass.getKick().getSource(),
 				pass.getKick().getTarget(),
-				ratedTarget.getTarget());
+				target.getTarget());
 		double reflectScore = 1 - relative(angle, minCriticalAngle, maxCriticalAngle);
-		return reflectScore * goalKickScore;
-	}
-
-
-	private double rateGoalKick(Pass pass, IRatedTarget ratedTarget)
-	{
-		var ratedSource = rater.rate(pass.getKick().getSource())
-				.orElseGet(() -> RatedTarget.ratedPoint(Geometry.getGoalTheir().getCenter(), 0));
-
-		var improvement = ratedTarget.getScore() - ratedSource.getScore();
-		return Math.min(relative(improvement, 0, bestImprovement), ratedTarget.getScore());
+		return reflectScore * improvementScore;
 	}
 }

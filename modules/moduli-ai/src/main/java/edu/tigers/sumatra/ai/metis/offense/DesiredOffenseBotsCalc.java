@@ -6,13 +6,14 @@ package edu.tigers.sumatra.ai.metis.offense;
 
 import edu.tigers.sumatra.ai.metis.ACalculator;
 import edu.tigers.sumatra.ids.BotID;
+import edu.tigers.sumatra.math.vector.IVector2;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 
@@ -20,7 +21,7 @@ import java.util.stream.Stream;
 public class DesiredOffenseBotsCalc extends ACalculator
 {
 	private final Supplier<List<BotID>> ballHandlingBots;
-	private final Supplier<List<BotID>> supportiveAttackers;
+	private final Supplier<Map<BotID, IVector2>> supportiveAttackers;
 	private final Supplier<List<BotID>> passReceivers;
 
 	@Getter
@@ -33,11 +34,15 @@ public class DesiredOffenseBotsCalc extends ACalculator
 	@Override
 	protected void doCalc()
 	{
-		desiredOffenseBots = Stream.of(ballHandlingBots, supportiveAttackers, passReceivers)
+		desiredOffenseBots = Stream.of(
+						ballHandlingBots,
+						() -> supportiveAttackers.get().keySet().stream().toList(),
+						passReceivers
+				)
 				.map(Supplier::get)
 				.flatMap(Collection::stream)
 				.distinct()
-				.collect(Collectors.toUnmodifiableList());
+				.toList();
 		numOffenseBots = desiredOffenseBots.size();
 	}
 }

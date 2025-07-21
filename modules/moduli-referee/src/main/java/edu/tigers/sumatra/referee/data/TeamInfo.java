@@ -3,7 +3,6 @@
  */
 package edu.tigers.sumatra.referee.data;
 
-import com.sleepycat.persist.model.Persistent;
 import edu.tigers.sumatra.referee.proto.SslGcRefereeMessage;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -17,7 +16,6 @@ import java.util.List;
 /**
  * Persistent wrapper for TeamInfo
  */
-@Persistent(version = 1)
 @Value
 @Builder
 @AllArgsConstructor(access = AccessLevel.PRIVATE)

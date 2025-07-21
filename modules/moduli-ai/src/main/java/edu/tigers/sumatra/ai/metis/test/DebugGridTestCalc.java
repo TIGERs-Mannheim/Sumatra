@@ -25,12 +25,14 @@ import edu.tigers.sumatra.drawable.IColorPicker;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.BallID;
 import edu.tigers.sumatra.ids.BotID;
+import edu.tigers.sumatra.ids.ETeamColor;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.wp.data.DynamicPosition;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
 import edu.tigers.sumatra.wp.util.BotDistanceComparator;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.log4j.Log4j2;
 
 import java.awt.Color;
 import java.util.Arrays;
@@ -39,11 +41,16 @@ import java.util.function.Supplier;
 import java.util.function.ToDoubleFunction;
 
 
+@Log4j2
 @RequiredArgsConstructor
 public class DebugGridTestCalc extends ACalculator
 {
-	@Configurable(defValue = "OFF")
-	private static EMode mode = EMode.OFF;
+	@Configurable(defValue = "false")
+	private static boolean enableGrid = false;
+	@Configurable(defValue = "false")
+	private static boolean enableSinglePoint = false;
+	@Configurable(defValue = "YELLOW")
+	private static ETeamColor enabledForTeam = ETeamColor.YELLOW;
 
 	@Configurable(defValue = "120")
 	private static int numX = 120;
@@ -56,8 +63,8 @@ public class DebugGridTestCalc extends ACalculator
 	@Configurable(defValue = "INTERCEPTION", comment = "The pass rating to display, if type is PASS_TARGET_RATING")
 	private static EPassRating passRating = EPassRating.INTERCEPTION;
 
-	@Configurable(defValue = "true", comment = "Use dynamic pass interception rating based on pass stats")
-	private static boolean useDynamicInterceptionRating = true;
+	@Configurable(defValue = "false", comment = "Use dynamic pass interception rating based on pass stats")
+	private static boolean useDynamicInterceptionRating = false;
 
 	@Configurable(defValue = "-1", comment = "The point of interest, meaning depends on rating. -1 -> ball")
 	private static DynamicPosition poi = new DynamicPosition(BallID.instance());
@@ -75,8 +82,8 @@ public class DebugGridTestCalc extends ACalculator
 	@Configurable(defValue = "false", comment = "Choose receiver automatically")
 	private static boolean chooseReceiverAutomatically = false;
 
-	@Configurable(defValue = "true", comment = "Draw the scores into the grid")
-	private static boolean drawNumbers = true;
+	@Configurable(defValue = "false", comment = "Draw the scores into the grid")
+	private static boolean drawNumbers = false;
 
 	@Configurable(defValue = "0,0", comment = "Single point to rate and display, for individual debugging")
 	private static IVector2 singlePoint = Vector2.zero();
@@ -87,9 +94,13 @@ public class DebugGridTestCalc extends ACalculator
 	@Configurable(defValue = "true")
 	private static boolean considerChip = true;
 
+	@Configurable(defValue = "false")
+	private static boolean printGridCalculationTime = false;
+
 
 	private final Supplier<PassStats> passStats;
 	private final Supplier<OffensiveZones> offensiveZones;
+	private final Supplier<List<BotID>> opponentMan2ManMarkers;
 
 	private final IColorPicker colorPicker = ColorPickerFactory.greenRedGradient();
 	private final PassFactory passFactory = new PassFactory();
@@ -101,15 +112,16 @@ public class DebugGridTestCalc extends ACalculator
 	@Override
 	protected boolean isCalculationNecessary()
 	{
-		return mode != EMode.OFF;
+		pointOfInterest = poi.update(getWFrame()).getPos();
+		return enabledForTeam == getAiFrame().getTeamColor()
+				&& shooter().isBot()
+				&& (enableGrid || enableSinglePoint);
 	}
 
 
 	@Override
 	public void doCalc()
 	{
-		pointOfInterest = poi.update(getWFrame()).getPos();
-
 		passFactory.update(getWFrame());
 		passCreator.update(getWFrame());
 
@@ -118,6 +130,10 @@ public class DebugGridTestCalc extends ACalculator
 			case DEFENSE_THREAT_RATING -> defenseThreatRating();
 			case BEST_GOAL_KICK_RATING -> bestGoalKickRating();
 			case PASS_TARGET_RATING -> passTargetRating();
+			default ->
+			{
+				// do nothing
+			}
 		}
 	}
 
@@ -162,7 +178,8 @@ public class DebugGridTestCalc extends ACalculator
 	private void defenseThreatRating()
 	{
 		var rater = new DefenseThreatRater();
-		draw(pos -> rater.getThreatRatingOfPosition(pointOfInterest, pos));
+		drawFullField(pos -> rater.getThreatRatingOfPosition(pointOfInterest, pos));
+		drawSinglePoint(pos -> rater.getThreatRatingOfPosition(pointOfInterest, pos));
 	}
 
 
@@ -170,9 +187,12 @@ public class DebugGridTestCalc extends ACalculator
 	{
 		var rater = new BestGoalKickRater();
 		rater.update(getWFrame());
-		draw(pos -> rater.rateKickOrigin(new KickOrigin(pos, shooter(), Double.POSITIVE_INFINITY))
+		ToDoubleFunction<IVector2> ratingFunction = pos -> rater.rateKickOrigin(
+						new KickOrigin(pos, shooter(), Double.POSITIVE_INFINITY)).goalKick()
 				.map(e -> e.getRatedTarget().getScore())
-				.orElse(0.0));
+				.orElse(0.0);
+		drawFullField(ratingFunction);
+		drawSinglePoint(ratingFunction);
 	}
 
 
@@ -186,30 +206,27 @@ public class DebugGridTestCalc extends ACalculator
 				// Sort by distance to ball as rough estimate to get the closest bots first
 				.sorted(new BotDistanceComparator(getBall().getPos()))
 				.toList();
+		var consideredBotsIntercept = consideredBots.stream().filter(e -> e.getBotId() != getAiFrame().getKeeperOpponentId()).toList();
 		if (useDynamicInterceptionRating)
 		{
 			ratingFactory.updateDynamic(
 					consideredBots,
-					consideredBots,
+					consideredBotsIntercept,
 					passStats.get(),
-					offensiveZones.get()
-			);
+					offensiveZones.get(),
+					opponentMan2ManMarkers.get());
 		} else
 		{
-			ratingFactory.update(consideredBots, consideredBots);
+			ratingFactory.update(consideredBots, consideredBotsIntercept, opponentMan2ManMarkers.get());
 		}
 
-		if (mode == EMode.SINGLE_POINT)
-		{
-			ratingFactory.setShapes(getShapes(EAiShapesLayer.TEST_GRID_ADDITIONAL));
-		}
-
-		draw(pos -> ratePassTargetRating(ratingFactory, pos));
-		ratingFactory.drawShapes(getShapes(EAiShapesLayer.TEST_GRID_ADDITIONAL));
+		drawFullField(pos -> ratePassTargetRating(ratingFactory, pos, EMode.GRID));
+		ratingFactory.setShapes(getShapes(EAiShapesLayer.TEST_GRID_ADDITIONAL));
+		drawSinglePoint(pos -> ratePassTargetRating(ratingFactory, pos, EMode.SINGLE_POINT));
 	}
 
 
-	private double ratePassTargetRating(RatedPassFactory ratingFactory, IVector2 pos)
+	private double ratePassTargetRating(RatedPassFactory ratingFactory, IVector2 pos, EMode mode)
 	{
 		KickOrigin kickOrigin = new KickOrigin(pointOfInterest, shooter(), Double.POSITIVE_INFINITY);
 		List<Pass> passes = passCreator.createPasses(kickOrigin, pos, receiver(pos))
@@ -229,34 +246,41 @@ public class DebugGridTestCalc extends ACalculator
 	}
 
 
-	private void draw(final ToDoubleFunction<IVector2> ratingFunction)
+	private void drawSinglePoint(final ToDoubleFunction<IVector2> ratingFunction)
 	{
-		switch (mode)
+		if (!enableSinglePoint)
 		{
-			case GRID -> drawFullField(ratingFunction);
-			case SINGLE_POINT ->
-			{
-				double score = ratingFunction.applyAsDouble(singlePoint);
-				Color color = colorPicker.getColor(score);
-				getShapes(EAiShapesLayer.TEST_GRID_ADDITIONAL).add(new DrawablePoint(singlePoint, color));
-				getShapes(EAiShapesLayer.TEST_GRID_ADDITIONAL)
-						.add(new DrawableAnnotation(singlePoint, String.format("%.2f", score)).withOffset(Vector2.fromX(10)));
-			}
-			default ->
-			{
-				// nothing
-			}
+			return;
 		}
+		double score = ratingFunction.applyAsDouble(singlePoint);
+		Color color = colorPicker.getColor(score);
+		getShapes(EAiShapesLayer.TEST_GRID_ADDITIONAL).add(new DrawablePoint(singlePoint, color));
+		getShapes(EAiShapesLayer.TEST_GRID_ADDITIONAL)
+				.add(new DrawableAnnotation(singlePoint, String.format("%.2f", score))
+						.withFontHeight(12.5)
+						.withCenterHorizontally(true)
+						.withOffsetY(25));
 	}
 
 
 	private void drawFullField(final ToDoubleFunction<IVector2> ratingFunction)
 	{
+		if (!enableGrid)
+		{
+			return;
+		}
+		long start = System.nanoTime();
 		getShapes(EAiShapesLayer.TEST_GRID_DEBUG).add(
 				DrawableGrid.generate(numX, numY, Geometry.getFieldWidth(), Geometry.getFieldLength(), ratingFunction)
 						.setColorPicker(colorPicker)
 						.setDrawNumbers(drawNumbers)
 		);
+		if (printGridCalculationTime)
+		{
+			long end = System.nanoTime();
+			long duration = (end - start) / 1_000_000;
+			log.debug("Generating grid took {} ms", duration);
+		}
 	}
 
 
@@ -264,13 +288,11 @@ public class DebugGridTestCalc extends ACalculator
 	{
 		BEST_GOAL_KICK_RATING,
 		PASS_TARGET_RATING,
-		FREE_SPACE_RATING,
 		DEFENSE_THREAT_RATING,
 	}
 
 	private enum EMode
 	{
-		OFF,
 		GRID,
 		SINGLE_POINT,
 	}

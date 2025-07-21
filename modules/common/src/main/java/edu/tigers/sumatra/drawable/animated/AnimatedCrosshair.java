@@ -3,7 +3,6 @@
  */
 package edu.tigers.sumatra.drawable.animated;
 
-import com.sleepycat.persist.model.Persistent;
 import edu.tigers.sumatra.drawable.IDrawableTool;
 import edu.tigers.sumatra.math.AngleMath;
 import edu.tigers.sumatra.math.circle.ICircle;
@@ -17,17 +16,9 @@ import java.awt.geom.AffineTransform;
 /**
  * @author AndreR <andre@ryll.cc>
  */
-@Persistent
 public class AnimatedCrosshair extends AnimatedCircle
 {
 	private INumberAnimator rotation;
-
-
-	@SuppressWarnings("unused")
-	private AnimatedCrosshair()
-	{
-		super();
-	}
 
 
 	/**

@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration base="com.github.g3force.configurable.ConfigClass4">
+    <testStoredDifferent>42</testStoredDifferent>
+</configuration>

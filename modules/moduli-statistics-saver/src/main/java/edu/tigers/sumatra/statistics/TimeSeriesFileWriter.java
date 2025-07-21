@@ -75,7 +75,7 @@ public class TimeSeriesFileWriter implements ITimeSeriesWriter
 			fileWriter = createFileWriter();
 		}
 
-		if (fileWriter == null)
+		if (fileWriter == null || entry.getFieldSet().isEmpty())
 		{
 			return;
 		}

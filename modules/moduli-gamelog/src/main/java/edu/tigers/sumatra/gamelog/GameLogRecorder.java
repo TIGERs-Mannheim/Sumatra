@@ -4,12 +4,13 @@
 
 package edu.tigers.sumatra.gamelog;
 
-import edu.tigers.moduli.AModule;
+
+import edu.tigers.sumatra.moduli.AModule;
 
 
 public class GameLogRecorder extends AModule
 {
-	private final GameLogWriter writer = new GameLogWriter(GameLogType.LOG_FILE);
+	private final GameLogWriter writer = new GameLogWriter();
 	private String matchType = "";
 	private String matchStage = "";
 	private String teamYellow = "";

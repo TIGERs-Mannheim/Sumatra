@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<moduleTest>
+
+    <globalConfiguration>
+        <environment>MODULI</environment>
+    </globalConfiguration>
+
+    <module id="edu.tigers.sumatra.moduli.modules.TestModule">
+        <implementation>edu.tigers.sumatra.moduli.modules.ConcreteTestModule</implementation>
+
+        <dependency>edu.tigers.sumatra.moduli.modules.ConfiguredTestModule</dependency>
+    </module>
+
+    <module id="edu.tigers.sumatra.moduli.modules.ConfiguredTestModule">
+
+        <properties>
+            <testProperty>exists</testProperty>
+        </properties>
+
+        <dependency>edu.tigers.sumatra.moduli.modules.TestModule</dependency>
+    </module>
+</moduleTest>

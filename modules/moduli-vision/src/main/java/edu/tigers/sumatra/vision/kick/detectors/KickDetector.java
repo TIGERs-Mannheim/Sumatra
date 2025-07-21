@@ -122,7 +122,7 @@ public class KickDetector implements IKickDetector
 	{
 		List<MergedBall> balls = frameHistory.stream()
 				.map(FrameRecord::getBall)
-				.collect(Collectors.toList());
+				.toList();
 
 		Map<BotID, List<FilteredVisionBot>> bots = frameHistory.stream()
 				.flatMap(f -> f.getRobots().stream())
@@ -213,7 +213,7 @@ public class KickDetector implements IKickDetector
 		List<IDrawableShape> shapes = new ArrayList<>();
 
 		DrawableAnnotation kvText = new DrawableAnnotation(lastKnownBallPosition, lastKVText);
-		kvText.withOffset(Vector2.fromXY(0, 30));
+		kvText.withOffset(Vector2.fromXY(0, 50));
 		kvText.withCenterHorizontally(true);
 		kvText.withFontHeight(20);
 		kvText.setColor(Color.MAGENTA);

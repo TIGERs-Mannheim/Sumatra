@@ -7,8 +7,8 @@ package edu.tigers.sumatra.ai.metis.offense.strategy;
 import edu.tigers.sumatra.ai.metis.ACalculator;
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
 import edu.tigers.sumatra.ai.metis.botdistance.BotDistance;
-import edu.tigers.sumatra.ai.metis.general.ESkirmishStrategy;
-import edu.tigers.sumatra.ai.metis.general.SkirmishInformation;
+import edu.tigers.sumatra.ai.metis.skirmish.ESkirmishStrategyType;
+import edu.tigers.sumatra.ai.metis.skirmish.SkirmishStrategy;
 import edu.tigers.sumatra.drawable.DrawableBorderText;
 import edu.tigers.sumatra.drawable.EFontSize;
 import edu.tigers.sumatra.geometry.Geometry;
@@ -18,10 +18,12 @@ import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.time.TimestampTimer;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 import java.awt.Color;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Supplier;
 
@@ -34,21 +36,33 @@ public class SkirmishFreeBallCalc extends ACalculator
 {
 	private final TimestampTimer timer = new TimestampTimer(0.25);
 
-	private final Supplier<SkirmishInformation> skirmishInformation;
+	private final Supplier<SkirmishStrategy> skirmishStrategy;
 	private final Supplier<BotDistance> opponentClosestToBall;
 	private final Supplier<List<BotID>> ballHandlingBots;
-	private final Supplier<List<BotID>> supportiveAttackers;
+	private final Supplier<Map<BotID, IVector2>> supportiveAttackers;
 
 	private ITrackedBot attacker;
 	private boolean fail = false;
 	private String info = "";
+	@Getter
+	private boolean startMoving = false;
+	@Getter
+	private IVector2 targetPosition = Vector2.zero();
 
 
 	@Override
 	protected boolean isCalculationNecessary()
 	{
 		return !ballHandlingBots.get().isEmpty()
-				&& skirmishInformation.get().getStrategy() == ESkirmishStrategy.FREE_BALL;
+				&& skirmishStrategy.get().type() == ESkirmishStrategyType.RIP_FREE;
+	}
+
+
+	@Override
+	protected void reset()
+	{
+		startMoving = false;
+		targetPosition = Vector2.zero();
 	}
 
 
@@ -58,11 +72,12 @@ public class SkirmishFreeBallCalc extends ACalculator
 		attacker = getWFrame().getBot(ballHandlingBots.get().stream().findFirst().orElse(BotID.noBot()));
 		fail = false;
 		info = "";
+		targetPosition = skirmishStrategy.get().targetPositions().getFirst();
 
-		if (getAiFrame().getPrevFrame().getTacticalField().getSkirmishInformation().isStartCircleMove())
+		if (startMoving)
 		{
 			// Keep going
-			skirmishInformation.get().setStartCircleMove(startCircleMove());
+			startMoving = startCircleMove();
 			return;
 		}
 
@@ -76,7 +91,7 @@ public class SkirmishFreeBallCalc extends ACalculator
 			info += "No Secondary | ";
 		} else
 		{
-			double dist = bot.getPos().distanceTo(skirmishInformation.get().getSupportiveCircleCatchPos());
+			double dist = bot.getPos().distanceTo(targetPosition);
 			if (dist > 100)
 			{
 				fail = true;
@@ -117,7 +132,7 @@ public class SkirmishFreeBallCalc extends ACalculator
 			info = "Activate !!!";
 			// init turn move timer here.
 			timer.start(getWFrame().getTimestamp());
-			skirmishInformation.get().setStartCircleMove(true);
+			startMoving = true;
 		}
 
 		getShapes(EAiShapesLayer.AI_SKIRMISH_DETECTOR)
@@ -171,7 +186,7 @@ public class SkirmishFreeBallCalc extends ACalculator
 
 	private ITrackedBot getSupportiveAttacker()
 	{
-		return supportiveAttackers.get()
+		return supportiveAttackers.get().keySet()
 				.stream()
 				.map(b -> getWFrame().getBot(b))
 				.findAny()

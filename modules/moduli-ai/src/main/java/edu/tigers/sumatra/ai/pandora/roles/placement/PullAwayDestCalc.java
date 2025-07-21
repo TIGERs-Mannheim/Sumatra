@@ -11,6 +11,7 @@ import edu.tigers.sumatra.drawable.DrawablePoint;
 import edu.tigers.sumatra.drawable.DrawableRectangle;
 import edu.tigers.sumatra.drawable.IDrawableShape;
 import edu.tigers.sumatra.geometry.Geometry;
+import edu.tigers.sumatra.math.SumatraMath;
 import edu.tigers.sumatra.math.line.ILineSegment;
 import edu.tigers.sumatra.math.line.Lines;
 import edu.tigers.sumatra.math.rectangle.IRectangle;
@@ -18,6 +19,7 @@ import edu.tigers.sumatra.math.rectangle.Rectangle;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
 import lombok.Getter;
+import org.apache.commons.lang.Validate;
 
 import java.awt.Color;
 import java.util.ArrayList;
@@ -31,13 +33,10 @@ import java.util.Optional;
  */
 public class PullAwayDestCalc
 {
-	@Configurable(defValue = "120.0", comment = "If ball is closer than this distance [mm] to a boundary, ball is pulled away orthogonally to boundary or corner")
-	private static double pullAwayMargin = 120;
+	@Configurable(defValue = "250.0", comment = "[mm] If ball is closer than this distance to a boundary or goal wall, the ball is pulled away. Must be large enough that a bot can position itself between ball and obstacle easily.")
+	private static double pullAwayMargin = 250;
 
-	@Configurable(defValue = "300.0", comment = "Distance [mm] that the ball has to be away from the boundary. Must be large enough that the bot can position between ball and boundary easily.")
-	private static double pullAwayMinDistance = 300;
-
-	@Configurable(defValue = "100.0", comment = "Distance [mm] to add when pulling ball away (hysteresis)")
+	@Configurable(defValue = "100.0", comment = "[mm] Extra distance to cover to accept ball is far enough from the next boundary")
 	private static double pullAwayHysteresis = 100;
 
 	static
@@ -48,50 +47,45 @@ public class PullAwayDestCalc
 	@Getter
 	private List<IDrawableShape> shapes = new ArrayList<>();
 
+	private boolean isPullOutOngoing = false;
+
 
 	public Optional<IVector2> getPullAwayBallTarget(IVector2 ballPos)
 	{
 		shapes = new ArrayList<>();
 
-		List<PullAwayCorner> pullAwayCorners = getPullAwayCorners();
+		var pullAwayCorners = getPullAwayCorners();
 		pullAwayCorners.stream().flatMap(pac -> pac.getShapes().stream()).forEach(shapes::add);
 
-		List<PullAwayArea> pullAwayAreas = getPullAwayAreas();
+		var pullAwayAreas = getPullAwayAreas();
 		pullAwayAreas.stream().flatMap(paa -> paa.getShapes().stream()).forEach(shapes::add);
 
-		IRectangle pullInRect = Geometry.getFieldWBorders().withMargin(-pullAwayMinDistance);
-		IRectangle pullOutRect = pullInRect.withMargin(-pullAwayHysteresis);
-		shapes.add(new DrawableRectangle(pullInRect).setColor(Color.black));
-		shapes.add(new DrawableRectangle(pullOutRect).setColor(Color.magenta));
-
-		Optional<IVector2> cornerSubTarget = pullAwayCorners.stream()
-				.filter(corner -> corner.isPointInShape(ballPos))
+		var cornerSubTarget = pullAwayCorners.stream()
+				.filter(corner -> corner.mustBePulledOut(ballPos, isPullOutOngoing))
 				.findFirst()
 				.map(corner -> corner.pullToPoint);
 
 		if (cornerSubTarget.isPresent())
 		{
+			isPullOutOngoing = true;
 			return cornerSubTarget;
 		}
 
-		Optional<IVector2> areaSubTarget = pullAwayAreas.stream()
-				.filter(paa -> paa.isPointInShape(ballPos))
+		var areaSubTarget = pullAwayAreas.stream()
+				.filter(paa -> paa.mustBePulledOut(ballPos, isPullOutOngoing))
 				.findFirst()
 				.map(paa -> paa.pullToLine.closestPointOnPath(ballPos));
-		if (areaSubTarget.isPresent())
-		{
-			return areaSubTarget;
-		}
 
-		// find a point that is at some distance away from boundary, so that robot can
-		// approach the ball from the side
-		if (pullInRect.isPointInShape(ballPos))
-		{
-			// ball is already far enough away from boundary, we can directly use the target
-			return Optional.empty();
-		}
-		// pull straight from boundary backwards to get the ball away from the boundary
-		return Optional.of(pullOutRect.nearestPointInside(ballPos));
+
+		isPullOutOngoing = areaSubTarget.isPresent();
+
+		return areaSubTarget;
+	}
+
+
+	private static double getPullAwayMargin()
+	{
+		return SumatraMath.max(Geometry.getBoundaryLength(), Geometry.getBoundaryWidth(), pullAwayMargin);
 	}
 
 
@@ -101,20 +95,18 @@ public class PullAwayDestCalc
 
 		// Field corners
 		Geometry.getFieldWBorders().getCorners().stream()
-				.map(corner -> createPullAwayCorner(
+				.map(corner -> PullAwayCorner.create(
 								corner,
-								Vector2.fromXY(-pullAwayMargin, -pullAwayMargin),
-								Vector2.fromXY(-pullAwayMinDistance, -pullAwayMinDistance)
+						Vector2.fromXY(-1, -1)
 						)
 				).forEach(pullAwayCorners::add);
 
 		// Goal inner corners
 		Geometry.getGoals().stream()
 				.flatMap(goal -> goal.getCorners().stream())
-				.map(corner -> createPullAwayCorner(
+				.map(corner -> PullAwayCorner.create(
 						corner,
-						Vector2.fromXY(-pullAwayMargin, -pullAwayMargin),
-						Vector2.fromXY(-pullAwayMinDistance, -pullAwayMinDistance)
+						Vector2.fromXY(-1, -1)
 				))
 				.forEach(pullAwayCorners::add);
 
@@ -123,23 +115,13 @@ public class PullAwayDestCalc
 		Geometry.getGoals().stream()
 				.flatMap(goal -> goal.getCorners().stream())
 				.map(corner -> corner.addMagnitude(Vector2.fromX(goalToBoundaryOffset)))
-				.map(corner -> createPullAwayCorner(
+				.map(corner -> PullAwayCorner.create(
 						corner,
-						Vector2.fromXY(-pullAwayMargin, pullAwayMargin),
-						Vector2.fromXY(-pullAwayMinDistance, pullAwayMinDistance)
+						Vector2.fromXY(-1, 1)
 				))
 				.forEach(pullAwayCorners::add);
 
 		return Collections.unmodifiableList(pullAwayCorners);
-	}
-
-
-	private PullAwayCorner createPullAwayCorner(IVector2 corner, IVector2 magnitudeArea, IVector2 magnitudePullAway)
-	{
-		return new PullAwayCorner(
-				Rectangle.fromPoints(corner, corner.addMagnitude(magnitudeArea)),
-				corner.addMagnitude(magnitudePullAway.addMagnitude(Vector2.fromXY(pullAwayHysteresis, pullAwayHysteresis)))
-		);
 	}
 
 
@@ -148,84 +130,160 @@ public class PullAwayDestCalc
 		List<PullAwayArea> pullAwayAreas = new ArrayList<>();
 
 		// outside of goal side walls
-		double pullAwayDist = pullAwayMargin + pullAwayHysteresis;
 		Geometry.getGoals().stream()
-				.flatMap(goal -> goal.getGoalPosts().stream())
-				.map(goalPost -> new PullAwayArea(
-								Rectangle.fromPoints(
-										goalPost,
-										goalPost.addMagnitude(Vector2.fromXY(Geometry.getBoundaryLength(), pullAwayMargin))
-								),
-								Lines.segmentFromPoints(
-										goalPost.addMagnitude(Vector2.fromXY(0, pullAwayDist)),
-										goalPost.addMagnitude(Vector2.fromXY(Geometry.getBoundaryLength(), pullAwayDist))
-								)
+				.flatMap(goal -> goal.getGoalPosts()
+						.stream()
+						.map(goalPost -> Lines.segmentFromPoints(
+								goalPost,
+								goalPost.addMagnitude(Vector2.fromXY(Geometry.getBoundaryLength(), 0))
+						))
+				)
+				.map(outerWall -> PullAwayArea.create(
+						outerWall,
+						Vector2.fromXY(0, 1)
 						)
 				).forEach(pullAwayAreas::add);
 
 		// inside of goal side walls
 		Geometry.getGoals().stream()
+				.flatMap(goal -> goal.getGoalPosts()
+						.stream()
+						.map(goalPost -> Lines.segmentFromPoints(
+								goalPost,
+								goalPost.addMagnitude(Vector2.fromXY(goal.getDepth(), 0))
+						))
+				)
+				.map(outerWall -> PullAwayArea.create(
+						outerWall,
+						Vector2.fromXY(0, -1)
+						)
+				).forEach(pullAwayAreas::add);
+
+		// Goal Posts towards the field
+		Geometry.getGoals().stream()
 				.flatMap(goal -> goal.getGoalPosts().stream())
-				.map(goalPost -> new PullAwayArea(
-								Rectangle.fromPoints(
-										goalPost,
-										goalPost.addMagnitude(Vector2.fromXY(Geometry.getGoalOur().getDepth(), -pullAwayMargin))
-								),
+				.map(goalPost -> PullAwayArea.create(
 								Lines.segmentFromPoints(
-										goalPost.addMagnitude(Vector2.fromXY(0, -pullAwayDist)),
-										goalPost.addMagnitude(Vector2.fromXY(Geometry.getGoalOur().getDepth(), -pullAwayDist))
-								)
+										goalPost.addMagnitude(Vector2.fromXY(0, -getPullAwayMargin())),
+										goalPost.addMagnitude(Vector2.fromXY(0, getPullAwayMargin()))
+								),
+						Vector2.fromXY(-1, 0)
 						)
 				).forEach(pullAwayAreas::add);
 
 		// inside of goal inner wall (to make sure that independently of boundary width the ball is far enough away from inner goal wall
-		double goalPostOffsetX = Geometry.getGoalOur().getDepth() - pullAwayMinDistance;
 		Geometry.getGoals().stream()
-				.map(goal -> new PullAwayArea(
-								Rectangle.fromPoints(
-										goal.getLeftPost()
-												.addMagnitude(Vector2.fromXY(goalPostOffsetX, 0)),
-										goal.getRightPost().addMagnitude(Vector2.fromXY(Geometry.getGoalOur().getDepth(), 0))
-								),
+				.map(goal -> PullAwayArea.create(
 								Lines.segmentFromPoints(
-										goal.getLeftPost().addMagnitude(Vector2.fromXY(goalPostOffsetX - pullAwayHysteresis, 0)),
-										goal.getRightPost().addMagnitude(Vector2.fromXY(goalPostOffsetX - pullAwayHysteresis, 0))
-								)
+										goal.getLeftPost().addMagnitude(Vector2.fromXY(goal.getDepth(), 0)),
+										goal.getRightPost().addMagnitude(Vector2.fromXY(goal.getDepth(), 0))
+								),
+						Vector2.fromXY(-1, 0)
 						)
 				).forEach(pullAwayAreas::add);
+
+		// Field boundaries
+		Geometry.getFieldWBorders().getEdges().stream()
+				.map(edge -> PullAwayArea.create(
+								edge,
+								SumatraMath.isZero(edge.directionVector().x()) ?
+										Vector2.fromXY(-1, 0) :
+										Vector2.fromXY(0, -1)
+						)
+				).forEach(pullAwayAreas::add);
+
 		return Collections.unmodifiableList(pullAwayAreas);
 	}
 
 
-	private record PullAwayCorner(Rectangle area, IVector2 pullToPoint)
+	private record PullAwayCorner(IRectangle exclusionArea, IRectangle hysteresisArea, IVector2 pullToPoint)
 	{
-		public boolean isPointInShape(IVector2 point)
+		static PullAwayCorner create(IVector2 corner, IVector2 pullDirection)
 		{
-			return area.isPointInShape(point);
+			Validate.isTrue(!SumatraMath.isZero(pullDirection.x()) && !SumatraMath.isZero(pullDirection.y()));
+			Validate.isTrue(SumatraMath.isEqual(pullDirection.getLength(), Math.sqrt(2)));
+
+			var magnitudeExclusion = pullDirection.multiplyNew(getPullAwayMargin());
+			var magnitudeHysteresis = pullDirection.multiplyNew(pullAwayHysteresis);
+
+			var exclusionCorner = corner.addMagnitude(magnitudeExclusion);
+			var hysteresisCorner = exclusionCorner.addMagnitude(magnitudeHysteresis);
+			var pullTarget = hysteresisCorner.addMagnitude(magnitudeHysteresis);
+
+			return new PullAwayCorner(
+					Rectangle.fromPoints(corner, exclusionCorner),
+					Rectangle.fromPoints(corner, hysteresisCorner),
+					pullTarget
+			);
+		}
+
+
+		public boolean mustBePulledOut(IVector2 point, boolean isCornerPullOutOngoing)
+		{
+			if (isCornerPullOutOngoing)
+			{
+				return hysteresisArea.isPointInShape(point);
+			} else
+			{
+				return exclusionArea.isPointInShape(point);
+			}
 		}
 
 
 		public List<IDrawableShape> getShapes()
 		{
 			return List.of(
-					new DrawableRectangle(area),
+					new DrawableRectangle(hysteresisArea, new Color(0, 0, 0, 100)).setFill(true),
+					new DrawableRectangle(exclusionArea, new Color(255, 0, 0, 100)).setFill(true),
 					new DrawablePoint(pullToPoint).setColor(Color.magenta)
 			);
 		}
 	}
 
-	private record PullAwayArea(IRectangle area, ILineSegment pullToLine)
+	private record PullAwayArea(IRectangle exclusionArea, IRectangle hysteresisArea, ILineSegment pullToLine)
 	{
-		public boolean isPointInShape(IVector2 point)
+		static PullAwayArea create(ILineSegment boundary, IVector2 pullDirection)
 		{
-			return area.isPointInShape(point);
+			Validate.isTrue(SumatraMath.isZero(pullDirection.x()) || SumatraMath.isZero(pullDirection.y()));
+			Validate.isTrue(!pullDirection.isZeroVector());
+			Validate.isTrue(SumatraMath.isEqual(pullDirection.getLength(), 1));
+
+			var magnitudeExclusion = pullDirection.multiplyNew(getPullAwayMargin());
+			var magnitudeHysteresis = pullDirection.multiplyNew(pullAwayHysteresis);
+
+			var exclusionLine = Lines.segmentFromOffset(
+					boundary.supportVector().addMagnitude(magnitudeExclusion), boundary.directionVector());
+			var hysteresisLine = Lines.segmentFromOffset(
+					exclusionLine.supportVector().addMagnitude(magnitudeHysteresis), exclusionLine.directionVector()
+			);
+			var pullTarget = Lines.segmentFromOffset(
+					hysteresisLine.supportVector().addMagnitude(magnitudeHysteresis), hysteresisLine.directionVector());
+
+			return new PullAwayArea(
+					Rectangle.fromPoints(boundary.getPathStart(), exclusionLine.getPathEnd()),
+					Rectangle.fromPoints(boundary.getPathStart(), hysteresisLine.getPathEnd()),
+					pullTarget
+			);
+		}
+
+
+		public boolean mustBePulledOut(IVector2 point, boolean isAreaPullOutOngoing)
+		{
+			if (isAreaPullOutOngoing)
+			{
+				return hysteresisArea.isPointInShape(point);
+			} else
+			{
+				return exclusionArea.isPointInShape(point);
+			}
 		}
 
 
 		public List<IDrawableShape> getShapes()
 		{
 			return List.of(
-					new DrawableRectangle(area),
+					new DrawableRectangle(hysteresisArea, new Color(0, 0, 0, 100)).setFill(true),
+					new DrawableRectangle(exclusionArea, new Color(255, 0, 0, 100)).setFill(true),
 					new DrawableLine(pullToLine).setColor(Color.magenta)
 			);
 		}

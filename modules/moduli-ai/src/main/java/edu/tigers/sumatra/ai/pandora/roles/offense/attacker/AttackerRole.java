@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.pandora.roles.offense.attacker;
@@ -20,6 +20,7 @@ import edu.tigers.sumatra.ai.pandora.roles.offense.attacker.states.ApproachBallL
 import edu.tigers.sumatra.ai.pandora.roles.offense.attacker.states.DribbleState;
 import edu.tigers.sumatra.ai.pandora.roles.offense.attacker.states.DribblingKickState;
 import edu.tigers.sumatra.ai.pandora.roles.offense.attacker.states.FreeKickState;
+import edu.tigers.sumatra.ai.pandora.roles.offense.attacker.states.FreeSkirmishState;
 import edu.tigers.sumatra.ai.pandora.roles.offense.attacker.states.KickState;
 import edu.tigers.sumatra.ai.pandora.roles.offense.attacker.states.ProtectState;
 import edu.tigers.sumatra.ai.pandora.roles.offense.attacker.states.ReceiveState;
@@ -42,6 +43,9 @@ public class AttackerRole extends ARole
 {
 	@Configurable(defValue = "2000.0")
 	private static double switchToKickDist = 2000;
+
+	@Configurable(defValue = "false", comment = "Enable FreeSkirmish")
+	private static boolean enableFreeSkirmish = false;
 
 	@Getter
 	@Setter
@@ -70,12 +74,18 @@ public class AttackerRole extends ARole
 		var redirectState = new RedirectState(this);
 		var dribblingKickState = new DribblingKickState(this);
 		var dribbleState = new DribbleState(this);
+		var freeSkirmishState = new FreeSkirmishState(this);
 		setInitialState(protectState);
 
 		// switch from protect
 		protectState.addTransition(this::ballMoves, approachBallLineState);
 		protectState.addTransition(this::switchToKick, kickState);
+		protectState.addTransition(this::switchToReceive, receiveState);
+		protectState.addTransition(ESkillState.SUCCESS, this::isFreeSkirmishViable, freeSkirmishState);
 		protectState.addTransition(ESkillState.SUCCESS, this::switchToDribble, dribbleState);
+
+		// switch from freeSkirmish
+		freeSkirmishState.addTransition(ESkillState.SUCCESS, protectState);
 
 		// switch from dribble
 		dribbleState.addTransition(this::switchToDribbleKick, dribblingKickState);
@@ -111,7 +121,7 @@ public class AttackerRole extends ARole
 		// switch from redirect
 		redirectState.addTransition(ESkillState.SUCCESS, approachBallLineState);
 		redirectState.addTransition(ESkillState.FAILURE, protectState);
-		redirectState.addTransition(this::switchToReceive, receiveState);
+		redirectState.addTransition(this::cancelRedirect, receiveState);
 
 		// switch from dribbling kick
 		dribblingKickState.addTransition(this::dribblingKickIsBlocked, protectState);
@@ -125,8 +135,24 @@ public class AttackerRole extends ARole
 	}
 
 
+	private boolean isFreeSkirmishViable()
+	{
+		if (!enableFreeSkirmish)
+		{
+			return false;
+		}
+
+		return opponentHasBallControl();
+	}
+
+
 	private boolean switchToDribble()
 	{
+		if (isFreeSkirmishViable())
+		{
+			return false;
+		}
+
 		return action.getDribbleToPos() != null
 				&& action.getDribbleToPos().getProtectFromPos() != null;
 	}
@@ -161,16 +187,23 @@ public class AttackerRole extends ARole
 
 	private boolean switchToRedirect()
 	{
-		return ballMoves() && (action.getType() == EOffensiveActionType.REDIRECT_KICK
-				|| action.getType() == EOffensiveActionType.PASS);
+		return !getBot().getBallContact().hasContact() && ballMoves() && (
+				action.getType() == EOffensiveActionType.REDIRECT_KICK
+						|| action.getType() == EOffensiveActionType.PASS);
 	}
 
 
 	private boolean switchToReceive()
 	{
-		return action.getType() == EOffensiveActionType.RECEIVE
+		return action.getType() == EOffensiveActionType.RECEIVE;
+	}
+
+
+	private boolean cancelRedirect()
+	{
+		return !getBot().getBallContact().hasContact() && (action.getType() == EOffensiveActionType.RECEIVE
 				|| (action.getType() != EOffensiveActionType.REDIRECT_KICK
-				&& action.getType() != EOffensiveActionType.PASS);
+				&& action.getType() != EOffensiveActionType.PASS));
 	}
 
 

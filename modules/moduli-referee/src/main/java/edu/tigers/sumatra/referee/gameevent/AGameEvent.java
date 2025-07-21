@@ -5,7 +5,6 @@
 package edu.tigers.sumatra.referee.gameevent;
 
 
-import com.sleepycat.persist.model.Persistent;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.ids.ETeamColor;
 import edu.tigers.sumatra.math.vector.IVector2;
@@ -20,22 +19,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 
-@Persistent(version = 1)
 public abstract class AGameEvent implements IGameEvent
 {
 	private final EGameEvent type;
 	private final List<String> origins;
 	private final long createdTimestamp;
-
-
-	@SuppressWarnings("unsued") // used by berkeley
-	protected AGameEvent()
-	{
-		createdTimestamp = -1;
-		type = null;
-		origins = List.of();
-
-	}
 
 
 	protected AGameEvent(final EGameEvent type)

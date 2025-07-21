@@ -8,6 +8,7 @@ import com.github.g3force.configurable.Configurable;
 import edu.tigers.sumatra.ai.pandora.plays.EPlay;
 import edu.tigers.sumatra.ai.pandora.roles.ARole;
 import edu.tigers.sumatra.ai.pandora.roles.move.MoveRole;
+import edu.tigers.sumatra.botmanager.botskills.data.ESong;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
@@ -80,8 +81,7 @@ public class RobotInterchangePlay extends AMaintenancePlay
 	{
 		IVector2 dest = startPos.subtractNew(direction);
 
-		List<MoveRole> roles = findRoles(MoveRole.class);
-		roles.sort(Comparator.comparing(ARole::getBotID));
+		List<MoveRole> roles = findRoles(MoveRole.class).stream().sorted(Comparator.comparing(ARole::getBotID)).toList();
 
 		boolean destsReached = true;
 		for (MoveRole role : roles)
@@ -93,12 +93,13 @@ public class RobotInterchangePlay extends AMaintenancePlay
 				dest = dest.addNew(direction);
 			} while (!pointChecker.allMatch(getAiFrame().getBaseAiFrame(), dest, role.getBotID()));
 
+			getAiFrame().getBaseAiFrame().getMultimediaControl().get(role.getBotID()).setSong(ESong.FINAL_COUNTDOWN);
+
 			role.updateDestination(dest);
 			double tmpOrientation = role.isDestinationReached() ?
 					orientation :
 					(LOOK_OUTSIDE_FIELD_ANGLE * positionInVision.factor * getMirrorFactor());
 			role.updateTargetAngle(tmpOrientation * Math.PI / 180);
-
 			destsReached = destsReached && role.isSkillStateSuccess();
 		}
 		if (destsReached)

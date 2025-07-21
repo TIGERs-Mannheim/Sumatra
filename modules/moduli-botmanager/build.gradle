@@ -17,9 +17,6 @@ dependencies {
     implementation project(':moduli-geometry')
     api project(':moduli-bot-params')
 
-    implementation(libs.com.github.TIGERs.mannheim.moduli)
-    implementation(libs.com.github.g3force.instanceables)
-
     implementation(libs.org.apache.logging.log4j.log4j.api)
 
     implementation(libs.commons.configuration)

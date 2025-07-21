@@ -4,7 +4,6 @@
 
 package edu.tigers.sumatra.bot;
 
-import com.sleepycat.persist.model.Persistent;
 import edu.tigers.sumatra.data.collector.IExportable;
 import edu.tigers.sumatra.filter.IInterpolatable;
 import edu.tigers.sumatra.math.IMirrorable;
@@ -23,7 +22,6 @@ import java.util.Arrays;
 import java.util.List;
 
 
-@Persistent
 @Data
 @RequiredArgsConstructor(access = AccessLevel.PROTECTED)
 public class State implements IMirrorable<State>, IExportable, IInterpolatable<State>

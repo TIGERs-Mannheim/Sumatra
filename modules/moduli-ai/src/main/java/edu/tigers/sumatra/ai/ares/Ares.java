@@ -9,7 +9,7 @@ import edu.tigers.sumatra.ai.data.BotAiInformation;
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
 import edu.tigers.sumatra.ai.pandora.plays.APlay;
 import edu.tigers.sumatra.ai.pandora.roles.ARole;
-import edu.tigers.sumatra.botmanager.botskills.data.MultimediaControl;
+import edu.tigers.sumatra.botmanager.data.MultimediaControl;
 import edu.tigers.sumatra.drawable.DrawableAnnotation;
 import edu.tigers.sumatra.drawable.DrawableCircle;
 import edu.tigers.sumatra.drawable.IDrawableShape;

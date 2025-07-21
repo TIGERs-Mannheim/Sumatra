@@ -7,24 +7,21 @@ import edu.tigers.sumatra.ball.BallParameters;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2f;
 import edu.tigers.sumatra.math.vector.Vector3;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
-/**
- * @author AndreR <andre@ryll.cc>
- */
-public class ChipBallConsultantTest
+class ChipBallConsultantTest
 {
 	private BallParameters params;
 	private ChipBallConsultant consultant;
 
 
-	@Before
-	public void setup()
+	@BeforeEach
+	void setup()
 	{
 		params = BallParameters.builder()
 				.withBallRadius(21.5)
@@ -43,7 +40,7 @@ public class ChipBallConsultantTest
 
 
 	@Test
-	public void testGetInitVelForDistTouchdown()
+	void testGetInitVelForDistTouchdown()
 	{
 		for (double distance = 0; distance < 3000; distance += 100)
 		{
@@ -68,11 +65,11 @@ public class ChipBallConsultantTest
 
 
 	@Test
-	public void testGetMinimumDistanceToOverChip()
+	void testGetMinimumDistanceToOverChip()
 	{
 		// test specific values
 		double dist = consultant.getMinimumDistanceToOverChip(3.0, 150);
-		assertEquals(dist, 188.89098770912403, 1e-6);
+		assertEquals(188.89098770912403, dist, 1e-6);
 
 		// test unreachable height
 		dist = consultant.getMinimumDistanceToOverChip(1.0, 10000);
@@ -81,11 +78,11 @@ public class ChipBallConsultantTest
 
 
 	@Test
-	public void testGetMaximumDistanceToOverChip()
+	void testGetMaximumDistanceToOverChip()
 	{
 		// test specific values
 		double dist = consultant.getMaximumDistanceToOverChip(3.0, 150);
-		assertEquals(dist, 728.5402049514264, 1e-6);
+		assertEquals(728.5402049514264, dist, 1e-6);
 
 		// test unreachable height
 		dist = consultant.getMaximumDistanceToOverChip(1.0, 10000);
@@ -94,7 +91,7 @@ public class ChipBallConsultantTest
 
 
 	@Test
-	public void testGetInitVelForPeakHeight()
+	void testGetInitVelForPeakHeight()
 	{
 		double kickVel = consultant.getInitVelForPeakHeight(200);
 		double distMin = consultant.getMinimumDistanceToOverChip(kickVel, 200);

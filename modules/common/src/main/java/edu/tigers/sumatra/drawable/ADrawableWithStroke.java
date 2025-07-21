@@ -4,8 +4,6 @@
 
 package edu.tigers.sumatra.drawable;
 
-import com.sleepycat.persist.model.Persistent;
-
 import java.awt.BasicStroke;
 import java.awt.Graphics2D;
 import java.awt.Stroke;
@@ -14,7 +12,6 @@ import java.awt.Stroke;
 /**
  * Abstract base drawable class with stroke width.
  */
-@Persistent
 public abstract class ADrawableWithStroke extends ADrawable
 {
 	private float strokeWidth = 10;

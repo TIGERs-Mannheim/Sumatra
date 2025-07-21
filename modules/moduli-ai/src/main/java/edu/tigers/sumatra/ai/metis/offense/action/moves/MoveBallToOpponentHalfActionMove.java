@@ -95,12 +95,12 @@ public class MoveBallToOpponentHalfActionMove extends AOffensiveActionMove
 		passFactory.setAimingTolerance(0.6);
 
 		var target = Geometry.getGoalTheir().getCenter();
-		var pass = passFactory.chip(kickSource, target, botId, BotID.noBot(), EBallReceiveMode.DONT_CARE);
-		return Optional.of(RatedOffensiveAction.buildPass(
-				EOffensiveActionMove.MOVE_BALL_TO_OPPONENT_HALF,
-				calcViability(kickSource,
-						getBall().getVel().getLength() > OffensiveConstants.getBallIsRollingThreshold(),
-						getWFrame().getBot(botId).getPos()), pass));
+		return passFactory.chip(kickSource, target, botId, BotID.noBot(), EBallReceiveMode.DONT_CARE)
+				.map(value -> RatedOffensiveAction.buildPass(
+						EOffensiveActionMove.MOVE_BALL_TO_OPPONENT_HALF,
+						calcViability(kickSource,
+								getBall().getVel().getLength() > OffensiveConstants.getBallIsRollingThreshold(),
+								getWFrame().getBot(botId).getPos()), value));
 	}
 
 

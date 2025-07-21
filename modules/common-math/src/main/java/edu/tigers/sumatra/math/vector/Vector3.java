@@ -4,8 +4,6 @@
 
 package edu.tigers.sumatra.math.vector;
 
-import com.sleepycat.persist.model.Persistent;
-
 import java.util.function.Function;
 
 
@@ -21,7 +19,6 @@ import java.util.function.Function;
  * @author Andre
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  */
-@Persistent
 public class Vector3 extends AVector3
 {
 	private double	x;

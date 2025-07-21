@@ -3,14 +3,12 @@
  */
 package edu.tigers.sumatra.bot.params;
 
-import com.sleepycat.persist.model.Persistent;
 import lombok.Data;
 
 
 /**
  * Robot kicker specifications.
  */
-@Persistent
 @Data
 public class BotKickerSpecs implements IBotKickerSpecs
 {

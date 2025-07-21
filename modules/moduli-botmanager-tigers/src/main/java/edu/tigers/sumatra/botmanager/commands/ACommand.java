@@ -53,9 +53,10 @@ public abstract class ACommand
 	/**
 	 * @param reliable the reliable to set
 	 */
-	public void setReliable(final boolean reliable)
+	public ACommand setReliable(final boolean reliable)
 	{
 		this.reliable = reliable;
+		return this;
 	}
 	
 	

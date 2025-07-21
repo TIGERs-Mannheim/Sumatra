@@ -103,7 +103,7 @@ public class FakePassReceiverSupportBehavior extends ASupportBehavior
 
 		draw(passLine, destination);
 		return SupportBehaviorPosition
-				.fromDestinationAndRotationTarget(destination, passLine.closestPointOnPath(destination), 1.0);
+				.fromDestinationAndRotationTarget(destination, getWFrame().getBall().getPos(), 1.0);
 	}
 
 

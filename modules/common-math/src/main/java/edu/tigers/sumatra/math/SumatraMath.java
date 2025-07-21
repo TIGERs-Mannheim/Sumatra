@@ -223,6 +223,46 @@ public final class SumatraMath
 
 
 	/**
+	 * Cap the magnitude of the value of a number to a range.
+	 *
+	 * @param value  the value to cap
+	 * @param bound1 the first bound value
+	 * @param bound2 the second bound value
+	 * @return value in range [bound1..bound2] or [bound2..bound1] with same sign as original value
+	 */
+	public static int capMagnitude(final int value, final int bound1, final int bound2)
+	{
+		if (bound1 < 0 || bound2 < 0)
+		{
+			throw new IllegalArgumentException("Bounds must be positive");
+		}
+		int min = Math.min(bound1, bound2);
+		int max = Math.max(bound1, bound2);
+		return Math.max(min, Math.min(max, Math.abs(value))) * Integer.signum(value);
+	}
+
+
+	/**
+	 * Cap the magnitude of the value of a number to a range.
+	 *
+	 * @param value  the value to cap
+	 * @param bound1 the first bound value
+	 * @param bound2 the second bound value
+	 * @return value in range [bound1..bound2] or [bound2..bound1] with same sign as original value
+	 */
+	public static double capMagnitude(final double value, final double bound1, final double bound2)
+	{
+		if (bound1 < 0 || bound2 < 0)
+		{
+			throw new IllegalArgumentException("Bounds must be positive");
+		}
+		double min = Math.min(bound1, bound2);
+		double max = Math.max(bound1, bound2);
+		return Math.max(min, Math.min(max, Math.abs(value))) * Math.signum(value);
+	}
+
+
+	/**
 	 * Add a magnitude to the absolute of a value.
 	 *
 	 * @param baseValue the base value

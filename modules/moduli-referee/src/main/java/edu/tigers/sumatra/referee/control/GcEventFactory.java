@@ -195,6 +195,18 @@ public final class GcEventFactory
 	}
 
 
+	public static SslGcApi.Input matchType(SslGcRefereeMessage.MatchType matchType)
+	{
+		return SslGcApi.Input.newBuilder()
+				.setChange(SslGcChange.Change.newBuilder()
+						.setUpdateConfigChange(SslGcChange.Change.UpdateConfig.newBuilder()
+								.setMatchType(matchType)
+								.build())
+						.build())
+				.build();
+	}
+
+
 	public static SslGcApi.Input ballPlacement(IVector2 location)
 	{
 		return SslGcApi.Input.newBuilder()

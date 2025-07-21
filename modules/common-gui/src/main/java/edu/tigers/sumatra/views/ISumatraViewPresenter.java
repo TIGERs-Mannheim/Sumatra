@@ -3,9 +3,7 @@
  */
 package edu.tigers.sumatra.views;
 
-import javax.swing.JMenu;
 import java.awt.Component;
-import java.util.List;
 
 
 /**
@@ -19,18 +17,6 @@ public interface ISumatraViewPresenter extends ISumatraPresenter
 	 * @return
 	 */
 	Component getViewPanel();
-
-
-	/**
-	 * You may return a list of JMenus here. They are dynamically added
-	 * to the main MenuBar if the view is shown.
-	 *
-	 * @return Optional JMenus or null if not used.
-	 */
-	default List<JMenu> getCustomMenus()
-	{
-		return List.of();
-	}
 
 	/**
 	 * Called if the view is shown.
@@ -46,22 +32,6 @@ public interface ISumatraViewPresenter extends ISumatraPresenter
 	 * Called if the view is hidden.
 	 */
 	default void onHidden()
-	{
-	}
-
-
-	/**
-	 * Called if the view got focused.
-	 */
-	default void onFocused()
-	{
-	}
-
-
-	/**
-	 * Called if the view lost the focus.
-	 */
-	default void onFocusLost()
 	{
 	}
 }

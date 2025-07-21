@@ -5,6 +5,7 @@ package edu.tigers.sumatra.view.toolbar;
 
 import edu.tigers.sumatra.model.SumatraModel;
 import edu.tigers.sumatra.util.ImageScaler;
+import edu.tigers.sumatra.view.BaseStationPanel;
 import edu.tigers.sumatra.view.FpsPanel;
 import lombok.Getter;
 import lombok.extern.log4j.Log4j2;
@@ -41,6 +42,8 @@ public class ToolBar
 	private final JProgressBar heapBar = new JProgressBar();
 	@Getter
 	private final JLabel heapLabel = new JLabel();
+	@Getter
+	private final BaseStationPanel baseStationPanel = new BaseStationPanel();
 
 
 	public ToolBar()
@@ -90,14 +93,9 @@ public class ToolBar
 		toolBarPanel.add(btnRecSave, "left");
 		toolBarPanel.add(btnTournament, "left");
 		toolBarPanel.add(fpsPanel, "left");
+		toolBarPanel.add(baseStationPanel, "left");
 		toolBarPanel.add(heapPanel, "left");
 		jToolBar.add(toolBarPanel);
-
-		// initialize icons
-		for (EStartStopButtonState icon : EStartStopButtonState.values())
-		{
-			log.trace("Load button icon " + icon.name());
-		}
 	}
 
 

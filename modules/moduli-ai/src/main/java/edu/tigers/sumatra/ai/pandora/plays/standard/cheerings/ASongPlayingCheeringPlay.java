@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.pandora.plays.standard.cheerings;
@@ -37,8 +37,8 @@ public abstract class ASongPlayingCheeringPlay implements ICheeringPlay
 	protected ASongPlayingCheeringPlay(List<ESong> songs, List<Double> interrupts, int numSongLoop)
 	{
 		Validate.isTrue(!songs.isEmpty());
-		this.songDuration = songs.get(0).getDuration();
-		this.songIsLooping = songs.get(0).isLooping();
+		this.songDuration = songs.getFirst().getDuration();
+		this.songIsLooping = songs.getFirst().isLooping();
 		Validate.isTrue(songs.stream().allMatch(song -> song.getDuration() == songDuration));
 		this.songs = songs;
 

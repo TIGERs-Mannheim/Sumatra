@@ -19,10 +19,7 @@ dependencies {
     implementation project(':moduli-geometry')
     implementation project(':moduli-referee')
 
-    implementation(libs.com.github.TIGERs.mannheim.moduli)
-    implementation(libs.com.github.g3force.configurable)
-
     implementation(libs.org.apache.logging.log4j.log4j.api)
 
-    implementation(libs.com.googlecode.json.simple)
+    implementation(libs.com.github.cliftonlabs.json.simple)
 }

@@ -121,7 +121,20 @@ public class PassSelectionCalc extends ACalculator
 			return bestPass.get();
 		}
 
-		// third phase: find good pass Target that provides pressure
+		// third phase: find best finisher
+		sortedPasses = passes.stream()
+				.filter(e -> filterFinisherPhase(e, oldPass))
+				.sorted(Comparator.comparingDouble(e -> 1 - e.getScore(EPassRating.FINISHER)))
+				.toList();
+		bestPass = getBestPass(sortedPasses, EPassRating.FINISHER);
+		if (bestPass.isPresent())
+		{
+			getShapes(EAiShapesLayer.PASS_SELECTION).add(
+					new DrawableAnnotation(bestPass.get().getPass().getKick().getTarget(), "finisher ", Vector2.fromY(50)));
+			return bestPass.get();
+		}
+
+		// 4th phase: find good pass Target that provides pressure
 		sortedPasses = passes.stream()
 				.filter(e -> filterPressurePhase(e, oldPass))
 				.sorted(Comparator.comparingDouble(e -> 1 - e.getScore(EPassRating.PRESSURE)))
@@ -134,7 +147,7 @@ public class PassSelectionCalc extends ACalculator
 			return bestPass.get();
 		}
 
-		// fourth phase: take what is left, we do not apply hysteresis for such looser passes on purpose
+		// 5th phase: take what is left, we do not apply hysteresis for such looser passes on purpose
 		bestPass = passes.stream()
 				.filter(e -> e.getScore(EPassRating.INTERCEPTION) > 0.5 &&
 						e.getScore(EPassRating.PASSABILITY) > 0.5 &&
@@ -184,7 +197,16 @@ public class PassSelectionCalc extends ACalculator
 	{
 		boolean applyHyst = shouldApplyHystForPass(currentPass, oldPass);
 		return currentPass.getScore(EPassRating.INTERCEPTION) > 0.5 - (applyHyst ? 0.2 : 0) &&
+				currentPass.getScore(EPassRating.PRESSURE) > 0.3 - (applyHyst ? 0.2 : 0) &&
 				currentPass.getScore(EPassRating.PASSABILITY) > 0.7 - (applyHyst ? 0.4 : 0);
+	}
+
+	private boolean filterFinisherPhase(RatedPass currentPass, RatedPass oldPass)
+	{
+		boolean applyHyst = shouldApplyHystForPass(currentPass, oldPass);
+		return currentPass.getScore(EPassRating.INTERCEPTION) > 0.5 - (applyHyst ? 0.2 : 0) &&
+				currentPass.getScore(EPassRating.FINISHER) > 0.7 - (applyHyst ? 0.1 : 0) &&
+				currentPass.getScore(EPassRating.PASSABILITY) > 0.7 - (applyHyst ? 0.3 : 0);
 	}
 
 

@@ -5,18 +5,18 @@
             <PatternLayout pattern="%d %p [%t|%c{1}|%X] %m%n"/>
         </Console>
         <SumatraAppender name="integrationTest"/>
-        <SumatraAppender name="berkeley"/>
+        <SumatraAppender name="persistence"/>
     </Appenders>
     <Loggers>
         <Root level="info">
             <AppenderRef ref="CONSOLE"/>
             <AppenderRef ref="integrationTest"/>
-            <AppenderRef ref="berkeley"/>
+            <AppenderRef ref="persistence"/>
         </Root>
         <Logger name="edu.tigers" level="trace" additivity="false">
             <AppenderRef ref="CONSOLE"/>
             <AppenderRef ref="integrationTest"/>
-            <AppenderRef ref="berkeley"/>
+            <AppenderRef ref="persistence"/>
         </Logger>
     </Loggers>
 </Configuration>

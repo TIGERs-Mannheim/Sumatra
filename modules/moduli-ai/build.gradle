@@ -25,15 +25,14 @@ dependencies {
     implementation project(':moduli-geometry')
     implementation project(':moduli-statistics-saver')
 
+    implementation(libs.com.github.haifengl)
+
     implementation(libs.com.github.TIGERs.mannheim.matlabcontrol)
-    api(libs.com.github.g3force.configurable)
-    implementation(libs.com.github.g3force.instanceables)
 
     implementation(libs.org.apache.commons.commons.math3)
     implementation(libs.org.apache.logging.log4j.log4j.api)
 
     implementation(libs.commons.lang)
 
-    implementation(libs.com.sleepycat.je)
-    implementation(libs.com.googlecode.json.simple)
+    implementation(libs.com.github.cliftonlabs.json.simple)
 }

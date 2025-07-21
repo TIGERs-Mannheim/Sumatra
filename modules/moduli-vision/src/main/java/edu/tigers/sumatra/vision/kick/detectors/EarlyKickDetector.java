@@ -108,7 +108,7 @@ public class EarlyKickDetector implements IKickDetector
 		List<MergedBall> allBalls = camBallMap.values().stream()
 				.flatMap(List::stream)
 				.filter(b -> b.getTimestamp() >= kickBall.getTimestamp())
-				.collect(Collectors.toList());
+				.toList();
 
 		log.debug("Early kick detected, bot: {}", kickingBot.getBotID());
 
@@ -140,9 +140,9 @@ public class EarlyKickDetector implements IKickDetector
 			return false;
 		}
 
-		double t0 = (ball0.gettCapture() * 1e-9);
-		double t1 = (ball1.gettCapture() * 1e-9);
-		double t2 = (ball2.gettCapture() * 1e-9);
+		double t0 = (ball0.getTimestamp() * 1e-9);
+		double t1 = (ball1.getTimestamp() * 1e-9);
+		double t2 = (ball2.getTimestamp() * 1e-9);
 
 		double dt1 = t1 - t0;
 		double dt2 = t2 - t1;

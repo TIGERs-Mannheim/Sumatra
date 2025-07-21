@@ -73,7 +73,7 @@ public class TigerSystemPing extends ACommand
 		payload = new byte[payloadSize];
 		for (int i = 0; i < payloadSize; i++)
 		{
-			SerialByteConverter.byte2ByteArray(payload, i, i == 0 ? 1 : i);
+			SerialByteConverter.byte2ByteArray(payload, i, i+1);
 		}
 	}
 	

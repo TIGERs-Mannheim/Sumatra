@@ -4,8 +4,8 @@
 
 package edu.tigers.sumatra.wp.exporter;
 
-import edu.tigers.moduli.AModule;
 import edu.tigers.sumatra.model.SumatraModel;
+import edu.tigers.sumatra.moduli.AModule;
 import edu.tigers.sumatra.network.MulticastUDPTransmitter;
 import edu.tigers.sumatra.wp.AWorldPredictor;
 import edu.tigers.sumatra.wp.IWorldFrameObserver;

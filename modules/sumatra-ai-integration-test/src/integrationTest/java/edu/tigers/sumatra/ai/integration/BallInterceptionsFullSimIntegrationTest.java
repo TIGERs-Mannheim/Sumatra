@@ -21,14 +21,15 @@ import edu.tigers.sumatra.wp.data.ITrackedBot;
 import lombok.Builder;
 import lombok.Value;
 import lombok.extern.log4j.Log4j2;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.TestInfo;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -36,12 +37,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * Run tests in a full simulation environment
  */
-@RunWith(Parameterized.class)
 @Log4j2
-public class BallInterceptionsFullSimIntegrationTest extends AFullSimIntegrationTest implements IAIObserver
+class BallInterceptionsFullSimIntegrationTest extends AFullSimIntegrationTest implements IAIObserver
 {
-	private final TestCaseParameters testCaseParameters;
-
 	@Value
 	@Builder
 	private static class TestCaseParameters
@@ -60,17 +58,11 @@ public class BallInterceptionsFullSimIntegrationTest extends AFullSimIntegration
 	}
 
 
-	public BallInterceptionsFullSimIntegrationTest(TestCaseParameters parameters)
-	{
-		this.testCaseParameters = parameters;
-	}
-
-
-	@Before
+	@BeforeEach
 	@Override
-	public void before()
+	public void before(TestInfo testInfo)
 	{
-		super.before();
+		super.before(testInfo);
 
 		SumatraModel.getInstance().getModule(AAgent.class).changeMode(EAiTeam.YELLOW, EAIControlState.MATCH_MODE);
 		SumatraModel.getInstance().getModule(AAgent.class).changeMode(EAiTeam.BLUE, EAIControlState.OFF);
@@ -78,8 +70,7 @@ public class BallInterceptionsFullSimIntegrationTest extends AFullSimIntegration
 	}
 
 
-	@Parameterized.Parameters(name = "{0}")
-	public static List<TestCaseParameters> testInput()
+	private static Stream<TestCaseParameters> testInput()
 	{
 		List<TestCaseParameters> snapshots = new ArrayList<>();
 		snapshots.add(TestCaseParameters.builder()
@@ -152,12 +143,13 @@ public class BallInterceptionsFullSimIntegrationTest extends AFullSimIntegration
 				.maxBallReachedTime(2.2)
 				.build());
 
-		return snapshots;
+		return snapshots.stream();
 	}
 
 
-	@Test
-	public void findBestPrimary()
+	@ParameterizedTest
+	@MethodSource("testInput")
+	void findBestPrimary(TestCaseParameters testCaseParameters)
 	{
 		var snapshot = readSnapshot(testCaseParameters.snapShotPath)
 				.toBuilder()
@@ -171,16 +163,16 @@ public class BallInterceptionsFullSimIntegrationTest extends AFullSimIntegration
 		StabilityStatsCollector stats = new StabilityStatsCollector();
 		double timeout = 5;
 		double attackerReachedBallLineDuration = defaultSimTimeBlocker(timeout)
-				.addStopCondition(this::ballLeftField)
+				.addStopCondition(new BallLeftFieldStopCondition())
 				.addStopCondition(this::attackerReachedBallLine)
 				.addHook(stats::updateStats)
 				.addHook(this::checkBehaviorWhenNoBallInterceptionTargetSet)
-				.addHook(this::checkAttackerAssignment)
+				.addHook(aiFrame -> checkAttackerAssignment(aiFrame, testCaseParameters.expectedCatcher))
 				.await()
 				.getDuration();
 
 		double ballReachedAttackerDuration = defaultSimTimeBlocker(timeout)
-				.addStopCondition(this::ballLeftField)
+				.addStopCondition(new BallLeftFieldStopCondition())
 				.addStopCondition(this::ballReachedAttacker)
 				.addHook(stats::updateStats)
 				.addHook(this::checkBehaviorWhenNoBallInterceptionTargetSet)
@@ -223,11 +215,11 @@ public class BallInterceptionsFullSimIntegrationTest extends AFullSimIntegration
 	}
 
 
-	private void checkAttackerAssignment(AIInfoFrame frame)
+	private void checkAttackerAssignment(AIInfoFrame frame, BotID expectedCatcher)
 	{
 		getAttacker(frame).ifPresent(b -> assertThat(b.getBotId())
 				.as("Correct attacker should be selected")
-				.isEqualTo(testCaseParameters.expectedCatcher));
+				.isEqualTo(expectedCatcher));
 	}
 
 
@@ -258,7 +250,7 @@ public class BallInterceptionsFullSimIntegrationTest extends AFullSimIntegration
 	{
 		ITrackedBall ball = frame.getWorldFrame().getBall();
 		return getAttacker(frame)
-				.map(bot -> ball.getTrajectory().closestPointTo(bot.getBotKickerPos())
+				.map(bot -> ball.getTrajectory().closestPointToRolling(bot.getBotKickerPos())
 						.distanceTo(bot.getBotKickerPos()) < 50)
 				.orElse(false);
 	}

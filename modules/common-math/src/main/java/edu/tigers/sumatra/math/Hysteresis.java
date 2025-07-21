@@ -23,8 +23,10 @@ public class Hysteresis
 
 	private boolean upper = false;
 
-	private Runnable onUpperCallback = () -> {};
-	private Runnable onLowerCallback = () -> {};
+	private Runnable onUpperCallback = () -> {
+	};
+	private Runnable onLowerCallback = () -> {
+	};
 
 
 	/**
@@ -54,7 +56,7 @@ public class Hysteresis
 	/**
 	 * @param value
 	 */
-	public void update(final double value)
+	public Hysteresis update(final double value)
 	{
 		boolean lower = !upper;
 		if (lower && (value > upperThreshold))
@@ -67,6 +69,7 @@ public class Hysteresis
 			upper = false;
 			onLowerCallback.run();
 		}
+		return this;
 	}
 
 

@@ -35,26 +35,29 @@ import edu.tigers.sumatra.wp.data.TrackedBall;
 import edu.tigers.sumatra.wp.data.TrackedBot;
 import edu.tigers.sumatra.wp.data.WorldFrameWrapper;
 import org.apache.logging.log4j.Level;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Timeout;
 
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 
 /**
- * @author Nicolai Ommer <nicolai.ommer@gmail.com>
+ * Base class for integration tests without full simulation (only step-wise full-AI processing).
  */
+@Timeout(value = 1, unit = TimeUnit.MINUTES)
 public abstract class AAiIntegrationTest
 {
 	private static final String MODULI_CONFIG = "integration_test.xml";
 
-	protected Metis metis;
+	private Metis metis;
 	private Athena athena;
 
 	private SimpleWorldFrame swf;
@@ -76,7 +79,7 @@ public abstract class AAiIntegrationTest
 	protected static LogEventWatcher logEventWatcher = new LogEventWatcher(Level.WARN, Level.ERROR);
 
 
-	@BeforeClass
+	@BeforeAll
 	public static void beforeClass()
 	{
 		ConfigRegistration.setDefPath("../../config/");
@@ -89,14 +92,14 @@ public abstract class AAiIntegrationTest
 	}
 
 
-	@AfterClass
+	@AfterAll
 	public static void afterClass()
 	{
 		logEventWatcher.stop();
 	}
 
 
-	@Before
+	@BeforeEach
 	public void init()
 	{
 		metisAiFrame = null;
@@ -109,7 +112,7 @@ public abstract class AAiIntegrationTest
 	}
 
 
-	@After
+	@AfterEach
 	public void after()
 	{
 		logEventWatcher.clear();

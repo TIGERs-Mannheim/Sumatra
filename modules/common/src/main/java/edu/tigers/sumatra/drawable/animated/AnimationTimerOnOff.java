@@ -3,28 +3,14 @@
  */
 package edu.tigers.sumatra.drawable.animated;
 
-import com.sleepycat.persist.model.Persistent;
-
-
 /**
  * This timer returns either 0.0 or 1.0.
- * 
- * @author AndreR <andre@ryll.cc>
  */
-@Persistent
 public class AnimationTimerOnOff extends AAnimationTimer
 {
 	private final double onPercentage;
-	
-	
-	@SuppressWarnings("unused")
-	private AnimationTimerOnOff()
-	{
-		super();
-		onPercentage = 0.5f;
-	}
-	
-	
+
+
 	/**
 	 * @param period Time for a full period in [s]
 	 */
@@ -33,8 +19,8 @@ public class AnimationTimerOnOff extends AAnimationTimer
 		super(period);
 		onPercentage = 0.5f;
 	}
-	
-	
+
+
 	/**
 	 * @param period Time for a full period in [s]
 	 * @param offset Offset for the timer in [s]. Can be used to de-synchronize multiple timers.
@@ -44,8 +30,8 @@ public class AnimationTimerOnOff extends AAnimationTimer
 		super(period, offset);
 		onPercentage = 0.5f;
 	}
-	
-	
+
+
 	/**
 	 * @param period Time for a full period in [s]
 	 * @param offset Offset for the timer in [s]. Can be used to de-synchronize multiple timers.
@@ -56,8 +42,8 @@ public class AnimationTimerOnOff extends AAnimationTimer
 		super(period, offset);
 		this.onPercentage = onPercentage;
 	}
-	
-	
+
+
 	@Override
 	public double getTimerValue()
 	{
@@ -65,7 +51,7 @@ public class AnimationTimerOnOff extends AAnimationTimer
 		{
 			return 1.0f;
 		}
-		
+
 		return 0.0f;
 	}
 }

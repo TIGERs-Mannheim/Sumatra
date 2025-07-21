@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.skillsystem.skills.dribbling;
@@ -36,23 +36,23 @@ public class DribbleKickSkill extends AMoveToSkill
 	@Configurable(defValue = "0.08", comment = "The max time to wait until angle is considered reached while within tolerance")
 	private static double maxTimeTargetAngleReached = 0.08;
 
-	@Configurable(defValue = "1.5")
-	private static double initialVelMax = 1.5;
+	@Configurable(defValue = "1.2")
+	private static double initialVelMax = 1.2;
 
 	@Configurable(defValue = "5.0")
 	private static double initialAccMaxW = 5.0;
 
-	@Configurable(defValue = "4.0")
-	private static double initialVelMaxW = 4.0;
+	@Configurable(defValue = "1.5")
+	private static double initialAccMax = 1.5;
+
+	@Configurable(defValue = "3.0")
+	private static double accMax = 3.0;
+
+	@Configurable(defValue = "20.0")
+	private static double accMaxW = 15.0;
 
 	@Configurable(defValue = "25.0")
 	private static double kickNowAccMaxW = 25.0;
-
-	@Configurable(defValue = "10.0")
-	private static double kickNowVelMaxW = 10.0;
-
-	@Configurable(defValue = "1.5")
-	private static double initialAccMax = 1.5;
 
 	private final TargetAngleReachedChecker targetAngleReachedChecker = new TargetAngleReachedChecker(
 			roughAngleTolerance, maxTimeTargetAngleReached);
@@ -73,6 +73,9 @@ public class DribbleKickSkill extends AMoveToSkill
 	@Setter
 	private double forceKickSpeed = 0.0;
 	private double finalTargetKickSpeed;
+
+	@Setter
+	private boolean forceDribblerOff = false;
 
 
 	@Override
@@ -99,7 +102,6 @@ public class DribbleKickSkill extends AMoveToSkill
 		{
 			// Robot wants to kick, but has to orientate first. We want to do this a little bit faster now!
 			getMoveConstraints().setAccMaxW(kickNowAccMaxW);
-			getMoveConstraints().setVelMaxW(kickNowVelMaxW);
 
 			var angleTolerance = Math.max(roughAngleTolerance, -roughAngleTolerance);
 			targetAngleReachedChecker.setOuterAngleDiffTolerance(angleTolerance);
@@ -115,9 +117,12 @@ public class DribbleKickSkill extends AMoveToSkill
 		{
 			// we reduce our limits if we just started to dribble, the ball has still weak binding to the robot.
 			getMoveConstraints().setAccMaxW(initialAccMaxW);
-			getMoveConstraints().setVelMaxW(initialVelMaxW);
 			getMoveConstraints().setAccMax(initialAccMax);
 			getMoveConstraints().setVelMax(initialVelMax);
+		} else
+		{
+			getMoveConstraints().setAccMaxW(accMaxW);
+			getMoveConstraints().setAccMax(accMax);
 		}
 
 		getShapes().get(ESkillShapesLayer.DRIBBLING_KICK).add(new DrawableArrow(getPos(), target.subtractNew(getPos())));
@@ -139,7 +144,13 @@ public class DribbleKickSkill extends AMoveToSkill
 		} else if (forceKickSpeed > 0)
 		{
 			var kickSpeed = SumatraMath.min(forceKickSpeed, finalTargetKickSpeed);
-			setKickParams(KickParams.straight(kickSpeed).withDribblerMode(EDribblerMode.HIGH_POWER));
+			if (forceDribblerOff)
+			{
+				setKickParams(KickParams.disarm().withDribblerMode(EDribblerMode.OFF));
+			} else
+			{
+				setKickParams(KickParams.straight(kickSpeed).withDribblerMode(EDribblerMode.HIGH_POWER));
+			}
 			getShapes().get(ESkillShapesLayer.DRIBBLING_KICK)
 					.add(new DrawableAnnotation(getPos(), "force kick", Vector2.fromY(50)));
 		} else
@@ -167,8 +178,10 @@ public class DribbleKickSkill extends AMoveToSkill
 	{
 		var ballOffset = getTBot().getBotKickerPos().subtractNew(getTBot().getPos()).scaleToNew(Geometry.getBallRadius());
 		double plannedBallVelAngle = target.subtractNew(getTBot().getBotKickerPos().addNew(ballOffset)).getAngle();
-		IVector2 plannedKick = Vector2.fromAngleLength(plannedBallVelAngle,
-				KickParams.maxStraight().getKickSpeed());
+		IVector2 plannedKick = Vector2.fromAngleLength(
+				plannedBallVelAngle,
+				KickParams.maxStraight().getKickSpeed()
+		);
 
 		IVector2 kick = plannedKick.subtractNew(getVel());
 		finalTargetKickSpeed = kick.getLength();

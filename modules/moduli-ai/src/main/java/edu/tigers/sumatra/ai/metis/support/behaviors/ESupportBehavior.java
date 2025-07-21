@@ -19,6 +19,7 @@ import lombok.Getter;
 public enum ESupportBehavior implements IInstanceableEnum, IEvent
 {
 	DIRECT_REDIRECTOR(new InstanceableClass<>(DirectRedirectorSupportBehavior.class)),
+	PASS_RECEIVER(new InstanceableClass<>(PassReceiverBehavior.class)),
 	FAKE_PASS_RECEIVER(new InstanceableClass<>(FakePassReceiverSupportBehavior.class)),
 	PENALTY_AREA_ATTACKER(new InstanceableClass<>(PenaltyAreaAttackerBehavior.class)),
 	BREAKTHROUGH_DEFENSIVE(new InstanceableClass<>(BreakThroughDefenseBehavior.class)),

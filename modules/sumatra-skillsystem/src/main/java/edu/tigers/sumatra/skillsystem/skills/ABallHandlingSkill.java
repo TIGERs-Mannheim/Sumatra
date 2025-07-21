@@ -205,8 +205,6 @@ public class ABallHandlingSkill extends AMoveToSkill
 			updateDestination(dest);
 			updateTargetAngle(targetOrientation);
 
-			ABallHandlingSkill.super.doUpdate();
-
 			drawShapes(getAngle(), angleDiff, angleTolerance);
 		}
 

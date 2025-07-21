@@ -27,6 +27,7 @@
 
         <properties>
             <start-sim-net-server>false</start-sim-net-server>
+            <start-paused>true</start-paused>
         </properties>
 
         <dependency>edu.tigers.sumatra.referee.AReferee</dependency>
@@ -66,12 +67,8 @@
     </module>
 
 
-    <module id="edu.tigers.sumatra.botmanager.ABotManager">
-        <implementation>edu.tigers.sumatra.botmanager.sim.SimBotManager</implementation>
-
-        <properties>
-            <basestation-impl>edu.tigers.sumatra.botmanager.sim.SumatraBaseStation</basestation-impl>
-        </properties>
+    <module id="edu.tigers.sumatra.botmanager.BotManager">
+        <implementation>edu.tigers.sumatra.botmanager.sim.SumatraSimBotManager</implementation>
 
         <dependency>edu.tigers.sumatra.botparams.BotParamsManager</dependency>
         <dependency>edu.tigers.sumatra.vision.AVisionFilter</dependency>
@@ -84,7 +81,7 @@
     <module id="edu.tigers.sumatra.skillsystem.ASkillSystem">
         <implementation>edu.tigers.sumatra.skillsystem.GenericSkillSystem</implementation>
 
-        <dependency>edu.tigers.sumatra.botmanager.ABotManager</dependency>
+        <dependency>edu.tigers.sumatra.botmanager.BotManager</dependency>
         <dependency>edu.tigers.sumatra.wp.AWorldPredictor</dependency>
     </module>
 
@@ -130,7 +127,7 @@
     </module>
 
     <!--
-        <module id="edu.tigers.sumatra.movementlimits.MovementObserverModule">
+        <module id="edu.tigers.sumatra.modelidentification.ModelIdentificationModule">
             <dependency>edu.tigers.sumatra.wp.AWorldPredictor</dependency>
             <dependency>edu.tigers.sumatra.botparams.BotParamsManager</dependency>
         </module>

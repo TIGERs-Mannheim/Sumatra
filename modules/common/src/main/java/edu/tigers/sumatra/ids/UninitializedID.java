@@ -3,13 +3,9 @@
  */
 package edu.tigers.sumatra.ids;
 
-import com.sleepycat.persist.model.Persistent;
-
-
 /**
  * Uninitialized object id.
  */
-@Persistent
 public class UninitializedID extends AObjectID
 {
 	private static final UninitializedID DEFAULT_INSTANCE = new UninitializedID();

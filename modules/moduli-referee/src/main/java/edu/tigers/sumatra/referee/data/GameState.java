@@ -4,13 +4,13 @@
 
 package edu.tigers.sumatra.referee.data;
 
-import com.sleepycat.persist.model.Persistent;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.ETeamColor;
 import edu.tigers.sumatra.math.vector.IVector2;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.Getter;
 import lombok.NonNull;
 import lombok.Value;
 
@@ -18,7 +18,6 @@ import lombok.Value;
 /**
  * The current game state and useful helper methods to query the state.
  */
-@Persistent(version = 1)
 @Value
 @Builder(toBuilder = true, setterPrefix = "with")
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
@@ -33,6 +32,7 @@ public class GameState
 	@NonNull
 	ETeamColor ourTeam;
 	boolean penaltyShootout;
+	@Getter(AccessLevel.NONE)
 	IVector2 ballPlacementPosition;
 
 	/**
@@ -297,6 +297,20 @@ public class GameState
 	public boolean isNextStandardSituationForUs()
 	{
 		if (isNextGameStateForThem() || isGameRunning())
+		{
+			return false;
+		}
+
+		return (nextState == EGameState.DIRECT_FREE) || (nextState == EGameState.INDIRECT_FREE);
+	}
+
+
+	/**
+	 * @return true if the next state is a DIRECT_FREE or INDIRECT_FREE for us.
+	 */
+	public boolean isNextStandardSituationForThem()
+	{
+		if (isNextGameStateForUs() || isGameRunning())
 		{
 			return false;
 		}

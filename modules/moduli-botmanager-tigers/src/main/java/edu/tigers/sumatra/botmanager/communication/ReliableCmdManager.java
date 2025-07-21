@@ -3,129 +3,211 @@
  */
 package edu.tigers.sumatra.botmanager.communication;
 
-import java.util.Map;
-import java.util.TimerTask;
-import java.util.concurrent.ConcurrentHashMap;
-
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import edu.tigers.sumatra.botmanager.bots.TigerBot;
 import edu.tigers.sumatra.botmanager.commands.ACommand;
 import edu.tigers.sumatra.botmanager.commands.ECommand;
 import edu.tigers.sumatra.botmanager.commands.tigerv2.TigerSystemAck;
+import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.thread.GeneralPurposeTimer;
+import lombok.AccessLevel;
+import lombok.RequiredArgsConstructor;
+import lombok.Value;
+import lombok.extern.log4j.Log4j2;
+
+import java.util.Deque;
+import java.util.TimerTask;
+import java.util.concurrent.ConcurrentLinkedDeque;
 
 
 /**
  * Manages retransmission and acknowledgments of reliable commands
- *
- * @author AndreR
  */
+@Log4j2
+@RequiredArgsConstructor
 public class ReliableCmdManager
 {
-	private static final Logger log = LogManager.getLogger(ReliableCmdManager.class.getName());
 	private static final int RETRY_TIMEOUT = 100;
-	private final Map<Integer, TimerTask> activeCmds = new ConcurrentHashMap<>();
-	private final TigerBot bot;
+	private final BotID botId;
+	private final IReliableCmdSender cmdSender;
 	private int nextSeq = 0;
+	private int lastRxSeq = -1;
+	private final Deque<ACommand> commandQueue = new ConcurrentLinkedDeque<>();
+	private TimerTask retransmitTask;
 
 
-	/**
-	 * Reliable command manager
-	 *
-	 * @param bot
-	 */
-	public ReliableCmdManager(final TigerBot bot)
-	{
-		this.bot = bot;
-	}
-
-
-	/**
-	 * Process an outgoing command and check if it is a reliable one.
-	 *
-	 * @param cmd
-	 */
-	public void outgoingCommand(final ACommand cmd)
+	public ECommandVerdict processOutgoingCommand(final ACommand cmd)
 	{
 		if (!cmd.isReliable())
 		{
-			return; // not a reliable command
+			return ECommandVerdict.PASS;
 		}
 
-		if (cmd.getSeq() == -1) // first time we see this command?
+		ECommandVerdict verdict;
+
+		synchronized (commandQueue)
 		{
-			TimerTask tTask = activeCmds.remove(nextSeq);
-			if (tTask != null)
+			if (commandQueue.isEmpty())
 			{
-				tTask.cancel(); // just in case this sequence number is still used, we delete it. this command is lost!
+				verdict = ECommandVerdict.PASS;
+			} else
+			{
+				verdict = ECommandVerdict.DROP;
 			}
 
 			cmd.setSeq(nextSeq); // assign new sequence number
 			++nextSeq;
 			nextSeq %= 0xFFFF;
+
+			commandQueue.addLast(cmd);
+
+			log.trace(
+					"{} Enqueued command {} with SEQ {}, queue size: {}", botId, cmd.getType(), cmd.getSeq(),
+					commandQueue.size()
+			);
+
+			if (retransmitTask == null)
+			{
+				scheduleRetransmit();
+			}
 		}
 
-		cmd.incRetransmits();
-		if (cmd.getRetransmits() > 20)
-		{
-			log.warn("Too many retransmits for cmd {}", cmd.getType());
-		} else
-		{
-			CommandTimeout timeout = new CommandTimeout(cmd);
-			GeneralPurposeTimer.getInstance().schedule(timeout, RETRY_TIMEOUT);
-			activeCmds.put(cmd.getSeq(), timeout);
-		}
+		return verdict;
 	}
 
 
-	/**
-	 * Process an incoming command.
-	 *
-	 * @param cmd
-	 */
-	public void incomingCommand(final ACommand cmd)
+	public ECommandVerdict processIncomingCommand(final ACommand cmd)
 	{
 		if (cmd.isReliable())
 		{
 			// this is a reliable command from the bot, send ACK
-			bot.execute(new TigerSystemAck(cmd.getSeq()));
+			log.trace("{} ACK'd {} from bot with SEQ {}", botId, cmd.getType(), cmd.getSeq());
+			cmdSender.sendReliableCmdOutput(new Output(new TigerSystemAck(cmd.getSeq())));
 
-			return;
+			if (cmd.getSeq() == lastRxSeq)
+			{
+				log.debug("{} duplicate command {} from bot received, SEQ: {}", botId, cmd.getType(), cmd.getSeq());
+				return ECommandVerdict.DROP;
+			}
+
+			lastRxSeq = cmd.getSeq();
+
+			return ECommandVerdict.PASS;
 		}
 
 		if (cmd.getType() == ECommand.CMD_SYSTEM_ACK)
 		{
 			TigerSystemAck ack = (TigerSystemAck) cmd;
+			processAck(ack.getSeq());
+		}
 
-			TimerTask tTask = activeCmds.remove(ack.getSeq());
-			if (tTask != null)
+		return ECommandVerdict.PASS;
+	}
+
+
+	public void clear()
+	{
+		synchronized (commandQueue)
+		{
+			cancelRetransmit();
+			commandQueue.clear();
+		}
+	}
+
+
+	private void processAck(int seq)
+	{
+		synchronized (commandQueue)
+		{
+			if (commandQueue.isEmpty())
 			{
-				tTask.cancel();
+				// This was a stray/late ACK, just ignore it
+				return;
+			}
+
+			if (seq == commandQueue.getFirst().getSeq())
+			{
+				log.trace("{} {} ACK with SEQ {}", botId, commandQueue.getFirst().getType(), seq);
+
+				commandQueue.removeFirst();
+				cancelRetransmit();
+
+				if (!commandQueue.isEmpty())
+				{
+					cmdSender.sendReliableCmdOutput(new Output(commandQueue.getFirst()));
+					scheduleRetransmit();
+				}
+			} else
+			{
+				log.warn(
+						"{} Out-of-order ACK received. Expected SEQ {} but got {}", botId, commandQueue.getFirst().getSeq(),
+						seq
+				);
 			}
 		}
 	}
 
-	private class CommandTimeout extends TimerTask
+
+	private void cancelRetransmit()
 	{
-		private final ACommand cmd;
-
-
-		/**
-		 * @param cmd
-		 */
-		public CommandTimeout(final ACommand cmd)
+		if (retransmitTask != null)
 		{
-			this.cmd = cmd;
+			retransmitTask.cancel();
+			retransmitTask = null;
 		}
+	}
 
 
+	private void scheduleRetransmit()
+	{
+		retransmitTask = new RetransmitTask();
+		GeneralPurposeTimer.getInstance().schedule(retransmitTask, RETRY_TIMEOUT);
+	}
+
+
+	private class RetransmitTask extends TimerTask
+	{
 		@Override
 		public void run()
 		{
-			log.debug("Retransmitting {} with sequence {} the {} time", cmd.getType(), cmd.getSeq(), cmd.getRetransmits());
-			bot.execute(cmd);
+			synchronized (commandQueue)
+			{
+				if (!commandQueue.isEmpty())
+				{
+					var cmd = commandQueue.getFirst();
+					cmd.incRetransmits();
+
+					if(cmd.getRetransmits() < 20)
+					{
+						log.debug(
+								"{} Retransmitting {} with sequence {} the {} time", botId, cmd.getType(), cmd.getSeq(),
+								cmd.getRetransmits()
+						);
+
+						cmdSender.sendReliableCmdOutput(new Output(cmd));
+						scheduleRetransmit();
+						return;
+					}
+
+					log.warn("{} Too many retransmits for cmd {}", botId, cmd.getType());
+					commandQueue.removeFirst();
+					if(!commandQueue.isEmpty())
+					{
+						cmdSender.sendReliableCmdOutput(new Output(commandQueue.getFirst()));
+						scheduleRetransmit();
+					}
+				}
+			}
 		}
+	}
+
+	public interface IReliableCmdSender
+	{
+		void sendReliableCmdOutput(Output out);
+	}
+
+	@Value
+	@RequiredArgsConstructor(access = AccessLevel.PRIVATE)
+	public static class Output
+	{
+		ACommand cmd;
 	}
 }

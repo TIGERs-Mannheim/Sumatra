@@ -48,7 +48,7 @@ public final class ESkillShapesLayer
 	public static final IShapeLayerIdentifier CALIBRATION = F.create(
 			F.category(SKILLS).layerName("Calibration"));
 	public static final IShapeLayerIdentifier MOVE_ON_PENALTY_AREA_SKILL = F.create(
-			F.category(SKILLS).layerName("Move on PenaltyArea").persistenceType(NEVER_PERSIST));
+			F.category(SKILLS).layerName("Move on PenaltyArea"));
 
 	public static final IShapeLayerIdentifier MOVE_TO_DEST = F.create(
 			F.category(MOVEMENT).layerName("MoveTo destination"));

@@ -4,7 +4,6 @@
 
 package edu.tigers.sumatra.referee.gameevent;
 
-import com.sleepycat.persist.model.Persistent;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.ids.ETeamColor;
 import edu.tigers.sumatra.math.vector.IVector2;
@@ -13,7 +12,6 @@ import lombok.EqualsAndHashCode;
 import lombok.Value;
 
 
-@Persistent
 @Value
 @EqualsAndHashCode(callSuper = true)
 public class DefenderTooCloseToKickPoint extends AGameEvent
@@ -22,16 +20,6 @@ public class DefenderTooCloseToKickPoint extends AGameEvent
 	int bot;
 	 IVector2 location;
 	double distance;
-
-
-	@SuppressWarnings("unsued") // used by berkeley
-	protected DefenderTooCloseToKickPoint()
-	{
-		team = null;
-		bot = 0;
-		location = null;
-		distance = 0;
-	}
 
 
 	/**

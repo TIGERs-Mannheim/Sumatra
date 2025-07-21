@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.integration.jmh;
@@ -39,7 +39,7 @@ public abstract class AFullSimPerfTest
 	{
 		ConfigRegistration.setDefPath("../../config/");
 		SumatraModel.getInstance().setCurrentModuliConfig(MODULI_CONFIG);
-		SumatraModel.getInstance().loadModulesOfConfig(MODULI_CONFIG);
+		SumatraModel.getInstance().loadModules();
 		Geometry.setNegativeHalfTeam(ETeamColor.BLUE);
 	}
 

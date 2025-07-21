@@ -4,7 +4,6 @@
 
 package edu.tigers.sumatra.math.circle;
 
-import com.sleepycat.persist.model.Persistent;
 import edu.tigers.sumatra.math.AngleMath;
 import edu.tigers.sumatra.math.IBoundedPath;
 import edu.tigers.sumatra.math.SumatraMath;
@@ -34,7 +33,6 @@ import java.util.Optional;
 /**
  * Implementation of {@link ICircle}
  */
-@Persistent(version = 1)
 public class Circle implements ICircle
 {
 	private final Vector2f center;

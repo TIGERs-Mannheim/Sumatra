@@ -236,11 +236,16 @@ public interface IBallTrajectory extends IMirrorable<IBallTrajectory>, IPlanarCu
 		return List.of(getTravelLineRolling());
 	}
 
-
 	/**
 	 * @return all segments of the travel line where the ball is interceptable (below robot height)
 	 */
-	List<ILineSegment> getTravelLinesInterceptable();
+	List<ILineSegment> getTravelLinesInterceptableByRobot();
+
+
+	/**
+	 * @return all segments of the travel line where the ball is interceptable (below maximumHeight)
+	 */
+	List<ILineSegment> getTravelLinesInterceptableBelow(double maximumHeight);
 
 
 	/**
@@ -256,7 +261,15 @@ public interface IBallTrajectory extends IMirrorable<IBallTrajectory>, IPlanarCu
 	 * @param point some point
 	 * @return the closest point on this trajectory
 	 */
-	IVector2 closestPointTo(IVector2 point);
+	IVector2 closestPointToRolling(IVector2 point);
+
+	/**
+	 * Find the closest point on this ball trajectory for the given point.
+	 *
+	 * @param point some point
+	 * @return the closest point on this trajectory
+	 */
+	IVector2 closestPointToBelow(IVector2 point, double maximumHeight);
 
 	/**
 	 * Return a new trajectory where the initialPos is adjusted so that the position after time equals posNow.

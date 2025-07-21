@@ -23,13 +23,10 @@ dependencies {
 
     implementation(libs.com.github.TIGERs.mannheim.jinput)
     natives(variantOf(libs.net.java.jinput) { classifier('natives-all') })
-    implementation(libs.com.github.TIGERs.mannheim.moduli)
-    implementation(libs.com.github.g3force.configurable)
-    implementation(libs.com.github.g3force.instanceables)
 
     implementation(libs.org.apache.logging.log4j.log4j.api)
 
-    implementation(libs.com.googlecode.json.simple)
+    implementation(libs.com.github.cliftonlabs.json.simple)
     implementation(libs.com.google.protobuf.protobuf.java)
 }
 
@@ -38,7 +35,9 @@ tasks.register('copyNatives', Copy) {
         from(zipTree(it))
     }
 
-    into layout.getBuildDirectory().dir("natives")
+    into(layout.getBuildDirectory().dir("natives"))
+
+    rename("libjinput-osx.jnilib", "libjinput-osx.dylib")
 }
 
 processResources.finalizedBy('copyNatives')

@@ -4,8 +4,6 @@
 
 package edu.tigers.sumatra.math.vector;
 
-import com.sleepycat.persist.model.Persistent;
-
 import java.util.function.Function;
 
 
@@ -17,7 +15,6 @@ import java.util.function.Function;
  * @see Vector3
  * @see Vector3f
  */
-@Persistent(version = 1)
 public abstract class AVector3 extends AVector implements IVector3
 {
 	@Override

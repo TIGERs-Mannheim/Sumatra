@@ -16,8 +16,7 @@ dependencies {
     implementation project(':moduli-referee')
     implementation project(':moduli-geometry')
 
-    implementation(libs.com.github.g3force.configurable)
-    implementation(libs.com.sleepycat.je)
+    implementation(libs.org.apache.logging.log4j.log4j.api)
 
     testImplementation project(':common-math')
 }

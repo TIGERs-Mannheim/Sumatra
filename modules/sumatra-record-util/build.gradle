@@ -17,15 +17,18 @@ dependencies {
     implementation project(':moduli-ai')
     implementation project(':moduli-record')
     implementation project(':moduli-ai-controller')
+    implementation project(':moduli-botmanager-tigers')
+    implementation project(':moduli-gamelog')
 
     implementation(libs.org.apache.logging.log4j.log4j.api)
 
     implementation(libs.org.openjdk.jol.jol.core)
-    implementation(libs.com.sleepycat.je)
+
+    testImplementation(libs.commons.lang)
 }
 
 application {
-    mainClass.set('edu.tigers.sumatra.persistence.BerkeleySizeAnalyzer')
+    mainClass.set('edu.tigers.sumatra.persistence.PersistenceSizeAnalyzer')
     applicationDefaultJvmArgs = [
             '-Djdk.attach.allowAttachSelf',
             '-Djol.magicFieldOffset=true'

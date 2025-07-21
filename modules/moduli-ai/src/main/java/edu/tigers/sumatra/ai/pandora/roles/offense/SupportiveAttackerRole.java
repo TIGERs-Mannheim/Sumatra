@@ -10,6 +10,7 @@ import edu.tigers.sumatra.ai.pandora.roles.ERole;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.pathfinder.EObstacleAvoidanceMode;
+import org.apache.commons.lang.Validate;
 
 
 /**
@@ -34,27 +35,22 @@ public class SupportiveAttackerRole extends ARole
 		@Override
 		protected void onUpdate()
 		{
-			IVector2 movePos;
-			if (!getTacticalField().getSupportiveAttackersOpponentFinisherBlocker().isEmpty()
-					&& getTacticalField().getSupportiveAttackersOpponentFinisherBlocker().containsKey(getBotID()))
+			IVector2 movePos = getTacticalField().getSupportiveAttackers().get(getBotID());
+			Validate.notNull(movePos);
+
+			if (getPos().distanceTo(movePos) < Geometry.getBotRadius() * 2)
 			{
-				movePos = getTacticalField().getSupportiveAttackersOpponentFinisherBlocker().get(getBotID());
-				if (getPos().distanceTo(movePos) < Geometry.getBotRadius() * 2)
-				{
-					// start to push against the opponent
-					var opponentPos = getWFrame().getBot(getTacticalField().getOpponentClosestToBall().getBotId()).getPos();
-					var opponentToBlockPoint = movePos.subtractNew(opponentPos)
-							.scaleTo(Geometry.getBotRadius() * 2 - aggressiveness);
-					movePos = opponentPos.addNew(opponentToBlockPoint);
-				}
-			} else
-			{
-				movePos = getAiFrame().getTacticalField().getSupportiveAttackerMovePos();
+				// start to push against the opponent
+				var opponentPos = getWFrame().getBot(getTacticalField().getOpponentClosestToBall().getBotId()).getPos();
+				var opponentToBlockPoint = movePos.subtractNew(opponentPos)
+						.scaleTo(Geometry.getBotRadius() * 2 - aggressiveness);
+				movePos = opponentPos.addNew(opponentToBlockPoint);
 			}
-			var dest = adjustMovePositionWhenItsInvalid(movePos);
+
+			movePos = adjustMovePositionWhenItsInvalid(movePos);
+			skill.updateDestination(movePos);
 			skill.getMoveCon().setObstacleAvoidanceMode(EObstacleAvoidanceMode.NORMAL);
 			skill.updateLookAtTarget(getWFrame().getBall());
-			skill.updateDestination(dest);
 		}
 	}
 }

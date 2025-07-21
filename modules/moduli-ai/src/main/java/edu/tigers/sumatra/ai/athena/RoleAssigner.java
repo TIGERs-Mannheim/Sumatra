@@ -48,8 +48,8 @@ public class RoleAssigner
 			Set<BotID> postAssignedBots = play.getRoles().stream().map(ARole::getBotID).collect(Collectors.toSet());
 			if (!SumatraModel.getInstance().isTournamentMode() && !postAssignedBots.equals(allDesiredBots))
 			{
-				log.warn("Assignment does not match desiredBots. desired: " + allDesiredBots + ", assigned: "
-						+ postAssignedBots + ", roleMapping: " + roleMapping);
+				log.warn("Assignment for play {} does not match desiredBots. desired: {}, assigned: {}, roleMapping: {}",
+						play.getType(), allDesiredBots, postAssignedBots, roleMapping);
 			}
 			assignedBotIds.addAll(postAssignedBots);
 		}
@@ -61,7 +61,7 @@ public class RoleAssigner
 		Set<BotID> preAssignedBots = play.getRoles().stream().map(ARole::getBotID).collect(Collectors.toSet());
 		desiredBots.removeAll(preAssignedBots);
 		List<ARole> newRoles = play.addRoles(desiredBots.size());
-		newRoles.forEach(role -> role.assignBotID(desiredBots.remove(0)));
+		newRoles.forEach(role -> role.assignBotID(desiredBots.removeFirst()));
 	}
 
 

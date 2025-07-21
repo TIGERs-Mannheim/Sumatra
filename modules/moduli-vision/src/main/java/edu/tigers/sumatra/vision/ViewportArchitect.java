@@ -155,12 +155,12 @@ public class ViewportArchitect
 
 		for (Entry<Integer, Viewport> entry : viewports.entrySet())
 		{
-			double timeSinceLastReport = (frame.gettCapture() - entry.getValue().lastReportTimestamp) * 1e-9;
+			double timeSinceLastReport = (frame.getTimestamp() - entry.getValue().lastReportTimestamp) * 1e-9;
 
 			if (timeSinceLastReport > (1.0 / reportRate))
 			{
 				notifyViewportUpdated(entry.getKey(), entry.getValue().getRectangle());
-				entry.getValue().lastReportTimestamp = frame.gettCapture();
+				entry.getValue().lastReportTimestamp = frame.getTimestamp();
 			}
 		}
 	}
@@ -467,7 +467,7 @@ public class ViewportArchitect
 				.filter(v -> !v.equals(origin))
 				.sorted(Comparator.comparingDouble(v -> v.center.distanceToSqr(start)))
 				.limit(4)
-				.collect(Collectors.toList());
+				.toList();
 
 		switch (direction)
 		{

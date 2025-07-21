@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.replay;
@@ -10,13 +10,13 @@ import edu.tigers.sumatra.botmanager.bots.DummyBot;
 import edu.tigers.sumatra.botparams.BotParamsManager;
 import edu.tigers.sumatra.drawable.ShapeMap;
 import edu.tigers.sumatra.drawable.ShapeMapSource;
+import edu.tigers.sumatra.gui.replay.presenter.IReplayController;
+import edu.tigers.sumatra.gui.replay.presenter.ReplayControlPresenter;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.ids.EAiTeam;
 import edu.tigers.sumatra.ids.ETeamColor;
 import edu.tigers.sumatra.model.SumatraModel;
-import edu.tigers.sumatra.persistence.BerkeleyDb;
-import edu.tigers.sumatra.presenter.replay.IReplayController;
-import edu.tigers.sumatra.presenter.replay.ReplayControlPresenter;
+import edu.tigers.sumatra.persistence.PersistenceDb;
 import edu.tigers.sumatra.skillsystem.GenericSkillSystem;
 import edu.tigers.sumatra.views.ASumatraView;
 import edu.tigers.sumatra.views.ESumatraViewType;
@@ -60,6 +60,7 @@ public class ReplayAiReCalcController implements IReplayController
 					.forEach(wFrameObservers::add);
 			if (view.getType() == ESumatraViewType.REPLAY_CONTROL)
 			{
+				view.ensureInitialized();
 				ReplayControlPresenter replayControlPresenter = (ReplayControlPresenter) view.getPresenter();
 				replayControlPresenter.getViewPanel().addMenuCheckbox(new RunAiAction());
 				replayControlPresenter.getViewPanel().addMenuCheckbox(new RunSkillsAction());
@@ -81,7 +82,7 @@ public class ReplayAiReCalcController implements IReplayController
 
 
 	@Override
-	public void update(final BerkeleyDb db, final WorldFrameWrapper wfw)
+	public void update(final PersistenceDb db, final WorldFrameWrapper wfw)
 	{
 		if (lastTimestamp > wfw.getSimpleWorldFrame().getTimestamp())
 		{
@@ -105,6 +106,7 @@ public class ReplayAiReCalcController implements IReplayController
 				if (runSkills)
 				{
 					Map<BotID, ShapeMap> skillShapeMap = skillSystem.process(wfw, ai.getAiTeam().getTeamColor());
+					skillShapeMap.keySet().removeIf(botID -> !wfw.getSimpleWorldFrame().getBots().containsKey(botID));
 					skillShapeMap.values().forEach(m -> m.setInverted(inverted));
 
 					wFrameObservers.forEach(o -> skillShapeMap.forEach((id, shapeMap) -> o.onNewShapeMap(

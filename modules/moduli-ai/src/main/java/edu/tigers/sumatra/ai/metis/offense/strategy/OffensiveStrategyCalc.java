@@ -6,10 +6,9 @@ package edu.tigers.sumatra.ai.metis.offense.strategy;
 
 import edu.tigers.sumatra.ai.metis.ACalculator;
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
-import edu.tigers.sumatra.ai.metis.offense.OffensiveConstants;
-import edu.tigers.sumatra.ai.metis.offense.statistics.OffensiveStatisticsFrame;
 import edu.tigers.sumatra.drawable.DrawableAnnotation;
 import edu.tigers.sumatra.ids.BotID;
+import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2f;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
 import lombok.Getter;
@@ -33,11 +32,9 @@ public class OffensiveStrategyCalc extends ACalculator
 
 
 	private final Supplier<EOffensiveStrategy> ballHandlingRobotsStrategy;
-	private final Supplier<OffensiveStatisticsFrame> offensiveStatisticsFrame;
 	private final Supplier<List<BotID>> ballHandlingBots;
 	private final Supplier<List<BotID>> passReceivers;
-	private final Supplier<List<BotID>> supportiveAttackers;
-	private final Supplier<List<BotID>> desiredOffenseBots;
+	private final Supplier<Map<BotID, IVector2>> supportiveAttackers;
 
 	@Getter
 	private OffensiveStrategy strategy;
@@ -48,13 +45,13 @@ public class OffensiveStrategyCalc extends ACalculator
 	{
 		Map<BotID, EOffensiveStrategy> strategyMap = new HashMap<>();
 		ballHandlingBots.get().forEach(bot -> strategyMap.put(bot, ballHandlingRobotsStrategy.get()));
-		supportiveAttackers.get().forEach(botID -> strategyMap.put(botID, EOffensiveStrategy.SUPPORTIVE_ATTACKER));
+		supportiveAttackers.get().keySet()
+				.forEach(botID -> strategyMap.put(botID, EOffensiveStrategy.SUPPORTIVE_ATTACKER));
 		passReceivers.get().forEach(botID -> strategyMap.put(botID, EOffensiveStrategy.RECEIVE_PASS));
 
 		var attackerBot = ballHandlingBots.get().stream().findFirst().orElse(null);
 		strategy = new OffensiveStrategy(attackerBot, Collections.unmodifiableMap(strategyMap));
 
-		statistics();
 		drawStrategy(strategy);
 	}
 
@@ -68,25 +65,6 @@ public class OffensiveStrategyCalc extends ACalculator
 					.add(new DrawableAnnotation(tBot.getPos(), entry.getValue().name(), COLOR)
 							.withCenterHorizontally(true)
 							.withOffset(Vector2f.fromY(-170)));
-		}
-	}
-
-
-	private void statistics()
-	{
-		if (!OffensiveConstants.isEnableOffensiveStatistics())
-		{
-			return;
-		}
-
-		OffensiveStatisticsFrame sFrame = offensiveStatisticsFrame.get();
-		sFrame.setDesiredNumBots(desiredOffenseBots.get().size());
-		sFrame.setPrimaryOffensiveBot(ballHandlingBots.get().stream().findFirst().orElse(BotID.noBot()));
-
-		for (BotID key : getWFrame().getTigerBotsAvailable().keySet())
-		{
-			EOffensiveStrategy eStrat = strategy.getCurrentOffensivePlayConfiguration().get(key);
-			sFrame.getBotFrames().get(key).setActiveStrategy(eStrat);
 		}
 	}
 }

@@ -4,7 +4,6 @@
 
 package edu.tigers.sumatra.referee.gameevent;
 
-import com.sleepycat.persist.model.Persistent;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.ids.ETeamColor;
 import edu.tigers.sumatra.math.AngleMath;
@@ -14,7 +13,6 @@ import lombok.EqualsAndHashCode;
 import lombok.Value;
 
 
-@Persistent
 @Value
 @EqualsAndHashCode(callSuper = true)
 public class BotCrashDrawn extends AGameEvent
@@ -25,18 +23,6 @@ public class BotCrashDrawn extends AGameEvent
 	double crashSpeed;
 	double speedDiff;
 	double crashAngle;
-
-
-	@SuppressWarnings("unsued") // used by berkeley
-	protected BotCrashDrawn()
-	{
-		botY = 0;
-		botB = 0;
-		location = null;
-		crashSpeed = 0;
-		speedDiff = 0;
-		crashAngle = 0;
-	}
 
 
 	/**

@@ -8,45 +8,28 @@ import edu.tigers.sumatra.ids.ETeamColor;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.referee.data.EGameState;
 import edu.tigers.sumatra.referee.data.GameState;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
+import java.util.stream.Stream;
 
 
-/**
- * @author Nicolai Ommer <nicolai.ommer@gmail.com>
- */
-@RunWith(Parameterized.class)
-public class RoleNumberIntegrationTest extends AAiIntegrationTest
+class RoleNumberIntegrationTest extends AAiIntegrationTest
 {
-
-	private String snapFile;
-
-
-	public RoleNumberIntegrationTest(final String snapFile)
+	private static Stream<String> snapshots()
 	{
-		this.snapFile = snapFile;
+		return Stream.of(
+				"snapshots/roleNumber1.json",
+				"snapshots/roleNumber2.json",
+				"snapshots/roleNumber3.json",
+				"snapshots/roleNumber4.json",
+				"snapshots/roleNumber5.json"
+		);
 	}
 
 
-	@Parameterized.Parameters
-	public static Collection<Object[]> parameters()
-	{
-		Collection<Object[]> params = new ArrayList<>();
-		params.add(new Object[] { "snapshots/roleNumber1.json" });
-		params.add(new Object[] { "snapshots/roleNumber2.json" });
-		params.add(new Object[] { "snapshots/roleNumber3.json" });
-		params.add(new Object[] { "snapshots/roleNumber4.json" });
-		params.add(new Object[] { "snapshots/roleNumber5.json" });
-		return params;
-	}
-
-
-	private void runWithGamestate(final GameState gameState) throws IOException
+	private void runWithGamestate(String snapFile, final GameState gameState) throws IOException
 	{
 		setGameState(gameState);
 		loadSnapshot(snapFile);
@@ -58,84 +41,93 @@ public class RoleNumberIntegrationTest extends AAiIntegrationTest
 	}
 
 
-	@Test
-	public void testRunning() throws IOException
+	@ParameterizedTest(name = "[{index}] {displayName} {argumentSetNameOrArgumentsWithNames}")
+	@MethodSource("snapshots")
+	void testRunning(String snapFile) throws IOException
 	{
-		runWithGamestate(GameState.RUNNING);
+		runWithGamestate(snapFile, GameState.RUNNING);
 	}
 
 
-	@Test
-	public void testStop() throws IOException
+	@ParameterizedTest(name = "[{index}] {displayName} {argumentSetNameOrArgumentsWithNames}")
+	@MethodSource("snapshots")
+	void testStop(String snapFile) throws IOException
 	{
-		runWithGamestate(GameState.STOP);
+		runWithGamestate(snapFile, GameState.STOP);
 	}
 
 
-	@Test
-	public void testDirectFree() throws IOException
+	@ParameterizedTest(name = "[{index}] {displayName} {argumentSetNameOrArgumentsWithNames}")
+	@MethodSource("snapshots")
+	void testDirectFree(String snapFile) throws IOException
 	{
-		runWithGamestate(GameState.empty()
+		runWithGamestate(snapFile, GameState.empty()
 				.withForTeam(ETeamColor.YELLOW)
 				.withState(EGameState.DIRECT_FREE)
 				.build());
 	}
 
 
-	@Test
-	public void testIndirectFree() throws IOException
+	@ParameterizedTest(name = "[{index}] {displayName} {argumentSetNameOrArgumentsWithNames}")
+	@MethodSource("snapshots")
+	void testIndirectFree(String snapFile) throws IOException
 	{
-		runWithGamestate(GameState.empty()
+		runWithGamestate(snapFile, GameState.empty()
 				.withForTeam(ETeamColor.YELLOW)
 				.withState(EGameState.INDIRECT_FREE)
 				.build());
 	}
 
 
-	@Test
-	public void testPrepareKickoff() throws IOException
+	@ParameterizedTest(name = "[{index}] {displayName} {argumentSetNameOrArgumentsWithNames}")
+	@MethodSource("snapshots")
+	void testPrepareKickoff(String snapFile) throws IOException
 	{
-		runWithGamestate(GameState.empty()
+		runWithGamestate(snapFile, GameState.empty()
 				.withForTeam(ETeamColor.YELLOW)
 				.withState(EGameState.PREPARE_KICKOFF)
 				.build());
 	}
 
 
-	@Test
-	public void testKickoff() throws IOException
+	@ParameterizedTest(name = "[{index}] {displayName} {argumentSetNameOrArgumentsWithNames}")
+	@MethodSource("snapshots")
+	void testKickoff(String snapFile) throws IOException
 	{
-		runWithGamestate(GameState.empty()
+		runWithGamestate(snapFile, GameState.empty()
 				.withForTeam(ETeamColor.YELLOW)
 				.withState(EGameState.KICKOFF)
 				.build());
 	}
 
 
-	@Test
-	public void testPreparePenalty() throws IOException
+	@ParameterizedTest(name = "[{index}] {displayName} {argumentSetNameOrArgumentsWithNames}")
+	@MethodSource("snapshots")
+	void testPreparePenalty(String snapFile) throws IOException
 	{
-		runWithGamestate(GameState.empty()
+		runWithGamestate(snapFile, GameState.empty()
 				.withForTeam(ETeamColor.YELLOW)
 				.withState(EGameState.PREPARE_PENALTY)
 				.build());
 	}
 
 
-	@Test
-	public void testPenalty() throws IOException
+	@ParameterizedTest(name = "[{index}] {displayName} {argumentSetNameOrArgumentsWithNames}")
+	@MethodSource("snapshots")
+	void testPenalty(String snapFile) throws IOException
 	{
-		runWithGamestate(GameState.empty()
+		runWithGamestate(snapFile, GameState.empty()
 				.withForTeam(ETeamColor.YELLOW)
 				.withState(EGameState.PENALTY)
 				.build());
 	}
 
 
-	@Test
-	public void testBallPlacement() throws IOException
+	@ParameterizedTest(name = "[{index}] {displayName} {argumentSetNameOrArgumentsWithNames}")
+	@MethodSource("snapshots")
+	void testBallPlacement(String snapFile) throws IOException
 	{
-		runWithGamestate(GameState.empty()
+		runWithGamestate(snapFile, GameState.empty()
 				.withForTeam(ETeamColor.YELLOW)
 				.withState(EGameState.BALL_PLACEMENT)
 				.withBallPlacementPosition(Vector2.fromXY(-2800, 500))

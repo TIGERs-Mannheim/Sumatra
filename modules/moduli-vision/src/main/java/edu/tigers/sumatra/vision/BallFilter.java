@@ -95,7 +95,8 @@ public class BallFilter
 		}
 
 		// returned last output if there is no valid ball at all
-		if (preInput.getMergedBall().isEmpty())
+		var mergedBallOpt = preInput.getMergedBall();
+		if (mergedBallOpt.isEmpty())
 		{
 			FilteredVisionBall ball = FilteredVisionBall.builder()
 					.withTimestamp(timestamp)
@@ -113,13 +114,14 @@ public class BallFilter
 			return new BallFilterOutput(ball, null, lastFilteredBall.getPos(), preInput);
 		}
 
-		MergedBall mergedBall = preInput.getMergedBall().get();
+		MergedBall mergedBall = mergedBallOpt.get();
 		long lastVisibleTimestamp = lastFilteredBall.getLastVisibleTimestamp();
 
-		if (mergedBall.getLatestCamBall().isPresent())
+		var latestCamBallOpt = mergedBall.getLatestCamBall();
+		if (latestCamBallOpt.isPresent())
 		{
-			lastKnownPosition = mergedBall.getLatestCamBall().get().getPos();
-			lastVisibleTimestamp = mergedBall.getLatestCamBall().get().gettCapture();
+			lastKnownPosition = latestCamBallOpt.get().getPos();
+			lastVisibleTimestamp = latestCamBallOpt.get().getTimestamp();
 			mergedBallHistory.add(mergedBall);
 		}
 

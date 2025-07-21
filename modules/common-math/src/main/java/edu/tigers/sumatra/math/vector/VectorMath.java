@@ -4,32 +4,26 @@
 
 package edu.tigers.sumatra.math.vector;
 
-import java.util.Collection;
-import java.util.Optional;
-
-import org.apache.commons.lang.Validate;
-
 import edu.tigers.sumatra.math.AngleMath;
 import edu.tigers.sumatra.math.SumatraMath;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
+import org.apache.commons.lang.Validate;
+
+import java.util.Collection;
+import java.util.Optional;
 
 
 /**
  * Vector related calculations.
  * Please consider using the methods from {@link IVector}, {@link IVector2}, etc. instead of these static methods!
- *
- * @author nicolai.ommer
  */
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class VectorMath
 {
-	@SuppressWarnings("unused")
-	private VectorMath()
-	{
-	}
-	
-	
 	/**
 	 * Calculate the angle between x-axis and the vector
-	 * 
+	 *
 	 * @param vector some non-zero vector
 	 * @return angle between x-axis and vector in [-PI..PI], or 0 if vector is zero
 	 */
@@ -37,8 +31,8 @@ public final class VectorMath
 	{
 		return SumatraMath.atan2(vector.y(), vector.x());
 	}
-	
-	
+
+
 	/**
 	 * Calculate angle difference between both vectors, so that:
 	 * <br>
@@ -59,8 +53,8 @@ public final class VectorMath
 		}
 		return Optional.of(AngleMath.difference(toVector.getAngle(), fromVector.getAngle()));
 	}
-	
-	
+
+
 	/**
 	 * Returns distance between two points
 	 *
@@ -73,8 +67,8 @@ public final class VectorMath
 	{
 		return a.subtractNew(b).getLength2();
 	}
-	
-	
+
+
 	/**
 	 * Squared distance between too points
 	 *
@@ -88,8 +82,8 @@ public final class VectorMath
 		final double abY = a.y() - b.y();
 		return (abX * abX) + (abY * abY);
 	}
-	
-	
+
+
 	/**
 	 * Get the nearest point to p from the list
 	 *
@@ -114,8 +108,8 @@ public final class VectorMath
 		Validate.notNull(closest);
 		return closest;
 	}
-	
-	
+
+
 	/**
 	 * Get the farthest point to p from the list
 	 *

@@ -7,6 +7,7 @@ package edu.tigers.sumatra.math;
 
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
+import org.apache.commons.lang.Validate;
 
 
 /**
@@ -102,11 +103,50 @@ public final class AngleMath
 	{
 		final var rotDirection = AngleMath.rotationDirection(angle1, angle2);
 		return switch (rotDirection)
-				{
-					case NONE -> 0;
-					case CLOCKWISE -> 1;
-					case COUNTER_CLOCKWISE -> -1;
-				};
+		{
+			case NONE -> 0;
+			case CLOCKWISE -> 1;
+			case COUNTER_CLOCKWISE -> -1;
+		};
+	}
+
+
+	/**
+	 * Cap the input value between bound1 and bound2. This will always use the shortest connection between the bounds
+	 * as the valid range. It is therefore not possible to cap for a range bigger than 180 degrees
+	 *
+	 * @param value
+	 * @param bound1
+	 * @param bound2
+	 * @return
+	 */
+	public static double capAngle(double value, double bound1, double bound2)
+	{
+		var v = normalizeAngle(value);
+		var b1 = normalizeAngle(bound1);
+		var b2 = normalizeAngle(bound2);
+
+		var rotDirB1ToB2 = rotationDirection(b1, b2);
+
+		if (rotDirB1ToB2 == ERotationDirection.NONE)
+		{
+			// Limits are the same so we must cap exactly at the limit
+			return b1;
+		}
+
+		var cw = rotDirB1ToB2 == ERotationDirection.CLOCKWISE ? b2 : b1;
+		var ccw = rotDirB1ToB2 == ERotationDirection.CLOCKWISE ? b1 : b2;
+
+		Validate.isTrue(rotationDirection(ccw, cw) == ERotationDirection.CLOCKWISE);
+
+		var rotDirV2cw = rotationDirection(v, cw);
+		var rotDirV2ccw = rotationDirection(v, ccw);
+		if (rotDirV2ccw == ERotationDirection.COUNTER_CLOCKWISE && rotDirV2cw == ERotationDirection.CLOCKWISE)
+		{
+			return v;
+		}
+		// Get closer limit
+		return diffAbs(v, cw) < diffAbs(v, ccw) ? cw : ccw;
 	}
 
 

@@ -4,9 +4,9 @@
 
 package edu.tigers.sumatra.ai.metis.offense.dribble;
 
-import com.github.g3force.configurable.Configurable;
 import edu.tigers.sumatra.ai.metis.ACalculator;
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
+import edu.tigers.sumatra.ai.metis.offense.OffensiveConstants;
 import edu.tigers.sumatra.drawable.DrawableCircle;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.BotID;
@@ -30,9 +30,6 @@ import java.util.function.Supplier;
 @RequiredArgsConstructor
 public class BallDribblingDetectorCalc extends ACalculator
 {
-	@Configurable(comment = "[mm] Any dribbling distance above this value is considered a violation. Includes safety margin", defValue = "900.0")
-	private static double maxDribblingLength = 900.0;
-
 	private final Supplier<Set<BotID>> currentlyTouchingBots;
 
 	@Getter
@@ -59,7 +56,7 @@ public class BallDribblingDetectorCalc extends ACalculator
 			{
 				// dribbling not active anymore
 				return new DribblingInformation(getWFrame().getBall().getPos(), false, BotID.noBot(),
-						Circle.createCircle(getBall().getPos(), maxDribblingLength), null, false);
+						Circle.createCircle(getBall().getPos(), OffensiveConstants.getMaxDribblingLength()), null, false);
 			}
 
 			ITrackedBot bot = getWFrame().getBot(dribblingInformation.getDribblingBot());
@@ -77,14 +74,14 @@ public class BallDribblingDetectorCalc extends ACalculator
 				.findFirst()
 				.map(this::getDribblingInformationFromBotID)
 				.orElse(new DribblingInformation(getBall().getPos(), false, BotID.noBot(),
-						Circle.createCircle(getBall().getPos(), maxDribblingLength), null, false));
+						Circle.createCircle(getBall().getPos(), OffensiveConstants.getMaxDribblingLength()), null, false));
 	}
 
 
 	private DribblingInformation getDribblingInformationFromBotID(BotID botID)
 	{
 		ITrackedBot bot = getWFrame().getBot(botID);
-		ICircle dribblingCircle = Circle.createCircle(getBall().getPos(), maxDribblingLength);
+		ICircle dribblingCircle = Circle.createCircle(getBall().getPos(), OffensiveConstants.getMaxDribblingLength());
 		IVector2 intersection = getIntersectionWithDribblingCircle(bot, dribblingCircle);
 		boolean violationImminent = intersection != null && isViolationImminent(bot, intersection);
 		return new DribblingInformation(getBall().getPos(), true, botID, dribblingCircle, intersection,
@@ -106,7 +103,7 @@ public class BallDribblingDetectorCalc extends ACalculator
 
 		double s = intersectionPoint.distanceTo(bot.getPos()) / 1000.0;
 		double t = s / v0;
-		return t < 0.1;
+		return t < 0.15;
 	}
 
 
@@ -116,6 +113,11 @@ public class BallDribblingDetectorCalc extends ACalculator
 			return null;
 		var halfLine = Lines.halfLineFromDirection(bot.getPos(), getCurrentMoveToDestination(bot, dribblingCircle));
 		var intersection = halfLine.intersect(dribblingCircle);
+		if (intersection.isEmpty())
+		{
+			// this can happen if bot has 0 velocity
+			return null;
+		}
 		// must have exactly one intersection, since half line starts inside the circle!
 		assert intersection.size() == 1;
 		return intersection.asList().getFirst();

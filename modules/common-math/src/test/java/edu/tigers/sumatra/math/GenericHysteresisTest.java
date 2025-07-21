@@ -5,12 +5,12 @@
 package edu.tigers.sumatra.math;
 
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 
-public class GenericHysteresisTest
+class GenericHysteresisTest
 {
 	private boolean lower = false;
 	private boolean upper = false;
@@ -18,7 +18,7 @@ public class GenericHysteresisTest
 
 
 	@Test
-	public void testSimple()
+	void testSimple()
 	{
 		lower = false;
 		upper = false;
@@ -51,7 +51,7 @@ public class GenericHysteresisTest
 
 
 	@Test
-	public void testDouble()
+	void testDouble()
 	{
 		GenericHysteresis hysteresis = new GenericHysteresis(() -> currentValue < -1, () -> currentValue > 1);
 		assertThat(hysteresis.isUpper())

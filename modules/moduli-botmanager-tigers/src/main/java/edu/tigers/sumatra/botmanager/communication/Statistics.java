@@ -8,15 +8,11 @@
  */
 package edu.tigers.sumatra.botmanager.communication;
 
-import com.sleepycat.persist.model.Persistent;
-
-
 /**
  * Communication statistics packet.
  * 
  * @author AndreR
  */
-@Persistent
 @SuppressWarnings("squid:ClassVariableVisibilityCheck")
 public class Statistics
 {

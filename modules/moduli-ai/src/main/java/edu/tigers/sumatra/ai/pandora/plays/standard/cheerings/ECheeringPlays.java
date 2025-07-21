@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.pandora.plays.standard.cheerings;
@@ -28,6 +28,7 @@ public enum ECheeringPlays implements IInstanceableEnum, IEvent
 	TIGER(new InstanceableClass<>(TigerCheeringPlay.class)),
 	CIRCLE(new InstanceableClass<>(CircleCheeringPlay.class)),
 	TETRIS(new InstanceableClass<>(TetrisCheeringPlay.class)),
+	IMPERIAL_MARCH(new InstanceableClass<>(ImperialCheeringPlay.class)),
 	;
 
 	private final InstanceableClass<?> instanceableClass;

@@ -28,7 +28,7 @@ public class ForcedPassActionMove extends AOffensiveActionMove
 
 	private OffensiveActionViability calcViability(RatedPass pass)
 	{
-		if (getAiFrame().getGameState().isFreeKickForUs() && pass != null)
+		if (getAiFrame().getGameState().isFreeKickForUs() && pass != null && getBall().getVel().getLength() < 0.9)
 		{
 			return new OffensiveActionViability(EActionViability.TRUE, applyMultiplier(1.0));
 		}
@@ -42,8 +42,10 @@ public class ForcedPassActionMove extends AOffensiveActionMove
 	{
 		return findPassForMe(selectedPasses.get(), botId)
 				.map(ratedPass -> RatedOffensiveAction
-						.buildPass(EOffensiveActionMove.FORCED_PASS,
+						.buildPass(
+								EOffensiveActionMove.FORCED_PASS,
 								calcViability(ratedPass),
-								ratedPass.getPass()));
+								ratedPass.getPass()
+						));
 	}
 }

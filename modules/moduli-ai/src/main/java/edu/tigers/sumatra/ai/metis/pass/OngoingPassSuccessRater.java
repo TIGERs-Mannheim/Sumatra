@@ -13,8 +13,8 @@ import edu.tigers.sumatra.wp.data.WorldFrame;
 
 public class OngoingPassSuccessRater
 {
-	@Configurable(defValue = "0.25", comment = "[s]")
-	private static double maxDurationDif = 0.25;
+	@Configurable(defValue = "0.35", comment = "[s]")
+	private static double maxDurationDif = 0.35;
 
 	@Configurable(defValue = "500.0", comment = "[mm]")
 	private static double maxDistanceToPlannedReceivePosition = 500.0;

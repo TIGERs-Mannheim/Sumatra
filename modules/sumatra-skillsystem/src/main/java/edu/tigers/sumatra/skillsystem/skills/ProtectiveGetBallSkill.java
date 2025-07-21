@@ -73,7 +73,7 @@ public class ProtectiveGetBallSkill extends ABallHandlingSkill
 
 	private boolean isSucceeded()
 	{
-		if (!getTBot().getRobotInfo().isBarrierInterrupted())
+		if (!getTBot().getBallContact().hasContact())
 		{
 			return false;
 		}

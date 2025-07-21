@@ -4,40 +4,23 @@
 
 package edu.tigers.sumatra.views;
 
-import edu.tigers.moduli.IModuliStateObserver;
-import edu.tigers.moduli.listenerVariables.ModulesState;
-
 import java.util.List;
 
 
-public interface ISumatraPresenter extends IModuliStateObserver
+public interface ISumatraPresenter
 {
-	@Override
-	default void onModuliStateChanged(ModulesState state)
-	{
-		if (state == ModulesState.ACTIVE)
-		{
-			onStart();
-			onStartModuli();
-		} else if (state == ModulesState.RESOLVED)
-		{
-			onStopModuli();
-			onStop();
-		}
-	}
-
 	/**
 	 * Moduli module (live mode) is started.
 	 */
-	default void onStartModuli()
+	default void onModuliStarted()
 	{
 	}
 
 
 	/**
-	 * Counterpart to {@link #onStartModuli()}
+	 * Counterpart to {@link #onModuliStarted()}
 	 */
-	default void onStopModuli()
+	default void onModuliStopped()
 	{
 	}
 

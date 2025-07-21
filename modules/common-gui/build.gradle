@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
  */
 
 plugins {
@@ -8,12 +8,12 @@ plugins {
 }
 
 dependencies {
-    implementation project(':common')
+    api project(':common')
     implementation project(':sumatra-model')
     implementation project(':moduli-record')
 
+    implementation(libs.com.formdev.flatlaf)
     implementation(libs.com.github.TIGERs.mannheim.infonode)
-    api(libs.com.github.TIGERs.mannheim.moduli)
 
     implementation(libs.commons.configuration)
 

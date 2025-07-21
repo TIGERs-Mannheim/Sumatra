@@ -36,7 +36,7 @@ public class PointChecker
 	private BotID botID;
 
 	@Setter
-	private double theirPenAreaMargin = Geometry.getBotRadius() + RuleConstraints.getPenAreaMarginStandard();
+	private double theirPenAreaMargin = Geometry.getBotRadius() + RuleConstraints.getPenAreaMarginStandard() + 30;
 	@Setter
 	private double ourPenAreaMargin = 200;
 

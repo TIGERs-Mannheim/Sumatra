@@ -7,7 +7,6 @@ package edu.tigers.sumatra.wp;
 import edu.tigers.sumatra.bot.RobotInfo;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.BotID;
-import edu.tigers.sumatra.ids.EAiTeam;
 import edu.tigers.sumatra.ids.ETeamColor;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
@@ -24,41 +23,10 @@ import java.util.Random;
 
 /**
  * Factory which creates a list of {@link WorldFrame}s with random positioned bots.
- *
- * @author Oliver Steinbrecher
  */
 public class WorldFrameFactory
 {
 	private static final Random RND = new Random(0);
-
-
-	@SuppressWarnings("unused")
-	private WorldFrameFactory()
-	{
-	}
-
-
-	/**
-	 * This method sets the Seed for the randomgenerator used to place the bots.
-	 * If this method is called the randomgenerator is resetted.
-	 *
-	 * @param seed
-	 */
-	public static void setRandomSeed(final long seed)
-	{
-		RND.setSeed(seed);
-	}
-
-
-	/**
-	 * @param frameNumber
-	 * @param timestamp
-	 * @return
-	 */
-	public static WorldFrame createWorldFrame(final long frameNumber, final long timestamp)
-	{
-		return new WorldFrame(createSimpleWorldFrame(frameNumber, timestamp), EAiTeam.YELLOW, false);
-	}
 
 
 	/**

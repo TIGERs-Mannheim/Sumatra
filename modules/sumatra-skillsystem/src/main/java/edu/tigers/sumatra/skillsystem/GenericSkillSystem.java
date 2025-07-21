@@ -5,8 +5,7 @@
 package edu.tigers.sumatra.skillsystem;
 
 import com.github.g3force.configurable.ConfigRegistration;
-import edu.tigers.sumatra.botmanager.ABotManager;
-import edu.tigers.sumatra.botmanager.IBotManagerObserver;
+import edu.tigers.sumatra.botmanager.BotManager;
 import edu.tigers.sumatra.botmanager.bots.ABot;
 import edu.tigers.sumatra.drawable.ShapeMap;
 import edu.tigers.sumatra.drawable.ShapeMapSource;
@@ -23,14 +22,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 
 /**
  * Generic skill system.
  */
 public class GenericSkillSystem extends ASkillSystem
-		implements IBotManagerObserver, IWorldFrameObserver, ISkillExecutorPostHook
+		implements IWorldFrameObserver, ISkillExecutorPostHook
 {
 	private static final ShapeMapSource SKILL_SHAPE_MAP_SOURCE = ShapeMapSource.of("Skills");
 
@@ -43,15 +41,8 @@ public class GenericSkillSystem extends ASkillSystem
 	}
 
 	private final Map<BotID, SkillExecutor> executors = new ConcurrentHashMap<>();
-	private final List<ISkillExecutorPostHook> skillExecutorPostHooks = new CopyOnWriteArrayList<>();
 
 	private AWorldPredictor wp;
-
-
-	private GenericSkillSystem()
-	{
-		// hidden, but instantiatable by moduli
-	}
 
 
 	/**
@@ -78,7 +69,6 @@ public class GenericSkillSystem extends ASkillSystem
 	@Override
 	public void initModule()
 	{
-		SumatraModel.getInstance().getModuleOpt(ABotManager.class).ifPresent(o -> o.addObserver(this));
 		BotID.getAll().forEach(this::addSkillExecutor);
 	}
 
@@ -96,6 +86,11 @@ public class GenericSkillSystem extends ASkillSystem
 		super.startModule();
 		executors.values().forEach(e -> e.start(getExecutorService()));
 
+		SumatraModel.getInstance().getModuleOpt(BotManager.class).ifPresent(botManager -> {
+			botManager.getOnBotOnline().subscribe(getClass().getCanonicalName(), this::onBotAdded);
+			botManager.getOnBotOffline().subscribe(getClass().getCanonicalName(), this::onBotRemoved);
+		});
+
 		wp = SumatraModel.getInstance().getModule(AWorldPredictor.class);
 		wp.addConsumer(this);
 	}
@@ -106,7 +101,10 @@ public class GenericSkillSystem extends ASkillSystem
 	{
 		emergencyStop();
 
-		SumatraModel.getInstance().getModuleOpt(ABotManager.class).ifPresent(o -> o.removeObserver(this));
+		SumatraModel.getInstance().getModuleOpt(BotManager.class).ifPresent(botManager -> {
+			botManager.getOnBotOnline().unsubscribe(getClass().getCanonicalName());
+			botManager.getOnBotOffline().unsubscribe(getClass().getCanonicalName());
+		});
 
 		if (wp != null)
 		{
@@ -155,18 +153,16 @@ public class GenericSkillSystem extends ASkillSystem
 	}
 
 
-	@Override
 	public void onBotAdded(final ABot bot)
 	{
 		executors.get(bot.getBotId()).setNewBot(bot);
 	}
 
 
-	@Override
-	public void onBotRemoved(final ABot bot)
+	private void onBotRemoved(BotID botId)
 	{
-		reset(bot.getBotId());
-		executors.get(bot.getBotId()).setNewBot(null);
+		reset(botId);
+		executors.get(botId).setNewBot(null);
 	}
 
 
@@ -228,10 +224,11 @@ public class GenericSkillSystem extends ASkillSystem
 		notifyCommandSent(bot, timestamp);
 		if (wp != null)
 		{
-			wp.notifyNewShapeMap(timestamp, shapeMap,
-					ShapeMapSource.of(bot.getBotId().toString(), SKILL_SHAPE_MAP_SOURCE));
+			wp.notifyNewShapeMap(
+					timestamp, shapeMap,
+					ShapeMapSource.of(bot.getBotId().toString(), SKILL_SHAPE_MAP_SOURCE)
+			);
 		}
-		skillExecutorPostHooks.forEach(hook -> hook.onSkillUpdated(bot, timestamp, shapeMap));
 	}
 
 
@@ -242,20 +239,5 @@ public class GenericSkillSystem extends ASkillSystem
 		{
 			wp.notifyRemoveSourceFromShapeMap(ShapeMapSource.of(botID.toString(), SKILL_SHAPE_MAP_SOURCE));
 		}
-		skillExecutorPostHooks.forEach(hook -> hook.onRobotRemoved(botID));
-	}
-
-
-	@Override
-	public void addSkillExecutorPostHook(ISkillExecutorPostHook hook)
-	{
-		skillExecutorPostHooks.add(hook);
-	}
-
-
-	@Override
-	public void removeSkillExecutorPostHook(ISkillExecutorPostHook hook)
-	{
-		skillExecutorPostHooks.remove(hook);
 	}
 }

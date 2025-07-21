@@ -4,7 +4,7 @@
 
 package edu.tigers.sumatra.ai.data;
 
-import com.sleepycat.persist.model.Persistent;
+import edu.tigers.sumatra.bot.BotLastKickState;
 import edu.tigers.sumatra.bot.EBallObservationState;
 import edu.tigers.sumatra.bot.EDribbleTractionState;
 import edu.tigers.sumatra.bot.EFeature;
@@ -26,7 +26,6 @@ import java.util.Set;
  *
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  */
-@Persistent(version = 3)
 public class BotAiInformation
 {
 	private final Map<EBotInformation, String> map = new EnumMap<>(EBotInformation.class);
@@ -230,6 +229,12 @@ public class BotAiInformation
 	public void setBallObservation(final EBallObservationState state)
 	{
 		map.put(EBotInformation.BALL_OBSERVATION, state.name());
+	}
+
+
+	public void setLastKick(final BotLastKickState state)
+	{
+		map.put(EBotInformation.LAST_KICK, state.toString());
 	}
 
 	public void setBotStats(final BaseStationWifiStats.BotStats stats)

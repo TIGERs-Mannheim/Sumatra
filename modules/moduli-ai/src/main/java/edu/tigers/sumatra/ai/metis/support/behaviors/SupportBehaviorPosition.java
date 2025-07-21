@@ -4,7 +4,6 @@
 
 package edu.tigers.sumatra.ai.metis.support.behaviors;
 
-import com.sleepycat.persist.model.Persistent;
 import edu.tigers.sumatra.math.vector.IVector2;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -15,7 +14,6 @@ import java.util.Optional;
 
 @Value
 @Builder
-@Persistent(version = 1)
 @AllArgsConstructor
 public class SupportBehaviorPosition
 {

@@ -8,6 +8,9 @@ import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
 import edu.tigers.sumatra.ai.metis.ACalculator;
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
+import edu.tigers.sumatra.ai.metis.ballpossession.BallPossession;
+import edu.tigers.sumatra.ai.metis.ballpossession.EBallControl;
+import edu.tigers.sumatra.ai.metis.botdistance.BotDistance;
 import edu.tigers.sumatra.ai.metis.kicking.EBallReceiveMode;
 import edu.tigers.sumatra.ai.metis.kicking.KickFactory;
 import edu.tigers.sumatra.ai.metis.kicking.Pass;
@@ -49,8 +52,11 @@ public class BallDribbleToPosCalc extends ACalculator
 	@Configurable(comment = "[mm] No opponent closer than this to the ball -> it is not dangerous", defValue = "1800.0")
 	private static double opponentIsCloseDistance = 1800.0;
 
-	@Configurable(comment = "[mm] protectKick target distance", defValue = "600.0")
-	private static double protectKickTargetDistance = 600.0;
+	@Configurable(comment = "[mm] protectKick target distance", defValue = "800.0")
+	private static double protectKickTargetDistance = 800.0;
+
+	@Configurable(comment = "[mm] consider only closest bot dist", defValue = "300.0")
+	private static double considerOnlyClosestBotDist = 300.0;
 
 	@Configurable(comment = "[s] needed time to reach protect kick target", defValue = "1.2")
 	private static double timeToReachProtectKickTarget = 1.2;
@@ -67,6 +73,8 @@ public class BallDribbleToPosCalc extends ACalculator
 
 	private final Supplier<List<BotID>> ballHandlingBots;
 	private final Supplier<DribblingInformation> dribblingInformation;
+	private final Supplier<BallPossession> ballPossession;
+	private final Supplier<BotDistance> closestOpponent;
 
 	@Getter
 	private DribbleToPos dribbleToPos;
@@ -101,8 +109,10 @@ public class BallDribbleToPosCalc extends ACalculator
 		EDribblingCondition condition = EDribblingCondition.DEFAULT;
 		addDribblingInformationShapes(dribblingInformation.get());
 
-		ICircle dribbleCircle = Circle.createCircle(dribblingInformation.get().getStartPos(),
-				dribblingInformation.get().getDribblingCircle().radius());
+		ICircle dribbleCircle = Circle.createCircle(
+				dribblingInformation.get().getStartPos(),
+				dribblingInformation.get().getDribblingCircle().radius()
+		);
 		var opponents = getWFrame().getOpponentBots().values().stream()
 				.filter(e -> dribbleCircle.withMargin(500).isPointInShape(e.getPos())).toList();
 
@@ -110,8 +120,10 @@ public class BallDribbleToPosCalc extends ACalculator
 		if (protectPass != null)
 		{
 			getShapesProtectKick().add(
-					new DrawableArrow(getBall().getPos(), protectPass.getKick().getTarget().subtractNew(getBall().getPos()),
-							new Color(207, 24, 255, 237)));
+					new DrawableArrow(
+							getBall().getPos(), protectPass.getKick().getTarget().subtractNew(getBall().getPos()),
+							new Color(207, 24, 255, 237)
+					));
 		}
 
 		List<IQuadrilateral> blockingQuads = getBlockingQuads(tigerBot, dribbleCircle, opponents);
@@ -124,8 +136,10 @@ public class BallDribbleToPosCalc extends ACalculator
 			boolean isBlocked = blockingQuads.stream().map(e -> e.intersectPerimeterPath(line))
 					.anyMatch(e -> !e.isEmpty());
 
-			getShapes().add(new DrawableAnnotation(dribblingInformation.get().getStartPos(),
-					isBlocked ? "is blocked" : "not blocked"));
+			getShapes().add(new DrawableAnnotation(
+					dribblingInformation.get().getStartPos(),
+					isBlocked ? "is blocked" : "not blocked"
+			));
 			getShapes().add(
 					new DrawableCircle(Circle.createCircle(bestPoint.get(), 30)).setFill(true).setColor(Color.cyan));
 			getShapes().add(
@@ -146,11 +160,20 @@ public class BallDribbleToPosCalc extends ACalculator
 		}
 
 		// calculate protectFrom
-		var weightedOpponents = opponents.stream().map(e -> new ValuePoint(e.getBotKickerPos(),
-						Math.max(0, 1 - e.getBotKickerPos().distanceTo(tigerBot.getPos()) / opponentIsCloseDistance)))
-				.filter(e -> e.getValue() < dribbleCircle.radius()).toList();
+		IVector2 protectTarget;
+		if (closestOpponent.get().getDist() < considerOnlyClosestBotDist)
+		{
+			protectTarget = getWFrame().getBot(closestOpponent.get().getBotId()).getPos();
+		} else
+		{
+			var weightedOpponents = opponents.stream().map(e -> new ValuePoint(
+							e.getBotKickerPos(),
+							Math.max(0, 1 - e.getBotKickerPos().distanceTo(tigerBot.getPos()) / opponentIsCloseDistance)
+					))
+					.filter(e -> e.getValue() < dribbleCircle.radius()).toList();
 
-		IVector2 protectTarget = calcProtectTarget(tigerBot, weightedOpponents);
+			protectTarget = calcProtectTarget(tigerBot, weightedOpponents);
+		}
 		return new DribbleToPos(protectTarget, dribbleToDestination, condition, null);
 	}
 
@@ -163,15 +186,18 @@ public class BallDribbleToPosCalc extends ACalculator
 		}
 
 		List<Pass> consideredPasses = new ArrayList<>();
-		for (int i = -numOfProtectKickSamplesPerHalf; i < numOfProtectKickSamplesPerHalf; i++)
+		for (int i = -numOfProtectKickSamplesPerHalf + 1; i < numOfProtectKickSamplesPerHalf - 1; i++)
 		{
-			IVector2 opponentGoalFront = Vector2.fromXY(Geometry.getFieldLength() / 2.0,
-							(Geometry.getFieldWidth() / 2.0 / numOfProtectKickSamplesPerHalf) * i)
+			IVector2 opponentGoalFront = Vector2.fromXY(
+							Geometry.getFieldLength() / 2.0,
+							(Geometry.getFieldWidth() / 2.0 / numOfProtectKickSamplesPerHalf) * i
+					)
 					.addNew(Vector2.fromX(-Geometry.getPenaltyAreaTheir().getRectangle().xExtent() * 1.25));
 			IVector2 ballToOpponentGoalFront = opponentGoalFront.subtractNew(getBall().getPos());
 			IVector2 kickTarget = getBall().getPos().addNew(ballToOpponentGoalFront.scaleToNew(protectKickTargetDistance));
 			getPassForKickTarget(kickTarget, opponentGoalFront).ifPresent(consideredPasses::add);
 		}
+
 		return consideredPasses.stream().max(Comparator.comparingDouble(Pass::getPreparationTime)).orElse(null);
 	}
 
@@ -180,12 +206,14 @@ public class BallDribbleToPosCalc extends ACalculator
 	{
 		var closeOpponent = getWFrame().getOpponentBots().values().stream()
 				.filter(bot -> getWFrame().getBall().getPos().distanceTo(bot.getPos()) < 5000)
-				.map(bot -> new Pair<>(bot.getBotId(),
-						TrajectoryGenerator.generatePositionTrajectory(bot, kickTarget).getTotalTime()))
+				.map(bot -> new Pair<>(
+						bot.getBotId(),
+						TrajectoryGenerator.generatePositionTrajectory(bot, kickTarget).getTotalTime()
+				))
 				.min(Comparator.comparingDouble(Pair::getValue));
 
 		boolean reachingProtectKickBeforeOpponent;
-		double minOpponentTime = Double.MAX_VALUE;
+		double minOpponentTime;
 		if (closeOpponent.isPresent())
 		{
 			minOpponentTime = closeOpponent.get().getValue();
@@ -193,6 +221,7 @@ public class BallDribbleToPosCalc extends ACalculator
 		} else
 		{
 			reachingProtectKickBeforeOpponent = true;
+			minOpponentTime = 0;
 		}
 
 		var ballToKickTarget = kickTarget.subtractNew(getBall().getPos());
@@ -202,15 +231,16 @@ public class BallDribbleToPosCalc extends ACalculator
 				kickTargetSide1.subtractNew(ballToKickTarget).addNew(ballToKickTarget.getNormalVector().scaleToNew(-120)),
 				kickTargetSide2.subtractNew(ballToKickTarget).addNew(ballToKickTarget.getNormalVector().scaleToNew(120)),
 				kickTargetSide1.addNew(ballToKickTarget.scaleToNew(Geometry.getBotRadius() * 2)),
-				kickTargetSide2.addNew(ballToKickTarget.scaleToNew(Geometry.getBotRadius() * 2)));
+				kickTargetSide2.addNew(ballToKickTarget.scaleToNew(Geometry.getBotRadius() * 2))
+		);
 
 		boolean protectPathFree = getWFrame().getOpponentBots().values().stream()
-				.filter(bot -> kickTarget.distanceTo(bot.getPos()) < 3000)
+				.filter(bot -> kickTarget.distanceTo(bot.getPos()) < 2000)
 				.filter(bot -> pathQuadliteral.isPointInShape(bot.getPos())).findAny().isEmpty();
 
 		if (reachingProtectKickBeforeOpponent
 				&& protectPathFree
-				&& Geometry.getField().withMargin(-400).isPointInShape(kickTarget)
+				&& Geometry.getField().withMargin(-600).isPointInShape(kickTarget)
 				&& !Geometry.getPenaltyAreaTheir().getRectangle().withMargin(Geometry.getBotRadius() * 2).isPointInShape(
 				kickTarget)
 				&& kickTargetSource.distanceTo(getBall().getPos()) > protectKickTargetDistance * 1.25)
@@ -222,15 +252,19 @@ public class BallDribbleToPosCalc extends ACalculator
 			}
 
 			getShapesProtectKick().add(
-					new DrawableArrow(getBall().getPos(), kickTarget.subtractNew(getBall().getPos()),
-							new Color(47, 104, 255, 137)));
+					new DrawableArrow(
+							getBall().getPos(), kickTarget.subtractNew(getBall().getPos()),
+							new Color(47, 104, 255, 137)
+					));
 
 			kickFactory.setAimingTolerance(0.6);
 			kickFactory.update(getWFrame());
 			var kick = kickFactory.chip(getBall().getPos(), kickTarget, 1.7);
 			return Optional.of(
-					new Pass(kick, BotID.noBot(), ballHandlingBots.get().getFirst(), 0, 0, minOpponentTime,
-							EBallReceiveMode.DONT_CARE));
+					new Pass(
+							kick, BotID.noBot(), ballHandlingBots.get().getFirst(), 0, 0, minOpponentTime,
+							EBallReceiveMode.DONT_CARE
+					));
 		}
 
 		return Optional.empty();
@@ -239,15 +273,23 @@ public class BallDribbleToPosCalc extends ACalculator
 
 	private IVector2 calcProtectTarget(ITrackedBot tigerBot, List<ValuePoint> weightedOpponents)
 	{
-		IVector2 protectFrom = Vector2.zero();
-		for (var wO : weightedOpponents)
+		IVector2 protectTarget;
+		if (ballPossession.get().getOpponentBallControl() == EBallControl.STRONG)
 		{
-			protectFrom = protectFrom.addNew(
-					wO.subtractNew(tigerBot.getPos()).scaleToNew(Geometry.getBotRadius() * 2 * wO.getValue()));
+			var opponentBot = getWFrame().getOpponentBot(ballPossession.get().getOpponentsId());
+			protectTarget = opponentBot.getPos();
+		} else
+		{
+			IVector2 protectFrom = Vector2.zero();
+			for (var wO : weightedOpponents)
+			{
+				protectFrom = protectFrom.addNew(
+						wO.subtractNew(tigerBot.getPos()).scaleToNew(Geometry.getBotRadius() * 2 * wO.getValue()));
+			}
+			IVector2 fallbackTarget = dribblingInformation.get().getStartPos().addNew(
+					Geometry.getGoalOur().getCenter().subtractNew(dribblingInformation.get().getStartPos()).multiplyNew(-1));
+			protectTarget = protectFrom.isZeroVector() ? fallbackTarget : tigerBot.getPos().addNew(protectFrom);
 		}
-		IVector2 fallbackTarget = dribblingInformation.get().getStartPos().addNew(
-				Geometry.getGoalOur().getCenter().subtractNew(dribblingInformation.get().getStartPos()).multiplyNew(-1));
-		IVector2 protectTarget = protectFrom.isZeroVector() ? fallbackTarget : tigerBot.getPos().addNew(protectFrom);
 
 		getShapes().add(new DrawableCircle(Circle.createCircle(protectTarget, 50), Color.ORANGE).setFill(true));
 		return protectTarget;
@@ -258,12 +300,16 @@ public class BallDribbleToPosCalc extends ACalculator
 	{
 		if (dribblingInformation.isDribblingInProgress())
 		{
-			getShapes().add(new DrawableCircle(dribblingInformation.getStartPos(),
-					dribblingInformation.getDribblingCircle().radius(), Color.RED.brighter()));
+			getShapes().add(new DrawableCircle(
+					dribblingInformation.getStartPos(),
+					dribblingInformation.getDribblingCircle().radius(), Color.RED.brighter()
+			));
 		} else
 		{
-			getShapes().add(new DrawableCircle(dribblingInformation.getStartPos(),
-					dribblingInformation.getDribblingCircle().radius(), Color.RED.darker()));
+			getShapes().add(new DrawableCircle(
+					dribblingInformation.getStartPos(),
+					dribblingInformation.getDribblingCircle().radius(), Color.RED.darker()
+			));
 		}
 	}
 
@@ -303,8 +349,10 @@ public class BallDribbleToPosCalc extends ACalculator
 
 	private void addDebugShapes(IVector2 point, double score)
 	{
-		getShapes().add(new DrawableCircle(Circle.createCircle(point, 10),
-				new Color(Math.min(255, (int) ((1 - score) * 255)), Math.min(255, (int) (score * 255)), 0)).setFill(true));
+		getShapes().add(new DrawableCircle(
+				Circle.createCircle(point, 10),
+				new Color(Math.min(255, (int) ((1 - score) * 255)), Math.min(255, (int) (score * 255)), 0)
+		).setFill(true));
 		getShapes().add(new DrawableAnnotation(point, String.format("%.2f", score)).withFontHeight(8));
 	}
 
@@ -348,20 +396,26 @@ public class BallDribbleToPosCalc extends ACalculator
 	}
 
 
-	private List<IQuadrilateral> getBlockingQuads(ITrackedBot tigerBot, ICircle dribbleCircle,
-			List<ITrackedBot> opponents)
+	private List<IQuadrilateral> getBlockingQuads(
+			ITrackedBot tigerBot, ICircle dribbleCircle,
+			List<ITrackedBot> opponents
+	)
 	{
 		List<IQuadrilateral> blockingQuads = opponents.stream()
-				.map(e -> getBlockingQuad(tigerBot, dribblingInformation.get().getDribblingCircle().radius(), dribbleCircle,
-						e)).filter(Optional::isPresent).map(Optional::get).toList();
+				.map(e -> getBlockingQuad(
+						tigerBot, dribblingInformation.get().getDribblingCircle().radius(), dribbleCircle,
+						e
+				)).filter(Optional::isPresent).map(Optional::get).toList();
 		blockingQuads.forEach(
 				e -> getShapes().add(new DrawableQuadrilateral(e, new Color(248, 0, 0, 128)).setFill(true)));
 		return blockingQuads;
 	}
 
 
-	private Optional<IQuadrilateral> getBlockingQuad(ITrackedBot tigerBot, double dribblingCircleRadius,
-			ICircle dribbleCircle, ITrackedBot opponent)
+	private Optional<IQuadrilateral> getBlockingQuad(
+			ITrackedBot tigerBot, double dribblingCircleRadius,
+			ICircle dribbleCircle, ITrackedBot opponent
+	)
 	{
 		var toOpponent = opponent.getPos().subtractNew(tigerBot.getPos());
 		var offset = toOpponent.getNormalVector().scaleToNew(Geometry.getBotRadius() * 1.5);

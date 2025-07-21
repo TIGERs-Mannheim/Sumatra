@@ -26,7 +26,7 @@ public abstract class AMovingRobotObstacle extends AMovingObstacle
 	@Override
 	public String getIdentifier()
 	{
-		return super.getIdentifier() + " " + botID.getSaveableString();
+		return super.getIdentifier() + " " + movingRobot.getClass().getSimpleName() + " " + botID.getSaveableString();
 	}
 
 

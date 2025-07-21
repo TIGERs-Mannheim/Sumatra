@@ -45,9 +45,9 @@ public class ConfigEditorPanel extends JPanel
 	private final SortedMap<String, EditorView> tabs = new TreeMap<>();
 	private final ConfigEditorSearchBar searchBar = new ConfigEditorSearchBar();
 
-	private String searchTokens = "";
-	private String latestName = "";
-	private HierarchicalConfiguration latestConfig = null;
+	private String nameSearchTokens = "";
+	private String tagSearchTokens = "";
+	private EditorView currentView = null;
 
 
 	public ConfigEditorPanel()
@@ -59,12 +59,15 @@ public class ConfigEditorPanel extends JPanel
 			Component c = tabpane.getComponentAt(tabpane.getSelectedIndex());
 			EditorView ev = (EditorView) c;
 			ev.initialReload();
+			currentView = ev;
+			refreshConfigModel(ev.getReferenceConfig());
 		});
 
 		searchBar.getTextField().getDocument().addDocumentListener(new SearchBarListener());
 
 		add(searchBar, BorderLayout.NORTH);
 		add(tabpane, BorderLayout.CENTER);
+
 	}
 
 
@@ -96,29 +99,31 @@ public class ConfigEditorPanel extends JPanel
 		}
 		tabpane.insertTab(client, null, newView, null, index);
 
+		if (currentView == null)
+		{
+			currentView = newView;
+		}
+
 		revalidate();
 		this.repaint();
 	}
 
 
 	/**
-	 * @param name
 	 * @param config
 	 */
-	public void refreshConfigModel(String name, HierarchicalConfiguration config)
+	public void refreshConfigModel(HierarchicalConfiguration config)
 	{
-		latestName = name;
-		latestConfig = config;
+		currentView.setReferenceConfig(config);
 
-		var view = tabs.get(name);
 		var model = new ConfigXMLTreeTableModel(config);
 
-		if (!searchTokens.isEmpty())
+		if (!nameSearchTokens.isEmpty() || !tagSearchTokens.isEmpty())
 		{
-			view.updateModel(filterModel(config, model), true);
+			currentView.updateModel(filterModel(config, model), true);
 		} else
 		{
-			view.updateModel(model, false);
+			currentView.updateModel(model, false);
 		}
 	}
 
@@ -137,7 +142,12 @@ public class ConfigEditorPanel extends JPanel
 	private Optional<FilterResult> filterConfigNode(ConfigurationNode originalNode, ConfigXMLTreeTableModel model,
 			boolean someParentIsMatching)
 	{
-		int score = matchingScore(originalNode, model);
+		// Score formula might need adjustments
+		int tagScore = tagSearchTokens.isEmpty() ? 100 : matchingTagScore(originalNode, model);
+		int nameScore = nameSearchTokens.isEmpty() ? 100 : matchingScore(originalNode, model);
+
+		int score = (tagScore + nameScore) / 2;
+
 		boolean matching = someParentIsMatching || score >= 85;
 		var newChildren = originalNode.getChildren().stream()
 				.map(node -> filterConfigNode(node, model, someParentIsMatching || matching))
@@ -182,7 +192,20 @@ public class ConfigEditorPanel extends JPanel
 				.map(String::toLowerCase)
 				.collect(Collectors.joining(" "));
 
-		return FuzzySearch.tokenSetPartialRatio(description, searchTokens);
+		return FuzzySearch.tokenSetPartialRatio(description, nameSearchTokens);
+	}
+
+
+	private int matchingTagScore(ConfigurationNode node, ConfigXMLTreeTableModel model)
+	{
+		String tags = Stream.of(node).map(n -> model.getValueAt(n, 3))
+				.filter(Objects::nonNull)
+				.filter(String.class::isInstance)
+				.map(String.class::cast)
+				.map(String::toLowerCase)
+				.collect(Collectors.joining());
+
+		return FuzzySearch.tokenSetPartialRatio(tags, tagSearchTokens);
 	}
 
 
@@ -217,15 +240,22 @@ public class ConfigEditorPanel extends JPanel
 
 		private void applySearch()
 		{
-			searchTokens = Arrays.stream(searchBar.getTextField().getText().split(" "))
+			nameSearchTokens = Arrays.stream(searchBar.getTextField().getText().split(" "))
 					.map(String::toLowerCase)
 					.map(String::strip)
 					.filter(s -> !s.isEmpty())
+					.filter(s -> !s.startsWith("@"))
 					.collect(Collectors.joining(" "));
-			if (latestConfig != null && latestName != null && tabs.get(latestName) != null)
-			{
-				refreshConfigModel(latestName, latestConfig);
-			}
+
+			tagSearchTokens = Arrays.stream(searchBar.getTextField().getText().split(" "))
+					.map(String::toLowerCase)
+					.map(String::strip)
+					.filter(s -> s.startsWith("@"))
+					.map(s -> s.substring(1))
+					.filter(s -> !s.isEmpty())
+					.collect(Collectors.joining(" "));
+
+			refreshConfigModel(currentView.getReferenceConfig());
 		}
 
 	}

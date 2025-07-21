@@ -15,9 +15,6 @@ dependencies {
     implementation project(':moduli-gamelog')
     implementation project(':sumatra-model')
 
-    implementation(libs.com.github.TIGERs.mannheim.moduli)
-    implementation(libs.com.github.g3force.configurable)
-
     implementation(libs.org.apache.logging.log4j.log4j.api)
 
     implementation(libs.commons.configuration)
@@ -25,6 +22,5 @@ dependencies {
     implementation(libs.commons.lang)
 
     api(libs.com.google.protobuf.protobuf.java)
-    implementation(libs.com.sleepycat.je)
-    implementation(libs.com.googlecode.json.simple)
+    implementation(libs.com.github.cliftonlabs.json.simple)
 }

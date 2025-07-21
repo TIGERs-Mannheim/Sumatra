@@ -7,6 +7,9 @@ package edu.tigers.sumatra.vision;
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
 import edu.tigers.sumatra.bot.BotBallState;
+import edu.tigers.sumatra.bot.EDribbleTractionState;
+import edu.tigers.sumatra.bot.EFeature;
+import edu.tigers.sumatra.bot.EFeatureState;
 import edu.tigers.sumatra.bot.RobotInfo;
 import edu.tigers.sumatra.bot.State;
 import edu.tigers.sumatra.drawable.DrawableCircle;
@@ -181,7 +184,12 @@ public class VirtualBallProducer
 			timePoseMap.remove(timePoseMap.firstKey());
 		}
 
-		if (info.isBarrierInterrupted())
+		if (info.getBotFeatures().get(EFeature.BARRIER) == EFeatureState.WORKING && info.isBarrierInterrupted())
+		{
+			lastBarrierInterruptedMap.put(info.getBotId(), info.getTimestamp());
+		} else if (info.getBotFeatures().get(EFeature.DRIBBLER) == EFeatureState.WORKING
+				&& (info.getDribbleTraction() == EDribbleTractionState.LIGHT
+				|| info.getDribbleTraction() == EDribbleTractionState.STRONG))
 		{
 			lastBarrierInterruptedMap.put(info.getBotId(), info.getTimestamp());
 		}

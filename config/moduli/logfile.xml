@@ -69,12 +69,8 @@
     </module>
 
 
-    <module id="edu.tigers.sumatra.botmanager.ABotManager">
+    <module id="edu.tigers.sumatra.botmanager.BotManager">
         <implementation>edu.tigers.sumatra.botmanager.GameLogBotManager</implementation>
-
-        <properties>
-            <basestation-impl>edu.tigers.sumatra.botmanager.basestation.DummyBaseStation</basestation-impl>
-        </properties>
 
         <dependency>edu.tigers.sumatra.botparams.BotParamsManager</dependency>
         <dependency>edu.tigers.sumatra.vision.AVisionFilter</dependency>
@@ -107,4 +103,11 @@
 
 
     <module id="edu.tigers.sumatra.botparams.BotParamsManager"/>
+
+
+    <module id="edu.tigers.sumatra.modelidentification.ModelIdentificationModule">
+        <dependency>edu.tigers.sumatra.wp.AWorldPredictor</dependency>
+        <dependency>edu.tigers.sumatra.botmanager.BotManager</dependency>
+        <dependency>edu.tigers.sumatra.botparams.BotParamsManager</dependency>
+    </module>
 </centralSoftware>

@@ -11,5 +11,4 @@ public enum EBotType
 	UNKNOWN,
 	TIGERS,
 	SUMATRA,
-	SIMULATOR,
 }

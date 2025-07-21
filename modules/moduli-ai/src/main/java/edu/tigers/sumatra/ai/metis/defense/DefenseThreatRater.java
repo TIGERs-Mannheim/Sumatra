@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2024, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.metis.defense;
@@ -11,6 +11,7 @@ import edu.tigers.sumatra.drawable.DrawableAnnotation;
 import edu.tigers.sumatra.drawable.DrawableCircle;
 import edu.tigers.sumatra.drawable.DrawableLine;
 import edu.tigers.sumatra.drawable.DrawablePoint;
+import edu.tigers.sumatra.drawable.DrawableShapeBoundary;
 import edu.tigers.sumatra.drawable.IColorPicker;
 import edu.tigers.sumatra.drawable.IDrawableShape;
 import edu.tigers.sumatra.geometry.Geometry;
@@ -21,7 +22,7 @@ import edu.tigers.sumatra.math.circle.Circle;
 import edu.tigers.sumatra.math.line.Lines;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
-import edu.tigers.sumatra.movingrobot.StoppingRobotFactory;
+import edu.tigers.sumatra.movingrobot.MovingRobotFactory;
 import edu.tigers.sumatra.pathfinder.TrajectoryGenerator;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
 import lombok.Getter;
@@ -66,15 +67,23 @@ public class DefenseThreatRater
 	@Getter
 	@Configurable(comment = "[mm] X position on the field where major danger drop off happens.", defValue = "1000.0")
 	private static double dangerDropOffX = 1000.0;
-	@Configurable(comment = "[deg] Maximum angle where a good redirect is expected, larger angles start to get lucky", defValue = "40.0")
-	private static double maxGoodRedirectAngle = 40.0;
+	@Configurable(comment = "[deg] Maximum angle where a good redirect is expected, larger angles start to get lucky", defValue = "45.0")
+	private static double maxGoodRedirectAngle = 45.0;
+	@Configurable(comment = "[deg] Maximum angle where a any sort of redirect is expected, larger angles are considered impossible", defValue = "75.0")
+	private static double maxBadRedirectAngle = 75.0;
+	@Configurable(comment = "[rad] Redirect precision - If the goal is wider than this, we expect the opponent to hit it", defValue = "0.3")
+	private static double redirectPrecision = 0.3;
+	@Configurable(comment = "[%] How much of the distance a pass is covered is counted to be used in the pass distance score", defValue = "0.1")
+	private static double passDistanceWithinPenAreaUsageFactor = 0.1;
+
 	@Configurable(comment = "[mm] Optimal pass distance, longer/shorter passes travel too little distance or for too long", defValue = "2000.0")
 	private static double optimalPassDistance = 2000.0;
 	@Configurable(comment = "[s] Time we look ahead in the future to predict an opponent's potential", defValue = "1.2")
 	private static double timeToPredictFuture = 1.2;
 	@Configurable(comment = "Num Samples per bot to predict future potential", defValue = "25")
 	private static int numSamplesToPredictFuture = 25;
-
+	@Configurable(comment = "[mm] Distance between the PenAreaBorder and where the PenAreaBorderScore takes effect", defValue = "400")
+	private static double penAreaDropoff = 400.0;
 
 	@Configurable(comment = "Draw debug shapes", defValue = "false")
 	private static boolean drawDebugShapes = false;
@@ -94,7 +103,7 @@ public class DefenseThreatRater
 	{
 		shapes = new ArrayList<>();
 		var rating = getDetailedThreatRatingOfRobot(ballPos, threat);
-		shapes.add(rating.draw(threat.getPos()));
+		shapes.add(rating.draw(threat.getPos().addNew(Vector2.fromX(Geometry.getBotRadius()))));
 		return rating.score;
 	}
 
@@ -116,16 +125,22 @@ public class DefenseThreatRater
 			{
 				var target = Geometry.getGoalOur().getCenter();
 				var threat = target.addNew(Vector2.fromAngleLength(angle, 500));
-				var score = calcCentralizedScore(threat, target);
+				var score = calcCentralizedScore(threat);
 				var color = colorPicker.getColor(score);
 				shapes.add(new DrawableLine(threat, target, color));
 				shapes.add(new DrawableAnnotation(threat, String.format("%.2f", score)));
 			}
 		}
 
-		shapes.add(new DrawableLine(Vector2.fromXY(dangerDropOffX, -Geometry.getFieldWidth() / 2),
-				Vector2.fromXY(dangerDropOffX, Geometry.getFieldWidth() / 2)));
+		shapes.add(new DrawableShapeBoundary(Geometry.getPenaltyAreaOur().withMargin(3 * Geometry.getBotRadius()), Color.PINK));
+		shapes.add(new DrawableShapeBoundary(Geometry.getPenaltyAreaOur().withMargin(3 * Geometry.getBotRadius() + penAreaDropoff), Color.PINK));
+
+		shapes.add(new DrawableLine(
+				Vector2.fromXY(dangerDropOffX, -Geometry.getFieldWidth() / 2),
+				Vector2.fromXY(dangerDropOffX, Geometry.getFieldWidth() / 2)
+		));
 		Stream.of(
+						0.0,
 						dangerDropOffPercentageRedirectAngle,
 						dangerDropOffPercentageTravelAngle,
 						dangerDropOffPercentageCentralized
@@ -169,23 +184,22 @@ public class DefenseThreatRater
 
 	private Stream<Rater> raterWithoutTimeDependence(IVector2 ballPos, IVector2 threatPos)
 	{
-		var target = Geometry.getGoalOur().bisection(threatPos);
 		return Stream.of(
 				new Rater(
 						"TRAVEL_ANGLE",
-						() -> calcTravelAngleScore(ballPos, threatPos, target),
+						() -> calcTravelAngleScore(ballPos, threatPos),
 						weightTravelAngle,
 						() -> calcDistanceToGoalFactor(threatPos, dangerDropOffPercentageTravelAngle)
 				),
 				new Rater(
 						"REDIRECT_ANGLE",
-						() -> calcRedirectAngleScore(ballPos, threatPos, target),
+						() -> calcRedirectAngleScore(ballPos, threatPos),
 						weightRedirectAngle,
 						() -> calcDistanceToGoalFactor(threatPos, dangerDropOffPercentageRedirectAngle)
 				),
 				new Rater(
 						"CENTRALIZED",
-						() -> calcCentralizedScore(threatPos, target),
+						() -> calcCentralizedScore(threatPos),
 						weightCentralized,
 						() -> calcDistanceToGoalFactor(threatPos, dangerDropOffPercentageCentralized)
 				),
@@ -245,50 +259,56 @@ public class DefenseThreatRater
 		}
 
 		var distThreatToGoal = threatPos.distanceTo(Geometry.getGoalOur().getCenter());
-
-		if (distThreatToGoal < maxDangerDistance)
-		{
-			return 1;
-		}
-
-		var minDangerLine = Lines.lineFromDirection(Vector2.fromX(dangerDropOffX), Vector2.fromY(1));
-		var goalToThreat = Lines.halfLineFromPoints(Geometry.getGoalOur().getCenter(), threatPos);
-		var intersect = minDangerLine.intersect(goalToThreat).asOptional();
-
-		if (intersect.isEmpty())
-		{
-			return 0;
-		}
-		var distToMin = intersect.get().distanceTo(Geometry.getGoalOur().getCenter());
-
-		return 0.1 + 0.9 * SumatraMath.relative(distThreatToGoal, distToMin, maxDangerDistance);
+		var minDangerDistance = dangerDropOffX - Geometry.getGoalOur().getCenter().x();
+		return 0.1 + 0.9 * SumatraMath.relative(distThreatToGoal, minDangerDistance, maxDangerDistance);
 	}
 
 
-	public double calcRedirectAngleScore(IVector2 ballPos, IVector2 threatPos, IVector2 target)
+	public double scoreRedirectTriangle(IVector2 ballSource, IVector2 redirectPosition, IVector2 target)
 	{
-		var opponentBall = Vector2.fromPoints(threatPos, ballPos);
-		var opponentGoal = Vector2.fromPoints(threatPos, target);
-		// Angle to redirect directly at the goal
-		double volleyAngle = opponentBall.angleToAbs(opponentGoal).orElse(Math.PI);
-		var maxAngle = AngleMath.deg2rad(maxGoodRedirectAngle);
-		return SumatraMath.relative(volleyAngle, 2 * maxAngle, maxAngle);
+		var incomingAngle = Vector2.fromPoints(redirectPosition, ballSource).getAngle();
+		var outgoingAngle = Vector2.fromPoints(redirectPosition, target).getAngle();
+		return scoreVolleyAngle(AngleMath.diffAbs(incomingAngle, outgoingAngle));
 	}
 
 
-	private double calcTravelAngleScore(IVector2 ballPos, IVector2 threatPos, IVector2 target)
+	private double scoreVolleyAngle(double volleyAngle)
 	{
-		var opponentGoal = Vector2.fromPoints(threatPos, target);
-		var ballGoal = Vector2.fromPoints(ballPos, target);
+		return SumatraMath.relative(
+				volleyAngle,
+				AngleMath.deg2rad(maxBadRedirectAngle),
+				AngleMath.deg2rad(maxGoodRedirectAngle)
+		);
+	}
+
+
+	private double calcRedirectAngleScore(IVector2 ballPos, IVector2 threatPos)
+	{
+		var angleOpponent = Vector2.fromPoints(threatPos, ballPos).getAngle();
+		var angleLeft = Vector2.fromPoints(threatPos, Geometry.getGoalOur().getLeftPost()).getAngle();
+		var angleRight = Vector2.fromPoints(threatPos, Geometry.getGoalOur().getRightPost()).getAngle();
+		var angleGoal = AngleMath.capAngle(angleOpponent, angleLeft, angleRight);
+
+		var goalAngleRange = AngleMath.diffAbs(angleLeft, angleRight);
+		var volleyAngle = AngleMath.diffAbs(angleOpponent, angleGoal) + redirectPrecision / 2;
+
+		return SumatraMath.relative(goalAngleRange, 0, redirectPrecision) * scoreVolleyAngle(volleyAngle);
+	}
+
+
+	private double calcTravelAngleScore(IVector2 ballPos, IVector2 threatPos)
+	{
+		var opponentGoal = Vector2.fromPoints(threatPos, Geometry.getGoalOur().bisection(threatPos));
+		var ballGoal = Vector2.fromPoints(ballPos, Geometry.getGoalOur().bisection(ballPos));
 		// How far has the keeper to travel to defend the new position
 		return ballGoal.angleToAbs(opponentGoal).orElse(0.0) / Math.PI;
 	}
 
 
-	private double calcCentralizedScore(IVector2 threatPos, IVector2 target)
+	private double calcCentralizedScore(IVector2 threatPos)
 	{
 		// Positions in the center are more dangerous
-		var opponentGoal = Vector2.fromPoints(threatPos, target);
+		var opponentGoal = Vector2.fromPoints(threatPos, Geometry.getGoalOur().bisection(threatPos));
 		var deadZone = SumatraMath.asin((2 * Geometry.getBotRadius()) / Geometry.getGoalOur().getWidth());
 		var angle = Math.abs(opponentGoal.getAngle());
 		var factor = SumatraMath.cap(angle / (AngleMath.PI_HALF + deadZone) - 1, 0, 1);
@@ -298,20 +318,22 @@ public class DefenseThreatRater
 
 	private double calcAtBoarderScore(IVector2 threatPos)
 	{
-		var distance = Geometry.getPenaltyAreaOur().withMargin(2 * Geometry.getBotRadius()).distanceTo(threatPos);
+		var distance = Geometry.getPenaltyAreaOur().withMargin(3 * Geometry.getBotRadius()).distanceTo(threatPos);
 		if (distance <= 0)
 		{
 			return 1;
 		} else
 		{
-			return SumatraMath.cap(1 - (distance / (3 * Geometry.getBotRadius())), 0, 1);
+			return SumatraMath.cap(1 - (distance / penAreaDropoff), 0, 1);
 		}
 	}
 
 
 	public double calcPassDistanceScore(IVector2 ballThreatPos, IVector2 threatPos)
 	{
-		var distance = ballThreatPos.distanceTo(threatPos);
+		var passLine = Lines.segmentFromPoints(ballThreatPos, threatPos);
+		var distance = passLine.getLength();
+
 		final double score;
 		if (distance < optimalPassDistance)
 		{
@@ -325,13 +347,28 @@ public class DefenseThreatRater
 			}
 		} else
 		{
+			var penAreaIntersections = Geometry.getPenaltyAreaOur().intersectPerimeterPath(passLine);
+
+			double distanceWithoutPenArea;
+			if (penAreaIntersections.size() == 2)
+			{
+				var distanceWithinPenArea = penAreaIntersections.getFirst().distanceTo(penAreaIntersections.getLast());
+				distanceWithoutPenArea = SumatraMath.max(
+						optimalPassDistance,
+						distance - (1 - passDistanceWithinPenAreaUsageFactor) * distanceWithinPenArea
+				);
+			} else
+			{
+				distanceWithoutPenArea = distance;
+			}
+
 			var distanceUpper = 2 * optimalPassDistance;
-			if (distance > distanceUpper)
+			if (distanceWithoutPenArea > distanceUpper)
 			{
 				score = 0;
 			} else
 			{
-				score = 1 - ((distance - optimalPassDistance) / (distanceUpper - optimalPassDistance));
+				score = 1 - ((distanceWithoutPenArea - optimalPassDistance) / (distanceUpper - optimalPassDistance));
 
 			}
 		}
@@ -341,7 +378,7 @@ public class DefenseThreatRater
 
 	private double calcFuturePotentialScore(IVector2 ballPos, ITrackedBot threat, double opponentLookahead)
 	{
-		var movingRobot = StoppingRobotFactory.create(
+		var movingRobot = MovingRobotFactory.stoppingRobot(
 				threat.getPos(),
 				threat.getVel(),
 				threat.getMoveConstraints().getVelMax(),
@@ -408,11 +445,12 @@ public class DefenseThreatRater
 
 			var text = sources.stream()
 					.map(rating -> String.format(
-							"%.2f | %.2f | %.2f | - %s%n",
-							rating.score * rating.weight / weight,
-							rating.score,
-							rating.distanceFactor,
-							rating.rater.name())
+									"%.2f | %.2f | %.2f | - %s%n",
+									rating.score * rating.weight / weight,
+									rating.score,
+									rating.distanceFactor,
+									rating.rater.name()
+							)
 					)
 					.collect(Collectors.joining());
 

@@ -19,11 +19,10 @@ public class TimeSeriesStatisticsSaver
 	{
 		if (identifierSuffix == null)
 		{
-			final String stage = aiFrame.getRefereeMsg().getStage().name();
 			final String teamName = aiFrame.getRefereeMsg().getTeamInfo(aiFrame.getTeamColor()).getName()
 					.replace(" ", "_");
 			final String teamColor = aiFrame.getTeamColor().name().toLowerCase();
-			identifierSuffix = stage + "_" + teamName + "_" + teamColor;
+			identifierSuffix = teamName + "_" + teamColor;
 		}
 	}
 

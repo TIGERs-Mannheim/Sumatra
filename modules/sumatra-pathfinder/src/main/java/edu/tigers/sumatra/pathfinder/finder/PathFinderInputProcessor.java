@@ -6,9 +6,16 @@ package edu.tigers.sumatra.pathfinder.finder;
 
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
+import edu.tigers.sumatra.drawable.DrawablePoint;
+import edu.tigers.sumatra.drawable.IDrawableShape;
+import edu.tigers.sumatra.drawable.ShapeMap;
 import edu.tigers.sumatra.math.AcceptablePosFinder;
+import edu.tigers.sumatra.math.AcceptablePosFinder.AcceptablePos;
 import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.pathfinder.EPathFinderShapesLayer;
 import edu.tigers.sumatra.pathfinder.obstacles.IObstacle;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.awt.Color;
 import java.util.ArrayList;
@@ -36,6 +43,10 @@ public class PathFinderInputProcessor
 			acceptablePosFinderDistanceStepSize,
 			acceptablePosFinderMaxIterations
 	);
+
+	@Setter
+	@Getter
+	private ShapeMap shapeMap;
 
 
 	public PathFinderInput processInput(PathFinderInput input)
@@ -104,6 +115,12 @@ public class PathFinderInputProcessor
 				.filter(noCollisionChecker);
 		if (adaptedDest.isPresent())
 		{
+			if (shapeMap != null)
+			{
+				shapeMap.get(EPathFinderShapesLayer.ADAPTED_DEST_FOR_BOT).addAll(collision.get().getShapes().stream()
+						.map(s -> s.setColor(Color.magenta))
+						.toList());
+			}
 			if (adaptedDest.get().distanceToSqr(originalDestination) < robotPos.distanceToSqr(originalDestination))
 			{
 				// The original Pos is anyway in the same direction as the adaptedPos, the adaption is not strictly necessary
@@ -112,7 +129,12 @@ public class PathFinderInputProcessor
 			return adaptedDest;
 		}
 
-		return acceptablePosFinder.findAcceptablePosWithReference(robotPos, noCollisionChecker, robotPos);
+		var acceptablePos = acceptablePosFinder.findAcceptablePos(robotPos, noCollisionChecker, robotPos);
+		if (shapeMap != null)
+		{
+			drawAcceptablePos(acceptablePos, shapeMap.get(EPathFinderShapesLayer.ADAPTED_DEST_FOR_BOT));
+		}
+		return acceptablePos.pos();
 	}
 
 
@@ -137,7 +159,24 @@ public class PathFinderInputProcessor
 				.filter(noCollisionChecker);
 
 		return adaptedDest.orElseGet(
-				() -> acceptablePosFinder.findAcceptablePosWithReference(dest, noCollisionChecker, robotPos)
-						.orElse(dest));
+				() -> {
+					var acceptablePos = acceptablePosFinder.findAcceptablePos(dest, noCollisionChecker, robotPos);
+					if (shapeMap != null)
+					{
+						drawAcceptablePos(acceptablePos, shapeMap.get(EPathFinderShapesLayer.ADAPTED_DEST));
+					}
+					return acceptablePos.pos().orElse(dest);
+				});
+	}
+
+
+	private void drawAcceptablePos(AcceptablePos acceptablePos, List<IDrawableShape> shapes)
+	{
+		acceptablePos.triedPositions().forEach(
+				p -> shapes.add(new DrawablePoint(p, Color.RED))
+		);
+		acceptablePos.possibleSolutions().forEach(
+				p -> shapes.add(new DrawablePoint(p, Color.GREEN))
+		);
 	}
 }

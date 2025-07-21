@@ -4,28 +4,18 @@
 
 package edu.tigers.sumatra.referee.gameevent;
 
-import com.sleepycat.persist.model.Persistent;
 import edu.tigers.sumatra.ids.ETeamColor;
 import edu.tigers.sumatra.referee.proto.SslGcGameEvent;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 
 
-@Persistent
 @Value
 @EqualsAndHashCode(callSuper = true)
 public class UnsportingBehaviorMinor extends AGameEvent
 {
 	ETeamColor team;
 	String reason;
-
-
-	@SuppressWarnings("unsued") // used by berkeley
-	protected UnsportingBehaviorMinor()
-	{
-		team = null;
-		reason = null;
-	}
 
 
 	/**

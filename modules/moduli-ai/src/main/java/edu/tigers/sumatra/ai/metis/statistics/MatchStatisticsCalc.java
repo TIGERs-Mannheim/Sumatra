@@ -11,6 +11,7 @@ import edu.tigers.sumatra.ai.metis.botdistance.BotDistance;
 import edu.tigers.sumatra.ai.metis.defense.data.DefenseBotThreatDefData;
 import edu.tigers.sumatra.ai.metis.defense.data.DefenseThreatAssignment;
 import edu.tigers.sumatra.ai.metis.goal.EPossibleGoal;
+import edu.tigers.sumatra.ai.metis.pass.PassStats;
 import edu.tigers.sumatra.ai.metis.statistics.stats.AStatsCalc;
 import edu.tigers.sumatra.ai.metis.statistics.stats.BallDefenderInTimeStatsCalc;
 import edu.tigers.sumatra.ai.metis.statistics.stats.BallPossessionStatsCalc;
@@ -20,6 +21,7 @@ import edu.tigers.sumatra.ai.metis.statistics.stats.DirectShotsStatsCalc;
 import edu.tigers.sumatra.ai.metis.statistics.stats.DuelStatsCalc;
 import edu.tigers.sumatra.ai.metis.statistics.stats.GoalStatsCalc;
 import edu.tigers.sumatra.ai.metis.statistics.stats.MatchStats;
+import edu.tigers.sumatra.ai.metis.statistics.stats.PassStatsStatsCalc;
 import edu.tigers.sumatra.ai.metis.statistics.stats.RoleTimeStatsCalc;
 import edu.tigers.sumatra.ai.pandora.plays.EPlay;
 import edu.tigers.sumatra.ids.BotID;
@@ -45,10 +47,11 @@ public class MatchStatisticsCalc extends ACalculator
 	@Getter
 	private MatchStats matchStatistics;
 
-	@Configurable(defValue = "false", comment = "Enable statistics calculation")
-	private static boolean enabled = false;
+	@Configurable(defValue = "true", comment = "Enable statistics calculation")
+	private static boolean enabled = true;
 
 
+	@SuppressWarnings("squid:S107")
 	public MatchStatisticsCalc(
 			Supplier<Map<EPlay, Set<BotID>>> desiredBots,
 			Supplier<BallPossession> ballPossession,
@@ -60,7 +63,8 @@ public class MatchStatisticsCalc extends ACalculator
 			Supplier<List<DefenseBotThreatDefData>> defenseBotThreats,
 			Supplier<Map<Integer, Double>> defenseThreatRatingForNumDefender,
 			Supplier<List<DefenseThreatAssignment>> defenseThreatAssignments,
-			Supplier<Set<BotID>> currentlyTouchingBots)
+			Supplier<Set<BotID>> currentlyTouchingBots,
+			Supplier<PassStats> passStats)
 	{
 		register(new BallPossessionStatsCalc(
 				ballPossession
@@ -94,6 +98,10 @@ public class MatchStatisticsCalc extends ACalculator
 				defenseBotThreats,
 				defenseThreatRatingForNumDefender,
 				defenseThreatAssignments
+		));
+
+		register(new PassStatsStatsCalc(
+				passStats
 		));
 	}
 
@@ -144,5 +152,10 @@ public class MatchStatisticsCalc extends ACalculator
 			statisticsToReceiveDataFrom.saveStatsToMatchStatistics(matchStats);
 		}
 		return matchStats;
+	}
+
+	public static void setEnabled(final boolean enabled)
+	{
+		MatchStatisticsCalc.enabled = enabled;
 	}
 }

@@ -3,23 +3,21 @@
  */
 package edu.tigers.sumatra.cam.data;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-
-import com.sleepycat.persist.model.Persistent;
-
 import edu.tigers.sumatra.data.collector.IExportable;
 import edu.tigers.sumatra.math.vector.IVector;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2f;
 import lombok.Getter;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
 
 /**
  * Base class for SSL-Vision camera objects.
  */
-@Persistent
+@Getter
 public abstract class ACamObject implements IExportable
 {
 	/**
@@ -32,63 +30,41 @@ public abstract class ACamObject implements IExportable
 	 */
 	private final IVector2 pixel;
 
-	private final long tCapture;
-	@Getter
-	private final Long tCaptureCamera;
-	private final long tAssembly;
-	@Getter
-	private final long tSent;
-	private final int camId;
-	private final long frameId;
+	private final long timestamp;
+	private final int cameraId;
+	private final long globalFrameId;
 
 
 	protected ACamObject()
 	{
 		confidence = 0;
 		pixel = Vector2f.ZERO_VECTOR;
-		tCapture = 0;
-		tCaptureCamera = null;
-		tAssembly = 0;
-		tSent = 0;
-		camId = 0;
-		frameId = 0;
+		timestamp = 0;
+		cameraId = 0;
+		globalFrameId = 0;
 	}
 
 
-	/**
-	 * @param confidence
-	 * @param pixel
-	 * @param tCapture
-	 * @param camId
-	 * @param frameId
-	 */
-	public ACamObject(final double confidence, final IVector2 pixel, final long tCapture, final Long tCaptureCamera,
-			final long tSent, final int camId, final long frameId)
+	protected ACamObject(
+			final double confidence, final IVector2 pixel, final long timestamp, final int cameraId,
+			final long globalFrameId
+	)
 	{
 		this.confidence = confidence;
 		this.pixel = pixel.copy();
-		this.tCapture = tCapture;
-		this.tCaptureCamera = tCaptureCamera;
-		this.tAssembly = System.nanoTime();
-		this.tSent = tSent;
-		this.camId = camId;
-		this.frameId = frameId;
+		this.timestamp = timestamp;
+		this.cameraId = cameraId;
+		this.globalFrameId = globalFrameId;
 	}
 
 
-	/**
-	 * @param o
-	 */
-	public ACamObject(final ACamObject o)
+	protected ACamObject(final ACamObject o)
 	{
 		confidence = o.confidence;
 		pixel = o.pixel.copy();
-		tCapture = o.tCapture;
-		tCaptureCamera = o.tCaptureCamera;
-		tAssembly = o.tAssembly;
-		tSent = o.tSent;
-		camId = o.camId;
-		frameId = o.frameId;
+		timestamp = o.timestamp;
+		cameraId = o.cameraId;
+		globalFrameId = o.globalFrameId;
 	}
 
 
@@ -96,19 +72,13 @@ public abstract class ACamObject implements IExportable
 	public List<Number> getNumberList()
 	{
 		List<Number> numbers = new ArrayList<>();
-		numbers.add(getFrameId());
+		numbers.add(getGlobalFrameId());
 		numbers.add(getCameraId());
-		numbers.add(gettCapture());
-		numbers.add(gettAssembly());
+		numbers.add(getTimestamp());
 		numbers.add(getPixel().x());
 		numbers.add(getPixel().y());
 		numbers.add(getConfidence());
 		numbers.addAll(getPos().getNumberList());
-		numbers.add(tSent);
-		if (tCaptureCamera != null)
-		{
-			numbers.add(tCaptureCamera);
-		}
 		return numbers;
 	}
 
@@ -116,9 +86,10 @@ public abstract class ACamObject implements IExportable
 	@Override
 	public List<String> getHeaders()
 	{
-		List<String> headers = new ArrayList<>();
-		headers.addAll(Arrays.asList("frameId", "camId", "tCapture", "tAssembly",
-				"pixel_x", "pixel_y", "confidence"));
+		List<String> headers = new ArrayList<>(Arrays.asList(
+				"frameId", "camId", "timestamp",
+				"pixel_x", "pixel_y", "confidence"
+		));
 		if (getPos().getNumDimensions() >= 1)
 		{
 			headers.add("pos_x");
@@ -131,11 +102,6 @@ public abstract class ACamObject implements IExportable
 		{
 			headers.add("pos_z");
 		}
-		headers.add("tSent");
-		if (tCaptureCamera != null)
-		{
-			headers.add("tCaptureCamera");
-		}
 		return headers;
 	}
 
@@ -144,76 +110,4 @@ public abstract class ACamObject implements IExportable
 	 * @return
 	 */
 	public abstract IVector getPos();
-
-
-	/**
-	 * @return the pixel
-	 */
-	public IVector2 getPixel()
-	{
-		return pixel;
-	}
-
-
-	/**
-	 * @return the confidence
-	 */
-	public double getConfidence()
-	{
-		return confidence;
-	}
-
-
-	/**
-	 * @return the timestamp
-	 */
-	public final long getTimestamp()
-	{
-		return tCapture;
-	}
-
-
-	/**
-	 * @return the camId
-	 */
-	public final int getCameraId()
-	{
-		return camId;
-	}
-
-
-	/**
-	 * @return the frameId
-	 */
-	public final long getFrameId()
-	{
-		return frameId;
-	}
-
-
-	/**
-	 * @return the tCapture
-	 */
-	public final long gettCapture()
-	{
-		return tCapture;
-	}
-
-
-	/**
-	 * @return the tSent
-	 */
-	public final long gettAssembly()
-	{
-		return tAssembly;
-	}
-
-
-	public long getCameraCaptureTimestamp()
-	{
-		if (tCaptureCamera == null)
-			return tCapture;
-
-		return tCaptureCamera;
-	}
 }

@@ -69,9 +69,10 @@ public class BallTracker
 	public BallTracker(final CamBall ball)
 	{
 		filter = new TrackingFilterPosVel2D(ball.getPos().getXYVector(), initialCovarianceXY, modelError, measError,
-				ball.gettCapture());
+				ball.getTimestamp()
+		);
 
-		lastInFieldTimestamp = ball.gettCapture();
+		lastInFieldTimestamp = ball.getTimestamp();
 		lastCamBall = ball;
 	}
 
@@ -92,9 +93,10 @@ public class BallTracker
 		RealVector initState = camBall.getPos().getXYVector().toRealVector()
 				.append(filtVel.toRealVector());
 		filter = new TrackingFilterPosVel2D(initState, initialCovarianceXY, modelError, measError,
-				camBall.gettCapture());
+				camBall.getTimestamp()
+		);
 
-		lastInFieldTimestamp = camBall.gettCapture();
+		lastInFieldTimestamp = camBall.getTimestamp();
 		lastCamBall = camBall;
 	}
 
@@ -134,10 +136,10 @@ public class BallTracker
 	{
 		IVector2 ballPos2D = ball.getPos().getXYVector();
 
-		long tCapture = ball.gettCapture();
+		long tCapture = ball.getTimestamp();
 
 		// calculate delta time since last update
-		double dtInSec = Math.abs(tCapture - lastCamBall.gettCapture()) * 1e-9;
+		double dtInSec = Math.abs(tCapture - lastCamBall.getTimestamp()) * 1e-9;
 
 		// calculate distance of this ball to our internal prediction
 		double distanceToPrediction = filter.getPositionEstimate().distanceTo(ballPos2D);
@@ -227,7 +229,7 @@ public class BallTracker
 	 */
 	public long getLastUpdateTimestamp()
 	{
-		return lastCamBall.gettCapture();
+		return lastCamBall.getTimestamp();
 	}
 
 

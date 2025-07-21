@@ -4,12 +4,11 @@
 
 package edu.tigers.sumatra.math.angle;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-
-import org.junit.Test;
-
 import edu.tigers.sumatra.math.vector.Vector2;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 
 /**
@@ -22,14 +21,14 @@ public class AngleTest
 	
 	
 	@Test
-	public void zero()
+	void zero()
 	{
 		assertEquals(0, Angle.zero().asRad(), ACCURACY);
 	}
 	
 	
 	@Test
-	public void ofRad()
+	void ofRad()
 	{
 		assertEquals(0, Angle.ofRad(0).asRad(), ACCURACY);
 		assertEquals(0, Angle.ofRad(Math.PI * 2).asRad(), ACCURACY);
@@ -40,7 +39,7 @@ public class AngleTest
 	
 	
 	@Test
-	public void ofDeg()
+	void ofDeg()
 	{
 		assertEquals(0, Angle.ofDeg(0).asRad(), ACCURACY);
 		assertEquals(0, Angle.ofDeg(360).asRad(), ACCURACY);
@@ -50,7 +49,7 @@ public class AngleTest
 	
 	
 	@Test
-	public void ofRotation()
+	void ofRotation()
 	{
 		assertEquals(0, Angle.ofRotation(5).asRad(), ACCURACY);
 		assertEquals(-Math.PI, Angle.ofRotation(0.5).asRad(), ACCURACY);
@@ -59,7 +58,7 @@ public class AngleTest
 	
 	
 	@Test
-	public void ofVec()
+	void ofVec()
 	{
 		assertEquals(0, Angle.ofVec(Vector2.fromAngle(0)).asRad(), ACCURACY);
 		assertEquals(-1.982297, Angle.ofVec(Vector2.fromAngle(42)).asRad(), ACCURACY);
@@ -68,7 +67,7 @@ public class AngleTest
 	
 	
 	@Test
-	public void add()
+	void add()
 	{
 		assertEquals(0, Angle.zero().add(Math.PI / 2).add(Angle.ofDeg(270)).asRad(), ACCURACY);
 		assertEquals(3, Angle.zero().add(Angle.ofDeg(1)).add(Angle.ofDeg(2)).asDeg(), ACCURACY);
@@ -76,7 +75,7 @@ public class AngleTest
 	
 	
 	@Test
-	public void subtract()
+	void subtract()
 	{
 		assertEquals(0, Angle.zero().subtract(Math.PI / 2).subtract(Angle.ofDeg(270)).asRad(), ACCURACY);
 		assertEquals(-3, Angle.zero().subtract(Angle.ofDeg(1)).subtract(Angle.ofDeg(2)).asDeg(), ACCURACY);
@@ -84,7 +83,7 @@ public class AngleTest
 	
 	
 	@Test
-	public void multiply()
+	void multiply()
 	{
 		assertEquals(0, Angle.zero().multiply(Math.PI / 2).multiply(42).asRad(), ACCURACY);
 		assertEquals(42, Angle.ofDeg(21).multiply(1).multiply(2).asDeg(), ACCURACY);
@@ -92,7 +91,7 @@ public class AngleTest
 	
 	
 	@Test
-	public void equals()
+	void equals()
 	{
 		assertEquals(Angle.ofDeg(90), Angle.ofRad(Math.PI * -1.5));
 		assertEquals(Angle.ofDeg(0), Angle.ofRad(0));

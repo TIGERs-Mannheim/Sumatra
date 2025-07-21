@@ -8,7 +8,7 @@ import edu.tigers.sumatra.drawable.IShapeLayerIdentifier;
 import edu.tigers.sumatra.drawable.ShapeMap;
 import edu.tigers.sumatra.export.CSVExporter;
 import edu.tigers.sumatra.persistence.util.ObjectSizeAnalyzer;
-import edu.tigers.sumatra.wp.BerkeleyShapeMapFrame;
+import edu.tigers.sumatra.wp.PersistenceShapeMapFrame;
 import lombok.extern.log4j.Log4j2;
 
 import java.io.IOException;
@@ -25,7 +25,7 @@ import java.util.Set;
 
 
 @Log4j2
-public class ShapeMapSizeAnalyzer implements ISizeAnalyzer<BerkeleyShapeMapFrame>
+public class ShapeMapSizeAnalyzer implements IPersistenceDbAnalyzer<PersistenceShapeMapFrame>
 {
 	private final ObjectSizeAnalyzer objectSizeAnalyzer = new ObjectSizeAnalyzer();
 	private final Set<String> allKeys = new HashSet<>();
@@ -44,7 +44,7 @@ public class ShapeMapSizeAnalyzer implements ISizeAnalyzer<BerkeleyShapeMapFrame
 
 
 	@Override
-	public void process(BerkeleyShapeMapFrame frame)
+	public void process(PersistenceShapeMapFrame frame)
 	{
 		for (ShapeMap shapeMap : frame.getShapeMaps().values())
 		{

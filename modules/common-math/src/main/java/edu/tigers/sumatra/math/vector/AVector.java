@@ -4,13 +4,12 @@
 
 package edu.tigers.sumatra.math.vector;
 
-import com.sleepycat.persist.model.Persistent;
+import com.github.cliftonlabs.json_simple.JsonArray;
+import com.github.cliftonlabs.json_simple.JsonObject;
 import edu.tigers.sumatra.math.SumatraMath;
 import org.apache.commons.lang.builder.HashCodeBuilder;
 import org.apache.commons.math3.linear.ArrayRealVector;
 import org.apache.commons.math3.linear.RealVector;
-import org.json.simple.JSONArray;
-import org.json.simple.JSONObject;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -24,7 +23,6 @@ import java.util.stream.Collectors;
 /**
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  */
-@Persistent
 public abstract class AVector implements IVector
 {
 	@Override
@@ -248,22 +246,22 @@ public abstract class AVector implements IVector
 
 
 	@Override
-	public JSONObject toJSON()
+	public JsonObject toJSON()
 	{
 		Map<String, Object> jsonMapping = new LinkedHashMap<>();
 		for (int d = 0; d < getNumDimensions(); d++)
 		{
 			jsonMapping.put("dim" + d, get(d));
 		}
-		return new JSONObject(jsonMapping);
+		return new JsonObject(jsonMapping);
 	}
 
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public JSONArray toJSONArray()
+	public JsonArray toJsonArray()
 	{
-		JSONArray arr = new JSONArray();
+		JsonArray arr = new JsonArray();
 		for (int d = 0; d < getNumDimensions(); d++)
 		{
 			arr.add(get(d));

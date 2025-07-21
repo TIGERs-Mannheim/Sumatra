@@ -15,10 +15,6 @@ import lombok.RequiredArgsConstructor;
 public enum EBotParamLabel
 {
 	/**
-	 * 2016 version TIGER
-	 */
-	TIGER_V2016("Parameters for TIGER bots (Revision 2016)"),
-	/**
 	 * 2020 version TIGER
 	 */
 	TIGER_V2020("Parameters TIGER bots (Revision 2020)"),

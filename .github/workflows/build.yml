@@ -1,4 +1,4 @@
-name: Build and push to docker
+name: Build
 
 on:
   push:
@@ -18,8 +18,3 @@ jobs:
         with:
           java-version: 21
           distribution: temurin
-      - name: Publish to Docker Hub
-        env:
-          CI_REGISTRY_USER: ${{ secrets.DOCKER_HUB_USERNAME }}
-          CI_REGISTRY_PASSWORD: ${{ secrets.DOCKER_HUB_PASSWORD }}
-        run: ./gradlew jib --image=registry.hub.docker.com/tigersmannheim/sumatra

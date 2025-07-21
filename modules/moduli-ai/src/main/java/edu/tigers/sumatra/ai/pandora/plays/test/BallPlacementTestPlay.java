@@ -55,14 +55,6 @@ public class BallPlacementTestPlay extends ABallPlacementPlay
 
 
 	@Override
-	protected boolean useAssistant()
-	{
-		return getRoles().size() > 1
-				&& getBall().getTrajectory().distanceTo(getBallTargetPos()) > 1000;
-	}
-
-
-	@Override
 	protected IVector2 getBallTargetPos()
 	{
 		return placementPositions.get(placementPositionIdx);

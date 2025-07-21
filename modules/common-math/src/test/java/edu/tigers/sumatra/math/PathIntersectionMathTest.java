@@ -17,7 +17,7 @@ import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.math.vector.Vector2f;
 import org.assertj.core.api.Assertions;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Random;
 
@@ -25,11 +25,11 @@ import static edu.tigers.sumatra.math.vector.Vector2.fromXY;
 import static org.assertj.core.api.Assertions.assertThat;
 
 
-public class PathIntersectionMathTest
+class PathIntersectionMathTest
 {
 
 	@Test
-	public void intersectLineAndLine()
+	void intersectLineAndLine()
 	{
 		var directionVector = Vector2f.X_AXIS;
 		var line = Lines.lineFromDirection(Vector2f.ZERO_VECTOR, directionVector);
@@ -58,7 +58,7 @@ public class PathIntersectionMathTest
 
 
 	@Test
-	public void intersectLineAndLineInvalid()
+	void intersectLineAndLineInvalid()
 	{
 		var validLine = Lines.lineFromDirection(Vector2f.ZERO_VECTOR, Vector2f.X_AXIS);
 
@@ -72,7 +72,7 @@ public class PathIntersectionMathTest
 
 
 	@Test
-	public void intersectLineAndLineParallel()
+	void intersectLineAndLineParallel()
 	{
 		// Horizontal line
 		var reference = Lines.lineFromDirection(Vector2f.ZERO_VECTOR, Vector2f.X_AXIS);
@@ -104,7 +104,7 @@ public class PathIntersectionMathTest
 
 
 	@Test
-	public void intersectLineAndHalfLine()
+	void intersectLineAndHalfLine()
 	{
 		var directionVector = Vector2f.X_AXIS;
 		var halfLine = Lines.halfLineFromDirection(Vector2f.ZERO_VECTOR, directionVector);
@@ -132,7 +132,7 @@ public class PathIntersectionMathTest
 
 
 	@Test
-	public void intersectLineAndHalfLineInvalid()
+	void intersectLineAndHalfLineInvalid()
 	{
 		var properHalfLine = Lines.halfLineFromDirection(Vector2f.ZERO_VECTOR, Vector2f.X_AXIS);
 		var invalidHalfLine = Lines.halfLineFromDirection(Vector2f.ZERO_VECTOR, Vector2f.ZERO_VECTOR);
@@ -151,7 +151,7 @@ public class PathIntersectionMathTest
 
 
 	@Test
-	public void intersectLineAndHalfLineParallel()
+	void intersectLineAndHalfLineParallel()
 	{
 		// Horizontal line
 		var reference = Lines.lineFromDirection(Vector2f.ZERO_VECTOR, Vector2f.X_AXIS);
@@ -188,7 +188,7 @@ public class PathIntersectionMathTest
 
 
 	@Test
-	public void intersectLineAndLineSegment()
+	void intersectLineAndLineSegment()
 	{
 		ILine line = Lines.lineFromPoints(Vector2f.ZERO_VECTOR, Vector2f.X_AXIS);
 
@@ -231,7 +231,7 @@ public class PathIntersectionMathTest
 
 
 	@Test
-	public void intersectLineAndLineSegmentInvalid()
+	void intersectLineAndLineSegmentInvalid()
 	{
 		var properLine = Lines.lineFromDirection(fromXY(1, 1), Vector2f.X_AXIS);
 		var invalidLine = Lines.lineFromDirection(fromXY(1, 0), Vector2f.ZERO_VECTOR);
@@ -257,7 +257,7 @@ public class PathIntersectionMathTest
 
 
 	@Test
-	public void intersectLineAndLineSegmentParallel()
+	void intersectLineAndLineSegmentParallel()
 	{
 		// Horizontal line
 		var reference = Lines.lineFromDirection(Vector2f.ZERO_VECTOR, Vector2f.X_AXIS);
@@ -294,7 +294,7 @@ public class PathIntersectionMathTest
 
 
 	@Test
-	public void intersectLineAndCircle()
+	void intersectLineAndCircle()
 	{
 		var circle = Circle.createCircle(Vector2.fromXY(-300, 200), 100);
 
@@ -316,7 +316,7 @@ public class PathIntersectionMathTest
 
 
 	@Test
-	public void intersectLineAndCircleInvalid()
+	void intersectLineAndCircleInvalid()
 	{
 		var properCircle = Circle.createCircle(Vector2f.ZERO_VECTOR, 1);
 		var invalidCircle = Circle.createCircle(Vector2f.ZERO_VECTOR, 0);
@@ -335,7 +335,7 @@ public class PathIntersectionMathTest
 
 
 	@Test
-	public void intersectLineAndArc()
+	void intersectLineAndArc()
 	{
 		var arc = Arc.createArc(Vector2.fromXY(-300, 200), 100, 0, AngleMath.PI_TWO);
 
@@ -357,7 +357,7 @@ public class PathIntersectionMathTest
 
 
 	@Test
-	public void intersectLineAndArcInvalid()
+	void intersectLineAndArcInvalid()
 	{
 		var properArc = Arc.createArc(Vector2f.ZERO_VECTOR, 1, 0, AngleMath.PI);
 		var invalidArc = Arc.createArc(Vector2f.ZERO_VECTOR, 0, 0, AngleMath.PI);
@@ -376,7 +376,7 @@ public class PathIntersectionMathTest
 
 
 	@Test
-	public void intersectHalfLineAndHalfLine()
+	void intersectHalfLineAndHalfLine()
 	{
 		var lineA = Lines.halfLineFromDirection(Vector2f.ZERO_VECTOR, Vector2f.X_AXIS);
 
@@ -406,7 +406,7 @@ public class PathIntersectionMathTest
 
 
 	@Test
-	public void intersectHalfLineAndHalfLineInvalid()
+	void intersectHalfLineAndHalfLineInvalid()
 	{
 		var validLine = Lines.halfLineFromDirection(Vector2f.ZERO_VECTOR, Vector2f.X_AXIS);
 
@@ -420,7 +420,7 @@ public class PathIntersectionMathTest
 
 
 	@Test
-	public void intersectHalfLineAndHalfLineParallel()
+	void intersectHalfLineAndHalfLineParallel()
 	{
 		var dir = Vector2f.X_AXIS;
 		var dirInv = dir.multiplyNew(-1);
@@ -445,7 +445,7 @@ public class PathIntersectionMathTest
 
 
 	@Test
-	public void intersectHalfLineAndLineSegment()
+	void intersectHalfLineAndLineSegment()
 	{
 		IHalfLine halfLine = Lines.halfLineFromDirection(Vector2f.ZERO_VECTOR, Vector2f.X_AXIS);
 
@@ -472,7 +472,7 @@ public class PathIntersectionMathTest
 
 
 	@Test
-	public void intersectHalfLineAndLineSegmentInvalid()
+	void intersectHalfLineAndLineSegmentInvalid()
 	{
 		var properHalfLine = Lines.halfLineFromDirection(fromXY(1, 1), Vector2f.X_AXIS);
 		var invalidHalfLine = Lines.halfLineFromDirection(fromXY(1, 0), Vector2f.ZERO_VECTOR);
@@ -499,7 +499,7 @@ public class PathIntersectionMathTest
 
 
 	@Test
-	public void intersectHalfLineAndLineSegmentParallel()
+	void intersectHalfLineAndLineSegmentParallel()
 	{
 		var dir = Vector2f.X_AXIS;
 		var dirInv = dir.multiplyNew(-1);
@@ -524,7 +524,7 @@ public class PathIntersectionMathTest
 
 
 	@Test
-	public void intersectHalfLineAndCircle()
+	void intersectHalfLineAndCircle()
 	{
 		var circle = Circle.createCircle(Vector2f.ZERO_VECTOR, 10);
 
@@ -558,7 +558,7 @@ public class PathIntersectionMathTest
 
 
 	@Test
-	public void intersectHalfLineAndCircleInvalid()
+	void intersectHalfLineAndCircleInvalid()
 	{
 		var properCircle = Circle.createCircle(Vector2f.ZERO_VECTOR, 1);
 		var invalidCircle = Circle.createCircle(Vector2f.ZERO_VECTOR, 0);
@@ -577,7 +577,7 @@ public class PathIntersectionMathTest
 
 
 	@Test
-	public void intersectHalfLineAndArc()
+	void intersectHalfLineAndArc()
 	{
 		var arc = Arc.createArc(Vector2f.ZERO_VECTOR, 10, AngleMath.PI_HALF, -AngleMath.PI);
 
@@ -600,7 +600,7 @@ public class PathIntersectionMathTest
 
 
 	@Test
-	public void intersectHalfLineAndArcInvalid()
+	void intersectHalfLineAndArcInvalid()
 	{
 		var properHalfLine = Lines.halfLineFromDirection(Vector2f.ZERO_VECTOR, Vector2f.fromX(10));
 		var invalidHalfLine = Lines.halfLineFromDirection(Vector2f.ZERO_VECTOR, Vector2f.ZERO_VECTOR);
@@ -619,7 +619,7 @@ public class PathIntersectionMathTest
 
 
 	@Test
-	public void intersectLineSegmentAndLineSegment()
+	void intersectLineSegmentAndLineSegment()
 	{
 		ILineSegment segment1 = Lines.segmentFromPoints(Vector2f.ZERO_VECTOR, Vector2f.X_AXIS);
 
@@ -646,7 +646,7 @@ public class PathIntersectionMathTest
 
 
 	@Test
-	public void intersectLineSegmentAndLineSegmentInvalid()
+	void intersectLineSegmentAndLineSegmentInvalid()
 	{
 		var validSegment = Lines.segmentFromOffset(Vector2f.ZERO_VECTOR, Vector2f.X_AXIS);
 
@@ -663,7 +663,7 @@ public class PathIntersectionMathTest
 
 
 	@Test
-	public void intersectLineSegmentAndLineSegmentParallel()
+	void intersectLineSegmentAndLineSegmentParallel()
 	{
 		var dir = Vector2f.X_AXIS;
 		var dirInv = dir.multiplyNew(-1);
@@ -688,7 +688,7 @@ public class PathIntersectionMathTest
 
 
 	@Test
-	public void intersectLineSegmentAndCircle()
+	void intersectLineSegmentAndCircle()
 	{
 		ICircle circle = Circle.createCircle(Vector2.fromXY(200, -200), 100);
 		ILineSegment line;
@@ -711,7 +711,7 @@ public class PathIntersectionMathTest
 
 
 	@Test
-	public void intersectLineSegmentAndCircleInvalid()
+	void intersectLineSegmentAndCircleInvalid()
 	{
 		var properSegment = Lines.segmentFromOffset(Vector2f.ZERO_VECTOR, Vector2f.fromX(10));
 		var invalidSegment = Lines.segmentFromOffset(Vector2f.ZERO_VECTOR, Vector2f.ZERO_VECTOR);
@@ -730,7 +730,7 @@ public class PathIntersectionMathTest
 
 
 	@Test
-	public void intersectLineSegmentAndArc()
+	void intersectLineSegmentAndArc()
 	{
 		var arc = Arc.createArc(Vector2f.ZERO_VECTOR, 10, 0, AngleMath.PI);
 
@@ -755,7 +755,7 @@ public class PathIntersectionMathTest
 
 
 	@Test
-	public void intersectLineSegmentAndArcInvalid()
+	void intersectLineSegmentAndArcInvalid()
 	{
 		var properSegment = Lines.segmentFromOffset(Vector2f.ZERO_VECTOR, Vector2f.fromX(10));
 		var invalidSegment = Lines.segmentFromOffset(Vector2f.ZERO_VECTOR, Vector2f.ZERO_VECTOR);
@@ -774,7 +774,7 @@ public class PathIntersectionMathTest
 
 
 	@Test
-	public void intersectCircleAndCircle()
+	void intersectCircleAndCircle()
 	{
 		var reference = Circle.createCircle(Vector2f.ZERO_VECTOR, 10);
 
@@ -795,7 +795,7 @@ public class PathIntersectionMathTest
 
 
 	@Test
-	public void intersectCircleAndCircleInvalid()
+	void intersectCircleAndCircleInvalid()
 	{
 		var valid = Circle.createCircle(Vector2f.ZERO_VECTOR, 1);
 
@@ -809,7 +809,7 @@ public class PathIntersectionMathTest
 
 
 	@Test
-	public void intersectCircleAndArc()
+	void intersectCircleAndArc()
 	{
 		var circle = Circle.createCircle(Vector2f.ZERO_VECTOR, 10);
 		var intersect = Vector2f.fromXY(9.55, 2.966);
@@ -831,7 +831,7 @@ public class PathIntersectionMathTest
 
 
 	@Test
-	public void intersectCircleAndArcInvalid()
+	void intersectCircleAndArcInvalid()
 	{
 		var properCircle = Circle.createCircle(Vector2f.ZERO_VECTOR, 10);
 		var invalidCircle = Circle.createCircle(Vector2f.ZERO_VECTOR, 0);
@@ -850,7 +850,7 @@ public class PathIntersectionMathTest
 
 
 	@Test
-	public void intersectArcAndArc()
+	void intersectArcAndArc()
 	{
 		var reference = Arc.createArc(Vector2f.ZERO_VECTOR, 10, 0, AngleMath.PI);
 		var intersect = Vector2f.fromXY(9.55, 2.966);
@@ -922,7 +922,7 @@ public class PathIntersectionMathTest
 
 
 	@Test
-	public void intersectArcAndArcInvalid()
+	void intersectArcAndArcInvalid()
 	{
 		var valid = Arc.createArc(Vector2f.ZERO_VECTOR, 1, 0, AngleMath.PI);
 
@@ -936,7 +936,7 @@ public class PathIntersectionMathTest
 
 
 	@Test
-	public void randomIntersections()
+	void randomIntersections()
 	{
 		var rand = new Random(42);
 

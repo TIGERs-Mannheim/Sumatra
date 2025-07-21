@@ -10,7 +10,7 @@ import edu.tigers.sumatra.math.line.ILine;
 import edu.tigers.sumatra.math.line.Lines;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Random;
 
@@ -24,7 +24,7 @@ public class DefenseMathTest
 {
 
 	@Test
-	public void testCalculateLineDefPoint()
+	public void testCalculateGoalDefPoint()
 	{
 
 		Random rnd = new Random(1245849416);
@@ -33,8 +33,7 @@ public class DefenseMathTest
 			IVector2 target = Vector2.fromXY((rnd.nextDouble() - 0.5) * Geometry.getFieldLength(),
 					(rnd.nextDouble() - 0.5) * Geometry.getFieldWidth());
 
-			IVector2 defPoint = DefenseMath.calculateLineDefPoint(target, Geometry.getGoalOur().getLeftPost(),
-					Geometry.getGoalOur().getRightPost(), Geometry.getBotRadius());
+			IVector2 defPoint = DefenseMath.calculateGoalDefPoint(target, Geometry.getBotRadius());
 			ILine lineToGoal = Lines.lineFromPoints(target, Geometry.getGoalOur().getCenter());
 
 			// defPoint should protect the goal, especially the goal center

@@ -25,18 +25,21 @@ public final class CommandFactory
 
 	private final Map<Integer, SerialDescription> commands = new HashMap<>();
 
-	private static final int HEADER_LENGTH = 2;
-	private static final int RELIABLE_HEADER_LENGTH = 4;
+	private static final int HEADER_LENGTH = 1;
+	private static final int RELIABLE_HEADER_LENGTH = 3;
 
 	/**
-	 * Reliable commands use an extended header, signaled by 8th bit in section
+	 * Reliable commands use an extended header, signaled by 8th bit in cmd
 	 */
-	private static final int RELIABLE_CMD_MASK = 0x8000;
+	private static final int RELIABLE_CMD_MASK = 0x80;
 
 
 	private CommandFactory()
 	{
-
+		for (ECommand cmd : ECommand.values())
+		{
+			getSerialDescription(cmd).ifPresent(desc -> commands.put(cmd.getId(), desc));
+		}
 	}
 
 
@@ -52,20 +55,6 @@ public final class CommandFactory
 			instance = new CommandFactory();
 		}
 		return instance;
-	}
-
-
-	/**
-	 * Call once per application lifetime to parse all commands.
-	 */
-	public void loadCommands()
-	{
-		commands.clear();
-
-		for (ECommand ecmd : ECommand.values())
-		{
-			getSerialDescription(ecmd).ifPresent(desc -> commands.put(ecmd.getId(), desc));
-		}
 	}
 
 
@@ -122,7 +111,7 @@ public final class CommandFactory
 	 */
 	public ACommand decode(final byte[] data)
 	{
-		int cmdId = SerialByteConverter.byteArray2UShort(data, 0);
+		int cmdId = SerialByteConverter.byteArray2UByte(data, 0);
 		boolean reliable = false;
 		int seq = 0;
 
@@ -221,16 +210,15 @@ public final class CommandFactory
 
 			cmdId |= RELIABLE_CMD_MASK;
 
-			SerialByteConverter.short2ByteArray(data, 0, cmdId);
-			SerialByteConverter.short2ByteArray(data, 2, cmd.getSeq());
+			SerialByteConverter.byte2ByteArray(data, 0, cmdId);
+			SerialByteConverter.short2ByteArray(data, HEADER_LENGTH, cmd.getSeq());
 
 			System.arraycopy(cmdData, 0, data, RELIABLE_HEADER_LENGTH, cmdData.length);
-
 		} else
 		{
 			data = new byte[cmdData.length + HEADER_LENGTH];
 
-			SerialByteConverter.short2ByteArray(data, 0, cmdId);
+			SerialByteConverter.byte2ByteArray(data, 0, cmdId);
 
 			System.arraycopy(cmdData, 0, data, HEADER_LENGTH, cmdData.length);
 		}

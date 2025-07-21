@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.ai.pandora.plays.test.kick;
 
@@ -16,7 +16,6 @@ import edu.tigers.sumatra.ai.pandora.roles.ARole;
 import edu.tigers.sumatra.ai.pandora.roles.move.MoveRole;
 import edu.tigers.sumatra.ai.pandora.roles.offense.PassReceiverRole;
 import edu.tigers.sumatra.ai.pandora.roles.offense.attacker.AttackerRole;
-import edu.tigers.sumatra.ai.pandora.roles.placement.BallPlacementRole;
 import edu.tigers.sumatra.botmanager.botskills.data.EKickerDevice;
 import edu.tigers.sumatra.drawable.DrawableCircle;
 import edu.tigers.sumatra.geometry.Geometry;
@@ -24,7 +23,7 @@ import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.circle.Circle;
 import edu.tigers.sumatra.math.line.LineMath;
 import edu.tigers.sumatra.math.vector.IVector2;
-import edu.tigers.sumatra.statemachine.AState;
+import edu.tigers.sumatra.statemachine.TransitionableState;
 import edu.tigers.sumatra.wp.data.KickedBall;
 import lombok.Setter;
 import org.apache.commons.lang.Validate;
@@ -37,7 +36,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 
@@ -48,12 +46,12 @@ public abstract class APassingPlay extends ABallPreparationPlay
 {
 	@Configurable(defValue = "1.57", comment = "Max allowed redirect angle (rad)")
 	private static double maxAllowedRedirectAngle = 1.57;
+	@Configurable(defValue = "600", comment = "Tolerance [mm] for the ball target position")
+	private static double ballTargetPosTolerance = 600;
 
 	private final PassFactory passFactory = new PassFactory();
 	private final KickFactory kickFactory = new KickFactory();
 
-	@Setter
-	private double maxDistBall2PassStart = 500;
 	@Setter
 	private double minPassDuration;
 	@Setter
@@ -89,7 +87,7 @@ public abstract class APassingPlay extends ABallPreparationPlay
 				.orElse(Double.POSITIVE_INFINITY);
 		if (kickAge > 0.2)
 		{
-			return getBall().getTrajectory().closestPointTo(origin);
+			return getBall().getTrajectory().closestPointToRolling(origin);
 		}
 		return origin;
 	}
@@ -129,23 +127,18 @@ public abstract class APassingPlay extends ABallPreparationPlay
 	{
 		passFactory.update(getWorldFrame());
 		kickFactory.update(getWorldFrame());
+		setPlacementTolerance(ballTargetPosTolerance);
 
-		origins = getOrigins();
-		botIdToOriginMap = mapDestinationsToRoles(origins);
-		originToBotIdMap = botIdToOriginMap.entrySet().stream()
-				.collect(Collectors.toMap(Map.Entry::getValue, Map.Entry::getKey));
-		drawReceivingPositions();
-		updateBallTargetPos();
-
-		super.doUpdateBeforeRoles();
-
-		if (origins.size() != getRoles().size())
+		updateOrigins();
+		if (origins.isEmpty())
 		{
 			return;
 		}
 
-		// set waiting positions
-		findRoles(MoveRole.class).forEach(this::updateWaitingDestination);
+		drawReceivingPositions();
+		updateBallTargetPos();
+
+		super.doUpdateBeforeRoles();
 
 		findRoles(AttackerRole.class).forEach(this::updateAttacker);
 
@@ -157,6 +150,24 @@ public abstract class APassingPlay extends ABallPreparationPlay
 				.max()
 				.orElse(0.0);
 		findRoles(AttackerRole.class).forEach(r -> r.setWaitForKick(allReceivingPosReachedIn > 0.2));
+	}
+
+
+	private void updateOrigins()
+	{
+		var newOrigins = getOrigins();
+		if (newOrigins.size() != getRoles().size())
+		{
+			origins = List.of();
+			botIdToOriginMap.clear();
+			originToBotIdMap.clear();
+		} else if (!origins.equals(newOrigins))
+		{
+			origins = newOrigins;
+			botIdToOriginMap = mapDestinationsToRoles(origins);
+			originToBotIdMap = botIdToOriginMap.entrySet().stream()
+					.collect(Collectors.toMap(Map.Entry::getValue, Map.Entry::getKey));
+		}
 	}
 
 
@@ -185,7 +196,7 @@ public abstract class APassingPlay extends ABallPreparationPlay
 					0.0,
 					EBallReceiveMode.DONT_CARE
 			);
-			passReceiverRole.setOutgoingKick(pass.getKick());
+			passReceiverRole.setOutgoingKick(pass.orElseThrow().getKick());
 		}
 	}
 
@@ -213,7 +224,7 @@ public abstract class APassingPlay extends ABallPreparationPlay
 			).orElse(0.0);
 
 			if ((receiveMode == EReceiveMode.REDIRECT && redirectAngle < maxAllowedRedirectAngle)
-					|| getBall().getVel().getLength2() < 0.5)
+					|| getBall().getVel().getLength2() < 1)
 			{
 				attackerRole.setAction(OffensiveAction.buildPass(pass));
 			} else
@@ -244,7 +255,7 @@ public abstract class APassingPlay extends ABallPreparationPlay
 					minPassDuration,
 					0.0,
 					EBallReceiveMode.DONT_CARE
-			);
+			).orElseThrow();
 		}
 		return passFactory.chip(
 				source,
@@ -254,7 +265,7 @@ public abstract class APassingPlay extends ABallPreparationPlay
 				minPassDuration,
 				0.0,
 				EBallReceiveMode.DONT_CARE
-		);
+		).orElseThrow();
 	}
 
 
@@ -270,15 +281,14 @@ public abstract class APassingPlay extends ABallPreparationPlay
 	{
 		Map<BotID, IVector2> mappedDestinations = new HashMap<>();
 		List<ARole> remainingRoles = new ArrayList<>(getRoles());
-
-		for (var dest : destinations)
-		{
+		destinations.forEach(dest -> {
 			var bestRole = remainingRoles.stream()
 					.min(Comparator.comparing(role -> role.getPos().distanceTo(dest)))
-					.map(ARole::getBotID);
-			bestRole.ifPresent(r -> mappedDestinations.put(r, dest));
-			bestRole.ifPresent(id -> remainingRoles.removeIf(role -> Objects.equals(role.getBotID(), id)));
-		}
+					.orElseThrow();
+			mappedDestinations.put(bestRole.getBotID(), dest);
+			remainingRoles.remove(bestRole);
+		});
+
 		return mappedDestinations;
 	}
 
@@ -306,50 +316,39 @@ public abstract class APassingPlay extends ABallPreparationPlay
 
 	private void updateBallTargetPos()
 	{
-		findRoles(BallPlacementRole.class).stream().findAny()
-				.map(ARole.class::cast)
-				.or(() -> Optional.ofNullable(getBestRoleForBall()))
-				.map(ARole::getBotID)
-				.map(this::getBallPlacementPos)
-				.ifPresent(this::setBallTargetPos);
+		origins.stream()
+				.min(Comparator.comparing(origin -> getBall().getTrajectory().distanceTo(origin)
+						- ((origin.equals(getBallTargetPos())) ? 500 : 0)))
+				.ifPresent(origin -> {
+					setBallTargetPos(origin);
+					setForcedSoloPlacementBot(originToBotIdMap.get(origin));
+				});
 	}
 
 
-	private IVector2 getBallPlacementPos(BotID botID)
+	@Override
+	protected void handleNonPlacingRole(ARole role)
 	{
-		return botIdToOriginMap.get(botID);
+		MoveRole moveRole = reassignRole(role, MoveRole.class, MoveRole::new);
+		updateWaitingDestination(moveRole);
 	}
 
 
-	private ARole getBestRoleForBall()
+	private class ExecutionState extends TransitionableState
 	{
-		if (getBall().getVel().getLength2() < 0.5)
+		public ExecutionState()
 		{
-			return getClosestToBallTrajectory();
+			super(stateMachine::changeState);
 		}
-		return getRoles().stream()
-				.filter(role -> getBall().getTrajectory().getTravelLine().isPointInFront(role.getPos()))
-				.min(Comparator.comparing(role -> getBall().getTrajectory().distanceTo(role.getBot().getBotKickerPos())))
-				.orElseGet(this::getClosestToBallTrajectory);
-	}
 
 
-	private ARole getClosestToBallTrajectory()
-	{
-		return getRoles().stream()
-				.min(Comparator.comparing(role -> getBall().getTrajectory().distanceTo(role.getBot().getBotKickerPos())))
-				.orElse(null);
-	}
-
-
-	private class ExecutionState extends AState
-	{
 		@Override
-		public void doUpdate()
+		public void onUpdate()
 		{
 			if (!Geometry.getField().isPointInShape(getBall().getPos())
 					|| (getBall().getVel().getLength2() < 0.5
-					&& getBallTargetPos().distanceTo(getBall().getPos()) > maxDistBall2PassStart))
+					&& getClosestToBall().getPos().distanceTo(getBall().getPos()) > 100
+					&& getBallTargetPos().distanceTo(getBall().getPos()) > ballTargetPosTolerance))
 			{
 				stopExecution();
 				return;
@@ -368,7 +367,33 @@ public abstract class APassingPlay extends ABallPreparationPlay
 			allRolesExcept(nearest2BallRole, passReceiverRole)
 					.forEach(r -> reassignRole(r, MoveRole.class, MoveRole::new));
 
+			// set waiting positions
+			findRoles(MoveRole.class).forEach(APassingPlay.this::updateWaitingDestination);
+
 			updateDuringExecution();
+		}
+
+
+		private ARole getBestRoleForBall()
+		{
+			if (getBall().getVel().getLength2() < 1)
+			{
+				return getClosestToBallTrajectory();
+			}
+			return getRoles().stream()
+					.filter(role -> getBall().getTrajectory().getTravelLine().isPointInFront(role.getPos()))
+					.min(Comparator.comparing(role -> getBall().getTrajectory().distanceTo(role.getBot().getBotKickerPos())))
+					.orElseGet(this::getClosestToBallTrajectory);
+		}
+
+
+		private ARole getClosestToBallTrajectory()
+		{
+			return origins.stream()
+					.min(Comparator.comparing(origin -> getBall().getTrajectory().distanceTo(origin)))
+					.map(origin -> originToBotIdMap.get(origin))
+					.map(APassingPlay.this::getRole)
+					.orElse(null);
 		}
 	}
 

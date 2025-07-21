@@ -75,7 +75,7 @@ public class TigerSystemPong extends ACommand
 		byte[] sPayload = new byte[payload.length];
 		for (int i = 0; i < payload.length; i++)
 		{
-			SerialByteConverter.byte2ByteArray(sPayload, i, i == 0 ? 1 : i);
+			SerialByteConverter.byte2ByteArray(sPayload, i, i+1);
 		}
 		for (int i = 0; i < payload.length; i++)
 		{

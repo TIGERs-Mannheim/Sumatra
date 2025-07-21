@@ -4,10 +4,10 @@
 
 package edu.tigers.sumatra.wp.util;
 
-import edu.tigers.moduli.exceptions.ModuleNotFoundException;
 import edu.tigers.sumatra.data.collector.IExportable;
 import edu.tigers.sumatra.data.collector.ITimeSeriesDataProvider;
 import edu.tigers.sumatra.model.SumatraModel;
+import edu.tigers.sumatra.moduli.exceptions.ModuleNotFoundException;
 import edu.tigers.sumatra.wp.AWorldPredictor;
 import edu.tigers.sumatra.wp.IWorldFrameObserver;
 import edu.tigers.sumatra.wp.data.ExtendedCamDetectionFrame;
@@ -93,8 +93,9 @@ public class TimeSeriesVisionDataProvider implements ITimeSeriesDataProvider, IW
 
 	private void processCamFrame(final ExtendedCamDetectionFrame frame)
 	{
-		dataBuffers.get("frameInfo").add(new ExportableFrameInfo(frame.getFrameNumber(), frame.getCameraId(),
-				frame.gettCapture(), frame.gettSent(), (long) (System.currentTimeMillis() * 1e6),
+		dataBuffers.get("frameInfo").add(new ExportableFrameInfo(
+				frame.getGlobalFrameId(), frame.getCameraId(),
+				frame.getTimestamp(), frame.getOriginalTimestamps().getTSent(), (long) (System.currentTimeMillis() * 1e6),
 				frame.getCamFrameNumber()));
 		dataBuffers.get("rawBall").add(frame.getBall());
 		dataBuffers.get("rawBalls").addAll(frame.getBalls());

@@ -4,12 +4,11 @@
 
 package edu.tigers.sumatra.math.pose;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-import org.junit.Test;
-
 import edu.tigers.sumatra.math.AngleMath;
 import edu.tigers.sumatra.math.vector.Vector3;
+import org.junit.jupiter.api.Test;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 
 public class PoseTest

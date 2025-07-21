@@ -3,7 +3,6 @@
  */
 package edu.tigers.sumatra.referee.data;
 
-import com.sleepycat.persist.model.Persistent;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.ids.ETeamColor;
@@ -30,7 +29,6 @@ import java.util.stream.Collectors;
 /**
  * Complete referee command
  */
-@Persistent(version = 2)
 @Value
 @Builder
 @AllArgsConstructor(access = AccessLevel.PRIVATE)

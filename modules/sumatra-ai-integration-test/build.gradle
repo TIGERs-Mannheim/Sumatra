@@ -6,56 +6,57 @@ plugins {
     id 'sumatra.java'
 }
 
-sourceSets {
-    integrationTest {
-        java.srcDir "src/integrationTest/java"
+testing {
+    suites {
+        test {
+            useJUnitJupiter()
+        }
+
+        integrationTest(JvmTestSuite) {
+            dependencies {
+                implementation project(':common')
+                implementation project(':common-math')
+                implementation project(':common-bot')
+                implementation project(':sumatra-simulation-control')
+                implementation project(':sumatra-snapshot')
+                implementation project(':sumatra-model')
+                implementation project(':sumatra-skillsystem')
+                implementation project(':moduli-ai')
+                implementation project(':moduli-autoreferee')
+                implementation project(':moduli-geometry')
+                implementation project(':moduli-referee')
+                implementation project(':moduli-wp')
+                implementation project(':moduli-record')
+                implementation project(':moduli-ai-controller')
+                implementation project(':moduli-bot-params')
+                runtimeOnly project(':moduli-botmanager-sim')
+
+                implementation(libs.org.apache.logging.log4j.log4j.api)
+                implementation(libs.org.apache.logging.log4j.log4j.core)
+
+                implementation(platform(libs.org.junit.bom))
+                implementation('org.junit.jupiter:junit-jupiter')
+                runtimeOnly('org.junit.platform:junit-platform-launcher')
+                implementation(libs.org.assertj.assertj.core)
+
+                annotationProcessor(libs.org.projectlombok.lombok)
+                implementation(libs.org.projectlombok.lombok)
+
+                implementation(libs.org.openjdk.jmh.jmh.core)
+                annotationProcessor(libs.org.openjdk.jmh.jmh.generator.annprocess)
+            }
+
+            targets {
+                all {
+                    testTask.configure {
+                        maxHeapSize = "2g"
+                        systemProperty("junit.jupiter.execution.timeout.threaddump.enabled", "true")
+                        inputs.dir(file('config'))
+                    }
+                }
+            }
+        }
     }
-}
-
-dependencies {
-    integrationTestImplementation project(':common')
-    integrationTestImplementation project(':common-math')
-    integrationTestImplementation project(':common-bot')
-    integrationTestImplementation project(':sumatra-simulation-control')
-    integrationTestImplementation project(':sumatra-snapshot')
-    integrationTestImplementation project(':sumatra-model')
-    integrationTestImplementation project(':sumatra-skillsystem')
-    integrationTestImplementation project(':moduli-ai')
-    integrationTestImplementation project(':moduli-autoreferee')
-    integrationTestImplementation project(':moduli-geometry')
-    integrationTestImplementation project(':moduli-referee')
-    integrationTestImplementation project(':moduli-wp')
-    integrationTestImplementation project(':moduli-record')
-    integrationTestImplementation project(':moduli-ai-controller')
-    integrationTestImplementation project(':moduli-bot-params')
-    integrationTestRuntimeOnly project(':moduli-botmanager-sim')
-
-    integrationTestImplementation(libs.com.github.g3force.configurable)
-
-    integrationTestImplementation(libs.org.apache.logging.log4j.log4j.api)
-    integrationTestImplementation(libs.org.apache.logging.log4j.log4j.core)
-
-    integrationTestImplementation(libs.junit)
-    integrationTestRuntimeOnly(libs.org.junit.vintage.junit.vintage.engine)
-    integrationTestImplementation(libs.org.assertj.assertj.core)
-
-    integrationTestAnnotationProcessor(libs.org.projectlombok.lombok)
-    integrationTestImplementation(libs.org.projectlombok.lombok)
-
-    integrationTestImplementation(libs.org.openjdk.jmh.jmh.core)
-    integrationTestAnnotationProcessor(libs.org.openjdk.jmh.jmh.generator.annprocess)
-}
-
-tasks.register('integrationTest', Test) {
-    description = "Run the integration tests"
-    group = "verification"
-
-    maxHeapSize = "2g"
-
-    testClassesDirs = sourceSets.integrationTest.output.classesDirs
-    classpath = sourceSets.integrationTest.runtimeClasspath
-
-    inputs.dir(file('config'))
 }
 
 tasks.register('runPathPlanningBenchmark', JavaExec) {

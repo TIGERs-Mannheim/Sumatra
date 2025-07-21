@@ -61,10 +61,15 @@ for proj in ${PROJECTS}; do
   cp -r "${source}" "${target}"
 done
 
+rm -r "${AUTOREF_DIR}/src/main/java/edu/tigers/"
+mkdir -p "${AUTOREF_DIR}/src/main/java/edu/tigers/"
+cp -r "${SUMATRA_DIR}/src/main/java/edu/tigers/base" "${AUTOREF_DIR}/src/main/java/edu/tigers/base"
+cp -r "${SUMATRA_DIR}/src/main/java/edu/tigers/autoref" "${AUTOREF_DIR}/src/main/java/edu/tigers/autoref"
+
 rm -r "${AUTOREF_DIR}/buildSrc"
 cp -r "${SUMATRA_DIR}/buildSrc" "${AUTOREF_DIR}"
 cp -r "${SUMATRA_DIR}/gradle" "${AUTOREF_DIR}"
-cp "${SUMATRA_DIR}/config/moduli/autoreferee.xml" "${AUTOREF_DIR}/config/moduli/moduli.xml"
-cp "${SUMATRA_DIR}/config/moduli/autoreferee-ci.xml" "${AUTOREF_DIR}/config/moduli/moduli-ci.xml"
+cp "${SUMATRA_DIR}/config/moduli/autoreferee.xml" "${AUTOREF_DIR}/config/moduli/autoreferee.xml"
+cp "${SUMATRA_DIR}/config/moduli/autoreferee-ci.xml" "${AUTOREF_DIR}/config/moduli/autoreferee-ci.xml"
 cp "${SUMATRA_DIR}/config/ssl-game-controller.yaml" "${AUTOREF_DIR}/config/ssl-game-controller.yaml"
 cp "${SUMATRA_DIR}/src/main/jib/config/engine-default.yaml" "${AUTOREF_DIR}/src/main/jib/config/engine-default.yaml"

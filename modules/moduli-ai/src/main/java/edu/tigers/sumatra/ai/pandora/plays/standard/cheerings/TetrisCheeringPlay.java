@@ -1,11 +1,12 @@
 /*
- * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.pandora.plays.standard.cheerings;
 
 import edu.tigers.sumatra.ai.pandora.plays.standard.CheeringPlay;
 import edu.tigers.sumatra.ai.pandora.roles.ARole;
+import edu.tigers.sumatra.botmanager.botskills.data.ESong;
 import edu.tigers.sumatra.drawable.DrawableAnnotation;
 import edu.tigers.sumatra.drawable.DrawableCircle;
 import edu.tigers.sumatra.geometry.Geometry;
@@ -24,11 +25,10 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 
-public class TetrisCheeringPlay implements ICheeringPlay
+public class TetrisCheeringPlay extends ASongPlayingCheeringPlay
 {
 	private static final double SPACING = 50;
 	private static final double JUMP_TIME = 0.6;
-	private CheeringPlay play = null;
 	private int stage = 0;
 	private int jumpCnt = 0;
 	private long tStart = -1;
@@ -37,10 +37,19 @@ public class TetrisCheeringPlay implements ICheeringPlay
 	private Set<Integer> turningRobots = Set.of();
 
 
+	public TetrisCheeringPlay()
+	{
+		super(
+				List.of(ESong.TETRIS),
+				List.of(),
+				1
+		);
+	}
+
 	@Override
 	public void initialize(final CheeringPlay play)
 	{
-		this.play = play;
+		super.initialize(play);
 		this.stage = 0;
 		this.tStart = -1;
 		this.turningRobots = Set.of();
@@ -65,7 +74,7 @@ public class TetrisCheeringPlay implements ICheeringPlay
 	@Override
 	public List<IVector2> calcPositions()
 	{
-		var roles = play.getPermutedRoles();
+		var roles = getPlay().getPermutedRoles();
 		if (roles.size() >= 8)
 		{
 			return Stream.concat(
@@ -99,6 +108,7 @@ public class TetrisCheeringPlay implements ICheeringPlay
 	@Override
 	public void doUpdate()
 	{
+		super.doUpdate();
 		doRotation();
 		tryJump();
 		switch (stage)
@@ -112,10 +122,17 @@ public class TetrisCheeringPlay implements ICheeringPlay
 	}
 
 
+	@Override
+	void handleInterrupt(int loopCount, int interruptCount)
+	{
+		// Unused
+	}
+
+
 	private void doRotation()
 	{
-		var roles = play.getPermutedRoles();
-		long tNow = play.getWorldFrame().getTimestamp();
+		var roles = getPlay().getPermutedRoles();
+		long tNow = getPlay().getWorldFrame().getTimestamp();
 		for (int i = 0; i < roles.size(); ++i)
 		{
 			double rotation;
@@ -135,7 +152,7 @@ public class TetrisCheeringPlay implements ICheeringPlay
 	private void pos(int robot, int row, int column)
 	{
 		var pos = calcPos(row, column);
-		play.getPermutedRoles().get(robot).updateDestination(pos);
+		getPlay().getPermutedRoles().get(robot).updateDestination(pos);
 		circle(pos, robot);
 	}
 
@@ -157,20 +174,20 @@ public class TetrisCheeringPlay implements ICheeringPlay
 
 	private void circle(IVector2 pos, Color color, int robot)
 	{
-		play.addShape(new DrawableCircle(pos, 100, color));
-		play.addShape(new DrawableAnnotation(pos, String.valueOf(robot), color));
+		getPlay().addShape(new DrawableCircle(pos, 100, color));
+		getPlay().addShape(new DrawableAnnotation(pos, String.valueOf(robot), color));
 	}
 
 
 	private void tryJump()
 	{
-		long tNow = play.getWorldFrame().getTimestamp();
+		long tNow = getPlay().getWorldFrame().getTimestamp();
 		if (tStart == -1)
 		{
 			tStart = tNow;
 		}
 		double jumpDiff = (tNow - tStart) * 1e-9;
-		if (jumpDiff >= JUMP_TIME && play.getPermutedRoles().stream()
+		if (jumpDiff >= JUMP_TIME && getPlay().getPermutedRoles().stream()
 				.allMatch(r -> r.getDestination().distanceTo(r.getPos()) < 0.5 * Geometry.getBotRadius()))
 		{
 			jumpCnt += 1;

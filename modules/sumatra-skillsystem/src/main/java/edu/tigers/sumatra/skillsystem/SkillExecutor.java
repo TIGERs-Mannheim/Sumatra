@@ -5,6 +5,7 @@
 package edu.tigers.sumatra.skillsystem;
 
 import edu.tigers.sumatra.botmanager.bots.ABot;
+import edu.tigers.sumatra.botmanager.data.MatchCommand;
 import edu.tigers.sumatra.drawable.ShapeMap;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.ids.EAiTeam;
@@ -45,6 +46,7 @@ class SkillExecutor implements Runnable, IWorldFrameObserver
 	private List<ISkillExecutorPostHook> postHooks = new CopyOnWriteArrayList<>();
 	private Future<?> future = null;
 	private boolean notifiedBotRemoved = true;
+	private final MatchCommand matchCommand = new MatchCommand();
 
 
 	public void update(final WorldFrameWrapper wf, final ShapeMap shapeMap)
@@ -84,9 +86,9 @@ class SkillExecutor implements Runnable, IWorldFrameObserver
 
 	private void processCurrentSkill(WorldFrameWrapper wf, ShapeMap shapeMap, ABot currentBot)
 	{
-		executeSave(() -> currentSkill.update(wf, currentBot, shapeMap));
+		executeSave(() -> currentSkill.update(wf, currentBot, shapeMap, matchCommand));
 		executeSave(() -> currentSkill.calcActions(wf.getTimestamp()));
-		executeSave(currentBot::sendMatchCommand);
+		executeSave(() -> currentBot.sendMatchCommand(matchCommand));
 	}
 
 
@@ -131,7 +133,7 @@ class SkillExecutor implements Runnable, IWorldFrameObserver
 			executeSave(currentSkill::calcExitActions);
 		}
 		skill.setCurrentTrajectory(currentSkill.getCurrentTrajectory());
-		executeSave(() -> skill.update(wf, currentBot, shapeMap));
+		executeSave(() -> skill.update(wf, currentBot, shapeMap, matchCommand));
 		executeSave(skill::calcEntryActions);
 		currentSkill = skill;
 	}

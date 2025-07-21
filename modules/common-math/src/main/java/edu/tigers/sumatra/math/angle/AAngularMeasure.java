@@ -4,14 +4,12 @@
 
 package edu.tigers.sumatra.math.angle;
 
-import com.sleepycat.persist.model.Persistent;
 import edu.tigers.sumatra.math.SumatraMath;
 
 
 /**
  * @author DominikE
  */
-@Persistent
 public abstract class AAngularMeasure implements IAngularMeasure
 {
 	private static final double PI = Math.PI;

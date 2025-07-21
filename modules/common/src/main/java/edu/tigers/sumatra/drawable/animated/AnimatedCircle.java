@@ -3,7 +3,6 @@
  */
 package edu.tigers.sumatra.drawable.animated;
 
-import com.sleepycat.persist.model.Persistent;
 import edu.tigers.sumatra.drawable.IDrawableTool;
 import edu.tigers.sumatra.math.circle.ICircle;
 import edu.tigers.sumatra.math.vector.IVector2;
@@ -15,7 +14,6 @@ import java.awt.Graphics2D;
 /**
  * @author AndreR <andre@ryll.cc>
  */
-@Persistent
 public class AnimatedCircle extends AAnimatedShape
 {
 	private INumberAnimator radius;

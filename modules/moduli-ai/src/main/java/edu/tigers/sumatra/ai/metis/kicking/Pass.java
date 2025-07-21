@@ -4,7 +4,6 @@
 
 package edu.tigers.sumatra.ai.metis.kicking;
 
-import com.sleepycat.persist.model.Persistent;
 import edu.tigers.sumatra.drawable.DrawableAnnotation;
 import edu.tigers.sumatra.drawable.IDrawableShape;
 import edu.tigers.sumatra.ids.BotID;
@@ -16,7 +15,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 
-@Persistent
 @Value
 @AllArgsConstructor
 public class Pass
@@ -28,20 +26,6 @@ public class Pass
 	double duration;
 	double preparationTime;
 	EBallReceiveMode receiveMode;
-
-
-	@SuppressWarnings("unused")
-		// berkeley
-	Pass()
-	{
-		kick = new Kick();
-		receiver = null;
-		shooter = null;
-		receivingSpeed = 0;
-		duration = 0;
-		preparationTime = 0;
-		receiveMode = EBallReceiveMode.RECEIVE;
-	}
 
 
 	public boolean isChip()

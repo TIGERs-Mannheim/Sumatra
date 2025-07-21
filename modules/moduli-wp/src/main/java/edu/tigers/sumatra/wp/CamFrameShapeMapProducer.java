@@ -40,7 +40,7 @@ public class CamFrameShapeMapProducer
 	public void updateCamFrameShapes(final ExtendedCamDetectionFrame frame)
 	{
 		camFrames.put(frame.getCameraId(), frame);
-		camFrames.values().removeIf(f -> Math.abs(frame.gettCapture() - f.gettCapture()) / 1e9 > 1);
+		camFrames.values().removeIf(f -> Math.abs(frame.getTimestamp() - f.getTimestamp()) / 1e9 > 1);
 	}
 
 
@@ -48,7 +48,7 @@ public class CamFrameShapeMapProducer
 	{
 		List<IDrawableShape> shapes = new ArrayList<>();
 		var mergedFrames = camFrames.values().stream()
-				.sorted(Comparator.comparing(CamDetectionFrame::gettCapture))
+				.sorted(Comparator.comparing(CamDetectionFrame::getTimestamp))
 				.toList();
 		for (ExtendedCamDetectionFrame mergedCamFrame : mergedFrames)
 		{
@@ -75,7 +75,7 @@ public class CamFrameShapeMapProducer
 		if (!mergedFrames.isEmpty())
 		{
 			Color ballColor = new Color(50, 100, 200);
-			double age = (mergedFrames.get(0).gettCapture() - mergedFrames.get(0).getBall().gettCapture()) / 1e9;
+			double age = (mergedFrames.get(0).getTimestamp() - mergedFrames.get(0).getBall().getTimestamp()) / 1e9;
 			double size = ((Geometry.getBallRadius() - 5) * (1 - Math.min(1, Math.max(0, age / 0.2)))) + 5;
 			DrawableCircle ballCircle = new DrawableCircle(mergedFrames.get(0).getBall().getPos().getXYVector(),
 					size, ballColor);

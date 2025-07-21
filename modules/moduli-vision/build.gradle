@@ -15,15 +15,10 @@ dependencies {
     api project(':moduli-cam')
     implementation project(':moduli-geometry')
 
-    implementation(libs.com.github.TIGERs.mannheim.moduli)
-    implementation(libs.com.github.g3force.configurable)
-
     implementation(libs.commons.lang)
     implementation(libs.org.apache.commons.commons.math3)
     implementation(libs.org.apache.commons.commons.collections4)
     implementation(libs.commons.configuration)
 
     implementation(libs.org.apache.logging.log4j.log4j.api)
-
-    implementation(libs.com.sleepycat.je)
 }

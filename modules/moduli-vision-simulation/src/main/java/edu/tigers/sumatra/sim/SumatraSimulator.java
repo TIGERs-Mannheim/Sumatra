@@ -6,6 +6,7 @@ package edu.tigers.sumatra.sim;
 
 import edu.tigers.sumatra.ball.BallState;
 import edu.tigers.sumatra.ball.trajectory.IBallTrajectory;
+import edu.tigers.sumatra.clock.ThreadUtil;
 import edu.tigers.sumatra.drawable.ShapeMap;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.AObjectID;
@@ -51,7 +52,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.LockSupport;
 import java.util.stream.Collectors;
 
 
@@ -125,7 +125,10 @@ public class SumatraSimulator extends ASumatraSimulator implements IRefereeObser
 		{
 			log.debug("Waiting for remote AIs");
 			simNetServer.addObserver(this);
-		} else if (!startPaused)
+		} else if (startPaused)
+		{
+			step();
+		} else
 		{
 			resume();
 		}
@@ -147,6 +150,10 @@ public class SumatraSimulator extends ASumatraSimulator implements IRefereeObser
 	{
 		running = false;
 		service.shutdown();
+
+		simNetServer.removeObserver(this);
+		simNetServer.stop();
+
 		try
 		{
 			boolean terminated = service.awaitTermination(1, TimeUnit.SECONDS);
@@ -161,9 +168,6 @@ public class SumatraSimulator extends ASumatraSimulator implements IRefereeObser
 		}
 
 		simState.getSimulatedBots().keySet().forEach(this::unregisterBot);
-
-		simNetServer.removeObserver(this);
-		simNetServer.stop();
 	}
 
 
@@ -400,9 +404,10 @@ public class SumatraSimulator extends ASumatraSimulator implements IRefereeObser
 			IVector2 pos = lastCollision.get().getPos();
 			BotID botID = lastCollision.get().getObject().getBotID();
 			SimulatedBot simulatedBot = simState.getSimulatedBots().get(botID);
-			if (simulatedBot != null
-					&& !lastCollision.get().getObject().getImpulse().isZeroVector()
-					&& (simState.getLastKickEvent() == null || !pos.equals(simState.getLastKickEvent().getPosition())))
+			if (simulatedBot == null || lastCollision.get().getObject().getImpulse().isZeroVector())
+			{
+				simState.setLastKickEvent(null);
+			} else if (simState.getLastKickEvent() == null || !pos.equals(simState.getLastKickEvent().getPosition()))
 			{
 				simState.setLastKickEvent(
 						new SimKickEvent(
@@ -437,13 +442,15 @@ public class SumatraSimulator extends ASumatraSimulator implements IRefereeObser
 				log.error("Uncaught error in simulator", err);
 			}
 
-			long tNow = System.nanoTime();
-			long mDt = (long) (CAM_DT / simSpeed);
-			long sleep = mDt - (tNow - tLast);
-			if (sleep > 0)
+			if (Double.isFinite(simSpeed))
 			{
-				assert sleep < (long) 1e9;
-				LockSupport.parkNanos(sleep);
+				long tNow = System.nanoTime();
+				long mDt = (long) (CAM_DT / simSpeed);
+				long sleep = mDt - (tNow - tLast);
+				if (sleep < (long) 1e9) // safety guard
+				{
+					ThreadUtil.parkNanosSafe(sleep);
+				}
 			}
 			tLast = System.nanoTime();
 		} while (running);

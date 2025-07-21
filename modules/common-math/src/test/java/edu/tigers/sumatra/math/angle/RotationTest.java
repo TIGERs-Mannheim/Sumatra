@@ -4,12 +4,11 @@
 
 package edu.tigers.sumatra.math.angle;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-
-import org.junit.Test;
-
 import edu.tigers.sumatra.math.vector.Vector2;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 
 /**
@@ -22,14 +21,14 @@ public class RotationTest
 	
 	
 	@Test
-	public void zero()
+	void zero()
 	{
 		assertEquals(0, Rotation.zero().asRad(), ACCURACY);
 	}
 	
 	
 	@Test
-	public void ofRad()
+	void ofRad()
 	{
 		assertEquals(0, Rotation.ofRad(0).asRad(), ACCURACY);
 		assertEquals(Math.PI * 2, Rotation.ofRad(Math.PI * 2).asRad(), ACCURACY);
@@ -40,7 +39,7 @@ public class RotationTest
 	
 	
 	@Test
-	public void ofDeg()
+	void ofDeg()
 	{
 		assertEquals(0, Rotation.ofDeg(0).asRad(), ACCURACY);
 		assertEquals(Math.PI * 2, Rotation.ofDeg(360).asRad(), ACCURACY);
@@ -50,7 +49,7 @@ public class RotationTest
 	
 	
 	@Test
-	public void ofRotation()
+	void ofRotation()
 	{
 		assertEquals(10 * Math.PI, Rotation.ofRotation(5).asRad(), ACCURACY);
 		assertEquals(Math.PI, Rotation.ofRotation(0.5).asRad(), ACCURACY);
@@ -59,7 +58,7 @@ public class RotationTest
 	
 	
 	@Test
-	public void ofVec()
+	void ofVec()
 	{
 		assertEquals(0, Rotation.ofVec(Vector2.fromAngle(0)).asRad(), ACCURACY);
 		assertEquals(-1.982297, Rotation.ofVec(Vector2.fromAngle(42)).asRad(), ACCURACY);
@@ -68,7 +67,7 @@ public class RotationTest
 	
 	
 	@Test
-	public void add()
+	void add()
 	{
 		assertEquals(Math.PI * 2, Rotation.zero().add(Math.PI / 2).add(Rotation.ofDeg(270)).asRad(), ACCURACY);
 		assertEquals(3, Rotation.zero().add(Rotation.ofDeg(1)).add(Rotation.ofDeg(2)).asDeg(), ACCURACY);
@@ -76,7 +75,7 @@ public class RotationTest
 	
 	
 	@Test
-	public void subtract()
+	void subtract()
 	{
 		assertEquals(-2 * Math.PI, Rotation.zero().subtract(Math.PI / 2).subtract(Rotation.ofDeg(270)).asRad(), ACCURACY);
 		assertEquals(-3, Rotation.zero().subtract(Rotation.ofDeg(1)).subtract(Rotation.ofDeg(2)).asDeg(), ACCURACY);
@@ -84,7 +83,7 @@ public class RotationTest
 	
 	
 	@Test
-	public void multiply()
+	void multiply()
 	{
 		assertEquals(0, Rotation.zero().multiply(Math.PI / 2).multiply(42).asRad(), ACCURACY);
 		assertEquals(42, Rotation.ofDeg(21).multiply(1).multiply(2).asDeg(), ACCURACY);
@@ -92,7 +91,7 @@ public class RotationTest
 	
 	
 	@Test
-	public void equals()
+	void equals()
 	{
 		assertEquals(Rotation.ofDeg(90), Rotation.ofRad(Math.PI / 2));
 		assertEquals(Rotation.ofDeg(0), Rotation.ofRad(0));

@@ -96,7 +96,7 @@ public class MaintenancePlay extends AMaintenancePlay
 	 */
 	private void calculateBotActionsForT(IVector2 direction)
 	{
-		List<MoveRole> roles = findRoles(MoveRole.class);
+		List<MoveRole> roles = new ArrayList<>(findRoles(MoveRole.class));
 		direction = Vector2.fromXY(direction.x(), direction.y() * (getWorldFrame().isInverted() ? -1.0 : 1.0));
 		direction = setMinDistance(direction);
 

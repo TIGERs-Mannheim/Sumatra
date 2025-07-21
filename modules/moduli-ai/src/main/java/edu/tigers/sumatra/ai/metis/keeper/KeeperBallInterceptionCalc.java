@@ -7,11 +7,10 @@ package edu.tigers.sumatra.ai.metis.keeper;
 import com.github.g3force.configurable.Configurable;
 import edu.tigers.sumatra.ai.metis.ACalculator;
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
-import edu.tigers.sumatra.ai.metis.ballinterception.InterceptionIteration;
+import edu.tigers.sumatra.ai.metis.ballinterception.BallInterceptor;
+import edu.tigers.sumatra.ai.metis.ballinterception.InterceptionFinderParameters;
 import edu.tigers.sumatra.ai.metis.ballinterception.RatedBallInterception;
-import edu.tigers.sumatra.ai.metis.general.BallInterceptor;
 import edu.tigers.sumatra.ball.trajectory.IBallTrajectory;
-import edu.tigers.sumatra.drawable.DrawableAnnotation;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.AngleMath;
@@ -19,32 +18,34 @@ import edu.tigers.sumatra.math.vector.IVector2;
 import lombok.Getter;
 
 import java.awt.Color;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 
 public class KeeperBallInterceptionCalc extends ACalculator
 {
-	@Configurable(defValue = "300.0", comment = "[mm]")
-	private static double stepSize = 300.0;
-	@Configurable(defValue = "4.0", comment = "[m/s] Max considered ball speed")
-	private static double maxBallSpeed = 4.0;
 	@Configurable(defValue = "-0.3", comment = "[s] Time difference between keeper reaching the intercept pos vs. ball travel time")
 	private static double slackTime = -0.3;
+	@Configurable(defValue = "0.1", comment = "[s]")
+	private static double oldTargetInterceptionBaseBonus = 0.1;
 
 	private BallInterceptor ballInterceptor;
 	private IVector2 previousInterceptionPosition = null;
 	@Getter
 	private RatedBallInterception keeperBallInterception;
 	private IBallTrajectory ballTrajectory;
-	private BotID keeper;
+	private BotID lastKeeper;
 
 
 	public KeeperBallInterceptionCalc()
 	{
-		ballInterceptor = new BallInterceptor(Optional::empty);
-		ballInterceptor.setShapeColor(Color.BLUE);
+		ballInterceptor = new BallInterceptor(
+				botID -> Optional.empty(),
+				this::getPreviousInterceptionTarget,
+				this::findBallTrajectory,
+				Color.BLUE
+		);
 	}
 
 
@@ -63,46 +64,29 @@ public class KeeperBallInterceptionCalc extends ACalculator
 	{
 		ballTrajectory = null;
 		keeperBallInterception = null;
-		keeper = getAiFrame().getKeeperId();
+		lastKeeper = BotID.noBot();
 	}
 
 
 	@Override
 	public void doCalc()
 	{
-		ballInterceptor.setShapes(getShapes(EAiShapesLayer.KEEPER_INTERCEPT));
-		ballTrajectory = findBallTrajectory();
-		ballInterceptor.setBallTrajectory(ballTrajectory);
-		ballInterceptor.updateInitialBallVelocity(getBall());
-		ballInterceptor.setAreaOfInterest(
-				Geometry.getPenaltyAreaOur().withMargin(KeeperBehaviorCalc.ballMarginMiddle().atBorder()).getRectangle());
-		ballInterceptor.setExclusionAreas(List.of());
-		List<IVector2> interceptionPoints = ballInterceptor.generateInterceptionPoints(maxBallSpeed, stepSize);
+		ballInterceptor.setOldTargetInterceptionBonus(oldTargetInterceptionBaseBonus);
+		ballInterceptor.setAreaOfInterest(Geometry.getField());
+		ballInterceptor.setConsideredBots(Set.of(getAiFrame().getKeeperId()));
+		ballInterceptor.setExclusionAreas(List.of(
+				Geometry.getPenaltyAreaOur().withMargin(Geometry.getBotRadius() + Geometry.getBallRadius()),
+				Geometry.getPenaltyAreaTheir().withMargin(Geometry.getBotRadius() + Geometry.getBallRadius())
+		));
+		ballInterceptor.setFinderParams(List.of(
+				new InterceptionFinderParameters(Math.min(slackTime, -0.1), false, 0),
+				new InterceptionFinderParameters(-0.1, false, 0)
+		));
 
-		var iterations = ballInterceptor.iterateOverBallTravelLine(getWFrame().getBot(keeper), interceptionPoints);
-		previousInterceptionPosition = invalidatePreviousInterceptionPositions().orElse(null);
-		var previousInterception = getPreviousInterceptionIteration();
-		if (previousInterception != null)
-		{
-			// replace bot target iteration with near sampled iteration(s)
-			iterations.removeIf(e -> Math.abs(e.getBallTravelTime() - previousInterception.getBallTravelTime()) < 0.1);
-			iterations.add(previousInterception);
-		}
-		iterations.removeIf(e -> !Double.isFinite(e.getBallTravelTime()));
-		iterations.forEach(this::drawDebugShapes);
-		iterations.sort(Comparator.comparingDouble(InterceptionIteration::getBallTravelTime));
+		var result = ballInterceptor.processFrame(getWFrame());
 
-		var zeroCrossings = ballInterceptor.findZeroCrossings(iterations);
-		var corridors = ballInterceptor.findCorridors(zeroCrossings);
-
-
-		keeperBallInterception = ballInterceptor.findTargetInterception(iterations, corridors, keeper,
-						previousInterception, Math.min(slackTime, -0.1))
-				.or(() -> ballInterceptor.findTargetInterception(iterations, corridors, keeper,
-						previousInterception, -0.1))
-				.or(() -> ballInterceptor.keepPositionUntilPassVanishes(getBall(), getWFrame().getBot(keeper),
-						previousInterception))
-				.orElse(null);
+		keeperBallInterception = result.interceptionMap().get(getAiFrame().getKeeperId());
+		getShapes(EAiShapesLayer.KEEPER_INTERCEPT).addAll(ballInterceptor.getShapes());
 
 		if (keeperBallInterception != null)
 		{
@@ -111,14 +95,8 @@ public class KeeperBallInterceptionCalc extends ACalculator
 		{
 			previousInterceptionPosition = null;
 		}
-	}
 
-
-	private void drawDebugShapes(InterceptionIteration iteration)
-	{
-		var pos = getBall().getTrajectory().getPosByTime(iteration.getBallTravelTime()).getXYVector();
-		var text = String.format("%.2f s (%.2f)", iteration.getSlackTime(), iteration.getIncludedSlackTimeBonus());
-		getShapes(EAiShapesLayer.KEEPER_INTERCEPT).add(new DrawableAnnotation(pos, text, true));
+		lastKeeper = getAiFrame().getKeeperId();
 	}
 
 
@@ -128,25 +106,19 @@ public class KeeperBallInterceptionCalc extends ACalculator
 	}
 
 
-	private InterceptionIteration getPreviousInterceptionIteration()
+	private Optional<IVector2> getPreviousInterceptionTarget(BotID botID)
 	{
-		return Optional.ofNullable(previousInterceptionPosition)
-				.map(point -> ballTrajectory.closestPointTo(point))
-				.filter(point -> ballInterceptor.isPositionLegal(point))
-				.map(point -> ballInterceptor.createInterceptionIterationFromPreviousTarget(getWFrame().getBot(keeper),
-						point, getBall())).orElse(null);
-	}
+		if (botID != lastKeeper)
+		{
+			return Optional.empty();
+		}
 
-
-	private Optional<IVector2> invalidatePreviousInterceptionPositions()
-	{
 		if (getAiFrame().getPrevFrame().getTacticalField().getKeeperBehavior() != EKeeperActionType.INTERCEPT_PASS)
 		{
 			return Optional.empty();
 		}
 		var ballDir = ballTrajectory.getTravelLine().directionVector();
 		return Optional.ofNullable(previousInterceptionPosition)
-				.filter(
-						pos -> (ballDir.angleToAbs(pos.subtractNew(getBall().getPos())).orElse(0.0) < AngleMath.deg2rad(15)));
+				.filter(p -> (ballDir.angleToAbs(p.subtractNew(getBall().getPos())).orElse(0.0) < AngleMath.deg2rad(15)));
 	}
 }

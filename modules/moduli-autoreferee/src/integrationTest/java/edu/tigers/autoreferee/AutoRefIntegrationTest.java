@@ -16,76 +16,61 @@ import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.ETeamColor;
 import edu.tigers.sumatra.log.LogEventWatcher;
 import edu.tigers.sumatra.model.SumatraModel;
-import edu.tigers.sumatra.persistence.BerkeleyAccessor;
-import edu.tigers.sumatra.persistence.BerkeleyAsyncRecorder;
-import edu.tigers.sumatra.persistence.BerkeleyDb;
-import edu.tigers.sumatra.persistence.log.BerkeleyLogEvent;
-import edu.tigers.sumatra.persistence.log.BerkeleyLogRecorder;
+import edu.tigers.sumatra.persistence.EPersistenceKeyType;
+import edu.tigers.sumatra.persistence.PersistenceAsyncRecorder;
+import edu.tigers.sumatra.persistence.PersistenceDb;
+import edu.tigers.sumatra.persistence.log.PersistenceLogEvent;
+import edu.tigers.sumatra.persistence.log.PersistenceLogRecorder;
 import edu.tigers.sumatra.referee.gameevent.GameEventFactory;
 import edu.tigers.sumatra.referee.gameevent.IGameEvent;
 import edu.tigers.sumatra.referee.gameevent.SimilarityChecker;
-import edu.tigers.sumatra.wp.BerkeleyShapeMapFrame;
-import edu.tigers.sumatra.wp.ShapeMapBerkeleyRecorder;
-import edu.tigers.sumatra.wp.WfwBerkeleyRecorder;
+import edu.tigers.sumatra.wp.PersistenceShapeMapFrame;
+import edu.tigers.sumatra.wp.ShapeMapPersistenceRecorder;
+import edu.tigers.sumatra.wp.WfwPersistenceRecorder;
 import edu.tigers.sumatra.wp.data.WorldFrameWrapper;
 import lombok.Builder;
-import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.Value;
 import lombok.extern.log4j.Log4j2;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.LogEvent;
 import org.apache.logging.log4j.message.Message;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.TestInfo;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.fail;
 
 
-@RunWith(Parameterized.class)
 @Log4j2
-@RequiredArgsConstructor
-public class AutoRefIntegrationTest
+class AutoRefIntegrationTest
 {
 	private static final String MODULI_CONFIG = "integration_test.xml";
 	private static final String TEST_CASE_DIR = "config/autoref-tests";
 
 	private static SimilarityChecker similarityChecker;
 
-	private final String name;
-	private final TestCase testCase;
-	private BerkeleyAsyncRecorder recorder;
+	private PersistenceAsyncRecorder recorder;
 	private final LogEventWatcher logEventWatcher = new LogEventWatcher(Level.WARN, Level.ERROR);
 	private boolean testCaseSucceeded;
 
 
-	@Parameterized.Parameters(name = "{0}")
-	public static Collection<Object[]> data()
-	{
-		return findTestCases().stream().map(t -> new Object[] { t.getName(), t }).collect(Collectors.toList());
-	}
-
-
-	@BeforeClass
-	public static void beforeClass()
+	@BeforeAll
+	static void beforeClass()
 	{
 		ConfigRegistration.setDefPath("../../config/");
 		SumatraModel.getInstance().setCurrentModuliConfig(MODULI_CONFIG);
@@ -97,8 +82,8 @@ public class AutoRefIntegrationTest
 
 
 	@SneakyThrows
-	@Before
-	public void before()
+	@BeforeEach
+	void before(TestInfo testInfo)
 	{
 		logEventWatcher.clear();
 		logEventWatcher.start();
@@ -106,23 +91,24 @@ public class AutoRefIntegrationTest
 		SumatraModel.getInstance().startModules();
 		SumatraModel.getInstance().getModule(AutoRefModule.class).changeMode(EAutoRefMode.PASSIVE);
 
-		BerkeleyDb db = BerkeleyDb.withCustomLocation(Paths.get("../../" + BerkeleyDb.getDefaultBasePath(),
-				BerkeleyDb.getDefaultName("FRIENDLY", "NORMAL_FIRST_HALF","yellow", "blue") + "_" + name));
-		db.add(BerkeleyLogEvent.class, new BerkeleyAccessor<>(BerkeleyLogEvent.class, false));
-		db.add(BerkeleyShapeMapFrame.class, new BerkeleyAccessor<>(BerkeleyShapeMapFrame.class, true));
-		db.add(WorldFrameWrapper.class, new BerkeleyAccessor<>(WorldFrameWrapper.class, true));
+		String name = testInfo.getTestMethod().toString();
+		PersistenceDb db = PersistenceDb.withCustomLocation(Paths.get("../../" + PersistenceDb.getDefaultBasePath(),
+				PersistenceDb.getDefaultName("FRIENDLY", "NORMAL_FIRST_HALF", "yellow", "blue") + "_" + name));
+		db.add(PersistenceLogEvent.class, EPersistenceKeyType.ARBITRARY);
+		db.add(PersistenceShapeMapFrame.class, EPersistenceKeyType.SUMATRA_TIMESTAMP);
+		db.add(WorldFrameWrapper.class, EPersistenceKeyType.SUMATRA_TIMESTAMP);
 
-		recorder = new BerkeleyAsyncRecorder(db);
-		recorder.add(new BerkeleyLogRecorder(db));
-		recorder.add(new WfwBerkeleyRecorder(db));
-		recorder.add(new ShapeMapBerkeleyRecorder(db));
+		recorder = new PersistenceAsyncRecorder(db);
+		recorder.add(new PersistenceLogRecorder(db));
+		recorder.add(new WfwPersistenceRecorder(db));
+		recorder.add(new ShapeMapPersistenceRecorder(db));
 		recorder.start();
 	}
 
 
 	@SneakyThrows
-	@After
-	public void after()
+	@AfterEach
+	void after()
 	{
 		logEventWatcher.stop();
 		recorder.stop();
@@ -137,8 +123,9 @@ public class AutoRefIntegrationTest
 	}
 
 
-	@Test
-	public void runTestCase()
+	@ParameterizedTest(allowZeroInvocations = true)
+	@MethodSource("findTestCases")
+	void runTestCase(TestCase testCase)
 	{
 		log.info("Start running test case {}", testCase.getName());
 		GameLogReader logReader = new GameLogReader();
@@ -167,18 +154,18 @@ public class AutoRefIntegrationTest
 
 			if (gameEvents.isEmpty() && desiredGameEvent != null)
 			{
-				Assert.fail("Expected game event: " + desiredGameEvent);
+				fail("Expected game event: " + desiredGameEvent);
 			}
 			if (desiredGameEvent == null && !gameEvents.isEmpty())
 			{
-				Assert.fail("Expected no game events, but got: " + gameEvents);
+				fail("Expected no game events, but got: " + gameEvents);
 			}
 
 			for (var gameEvent : gameEvents)
 			{
 				if (!similarityChecker.isSimilar(gameEvent, desiredGameEvent))
 				{
-					Assert.fail("Game event mismatch.\nExpected: " + desiredGameEvent + "\n     Got: " + gameEvent);
+					fail("Game event mismatch.\nExpected: " + desiredGameEvent + "\n     Got: " + gameEvent);
 				}
 				if (desiredEvent.getStopAfterEvent())
 				{
@@ -193,12 +180,12 @@ public class AutoRefIntegrationTest
 	}
 
 
-	private static List<TestCase> findTestCases()
+	private static Stream<TestCase> findTestCases()
 	{
 		Path testCaseDir = Path.of(TEST_CASE_DIR);
 		if (!testCaseDir.toFile().exists())
 		{
-			return Collections.emptyList();
+			return Stream.of();
 		}
 		try (Stream<Path> stream = Files.walk(testCaseDir))
 		{
@@ -206,7 +193,8 @@ public class AutoRefIntegrationTest
 					.filter(p -> p.getFileName().toString().endsWith(".json"))
 					.map(AutoRefIntegrationTest::createTestCase)
 					.sorted(Comparator.comparing(TestCase::getName))
-					.collect(Collectors.toList());
+					.toList()
+					.stream();
 		} catch (IOException e)
 		{
 			throw new IllegalStateException("Could not walk through test case folder.", e);
@@ -269,7 +257,7 @@ public class AutoRefIntegrationTest
 
 	@Value
 	@Builder
-	private static class TestCase
+	static class TestCase
 	{
 		String name;
 		Path logfileLocation;

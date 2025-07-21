@@ -9,32 +9,12 @@ plugins {
     id 'sumatra.protobuf'
 }
 
-def osClassifier = {
-    def os = System.getProperty("os.name").toLowerCase()
-    if (os.contains("windows")) {
-        return "windows_amd64"
-    } else if (os.contains("linux")) {
-        return "linux_amd64"
-    } else if (os.contains("mac")) {
-        if (System.getProperty("os.arch") == "aarch64") {
-            return "darwin_arm64"
-        }
-        return "darwin_amd64"
-    } else {
-        throw new IllegalStateException("Unknown operating system: ${os}")
-    }
-}()
-
 dependencies {
     implementation project(':common')
     implementation project(':common-math')
+    implementation project(':sumatra-model')
     implementation project(':moduli-geometry')
     implementation project(':moduli-gamelog')
-    implementation project(':sumatra-model')
-
-    implementation(libs.com.github.TIGERs.mannheim.moduli)
-    implementation(libs.com.github.g3force.configurable)
-    implementation(libs.com.github.g3force.instanceables)
 
     implementation(libs.org.apache.logging.log4j.log4j.api)
 
@@ -43,9 +23,6 @@ dependencies {
     implementation(libs.commons.io)
 
     api(libs.com.google.protobuf.protobuf.java)
-    implementation(libs.com.sleepycat.je)
 
-    if (!project.property("compactBuild").toBoolean()) {
-        runtimeOnly(variantOf(libs.com.github.TIGERs.mannheim.ssl.game.controller.maven) { classifier(osClassifier) })
-    }
+    runtimeOnly(libs.com.github.TIGERs.mannheim.ssl.game.controller.maven)
 }

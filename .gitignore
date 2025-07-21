@@ -13,6 +13,7 @@ sonarlint
 s101plugin.properties
 .idea/artifacts
 *state-store.json.stream
+.DS_Store
 
 doc/**/*.html
 doc/**/*-guide.pdf
@@ -28,3 +29,4 @@ cache
 out
 **/test/generated_tests
 **/integrationTest/generated
+/modules/moduli-autoreferee/config/autoref-tests

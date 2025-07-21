@@ -4,7 +4,7 @@
 
 package edu.tigers.sumatra.persistence.processors;
 
-import edu.tigers.sumatra.ai.BerkeleyAiFrame;
+import edu.tigers.sumatra.ai.PersistenceAiFrame;
 import edu.tigers.sumatra.ai.VisualizationFrame;
 import edu.tigers.sumatra.export.CSVExporter;
 import edu.tigers.sumatra.ids.ETeamColor;
@@ -16,14 +16,14 @@ import java.util.List;
 import java.util.Map;
 
 
-public class AiFrameSizeAnalyzer implements ISizeAnalyzer<BerkeleyAiFrame>
+public class AiFrameSizeAnalyzer implements IPersistenceDbAnalyzer<PersistenceAiFrame>
 {
 	private final ObjectSizeAnalyzer objectSizeAnalyzer = new ObjectSizeAnalyzer();
 	private final Map<String, Long> sizes = new LinkedHashMap<>();
 
 
 	@Override
-	public void process(BerkeleyAiFrame frame)
+	public void process(PersistenceAiFrame frame)
 	{
 		Map<String, Object> measures = new LinkedHashMap<>();
 		measures.put("berkeleyAiFrame", frame);
@@ -38,7 +38,6 @@ public class AiFrameSizeAnalyzer implements ISizeAnalyzer<BerkeleyAiFrame>
 				measures.put("matchStats" + qualifier, visFrame.getMatchStats());
 				measures.put("offensiveStrategy" + qualifier, visFrame.getOffensiveStrategy());
 				measures.put("offensiveActions" + qualifier, visFrame.getOffensiveActions());
-				measures.put("offensiveStatisticsFrame" + qualifier, visFrame.getOffensiveStatisticsFrame());
 				measures.put("ballInterceptions" + qualifier, visFrame.getBallInterceptionInformationMap());
 				measures.put("activeSupportBehaviors" + qualifier, visFrame.getActiveSupportBehaviors());
 				measures.put("supportBehaviorAssignment" + qualifier, visFrame.getSupportBehaviorAssignment());

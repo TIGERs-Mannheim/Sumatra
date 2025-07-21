@@ -3,12 +3,12 @@
  */
 package edu.tigers.sumatra.botmanager.commands.tigerv2;
 
-import com.sleepycat.persist.model.Persistent;
 import edu.tigers.sumatra.bot.EBallObservationState;
 import edu.tigers.sumatra.bot.EDribbleTractionState;
 import edu.tigers.sumatra.bot.EDribblerTemperature;
 import edu.tigers.sumatra.bot.EFeature;
 import edu.tigers.sumatra.bot.ERobotMode;
+import edu.tigers.sumatra.botmanager.botskills.data.EKickerDevice;
 import edu.tigers.sumatra.botmanager.commands.ACommand;
 import edu.tigers.sumatra.botmanager.commands.ECommand;
 import edu.tigers.sumatra.botmanager.serial.SerialData;
@@ -29,7 +29,6 @@ import java.util.List;
  *
  * @author AndreR
  */
-@Persistent
 public class TigerSystemMatchFeedback extends ACommand implements IExportable
 {
 	private static final int UNUSED_FIELD = 0x7FFF;
@@ -87,6 +86,21 @@ public class TigerSystemMatchFeedback extends ACommand implements IExportable
 	 */
 	@SerialData(type = ESerialDataType.INT16)
 	private final int[] ballPosition = new int[2];
+	/**
+	 * [0.05ms]
+	 */
+	@SerialData(type = ESerialDataType.UINT8)
+	private int lastKickDuration;
+	/**
+	 * [0.0625m/s], vel = 7 bits, kick device = 1 bit (MSB)
+	 */
+	@SerialData(type = ESerialDataType.UINT8)
+	private int lastKickDribbleVelDev;
+	/**
+	 * [0.0625N]
+	 */
+	@SerialData(type = ESerialDataType.UINT8)
+	private int lastKickDribbleForce;
 
 
 	/**
@@ -119,6 +133,10 @@ public class TigerSystemMatchFeedback extends ACommand implements IExportable
 		nbrs.add(getKickerPercentage());
 		nbrs.add(getDribbleTractionState().getId());
 		nbrs.add(getBallObservationState().getId());
+		nbrs.add(getLastKickDevice().getValue());
+		nbrs.add(getLastKickDuration());
+		nbrs.add(getLastKickDribblerSpeed());
+		nbrs.add(getLastKickDribblerForce());
 		return nbrs;
 	}
 
@@ -126,9 +144,12 @@ public class TigerSystemMatchFeedback extends ACommand implements IExportable
 	@Override
 	public List<String> getHeaders()
 	{
-		return Arrays.asList("pos_x", "pos_y", "pos_z", "vel_x", "vel_y", "vel_z", "pos_valid", "vel_valid",
+		return Arrays.asList(
+				"pos_x", "pos_y", "pos_z", "vel_x", "vel_y", "vel_z", "pos_valid", "vel_valid",
 				"kickerLevel", "dribbleSpeed", "batteryPercentage", "barrierInterrupted", "kickCounter", "dribblerTemp",
-				"features", "ball_x", "ball_y", "ball_valid", "kickerPercentage", "dribbleTraction", "ballObservation");
+				"features", "ball_x", "ball_y", "ball_valid", "kickerPercentage", "dribbleTraction", "ballObservation",
+				"lastKickDev", "lastKickDuration", "lastKickDribVel", "lastKickDribForce"
+				);
 	}
 
 
@@ -339,6 +360,105 @@ public class TigerSystemMatchFeedback extends ACommand implements IExportable
 
 
 	/**
+	 * Duration of last kick in [ms].
+	 *
+	 * @return
+	 */
+	public double getLastKickDuration()
+	{
+		return lastKickDuration * 0.05;
+	}
+
+
+	/**
+	 * Last kick duration in [ms]
+	 *
+	 * @param duration
+	 */
+	public void setLastKickDuration(double duration)
+	{
+		lastKickDuration = (int) (duration / 0.05 + 0.5);
+	}
+
+
+	/**
+	 * Dribbling bar surface speed in [m/s] during last kick.
+	 *
+	 * @return
+	 */
+	public double getLastKickDribblerSpeed()
+	{
+		return (lastKickDribbleVelDev & 0x7F) * 0.0625;
+	}
+
+
+	/**
+	 * Set dribbling bar surface speed of last kick in [m/s].
+	 *
+	 * @param speed
+	 */
+	public void setLastKickDribblerSpeed(double speed)
+	{
+		lastKickDribbleVelDev &= 0x80;
+		lastKickDribbleVelDev |= (int) (speed / 0.0625 + 0.5);
+	}
+
+
+	/**
+	 * Dribbling bar surface force in [N] during last kick.
+	 *
+	 * @return
+	 */
+	public double getLastKickDribblerForce()
+	{
+		return lastKickDribbleForce * 0.0625;
+	}
+
+
+	/**
+	 * Set dribbling bar surface speed of last kick in [N].
+	 *
+	 * @param force
+	 */
+	public void setLastKickDribblerForce(double force)
+	{
+		lastKickDribbleForce = (int) (force / 0.0625 + 0.5);
+	}
+
+
+	/**
+	 * Device used for last kick.
+	 *
+	 * @return
+	 */
+	public EKickerDevice getLastKickDevice()
+	{
+		if ((lastKickDribbleVelDev & 0x80) != 0)
+		{
+			return EKickerDevice.CHIP;
+		}
+
+		return EKickerDevice.STRAIGHT;
+	}
+
+
+	/**
+	 * Set device used for last kick.
+	 *
+	 * @param device
+	 */
+	public void setLastKickDevice(EKickerDevice device)
+	{
+		lastKickDribbleVelDev &= 0x7F;
+
+		if (device == EKickerDevice.CHIP)
+		{
+			lastKickDribbleVelDev |= 0x80;
+		}
+	}
+
+
+	/**
 	 * @return the hardwareId
 	 */
 	public int getHardwareId()
@@ -458,12 +578,12 @@ public class TigerSystemMatchFeedback extends ACommand implements IExportable
 
 
 	/**
-	 * @param dribblerSpeed [RPM]
+	 * @param dribblerSpeed Dribbling bar surface speed in [m/s]
 	 */
 	public void setDribblerSpeed(final double dribblerSpeed)
 	{
 		dribblerState &= 0x03;
-		dribblerState |= ((int) ((dribblerSpeed + 250.0) / 500.0)) << 2;
+		dribblerState |= ((int) (dribblerSpeed * 4.0 + 0.5)) << 2;
 	}
 
 

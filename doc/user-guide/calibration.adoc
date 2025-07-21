@@ -163,3 +163,19 @@ The parameters are stored under Cfg -> geom -> edu.tigers.sumatra.geometry.BallP
 
 The parameters can be determined using the "Ball & Kick Model" view which shows further instructions.
 Any passing or redirect test play can be used to perform redirects.
+
+=== Arm Early
+
+When a robot wants to shoot while rotating, the delay between the decision to arm/kick and the robot to actually kick the ball leads to situations where the robot rotates a bit too far before kicking.
+To counteract this effect arm early arms the kicker before reaching the desired rotation.
+
+To calibrate this the `TestTouchKickSkillPlay` exists. It enforces kicks while moving and rotating with the ball. Simultaneously you can adjust the `orientationLookaheadKickerArm` to change how early the kicker will be armed.
+
+=== Dribbling
+
+Depending on the carpet, the safe dribbling movement limits for Protect and Finisher have to be determined.
+
+Therefore, use the `DribbleTestRole`, preferably with the `fullAuto` configuration via the roles test view. The `DribbleTestRole` uses the `DragBallSkill`, which is also the skill used during a match when a Protect action is active. Adjust the velocity and acceleration limits in `DragBallSkill` as needed.
+
+The Finisher can be tested with the `DribbleKickTestRole` in a similar manner. Then, adjust the movement limits in `DribbleKickSkill`.
+

@@ -12,7 +12,9 @@ import edu.tigers.sumatra.ai.metis.kicking.PassFactory;
 import edu.tigers.sumatra.ai.metis.offense.OffensiveConstants;
 import edu.tigers.sumatra.ai.metis.offense.OffensiveMath;
 import edu.tigers.sumatra.ai.metis.targetrater.RotationTimeHelper;
+import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.BotID;
+import edu.tigers.sumatra.math.line.LineMath;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.pathfinder.TrajectoryGenerator;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
@@ -25,6 +27,9 @@ public class PassCreator
 {
 	@Configurable(defValue = "0.3", comment = "The time [s] that the pass receiver should get after it moved to the target pos")
 	private static double minPassReceiverPrepareTime = 0.3;
+
+	@Configurable(defValue = "1.0", comment = "[s] min pass duration")
+	private static double defaultMinPassDuration = 1.0;
 
 	static
 	{
@@ -44,13 +49,14 @@ public class PassCreator
 
 	public List<Pass> createPasses(KickOrigin passOrigin, IVector2 pos, BotID receiver)
 	{
-		var minPassDuration = timeUntilBotReached(pos, receiver)
+		var origin = passOrigin.getPos();
+		var minPassDuration = timeUntilReceiverReachedTarget(origin, pos, receiver)
 				- passOrigin.impactTimeOrZero()
 				+ minPassReceiverPrepareTime;
-		var origin = passOrigin.getPos();
+		minPassDuration = Math.max(minPassDuration, defaultMinPassDuration);
+
 		var shooter = passOrigin.getShooter();
 		var prepTime = preparationTime(wFrame.getBot(shooter), pos.subtractNew(origin));
-
 		var ballPos = this.wFrame.getBall().getPos();
 		boolean isRedirectable = OffensiveMath.getRedirectAngle(ballPos, passOrigin.getPos(), pos)
 				< OffensiveConstants.getMaximumReasonableRedirectAngle();
@@ -72,13 +78,14 @@ public class PassCreator
 	}
 
 
-	private double timeUntilBotReached(final IVector2 pos, final BotID botID)
+	private double timeUntilReceiverReachedTarget(IVector2 origin, IVector2 pos, BotID botID)
 	{
 		ITrackedBot tBot = wFrame.getBot(botID);
 		if (tBot == null)
 		{
 			return 0;
 		}
-		return TrajectoryGenerator.generatePositionTrajectory(tBot, pos).getTotalTime();
+		IVector2 dest = LineMath.stepAlongLine(pos, origin, -(tBot.getCenter2DribblerDist() + Geometry.getBallRadius()));
+		return TrajectoryGenerator.generatePositionTrajectory(tBot, dest).getTotalTime();
 	}
 }

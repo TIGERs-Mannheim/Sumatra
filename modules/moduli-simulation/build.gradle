@@ -19,9 +19,6 @@ dependencies {
     implementation project(':moduli-cam')
     implementation project(':moduli-geometry')
 
-    implementation(libs.com.github.TIGERs.mannheim.moduli)
-    implementation(libs.com.github.g3force.configurable)
-
     implementation(libs.org.apache.logging.log4j.log4j.api)
 
     implementation(libs.com.google.protobuf.protobuf.java)

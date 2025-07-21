@@ -3,13 +3,13 @@
  */
 package edu.tigers.sumatra.ai;
 
+import edu.tigers.sumatra.ai.athena.EAIControlState;
+import edu.tigers.sumatra.ids.EAiTeam;
+import edu.tigers.sumatra.moduli.AModule;
+
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
-
-import edu.tigers.moduli.AModule;
-import edu.tigers.sumatra.ai.athena.EAIControlState;
-import edu.tigers.sumatra.ids.EAiTeam;
 
 
 /**

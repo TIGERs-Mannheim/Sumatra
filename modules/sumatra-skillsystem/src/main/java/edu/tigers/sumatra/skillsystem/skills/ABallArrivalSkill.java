@@ -16,7 +16,7 @@ import edu.tigers.sumatra.math.line.Lines;
 import edu.tigers.sumatra.math.pose.Pose;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
-import edu.tigers.sumatra.math.vector.Vector2f;
+import edu.tigers.sumatra.pathfinder.TrajectoryGenerator;
 import edu.tigers.sumatra.skillsystem.ESkillShapesLayer;
 import edu.tigers.sumatra.skillsystem.skills.util.PositionValidator;
 import edu.tigers.sumatra.wp.data.KickedBall;
@@ -46,20 +46,28 @@ public abstract class ABallArrivalSkill extends AMoveToSkill
 	@Configurable(defValue = "0.1", comment = "[s] Maximum expected time the vision might deviate from the real world")
 	private static double maxExpectedVisionTimeDeviation = 0.1;
 
+	@Configurable(defValue = "0.0", comment = "[s] offset to the ballArrivalTime to allow tuning the timing of overshooting trajectories")
+	private static double ballArrivalTimeOffset = 0;
+
 	private final PositionValidator positionValidator = new PositionValidator();
 	@Setter
 	protected IVector2 ballReceivingPosition;
 	@Setter
 	private Hysteresis ballSpeedHysteresis = new Hysteresis(0.1, 0.6);
+	@Setter
+	private double maxReceptionHeight = 0;
+	@Setter
+	private boolean useOvershoot = false;
 	private IVector2 currentBallReceivingPosition;
 	@Getter(AccessLevel.PROTECTED)
 	@Setter(AccessLevel.PROTECTED)
 	private double desiredTargetAngle;
 
 
-	protected final boolean receivingPositionIsReachableByBall(IVector2 pos)
+	private boolean receivingPositionIsReachableByBall(IVector2 pos)
 	{
-		return getBall().getTrajectory().closestPointTo(pos).distanceTo(pos) < maxDistanceToReceivingPosition;
+		return getBall().getTrajectory().closestPointToBelow(pos, maxReceptionHeight).distanceTo(pos)
+				< maxDistanceToReceivingPosition;
 	}
 
 
@@ -105,7 +113,6 @@ public abstract class ABallArrivalSkill extends AMoveToSkill
 
 		updateTargetAngle(calcTargetAngle(currentBallReceivingPosition));
 		updateDestination(calcDest());
-		getMoveConstraints().setPrimaryDirection(calcPrimaryDirection());
 
 		drawShapes();
 
@@ -120,7 +127,7 @@ public abstract class ABallArrivalSkill extends AMoveToSkill
 				getBall().getVel().scaleToNew(-distance).add(getBall().getPos()));
 
 		return previousInterceptionPoint.nearestTo(List.of(
-				getBall().getTrajectory().closestPointTo(previousInterceptionPoint),
+				getBall().getTrajectory().closestPointToBelow(previousInterceptionPoint, maxReceptionHeight),
 				ballLineProjectedBack.closestPointOnPath(previousInterceptionPoint)
 		));
 	}
@@ -171,25 +178,24 @@ public abstract class ABallArrivalSkill extends AMoveToSkill
 	}
 
 
-	protected IVector2 calcDest()
+	private IVector2 calcDest()
 	{
 		IVector2 dest = BotShape.getCenterFromKickerPos(currentBallReceivingPosition, getTargetAngle(),
 				getTBot().getCenter2DribblerDist() + Geometry.getBallRadius());
 
 		// the bot may drive through the penArea, but it should not have a destination inside,
 		// because touching the ball while being partially inside the penArea is a foul.
-		return positionValidator.movePosOutOfPenAreaWrtBall(dest, marginBetweenDestAndPenArea,
+		var finalDest = positionValidator.movePosOutOfPenAreaWrtBall(dest, marginBetweenDestAndPenArea,
 				getMoveCon().getConsideredPenAreas());
-	}
 
-
-	private IVector2 calcPrimaryDirection()
-	{
-		if (getBall().getVel().getLength2() > 0.2)
+		if (!useOvershoot)
 		{
-			return getBall().getVel();
+			return finalDest;
 		}
-		return Vector2f.ZERO_VECTOR;
+
+		var ballTime = getBall().getTrajectory().getTimeByPos(currentBallReceivingPosition);
+		return TrajectoryGenerator.generateVirtualPositionToReachPointInTime(getTBot(), finalDest,
+				ballTime + ballArrivalTimeOffset);
 	}
 
 

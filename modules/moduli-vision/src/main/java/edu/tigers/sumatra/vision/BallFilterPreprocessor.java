@@ -42,6 +42,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
 
@@ -69,8 +70,6 @@ public class BallFilterPreprocessor
 	private final KickDetectors kickDetectors = new KickDetectors();
 	private final KickEstimators kickEstimators = new KickEstimators();
 	private final List<IBallModelIdentificationObserver> observers = new CopyOnWriteArrayList<>();
-	@Configurable(comment = "Enable model identification solver", defValue = "false")
-	private boolean doModelIdentification = false;
 
 
 	/**
@@ -124,15 +123,6 @@ public class BallFilterPreprocessor
 		ballTrackerMerger.reset();
 		kickDetectors.reset();
 		kickEstimators.reset();
-	}
-
-
-	/**
-	 * @param doModelIdentification the doModelIdentification to set
-	 */
-	public void setDoModelIdentification(final boolean doModelIdentification)
-	{
-		this.doModelIdentification = doModelIdentification;
 	}
 
 
@@ -273,7 +263,7 @@ public class BallFilterPreprocessor
 			// Merge these few trackers
 			MergedBall mergedBall = BallTracker.mergeBallTrackers(distinctTrackers, timestamp);
 
-			mergedBall.getLatestCamBall().ifPresent(latestBall -> lastBallUpdateTimestamp = latestBall.gettCapture());
+			mergedBall.getLatestCamBall().ifPresent(latestBall -> lastBallUpdateTimestamp = latestBall.getTimestamp());
 
 			return mergedBall;
 		}
@@ -364,15 +354,12 @@ public class BallFilterPreprocessor
 				estimators.forEach(k -> k.addCamBall(ball.getLatestCamBall().get()));
 			}
 
-			// run completed check
-			if (doModelIdentification)
-			{
-				estimators.stream()
-						.filter(e -> e.isDone(mergedRobots, timestamp))
-						.map(IKickEstimator::getModelIdentResult)
-						.flatMap(List::stream)
-						.forEach(this::notifyBallModelIdentificationResult);
-			}
+			estimators.stream()
+					.filter(e -> e.isDone(mergedRobots, timestamp))
+					.forEach(estimator -> CompletableFuture.runAsync(() ->
+							estimator.getModelIdentResult()
+									.forEach(this::notifyBallModelIdentificationResult)
+					));
 			if (lastBestEstimator != null && lastBestEstimator.isDone(mergedRobots, timestamp))
 			{
 				// remove all estimators, if the currently active one finished
@@ -494,13 +481,15 @@ public class BallFilterPreprocessor
 		{
 			Optional<IKickEstimator> bestEstimator = estimators.stream()
 					.filter(k -> k.getFitResult().isPresent())
+					.filter(k -> k.getFitResult().get().getAvgDistance() > 0.0)
 					.min(Comparator.comparingDouble(k -> k.getFitResult().get().getAvgDistance()));
 
 			if (bestEstimator.isPresent())
 			{
 				IKickEstimator est = bestEstimator.get();
 				boolean noLastBestEstimator = (lastBestEstimator == null) || !estimators.contains(lastBestEstimator);
-				if (noLastBestEstimator || ((est != lastBestEstimator) && (est.getFitResult().orElseThrow()
+				if (noLastBestEstimator || lastBestEstimator.getFitResult().isEmpty() || ((est != lastBestEstimator) && (
+						est.getFitResult().orElseThrow()
 						.getAvgDistance() < (lastBestEstimator.getFitResult().orElseThrow().getAvgDistance()
 						* (1.0 - estimatorSwitchHysteresis))))
 						|| (lastBestEstimator.getType() == est.getType()))

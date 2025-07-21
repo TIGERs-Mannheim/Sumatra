@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.metis.general;
@@ -7,6 +7,7 @@ package edu.tigers.sumatra.ai.metis.general;
 import com.github.g3force.configurable.Configurable;
 import edu.tigers.sumatra.ai.metis.ACalculator;
 import edu.tigers.sumatra.ai.pandora.plays.EPlay;
+import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.model.SumatraModel;
 import edu.tigers.sumatra.referee.data.EGameState;
 import edu.tigers.sumatra.referee.data.GameState;
@@ -27,7 +28,6 @@ import java.util.function.Supplier;
 @RequiredArgsConstructor
 public class PlayNumberCalc extends ACalculator
 {
-
 	@Configurable(defValue = "true", comment = "KEEP THIS ALWAYS ACTIVE, unless you're 100% sure. This will deactivate Offense during Running")
 	private static boolean activateOffenseDuringRunning = true;
 
@@ -83,8 +83,10 @@ public class PlayNumberCalc extends ACalculator
 			int assignedBots = assignedBots();
 			if (assignedBots != availableBots())
 			{
-				log.warn(String.format("Assigned number of bots does not match number of available (%d): %s",
-						availableBots(), playNumbers));
+				log.warn(
+						"Assigned number of bots does not match number of available ({}): {}",
+						availableBots(), playNumbers
+				);
 			}
 		}
 	}
@@ -158,7 +160,8 @@ public class PlayNumberCalc extends ACalculator
 
 	private void keeper()
 	{
-		if (getWFrame().getTigerBotsAvailable().containsKey(getAiFrame().getKeeperId()) && unassignedBots() > 0)
+		BotID keeperId = getAiFrame().getKeeperId();
+		if (getWFrame().getTigerBotsAvailable().containsKey(keeperId) && unassignedBots() > 0)
 		{
 			playNumbers.put(EPlay.KEEPER, 1);
 		}

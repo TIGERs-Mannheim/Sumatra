@@ -15,7 +15,7 @@ import edu.tigers.sumatra.math.line.Lines;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
 import org.assertj.core.data.Percentage;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
@@ -90,7 +90,7 @@ public class RectangleTest
 	public void testToJSON()
 	{
 		Rectangle rectangle = Rectangle.aroundLine(Vector2.fromX(-1), Vector2.fromX(1), 1);
-		assertThat(rectangle.toJSON().toJSONString()).isEqualTo("{\"extent\":[4.0,2.0],\"center\":[0.0,0.0]}");
+		assertThat(rectangle.toJSON().toJson()).isEqualTo("{\"extent\":[4.0,2.0],\"center\":[0.0,0.0]}");
 	}
 
 

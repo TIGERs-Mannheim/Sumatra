@@ -18,7 +18,4 @@ public enum EBallPossession
 	NO_ONE,
 	/** */
 	BOTH,
-	/** */
-	@Deprecated
-	UNKNOWN,
 }

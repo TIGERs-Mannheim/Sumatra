@@ -37,20 +37,11 @@ Keep in mind that making these configs persistent might confuse other developers
 
 ==== Recording match data
 
-We use the object database Oracle Berkeley DB Java Edition (http://www.oracle.com/technetwork/database/berkeleydb/overview/index-093405.html) for saving all the match data.
+We use a custom generic object serializer for saving all the match data.
+For more information regarding the serializer look into moduli-record/src/main/java/edu/tigers/sumatra/persistence/serializer/README.md.
 
 Each recording is associated with one database.
 A database is a folder containing some metadata files and numerated data files.
 They are stored in `data/record/`.
-
-All classes that should be persisted need to meet following requirements:
-* Must be annotated with `@com.sleepycat.persist.model.Persistent` (except for the few entities, which need `@Entity`)
-* Must have a no-args constructor which can be private
-* Fields that should not be persistent can be marked with `transient`
-
-The database supports mutations if older databases need to be converted to an altered class structure.
-Some changes do not need a mutations at all.
-Sometimes, it is sufficient to increment the version in the class annotation.
-Mutations can be added here: `RecordManager#getMutations()`
 
 include::08_concepts_ai.adoc[]

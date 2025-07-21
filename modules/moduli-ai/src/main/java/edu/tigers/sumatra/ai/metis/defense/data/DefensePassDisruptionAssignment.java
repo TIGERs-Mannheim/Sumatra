@@ -6,11 +6,10 @@ package edu.tigers.sumatra.ai.metis.defense.data;
 
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.vector.IVector2;
-import lombok.NonNull;
 import lombok.Value;
+import lombok.experimental.Accessors;
 
 
-@NonNull
 @Value
 public class DefensePassDisruptionAssignment implements Comparable<DefensePassDisruptionAssignment>
 {
@@ -18,8 +17,11 @@ public class DefensePassDisruptionAssignment implements Comparable<DefensePassDi
 	BotID defenderId;
 	IVector2 interceptionPoint;
 	IVector2 movementDestination;
-	boolean crucialMightMakeSense;
+	@Accessors(fluent = true)
+	boolean hasHighSuccessProbability;
 	boolean ignoreOpponentPassReceiverInPathPlanning;
+
+	EDefensePassDisruptionStrategyType strategyType;
 
 
 	@Override

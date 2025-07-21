@@ -3,23 +3,25 @@
  */
 package edu.tigers.autoref.view.generic;
 
-import java.awt.BorderLayout;
-import java.awt.Color;
-import java.awt.Graphics;
-import java.util.HashMap;
-import java.util.Map;
-
-import javax.swing.JPanel;
-
 import info.monitorenter.gui.chart.Chart2D;
 import info.monitorenter.gui.chart.IAxis;
+import info.monitorenter.gui.chart.IAxisScalePolicy;
 import info.monitorenter.gui.chart.ITracePoint2D;
+import info.monitorenter.gui.chart.axis.AAxis;
+import info.monitorenter.gui.chart.axis.scalepolicy.AxisScalePolicyManualTicks;
 import info.monitorenter.gui.chart.rangepolicies.RangePolicyFixedViewport;
 import info.monitorenter.gui.chart.traces.Trace2DLtd;
 import info.monitorenter.gui.chart.traces.Trace2DSimple;
 import info.monitorenter.gui.chart.traces.painters.TracePainterDisc;
 import info.monitorenter.gui.chart.traces.painters.TracePainterLine;
 import info.monitorenter.util.Range;
+
+import javax.swing.JPanel;
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Graphics;
+import java.util.HashMap;
+import java.util.Map;
 
 
 /**
@@ -132,6 +134,16 @@ public class FixedTimeRangeChartPanel extends JPanel
 	public void clipY(final double min, final double max)
 	{
 		mainChart.getAxisY().setRangePolicy(new RangePolicyFixedViewport(new Range(min, max)));
+	}
+
+
+	@SuppressWarnings("unchecked")
+	public void yTicks(double spacing)
+	{
+		AAxis<IAxisScalePolicy> yAxis = (AAxis<IAxisScalePolicy>) mainChart.getAxisY();
+
+		yAxis.setAxisScalePolicy(new AxisScalePolicyManualTicks());
+		yAxis.setMinorTickSpacing(spacing);
 	}
 	
 	

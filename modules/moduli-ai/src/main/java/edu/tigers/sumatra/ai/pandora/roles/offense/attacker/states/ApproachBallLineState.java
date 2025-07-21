@@ -6,6 +6,7 @@ package edu.tigers.sumatra.ai.pandora.roles.offense.attacker.states;
 
 import edu.tigers.sumatra.ai.metis.kicking.Kick;
 import edu.tigers.sumatra.ai.metis.offense.OffensiveConstants;
+import edu.tigers.sumatra.ai.metis.offense.action.EOffensiveActionType;
 import edu.tigers.sumatra.ai.pandora.roles.offense.attacker.AttackerRole;
 import edu.tigers.sumatra.pathfinder.EObstacleAvoidanceMode;
 import edu.tigers.sumatra.skillsystem.skills.ApproachBallLineSkill;
@@ -29,8 +30,12 @@ public class ApproachBallLineState extends AAttackerRoleState<ApproachBallLineSk
 		skill.setDesiredBallCatchPos(getRole().getAction().getBallContactPos());
 		skill.getMoveCon().setObstacleAvoidanceMode(EObstacleAvoidanceMode.AGGRESSIVE);
 		skill.setApproachFailedMinBallVel(OffensiveConstants.getAbortBallInterceptionVelThreshold());
+		skill.setUseOvershoot(OffensiveConstants.isAllowOvershootingBallInterceptions());
 
 		getRole().getAction().getKickOpt()
-				.map(Kick::getTarget).ifPresentOrElse(skill::setTarget, () -> skill.setTarget(null));
+				.map(Kick::getTarget)
+				.filter(e -> getRole().getAction() != null
+						&& getRole().getAction().getType() == EOffensiveActionType.REDIRECT_KICK)
+				.ifPresentOrElse(skill::setTarget, () -> skill.setTarget(null));
 	}
 }

@@ -3,10 +3,10 @@
  */
 package edu.tigers.sumatra.vision.kick.estimators;
 
-import java.util.Map;
-
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.IVector3;
+
+import java.util.Map;
 
 
 /**
@@ -52,4 +52,12 @@ public interface IBallModelIdentResult
 	 * @return
 	 */
 	Map<String, Double> getModelParameters();
+
+
+	/**
+	 * Amount of CamBall samples used to determine the result.
+	 * 
+	 * @return
+	 */
+	int getSampleAmount();
 }

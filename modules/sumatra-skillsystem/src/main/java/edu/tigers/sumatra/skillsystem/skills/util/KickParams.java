@@ -4,7 +4,6 @@
 
 package edu.tigers.sumatra.skillsystem.skills.util;
 
-import com.sleepycat.persist.model.Persistent;
 import edu.tigers.sumatra.botmanager.botskills.data.EKickerDevice;
 import edu.tigers.sumatra.geometry.RuleConstraints;
 import lombok.AccessLevel;
@@ -15,7 +14,6 @@ import lombok.Value;
 /**
  * Immutable kicker and dribbler parameters.
  */
-@Persistent
 @Value
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class KickParams
@@ -25,18 +23,12 @@ public class KickParams
 	EDribblerMode dribblerMode;
 	double dribbleSpeed;
 	double dribbleForce;
-
-
-	@SuppressWarnings("unused") // berkeley
-	private KickParams()
-	{
-		this(EKickerDevice.STRAIGHT, 0);
-	}
+	double armDuration;
 
 
 	private KickParams(final EKickerDevice device, final double kickSpeed)
 	{
-		this(device, kickSpeed, EDribblerMode.OFF, 0, 0);
+		this(device, kickSpeed, EDribblerMode.OFF, 0, 0, 0);
 	}
 
 
@@ -76,13 +68,19 @@ public class KickParams
 	}
 
 
+	public static KickParams armTime(EKickerDevice device, double duration)
+	{
+		return new KickParams(device, 0, EDribblerMode.OFF, 0, 0, duration);
+	}
+
+
 	public KickParams withDribblerMode(EDribblerMode dribblerMode)
 	{
 		if (dribblerMode == EDribblerMode.OFF
 				|| dribblerMode == EDribblerMode.DEFAULT
 				|| dribblerMode == EDribblerMode.HIGH_POWER)
 		{
-			return new KickParams(device, kickSpeed, dribblerMode, 0, 0);
+			return new KickParams(device, kickSpeed, dribblerMode, 0, 0, armDuration);
 		}
 		throw new IllegalArgumentException(
 				"Dribbler mode can not be set without additional parameters: " + dribblerMode);
@@ -91,7 +89,7 @@ public class KickParams
 
 	public KickParams withDribbleSpeed(double dribbleSpeed, double dribbleForce)
 	{
-		return new KickParams(device, kickSpeed, EDribblerMode.MANUAL, dribbleSpeed, dribbleForce);
+		return new KickParams(device, kickSpeed, EDribblerMode.MANUAL, dribbleSpeed, dribbleForce, armDuration);
 	}
 }
 

@@ -1,22 +1,24 @@
 /*
- * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.pandora.plays.standard;
 
+import edu.tigers.sumatra.ai.common.KeepDistanceToBall;
+import edu.tigers.sumatra.ai.common.PointChecker;
+import edu.tigers.sumatra.ai.metis.ballplacement.BallPlacementBotChooser;
 import edu.tigers.sumatra.ai.pandora.plays.APlay;
 import edu.tigers.sumatra.ai.pandora.plays.EPlay;
 import edu.tigers.sumatra.ai.pandora.roles.ARole;
 import edu.tigers.sumatra.ai.pandora.roles.move.MoveRole;
-import edu.tigers.sumatra.ai.pandora.roles.offense.KeepDistToBallRole;
 import edu.tigers.sumatra.ai.pandora.roles.placement.BallPlacementRole;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.line.LineMath;
 import edu.tigers.sumatra.math.vector.IVector2;
+import lombok.Setter;
 
-import java.util.Comparator;
-import java.util.Objects;
+import java.util.Optional;
 
 
 /**
@@ -24,6 +26,21 @@ import java.util.Objects;
  */
 public abstract class ABallPlacementPlay extends APlay
 {
+	private final KeepDistanceToBall keepDistanceToBall = new KeepDistanceToBall(new PointChecker()
+			.checkBallDistanceStatic()
+			.checkInsideField()
+			.checkPointFreeOfBots());
+
+	@Setter
+	private BotID forcedSoloPlacementBot;
+
+	@Setter
+	private Double placementTolerance;
+
+	private BotID lastPrimaryBot;
+	private BotID lastAssistantBot;
+
+
 	protected ABallPlacementPlay(final EPlay type)
 	{
 		super(type);
@@ -34,86 +51,94 @@ public abstract class ABallPlacementPlay extends APlay
 	{
 		IVector2 placementPos = getBallTargetPos();
 
-		if (getRoles().isEmpty())
+		if (getRoles().isEmpty() || placementPos == null)
 		{
 			return;
 		}
 
-		var currentBallPlacementBot = findRoles(BallPlacementRole.class).stream()
-				.map(BallPlacementRole::getBotID)
-				.findFirst().orElse(BotID.noBot());
-		if (getRoles().size() == 1)
+		var ballPlacementBotChooser = new BallPlacementBotChooser(
+				getBall(),
+				getBallTargetPos(),
+				getRoles().stream().map(ARole::getBot).toList(),
+				lastPrimaryBot,
+				lastAssistantBot
+		);
+
+		Optional<BotID> primaryBot = Optional.ofNullable(forcedSoloPlacementBot)
+				.or(ballPlacementBotChooser::choosePrimary);
+		if (primaryBot.isEmpty())
 		{
-			var placementRole = reassignRole(getRoles().getFirst(), BallPlacementRole.class, BallPlacementRole::new);
-			placementRole.setPassMode(BallPlacementRole.EPassMode.NONE);
-		} else if (useAssistant())
+			lastPrimaryBot = null;
+			lastAssistantBot = null;
+			return;
+		}
+		lastPrimaryBot = primaryBot.get();
+		var primaryRole = reassignRole(getRole(lastPrimaryBot), BallPlacementRole.class, BallPlacementRole::new);
+		var useAssistant = forcedSoloPlacementBot == null;
+
+		ballPlacementBotChooser.getOrderedAssistants(lastPrimaryBot).stream()
+				.filter(id -> useAssistant)
+				.findFirst()
+				.ifPresentOrElse(
+						assistant -> {
+							lastAssistantBot = assistant;
+							ARole assistantRole = assignAssistant(getRole(assistant), placementPos);
+							allRolesExcept(assistantRole, primaryRole).forEach(this::handleNonPlacingRole);
+						},
+						() -> {
+							lastAssistantBot = null;
+							primaryRole.setPassMode(BallPlacementRole.EPassMode.NONE);
+							allRolesExcept(primaryRole).forEach(this::handleNonPlacingRole);
+						}
+				);
+
+		findRoles(BallPlacementRole.class).forEach(r -> {
+			if (placementTolerance != null)
+			{
+				r.setPlacementTolerance(placementTolerance);
+			}
+			r.setBallTargetPos(placementPos);
+		});
+	}
+
+
+	private MoveRole assignAssistant(ARole receivingRole, IVector2 placementPos)
+	{
+		MoveRole receivingMoveRole = reassignRole(receivingRole, MoveRole.class, MoveRole::new);
+
+		double dist2Ball = receivingMoveRole.getBot().getCenter2DribblerDist() + Geometry.getBallRadius();
+		receivingMoveRole.updateDestination(LineMath.stepAlongLine(placementPos, getBall().getPos(), -dist2Ball));
+		receivingMoveRole.updateLookAtTarget(getBall());
+		boolean isReadyForPass = receivingMoveRole.isDestinationReached();
+
+		receivingMoveRole.getMoveCon().physicalObstaclesOnly();
+		receivingMoveRole.getMoveCon().setBallObstacle(!isReadyForPass);
+		if (isReadyForPass)
 		{
-			ARole ballPlacementRole = getRoles()
-					.stream()
-					.min(Comparator.comparing(r -> getBall().getTrajectory().distanceTo(r.getPos())
-							- ((Objects.equals(r.getBotID(), currentBallPlacementBot)) ? 500 : 0)))
-					.map(r -> reassignRole(r, BallPlacementRole.class, BallPlacementRole::new))
-					.orElseThrow();
-			MoveRole receivingRole = allRolesExcept(ballPlacementRole)
-					.stream()
-					.min(Comparator.comparing(r -> r.getPos().distanceToSqr(getBallTargetPos())))
-					.map(r -> reassignRole(r, MoveRole.class, MoveRole::new))
-					.orElseThrow();
-
-
-			double dist2Ball = receivingRole.getBot().getCenter2DribblerDist() + Geometry.getBallRadius();
-			receivingRole.updateDestination(LineMath.stepAlongLine(placementPos, getBall().getPos(), -dist2Ball));
-			receivingRole.updateLookAtTarget(getBall());
-			boolean isReadyForPass = receivingRole.isDestinationReached();
-
-			receivingRole.getMoveCon().physicalObstaclesOnly();
-			receivingRole.getMoveCon().setBallObstacle(!isReadyForPass);
-
-			findRoles(BallPlacementRole.class).forEach(r -> r.setPassMode(
-					isReadyForPass
-							? BallPlacementRole.EPassMode.READY
-							: BallPlacementRole.EPassMode.WAIT));
-
-			allRolesExcept(receivingRole, ballPlacementRole)
-					.forEach(this::handleNonPlacingRole);
+			receivingMoveRole.setDestinationAdjuster((aiFrame, destination, botID) -> destination);
 		} else
 		{
-			BallPlacementRole ballPlacementRole = getRoles()
-					.stream()
-					.min(Comparator.comparing(r -> getBall().getTrajectory().distanceTo(r.getPos())
-							- ((Objects.equals(r.getBotID(), currentBallPlacementBot)) ? 500 : 0)))
-					.map(r -> reassignRole(r, BallPlacementRole.class, BallPlacementRole::new))
-					.orElseThrow();
-
-			ballPlacementRole.setPassMode(BallPlacementRole.EPassMode.NONE);
-
-			allRolesExcept(ballPlacementRole)
-					.forEach(this::handleNonPlacingRole);
+			receivingMoveRole.setDestinationAdjuster(keepDistanceToBall::findNextFreeDest);
 		}
 
-		if (placementPos != null)
-		{
-			findRoles(BallPlacementRole.class).forEach(r -> r.setBallTargetPos(placementPos));
-		}
+		findRoles(BallPlacementRole.class).forEach(r -> r.setPassMode(
+				isReadyForPass
+						? BallPlacementRole.EPassMode.READY
+						: BallPlacementRole.EPassMode.WAIT));
+		return receivingMoveRole;
 	}
 
 
 	protected final boolean ballPlacementDone()
 	{
-		return !getRoles().isEmpty() && findRoles(BallPlacementRole.class).stream()
-				.allMatch(BallPlacementRole::isBallPlacedAndCleared);
-	}
-
-
-	protected boolean useAssistant()
-	{
-		return getRoles().size() > 1;
+		var placementRoles = findRoles(BallPlacementRole.class);
+		return !placementRoles.isEmpty() && placementRoles.stream().allMatch(BallPlacementRole::isBallPlacedAndCleared);
 	}
 
 
 	protected void handleNonPlacingRole(ARole role)
 	{
-		reassignRole(role, KeepDistToBallRole.class, KeepDistToBallRole::new);
+		reassignRole(role, MoveRole.class, MoveRole::new);
 	}
 
 

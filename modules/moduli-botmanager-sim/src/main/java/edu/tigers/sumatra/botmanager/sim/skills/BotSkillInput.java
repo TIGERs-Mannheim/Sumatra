@@ -5,6 +5,7 @@ package edu.tigers.sumatra.botmanager.sim.skills;
 
 import edu.tigers.sumatra.bot.params.IBotParams;
 import edu.tigers.sumatra.botmanager.botskills.ABotSkill;
+import edu.tigers.sumatra.botmanager.data.MatchBroadcast;
 import edu.tigers.sumatra.sim.dynamics.bot.SimBotState;
 
 
@@ -16,7 +17,7 @@ public record BotSkillInput(
 		SimBotState state,
 		IBotParams botParams,
 		long tNow,
-		boolean strictVelocityLimit
+		MatchBroadcast broadcast
 )
 {
 }

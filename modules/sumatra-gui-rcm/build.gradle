@@ -15,7 +15,6 @@ dependencies {
     implementation project(':moduli-botmanager')
 
     implementation(libs.com.github.TIGERs.mannheim.jinput)
-    implementation(libs.com.github.g3force.configurable)
 
     implementation(libs.org.apache.logging.log4j.log4j.api)
 }

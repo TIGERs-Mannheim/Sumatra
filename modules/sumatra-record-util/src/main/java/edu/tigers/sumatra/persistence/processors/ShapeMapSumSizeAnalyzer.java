@@ -8,7 +8,7 @@ import edu.tigers.sumatra.drawable.IShapeLayerIdentifier;
 import edu.tigers.sumatra.drawable.ShapeMap;
 import edu.tigers.sumatra.export.CSVExporter;
 import edu.tigers.sumatra.persistence.util.ObjectSizeAnalyzer;
-import edu.tigers.sumatra.wp.BerkeleyShapeMapFrame;
+import edu.tigers.sumatra.wp.PersistenceShapeMapFrame;
 
 import java.nio.file.Path;
 import java.util.Collection;
@@ -17,7 +17,7 @@ import java.util.List;
 import java.util.Map;
 
 
-public class ShapeMapSumSizeAnalyzer implements ISizeAnalyzer<BerkeleyShapeMapFrame>
+public class ShapeMapSumSizeAnalyzer implements IPersistenceDbAnalyzer<PersistenceShapeMapFrame>
 {
 	private final ObjectSizeAnalyzer objectSizeAnalyzer = new ObjectSizeAnalyzer();
 	private final Map<String, Long> sizes = new LinkedHashMap<>();
@@ -30,7 +30,7 @@ public class ShapeMapSumSizeAnalyzer implements ISizeAnalyzer<BerkeleyShapeMapFr
 
 
 	@Override
-	public void process(BerkeleyShapeMapFrame frame)
+	public void process(PersistenceShapeMapFrame frame)
 	{
 		frame.getShapeMaps().values().stream()
 				.map(ShapeMap::getAllShapeLayers)
@@ -42,7 +42,7 @@ public class ShapeMapSumSizeAnalyzer implements ISizeAnalyzer<BerkeleyShapeMapFr
 	}
 
 
-	private long calcSize(BerkeleyShapeMapFrame frame, IShapeLayerIdentifier shapeLayer)
+	private long calcSize(PersistenceShapeMapFrame frame, IShapeLayerIdentifier shapeLayer)
 	{
 		return frame.getShapeMaps().values().stream()
 				.map(shapeMap -> shapeMap.get(shapeLayer))

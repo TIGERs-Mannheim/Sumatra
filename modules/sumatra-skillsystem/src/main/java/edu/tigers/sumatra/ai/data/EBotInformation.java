@@ -26,6 +26,7 @@ public enum EBotInformation
 	DRIBBLE_FORCE("Dribble force [N]"),
 	DRIBBLE_TRACTION("Dribble traction"),
 	BALL_OBSERVATION("Ball observation"),
+	LAST_KICK("Last kick"),
 	PLAY("Play"),
 	ROLE("Role"),
 	ROLE_STATE("Role State"),

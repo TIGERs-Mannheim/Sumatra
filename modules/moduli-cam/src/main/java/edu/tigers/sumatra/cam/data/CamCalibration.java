@@ -3,6 +3,7 @@
  */
 package edu.tigers.sumatra.cam.data;
 
+import com.github.cliftonlabs.json_simple.JsonObject;
 import edu.tigers.sumatra.cam.proto.SslVisionGeometry.SSL_GeometryCameraCalibration;
 import edu.tigers.sumatra.export.IJsonString;
 import edu.tigers.sumatra.math.SumatraMath;
@@ -19,7 +20,6 @@ import org.apache.commons.math3.geometry.euclidean.threed.Rotation;
 import org.apache.commons.math3.linear.Array2DRowRealMatrix;
 import org.apache.commons.math3.linear.MatrixUtils;
 import org.apache.commons.math3.linear.RealMatrix;
-import org.json.simple.JSONObject;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -115,7 +115,7 @@ public class CamCalibration implements IJsonString
 
 
 	@Override
-	public JSONObject toJSON()
+	public JsonObject toJSON()
 	{
 		Map<String, Object> top = new LinkedHashMap<>();
 		top.put("id", cameraId);
@@ -133,7 +133,7 @@ public class CamCalibration implements IJsonString
 		top.put("derivedCameraWorldTx", cameraPosition.x());
 		top.put("derivedCameraWorldTy", cameraPosition.y());
 		top.put("derivedCameraWorldTz", cameraPosition.z());
-		return new JSONObject(top);
+		return new JsonObject(top);
 	}
 
 

@@ -3,18 +3,17 @@
  */
 package edu.tigers.sumatra.persistence;
 
+import edu.tigers.sumatra.ai.AIInfoFrame;
+import edu.tigers.sumatra.ai.PersistenceAiFrame;
+import edu.tigers.sumatra.ai.VisualizationFrame;
+import edu.tigers.sumatra.ids.ETeamColor;
+import edu.tigers.sumatra.wp.data.WorldFrameWrapper;
+import org.apache.commons.lang.Validate;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-
-import org.apache.commons.lang.Validate;
-
-import edu.tigers.sumatra.ai.AIInfoFrame;
-import edu.tigers.sumatra.ai.BerkeleyAiFrame;
-import edu.tigers.sumatra.ai.VisualizationFrame;
-import edu.tigers.sumatra.ids.ETeamColor;
-import edu.tigers.sumatra.wp.data.WorldFrameWrapper;
 
 
 /**
@@ -96,9 +95,9 @@ public class PersistenceTestHelper
 	 * @param wfw
 	 * @return
 	 */
-	private BerkeleyAiFrame createRecordFrame(final WorldFrameWrapper wfw)
+	private PersistenceAiFrame createRecordFrame(final WorldFrameWrapper wfw)
 	{
-		BerkeleyAiFrame recFrame = new BerkeleyAiFrame(wfw.getTimestamp());
+		PersistenceAiFrame recFrame = new PersistenceAiFrame(wfw.getTimestamp());
 		recFrame.addVisFrame(createVisualizationFrame(wfw, ETeamColor.YELLOW));
 		recFrame.addVisFrame(createVisualizationFrame(wfw, ETeamColor.BLUE));
 		return recFrame;
@@ -109,9 +108,9 @@ public class PersistenceTestHelper
 	 * @param wfw
 	 * @return
 	 */
-	private List<BerkeleyAiFrame> createOneRecordFrame(final WorldFrameWrapper wfw)
+	private List<PersistenceAiFrame> createOneRecordFrame(final WorldFrameWrapper wfw)
 	{
-		List<BerkeleyAiFrame> frames = new ArrayList<>(1);
+		List<PersistenceAiFrame> frames = new ArrayList<>(1);
 		frames.add(createRecordFrame(wfw));
 		return frames;
 	}
@@ -120,7 +119,7 @@ public class PersistenceTestHelper
 	/**
 	 * @return
 	 */
-	public List<BerkeleyAiFrame> createOneRecordFrame()
+	public List<PersistenceAiFrame> createOneRecordFrame()
 	{
 		return createOneRecordFrame(frameFactory.createWorldFrameWrapper(0, 0));
 	}

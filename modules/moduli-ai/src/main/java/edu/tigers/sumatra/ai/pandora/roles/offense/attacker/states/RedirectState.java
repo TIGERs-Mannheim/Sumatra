@@ -48,6 +48,8 @@ public class RedirectState extends AAttackerRoleState<RedirectBallSkill>
 		skill.setBallReceivingPosition(getRole().getAction().getBallContactPos());
 		skill.setTarget(getRole().getAction().getKick().getTarget());
 		skill.setDesiredKickParams(getRole().getAction().getKick().getKickParams());
+		skill.setMaxReceptionHeight(OffensiveConstants.getMaxInterceptHeight());
+		skill.setUseOvershoot(OffensiveConstants.isAllowOvershootingBallInterceptions());
 	}
 
 
@@ -59,5 +61,7 @@ public class RedirectState extends AAttackerRoleState<RedirectBallSkill>
 		skill.setBallReceivingPosition(getRole().getPos());
 		skill.setTarget(Geometry.getCenter());
 		skill.setDesiredKickParams(KickParams.maxStraight());
+		skill.setMaxReceptionHeight(OffensiveConstants.getMaxInterceptHeight());
+		skill.setUseOvershoot(OffensiveConstants.isAllowOvershootingBallInterceptions());
 	}
 }

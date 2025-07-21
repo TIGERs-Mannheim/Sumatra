@@ -3,25 +3,25 @@
  */
 package edu.tigers.sumatra.filter.ukf;
 
+import edu.tigers.sumatra.math.SumatraMath;
+import org.junit.jupiter.api.Test;
+
 import java.util.Arrays;
 
-import org.junit.Assert;
-import org.junit.Test;
-
-import edu.tigers.sumatra.math.SumatraMath;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 
 /**
  * @author AndreR
  */
-public class AUnscentedKalmanFilterTest
+class AUnscentedKalmanFilterTest
 {
-	private class PosVelUKF extends AUnscentedKalmanFilter
+	private static class PosVelUKF extends AUnscentedKalmanFilter
 	{
 		private final double	deltaT;
-		
-		
-		public PosVelUKF(final double dT)
+
+
+		PosVelUKF(final double dT)
 		{
 			super(2, 1, 0);
 			
@@ -44,13 +44,13 @@ public class AUnscentedKalmanFilterTest
 			measOut[0] = stateIn[0];
 		}
 	}
-	
-	private class BotUKF extends AUnscentedKalmanFilter
+
+	private static class BotUKF extends AUnscentedKalmanFilter
 	{
 		private final double	deltaT;
-		
-		
-		public BotUKF(final double dT)
+
+
+		BotUKF(final double dT)
 		{
 			super(6, 3, 0);
 			
@@ -94,9 +94,8 @@ public class AUnscentedKalmanFilterTest
 	}
 	
 	
-	/** */
 	@Test
-	public void posVelUKF()
+	void posVelUKF()
 	{
 		PosVelUKF ukf = new PosVelUKF(0.01);
 		ukf.setProcessNoise(0.01, 10.0);
@@ -114,15 +113,14 @@ public class AUnscentedKalmanFilterTest
 			state = ukf.update(meas);
 			// System.out.println(Arrays.toString(state));
 		}
-		
-		Assert.assertEquals(meas[0], state[0], 0.001);
-		Assert.assertEquals(0, state[1], 0.01);
+
+		assertEquals(meas[0], state[0], 0.001);
+		assertEquals(0, state[1], 0.01);
 	}
 	
 	
-	/** */
 	@Test
-	public void botUKF()
+	void botUKF()
 	{
 		BotUKF ukf = new BotUKF(0.01);
 		ukf.setProcessNoise(0.001, 0.001, 0.001, 0.5, 0.5, 0.5);
@@ -141,12 +139,12 @@ public class AUnscentedKalmanFilterTest
 			state = ukf.update(meas);
 			// System.out.println(Arrays.toString(state));
 		}
-		
-		Assert.assertEquals(meas[0], state[0], 0.001);
-		Assert.assertEquals(meas[1], state[1], 0.001);
-		Assert.assertEquals(meas[2], state[2], 0.001);
-		Assert.assertEquals(0, state[3], 0.01);
-		Assert.assertEquals(0, state[4], 0.01);
-		Assert.assertEquals(0, state[5], 0.01);
+
+		assertEquals(meas[0], state[0], 0.001);
+		assertEquals(meas[1], state[1], 0.001);
+		assertEquals(meas[2], state[2], 0.001);
+		assertEquals(0, state[3], 0.01);
+		assertEquals(0, state[4], 0.01);
+		assertEquals(0, state[5], 0.01);
 	}
 }

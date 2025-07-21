@@ -4,7 +4,6 @@
 
 package edu.tigers.sumatra.ball;
 
-import com.sleepycat.persist.model.Persistent;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -14,7 +13,6 @@ import lombok.Value;
 /**
  * All parameters required for ball models.
  */
-@Persistent
 @Value
 @Builder(setterPrefix = "with", toBuilder = true)
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
@@ -56,21 +54,4 @@ public class BallParameters
 	 * Max. ball height that can be intercepted by robots [mm].
 	 */
 	double maxInterceptableHeight;
-
-
-	/**
-	 * Create an empty default state. Required for {@link Persistent}.
-	 */
-	private BallParameters()
-	{
-		ballRadius = 0;
-		accSlide = 0;
-		accRoll = 0;
-		inertiaDistribution = 0;
-		chipDampingXYFirstHop = 0;
-		chipDampingXYOtherHops = 0;
-		chipDampingZ = 0;
-		minHopHeight = 0;
-		maxInterceptableHeight = 0;
-	}
 }

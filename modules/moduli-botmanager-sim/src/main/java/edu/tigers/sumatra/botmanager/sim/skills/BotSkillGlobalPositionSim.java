@@ -28,7 +28,7 @@ public class BotSkillGlobalPositionSim implements IBotSkillSim
 				.kickSpeed(skill.getKickSpeed())
 				.dribblerRPM(skill.getDribbleSpeed())
 				.primaryDirection(skill.getPrimaryDirection())
-				.strictVelocityLimit(input.strictVelocityLimit())
+				.strictVelocityLimit(input.broadcast().isStrictVelocityLimit())
 				.build();
 	}
 }

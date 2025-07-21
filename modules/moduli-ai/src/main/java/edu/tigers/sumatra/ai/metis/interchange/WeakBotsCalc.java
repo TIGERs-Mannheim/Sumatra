@@ -8,6 +8,7 @@ import edu.tigers.sumatra.ai.metis.ACalculator;
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
 import edu.tigers.sumatra.bot.EFeature;
 import edu.tigers.sumatra.bot.EFeatureState;
+import edu.tigers.sumatra.bot.ERobotHealthState;
 import edu.tigers.sumatra.drawable.DrawableBorderText;
 import edu.tigers.sumatra.drawable.IDrawableShape;
 import edu.tigers.sumatra.drawable.animated.AnimatedCrosshair;
@@ -55,7 +56,7 @@ public class WeakBotsCalc extends ACalculator
 		// therefore visible bots are used
 		Set<ITrackedBot> weak = new HashSet<>();
 		weak.addAll(getWFrame().getTigerBotsVisible().values().stream()
-				.filter(bot -> !bot.getRobotInfo().isHealthy()).toList());
+				.filter(bot -> bot.getRobotInfo().getHealthState() != ERobotHealthState.READY).toList());
 		weak.addAll(getWFrame().getTigerBotsVisible().values().stream()
 				.filter(ITrackedBot::isMalFunctioning).toList());
 		return weak.stream().sorted((bot1, bot2) -> Float.compare(bot1.getRobotInfo().getBatteryRelative(),

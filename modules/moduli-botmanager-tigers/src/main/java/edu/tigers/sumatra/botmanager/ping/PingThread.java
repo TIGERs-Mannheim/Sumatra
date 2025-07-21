@@ -8,12 +8,12 @@
  */
 package edu.tigers.sumatra.botmanager.ping;
 
+import edu.tigers.sumatra.botmanager.bots.CommandBasedBot;
+import edu.tigers.sumatra.botmanager.commands.tiger.TigerSystemPing;
+
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
-
-import edu.tigers.sumatra.botmanager.bots.TigerBot;
-import edu.tigers.sumatra.botmanager.commands.tiger.TigerSystemPing;
 
 
 /**
@@ -29,14 +29,14 @@ public class PingThread implements Runnable
 	private final List<PingDatum> completed = new LinkedList<>();
 	
 	private final int payloadSize;
-	private final TigerBot bot;
+	private final CommandBasedBot bot;
 	
 	
 	private int id = 0;
 	private long lastStatTime = 0;
 	
 	
-	public PingThread(final int payloadSize, final TigerBot bot)
+	public PingThread(final int payloadSize, final CommandBasedBot bot)
 	{
 		this.payloadSize = payloadSize;
 		this.bot = bot;
@@ -78,7 +78,7 @@ public class PingThread implements Runnable
 			pings.add(new PingDatum(id));
 		}
 		
-		bot.execute(new TigerSystemPing(id, payloadSize));
+		bot.sendCommand(new TigerSystemPing(id, payloadSize));
 		id++;
 		
 		synchronized (pings)

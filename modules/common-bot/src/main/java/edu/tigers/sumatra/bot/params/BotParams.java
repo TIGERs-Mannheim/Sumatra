@@ -3,14 +3,10 @@
  */
 package edu.tigers.sumatra.bot.params;
 
-import com.sleepycat.persist.model.Persistent;
-
-
 /**
  * Data holder for all parameters of a robot.
  * Includes movement limits and physical properties.
  */
-@Persistent
 public class BotParams implements IBotParams
 {
 	private final BotMovementLimits movementLimits = new BotMovementLimits();

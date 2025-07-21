@@ -3,13 +3,9 @@
  */
 package edu.tigers.sumatra.bot.params;
 
-import com.sleepycat.persist.model.Persistent;
-
-
 /**
  * Robot movement limitations.
  */
-@Persistent
 public class BotMovementLimits implements IBotMovementLimits
 {
 	private double velMax = 0.1;

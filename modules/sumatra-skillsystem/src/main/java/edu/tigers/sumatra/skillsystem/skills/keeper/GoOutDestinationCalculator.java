@@ -28,10 +28,10 @@ import java.util.Optional;
 public class GoOutDestinationCalculator extends AKeeperDestinationCalculator
 {
 	@Override
-	public IVector2 calcDestination()
+	public KeeperDestination calcDestination()
 	{
 
-		Optional<IVector2> poleCoveringPosition = calcPositionAtPoleCoveringWholeGoal(getPosToCover());
+		Optional<IVector2> poleCoveringPosition = calcPositionAtPostCoveringWholeGoal(getPosToCover());
 		IVector2 targetPosition;
 		Color circleColor;
 		if (poleCoveringPosition.isPresent())
@@ -63,7 +63,7 @@ public class GoOutDestinationCalculator extends AKeeperDestinationCalculator
 		getShapes().get(ESkillShapesLayer.KEEPER_POSITIONING_CALCULATORS)
 				.add(new DrawableCircle(targetPosition, Geometry.getBotRadius(), circleColor));
 
-		return targetPosition;
+		return KeeperDestination.fromDestination(getTBot(), targetPosition);
 	}
 
 
@@ -85,18 +85,18 @@ public class GoOutDestinationCalculator extends AKeeperDestinationCalculator
 
 	private IVector2 calcNearestGoalPostPosition(IVector2 posToCover)
 	{
-		IVector2 leftPole = Geometry.getGoalOur().getLeftPost();
-		IVector2 rightPole = Geometry.getGoalOur().getRightPost();
+		IVector2 leftPost = Geometry.getGoalOur().getLeftPost();
+		IVector2 rightPost = Geometry.getGoalOur().getRightPost();
 
-		IVector2 nearestPole;
+		IVector2 nearestPost;
 		if (posToCover.y() < 0)
 		{
-			nearestPole = rightPole;
+			nearestPost = rightPost;
 		} else
 		{
-			nearestPole = leftPole;
+			nearestPost = leftPost;
 		}
-		return LineMath.stepAlongLine(nearestPole, Geometry.getCenter(),
+		return LineMath.stepAlongLine(nearestPost, Geometry.getCenter(),
 				Geometry.getBotRadius() + Geometry.getBallRadius());
 	}
 
@@ -117,25 +117,23 @@ public class GoOutDestinationCalculator extends AKeeperDestinationCalculator
 
 	private IVector2 calcPositionCoveringWholeGoal(IVector2 posToCover)
 	{
-		IVector2 goalCenter = Geometry.getGoalOur().getCenter();
-		IVector2 leftPole = Geometry.getGoalOur().getLeftPost();
-		IVector2 rightPole = Geometry.getGoalOur().getRightPost();
+		var goalCenter = Geometry.getGoalOur().bisection(posToCover);
 
-		IVector2 ballGoalOrthoDirection = Lines.lineFromPoints(posToCover, goalCenter).directionVector()
+		var ballGoalOrthoDirection = Lines.lineFromPoints(posToCover, goalCenter).directionVector()
 				.getNormalVector();
-		ILine ballGoalLineOrtho = Lines.lineFromDirection(goalCenter, ballGoalOrthoDirection);
-		ILine ballLeftPose = Lines.lineFromPoints(posToCover, leftPole);
-		ILine ballRightPose = Lines.lineFromPoints(posToCover, rightPole);
+		var ballGoalLineOrtho = Lines.lineFromDirection(goalCenter, ballGoalOrthoDirection);
+		var ballLeftPost = Lines.halfLineFromPoints(posToCover, Geometry.getGoalOur().getLeftPost());
+		var ballRightPost = Lines.halfLineFromPoints(posToCover, Geometry.getGoalOur().getRightPost());
 
-		double distLM = VectorMath.distancePP(goalCenter, ballGoalLineOrtho.intersect(ballLeftPose)
+		double distLM = VectorMath.distancePP(goalCenter, ballGoalLineOrtho.intersect(ballLeftPost)
 				.asOptional().orElseThrow(IllegalStateException::new));
 
-		double distRM = VectorMath.distancePP(goalCenter, ballGoalLineOrtho.intersect(ballRightPose)
+		double distRM = VectorMath.distancePP(goalCenter, ballGoalLineOrtho.intersect(ballRightPost)
 				.asOptional().orElseThrow(IllegalStateException::new));
 
 		double relativeRadius = (2 * Geometry.getBotRadius() * distLM) / (distLM + distRM);
 
-		double alpha = ballLeftPose.directionVector().angleToAbs(ballGoalOrthoDirection).orElse(0.0);
+		double alpha = ballLeftPost.directionVector().angleToAbs(ballGoalOrthoDirection).orElse(0.0);
 		// angle should be less than 90° = pi/2
 		if ((alpha > (AngleMath.PI / 2)) && (alpha < AngleMath.PI))
 		{
@@ -145,7 +143,7 @@ public class GoOutDestinationCalculator extends AKeeperDestinationCalculator
 		IVector2 optimalDistanceToBallPosDirectedToGoal = LineMath.stepAlongLine(posToCover, goalCenter,
 				relativeRadius * SumatraMath.tan(alpha));
 
-		IVector2 optimalDistanceToBallPosDirectedToRightPose = ballRightPose
+		IVector2 optimalDistanceToBallPosDirectedToRightPose = ballRightPost
 				.intersect(Lines.lineFromDirection(optimalDistanceToBallPosDirectedToGoal, ballGoalOrthoDirection))
 				.asOptional().orElseThrow(IllegalStateException::new);
 
@@ -154,31 +152,31 @@ public class GoOutDestinationCalculator extends AKeeperDestinationCalculator
 	}
 
 
-	private Optional<IVector2> calcPositionAtPoleCoveringWholeGoal(IVector2 posToCover)
+	private Optional<IVector2> calcPositionAtPostCoveringWholeGoal(IVector2 posToCover)
 	{
-		IVector2 leftPole = Geometry.getGoalOur().getLeftPost();
-		IVector2 rightPole = Geometry.getGoalOur().getRightPost();
+		IVector2 leftPost = Geometry.getGoalOur().getLeftPost();
+		IVector2 rightPost = Geometry.getGoalOur().getRightPost();
 
-		double distanceRightPole = Lines.lineFromPoints(posToCover, leftPole).distanceTo(rightPole);
-		double distanceLeftPole = Lines.lineFromPoints(posToCover, rightPole).distanceTo(leftPole);
+		double distanceRightPost = Lines.lineFromPoints(posToCover, leftPost).distanceTo(rightPost);
+		double distanceLeftPost = Lines.lineFromPoints(posToCover, rightPost).distanceTo(leftPost);
 
-		boolean isPositionAtLeftPoleCoverGoal = distanceLeftPole <= Geometry.getBotRadius() * 2 && posToCover.y() > 0;
-		boolean isPositionAtRightPoleCoverGoal = distanceRightPole <= Geometry.getBotRadius() * 2 && posToCover.y() < 0;
+		boolean isPositionAtLeftPostCoverGoal = distanceLeftPost <= Geometry.getBotRadius() * 2 && posToCover.y() > 0;
+		boolean isPositionAtRightPostCoverGoal = distanceRightPost <= Geometry.getBotRadius() * 2 && posToCover.y() < 0;
 
-		Optional<IVector2> pole = Optional.empty();
+		Optional<IVector2> post = Optional.empty();
 
-		if (isPositionAtLeftPoleCoverGoal)
+		if (isPositionAtLeftPostCoverGoal)
 		{
-			pole = Optional.of(leftPole);
-		} else if (isPositionAtRightPoleCoverGoal)
+			post = Optional.of(leftPost);
+		} else if (isPositionAtRightPostCoverGoal)
 		{
-			pole = Optional.of(rightPole);
+			post = Optional.of(rightPost);
 		}
 
 		Optional<IVector2> coveringPosition = Optional.empty();
-		if (pole.isPresent())
+		if (post.isPresent())
 		{
-			coveringPosition = Optional.of(LineMath.stepAlongLine(pole.get(), Geometry.getCenter(),
+			coveringPosition = Optional.of(LineMath.stepAlongLine(post.get(), Geometry.getCenter(),
 					Geometry.getBotRadius() + Geometry.getBallRadius()));
 		}
 		return coveringPosition;

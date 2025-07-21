@@ -14,6 +14,9 @@ import edu.tigers.sumatra.math.vector.Vector3;
 import edu.tigers.sumatra.vision.data.KickSolverResult;
 import edu.tigers.sumatra.vision.kick.estimators.EBallModelIdentType;
 import edu.tigers.sumatra.vision.kick.estimators.IBallModelIdentResult;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.extern.log4j.Log4j2;
 import org.apache.commons.math3.analysis.MultivariateFunction;
 import org.apache.commons.math3.exception.MathIllegalArgumentException;
 import org.apache.commons.math3.optim.InitialGuess;
@@ -35,26 +38,23 @@ import java.util.Optional;
  * Estimate kick velocity and chip parameters over complete chip ball trajectory
  * via a genetic optimization algorithm.
  */
+@Log4j2
 public class ChipKickSolverNonLinIdentDirect extends AChipKickSolver
 {
 	private static final double[] LOWER_BOUNDS = new double[] { -6500, -6500, 100, 0.1, 0.1, 0.1 };
-	private static final double[] UPPER_BOUNDS = new double[] { 6500, 6500, 6500, 0.95, 1.0, 0.9 };
+	private static final double[] UPPER_BOUNDS = new double[] { 6500, 6500, 6500, 0.95, 1.001, 0.9 };
 
 	private double[] initialGuess = new double[6];
 
 
-	/**
-	 * @param kickPosition
-	 * @param kickTimestamp
-	 * @param camCalib
-	 * @param initialEstimate
-	 */
-	public ChipKickSolverNonLinIdentDirect(final IVector2 kickPosition, final long kickTimestamp,
-			final Map<Integer, CamCalibration> camCalib, final IVector3 initialEstimate)
+	public ChipKickSolverNonLinIdentDirect(
+			final IVector2 kickPosition,
+			final long kickTimestamp,
+			final Map<Integer, CamCalibration> camCalib,
+			final IVector3 initialEstimate
+	)
 	{
 		super(kickPosition, kickTimestamp, camCalib);
-
-		this.kickTimestamp = kickTimestamp;
 
 		BallParameters ballParams = Geometry.getBallParameters();
 		initialGuess[0] = initialEstimate.x();
@@ -81,14 +81,16 @@ public class ChipKickSolverNonLinIdentDirect extends AChipKickSolver
 		double[] result;
 
 		// pull out wide-scatter shotgun
-		CMAESOptimizer optimizer = new CMAESOptimizer(10000, 0.1, true, 10, 0, new MersenneTwister(), false, null);
+		CMAESOptimizer optimizer = new CMAESOptimizer(10000, 0.01, true, 10, 0, new MersenneTwister(), false, null);
 
 		try
 		{
 			// and now fire it onto our problem
+			var model = new ChipBallModel(records);
+
 			final PointValuePair optimum = optimizer.optimize(
 					new MaxEval(20000),
-					new ObjectiveFunction(new ChipBallModel(records)),
+					new ObjectiveFunction(model),
 					GoalType.MINIMIZE,
 					new InitialGuess(initialGuess),
 					new SimpleBounds(LOWER_BOUNDS, UPPER_BOUNDS),
@@ -96,17 +98,32 @@ public class ChipKickSolverNonLinIdentDirect extends AChipKickSolver
 					new CMAESOptimizer.PopulationSize(50));
 
 			result = optimum.getPoint();
+			double error = model.value(result);
+			log.debug(
+					"Optimizer used {} evaluations, {} iterations, error: {}",
+					optimizer.getEvaluations(), optimizer.getIterations(), error
+			);
 		} catch (IllegalStateException | MathIllegalArgumentException e)
 		{
 			// victim did not survive
 			return Optional.empty();
 		}
 
+		for (int i = 0; i < LOWER_BOUNDS.length; i++)
+		{
+			double val = result[i];
+			if (val <= LOWER_BOUNDS[i] || val >= UPPER_BOUNDS[i])
+			{
+				log.debug("Solution discarded, value {} with index {} is at boundary.", val, i);
+				return Optional.empty();
+			}
+		}
+
 		// we have a winner!
 		IVector3 kickVelEst = Vector3.fromXYZ(result[0], result[1], result[2]);
 
 		return Optional.of(new ChipModelIdentResult(kickVelEst, kickPosition, kickTimestamp,
-				result[3], result[4], result[5]));
+				result[3], result[4], result[5], records.size()));
 	}
 
 
@@ -137,8 +154,8 @@ public class ChipKickSolverNonLinIdentDirect extends AChipKickSolver
 					.withChipDampingZ(dampZ)
 					.build();
 
-			double tKickOffset = records.get(0).gettCapture() - kickTimestamp;
-			double tKick = records.get(0).getCameraCaptureTimestamp() - tKickOffset;
+			long tKickOffset = records.getFirst().getTimestamp() - kickTimestamp;
+			long tKick = records.getFirst().getTimestamp() - tKickOffset;
 
 			var traj = new BallFactory(params)
 					.createTrajectoryFromKickedBallWithoutSpin(kickPosition, kickVel);
@@ -146,18 +163,20 @@ public class ChipKickSolverNonLinIdentDirect extends AChipKickSolver
 			double error = 0;
 			for (CamBall ball : records)
 			{
-				IVector3 trajPos = traj.getMilliStateAtTime((ball.getCameraCaptureTimestamp() - tKick) * 1e-9).getPos();
+				IVector3 trajPos = traj.getMilliStateAtTime((ball.getTimestamp() - tKick) * 1e-9).getPos();
 				IVector2 ground = trajPos.projectToGroundNew(getCameraPosition(ball.getCameraId()));
 
-				error += ball.getFlatPos().distanceTo(ground);
+				error += ball.getFlatPos().distanceToSqr(ground);
 			}
 
+			error = Math.sqrt(error);
 			error /= records.size();
 
 			return error;
 		}
 	}
 
+	@AllArgsConstructor
 	public static class ChipModelIdentResult implements IBallModelIdentResult
 	{
 		private final IVector3 kickVel;
@@ -167,26 +186,8 @@ public class ChipKickSolverNonLinIdentDirect extends AChipKickSolver
 		private final double dampingXYOtherHops;
 		private final double dampingZ;
 
-
-		/**
-		 * @param kickVel
-		 * @param kickPos
-		 * @param kickTimestamp
-		 * @param dampingXYFirstHop
-		 * @param dampingXYOtherHops
-		 * @param dampingZ
-		 */
-		public ChipModelIdentResult(final IVector3 kickVel, final IVector2 kickPos, final long kickTimestamp,
-				final double dampingXYFirstHop,
-				final double dampingXYOtherHops, final double dampingZ)
-		{
-			this.kickVel = kickVel;
-			this.kickPos = kickPos;
-			this.kickTimestamp = kickTimestamp;
-			this.dampingXYFirstHop = dampingXYFirstHop;
-			this.dampingXYOtherHops = dampingXYOtherHops;
-			this.dampingZ = dampingZ;
-		}
+		@Getter
+		private final int sampleAmount;
 
 
 		public static String[] getParameterNames()
@@ -232,24 +233,6 @@ public class ChipKickSolverNonLinIdentDirect extends AChipKickSolver
 		public long getKickTimestamp()
 		{
 			return kickTimestamp;
-		}
-
-
-		public double getDampingXYFirstHop()
-		{
-			return dampingXYFirstHop;
-		}
-
-
-		public double getDampingXYOtherHops()
-		{
-			return dampingXYOtherHops;
-		}
-
-
-		public double getDampingZ()
-		{
-			return dampingZ;
 		}
 
 

@@ -40,6 +40,9 @@ public class BallHandlingSkillMovementCalc extends ACalculator
 	@Configurable(defValue = "300.0", comment = "[mm] max dist to consider opponent bots")
 	private static double maxOpponentDist = 300.0;
 
+	@Configurable(defValue = "30.0", comment = "[degree] angles to target smaller than this will not require a special movement direction")
+	private static double noSpecialMovementAngle = 30.0;
+
 	private final Supplier<DribbleToPos> dribbleToPos;
 	private final Supplier<Map<BotID, RatedOffensiveAction>> offensiveActions;
 	private final Supplier<List<BotID>> ballHandlingBots;
@@ -85,7 +88,7 @@ public class BallHandlingSkillMovementCalc extends ACalculator
 				Math.min(0, targetAngle),
 				Math.max(0, targetAngle));
 
-		if (Math.abs(targetAngle) > AngleMath.deg2rad(15) &&
+		if (Math.abs(targetAngle) > AngleMath.deg2rad(noSpecialMovementAngle) &&
 				opponentIsInBetween &&
 				Math.signum(targetAngle) == Math.signum(opponentAngle))
 		{

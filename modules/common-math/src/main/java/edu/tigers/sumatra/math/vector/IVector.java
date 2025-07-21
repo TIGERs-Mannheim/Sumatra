@@ -4,10 +4,10 @@
 
 package edu.tigers.sumatra.math.vector;
 
+import com.github.cliftonlabs.json_simple.JsonArray;
 import edu.tigers.sumatra.export.IJsonString;
 import edu.tigers.sumatra.export.INumberListable;
 import org.apache.commons.math3.linear.RealVector;
-import org.json.simple.JSONArray;
 
 import java.util.function.Function;
 
@@ -173,5 +173,5 @@ public interface IVector extends IJsonString, INumberListable
 	 * 
 	 * @return
 	 */
-	JSONArray toJSONArray();
+	JsonArray toJsonArray();
 }

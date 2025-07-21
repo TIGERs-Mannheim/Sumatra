@@ -164,7 +164,7 @@ public class Referee extends AReferee
 	{
 		sendGameControllerEvent(GcEventFactory.teamName(ETeamColor.BLUE, "BLUE AI"));
 		sendGameControllerEvent(GcEventFactory.teamName(ETeamColor.YELLOW, "YELLOW AI"));
-		sendGameControllerEvent(GcEventFactory.stage(SslGcRefereeMessage.Referee.Stage.NORMAL_FIRST_HALF));
+		sendGameControllerEvent(GcEventFactory.matchType(SslGcRefereeMessage.MatchType.FRIENDLY));
 		var division = Division.valueOf(getSubnodeConfiguration().getString("division", Division.DIV_A.name()));
 		sendGameControllerEvent(GcEventFactory.division(division));
 	}
@@ -174,6 +174,7 @@ public class Referee extends AReferee
 	public void resetGameController()
 	{
 		log.debug("Resetting game controller");
+		flushChanges();
 		sendGameControllerEvent(GcEventFactory.triggerResetMatch());
 		initGameController();
 	}

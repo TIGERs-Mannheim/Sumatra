@@ -25,4 +25,12 @@ public class AthenaGuiInput
 	List<ARole> roles = new CopyOnWriteArrayList<>();
 	List<APlay> plays = new CopyOnWriteArrayList<>();
 	Map<EPlay, Set<BotID>> roleMapping = new ConcurrentHashMap<>();
+
+	public AthenaGuiInput copy() {
+		AthenaGuiInput copy = new AthenaGuiInput();
+		copy.roles.addAll(roles);
+		copy.plays.addAll(plays);
+		copy.roleMapping.putAll(roleMapping);
+		return copy;
+	}
 }

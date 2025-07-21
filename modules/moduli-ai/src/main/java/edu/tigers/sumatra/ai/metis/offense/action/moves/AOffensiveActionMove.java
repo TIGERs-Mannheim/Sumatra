@@ -44,12 +44,6 @@ public abstract class AOffensiveActionMove
 	public abstract Optional<RatedOffensiveAction> calcAction(BotID botId);
 
 
-	public Optional<RatedOffensiveAction> calcAction(BotID botId, boolean isImpactImminent)
-	{
-		return calcAction(botId);
-	}
-
-
 	protected double applyMultiplier(double baseScore)
 	{
 		return SumatraMath.cap(baseScore * scoreMultiplier, 0, 1);

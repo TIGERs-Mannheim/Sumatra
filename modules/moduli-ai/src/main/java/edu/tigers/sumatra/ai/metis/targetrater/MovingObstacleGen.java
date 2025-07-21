@@ -10,8 +10,8 @@ import edu.tigers.sumatra.geometry.RuleConstraints;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.circle.ICircle;
 import edu.tigers.sumatra.math.vector.IVector2;
-import edu.tigers.sumatra.movingrobot.AcceleratingRobotFactory;
 import edu.tigers.sumatra.movingrobot.IMovingRobot;
+import edu.tigers.sumatra.movingrobot.MovingRobotFactory;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
 import lombok.Setter;
 
@@ -69,7 +69,7 @@ public class MovingObstacleGen
 		var reactionPos = bot.getPosByTime(reactionTimestamp);
 		var reactionVel = bot.getVelByTime(reactionTimestamp);
 
-		var movingRobot = AcceleratingRobotFactory.create(
+		var movingRobot = MovingRobotFactory.acceleratingRobot(
 				reactionPos,
 				reactionVel,
 				bot.getRobotInfo().getBotParams().getMovementLimits().getVelMax(),

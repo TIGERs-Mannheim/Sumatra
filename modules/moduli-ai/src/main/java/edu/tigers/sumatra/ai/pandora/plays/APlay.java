@@ -9,6 +9,7 @@ import edu.tigers.sumatra.ai.pandora.roles.ARole;
 import edu.tigers.sumatra.ai.pandora.roles.move.MoveRole;
 import edu.tigers.sumatra.drawable.IDrawableShape;
 import edu.tigers.sumatra.drawable.IShapeLayerIdentifier;
+import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.wp.data.ITrackedBall;
 import edu.tigers.sumatra.wp.data.WorldFrame;
 import lombok.extern.log4j.Log4j2;
@@ -19,7 +20,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 
 /**
@@ -33,11 +33,10 @@ public abstract class APlay
 	private final EPlay type;
 	private AthenaAiFrame aiFrame;
 
+	private boolean numberOfBotsChanged = false;
 
-	/**
-	 * @param type of the play
-	 */
-	public APlay(final EPlay type)
+
+	protected APlay(final EPlay type)
 	{
 		this.type = type;
 	}
@@ -95,8 +94,11 @@ public abstract class APlay
 	 */
 	protected final void addRole(final ARole role)
 	{
+		log.trace("Adding role: {} {}", role.getType(), role.getBotID());
+		role.updateBefore(aiFrame);
 		roles.add(role);
-		onNumberOfBotsChanged();
+		numberOfBotsChanged = true;
+		log.trace("Added role: {} {}", role.getType(), role.getBotID());
 	}
 
 
@@ -107,9 +109,10 @@ public abstract class APlay
 	 */
 	public final void removeRole(final ARole role)
 	{
+		log.trace("Removing role: {} {}", role.getType(), role.getBotID());
 		roles.remove(role);
 		role.setCompleted();
-		onNumberOfBotsChanged();
+		numberOfBotsChanged = true;
 	}
 
 
@@ -194,6 +197,13 @@ public abstract class APlay
 	public final void updateBeforeRoles(final AthenaAiFrame frame)
 	{
 		aiFrame = frame;
+
+		if (numberOfBotsChanged)
+		{
+			onNumberOfBotsChanged();
+			numberOfBotsChanged = false;
+		}
+
 		doUpdateBeforeRoles();
 	}
 
@@ -243,13 +253,29 @@ public abstract class APlay
 	}
 
 
+	/**
+	 * Get the role for the given botId.
+	 * If no role is found, an exception is thrown.
+	 *
+	 * @param botId the bot id to search for
+	 * @return the role for the given bot id
+	 */
+	public final ARole getRole(final BotID botId)
+	{
+		return roles.stream()
+				.filter(r -> r.getBotID().equals(botId))
+				.findFirst()
+				.orElseThrow(() -> new IllegalStateException("No role found for bot: " + botId));
+	}
+
+
 	@SuppressWarnings("unchecked")
 	protected final <T extends ARole> List<T> findRoles(Class<T> clazz)
 	{
 		return roles.stream()
 				.filter(r -> r.getClass().equals(clazz))
 				.map(r -> (T) r)
-				.collect(Collectors.toList());
+				.toList();
 	}
 
 
@@ -268,7 +294,7 @@ public abstract class APlay
 	{
 		return roles.stream()
 				.filter(r -> !r.getClass().equals(clazz))
-				.collect(Collectors.toList());
+				.toList();
 	}
 
 
@@ -277,7 +303,7 @@ public abstract class APlay
 		List<ARole> exceptRoles = Arrays.asList(except);
 		return roles.stream()
 				.filter(r -> !exceptRoles.contains(r))
-				.collect(Collectors.toList());
+				.toList();
 	}
 
 

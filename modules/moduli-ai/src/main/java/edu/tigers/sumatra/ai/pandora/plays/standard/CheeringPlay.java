@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.ai.pandora.plays.standard;
 
@@ -8,9 +8,11 @@ import edu.tigers.sumatra.ai.pandora.plays.APlay;
 import edu.tigers.sumatra.ai.pandora.plays.EPlay;
 import edu.tigers.sumatra.ai.pandora.plays.standard.cheerings.ECheeringPlays;
 import edu.tigers.sumatra.ai.pandora.plays.standard.cheerings.ICheeringPlay;
+import edu.tigers.sumatra.ai.pandora.roles.ARole;
 import edu.tigers.sumatra.ai.pandora.roles.move.MoveRole;
+import edu.tigers.sumatra.botmanager.botskills.data.ELedColor;
 import edu.tigers.sumatra.botmanager.botskills.data.ESong;
-import edu.tigers.sumatra.botmanager.botskills.data.MultimediaControl;
+import edu.tigers.sumatra.botmanager.data.MultimediaControl;
 import edu.tigers.sumatra.drawable.DrawableBorderText;
 import edu.tigers.sumatra.drawable.IDrawableShape;
 import edu.tigers.sumatra.geometry.Geometry;
@@ -28,6 +30,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 
 public class CheeringPlay extends APlay
@@ -57,6 +61,24 @@ public class CheeringPlay extends APlay
 		}
 
 		multimediaControl.setSong(song);
+	}
+
+
+	public void setEyeColor(BotID botID, ELedColor color)
+	{
+		MultimediaControl multimediaControl = getAiFrame().getBaseAiFrame().getMultimediaControl().get(botID);
+		if (multimediaControl == null)
+		{
+			return;
+		}
+
+		multimediaControl.setLedColor(color);
+	}
+
+	@Override
+	protected void onNumberOfBotsChanged()
+	{
+		activePlay = null;
 	}
 
 
@@ -142,7 +164,7 @@ public class CheeringPlay extends APlay
 			play = (ICheeringPlay) selectedPlay.getInstanceableClass().newInstance();
 		} else
 		{
-			play = plays.remove(0);
+			play = plays.removeFirst();
 		}
 		if (play.requiredNumRobots() <= getMoveRoles().size())
 		{
@@ -157,6 +179,8 @@ public class CheeringPlay extends APlay
 	private List<IVector2> activateNewPlay(ICheeringPlay play)
 	{
 		resetBotsAndPermutation();
+
+		getMoveRoles().forEach(role -> role.getMoveCon().setIgnoredBots(Set.of()));
 
 		state = EPlayState.DRIVING_TO_FIRST_POSITION;
 		play.initialize(this);
@@ -189,6 +213,8 @@ public class CheeringPlay extends APlay
 	private EPlayState updateCheering(ICheeringPlay play)
 	{
 		play.doUpdate();
+		var rolesToIgnore = getRoles().stream().map(ARole::getBotID).collect(Collectors.toUnmodifiableSet());
+		getMoveRoles().forEach(role -> role.getMoveCon().setIgnoredBots(rolesToIgnore));
 		return EPlayState.CHEERING;
 	}
 

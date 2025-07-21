@@ -5,6 +5,7 @@ package edu.tigers.sumatra.filter;
 
 import java.util.Optional;
 
+import lombok.Getter;
 import org.apache.commons.math3.linear.Array2DRowRealMatrix;
 import org.apache.commons.math3.linear.ArrayRealVector;
 import org.apache.commons.math3.linear.DecompositionSolver;
@@ -28,6 +29,7 @@ import edu.tigers.sumatra.math.vector.Vector2;
  */
 public class FirstOrderMultiSampleEstimator
 {
+	@Getter
 	private final int numSamples;
 	
 	private final RealMatrix matA;

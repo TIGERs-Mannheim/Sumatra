@@ -4,8 +4,6 @@
 
 package edu.tigers.sumatra.math.vector;
 
-import com.sleepycat.persist.model.Persistent;
-
 import edu.tigers.sumatra.math.SumatraMath;
 
 
@@ -19,7 +17,6 @@ import edu.tigers.sumatra.math.SumatraMath;
  * @see IVector3
  * @author Gero
  */
-@Persistent
 public final class Vector2f extends AVector2
 {
 	/** Vector2f(1,0) */

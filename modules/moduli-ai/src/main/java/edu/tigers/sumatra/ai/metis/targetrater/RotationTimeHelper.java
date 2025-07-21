@@ -5,6 +5,9 @@
 package edu.tigers.sumatra.ai.metis.targetrater;
 
 
+import edu.tigers.sumatra.math.AngleMath;
+
+
 public class RotationTimeHelper
 {
 	private RotationTimeHelper()
@@ -14,7 +17,7 @@ public class RotationTimeHelper
 
 	public static double calcRotationTime(double v0, double s0, double s2, double vMax, double aMax)
 	{
-		var s = s2 - s0;
+		var s = AngleMath.difference(s2, s0);
 
 		var v1 = (s >= 0) ? vMax : -vMax;
 		var a = (v0 < v1) ? aMax : -aMax;

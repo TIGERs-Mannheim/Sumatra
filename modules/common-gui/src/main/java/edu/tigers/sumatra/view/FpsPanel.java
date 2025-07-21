@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.view;
 
@@ -10,7 +10,6 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.border.TitledBorder;
 import java.awt.Dimension;
-import java.awt.EventQueue;
 import java.util.EnumMap;
 import java.util.Map;
 
@@ -74,7 +73,7 @@ public class FpsPanel extends JPanel
 		final JLabel lbl = labelMap.get(type);
 		if (!lbl.getText().equals(txt))
 		{
-			EventQueue.invokeLater(() -> lbl.setText(txt));
+			lbl.setText(txt);
 		}
 	}
 

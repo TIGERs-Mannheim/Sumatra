@@ -3,27 +3,14 @@
  */
 package edu.tigers.sumatra.drawable.animated;
 
-import com.sleepycat.persist.model.Persistent;
-
-
 /**
  * Actually not an animator. Uses a fixed value.
- * 
- * @author AndreR <andre@ryll.cc>
  */
-@Persistent
 public class NumberAnimatorFixed implements INumberAnimator
 {
 	private final double number;
-	
-	
-	@SuppressWarnings("unused")
-	private NumberAnimatorFixed()
-	{
-		number = 0;
-	}
-	
-	
+
+
 	/**
 	 * @param number
 	 */
@@ -31,8 +18,8 @@ public class NumberAnimatorFixed implements INumberAnimator
 	{
 		this.number = number;
 	}
-	
-	
+
+
 	@Override
 	public double getNumber()
 	{

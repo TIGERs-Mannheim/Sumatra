@@ -4,6 +4,10 @@
 package edu.tigers.sumatra.snapshot;
 
 
+import com.github.cliftonlabs.json_simple.JsonArray;
+import com.github.cliftonlabs.json_simple.JsonException;
+import com.github.cliftonlabs.json_simple.JsonObject;
+import com.github.cliftonlabs.json_simple.Jsoner;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.IVector3;
@@ -11,10 +15,6 @@ import edu.tigers.sumatra.referee.proto.SslGcRefereeMessage;
 import lombok.Builder;
 import lombok.Singular;
 import lombok.Value;
-import org.json.simple.JSONArray;
-import org.json.simple.JSONObject;
-import org.json.simple.parser.JSONParser;
-import org.json.simple.parser.ParseException;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -50,10 +50,9 @@ public class Snapshot
 	/**
 	 * @return
 	 */
-	@SuppressWarnings("unchecked")
-	public JSONObject toJSON()
+	public JsonObject toJSON()
 	{
-		JSONObject obj = new JSONObject();
+		JsonObject obj = new JsonObject();
 		obj.put("bots", JsonConverter.encode(bots));
 		obj.put("ball", ball.toJSON());
 		if (command != null)
@@ -80,18 +79,18 @@ public class Snapshot
 	 * @param obj
 	 * @return
 	 */
-	public static Snapshot fromJSON(final JSONObject obj)
+	public static Snapshot fromJSON(final JsonObject obj)
 	{
-		Map<BotID, SnapObject> bots = JsonConverter.decodeBots((JSONArray) obj.get("bots"));
-		SnapObject ball = SnapObject.fromJSON((JSONObject) obj.get("ball"));
+		Map<BotID, SnapObject> bots = JsonConverter.decodeBots((JsonArray) obj.get("bots"));
+		SnapObject ball = SnapObject.fromJSON((JsonObject) obj.get("ball"));
 		SslGcRefereeMessage.Referee.Command command = Optional.ofNullable((String) obj.get("command"))
 				.map(SslGcRefereeMessage.Referee.Command::valueOf).orElse(null);
 		SslGcRefereeMessage.Referee.Stage stage = Optional.ofNullable((String) obj.get("stage"))
 				.map(SslGcRefereeMessage.Referee.Stage::valueOf).orElse(null);
-		IVector2 placementPos = Optional.ofNullable((JSONArray) obj.get("placementPos"))
+		IVector2 placementPos = Optional.ofNullable((JsonArray) obj.get("placementPos"))
 				.map(JsonConverter::decodeVector2)
 				.orElse(null);
-		Map<BotID, IVector3> moveDestinations = JsonConverter.decodeVector3Map((JSONArray) obj.get("moveDestinations"));
+		Map<BotID, IVector3> moveDestinations = JsonConverter.decodeVector3Map((JsonArray) obj.get("moveDestinations"));
 		return Snapshot.builder()
 				.bots(bots)
 				.ball(ball)
@@ -103,15 +102,9 @@ public class Snapshot
 	}
 
 
-	/**
-	 * @param json
-	 * @return
-	 * @throws ParseException
-	 */
-	public static Snapshot fromJSONString(final String json) throws ParseException
+	public static Snapshot fromJSONString(final String json) throws JsonException
 	{
-		JSONParser parser = new JSONParser();
-		return Snapshot.fromJSON((JSONObject) parser.parse(json));
+		return Snapshot.fromJSON((JsonObject) Jsoner.deserialize(json));
 	}
 
 
@@ -128,7 +121,7 @@ public class Snapshot
 		try
 		{
 			return Snapshot.fromJSONString(json);
-		} catch (ParseException err)
+		} catch (JsonException err)
 		{
 			throw new IOException("Could not parse snapshot.", err);
 		}
@@ -172,7 +165,7 @@ public class Snapshot
 
 		Files.writeString(
 				target,
-				toJSON().toJSONString(),
+				toJSON().toJson(),
 				StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.CREATE
 		);
 	}

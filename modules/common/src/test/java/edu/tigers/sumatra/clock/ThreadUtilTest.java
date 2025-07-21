@@ -3,28 +3,23 @@
  */
 package edu.tigers.sumatra.clock;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.LockSupport;
 
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
 /**
  * Tests methods in {@link ThreadUtil}
- *
- * @author Gero
  */
-public class ThreadUtilTest
+class ThreadUtilTest
 {
 	/**
 	 * Test method for {@link edu.tigers.sumatra.clock.ThreadUtil#parkNanosSafe(long)}.
 	 */
 	@Test
-	public void testParkNanosSafeLong()
+	void testParkNanosSafeLong()
 	{
 		final long sleepFor = 50;
 
@@ -35,7 +30,35 @@ public class ThreadUtilTest
 			final long stop = System.nanoTime();
 
 			final long duration = stop - start;
-			assertTrue("Not slept enough: " + duration + "ns < " + sleepFor + "ns!!!", duration > sleepFor);
+			assertTrue(duration > sleepFor, "Not slept enough: " + duration + "ns < " + sleepFor + "ns!!!");
 		}
+	}
+
+
+	private static void measureParkNanos()
+	{
+		long iterationCount = 100;
+		long[] sleepTimes = new long[] { 0, 1, 10_000, 100_000, 500_000, 1_000_000, 10_000_000 };
+
+		for (long sleepTime : sleepTimes)
+		{
+			long startNanos = System.nanoTime();
+			for (long i = 0; i < iterationCount; i++)
+			{
+				LockSupport.parkNanos(sleepTime);
+			}
+			long durationNanos = System.nanoTime() - startNanos;
+			long microsPerIteration = durationNanos / iterationCount;
+			long diff = (microsPerIteration - sleepTime);
+			double rel = (double) diff / sleepTime;
+
+			System.out.printf("%8d | %8d | %8d | %.1f %n", sleepTime, microsPerIteration, diff, rel * 100);
+		}
+	}
+
+
+	public static void main(String[] args)
+	{
+		measureParkNanos();
 	}
 }

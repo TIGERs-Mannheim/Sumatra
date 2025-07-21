@@ -9,21 +9,16 @@ import edu.tigers.sumatra.math.line.Lines;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.IVector3;
 import edu.tigers.sumatra.math.vector.Vector2;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 
 
 /**
  * Bot related calculations.
- *
- * @author nicolai.ommer
  */
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class BotMath
 {
-	@SuppressWarnings("unused")
-	private BotMath()
-	{
-	}
-	
-	
 	/**
 	 * Convert a bot-local vector to the equivalent global one.
 	 *
@@ -36,8 +31,8 @@ public final class BotMath
 	{
 		return local.turnNew(-AngleMath.PI_HALF + wpAngle);
 	}
-	
-	
+
+
 	/**
 	 * Convert a global vector to a bot-local one
 	 *
@@ -50,11 +45,11 @@ public final class BotMath
 	{
 		return global.turnNew(AngleMath.PI_HALF - wpAngle);
 	}
-	
-	
+
+
 	/**
 	 * Get front dribbler line of a robot.
-	 * 
+	 *
 	 * @param pos Position [mm] and orientation of robot [rad]
 	 * @param radius Radius [mm] or robot
 	 * @param center2DribblerDist Distance from center to dribbler.
@@ -68,7 +63,7 @@ public final class BotMath
 				.addNew(Vector2.fromAngle(pos.z() - theta).scaleTo(radius));
 		IVector2 rightBotEdge = pos.getXYVector()
 				.addNew(Vector2.fromAngle(pos.z() + theta).scaleTo(radius));
-		
+
 		return Lines.segmentFromPoints(leftBotEdge, rightBotEdge);
 	}
 }

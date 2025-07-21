@@ -10,6 +10,7 @@ import edu.tigers.sumatra.ai.metis.kicking.Pass;
 import edu.tigers.sumatra.ai.metis.offense.situation.zone.OffensiveZones;
 import edu.tigers.sumatra.ai.metis.pass.PassStats;
 import edu.tigers.sumatra.drawable.IDrawableShape;
+import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.SumatraMath;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
 
@@ -53,12 +54,11 @@ public class DynamicPassInterceptionMovingRobotRater extends APassRater
 
 	public DynamicPassInterceptionMovingRobotRater(
 			Collection<ITrackedBot> consideredBots,
-			Collection<ITrackedBot> consideredBotsIntercept,
 			PassStats passStats,
-			OffensiveZones offensiveZones
-	)
+			OffensiveZones offensiveZones,
+			List<BotID> opponentMan2ManMarkers)
 	{
-		passInterceptionMovingRobotRater = new PassInterceptionMovingRobotRater(consideredBots);
+		passInterceptionMovingRobotRater = new PassInterceptionMovingRobotRater(consideredBots, opponentMan2ManMarkers);
 		this.passStats = passStats;
 		this.offensiveZones = offensiveZones;
 
@@ -97,12 +97,5 @@ public class DynamicPassInterceptionMovingRobotRater extends APassRater
 	public void setShapes(List<IDrawableShape> shapes)
 	{
 		passInterceptionMovingRobotRater.setShapes(shapes);
-	}
-
-
-	@Override
-	public void drawShapes(List<IDrawableShape> shapes)
-	{
-		passInterceptionMovingRobotRater.drawShapes(shapes);
 	}
 }

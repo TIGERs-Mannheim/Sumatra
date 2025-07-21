@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.ai.pandora.plays;
 
@@ -18,10 +18,12 @@ import edu.tigers.sumatra.ai.pandora.plays.standard.RobotInterchangePlay;
 import edu.tigers.sumatra.ai.pandora.plays.standard.cheerings.ECheeringPlays;
 import edu.tigers.sumatra.ai.pandora.plays.test.BallPlacementRandomTestPlay;
 import edu.tigers.sumatra.ai.pandora.plays.test.BallPlacementTestPlay;
+import edu.tigers.sumatra.ai.pandora.plays.test.DribblingTestPlay;
 import edu.tigers.sumatra.ai.pandora.plays.test.GuiTestPlay;
 import edu.tigers.sumatra.ai.pandora.plays.test.SnapshotPlay;
 import edu.tigers.sumatra.ai.pandora.plays.test.ballmodel.CalibrateBallKickModelPlay;
 import edu.tigers.sumatra.ai.pandora.plays.test.ballmodel.EBallModelCalibrationKickMode;
+import edu.tigers.sumatra.ai.pandora.plays.test.ballmodel.EFieldSide;
 import edu.tigers.sumatra.ai.pandora.plays.test.kick.APassingPlay.EReceiveMode;
 import edu.tigers.sumatra.ai.pandora.plays.test.kick.PassAroundACirclePlay;
 import edu.tigers.sumatra.ai.pandora.plays.test.kick.PassInACirclePlay;
@@ -30,11 +32,14 @@ import edu.tigers.sumatra.ai.pandora.plays.test.kick.RedirectTrianglePlay;
 import edu.tigers.sumatra.ai.pandora.plays.test.kick.TestStopBallPlay;
 import edu.tigers.sumatra.ai.pandora.plays.test.kick.TestTouchKickSkillPlay;
 import edu.tigers.sumatra.ai.pandora.plays.test.move.AroundTheBallPlay;
+import edu.tigers.sumatra.ai.pandora.roles.test.calibrate.AKickSamplerRole.EKickMode;
 import edu.tigers.sumatra.botmanager.botskills.data.EKickerDevice;
 import edu.tigers.sumatra.math.pose.Pose;
 import edu.tigers.sumatra.math.vector.IVector2;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+
+import java.nio.file.Path;
 
 import static com.github.g3force.instanceables.InstanceableClass.ic;
 
@@ -68,8 +73,9 @@ public enum EPlay implements IInstanceableEnum
 	AROUND_THE_BALL(new InstanceableClass<>(AroundTheBallPlay.class,
 			new InstanceableParameter(Double.TYPE, "radius", "500")
 	)),
+
 	SNAPSHOT(new InstanceableClass<>(SnapshotPlay.class)
-			.setterParam(String.class, "snapshot file", "data/snapshots/hwc1s01.json", SnapshotPlay::setSnapshotFile)
+			.setterParam(Path.class, "snapshot file", "data/snapshots", SnapshotPlay::setSnapshotFile)
 	),
 
 	PASS_TO_EACH_OTHER(ic(PassToEachOtherPlay.class)
@@ -122,15 +128,24 @@ public enum EPlay implements IInstanceableEnum
 	BALL_PLACEMENT_TEST(new InstanceableClass<>(BallPlacementTestPlay.class,
 			new InstanceableParameter(IVector2[].class, "placement positions", "-1000,-1000;1000,1000")
 	)),
-	BALL_PLACEMENT_RANDOM_TEST(new InstanceableClass<>(BallPlacementRandomTestPlay.class,
-			new InstanceableParameter(Boolean.TYPE, "Only our Half", "true")
+	BALL_PLACEMENT_RANDOM_TEST(ic(BallPlacementRandomTestPlay.class,
+			new InstanceableParameter(EFieldSide.class, "field side(s)", "OUR")
 	)),
-	CALIBRATE_BALL_KICK_MODEL(new InstanceableClass<>(CalibrateBallKickModelPlay.class,
-			new InstanceableParameter(EBallModelCalibrationKickMode.class, "calibration mode", "STRAIGHT_FULL_FIELD"),
-			new InstanceableParameter(Double.TYPE, "margin to border", "-250.0"),
-			new InstanceableParameter(Double.TYPE, "[ms] min discharge duration", "5"),
-			new InstanceableParameter(Double.TYPE, "[ms] max discharge duration", "10"),
-			new InstanceableParameter(Integer.TYPE, "num samples", "10"))
+
+	CALIBRATE_BALL_KICK_MODEL(ic(CalibrateBallKickModelPlay.class)
+			.setterParam(EBallModelCalibrationKickMode.class, "calibration mode", "STRAIGHT",
+					CalibrateBallKickModelPlay::setMode)
+			.setterParam(
+					EFieldSide.class, "field side(s)", "BOTH",
+					CalibrateBallKickModelPlay::setSide)
+			.setterParam(Double.TYPE, "margin to border", "-250.0", CalibrateBallKickModelPlay::setMarginToBorder)
+			.setterParam(Double.TYPE, "[ms] min discharge duration", "5", CalibrateBallKickModelPlay::setMinDurationMs)
+			.setterParam(Double.TYPE, "[ms] max discharge duration", "10", CalibrateBallKickModelPlay::setMaxDurationMs)
+			.setterParam(Integer.TYPE, "num samples", "10", CalibrateBallKickModelPlay::setNumSamples)
+			.setterParam(
+					EKickMode.class, "kick (skill) mode", "SINGLE_TOUCH",
+					CalibrateBallKickModelPlay::setKickMode
+			)
 	),
 	TEST_STOP_BALL(ic(TestStopBallPlay.class)
 			.setterParam(IVector2.class, "kickStartPos", "-2000;-1000", TestStopBallPlay::setKickStartPos)
@@ -138,6 +153,9 @@ public enum EPlay implements IInstanceableEnum
 			.setterParam(Pose.class, "approachStartPos", "-2200;-1000;1",
 					TestStopBallPlay::setApproachStartPos)
 			.setterParam(Double.TYPE, "kickSpeed", "2.0", TestStopBallPlay::setKickSpeed)
+	),
+	TEST_DRIBBLING(ic(DribblingTestPlay.class)
+			.setterParam(IVector2.class, "practiceLocation", "0,0", DribblingTestPlay::setPracticeLocation)
 	),
 	TEST_TOUCH_KICK_SKILL(new InstanceableClass<>(TestTouchKickSkillPlay.class,
 			new InstanceableParameter(IVector2.class, "Start", "-3000;2250"),

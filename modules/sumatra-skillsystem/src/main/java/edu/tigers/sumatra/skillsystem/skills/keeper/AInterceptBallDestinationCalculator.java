@@ -20,8 +20,6 @@ public abstract class AInterceptBallDestinationCalculator extends AKeeperDestina
 {
 	@Configurable(comment = "The radius to try intercepting the chip-kicked ball within", defValue = "500.0")
 	protected static double maxChipInterceptDist = 500.0;
-	@Configurable(comment = "Use MoveConstraints PrimaryDirection during intercept", defValue = "false")
-	protected static boolean usePrimaryDirectionsIntercept = false;
 
 	static
 	{

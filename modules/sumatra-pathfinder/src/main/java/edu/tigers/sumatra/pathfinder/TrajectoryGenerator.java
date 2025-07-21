@@ -120,9 +120,15 @@ public final class TrajectoryGenerator
 
 	public static boolean isComeToAStopFaster(ITrackedBot bot, IVector2 dest)
 	{
-		var trajWithoutComeToAStop = generatePositionTrajectory(bot, dest);
+		return isComeToAStopFaster(bot.getMoveConstraints(), bot.getPos(), bot.getVel(), dest);
+	}
+
+
+	public static boolean isComeToAStopFaster(MoveConstraints mc, IVector2 curPos, IVector2 curVel, IVector2 dest)
+	{
+		var trajWithoutComeToAStop = generatePositionTrajectory(mc, curPos, curVel, dest);
 		var stateAfterComeToAStop = stateAfterComeToAStop(
-				bot.getMoveConstraints(),
+				mc,
 				trajWithoutComeToAStop.getPosition(0),
 				trajWithoutComeToAStop.getVelocity(0)
 		);
@@ -130,7 +136,7 @@ public final class TrajectoryGenerator
 		var end = trajWithoutComeToAStop.getPosition(trajWithoutComeToAStop.getTotalTime()).multiplyNew(1e3);
 
 		var trajAfterBrk = generatePositionTrajectory(
-				bot.getMoveConstraints(),
+				mc,
 				stateAfterComeToAStop.pos,
 				stateAfterComeToAStop.vel,
 				end
@@ -234,15 +240,23 @@ public final class TrajectoryGenerator
 
 	public static boolean isComeToAStopFasterToReachPointInTime(ITrackedBot bot, IVector2 dest, double targetTime)
 	{
-		var trajWithoutComeToAStop = generatePositionTrajectoryToReachPointInTime(bot, dest, targetTime);
+		return isComeToAStopFasterToReachPointInTime(bot.getMoveConstraints(), bot.getPos(), bot.getVel(), dest,
+				targetTime);
+	}
+
+
+	public static boolean isComeToAStopFasterToReachPointInTime(MoveConstraints mc, IVector2 curPos, IVector2 curVel,
+			IVector2 dest, double targetTime)
+	{
+		var trajWithoutComeToAStop = generatePositionTrajectoryToReachPointInTime(mc, curPos, curVel, dest, targetTime);
 		var stateAfterComeToAStop = stateAfterComeToAStop(
-				bot.getMoveConstraints(),
+				mc,
 				trajWithoutComeToAStop.getPosition(0),
 				trajWithoutComeToAStop.getVelocity(0)
 		);
 
 		var trajAfterBrk = generatePositionTrajectoryToReachPointInTime(
-				bot.getMoveConstraints(),
+				mc,
 				stateAfterComeToAStop.pos.multiplyNew(1e3),
 				stateAfterComeToAStop.vel,
 				dest,
@@ -252,7 +266,6 @@ public final class TrajectoryGenerator
 		return trajAfterBrk.getTotalTime() + stateAfterComeToAStop.lookAhead + 0.01
 				< trajWithoutComeToAStop.getTotalTime();
 	}
-
 
 	//************************************************************************
 	// Private Helper

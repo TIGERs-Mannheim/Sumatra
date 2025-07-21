@@ -16,10 +16,10 @@ import edu.tigers.sumatra.drawable.DrawableAnnotation;
 import edu.tigers.sumatra.drawable.DrawableArrow;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.math.line.Lines;
-import edu.tigers.sumatra.math.penarea.FinisherMoveShape;
+import edu.tigers.sumatra.ai.metis.offense.dribble.finisher.FinisherMoveShape;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
-import edu.tigers.sumatra.pathfinder.obstacles.FinisherMoveShapeObstacle;
+import edu.tigers.sumatra.ai.metis.offense.dribble.finisher.FinisherMoveShapeObstacle;
 import edu.tigers.sumatra.pathfinder.obstacles.IObstacle;
 import edu.tigers.sumatra.skillsystem.skills.dribbling.DribbleKickSkill;
 import edu.tigers.sumatra.time.TimestampTimer;
@@ -35,8 +35,8 @@ public class DribblingKickState extends AAttackerRoleState<DribbleKickSkill>
 {
 	@Configurable(defValue = "-20.0")
 	private static double isInsideObstacleShapeOffset = -20;
-	@Configurable(defValue = "2.5", comment = "[m/s] if a dribbling violation is imminent and we do not roughly look towards opponent goal")
-	private static double violationImminentKickSpeed = 2.5;
+	@Configurable(defValue = "2.0", comment = "[m/s] if a dribbling violation is imminent and we do not roughly look towards opponent goal")
+	private static double violationImminentKickSpeed = 2.0;
 	private final TimestampTimer canShootClearanceTimer = new TimestampTimer(0.10);
 	private final TimestampTimer driveToFakePointTimer = new TimestampTimer(1.30);
 	private DribbleToPos lastValidDribbleToPos = null;
@@ -62,7 +62,15 @@ public class DribblingKickState extends AAttackerRoleState<DribbleKickSkill>
 	{
 		super.doEntryActions();
 		driveToFakePointTimer.reset();
-		alreadyReachedFakePoint = false;
+
+		alreadyReachedFakePoint = Math.random() > 0.5;
+		var action = getRole().getAction();
+		if (action.getDribbleToPos().getDribbleToDestination()
+				.distanceTo(getRole().getPos()) < Geometry.getBotRadius() * 4)
+		{
+			alreadyReachedFakePoint = true;
+		}
+
 		isMovingOutside = false;
 	}
 
@@ -164,7 +172,11 @@ public class DribblingKickState extends AAttackerRoleState<DribbleKickSkill>
 			} else
 			{
 				skill.setForceKickSpeed(violationImminentKickSpeed);
+				skill.setForceDribblerOff(true);
 			}
+		} else
+		{
+			skill.setForceDribblerOff(false);
 		}
 	}
 
@@ -172,6 +184,7 @@ public class DribblingKickState extends AAttackerRoleState<DribbleKickSkill>
 	private Optional<IRatedTarget> getRatedTarget(IVector2 botStateKickerPos)
 	{
 		var rater = AngleRangeRater.forGoal(Geometry.getGoalTheir());
+		rater.setTimeToKick(0.1); // We should already look towards the goal, but we cannot kick immediately.
 		rater.setObstacles(
 				Stream.concat(
 						getRole().getWFrame().getOpponentBots().values().stream(),

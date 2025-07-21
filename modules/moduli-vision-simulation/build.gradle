@@ -18,13 +18,9 @@ dependencies {
     api project(':moduli-vision')
     implementation project(':moduli-geometry')
 
-    implementation(libs.com.github.g3force.configurable)
-
     implementation(libs.commons.lang)
     implementation(libs.commons.configuration)
 
     implementation(libs.org.apache.logging.log4j.log4j.api)
-
-    implementation(libs.com.sleepycat.je)
     implementation(libs.com.google.protobuf.protobuf.java)
 }

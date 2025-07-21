@@ -4,7 +4,6 @@
 
 package edu.tigers.sumatra.wp.data;
 
-import com.sleepycat.persist.model.Persistent;
 import edu.tigers.sumatra.bot.BotState;
 import edu.tigers.sumatra.bot.MoveConstraints;
 import edu.tigers.sumatra.bot.RobotInfo;
@@ -30,7 +29,6 @@ import java.util.Optional;
 /**
  * A tracked (filtered, predicted) robot.
  */
-@Persistent(version = 2)
 public final class TrackedBot implements ITrackedBot
 {
 	private final long timestamp;
@@ -42,21 +40,6 @@ public final class TrackedBot implements ITrackedBot
 	private final RobotInfo robotInfo;
 	private final double quality;
 	private final boolean malFunctioning;
-
-
-	@SuppressWarnings("unused")
-	private TrackedBot()
-	{
-		timestamp = 0;
-		botId = BotID.noBot();
-		botState = State.of(Pose.from(Vector3.zero()), Vector3.zero());
-		filteredState = null;
-		ballContact = BallContact.def(timestamp);
-		robotInfo = null;
-		tAssembly = 0;
-		quality = 0;
-		malFunctioning = false;
-	}
 
 
 	private TrackedBot(final Builder builder)

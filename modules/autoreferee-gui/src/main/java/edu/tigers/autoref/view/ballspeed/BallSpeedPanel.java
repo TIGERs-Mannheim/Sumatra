@@ -59,7 +59,8 @@ public class BallSpeedPanel extends JPanel
 	{
 		chartPanel = new FixedTimeRangeChartPanel(timeRange, true);
 		chartPanel.setColor(Color.BLUE);
-		chartPanel.clipY(0, 15);
+		chartPanel.clipY(0, 7.5);
+		chartPanel.yTicks(1.0);
 		chartPanel.setXTitle("Time [s]");
 		chartPanel.setYTitle("Ball Speed [m/s]");
 		setTimeRange(timeRange);
@@ -81,6 +82,7 @@ public class BallSpeedPanel extends JPanel
 		});
 
 		JCheckBox stopChartCheckbox = new JCheckBox("Pause when not RUNNING");
+		stopChartCheckbox.setSelected(true);
 		stopChartCheckbox.setBackground(Color.WHITE);
 		stopChartCheckbox.addActionListener(e -> {
 			boolean newValue = stopChartCheckbox.isSelected();

@@ -111,17 +111,17 @@ public class MatchModeAthenaAdapter implements IAthenaAdapter
 			List<ARole> roles = activePlays.stream()
 					.map(APlay::getRoles)
 					.flatMap(Collection::stream)
-					.collect(Collectors.toList());
+					.toList();
 			if (numBots != roles.size())
 			{
-				log.warn("Assigned role number does not match number of bots: numBots=" + numBots + ", numRoles="
-						+ roles.size() + " | Roles: " + roles);
+				log.warn("Assigned role number does not match number of bots: numBots={}, numRoles={} | Roles: {}",
+						numBots, roles.size(), roles);
 			} else
 			{
 				Set<BotID> uniqueSetOfBots = roles.stream().map(ARole::getBotID).collect(Collectors.toSet());
 				if (uniqueSetOfBots.size() != numBots)
 				{
-					log.warn("Bot ids are assigned multiple times: " + roles);
+					log.warn("Bot ids are assigned multiple times: {}", roles);
 				}
 			}
 		}

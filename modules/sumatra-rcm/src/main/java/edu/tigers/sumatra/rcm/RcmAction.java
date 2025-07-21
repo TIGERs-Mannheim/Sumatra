@@ -3,8 +3,8 @@
  */
 package edu.tigers.sumatra.rcm;
 
+import com.github.cliftonlabs.json_simple.JsonObject;
 import edu.tigers.sumatra.skillsystem.ESkill;
-import org.json.simple.JSONObject;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -85,16 +85,10 @@ public class RcmAction
 	}
 
 
-	/**
-	 * @param jsonAction
-	 * @return
-	 */
-	@SuppressWarnings("unchecked")
-	public static RcmAction fromJSON(final JSONObject jsonAction)
+	public static RcmAction fromJSON(final JsonObject map)
 	{
-		Map<String, String> map = jsonAction;
-		EActionType actionType = EActionType.valueOf(map.get("actionType"));
-		String strActionEnum = map.get("actionEnum");
+		EActionType actionType = EActionType.valueOf(map.get("actionType").toString());
+		String strActionEnum = map.get("actionEnum").toString();
 		final Enum<?> actionEnum;
 		switch (actionType)
 		{
@@ -183,12 +177,12 @@ public class RcmAction
 	/**
 	 * @return
 	 */
-	public JSONObject toJSON()
+	public JsonObject toJSON()
 	{
 		Map<String, String> jsonAction = new LinkedHashMap<>(2);
 		jsonAction.put("actionType", getActionType().name());
 		jsonAction.put("actionEnum", getActionEnum().name());
-		return new JSONObject(jsonAction);
+		return new JsonObject(jsonAction);
 	}
 
 

@@ -38,5 +38,7 @@ public class KickState extends AAttackerRoleState<TouchKickSkill>
 		skill.setDesiredKickParams(getRole().getAction().getKick().getKickParams());
 		skill.setTurnAdvise(getRole().getTacticalField().getBallHandlingAdvise().getTurnAdvise());
 		skill.setMoveAdvise(getRole().getTacticalField().getBallHandlingAdvise().getMoveAdvise());
+		skill.setForcePushDuringKick(getRole().getAction().isForcePushDuringKick());
+		skill.setMarginToTheirPenArea(15);
 	}
 }

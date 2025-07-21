@@ -4,11 +4,11 @@
 
 package edu.tigers.sumatra.skillsystem;
 
-import edu.tigers.moduli.AModule;
 import edu.tigers.sumatra.botmanager.bots.ABot;
 import edu.tigers.sumatra.drawable.ShapeMap;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.ids.ETeamColor;
+import edu.tigers.sumatra.moduli.AModule;
 import edu.tigers.sumatra.skillsystem.skills.ISkill;
 import edu.tigers.sumatra.thread.NamedThreadFactory;
 import edu.tigers.sumatra.wp.data.WorldFrameWrapper;
@@ -61,18 +61,6 @@ public abstract class ASkillSystem extends AModule
 
 
 	@Override
-	public void deinitModule()
-	{
-	}
-
-
-	@Override
-	public void initModule()
-	{
-	}
-
-
-	@Override
 	public void startModule()
 	{
 		executorService = Executors.newCachedThreadPool(new NamedThreadFactory("SkillExecutor"));
@@ -119,10 +107,4 @@ public abstract class ASkillSystem extends AModule
 	{
 		observers.remove(observer);
 	}
-
-
-	public abstract void addSkillExecutorPostHook(ISkillExecutorPostHook hook);
-
-
-	public abstract void removeSkillExecutorPostHook(ISkillExecutorPostHook hook);
 }

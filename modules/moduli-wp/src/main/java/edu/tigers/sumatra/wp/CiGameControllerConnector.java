@@ -21,9 +21,11 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.ConnectException;
 import java.net.Socket;
+import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 
@@ -37,92 +39,135 @@ public class CiGameControllerConnector
 {
 	private static final String HOSTNAME = "localhost";
 	private final int port;
+	private final Watchdog watchdog = new Watchdog(5000, this.getClass().getSimpleName(), this::onTimeout);
+	private final Object lockSendRecv = new Object();
+	private final Object lockSocket = new Object();
+	private CountDownLatch latchInit = new CountDownLatch(1);
 	private Socket socket;
-	private Watchdog watchdog;
 	private SslGcCi.CiInput lastInput;
 	private CamGeometry lastGeometry;
+	private boolean connectionFailed = false;
 
 	private final SSLVisionCamGeometryTranslator translator = new SSLVisionCamGeometryTranslator();
 	private final TrackerPacketGenerator trackerPacketGenerator = new TrackerPacketGenerator("TIGERs");
 
 
-	public synchronized void start() throws IOException
+	public void start()
 	{
 		log.trace("Starting");
-		watchdog = new Watchdog(5000, this.getClass().getSimpleName(), this::onTimeout);
 		watchdog.start();
-		connect();
-		// Initialize connection by performing one roundtrip
-		send(0);
-		receiveRefereeMessages();
+		initializeConnection();
+		latchInit.countDown();
 		log.trace("Started");
 	}
 
 
-	public synchronized void stop()
+	public void stop()
 	{
 		log.trace("Stopping");
+		latchInit = new CountDownLatch(1);
 		watchdog.stop();
 		disconnect();
 		log.trace("Stopped");
 	}
 
 
-	private void connect() throws IOException
+	private void initializeConnection()
 	{
-		log.trace("Connecting");
+		// Connect to the SSL-Game-Controller, wait until the connection is established
+		connectBlocking();
+		synchronized (lockSendRecv)
+		{
+			// Perform a first round for initialization
+			if (send(0))
+			{
+				receiveRefereeMessages();
+			}
+		}
+	}
 
+
+	private void connectBlocking()
+	{
 		for (int i = 0; i < 50; i++)
 		{
+			if (watchdog.isStopped())
+			{
+				log.trace("Watchdog stopped, aborting connection");
+				return;
+			}
 			// Allow the GC to come up
 			ThreadUtil.parkNanosSafe(TimeUnit.MILLISECONDS.toNanos(200));
 			try
 			{
-				socket = new Socket(HOSTNAME, port);
-				socket.setTcpNoDelay(true);
-				log.debug("Connected");
+				connect();
+				log.debug("Connected to SSL-Game-Controller");
 				return;
 			} catch (ConnectException e)
 			{
 				log.debug("Still connecting: {}", e.getMessage());
 			} catch (IOException e)
 			{
-				log.debug("Connection to SSL-Game-Controller failed", e);
+				log.warn("Connection to SSL-Game-Controller failed", e);
 			}
 		}
-		throw new IOException("Connection to SSL-Game-Controller failed repeatedly");
+		log.error("Connection to SSL-Game-Controller failed repeatedly");
+	}
+
+
+	private void connect() throws IOException
+	{
+		log.trace("Connecting");
+		synchronized (lockSocket)
+		{
+			try
+			{
+				socket = new Socket(HOSTNAME, port);
+				socket.setTcpNoDelay(true);
+				connectionFailed = false;
+			} catch (IOException e)
+			{
+				connectionFailed = true;
+				throw e;
+			}
+		}
+		log.trace("Connected");
 	}
 
 
 	private void disconnect()
 	{
 		log.trace("Disconnect");
-		if (socket != null)
+		synchronized (lockSocket)
 		{
-			try
+			if (socket != null)
 			{
-				socket.close();
-				socket = null;
-			} catch (IOException e)
-			{
-				log.warn("Closing socket failed", e);
+				log.trace("Closing socket");
+				try
+				{
+					socket.close();
+					socket = null;
+				} catch (IOException e)
+				{
+					log.warn("Closing socket failed", e);
+				}
 			}
 		}
 		log.trace("Disconnected");
 	}
 
 
-	private void send(final long timestamp)
+	private boolean send(final long timestamp)
 	{
 		lastGeometry = Geometry.getLastCamGeometry();
-		send(SslGcCi.CiInput.newBuilder()
+		return send(SslGcCi.CiInput.newBuilder()
 				.setTimestamp(timestamp)
 				.setGeometry(translator.toProtobuf(lastGeometry))
 				.build());
 	}
 
 
-	private void send(final SimpleWorldFrame swf,
+	private boolean send(final SimpleWorldFrame swf,
 			final List<SslGcApi.Input> inputs)
 	{
 		SslGcCi.CiInput.Builder builder = SslGcCi.CiInput.newBuilder()
@@ -134,26 +179,34 @@ public class CiGameControllerConnector
 			lastGeometry = Geometry.getLastCamGeometry();
 			builder.setGeometry(translator.toProtobuf(lastGeometry));
 		}
-		send(builder.build());
+		return send(builder.build());
 	}
 
 
-	private void send(final SslGcCi.CiInput input)
+	private boolean send(final SslGcCi.CiInput input)
 	{
-		if (socket == null)
+		synchronized (lockSocket)
 		{
-			return;
-		}
-		try
-		{
-			lastInput = input;
-			input.writeDelimitedTo(socket.getOutputStream());
-			socket.getOutputStream().flush();
-			watchdog.reset();
-			watchdog.setActive(true);
-		} catch (IOException e)
-		{
-			log.warn("Could not write to socket", e);
+			if (socket == null)
+			{
+				return false;
+			}
+			try
+			{
+				lastInput = input;
+				input.writeDelimitedTo(socket.getOutputStream());
+				socket.getOutputStream().flush();
+				watchdog.reset();
+				watchdog.setActive(true);
+				return true;
+			} catch (SocketException e)
+			{
+				log.debug("Can not write to socket: {}", e.getMessage());
+			} catch (IOException e)
+			{
+				log.warn("Could not write to socket", e);
+			}
+			return false;
 		}
 	}
 
@@ -166,20 +219,23 @@ public class CiGameControllerConnector
 		List<SslGcRefereeMessage.Referee> messages = new ArrayList<>();
 		try
 		{
-			do
+			synchronized (lockSocket)
 			{
-				SslGcCi.CiOutput output = SslGcCi.CiOutput.parseDelimitedFrom(socket.getInputStream());
-				if (output == null)
+				do
 				{
-					throw new IOException(
-							"Receiving Message failed: Socket was at EOF, most likely the connection was closed");
-				}
-
-				if (output.hasRefereeMsg())
-				{
-					messages.add(output.getRefereeMsg());
-				}
-			} while (socket.getInputStream().available() > 0);
+					SslGcCi.CiOutput output = SslGcCi.CiOutput.parseDelimitedFrom(socket.getInputStream());
+					if (output == null)
+					{
+						log.debug("Socket was at EOF, most likely the connection was closed");
+					} else if (output.hasRefereeMsg())
+					{
+						messages.add(output.getRefereeMsg());
+					}
+				} while (socket.getInputStream().available() > 0);
+			}
+		} catch (SocketException e)
+		{
+			log.debug("Can not read from socket: {}", e.getMessage());
 		} catch (IOException e)
 		{
 			log.warn("Receiving CI message from SSL-Game-Controller failed", e);
@@ -192,26 +248,48 @@ public class CiGameControllerConnector
 	}
 
 
-	public synchronized List<SslGcRefereeMessage.Referee> process(final SimpleWorldFrame swf,
-			List<SslGcApi.Input> inputs)
+	public List<SslGcRefereeMessage.Referee> process(final SimpleWorldFrame swf, List<SslGcApi.Input> inputs)
 	{
-		if (socket == null)
+		try
 		{
-			try
+			boolean initialized = latchInit.await(10, TimeUnit.SECONDS);
+			if (!initialized)
 			{
-				connect();
-			} catch (IOException e)
-			{
-				log.warn("Failed to reconnect", e);
+				log.error("Timeout while waiting for connection to be initialized");
+				return Collections.emptyList();
 			}
-		}
-		if (socket == null)
+		} catch (InterruptedException e)
 		{
+			Thread.currentThread().interrupt();
+			log.warn("Interrupted while waiting for connection to be initialized", e);
 			return Collections.emptyList();
 		}
 
-		send(swf, inputs);
-		return receiveRefereeMessages();
+		synchronized (lockSocket)
+		{
+			if (socket == null)
+			{
+				boolean wasConnectionFailed = connectionFailed;
+				try
+				{
+					connect();
+				} catch (IOException e)
+				{
+					if (!wasConnectionFailed)
+					{
+						log.warn("Connection to SSL-Game-Controller failed", e);
+					}
+				}
+			}
+		}
+		synchronized (lockSendRecv)
+		{
+			if (send(swf, inputs))
+			{
+				return receiveRefereeMessages();
+			}
+		}
+		return Collections.emptyList();
 	}
 
 

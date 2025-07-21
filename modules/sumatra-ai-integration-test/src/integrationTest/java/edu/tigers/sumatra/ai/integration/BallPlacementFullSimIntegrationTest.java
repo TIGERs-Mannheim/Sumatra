@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2024, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.integration;
@@ -14,17 +14,17 @@ import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.referee.data.EGameState;
 import edu.tigers.sumatra.referee.gameevent.EGameEvent;
 import edu.tigers.sumatra.referee.proto.SslGcRefereeMessage;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 
-public class BallPlacementFullSimIntegrationTest extends AFullSimIntegrationTest
+class BallPlacementFullSimIntegrationTest extends AFullSimIntegrationTest
 {
 	private static final int maxOwnBots = 3;
 	private static final int maxOppBots = 3;
 
 
 	@Test
-	public void ballPlacementCornerToCenterMultiple()
+	void ballPlacementCornerToCenterMultiple()
 	{
 		runBallPlacement(
 				Geometry.getFieldWBorders().getCorner(IRectangle.ECorner.BOTTOM_LEFT),
@@ -35,18 +35,18 @@ public class BallPlacementFullSimIntegrationTest extends AFullSimIntegrationTest
 
 
 	@Test
-	public void ballPlacementCornerToCenterSingle()
+	void ballPlacementCornerToCenterSingle()
 	{
 		runBallPlacement(
 				Geometry.getFieldWBorders().getCorner(IRectangle.ECorner.BOTTOM_LEFT),
 				Vector2.zero(),
-				1
+				2
 		);
 	}
 
 
 	@Test
-	public void ballPlacementCornerToOppositeCornerMultiple()
+	void ballPlacementCornerToOppositeCornerMultiple()
 	{
 		runBallPlacement(
 				Geometry.getFieldWBorders().getCorner(IRectangle.ECorner.BOTTOM_LEFT),
@@ -57,18 +57,18 @@ public class BallPlacementFullSimIntegrationTest extends AFullSimIntegrationTest
 
 
 	@Test
-	public void ballPlacementCornerToOppositeCornerSingle()
+	void ballPlacementCornerToOppositeCornerSingle()
 	{
 		runBallPlacement(
 				Geometry.getFieldWBorders().getCorner(IRectangle.ECorner.BOTTOM_LEFT),
 				Geometry.getField().getCorner(IRectangle.ECorner.TOP_LEFT).addMagnitude(Vector2.fromXY(-200, -200)),
-				1
+				2
 		);
 	}
 
 
 	@Test
-	public void ballPlacementGoalCornerToCenterMultiple()
+	void ballPlacementGoalCornerToCenterMultiple()
 	{
 		runBallPlacement(
 				Geometry.getGoalTheir().getCorners().getFirst(),
@@ -79,18 +79,18 @@ public class BallPlacementFullSimIntegrationTest extends AFullSimIntegrationTest
 
 
 	@Test
-	public void ballPlacementGoalCornerToCenterSingle()
+	void ballPlacementGoalCornerToCenterSingle()
 	{
 		runBallPlacement(
 				Geometry.getGoalTheir().getCorners().getFirst(),
 				Vector2.zero(),
-				1
+				2
 		);
 	}
 
 
 	@Test
-	public void ballPlacementTouchBoundaryToCenterMultiple()
+	void ballPlacementTouchBoundaryToCenterMultiple()
 	{
 		runBallPlacement(
 				Vector2.fromXY(2000, Geometry.getFieldWidth() / 2 + Geometry.getBoundaryWidth()),
@@ -101,22 +101,24 @@ public class BallPlacementFullSimIntegrationTest extends AFullSimIntegrationTest
 
 
 	@Test
-	public void ballPlacementTouchBoundaryToCenterSingle()
+	void ballPlacementTouchBoundaryToCenterSingle()
 	{
 		runBallPlacement(
 				Vector2.fromXY(2000, Geometry.getFieldWidth() / 2 + Geometry.getBoundaryWidth()),
 				Vector2.zero(),
-				1
+				2
 		);
 	}
 
 
 	@Test
-	public void ballPlacementAlmostTouchBoundaryToCenterMultiple()
+	void ballPlacementAlmostTouchBoundaryToCenterMultiple()
 	{
 		runBallPlacement(
-				Vector2.fromXY(2000,
-						Geometry.getFieldWidth() / 2 + Geometry.getBoundaryWidth() - 2 * Geometry.getBotRadius()),
+				Vector2.fromXY(
+						2000,
+						Geometry.getFieldWidth() / 2 + Geometry.getBoundaryWidth() - 2 * Geometry.getBotRadius()
+				),
 				Vector2.zero(),
 				maxOwnBots
 		);
@@ -124,19 +126,21 @@ public class BallPlacementFullSimIntegrationTest extends AFullSimIntegrationTest
 
 
 	@Test
-	public void ballPlacementAlmostTouchBoundaryToCenterSingle()
+	void ballPlacementAlmostTouchBoundaryToCenterSingle()
 	{
 		runBallPlacement(
-				Vector2.fromXY(2000,
-						Geometry.getFieldWidth() / 2 + Geometry.getBoundaryWidth() - 2 * Geometry.getBotRadius()),
+				Vector2.fromXY(
+						2000,
+						Geometry.getFieldWidth() / 2 + Geometry.getBoundaryWidth() - 2 * Geometry.getBotRadius()
+				),
 				Vector2.zero(),
-				1
+				2
 		);
 	}
 
 
 	@Test
-	public void ballPlacementInsideGoalToCornerMultiple()
+	void ballPlacementInsideGoalToCornerMultiple()
 	{
 		runBallPlacement(
 				Geometry.getGoalTheir().getCenter().addMagnitude(Vector2.fromX(Geometry.getGoalTheir().getDepth())),
@@ -147,13 +151,25 @@ public class BallPlacementFullSimIntegrationTest extends AFullSimIntegrationTest
 
 
 	@Test
-	public void ballPlacementInsideGoalToCornerSingle()
+	void ballPlacementInsideGoalToCornerSingle()
 	{
 		runBallPlacement(
 				Geometry.getGoalTheir().getCenter().addMagnitude(Vector2.fromX(Geometry.getGoalTheir().getDepth())),
 				Geometry.getGoalTheir().getCenter().addMagnitude(Vector2.fromXY(-200, Geometry.getFieldWidth() / 2 - 200)),
-				1
+				2
 		);
+	}
+
+
+	/**
+	 * Check if the ball placement works when the ball is placed from the penalty area.
+	 * It should not be placed by the keeper, but the keeper should move away and let another bot place the ball.
+	 */
+	@Test
+	void ballPlacementFromPenArea()
+	{
+		initSimulation("snapshots/ballPlacementFromPenArea.json");
+		runBallPlacement();
 	}
 
 
@@ -164,19 +180,28 @@ public class BallPlacementFullSimIntegrationTest extends AFullSimIntegrationTest
 				.maintenance(ETeamColor.YELLOW, maxOppBots)
 				.ballPos(source)
 				.snapshotBuilder()
+				.stage(SslGcRefereeMessage.Referee.Stage.NORMAL_FIRST_HALF)
 				.command(SslGcRefereeMessage.Referee.Command.STOP)
 				.placementPos(target)
 				.autoContinue(false)
 				.build());
+
 		defaultSimTimeBlocker(0.5)
 				.addStopCondition(new BotsNotMovingStopCondition(0.1))
 				.await();
 		sendRefereeCommand(SslGcRefereeMessage.Referee.Command.BALL_PLACEMENT_BLUE);
 		defaultSimTimeBlocker(0.1)
 				.await();
+
+		runBallPlacement();
+	}
+
+
+	private void runBallPlacement()
+	{
 		// 30s is allowed in the real game, but this is only simulated, and we really should not need the full 30s
 		defaultSimTimeBlocker(20)
-				.addStopCondition(this::gameStopped)
+				.addStopCondition(new GameStateStopCondition(EGameState.STOP))
 				.await();
 
 		assertNoWarningsOrErrors();

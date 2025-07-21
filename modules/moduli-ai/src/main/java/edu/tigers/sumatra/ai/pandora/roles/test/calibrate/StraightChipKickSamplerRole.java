@@ -1,9 +1,10 @@
 /*
- * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.pandora.roles.test.calibrate;
 
+import edu.tigers.sumatra.ai.pandora.plays.test.ballmodel.EFieldSide;
 import edu.tigers.sumatra.ai.pandora.roles.ERole;
 import edu.tigers.sumatra.botmanager.botskills.data.EKickerDevice;
 import edu.tigers.sumatra.geometry.Geometry;
@@ -20,32 +21,30 @@ public class StraightChipKickSamplerRole extends AKickSamplerRole
 
 	@SuppressWarnings({ "squid:S00107", "unused" }) // constructor is used by UI to feed parameters into role
 	public StraightChipKickSamplerRole(
-			final boolean onlyOurHalf,
-			final boolean chipFromSide,
-			final IVector2 kickCorner,
-			final double minDurationMs,
-			final double maxDurationMs,
-			final double stepSize,
-			final boolean continueSampling,
-			final boolean doChip,
-			final boolean doStraight)
+			EFieldSide fieldSide,
+			EKickerDevice kickerDevice,
+			double shootDurationMs,
+			EKickMode kickMode,
+			IVector2 kickCorner,
+			boolean chipFromSide
+			)
 	{
-		super(ERole.STRAIGHT_CHIP_KICK_SAMPLER, onlyOurHalf);
-
-		if (continueSampling && !samples.isEmpty())
-		{
-			return;
-		}
+		super(ERole.STRAIGHT_CHIP_KICK_SAMPLER, kickMode);
 
 		samples.clear();
 
-		if (doStraight)
+		SamplePoint p = new SamplePoint();
+		p.rightOffset = 0;
+		p.device = kickerDevice;
+		p.durationMs = shootDurationMs;
+
+		if (kickerDevice == EKickerDevice.STRAIGHT)
 		{
 			IVector2 kickTarget;
-			if (onlyOurHalf)
+			if (fieldSide != EFieldSide.BOTH)
 			{
 				kickTarget = Vector2.fromXY(
-						-Geometry.getFieldWidth() / 2,
+						fieldSide.getSign() * Geometry.getFieldWidth() / 2,
 						-Geometry.getFieldLength() / 2
 				);
 			} else
@@ -56,59 +55,38 @@ public class StraightChipKickSamplerRole extends AKickSamplerRole
 				);
 			}
 
-			// create straight sample points
-			for (double dur = minDurationMs; dur <= maxDurationMs; dur += stepSize)
-			{
-				SamplePoint p = new SamplePoint();
+			p.kickPos = Vector2.fromXY(
+					Math.signum(kickCorner.x()) * (Geometry.getFieldLength() / 2 - 200),
+					Math.signum(kickCorner.y()) * (Geometry.getFieldWidth() / 2 - 200)
+			);
+			p.targetAngle = kickTarget.subtractNew(p.kickPos).getAngle();
 
-				p.kickPos = Vector2.fromXY(
-						Math.signum(kickCorner.x()) * (Geometry.getFieldLength() / 2 - 200),
-						Math.signum(kickCorner.y()) * (Geometry.getFieldWidth() / 2 - 200)
-				);
-				p.targetAngle = kickTarget.subtractNew(p.kickPos).getAngle();
-				p.durationMs = dur;
-				p.device = EKickerDevice.STRAIGHT;
-				p.rightOffset = 0;
-
-				samples.add(p);
-			}
-		}
-
-		if (doChip)
+		} else
 		{
-			// create chip sample points
-			for (double dur = minDurationMs; dur <= maxDurationMs; dur += stepSize)
+
+			if (chipFromSide)
 			{
-				SamplePoint p = new SamplePoint();
-
-				if (chipFromSide)
-				{
-					p.kickPos = Vector2.fromXY(0, (-Geometry.getFieldWidth() / 2) + 600);
-					p.targetAngle = AngleMath.PI_HALF;
-				} else
-				{
-					p.kickPos = Vector2.fromXY((-Geometry.getFieldLength() / 2) + 600, 0);
-					p.targetAngle = 0;
-				}
-
-				p.durationMs = dur;
-				p.device = EKickerDevice.CHIP;
-				p.rightOffset = 0;
-
-				samples.add(p);
+				p.kickPos = Vector2.fromXY(0, (-Geometry.getFieldWidth() / 2) + 600);
+				p.targetAngle = AngleMath.PI_HALF;
+			} else
+			{
+				p.kickPos = Vector2.fromXY((-Geometry.getFieldLength() / 2) + 600, 0);
+				p.targetAngle = 0;
 			}
 		}
+
+		samples.add(p);
 	}
 
-
 	public StraightChipKickSamplerRole(
-			boolean onlyOurHalf,
 			EKickerDevice kickerDevice,
 			IVector2 kickPos,
 			IVector2 kickTarget,
-			double shootDurationMs)
+			double shootDurationMs,
+			EKickMode kickMode
+	)
 	{
-		super(ERole.STRAIGHT_CHIP_KICK_SAMPLER, onlyOurHalf);
+		super(ERole.STRAIGHT_CHIP_KICK_SAMPLER, kickMode);
 
 		var sample = new SamplePoint();
 		sample.device = kickerDevice;
@@ -118,12 +96,5 @@ public class StraightChipKickSamplerRole extends AKickSamplerRole
 		sample.rightOffset = 0;
 
 		samples.add(sample);
-	}
-
-
-	@Override
-	protected String getFolderName()
-	{
-		return "ballKick";
 	}
 }

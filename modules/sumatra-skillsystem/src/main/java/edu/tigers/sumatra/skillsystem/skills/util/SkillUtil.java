@@ -10,6 +10,8 @@ import edu.tigers.sumatra.math.penaltyarea.IPenaltyArea;
 import edu.tigers.sumatra.math.rectangle.IRectangle;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.wp.data.ITrackedBall;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 
 import java.util.Arrays;
 import java.util.List;
@@ -17,18 +19,11 @@ import java.util.List;
 
 /**
  * Common utility methods for skills
- *
- * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  */
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class SkillUtil
 {
 	private static final double INSIDE_FIELD_MARGIN = 20;
-
-
-	@SuppressWarnings("unused")
-	private SkillUtil()
-	{
-	}
 
 
 	/**
@@ -117,6 +112,4 @@ public final class SkillUtil
 		}
 		return pos;
 	}
-
-
 }

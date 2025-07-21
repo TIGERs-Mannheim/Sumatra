@@ -4,7 +4,6 @@
 
 package edu.tigers.sumatra.ai.metis.kicking;
 
-import com.sleepycat.persist.model.Persistent;
 import edu.tigers.sumatra.drawable.DrawableAnnotation;
 import edu.tigers.sumatra.drawable.DrawableArrow;
 import edu.tigers.sumatra.drawable.IDrawableShape;
@@ -24,7 +23,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 
-@Persistent
 @Value
 @Builder
 @AllArgsConstructor(access = AccessLevel.PRIVATE)

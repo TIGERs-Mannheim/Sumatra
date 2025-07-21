@@ -167,7 +167,7 @@ public class DirectionValidator implements IKickValidator
 				matA.setEntry(i, 1, 1.0);
 
 				CamBall bNow = bestGroup.get(i).getLatestCamBall().orElseThrow();
-				double time = ((bNow.gettCapture()) - bFirst.gettCapture()) * 1e-9;
+				double time = ((bNow.getTimestamp()) - bFirst.getTimestamp()) * 1e-9;
 				b.setEntry(i, time);
 			}
 
@@ -181,7 +181,7 @@ public class DirectionValidator implements IKickValidator
 				return Optional.empty();
 			}
 
-			long tKick = ((long) (x.getEntry(1) * 1e9)) + bFirst.gettCapture();
+			long tKick = ((long) (x.getEntry(1) * 1e9)) + bFirst.getTimestamp();
 
 			return Optional.of(new Pair<>(tKick, kickPos.orElseThrow()));
 		}

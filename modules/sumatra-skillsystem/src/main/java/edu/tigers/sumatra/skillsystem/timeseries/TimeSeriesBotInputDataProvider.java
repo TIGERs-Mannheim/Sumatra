@@ -4,7 +4,6 @@
 
 package edu.tigers.sumatra.skillsystem.timeseries;
 
-import edu.tigers.moduli.exceptions.ModuleNotFoundException;
 import edu.tigers.sumatra.botmanager.bots.ABot;
 import edu.tigers.sumatra.botmanager.botskills.BotSkillFastGlobalPosition;
 import edu.tigers.sumatra.botmanager.botskills.BotSkillGlobalPosition;
@@ -15,6 +14,7 @@ import edu.tigers.sumatra.data.collector.ITimeSeriesDataProvider;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.math.vector.Vector3;
 import edu.tigers.sumatra.model.SumatraModel;
+import edu.tigers.sumatra.moduli.exceptions.ModuleNotFoundException;
 import edu.tigers.sumatra.skillsystem.ASkillSystem;
 import edu.tigers.sumatra.skillsystem.ISkillSystemObserver;
 import org.apache.logging.log4j.LogManager;
@@ -96,25 +96,25 @@ public class TimeSeriesBotInputDataProvider implements ITimeSeriesDataProvider, 
 		botInput.settSent(tSent);
 		saveTrajectory(bot, timestamp, botInput);
 
-		switch (bot.getMatchCtrl().getSkill().getType())
+		switch (bot.getLastSentMatchCommand().getSkill().getType())
 		{
 			case GLOBAL_POSITION:
-				BotSkillGlobalPosition botSkillGlobalPosition = (BotSkillGlobalPosition) bot.getMatchCtrl().getSkill();
+				BotSkillGlobalPosition botSkillGlobalPosition = (BotSkillGlobalPosition) bot.getLastSentMatchCommand().getSkill();
 				botInput
 						.setSetPos(Vector3.from2d(botSkillGlobalPosition.getPos(), botSkillGlobalPosition.getOrientation()));
 				break;
 			case LOCAL_VELOCITY:
-				BotSkillLocalVelocity botSkillLocalVelocity = (BotSkillLocalVelocity) bot.getMatchCtrl().getSkill();
+				BotSkillLocalVelocity botSkillLocalVelocity = (BotSkillLocalVelocity) bot.getLastSentMatchCommand().getSkill();
 				botInput.setLocalVel(Vector3.fromXYZ(botSkillLocalVelocity.getX(), botSkillLocalVelocity.getY(),
 						botSkillLocalVelocity.getW()));
 				break;
 			case GLOBAL_VEL_XY_POS_W:
-				BotSkillGlobalVelXyPosW botSkillGlobalVelXyPosW = (BotSkillGlobalVelXyPosW) bot.getMatchCtrl().getSkill();
+				BotSkillGlobalVelXyPosW botSkillGlobalVelXyPosW = (BotSkillGlobalVelXyPosW) bot.getLastSentMatchCommand().getSkill();
 				botInput.setSetPos(Vector3.fromXYZ(0, 0, botSkillGlobalVelXyPosW.getTargetAngle()));
 				botInput.setSetVel(Vector3.from2d(botSkillGlobalVelXyPosW.getVel(), 0));
 				break;
 			case FAST_GLOBAL_POSITION:
-				BotSkillFastGlobalPosition skill = (BotSkillFastGlobalPosition) bot.getMatchCtrl().getSkill();
+				BotSkillFastGlobalPosition skill = (BotSkillFastGlobalPosition) bot.getLastSentMatchCommand().getSkill();
 				botInput.setSetPos(Vector3.fromXYZ(0, 0, skill.getOrientation()));
 				break;
 			case BOT_SKILL_SINE:
@@ -125,11 +125,11 @@ public class TimeSeriesBotInputDataProvider implements ITimeSeriesDataProvider, 
 				break;
 		}
 
-		botInput.setKickSpeed(bot.getMatchCtrl().getSkill().getKickSpeed());
-		botInput.setKickDevice(bot.getMatchCtrl().getSkill().getDevice().getValue());
-		botInput.setDribbleRpm(bot.getMatchCtrl().getSkill().getDribbleSpeed());
-		botInput.setKickMode(bot.getMatchCtrl().getSkill().getMode().getId());
-		botInput.setMoveConstraints(bot.getMatchCtrl().getSkill().getMoveConstraints());
+		botInput.setKickSpeed(bot.getLastSentMatchCommand().getSkill().getKickSpeed());
+		botInput.setKickDevice(bot.getLastSentMatchCommand().getSkill().getDevice().getValue());
+		botInput.setDribbleRpm(bot.getLastSentMatchCommand().getSkill().getDribbleSpeed());
+		botInput.setKickMode(bot.getLastSentMatchCommand().getSkill().getMode().getId());
+		botInput.setMoveConstraints(bot.getLastSentMatchCommand().getSkill().getMoveConstraints());
 
 		botInputs.add(botInput);
 	}

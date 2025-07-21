@@ -4,25 +4,23 @@
 
 package edu.tigers.sumatra.teamclient;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-
+import com.github.g3force.configurable.ConfigRegistration;
+import com.github.g3force.configurable.Configurable;
+import edu.tigers.sumatra.ai.AAgent;
+import edu.tigers.sumatra.ai.AIInfoFrame;
+import edu.tigers.sumatra.ai.IAIObserver;
+import edu.tigers.sumatra.model.SumatraModel;
+import edu.tigers.sumatra.moduli.AModule;
 import edu.tigers.sumatra.util.Safe;
 import org.apache.commons.lang.Validate;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import com.github.g3force.configurable.ConfigRegistration;
-import com.github.g3force.configurable.Configurable;
-
-import edu.tigers.moduli.AModule;
-import edu.tigers.sumatra.ai.AAgent;
-import edu.tigers.sumatra.ai.AIInfoFrame;
-import edu.tigers.sumatra.ai.IAIObserver;
-import edu.tigers.sumatra.model.SumatraModel;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 
 public class TeamClientModule extends AModule implements IAIObserver

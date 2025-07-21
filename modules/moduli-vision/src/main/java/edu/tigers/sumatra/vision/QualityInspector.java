@@ -1,10 +1,12 @@
 /*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.vision;
 
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
+import edu.tigers.sumatra.bot.EBotType;
+import edu.tigers.sumatra.bot.RobotInfo;
 import edu.tigers.sumatra.cam.data.CamCalibration;
 import edu.tigers.sumatra.cam.data.CamGeometry;
 import edu.tigers.sumatra.drawable.DrawableAnnotation;
@@ -48,6 +50,10 @@ public class QualityInspector
 	private static boolean drawRobotDeviationIssues = true;
 	@Configurable(defValue = "true", comment = "Draw invisible robot issues in quality layer.")
 	private static boolean drawRobotInvisibleIssues = true;
+	@Configurable(defValue = "true", comment = "Draw height robot issues in quality layer.")
+	private static boolean drawRobotHeightIssues = true;
+	@Configurable(defValue = "true", comment = "Draw Camera FPS quality issues in quality layer.")
+	private static boolean drawFpsIssues = true;
 	@Configurable(defValue = "true", comment = "Draw robot vision quality issues in quality layer.")
 	private static boolean drawRobotQualityIssues = true;
 	@Configurable(defValue = "400.0", comment = "Maximum allowed camera height difference to median height. [mm]")
@@ -64,6 +70,8 @@ public class QualityInspector
 	private static double minSpeedForInvisibleCheck = 1.5;
 	@Configurable(defValue = "0.1", comment = "Time until an invisible fast robot is reported. [s]")
 	private static double minInvisibleTime = 0.1;
+	@Configurable(defValue = "69.0", comment = "Minimal camera frames per second [fps]")
+	private static double minimumCamFps = 69.0;
 
 	static
 	{
@@ -72,10 +80,12 @@ public class QualityInspector
 
 	private List<CamCalibration> problematicCams = new ArrayList<>();
 	private List<RobotDeviationIssue> deviationIssues = new ArrayList<>();
+	private List<RobotHeightIssue> robotHeightIssues = new ArrayList<>();
 	private List<RobotInvisibleIssue> invisibleIssues = new ArrayList<>();
 	private List<FilteredVisionBot> filteredBots = new ArrayList<>();
 	private List<CameraTimeDiffIssue> camTimeDiffIssues = new ArrayList<>();
 	private Map<Integer, CamCalibration> calibrations = new HashMap<>();
+	private List<CameraFpsIssue> cameraFpsIssues = new ArrayList<>();
 
 
 	/**
@@ -89,6 +99,7 @@ public class QualityInspector
 		// remove old issues
 		deviationIssues.removeIf(i -> (timestamp - i.lastOccurence) > (issueTimeout * 1e9));
 		invisibleIssues.removeIf(i -> (timestamp - i.lastOccurence) > (issueTimeout * 1e9));
+		robotHeightIssues.clear();
 
 		// just get all RobotTracker in one list
 		List<RobotTracker> allTrackers = camFilters.stream()
@@ -105,6 +116,7 @@ public class QualityInspector
 
 			IRectangle viewport = viewPort.get();
 			checkInvisibleRobot(timestamp, filter, viewport);
+			checkRobotHeightDeviation(timestamp, filter);
 		}
 
 		// group trackers by BotID
@@ -137,11 +149,33 @@ public class QualityInspector
 		}
 
 		// check for large differences in latest timestamp to cameras' timestamps
-		camTimeDiffIssues = camFilters.stream()
-				.filter(c -> timestamp - c.getTimestamp() > c.getAverageFrameDt() * 2e9)
-				.map(c -> new CameraTimeDiffIssue(c.getCameraPosition().orElse(Vector3f.ZERO_VECTOR).getXYVector(),
-						timestamp - c.getTimestamp()))
-				.toList();
+		camTimeDiffIssues = camFilters.stream().filter(c -> timestamp - c.getTimestamp() > c.getAverageFrameDt() * 2e9)
+				.map(c -> new CameraTimeDiffIssue(
+						c.getCameraPosition().orElse(Vector3f.ZERO_VECTOR).getXYVector(),
+						timestamp - c.getTimestamp()
+				)).toList();
+	}
+
+
+	private void checkRobotHeightDeviation(final long timestamp, final CamFilter filter)
+	{
+		for (RobotTracker tracker : filter.getValidRobots().values())
+		{
+			RobotInfo robotInfo = filter.getRobotInfoMap().get(tracker.getBotId());
+			if (robotInfo == null || robotInfo.getType() == EBotType.UNKNOWN)
+			{
+				continue;
+			}
+
+			double targetHeight = robotInfo.getBotParams().getDimensions().getHeight();
+			double robotHeight = tracker.getBotHeight();
+
+			if (Math.abs(targetHeight - robotHeight) > 1e-3)
+			{
+				robotHeightIssues.add(
+						new RobotHeightIssue(tracker.getPosition(timestamp), tracker.getBotId(), robotHeight, targetHeight));
+			}
+		}
 	}
 
 
@@ -182,6 +216,23 @@ public class QualityInspector
 					sameBotIssue.get().lastOccurence = timestamp;
 				}
 			}
+		}
+	}
+
+
+	private void checkCameraFPS(Collection<CamFilter> camFilters)
+	{
+		cameraFpsIssues.clear();
+		for (CamFilter filter : camFilters)
+		{
+			double fps = 1.0 / filter.getAverageFrameDt();
+
+			filter.getCameraPosition().ifPresent(pos -> {
+				if (fps < minimumCamFps)
+				{
+					cameraFpsIssues.add(new CameraFpsIssue(pos.getXYVector(), fps));
+				}
+			});
 		}
 	}
 
@@ -258,6 +309,17 @@ public class QualityInspector
 	}
 
 
+	/**
+	 * Inspect camera FPS for issues.
+	 *
+	 * @param camFilters
+	 */
+	public void inspectCameras(final Collection<CamFilter> camFilters)
+	{
+		checkCameraFPS(camFilters);
+	}
+
+
 	private void checkCameraHeights(final Collection<CamCalibration> cams)
 	{
 		problematicCams.clear();
@@ -292,6 +354,8 @@ public class QualityInspector
 		addRobotDeviationIssues(shapes);
 		addRobotInvisibleIssues(shapes);
 		addRobotQualityIssues(shapes);
+		addRobotHeightIssues(shapes);
+		addFPSIssues(shapes);
 
 		return shapes;
 	}
@@ -308,12 +372,36 @@ public class QualityInspector
 					continue;
 				}
 
-				DrawableAnnotation unc = new DrawableAnnotation(bot.getPos(),
-						String.format("%.0f", bot.getQuality() * 100), true);
+				DrawableAnnotation unc = new DrawableAnnotation(
+						bot.getPos(),
+						String.format("%.0f", bot.getQuality() * 100), true
+				);
 				unc.withOffset(Vector2.fromY(120));
 				unc.setColor(bot.getBotID().getTeamColor().getColor());
 				unc.withFontHeight(60);
 				shapes.add(unc);
+			}
+		}
+	}
+
+
+	private void addRobotHeightIssues(List<IDrawableShape> shapes)
+	{
+		if (drawRobotHeightIssues)
+		{
+			for (RobotHeightIssue issue : robotHeightIssues)
+			{
+				DrawableCircle circle = new DrawableCircle(issue.robotPos, 160, Color.MAGENTA);
+				circle.setStrokeWidth(20);
+				shapes.add(circle);
+				DrawableAnnotation warn = new DrawableAnnotation(
+						issue.robotPos.addNew(Vector2.fromXY(0, 240)),
+						"CURRENT_HEIGHT: " + issue.robotHeight + System.lineSeparator() + " TARGET_HEIGHT: "
+								+ issue.targetHeight, false
+				);
+				warn.withFontHeight(100).withBold(true).setColor(Color.MAGENTA);
+
+				shapes.add(warn);
 			}
 		}
 	}
@@ -326,8 +414,10 @@ public class QualityInspector
 			// draw invisible fast robots
 			for (RobotInvisibleIssue issue : invisibleIssues)
 			{
-				DrawableCircle circle = new DrawableCircle(issue.getCenterPos(), 160,
-						issue.botId.getTeamColor().getColor());
+				DrawableCircle circle = new DrawableCircle(
+						issue.getCenterPos(), 160,
+						issue.botId.getTeamColor().getColor()
+				);
 				circle.setStrokeWidth(20);
 				shapes.add(circle);
 
@@ -335,8 +425,10 @@ public class QualityInspector
 				line.setStrokeWidth(20);
 				shapes.add(line);
 
-				DrawableAnnotation botId = new DrawableAnnotation(issue.getCenterPos().addNew(Vector2.fromXY(0, 240)),
-						issue.botId.toString(), true);
+				DrawableAnnotation botId = new DrawableAnnotation(
+						issue.getCenterPos().addNew(Vector2.fromXY(0, 240)),
+						issue.botId.toString(), true
+				);
 				botId.setColor(issue.botId.getTeamColor().getColor());
 				botId.withFontHeight(100);
 				botId.withBold(true);
@@ -361,27 +453,54 @@ public class QualityInspector
 				line.setStrokeWidth(10);
 				shapes.add(line);
 
-				DrawableAnnotation botId = new DrawableAnnotation(issue.getCenterPos().addNew(Vector2.fromXY(0, 240)),
-						issue.botId.toString(), true);
+				DrawableAnnotation botId = new DrawableAnnotation(
+						issue.getCenterPos().addNew(Vector2.fromXY(0, 240)),
+						issue.botId.toString(), true
+				);
 				botId.setColor(Color.ORANGE);
 				botId.withFontHeight(100);
 				botId.withBold(true);
 				shapes.add(botId);
 
-				DrawableAnnotation camIds = new DrawableAnnotation(issue.getCenterPos().addNew(Vector2.fromXY(0, -240)),
-						issue.firstCam + " <-> " + issue.secondCam, true);
+				DrawableAnnotation camIds = new DrawableAnnotation(
+						issue.getCenterPos().addNew(Vector2.fromXY(0, -240)),
+						issue.firstCam + " <-> " + issue.secondCam, true
+				);
 				camIds.setColor(Color.ORANGE);
 				camIds.withFontHeight(100);
 				camIds.withBold(true);
 				shapes.add(camIds);
 
-				DrawableAnnotation dist = new DrawableAnnotation(issue.getCenterPos().addNew(Vector2.fromXY(0, -340)),
-						String.format("%.1fmm", issue.firstPos.distanceTo(issue.secondPos)), true);
+				DrawableAnnotation dist = new DrawableAnnotation(
+						issue.getCenterPos().addNew(Vector2.fromXY(0, -340)),
+						String.format("%.1fmm", issue.firstPos.distanceTo(issue.secondPos)), true
+				);
 				dist.setColor(Color.ORANGE);
 				dist.withFontHeight(80);
 				dist.withBold(true);
 				shapes.add(dist);
 			}
+		}
+	}
+
+
+	private void addFPSIssues(List<IDrawableShape> shapes)
+	{
+		if (!drawFpsIssues)
+		{
+			return;
+		}
+
+		for (CameraFpsIssue issue : cameraFpsIssues)
+		{
+			DrawableAnnotation lowFPS = new DrawableAnnotation(
+					issue.camPos,
+					String.format("CAMERA FPS TOO LOW: %.1f FPS", issue.fps)
+			);
+			lowFPS.withOffset(Vector2.fromXY(40, 150));
+			lowFPS.withFontHeight(70);
+			lowFPS.setColor(Color.MAGENTA);
+			shapes.add(lowFPS);
 		}
 	}
 
@@ -411,7 +530,8 @@ public class QualityInspector
 
 				DrawableAnnotation warn = new DrawableAnnotation(
 						issue.camPos.addNew(Vector2.fromXY(0, -280)), String.format("TIME DIFF: %.3f", issue.diff * 1e-9),
-						true);
+						true
+				);
 				warn.withFontHeight(100).withBold(true).setColor(Color.RED);
 				shapes.add(warn);
 			}
@@ -435,6 +555,15 @@ public class QualityInspector
 		}
 	}
 
+	@AllArgsConstructor
+	private static class RobotHeightIssue
+	{
+		private IVector2 robotPos;
+		private BotID botId;
+		private double robotHeight;
+		private double targetHeight;
+	}
+
 	private static class RobotInvisibleIssue
 	{
 		private IVector2 firstPos;
@@ -448,6 +577,20 @@ public class QualityInspector
 			return firstPos.addNew(lastPos).multiply(0.5);
 		}
 	}
+
+	private static class CameraFpsIssue
+	{
+		private final IVector2 camPos;
+		private final double fps;
+
+
+		public CameraFpsIssue(IVector2 camPos, double fps)
+		{
+			this.camPos = camPos;
+			this.fps = fps;
+		}
+	}
+
 
 	@AllArgsConstructor
 	private static class CameraTimeDiffIssue

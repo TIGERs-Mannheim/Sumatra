@@ -3,93 +3,49 @@
  */
 package edu.tigers.sumatra.drawable;
 
-import org.apache.commons.lang.Validate;
+import edu.tigers.sumatra.math.SumatraMath;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 
 import java.awt.AlphaComposite;
 import java.awt.Color;
 import java.awt.Graphics2D;
-import java.util.ArrayList;
 import java.util.List;
 
 
 /**
  * Create color pickers
  */
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class ColorPickerFactory
 {
-	private static final List<Color> colors = new ArrayList<>();
+	private static final List<Color> COLORS = List.of(
+			new Color(0xba55d3),
+			new Color(0x1e90ff),
+			new Color(0xfa8072),
+			new Color(0xdda0dd),
+			new Color(0xff1493),
+			new Color(0x98fb98),
+			new Color(0x87cefa),
+			new Color(0xffe4b5),
+			new Color(0x2f4f4f),
+			new Color(0x2e8b57),
+			new Color(0x800000),
+			new Color(0x808000),
+			new Color(0x000080),
+			new Color(0xffa500)
+	);
 
-	static
+
+	/**
+	 * Get a color from a static color map with visually distinct colors.
+	 *
+	 * @param index
+	 * @return
+	 */
+	public static Color getDistinctColor(final int index)
 	{
-		colors.add(new Color(0xE11408));
-		colors.add(new Color(0xE11C08));
-		colors.add(new Color(0xE12308));
-		colors.add(new Color(0xE12A08));
-		colors.add(new Color(0xE13108));
-		colors.add(new Color(0xE13908));
-		colors.add(new Color(0xE14008));
-		colors.add(new Color(0xE14708));
-		colors.add(new Color(0xE14E07));
-		colors.add(new Color(0xE15607));
-		colors.add(new Color(0xE15D07));
-		colors.add(new Color(0xE16407));
-		colors.add(new Color(0xE16B07));
-		colors.add(new Color(0xE17307));
-		colors.add(new Color(0xE17A07));
-		colors.add(new Color(0xE18206));
-		colors.add(new Color(0xE28906));
-		colors.add(new Color(0xE29006));
-		colors.add(new Color(0xE29806));
-		colors.add(new Color(0xE29F06));
-		colors.add(new Color(0xE2A706));
-		colors.add(new Color(0xE2AE06));
-		colors.add(new Color(0xE2B505));
-		colors.add(new Color(0xE2BD05));
-		colors.add(new Color(0xE2C405));
-		colors.add(new Color(0xE2CC05));
-		colors.add(new Color(0xE2D305));
-		colors.add(new Color(0xE2DB05));
-		colors.add(new Color(0xE2E205));
-		colors.add(new Color(0xDBE204));
-		colors.add(new Color(0xD3E204));
-		colors.add(new Color(0xCCE204));
-		colors.add(new Color(0xC4E304));
-		colors.add(new Color(0xBDE304));
-		colors.add(new Color(0xB5E304));
-		colors.add(new Color(0xAEE304));
-		colors.add(new Color(0xA6E303));
-		colors.add(new Color(0x9FE303));
-		colors.add(new Color(0x97E303));
-		colors.add(new Color(0x8FE303));
-		colors.add(new Color(0x88E303));
-		colors.add(new Color(0x80E303));
-		colors.add(new Color(0x79E303));
-		colors.add(new Color(0x71E302));
-		colors.add(new Color(0x69E302));
-		colors.add(new Color(0x62E302));
-		colors.add(new Color(0x5AE302));
-		colors.add(new Color(0x52E302));
-		colors.add(new Color(0x4BE402));
-		colors.add(new Color(0x43E402));
-		colors.add(new Color(0x3BE401));
-		colors.add(new Color(0x33E401));
-		colors.add(new Color(0x2CE401));
-		colors.add(new Color(0x24E401));
-		colors.add(new Color(0x1CE401));
-		colors.add(new Color(0x14E401));
-		colors.add(new Color(0x0DE401));
-		colors.add(new Color(0x05E400));
-		colors.add(new Color(0x00E404));
-		colors.add(new Color(0x00E40B));
-		colors.add(new Color(0x00E413));
-		colors.add(new Color(0x00E41A));
-		colors.add(new Color(0x00E422));
-		colors.add(new Color(0x00E52A));
-	}
-
-
-	private ColorPickerFactory()
-	{
+		return COLORS.get(index % COLORS.size());
 	}
 
 
@@ -185,12 +141,19 @@ public final class ColorPickerFactory
 			@Override
 			public Color getColor(final double relValue)
 			{
-				Validate.isTrue(relValue >= 0, "relValue must be greater or equal to zero: ", relValue);
-				Validate.isTrue(relValue <= 1, "relValue must be smaller or equal to one: ", relValue);
-				int red = (int) ((color2.getRed() * relValue) + (color1.getRed() * (1 - relValue)));
-				int green = (int) ((color2.getGreen() * relValue) + (color1.getGreen() * (1 - relValue)));
-				int blue = (int) ((color2.getBlue() * relValue) + (color1.getBlue() * (1 - relValue)));
-				return new Color(red, green, blue);
+				float value = (float) SumatraMath.cap(relValue, 0, 1);
+
+				float[] hsb1 = new float[3];
+				float[] hsb2 = new float[3];
+				Color.RGBtoHSB(color1.getRed(), color1.getGreen(), color1.getBlue(), hsb1);
+				Color.RGBtoHSB(color2.getRed(), color2.getGreen(), color2.getBlue(), hsb2);
+
+				float[] hsb = new float[3];
+				for (int i = 0; i < 3; i++)
+				{
+					hsb[i] = (hsb2[i] * value) + (hsb1[i] * (1 - value));
+				}
+				return Color.getHSBColor(hsb[0], hsb[1], hsb[2]);
 			}
 		};
 	}
@@ -232,39 +195,7 @@ public final class ColorPickerFactory
 	 */
 	public static IColorPicker greenRedGradient()
 	{
-		return new IColorPicker()
-		{
-
-			@Override
-			public Color getColor(final double relValue)
-			{
-				return gradientFromList(relValue);
-			}
-
-
-			@Override
-			public Color applyColor(final Graphics2D g, final double relValue)
-			{
-				Color c = getColor(relValue);
-				g.setColor(c);
-				return c;
-			}
-		};
-	}
-
-
-	private static Color gradientFromList(final double relValue)
-	{
-		double step = 1.0 / colors.size();
-		for (int i = 0; i < colors.size(); i++)
-		{
-			double val = (i + 1) * step;
-			if (relValue <= val)
-			{
-				return colors.get(i);
-			}
-		}
-		return Color.black;
+		return ColorPickerFactory.scaledDouble(new Color(0xE11408), new Color(0x00E52A));
 	}
 
 

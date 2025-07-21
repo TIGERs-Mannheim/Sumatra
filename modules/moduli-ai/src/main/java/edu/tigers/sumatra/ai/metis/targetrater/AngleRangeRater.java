@@ -15,6 +15,7 @@ import edu.tigers.sumatra.geometry.Goal;
 import edu.tigers.sumatra.math.I2DShape;
 import edu.tigers.sumatra.math.SumatraMath;
 import edu.tigers.sumatra.math.circle.ICircle;
+import edu.tigers.sumatra.math.line.ILineSegment;
 import edu.tigers.sumatra.math.triangle.Triangle;
 import edu.tigers.sumatra.math.triangle.TriangleMath;
 import edu.tigers.sumatra.math.vector.IVector2;
@@ -22,7 +23,6 @@ import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
 import lombok.AccessLevel;
 import lombok.Data;
-import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.Value;
@@ -52,8 +52,8 @@ public class AngleRangeRater implements ITargetRater
 	@Configurable(comment = "[s] Max time horizon to consider for moving robots", defValue = "2.0")
 	private static double maxHorizon = 2.0;
 
-	@Configurable(comment = "[s] The time a robot needs to react to the ball movement", defValue = "0.1")
-	private static double timeForBotToReact = 0.1;
+	@Configurable(comment = "[s] The time a robot needs to react to the ball movement", defValue = "0.12")
+	private static double timeForBotToReact = 0.12;
 
 	@Configurable(comment = "[rad] The angle that is considered a safe goal. Any higher angle will not improve the score", defValue = "0.3")
 	private static double probablyAGoalAngle = 0.3;
@@ -76,7 +76,7 @@ public class AngleRangeRater implements ITargetRater
 	private Collection<ITrackedBot> obstacles = Collections.emptyList();
 
 	/**
-	 * Take scare when settings this value.
+	 * Take care when settings this value.
 	 * Setting timeToKick is usually too pessimistic, because
 	 * 1. The opponent may not detect the redirect, so robots will not react to a goal kick, before the actual kick
 	 * 2. The time may get so high that the kick is never possible
@@ -94,7 +94,6 @@ public class AngleRangeRater implements ITargetRater
 	@Setter
 	private double noneOptimalDriveFactor = 1.0;
 
-	@Getter
 	private LastContext lastContext = new LastContext();
 
 
@@ -109,6 +108,16 @@ public class AngleRangeRater implements ITargetRater
 		return new AngleRangeRater(AngleRangeGenerator.forGoal(goal));
 	}
 
+
+	/**
+	 *
+	 * @param segment
+	 * @return
+	 */
+	public static AngleRangeRater forLineSegment(ILineSegment segment)
+	{
+		return new AngleRangeRater(AngleRangeGenerator.forLineSegment(segment));
+	}
 
 	@Override
 	public Optional<IRatedTarget> rate(final IVector2 origin)
@@ -125,18 +134,20 @@ public class AngleRangeRater implements ITargetRater
 		movingObstacleGen.setNoneOptimalDriveFactor(noneOptimalDriveFactor);
 		movingObstacleGen.setTimeBeforeReactionUsageFactor(timeBeforeReactionUsageFactor);
 
-		lastContext.botTimeToReact =
+		var newContext = new LastContext();
+		newContext.botTimeToReact =
 				obstacles.stream().collect(Collectors.toMap(Function.identity(), this::getTimeForBotToReact));
 
-		var reactions = lastContext.botTimeToReact.entrySet().stream().collect(Collectors.toMap(
+		var reactions = newContext.botTimeToReact.entrySet().stream().collect(Collectors.toMap(
 				a -> a.getKey().getBotId(), Map.Entry::getValue));
 
-		lastContext.origin = origin;
-		lastContext.circleObstacles = movingObstacleGen.generateCircles(obstacles, origin, reactions);
-		lastContext.uncoveredAngleRanges = angleRangeGenerator
-				.findUncoveredAngleRanges(origin, lastContext.circleObstacles);
+		newContext.origin = origin;
+		newContext.circleObstacles = movingObstacleGen.generateCircles(obstacles, origin, reactions);
+		newContext.uncoveredAngleRanges = angleRangeGenerator
+				.findUncoveredAngleRanges(origin, newContext.circleObstacles);
 
-		return lastContext.uncoveredAngleRanges
+		lastContext = newContext;
+		return newContext.uncoveredAngleRanges
 				.stream()
 				.map(r -> new RatedAngleRange(r, getScoreChanceFromAngle(r.getWidth())))
 				.map(r -> createTargetFromRatedAngleRange(origin, r))

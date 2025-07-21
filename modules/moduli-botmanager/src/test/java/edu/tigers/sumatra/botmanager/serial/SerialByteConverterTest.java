@@ -1,14 +1,14 @@
 package edu.tigers.sumatra.botmanager.serial;
 
-import static org.junit.Assert.assertEquals;
+import org.junit.jupiter.api.Test;
 
-import org.junit.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 
-public class SerialByteConverterTest
+class SerialByteConverterTest
 {
 	@Test
-	public void testInt()
+	void testInt()
 	{
 		int input = 0xC0DEBA5E;
 		byte[] data = new byte[4];
@@ -22,7 +22,7 @@ public class SerialByteConverterTest
 	
 	
 	@Test
-	public void testUShort()
+	void testUShort()
 	{
 		int input = 0xC0DE;
 		byte[] data = new byte[2];
@@ -36,7 +36,7 @@ public class SerialByteConverterTest
 	
 	
 	@Test
-	public void testShort()
+	void testShort()
 	{
 		short input = (short) 0xC0DE;
 		byte[] data = new byte[2];
@@ -50,7 +50,7 @@ public class SerialByteConverterTest
 	
 	
 	@Test
-	public void testFloat()
+	void testFloat()
 	{
 		float input = 0xC0DEBA5E;
 		byte[] data = new byte[4];
@@ -64,7 +64,7 @@ public class SerialByteConverterTest
 	
 	
 	@Test
-	public void testHalfFloat()
+	void testHalfFloat()
 	{
 		// float input = 0xC0DEBA5E;
 		float input = 1.0f;

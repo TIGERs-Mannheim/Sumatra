@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.skillsystem.skills;
@@ -48,6 +48,13 @@ public abstract class ATouchKickSkill extends ABallHandlingSkill
 	}
 
 
+	public void setKickArmTime(double duration)
+	{
+		this.desiredKickParams = KickParams.armTime(desiredKickParams.getDevice(), duration)
+				.withDribblerMode(desiredKickParams.getDribblerMode());
+	}
+
+
 	protected double getKickSpeed()
 	{
 		double kickSpeed = desiredKickParams.getKickSpeed();
@@ -56,5 +63,15 @@ public abstract class ATouchKickSkill extends ABallHandlingSkill
 			kickSpeed = adaptKickSpeedToBotVel(target, kickSpeed);
 		}
 		return kickSpeed;
+	}
+
+
+	protected KickParams getArmedKickParams()
+	{
+		if (desiredKickParams.getArmDuration() > 0)
+		{
+			return desiredKickParams;
+		}
+		return KickParams.of(desiredKickParams.getDevice(), getKickSpeed());
 	}
 }

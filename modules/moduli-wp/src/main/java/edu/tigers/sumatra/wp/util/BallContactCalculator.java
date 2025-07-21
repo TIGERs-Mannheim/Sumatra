@@ -4,6 +4,7 @@
 
 package edu.tigers.sumatra.wp.util;
 
+import edu.tigers.sumatra.bot.EDribbleTractionState;
 import edu.tigers.sumatra.bot.EFeature;
 import edu.tigers.sumatra.bot.EFeatureState;
 import edu.tigers.sumatra.bot.RobotInfo;
@@ -71,6 +72,10 @@ public class BallContactCalculator
 		if (robotInfo.getBotFeatures().get(EFeature.BARRIER) == EFeatureState.WORKING)
 		{
 			return Optional.of(robotInfo.isBarrierInterrupted());
+		} else if (robotInfo.getBotFeatures().get(EFeature.DRIBBLER) == EFeatureState.WORKING)
+		{
+			return Optional.of(robotInfo.getDribbleTraction() == EDribbleTractionState.LIGHT
+					|| robotInfo.getDribbleTraction() == EDribbleTractionState.STRONG);
 		}
 		return Optional.empty();
 	}

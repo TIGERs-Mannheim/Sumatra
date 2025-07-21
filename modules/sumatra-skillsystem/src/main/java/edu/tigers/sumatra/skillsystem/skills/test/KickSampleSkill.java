@@ -12,7 +12,7 @@ import edu.tigers.sumatra.botmanager.botskills.data.EKickerMode;
 import edu.tigers.sumatra.botmanager.botskills.data.ELedColor;
 import edu.tigers.sumatra.botmanager.botskills.data.ESong;
 import edu.tigers.sumatra.botmanager.botskills.data.KickerDribblerCommands;
-import edu.tigers.sumatra.botmanager.botskills.data.MultimediaControl;
+import edu.tigers.sumatra.botmanager.data.MultimediaControl;
 import edu.tigers.sumatra.cam.data.CamBall;
 import edu.tigers.sumatra.data.collector.ITimeSeriesDataCollectorObserver;
 import edu.tigers.sumatra.data.collector.TimeSeriesDataCollector;
@@ -142,10 +142,10 @@ public class KickSampleSkill extends AMoveSkill implements ITimeSeriesDataCollec
 		jsonMapping.put("voltage", kickVoltage);
 		if (getWorldFrame().isInverted())
 		{
-			jsonMapping.put("kickPos", smoothedBallPos.multiplyNew(-1.0).toJSONArray());
+			jsonMapping.put("kickPos", smoothedBallPos.multiplyNew(-1.0).toJsonArray());
 		} else
 		{
-			jsonMapping.put("kickPos", smoothedBallPos.toJSONArray());
+			jsonMapping.put("kickPos", smoothedBallPos.toJsonArray());
 		}
 
 		jsonMapping.put("orientation", targetAngle);
@@ -189,7 +189,7 @@ public class KickSampleSkill extends AMoveSkill implements ITimeSeriesDataCollec
 		public void doEntryActions()
 		{
 			waitPos = kickPos.addNew(Vector2.fromAngle(targetAngle)
-					.multiply(-50.0 - getBot().getCenter2DribblerDist() - Geometry.getBallRadius()));
+					.multiply(-50.0 - getTBot().getCenter2DribblerDist() - Geometry.getBallRadius()));
 			setTargetPose(waitPos, targetAngle, defaultMoveConstraints().setAccMax(1.0));
 
 			MultimediaControl mmc = new MultimediaControl()
@@ -380,7 +380,7 @@ public class KickSampleSkill extends AMoveSkill implements ITimeSeriesDataCollec
 			startWaitTime = 0;
 
 			IVector2 y = Vector2.fromAngleLength(targetAngle,
-					-20.0 - getBot().getCenter2DribblerDist() - Geometry.getBallRadius());
+					-20.0 - getTBot().getCenter2DribblerDist() - Geometry.getBallRadius());
 			IVector2 x = Vector2.fromAngleLength(targetAngle + AngleMath.PI_HALF, rightOffset);
 			runUpPos = smoothedBallPos.addNew(y).add(x);
 			setTargetPose(runUpPos, targetAngle, defaultMoveConstraints());
@@ -428,7 +428,7 @@ public class KickSampleSkill extends AMoveSkill implements ITimeSeriesDataCollec
 		{
 			startTime = getWorldFrame().getTimestamp();
 
-			kickVoltage = getBot().getKickerLevel();
+			kickVoltage = getBot().getLastReceivedBotFeedback().getKickerLevel();
 
 			// start watcher
 			SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss");

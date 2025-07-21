@@ -16,5 +16,5 @@ dependencies {
 
     implementation(libs.org.apache.logging.log4j.log4j.api)
 
-    implementation(libs.com.googlecode.json.simple)
+    implementation(libs.com.github.cliftonlabs.json.simple)
 }

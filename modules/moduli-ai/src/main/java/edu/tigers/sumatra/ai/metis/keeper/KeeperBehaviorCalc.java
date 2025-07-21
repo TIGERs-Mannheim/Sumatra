@@ -390,10 +390,9 @@ public class KeeperBehaviorCalc extends ACalculator
 		var consideredBots = getWFrame().getBots().values().stream()
 				.filter(bot -> !bot.getBotId().equals(getBotID()))
 				.toList();
-		var rater = new PassInterceptionMovingRobotRater(consideredBots);
+		var rater = new PassInterceptionMovingRobotRater(consideredBots, Collections.emptyList());
 		var shapes = getShapes(EAiShapesLayer.KEEPER_BEHAVIOR_DEBUG);
 		rater.setShapes(shapes);
-		rater.drawShapes(shapes);
 		rater.setScoringFactorOffset(-0.3);
 		rater.setRobotMovementLimitFactor(1.3);
 		var rating = rater.rateRollingBall(getBall(), getBall().getTrajectory().getTimeByPos(entryPoint));

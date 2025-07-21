@@ -4,7 +4,6 @@
 
 package edu.tigers.sumatra.trajectory;
 
-import com.sleepycat.persist.model.Persistent;
 import edu.tigers.sumatra.math.AngleMath;
 import edu.tigers.sumatra.math.vector.AVector;
 import edu.tigers.sumatra.math.vector.IVector2;
@@ -23,7 +22,6 @@ import java.util.function.UnaryOperator;
  * Bang Bang Trajectory for two dimensions.
  */
 @ToString
-@Persistent
 class BangBangTrajectory2D implements ITrajectory<IVector2>
 {
 	final BangBangTrajectory1D x = new BangBangTrajectory1D();

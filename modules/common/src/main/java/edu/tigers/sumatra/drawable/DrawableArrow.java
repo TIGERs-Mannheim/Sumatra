@@ -4,7 +4,6 @@
 
 package edu.tigers.sumatra.drawable;
 
-import com.sleepycat.persist.model.Persistent;
 import edu.tigers.sumatra.math.vector.IVector2;
 
 import java.awt.Color;
@@ -12,18 +11,11 @@ import java.awt.Graphics2D;
 import java.awt.geom.AffineTransform;
 
 
-@Persistent
 public class DrawableArrow extends ADrawable
 {
 	private IVector2 position;
 	private IVector2 direction;
 	private int arrowSize = 25;
-
-
-	@SuppressWarnings("unused") // berkeley
-	private DrawableArrow()
-	{
-	}
 
 
 	public DrawableArrow(IVector2 position, IVector2 direction)

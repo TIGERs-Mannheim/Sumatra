@@ -8,6 +8,7 @@ import edu.tigers.sumatra.ai.metis.kicking.Pass;
 import edu.tigers.sumatra.ai.metis.offense.situation.zone.OffensiveZones;
 import edu.tigers.sumatra.ai.metis.pass.PassStats;
 import edu.tigers.sumatra.drawable.IDrawableShape;
+import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
 
 import java.util.Arrays;
@@ -32,11 +33,15 @@ public class RatedPassFactory
 	}
 
 
-	public void update(Collection<ITrackedBot> consideredBots, Collection<ITrackedBot> consideredBotsIntercept)
+	public void update(Collection<ITrackedBot> consideredBots,
+			Collection<ITrackedBot> consideredBotsIntercept,
+			List<BotID> opponentMan2ManMarker)
 	{
-		passRaters.put(EPassRating.INTERCEPTION, new PassInterceptionMovingRobotRater(consideredBotsIntercept));
+		passRaters.put(EPassRating.INTERCEPTION, new PassInterceptionMovingRobotRater(consideredBotsIntercept,
+				opponentMan2ManMarker));
 		passRaters.put(EPassRating.REFLECT_GOAL_KICK, new ReflectorRater(consideredBots));
 		passRaters.put(EPassRating.GOAL_KICK, new GoalRater(consideredBots));
+		passRaters.put(EPassRating.FINISHER, new FinisherRater(consideredBots));
 	}
 
 
@@ -44,17 +49,18 @@ public class RatedPassFactory
 			Collection<ITrackedBot> consideredBots,
 			Collection<ITrackedBot> consideredBotsIntercept,
 			PassStats passStats,
-			OffensiveZones offensiveZones
-	)
+			OffensiveZones offensiveZones,
+			List<BotID> opponentMan2ManMarkers)
 	{
 		passRaters.put(EPassRating.INTERCEPTION, new DynamicPassInterceptionMovingRobotRater(
-				consideredBots,
 				consideredBotsIntercept,
 				passStats,
-				offensiveZones
+				offensiveZones,
+				opponentMan2ManMarkers
 		));
 		passRaters.put(EPassRating.REFLECT_GOAL_KICK, new ReflectorRater(consideredBots));
 		passRaters.put(EPassRating.GOAL_KICK, new GoalRater(consideredBots));
+		passRaters.put(EPassRating.FINISHER, new FinisherRater(consideredBots));
 	}
 
 
@@ -78,11 +84,5 @@ public class RatedPassFactory
 	public void setShapes(List<IDrawableShape> shapes)
 	{
 		passRaters.values().forEach(r -> r.setShapes(shapes));
-	}
-
-
-	public void drawShapes(List<IDrawableShape> shapes)
-	{
-		passRaters.values().forEach(r -> r.drawShapes(shapes));
 	}
 }

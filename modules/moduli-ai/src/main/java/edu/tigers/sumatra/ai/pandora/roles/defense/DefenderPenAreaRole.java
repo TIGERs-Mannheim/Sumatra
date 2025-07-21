@@ -79,7 +79,7 @@ public class DefenderPenAreaRole extends ADefenseRole
 
 	private IVector2 validFinalDestination(final IVector2 intermediatePos)
 	{
-		if (isGoalShotDetected(intermediatePos))
+		if (isGoalShotInterceptNecessary(intermediatePos))
 		{
 			return interceptGoalShot().getPos();
 		}
@@ -90,22 +90,6 @@ public class DefenderPenAreaRole extends ADefenseRole
 				if (bot.getPos().distanceTo(intermediatePos) < Geometry.getBotRadius() * 1.5)
 				{
 					return bot.getBotShape().withMargin(0.5 * Geometry.getBotRadius()).nearestPointOutside(intermediatePos);
-				}
-			}
-
-			double botBallRadius = Geometry.getBotRadius() + Geometry.getBallRadius();
-			var adaptedPenArea = penAreaBoundary.withMargin(-botBallRadius);
-			if (!adaptedPenArea.isPointInShape(getBall().getPos()))
-			{
-				final IVector2 ballProjectedToPenArea = adaptedPenArea.projectPoint(Geometry.getGoalOur().getCenter(),
-						getBall().getPos());
-				final double ballToPenAreaDist = ballProjectedToPenArea.distanceTo(getBall().getPos());
-
-				if (intermediatePos.distanceTo(getBall().getPos()) < botBallRadius)
-				{
-					// ball is inside destination. Better not drive onto ball
-					return adaptedPenArea.withMargin(ballToPenAreaDist + botBallRadius)
-							.projectPoint(Geometry.getGoalOur().getCenter(), intermediatePos);
 				}
 			}
 		}
@@ -131,6 +115,7 @@ public class DefenderPenAreaRole extends ADefenseRole
 		protected void onInit()
 		{
 			skill.getMoveCon().setPenaltyAreaOurObstacle(false);
+			skill.getMoveCon().setGoalPostsObstacle(true);
 			curPos = getPos();
 		}
 
@@ -201,6 +186,7 @@ public class DefenderPenAreaRole extends ADefenseRole
 			skill.updateTargetAngle(getTargetAngle());
 			skill.updateDestination(validFinalDestination(destination));
 			skill.getMoveCon().setPenaltyAreaOurObstacle(!getAiFrame().getGameState().isStoppedGame());
+			skill.getMoveCon().setGoalPostsObstacle(true);
 			skill.getMoveCon().setIgnoredBots(nonCloseCompanions());
 			skill.getMoveCon().setBallObstacle(false);
 		}

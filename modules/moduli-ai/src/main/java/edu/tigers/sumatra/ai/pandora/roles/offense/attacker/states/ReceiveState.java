@@ -37,6 +37,8 @@ public class ReceiveState extends AAttackerRoleState<ReceiveBallSkill>
 		skill.getMoveCon().setObstacleAvoidanceMode(EObstacleAvoidanceMode.AGGRESSIVE);
 		skill.getMoveCon().setTheirBotsObstacle(false);
 		skill.setBallReceivingPosition(getRole().getAction().getBallContactPos());
+		skill.setMaxReceptionHeight(OffensiveConstants.getMaxInterceptHeight());
+		skill.setUseOvershoot(OffensiveConstants.isAllowOvershootingBallInterceptions());
 	}
 }
 

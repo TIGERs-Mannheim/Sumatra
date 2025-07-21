@@ -4,16 +4,6 @@
 
 package edu.tigers.sumatra.sim.collision.ball;
 
-import static edu.tigers.sumatra.geometry.Geometry.getBallRadius;
-import static edu.tigers.sumatra.geometry.Geometry.getBotRadius;
-import static java.lang.Math.acos;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.within;
-
-import java.util.Optional;
-
-import org.junit.Test;
-
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.ids.ETeamColor;
 import edu.tigers.sumatra.math.pose.Pose;
@@ -21,6 +11,15 @@ import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.IVector3;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.math.vector.Vector3;
+import org.junit.jupiter.api.Test;
+
+import java.util.Optional;
+
+import static edu.tigers.sumatra.geometry.Geometry.getBallRadius;
+import static edu.tigers.sumatra.geometry.Geometry.getBotRadius;
+import static java.lang.Math.acos;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.within;
 
 
 /**

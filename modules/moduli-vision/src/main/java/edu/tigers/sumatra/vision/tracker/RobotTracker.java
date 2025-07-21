@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.vision.tracker;
 
@@ -43,6 +43,7 @@ public class RobotTracker
 	private double visionQuality;
 	private double lastCamOrientation;
 	private long orientationTurns = 0;
+	private double botHeight;
 
 	private int health = 2;
 
@@ -82,13 +83,16 @@ public class RobotTracker
 	public RobotTracker(final CamRobot robot)
 	{
 		filterXY = new TrackingFilterPosVel2D(robot.getPos(), initialCovarianceXY, modelErrorXY, measErrorXY,
-				robot.gettCapture());
+				robot.getTimestamp()
+		);
 		filterW = new TrackingFilterPosVel1D(robot.getOrientation(), initialCovarianceW, modelErrorW, measErrorW,
-				robot.gettCapture());
+				robot.getTimestamp()
+		);
 
 		lastCamOrientation = robot.getOrientation();
-		lastUpdateTimestamp = robot.gettCapture();
+		lastUpdateTimestamp = robot.getTimestamp();
 		botId = robot.getBotId();
+		botHeight = robot.getHeight();
 		camId = robot.getCameraId();
 	}
 
@@ -106,13 +110,16 @@ public class RobotTracker
 		RealVector w = new ArrayRealVector(new double[] { filtered.getOrientation(), filtered.getAngularVel() });
 
 		filterXY = new TrackingFilterPosVel2D(xy, initialCovarianceXY, modelErrorXY, measErrorXY,
-				robot.gettCapture());
+				robot.getTimestamp()
+		);
 		filterW = new TrackingFilterPosVel1D(w, initialCovarianceW, modelErrorW, measErrorW,
-				robot.gettCapture());
+				robot.getTimestamp()
+		);
 
 		lastCamOrientation = robot.getOrientation();
-		lastUpdateTimestamp = robot.gettCapture();
+		lastUpdateTimestamp = robot.getTimestamp();
 		botId = robot.getBotId();
+		botHeight = robot.getHeight();
 		camId = robot.getCameraId();
 	}
 
@@ -146,7 +153,7 @@ public class RobotTracker
 	 */
 	public void update(final CamRobot robot)
 	{
-		double dtInSec = Math.abs(robot.gettCapture() - lastUpdateTimestamp) * 1e-9;
+		double dtInSec = Math.abs(robot.getTimestamp() - lastUpdateTimestamp) * 1e-9;
 		double distanceToPrediction = filterXY.getPositionEstimate().distanceTo(robot.getPos());
 		if (distanceToPrediction > (dtInSec * maxLinearVel))
 		{
@@ -167,7 +174,7 @@ public class RobotTracker
 			health += 2;
 		}
 
-		lastUpdateTimestamp = robot.gettCapture();
+		lastUpdateTimestamp = robot.getTimestamp();
 		updateTimestamps.add(lastUpdateTimestamp);
 
 		filterXY.correct(robot.getPos());
@@ -190,6 +197,8 @@ public class RobotTracker
 		orient += orientationTurns * AngleMath.PI_TWO;
 
 		filterW.correct(orient);
+
+		botHeight = robot.getHeight();
 	}
 
 
@@ -244,7 +253,6 @@ public class RobotTracker
 		return filterW.getVelocityEstimate();
 	}
 
-
 	/**
 	 * @return timestamp in [ns]
 	 */
@@ -262,6 +270,14 @@ public class RobotTracker
 		return botId;
 	}
 
+
+	/**
+	 * @return Robot Height in [mm]
+	 */
+	public double getBotHeight()
+	{
+		return botHeight;
+	}
 
 	/**
 	 * This function merges a variable number of robot trackers and makes a filtered vision bot out of them.

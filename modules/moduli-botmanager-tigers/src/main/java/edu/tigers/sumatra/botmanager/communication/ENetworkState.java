@@ -10,7 +10,7 @@ package edu.tigers.sumatra.botmanager.communication;
 
 
 /**
- * State of a bot connection.
+ * State of a base station connection.
  * 
  * @author AndreR
  */

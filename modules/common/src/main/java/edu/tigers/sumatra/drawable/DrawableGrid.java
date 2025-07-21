@@ -125,6 +125,7 @@ public class DrawableGrid implements IDrawableShape
 		}
 		String text = DF.format(number);
 		return new DrawableAnnotation(point.getXYVector(), text)
+				.withFontHeight(cellExtentX / 2)
 				.withCenterHorizontally(true);
 	}
 }

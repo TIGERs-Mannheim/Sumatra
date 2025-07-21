@@ -15,13 +15,13 @@ dependencies {
     implementation project(':sumatra-model')
     implementation project(':moduli-botmanager')
     implementation project(':moduli-botmanager-tigers')
+    implementation project(':moduli-wp')
 
-    implementation(libs.com.github.TIGERs.mannheim.moduli)
     implementation(libs.commons.lang)
 
     implementation(libs.org.apache.logging.log4j.log4j.api)
 
     implementation(libs.net.sf.jchart2d)
-    implementation(libs.com.googlecode.json.simple)
+    implementation(libs.com.github.cliftonlabs.json.simple)
     implementation(libs.com.miglayout.miglayout.swing)
 }

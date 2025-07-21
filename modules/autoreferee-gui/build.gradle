@@ -8,6 +8,7 @@ plugins {
 }
 
 dependencies {
+    implementation project(':common')
     implementation project(':common-math')
     implementation project(':common-gui')
     implementation project(':sumatra-model')
@@ -15,9 +16,6 @@ dependencies {
     implementation project(':moduli-referee')
     implementation project(':moduli-wp')
     implementation project(':moduli-geometry')
-
-    implementation(libs.com.github.TIGERs.mannheim.moduli)
-    implementation(libs.com.github.g3force.configurable)
 
     implementation(libs.commons.lang)
     implementation(libs.com.miglayout.miglayout.swing)

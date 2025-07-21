@@ -4,8 +4,6 @@
 
 package edu.tigers.sumatra.math.angle;
 
-import com.sleepycat.persist.model.Persistent;
-
 import edu.tigers.sumatra.math.vector.IVector2;
 
 
@@ -18,7 +16,6 @@ import edu.tigers.sumatra.math.vector.IVector2;
  * 
  * @author DominikE
  */
-@Persistent
 public class Angle extends AAngularMeasure implements IAngle
 {
 	

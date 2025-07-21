@@ -4,7 +4,6 @@
 
 package edu.tigers.sumatra.wp.data;
 
-import com.sleepycat.persist.model.Persistent;
 import edu.tigers.sumatra.ball.BallState;
 import edu.tigers.sumatra.ball.trajectory.IBallTrajectory;
 import edu.tigers.sumatra.ball.trajectory.IChipBallConsultant;
@@ -26,7 +25,6 @@ import java.util.List;
 /**
  * A tracked (filtered, predicted) ball.
  */
-@Persistent
 public class TrackedBall implements ITrackedBall
 {
 	private final long timestamp;

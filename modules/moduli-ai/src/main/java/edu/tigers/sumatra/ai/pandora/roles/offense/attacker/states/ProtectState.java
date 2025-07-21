@@ -20,6 +20,9 @@ public class ProtectState extends AAttackerRoleState<ProtectiveGetBallSkill>
 	@Configurable(defValue = "false")
 	private static boolean requireStrongDribblerContactForProtect = false;
 
+	@Configurable(defValue = "false")
+	private static boolean useAggressiveObstacleAvoidance = false;
+
 	static
 	{
 		ConfigRegistration.registerClass("roles", ProtectState.class);
@@ -37,7 +40,10 @@ public class ProtectState extends AAttackerRoleState<ProtectiveGetBallSkill>
 	@Override
 	protected void doStandardUpdate()
 	{
-		skill.getMoveCon().setObstacleAvoidanceMode(EObstacleAvoidanceMode.AGGRESSIVE);
+		if (useAggressiveObstacleAvoidance)
+		{
+			skill.getMoveCon().setObstacleAvoidanceMode(EObstacleAvoidanceMode.AGGRESSIVE);
+		}
 		var action = getRole().getAction();
 		if (action != null)
 		{
@@ -47,8 +53,7 @@ public class ProtectState extends AAttackerRoleState<ProtectiveGetBallSkill>
 			);
 		}
 
-		if (protectionPos == null || getRole().getPos().distanceTo(getRole().getBall().getPos())
-				> Geometry.getBotRadius() * 2 + Geometry.getBallRadius())
+		if (protectionPos == null || !getRole().getBot().getBallContact().hasContact())
 		{
 			protectionPos = calcProtectionTarget();
 		} // else keep old pos
@@ -59,7 +64,8 @@ public class ProtectState extends AAttackerRoleState<ProtectiveGetBallSkill>
 
 	private IVector2 calcProtectionTarget()
 	{
-		if (getRole().getBot().getBotKickerPos().distanceTo(getRole().getBall().getPos()) < Geometry.getBotRadius())
+		if (getRole().getBot().getBotKickerPos().distanceTo(getRole().getBall().getPos()) < Geometry.getBotRadius()
+		&& getRole().getBot().getBallContact().hasContact())
 		{
 			// we are already very close to the ball. Just get it and dont try to turn around
 			var botPos = getRole().getPos();

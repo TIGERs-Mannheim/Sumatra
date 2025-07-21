@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.autoref.view.gamelog;
 
@@ -17,7 +17,6 @@ import javax.swing.event.TableModelEvent;
 import javax.swing.event.TableModelListener;
 import javax.swing.table.TableRowSorter;
 import java.awt.BorderLayout;
-import java.awt.EventQueue;
 import java.awt.Rectangle;
 import java.util.Set;
 import java.util.stream.IntStream;
@@ -103,8 +102,7 @@ public class GameLogPanel extends JPanel
 
 			if (isViewPortAtBottom)
 			{
-				EventQueue.invokeLater(
-						() -> entryTable.scrollRectToVisible(entryTable.getCellRect(entryTable.getRowCount() - 1, 0, true)));
+				entryTable.scrollRectToVisible(entryTable.getCellRect(entryTable.getRowCount() - 1, 0, true));
 			}
 		}
 	}

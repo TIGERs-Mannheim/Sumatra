@@ -62,7 +62,7 @@ public class OngoingPassCalc extends ACalculator
 	@Configurable(defValue = "0.2", comment = "Min kick fit age [s] after which passes can be rejected")
 	private static double minKickFitAge = 0.2;
 
-	@Configurable(defValue = "0.2", comment = "hyt bonus score [0,1]")
+	@Configurable(defValue = "0.2", comment = "hyt bonus score [0,1] will be applied twice very early after the kick")
 	private static double keepCurrentPassHyst = 0.2;
 
 	private final TimeLimitedBuffer<Pass> passBuffer = new TimeLimitedBuffer<>();
@@ -73,12 +73,16 @@ public class OngoingPassCalc extends ACalculator
 
 	private OffensiveZones.OffensiveZoneGeometry oldGeometry;
 
+	private KickedBall oldKickFitState = null;
+
 
 	@Override
 	public void doCalc()
 	{
 		generateZoneGeometry();
 		handlePassBufferContent();
+
+		visualizePassBuffer(passBuffer.getElements());
 
 		Optional<KickedBall> kickFitStateOpt = getWFrame().getKickedBall()
 				.filter(b -> b.getAbsoluteKickSpeed() > minKickVelocity);
@@ -87,23 +91,34 @@ public class OngoingPassCalc extends ACalculator
 			getShapes(EAiShapesLayer.OFFENSE_ONGOING_PASS).add(
 					new DrawableAnnotation(getBall().getPos(), "Invalid KickFit", Vector2.fromY(20))
 							.setColor(Color.BLACK));
+
 			ongoingPass = null;
+			oldKickFitState = null;
 			return;
 		}
 
+		if (oldKickFitState != null &&
+				oldKickFitState.getKickTimestamp() != kickFitStateOpt.get().getKickTimestamp())
+		{
+			getShapes(EAiShapesLayer.OFFENSE_ONGOING_PASS).add(
+					new DrawableAnnotation(getBall().getPos(), "New KickFitEvent", Vector2.fromY(40))
+							.setColor(Color.BLACK));
+			ongoingPass = null;
+		}
+
 		var kickFitState = kickFitStateOpt.get();
+		oldKickFitState = kickFitState;
 		visualizeKickFitState(kickFitState);
 
 		List<Pass> consideredPasses = new ArrayList<>(passBuffer.getElements());
 		getOngoingPass().map(OngoingPass::getPass).ifPresent(consideredPasses::add);
-		visualizePassBuffer(consideredPasses);
 
 		IVector2 averagePassTarget = getAveragePassTarget(consideredPasses, kickFitState);
 		getShapes(EAiShapesLayer.OFFENSE_ONGOING_PASS).add(
-				new DrawableCircle(Circle.createCircle(averagePassTarget, 50), Color.GREEN).setFill(true)
+				new DrawableCircle(Circle.createCircle(averagePassTarget, 40), Color.GREEN).setFill(true)
 		);
 		getShapes(EAiShapesLayer.OFFENSE_ONGOING_PASS).add(
-				new DrawableCircle(Circle.createCircle(averagePassTarget, 40), Color.RED).setFill(true)
+				new DrawableCircle(Circle.createCircle(averagePassTarget, 30), Color.RED).setFill(true)
 		);
 
 		if (isKickFitStateTrustworthy(kickFitState))
@@ -121,7 +136,7 @@ public class OngoingPassCalc extends ACalculator
 			ongoingPass = consideredPasses.stream()
 					.filter(pass -> getWFrame().getTigerBotsAvailable().containsKey(pass.getReceiver()))
 					.min(Comparator.comparing(e -> e.getKick().getTarget().distanceTo(averagePassTarget)))
-					.filter(pass -> ballKickWithPassFitScore(kickFitState, pass) > minBallKickWithPassFitScore)
+					.filter(pass -> isOngoingPassTrustworthy(pass, kickFitState))
 					.map(this::updatePass)
 					.orElse(null);
 		}
@@ -156,33 +171,18 @@ public class OngoingPassCalc extends ACalculator
 				.anyMatch(ratedAction -> ratedAction.getAction().getType() == EOffensiveActionType.PASS);
 
 		var activePass = getActivePass();
-		activePass.filter(pass -> isResetBufferNeeded(pass, isPassAction)).ifPresent(pass -> passBuffer.reset());
 
 		if (isPassAction)
 		{
-			activePass.ifPresent(this::addPassIfOrientationMatches);
+			activePass
+					.filter(p -> getWFrame().getBots().containsKey(p.getShooter()))
+					.ifPresent(this::addPassIfOrientationMatches);
 		}
 		passBuffer.reduceByAbsoluteDuration(getWFrame().getTimestamp());
 	}
 
 
-	private boolean isResetBufferNeeded(Pass activePass, boolean isPassAction)
-	{
-		if (!passBuffer.getElements().isEmpty() && isPassAction)
-		{
-			var oldestPass = passBuffer.getOldest();
-			if (oldestPass.isPresent())
-			{
-				var idShooter = oldestPass.get().getShooter();
-				var idNewShooter = activePass.getShooter();
-				return idShooter != idNewShooter;
-			}
-		}
-		return false;
-	}
-
-
-	private static IVector2 getAveragePassTarget(List<Pass> consideredPasses, KickedBall kickFitState)
+	private IVector2 getAveragePassTarget(List<Pass> consideredPasses, KickedBall kickFitState)
 	{
 		IVector2 sumOfPassTargets = Vector2.zero();
 		int numOfUsedPasses = 0;
@@ -199,7 +199,7 @@ public class OngoingPassCalc extends ACalculator
 				numOfUsedPasses++;
 			}
 		}
-		return sumOfPassTargets.multiplyNew(1.0 / numOfUsedPasses);
+		return numOfUsedPasses > 0 ? sumOfPassTargets.multiplyNew(1.0 / numOfUsedPasses) : Vector2.zero();
 	}
 
 
@@ -228,7 +228,7 @@ public class OngoingPassCalc extends ACalculator
 	{
 		consideredPasses.forEach(e ->
 				getShapes(EAiShapesLayer.OFFENSE_ONGOING_PASS)
-						.add(new DrawableCircle(Circle.createCircle(e.getKick().getSource(), 30), Color.ORANGE).setFill(true)
+						.add(new DrawableCircle(Circle.createCircle(e.getKick().getTarget(), 30), Color.ORANGE).setFill(true)
 						));
 	}
 
@@ -279,7 +279,8 @@ public class OngoingPassCalc extends ACalculator
 							> timePassReceiverHasToArriveBeforePassToReceiveSuccessful)
 			{
 				// update ongoing pass with ball reached Information
-				return ongoingPass.toBuilder()
+				return ongoingPass
+						.toBuilder()
 						.passLineBeenReachedByReceiver(true)
 						.build();
 			}
@@ -328,6 +329,21 @@ public class OngoingPassCalc extends ACalculator
 		return getWFrame().getKickedBall()
 				.filter(e -> e.getKickingBot().getTeamColor() == getWFrame().getTeamColor())
 				.isEmpty();
+	}
+
+
+	private boolean isOngoingPassTrustworthy(Pass pass, KickedBall kickFitState)
+	{
+		var timeSinceKick = (getWFrame().getTimestamp() - kickFitState.getKickTimestamp()) / 1e9;
+		if (timeSinceKick < 0.3 * minKickFitAge)
+		{
+			return true;
+		} else
+		{
+			var adaptionOverTime =
+					keepCurrentPassHyst * SumatraMath.relative(timeSinceKick, 0.3 * minKickFitAge, minKickFitAge);
+			return ballKickWithPassFitScore(kickFitState, pass) > minBallKickWithPassFitScore + adaptionOverTime;
+		}
 	}
 
 

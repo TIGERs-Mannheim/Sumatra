@@ -18,8 +18,6 @@ dependencies {
     implementation project(':moduli-referee')
     implementation project(':moduli-cam')
 
-    implementation(libs.com.github.TIGERs.mannheim.moduli)
-
     implementation(libs.org.apache.logging.log4j.log4j.api)
     implementation(libs.commons.configuration)
 

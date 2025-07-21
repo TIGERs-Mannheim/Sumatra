@@ -4,14 +4,13 @@
 
 package edu.tigers.sumatra.rcm;
 
+import com.github.cliftonlabs.json_simple.JsonException;
+import com.github.cliftonlabs.json_simple.JsonObject;
+import com.github.cliftonlabs.json_simple.Jsoner;
 import net.java.games.input.Component;
 import net.java.games.input.Controller;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.json.simple.JSONObject;
-import org.json.simple.JSONValue;
-import org.json.simple.parser.JSONParser;
-import org.json.simple.parser.ParseException;
 
 import java.io.File;
 import java.io.IOException;
@@ -65,7 +64,7 @@ public class RcmActionMap
 	public void save(final File file)
 	{
 		Map<String, Object> jsonMap = new LinkedHashMap<>();
-		List<JSONObject> jsonArray = new ArrayList<>(actionMappings.size());
+		List<JsonObject> jsonArray = new ArrayList<>(actionMappings.size());
 		for (RcmActionMapping mapping : actionMappings)
 		{
 			jsonArray.add(mapping.toJSON());
@@ -76,7 +75,7 @@ public class RcmActionMap
 		}
 		jsonMap.put("mapping", jsonArray);
 
-		String json = JSONValue.toJSONString(jsonMap);
+		String json = Jsoner.serialize(jsonMap);
 		try
 		{
 			Files.write(Paths.get(file.getAbsolutePath()), json.getBytes());
@@ -90,17 +89,16 @@ public class RcmActionMap
 	@SuppressWarnings("unchecked")
 	public void load(final File file)
 	{
-		JSONParser parser = new JSONParser();
 		String json = "";
 		try
 		{
 			json = new String(Files.readAllBytes(file.toPath()), ENCODING);
-			Object obj = parser.parse(json);
+			Object obj = Jsoner.deserialize(json);
 			Map<String, Object> jsonMap = (Map<String, Object>) obj;
 
-			List<JSONObject> jsonArray = (List<JSONObject>) jsonMap.get("mapping");
+			List<JsonObject> jsonArray = (List<JsonObject>) jsonMap.get("mapping");
 			actionMappings.clear();
-			for (JSONObject jsonObj : jsonArray)
+			for (JsonObject jsonObj : jsonArray)
 			{
 				RcmActionMapping mapping = RcmActionMapping.fromJSON(jsonObj);
 				actionMappings.add(mapping);
@@ -110,10 +108,10 @@ public class RcmActionMap
 			log.info("Loaded {}", file.getName());
 		} catch (IOException err)
 		{
-			log.error("Could not load config from " + file, err);
-		} catch (ParseException err)
+			log.error("Could not load config from {}", file, err);
+		} catch (JsonException err)
 		{
-			log.error("Could not parse json: " + json, err);
+			log.error("Could not parse json: {}", json, err);
 		} catch (IllegalArgumentException err)
 		{
 			log.error("Error loading config", err);

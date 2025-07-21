@@ -54,6 +54,12 @@ public class ConfigFileDatabaseManager
 	}
 
 
+	public IConfigFileDatabase getDatabase()
+	{
+		return database;
+	}
+
+
 	private ConfigFileDatabase loadDatabase()
 	{
 		File file = Paths.get(DATABASE_FILE).toFile();

@@ -46,7 +46,14 @@ public class Watchdog
 		if (executorService != null)
 		{
 			executorService.shutdown();
+			executorService = null;
 		}
+	}
+
+
+	public boolean isStopped()
+	{
+		return executorService == null;
 	}
 
 
