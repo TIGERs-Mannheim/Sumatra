@@ -1,11 +1,8 @@
-/*
- * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.wp;
 
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import com.github.g3force.configurable.IConfigClient;
 import com.github.g3force.configurable.IConfigObserver;
 import edu.tigers.sumatra.ball.BallState;
@@ -89,19 +86,19 @@ public class WorldInfoCollector extends AWorldPredictor
 	@Configurable(
 			comment = "Add a faked ball. Set pos,vel,acc in code.",
 			defValue = "false"
-	)
+			, unit = EConfigUnit.BOOLEAN)
 	private static boolean fakeBall = false;
 
 	@Configurable(
 			comment = "Use robot feedback for position and velocity.",
 			defValue = "true"
-	)
+			, unit = EConfigUnit.BOOLEAN)
 	private static boolean preferRobotFeedback = true;
 
 	@Configurable(
 			comment = "Use mal functioning check to filter available bots",
 			defValue = "true"
-	)
+			, unit = EConfigUnit.BOOLEAN)
 	private static boolean checkMalFunction = true;
 
 	static
@@ -269,6 +266,7 @@ public class WorldInfoCollector extends AWorldPredictor
 
 		ShapeMap visionShapeMap = camFrameShapeMapProducer.createShapeMap();
 		addCamObjectFilterShapes(visionShapeMap);
+		addCamSourceShapes(visionShapeMap);
 		notifyNewShapeMap(lastWFTimestamp, visionShapeMap, VISION_SHAPE_MAP_SOURCE);
 	}
 
@@ -295,6 +293,23 @@ public class WorldInfoCollector extends AWorldPredictor
 		var cams = new DrawableBorderText(Vector2.fromXY(1, 8), "Excluded cams: " + String.join(", ", camIdStrings))
 				.setFontSize(EFontSize.LARGE).setColor(Color.RED);
 		return List.of(rectangle, cams);
+	}
+
+
+	private void addCamSourceShapes(ShapeMap shapeMap)
+	{
+		if (cam == null)
+		{
+			return;
+		}
+
+		shapeMap.get(EWpShapesLayer.VISION_SOURCE).add(
+				new DrawableBorderText(
+						Vector2.fromXY(13.5, 4.1),
+						"Vision Source: " + cam.getCamSource().toString().replace("SSL_SOURCE_", "")
+				)
+						.setColor(Color.WHITE)
+		);
 	}
 
 

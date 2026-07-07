@@ -1,10 +1,7 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.autoreferee.engine.detector;
 
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.autoreferee.AutoRefUtil;
 import edu.tigers.autoreferee.generic.BotPosition;
 import edu.tigers.sumatra.geometry.Geometry;
@@ -29,10 +26,10 @@ import java.util.Optional;
  */
 public class BotInDefenseAreaDetector extends AGameEventDetector
 {
-	@Configurable(comment = "[s] The cool down time before registering a ball touch with the same bot again in ms", defValue = "2.0")
+	@Configurable(comment = "The cool down time before registering a ball touch with the same bot again in ms", defValue = "2.0", unit = EConfigUnit.TIME_S)
 	private static double coolDownTime = 2.0;
 
-	@Configurable(comment = "[mm] Distance from the defense line that is considered a partial violation", defValue = "20.0")
+	@Configurable(comment = "Distance from the defense line that is considered a partial violation", defValue = "20.0", unit = EConfigUnit.DISTANCE_MM)
 	private static double partialTouchMargin = 20;
 
 	private final Map<BotID, BotPosition> lastViolators = new HashMap<>();

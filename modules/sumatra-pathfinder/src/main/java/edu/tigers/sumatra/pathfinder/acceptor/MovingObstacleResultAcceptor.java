@@ -1,12 +1,9 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.pathfinder.acceptor;
 
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
-import edu.tigers.sumatra.bot.IMoveConstraints;
+import com.github.g3force.configurable.EConfigUnit;
+import edu.tigers.sumatra.bot.MoveConstraints;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.pathfinder.finder.PathFinderResult;
 import lombok.RequiredArgsConstructor;
@@ -17,13 +14,13 @@ import static edu.tigers.sumatra.math.SumatraMath.square;
 @RequiredArgsConstructor
 public class MovingObstacleResultAcceptor implements PathFinderResultAcceptor
 {
-	@Configurable(defValue = "0.0", comment = "Brake time [s] to require in addition to time to collision")
+	@Configurable(defValue = "0.0", comment = "Brake time to require in addition to time to collision", unit = EConfigUnit.TIME_S)
 	private static double brakeTimeOffset = 0.0;
 
-	@Configurable(defValue = "300.0", comment = "Threshold [mm] for distance from dest to collision to reject path")
+	@Configurable(defValue = "300.0", comment = "Threshold for distance from dest to collision to reject path", unit = EConfigUnit.DISTANCE_MM)
 	private static double distDestToCollisionThreshold = 300.0;
 
-	@Configurable(defValue = "1.5", comment = "Acceptable threshold [m/s] for potential robot speed at collision")
+	@Configurable(defValue = "1.5", comment = "Acceptable threshold for potential robot speed at collision", unit = EConfigUnit.VELOCITY_M)
 	private static double collisionSpeedThreshold = 1.5;
 
 	static
@@ -31,7 +28,7 @@ public class MovingObstacleResultAcceptor implements PathFinderResultAcceptor
 		ConfigRegistration.registerClass("sisyphus", MovingObstacleResultAcceptor.class);
 	}
 
-	private final IMoveConstraints moveConstraints;
+	private final MoveConstraints moveConstraints;
 
 
 	@Override

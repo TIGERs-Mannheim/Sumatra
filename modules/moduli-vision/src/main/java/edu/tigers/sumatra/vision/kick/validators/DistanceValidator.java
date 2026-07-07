@@ -1,10 +1,8 @@
-/*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra.vision.kick.validators;
 
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.vision.data.FilteredVisionBot;
 import edu.tigers.sumatra.vision.tracker.BallTracker.MergedBall;
 import org.apache.commons.math3.util.Pair;
@@ -13,7 +11,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 
 /**
@@ -23,13 +20,13 @@ import java.util.stream.Collectors;
  */
 public class DistanceValidator implements IKickValidator
 {
-	@Configurable(defValue = "160.0", comment = "At least one sample must be beyond this distance")
+	@Configurable(defValue = "160.0", comment = "At least one sample must be beyond this distance", unit = EConfigUnit.DISTANCE_MM)
 	private static double	atLeastOneBeyondDist	= 160.0;
 
-	@Configurable(defValue = "130.0", comment = "First sample must be closer, all others further away than this")
+	@Configurable(defValue = "130.0", comment = "First sample must be closer, all others further away than this", unit = EConfigUnit.DISTANCE_MM)
 	private static double	thresholdDist1			= 130.0;
 
-	@Configurable(defValue = "170.0", comment = "First sample must be closer, all others further away than this (alternative)")
+	@Configurable(defValue = "170.0", comment = "First sample must be closer, all others further away than this (alternative)", unit = EConfigUnit.DISTANCE_MM)
 	private static double	thresholdDist2			= 170.0;
 
 	static
@@ -61,22 +58,18 @@ public class DistanceValidator implements IKickValidator
 			List<Double> distances = data.stream()
 					.map(d -> d.getFirst().getLatestCamBall().get().getPos().getXYVector()
 							.distanceTo(d.getSecond().getPos()))
-					.collect(Collectors.toList());
+					.toList();
 
-			boolean distantBall = false;
-			if (distances.stream().anyMatch(d -> d > atLeastOneBeyondDist))
-			{
-				distantBall = true;
-			}
+			boolean distantBall = distances.stream().anyMatch(d -> d > atLeastOneBeyondDist);
 
-			if ((distances.get(0) < thresholdDist1)
+			if ((distances.getFirst() < thresholdDist1)
 					&& distances.subList(1, distances.size()).stream().allMatch(d -> d > thresholdDist1)
 					&& distantBall)
 			{
 				return true;
 			}
 
-			if ((distances.get(0) < thresholdDist2)
+			if ((distances.getFirst() < thresholdDist2)
 					&& distances.subList(1, distances.size()).stream().allMatch(d -> d > thresholdDist2)
 					&& distantBall)
 			{

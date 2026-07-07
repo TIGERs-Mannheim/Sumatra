@@ -1,10 +1,8 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.persistence.serializer;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.VarHandle;
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.nio.ByteBuffer;
@@ -13,40 +11,43 @@ import java.nio.ByteBuffer;
 /**
  * Serializer abstraction for Object and Record field access depending on primitive type
  * (for generic objects see GenericSerializer).
- *
+ * <p>
  * Reducing this boilerplate code with functional abstraction leads to primitives being boxed into Objects,
  * causing allocations (significant performance hit).
+ * <p>
+ * Field access for arbitrary objects goes through a {@link VarHandle} obtained from
+ * {@link java.lang.invoke.MethodHandles#privateLookupIn(Class, java.lang.invoke.MethodHandles.Lookup)}.
+ * Final instance fields cannot be written through a VarHandle ({@code VarHandle.set} is unsupported on
+ * finals), so writes use a {@link MethodHandle} from {@code Lookup.unreflectSetter} after
+ * {@code Field.setAccessible(true)} — the JDK's documented escape hatch for serialization libraries.
+ * Reads on final fields keep using the read-only VarHandle, which the JIT can specialise.
+ * <p>
+ * java:S3011: Intentionally bypassing access control checks
  */
-// Usage of Unsafe is unavoidable for classes without zero-args constructor and module protected classes
-@SuppressWarnings("java:S1191")
+@SuppressWarnings("java:S3011")
 public interface FieldSerializer<T> extends PrimitiveDeserializer<T>
 {
-	sun.misc.Unsafe UNSAFE = getUnsafe();
-
-
-	@SuppressWarnings("java:S3011")  // The accessibility bypass is necessary to access Unsafe.theUnsafe
-	static sun.misc.Unsafe getUnsafe()
-	{
-		try
-		{
-			Field unsafeField = sun.misc.Unsafe.class.getDeclaredField("theUnsafe");
-			unsafeField.setAccessible(true);
-			return (sun.misc.Unsafe) unsafeField.get(null);
-		} catch (NoSuchFieldException | IllegalAccessException e)
-		{
-			throw new IllegalStateException("Could not access sun.misc.Unsafe instance", e);
-		}
-	}
 
 
 	void serializeSafe(Field field, MappedDataOutputStream stream, Object object)
 			throws IOException, IllegalAccessException;
 
-	void serializeUnsafe(long offset, MappedDataOutputStream stream, Object object) throws IOException;
+	void serializeUnsafe(VarHandle handle, MappedDataOutputStream stream, Object object) throws IOException;
 
 	void serializeArray(int index, MappedDataOutputStream stream, Object object) throws IOException;
 
-	void deserializeUnsafe(long offset, ByteBuffer buffer, Object object) throws IOException;
+	void deserializeSafe(Field field, ByteBuffer buffer, Object object)
+			throws IOException, IllegalAccessException;
+
+	void deserializeUnsafe(VarHandle handle, ByteBuffer buffer, Object object) throws IOException;
+
+	/**
+	 * Write to a final instance field via a pre-bound {@link MethodHandle} setter (obtained via
+	 * {@code Lookup.unreflectSetter} on a {@code setAccessible(true)} field). The setter has been
+	 * {@code asType}'d to {@code (Object, fieldType)void} for primitives, or {@code (Object, Object)void}
+	 * for reference types, so the call site passes the receiver as Object.
+	 */
+	void deserializeFinal(MethodHandle setter, ByteBuffer buffer, Object object) throws IOException;
 
 	void deserializeArray(int index, ByteBuffer buffer, Object array) throws IOException;
 
@@ -62,9 +63,9 @@ public interface FieldSerializer<T> extends PrimitiveDeserializer<T>
 
 
 		@Override
-		public void serializeUnsafe(long offset, MappedDataOutputStream stream, Object object) throws IOException
+		public void serializeUnsafe(VarHandle handle, MappedDataOutputStream stream, Object object) throws IOException
 		{
-			stream.write(UNSAFE.getBoolean(object, offset));
+			stream.write((boolean) handle.get(object));
 		}
 
 
@@ -83,9 +84,30 @@ public interface FieldSerializer<T> extends PrimitiveDeserializer<T>
 
 
 		@Override
-		public void deserializeUnsafe(long offset, ByteBuffer buffer, Object object)
+		public void deserializeSafe(Field field, ByteBuffer buffer, Object object) throws IllegalAccessException
 		{
-			UNSAFE.putBoolean(object, offset, buffer.get() != 0);
+			field.setBoolean(object, buffer.get() != 0);
+		}
+
+
+		@Override
+		public void deserializeUnsafe(VarHandle handle, ByteBuffer buffer, Object object)
+		{
+			handle.set(object, buffer.get() != 0);
+		}
+
+
+		@Override
+		public void deserializeFinal(MethodHandle setter, ByteBuffer buffer, Object object) throws IOException
+		{
+			boolean val = buffer.get() != 0;
+			try
+			{
+				setter.invokeExact(object, val);
+			} catch (Throwable t)
+			{
+				throw new IOException("Failed to set final boolean field", t);
+			}
 		}
 
 
@@ -108,9 +130,9 @@ public interface FieldSerializer<T> extends PrimitiveDeserializer<T>
 
 
 		@Override
-		public void serializeUnsafe(long offset, MappedDataOutputStream stream, Object object) throws IOException
+		public void serializeUnsafe(VarHandle handle, MappedDataOutputStream stream, Object object) throws IOException
 		{
-			stream.write(UNSAFE.getChar(object, offset));
+			stream.write((char) handle.get(object));
 		}
 
 
@@ -129,9 +151,31 @@ public interface FieldSerializer<T> extends PrimitiveDeserializer<T>
 
 
 		@Override
-		public void deserializeUnsafe(long offset, ByteBuffer buffer, Object object) throws IOException
+		public void deserializeSafe(Field field, ByteBuffer buffer, Object object)
+				throws IOException, IllegalAccessException
 		{
-			UNSAFE.putChar(object, offset, (char) PrimitiveDeserializer.readInt(buffer));
+			field.setChar(object, (char) PrimitiveDeserializer.readInt(buffer));
+		}
+
+
+		@Override
+		public void deserializeUnsafe(VarHandle handle, ByteBuffer buffer, Object object) throws IOException
+		{
+			handle.set(object, (char) PrimitiveDeserializer.readInt(buffer));
+		}
+
+
+		@Override
+		public void deserializeFinal(MethodHandle setter, ByteBuffer buffer, Object object) throws IOException
+		{
+			char val = (char) PrimitiveDeserializer.readInt(buffer);
+			try
+			{
+				setter.invokeExact(object, val);
+			} catch (Throwable t)
+			{
+				throw new IOException("Failed to set final char field", t);
+			}
 		}
 
 
@@ -154,9 +198,9 @@ public interface FieldSerializer<T> extends PrimitiveDeserializer<T>
 
 
 		@Override
-		public void serializeUnsafe(long offset, MappedDataOutputStream stream, Object object) throws IOException
+		public void serializeUnsafe(VarHandle handle, MappedDataOutputStream stream, Object object) throws IOException
 		{
-			stream.write(UNSAFE.getByte(object, offset));
+			stream.write((byte) handle.get(object));
 		}
 
 
@@ -175,9 +219,30 @@ public interface FieldSerializer<T> extends PrimitiveDeserializer<T>
 
 
 		@Override
-		public void deserializeUnsafe(long offset, ByteBuffer buffer, Object object)
+		public void deserializeSafe(Field field, ByteBuffer buffer, Object object) throws IllegalAccessException
 		{
-			UNSAFE.putByte(object, offset, buffer.get());
+			field.setByte(object, buffer.get());
+		}
+
+
+		@Override
+		public void deserializeUnsafe(VarHandle handle, ByteBuffer buffer, Object object)
+		{
+			handle.set(object, buffer.get());
+		}
+
+
+		@Override
+		public void deserializeFinal(MethodHandle setter, ByteBuffer buffer, Object object) throws IOException
+		{
+			byte val = buffer.get();
+			try
+			{
+				setter.invokeExact(object, val);
+			} catch (Throwable t)
+			{
+				throw new IOException("Failed to set final byte field", t);
+			}
 		}
 
 
@@ -199,9 +264,9 @@ public interface FieldSerializer<T> extends PrimitiveDeserializer<T>
 
 
 		@Override
-		public void serializeUnsafe(long offset, MappedDataOutputStream stream, Object object) throws IOException
+		public void serializeUnsafe(VarHandle handle, MappedDataOutputStream stream, Object object) throws IOException
 		{
-			stream.write(UNSAFE.getShort(object, offset));
+			stream.write((short) handle.get(object));
 		}
 
 
@@ -220,9 +285,31 @@ public interface FieldSerializer<T> extends PrimitiveDeserializer<T>
 
 
 		@Override
-		public void deserializeUnsafe(long offset, ByteBuffer buffer, Object object) throws IOException
+		public void deserializeSafe(Field field, ByteBuffer buffer, Object object)
+				throws IOException, IllegalAccessException
 		{
-			UNSAFE.putShort(object, offset, (short) PrimitiveDeserializer.readInt(buffer));
+			field.setShort(object, (short) PrimitiveDeserializer.readInt(buffer));
+		}
+
+
+		@Override
+		public void deserializeUnsafe(VarHandle handle, ByteBuffer buffer, Object object) throws IOException
+		{
+			handle.set(object, (short) PrimitiveDeserializer.readInt(buffer));
+		}
+
+
+		@Override
+		public void deserializeFinal(MethodHandle setter, ByteBuffer buffer, Object object) throws IOException
+		{
+			short val = (short) PrimitiveDeserializer.readInt(buffer);
+			try
+			{
+				setter.invokeExact(object, val);
+			} catch (Throwable t)
+			{
+				throw new IOException("Failed to set final short field", t);
+			}
 		}
 
 
@@ -245,9 +332,9 @@ public interface FieldSerializer<T> extends PrimitiveDeserializer<T>
 
 
 		@Override
-		public void serializeUnsafe(long offset, MappedDataOutputStream stream, Object object) throws IOException
+		public void serializeUnsafe(VarHandle handle, MappedDataOutputStream stream, Object object) throws IOException
 		{
-			stream.write(UNSAFE.getInt(object, offset));
+			stream.write((int) handle.get(object));
 		}
 
 
@@ -266,9 +353,31 @@ public interface FieldSerializer<T> extends PrimitiveDeserializer<T>
 
 
 		@Override
-		public void deserializeUnsafe(long offset, ByteBuffer buffer, Object object) throws IOException
+		public void deserializeSafe(Field field, ByteBuffer buffer, Object object)
+				throws IOException, IllegalAccessException
 		{
-			UNSAFE.putInt(object, offset, PrimitiveDeserializer.readInt(buffer));
+			field.setInt(object, PrimitiveDeserializer.readInt(buffer));
+		}
+
+
+		@Override
+		public void deserializeUnsafe(VarHandle handle, ByteBuffer buffer, Object object) throws IOException
+		{
+			handle.set(object, PrimitiveDeserializer.readInt(buffer));
+		}
+
+
+		@Override
+		public void deserializeFinal(MethodHandle setter, ByteBuffer buffer, Object object) throws IOException
+		{
+			int val = PrimitiveDeserializer.readInt(buffer);
+			try
+			{
+				setter.invokeExact(object, val);
+			} catch (Throwable t)
+			{
+				throw new IOException("Failed to set final int field", t);
+			}
 		}
 
 
@@ -291,9 +400,9 @@ public interface FieldSerializer<T> extends PrimitiveDeserializer<T>
 
 
 		@Override
-		public void serializeUnsafe(long offset, MappedDataOutputStream stream, Object object) throws IOException
+		public void serializeUnsafe(VarHandle handle, MappedDataOutputStream stream, Object object) throws IOException
 		{
-			stream.write(UNSAFE.getLong(object, offset));
+			stream.write((long) handle.get(object));
 		}
 
 
@@ -312,9 +421,30 @@ public interface FieldSerializer<T> extends PrimitiveDeserializer<T>
 
 
 		@Override
-		public void deserializeUnsafe(long offset, ByteBuffer buffer, Object object)
+		public void deserializeSafe(Field field, ByteBuffer buffer, Object object) throws IllegalAccessException
 		{
-			UNSAFE.putLong(object, offset, buffer.getLong());
+			field.setLong(object, buffer.getLong());
+		}
+
+
+		@Override
+		public void deserializeUnsafe(VarHandle handle, ByteBuffer buffer, Object object)
+		{
+			handle.set(object, buffer.getLong());
+		}
+
+
+		@Override
+		public void deserializeFinal(MethodHandle setter, ByteBuffer buffer, Object object) throws IOException
+		{
+			long val = buffer.getLong();
+			try
+			{
+				setter.invokeExact(object, val);
+			} catch (Throwable t)
+			{
+				throw new IOException("Failed to set final long field", t);
+			}
 		}
 
 
@@ -337,9 +467,9 @@ public interface FieldSerializer<T> extends PrimitiveDeserializer<T>
 
 
 		@Override
-		public void serializeUnsafe(long offset, MappedDataOutputStream stream, Object object) throws IOException
+		public void serializeUnsafe(VarHandle handle, MappedDataOutputStream stream, Object object) throws IOException
 		{
-			stream.write(UNSAFE.getFloat(object, offset));
+			stream.write((float) handle.get(object));
 		}
 
 
@@ -358,9 +488,30 @@ public interface FieldSerializer<T> extends PrimitiveDeserializer<T>
 
 
 		@Override
-		public void deserializeUnsafe(long offset, ByteBuffer buffer, Object object)
+		public void deserializeSafe(Field field, ByteBuffer buffer, Object object) throws IllegalAccessException
 		{
-			UNSAFE.putFloat(object, offset, Float.intBitsToFloat(buffer.getInt()));
+			field.setFloat(object, Float.intBitsToFloat(buffer.getInt()));
+		}
+
+
+		@Override
+		public void deserializeUnsafe(VarHandle handle, ByteBuffer buffer, Object object)
+		{
+			handle.set(object, Float.intBitsToFloat(buffer.getInt()));
+		}
+
+
+		@Override
+		public void deserializeFinal(MethodHandle setter, ByteBuffer buffer, Object object) throws IOException
+		{
+			float val = Float.intBitsToFloat(buffer.getInt());
+			try
+			{
+				setter.invokeExact(object, val);
+			} catch (Throwable t)
+			{
+				throw new IOException("Failed to set final float field", t);
+			}
 		}
 
 
@@ -383,9 +534,9 @@ public interface FieldSerializer<T> extends PrimitiveDeserializer<T>
 
 
 		@Override
-		public void serializeUnsafe(long offset, MappedDataOutputStream stream, Object object) throws IOException
+		public void serializeUnsafe(VarHandle handle, MappedDataOutputStream stream, Object object) throws IOException
 		{
-			stream.write(UNSAFE.getDouble(object, offset));
+			stream.write((double) handle.get(object));
 		}
 
 
@@ -404,9 +555,30 @@ public interface FieldSerializer<T> extends PrimitiveDeserializer<T>
 
 
 		@Override
-		public void deserializeUnsafe(long offset, ByteBuffer buffer, Object object)
+		public void deserializeSafe(Field field, ByteBuffer buffer, Object object) throws IllegalAccessException
 		{
-			UNSAFE.putDouble(object, offset, Float.intBitsToFloat(buffer.getInt()));
+			field.setDouble(object, Float.intBitsToFloat(buffer.getInt()));
+		}
+
+
+		@Override
+		public void deserializeUnsafe(VarHandle handle, ByteBuffer buffer, Object object)
+		{
+			handle.set(object, (double) Float.intBitsToFloat(buffer.getInt()));
+		}
+
+
+		@Override
+		public void deserializeFinal(MethodHandle setter, ByteBuffer buffer, Object object) throws IOException
+		{
+			double val = Float.intBitsToFloat(buffer.getInt());
+			try
+			{
+				setter.invokeExact(object, val);
+			} catch (Throwable t)
+			{
+				throw new IOException("Failed to set final double field", t);
+			}
 		}
 
 

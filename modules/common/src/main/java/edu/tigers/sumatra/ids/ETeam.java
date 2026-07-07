@@ -1,12 +1,3 @@
-/*
- * *********************************************************
- * Copyright (c) 2009 - 2011, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 06.04.2011
- * Author(s):
- * FlorianS
- * *********************************************************
- */
 package edu.tigers.sumatra.ids;
 
 /**

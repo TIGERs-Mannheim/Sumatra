@@ -1,10 +1,7 @@
-/*
- * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.pandora.roles.test.kick;
 
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.ai.pandora.roles.ARole;
 import edu.tigers.sumatra.ai.pandora.roles.ERole;
 import edu.tigers.sumatra.botmanager.botskills.data.EKickerDevice;
@@ -23,7 +20,7 @@ import edu.tigers.sumatra.statemachine.IEvent;
  */
 public class KickTestRole extends ARole
 {
-	@Configurable(comment = "The kick skill to use", defValue = "TOUCH")
+	@Configurable(comment = "The kick skill to use", defValue = "TOUCH", unit = EConfigUnit.NO_UNIT)
 	private static EKickSkill kickSkill = EKickSkill.TOUCH;
 
 	private final IVector2 passTarget;
@@ -77,7 +74,7 @@ public class KickTestRole extends ARole
 			var skill = getSkill();
 			setNewSkill(skill);
 
-			skill.getMoveCon().physicalObstaclesOnly();
+			skill.setMoveCon(skill.getMoveCon().withPhysicalObstaclesOnly());
 		}
 
 
@@ -100,7 +97,7 @@ public class KickTestRole extends ARole
 		public void doEntryActions()
 		{
 			MoveToSkill skill = MoveToSkill.createMoveToSkill();
-			skill.getMoveCon().physicalObstaclesOnly();
+			skill.setMoveCon(skill.getMoveCon().withPhysicalObstaclesOnly());
 			setNewSkill(skill);
 		}
 	}

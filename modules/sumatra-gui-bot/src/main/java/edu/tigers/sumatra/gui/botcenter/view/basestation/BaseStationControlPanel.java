@@ -1,6 +1,3 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra.gui.botcenter.view.basestation;
 
 import edu.tigers.sumatra.botmanager.communication.ENetworkState;
@@ -14,6 +11,7 @@ import javax.swing.JPanel;
 import javax.swing.JTextField;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.Serial;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -50,6 +48,7 @@ public class BaseStationControlPanel extends JPanel
 		void onStopPing();
 	}
 
+	@Serial
 	private static final long serialVersionUID = -3730726072203478050L;
 
 	private final JButton connect = new JButton("Connect");

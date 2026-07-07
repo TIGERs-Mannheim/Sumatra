@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.botmanager.sim;
 
 import edu.tigers.sumatra.bot.BotState;
@@ -100,7 +96,7 @@ public class SumatraSimBot extends ABot
 						botState.isBarrierInterrupted(), timestamp
 				))
 				.withBatteryLevel(1.0f)
-				.withBatteryLevelRelative(1.0f)
+				.withBatteryLevelRelative(getBotId().getNumber() == 1 ? 0.5 : 1.0f)
 				.withBarrierInterrupted(botState.isBarrierInterrupted())
 				.withBotFeatures(EFeature.getDefaultFeatureStates())
 				.withRobotMode(ERobotMode.READY)

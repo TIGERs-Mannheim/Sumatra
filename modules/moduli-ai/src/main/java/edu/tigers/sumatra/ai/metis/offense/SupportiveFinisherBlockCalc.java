@@ -1,10 +1,7 @@
-/*
- * Copyright (c) 2009 - 2019, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.metis.offense;
 
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.ai.common.PointChecker;
 import edu.tigers.sumatra.ai.metis.ACalculator;
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
@@ -41,16 +38,16 @@ import java.util.function.Supplier;
 @RequiredArgsConstructor
 public class SupportiveFinisherBlockCalc extends ACalculator
 {
-	@Configurable(defValue = "1500.0")
+	@Configurable(defValue = "1500.0", unit = EConfigUnit.DISTANCE_MM)
 	private static double marginToPenAreaToConsiderBlock = 1500;
 
-	@Configurable(defValue = "800.0")
+	@Configurable(defValue = "800.0", unit = EConfigUnit.DISTANCE_MM)
 	private static double considerOpponentsWithingPenAreaMargin = 800;
 
-	@Configurable(defValue = "80.0")
+	@Configurable(defValue = "80.0", unit = EConfigUnit.DISTANCE_MM)
 	private static double moveBorderPointsInsideDist = 80;
 
-	@Configurable(defValue = "20.0", comment = "[mm] moves block point inside opponent pos. Higher number, more aggressive")
+	@Configurable(defValue = "20.0", comment = "moves block point inside opponent pos. Higher number, more aggressive", unit = EConfigUnit.DISTANCE_MM)
 	private static double aggressiveness = 20;
 
 	private final Supplier<DribblingInformation> dribblingInformation;

@@ -1,15 +1,8 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.skillsystem.skills;
 
 import com.github.g3force.configurable.Configurable;
-import edu.tigers.sumatra.ai.data.BotAiInformation;
-import edu.tigers.sumatra.bot.EDribbleTractionState;
-import edu.tigers.sumatra.bot.IMoveConstraints;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.bot.MoveConstraints;
-import edu.tigers.sumatra.botmanager.bots.ABot;
 import edu.tigers.sumatra.botmanager.botskills.AMoveBotSkill;
 import edu.tigers.sumatra.botmanager.botskills.BotSkillFastGlobalPosition;
 import edu.tigers.sumatra.botmanager.botskills.BotSkillGlobalPosition;
@@ -20,15 +13,17 @@ import edu.tigers.sumatra.botmanager.botskills.BotSkillMotorsOff;
 import edu.tigers.sumatra.botmanager.botskills.data.EKickerDevice;
 import edu.tigers.sumatra.botmanager.botskills.data.EKickerMode;
 import edu.tigers.sumatra.botmanager.botskills.data.KickerDribblerCommands;
-import edu.tigers.sumatra.botmanager.data.MatchCommand;
+import edu.tigers.sumatra.botmanager.data.MultimediaControl;
 import edu.tigers.sumatra.drawable.DrawableAnnotation;
 import edu.tigers.sumatra.drawable.DrawableBot;
+import edu.tigers.sumatra.drawable.DrawableCircle;
 import edu.tigers.sumatra.drawable.DrawablePlanarCurve;
-import edu.tigers.sumatra.drawable.ShapeMap;
+import edu.tigers.sumatra.drawable.IDrawableShape;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.EAiTeam;
 import edu.tigers.sumatra.math.AngleMath;
 import edu.tigers.sumatra.math.SumatraMath;
+import edu.tigers.sumatra.math.circle.Circle;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.IVector3;
 import edu.tigers.sumatra.math.vector.Vector2;
@@ -42,13 +37,13 @@ import edu.tigers.sumatra.wp.data.ITrackedBall;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
 import edu.tigers.sumatra.wp.data.TrackedBot;
 import edu.tigers.sumatra.wp.data.WorldFrame;
-import edu.tigers.sumatra.wp.data.WorldFrameWrapper;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
-import org.apache.commons.lang.Validate;
+import org.apache.commons.lang3.Validate;
 
 import java.awt.Color;
+import java.util.List;
 import java.util.Optional;
 
 import static edu.tigers.sumatra.math.AngleMath.PI;
@@ -65,7 +60,8 @@ public abstract class AMoveSkill extends ASkill
 	@Getter(AccessLevel.PROTECTED)
 	@Configurable(
 			comment = "Max speed to set during STOP. This should be low enough to give robots some room for error consumption",
-			defValue = "1.0"
+			defValue = "1.0",
+			unit = EConfigUnit.VELOCITY_M
 	)
 	private static double maxStopSpeed = 1.0;
 
@@ -84,7 +80,7 @@ public abstract class AMoveSkill extends ASkill
 	protected final void setTargetPose(
 			final IVector2 destination,
 			final double targetAngle,
-			final IMoveConstraints moveConstraints
+			final MoveConstraints moveConstraints
 	)
 	{
 		getMatchCtrl().setSkill(getPositioningBotSkill(destination, targetAngle, moveConstraints));
@@ -105,7 +101,7 @@ public abstract class AMoveSkill extends ASkill
 	private ITrajectory<IVector3> trajectoryToDestination(
 			final IVector2 destination,
 			final double targetAngle,
-			final IMoveConstraints moveConstraints
+			final MoveConstraints moveConstraints
 	)
 	{
 		var traj2d = generatePositionTrajectory(getTBot(), destination, moveConstraints);
@@ -117,16 +113,12 @@ public abstract class AMoveSkill extends ASkill
 	private AMoveBotSkill getPositioningBotSkill(
 			final IVector2 destination,
 			final double targetAngle,
-			final IMoveConstraints moveConstraints
+			final MoveConstraints moveConstraints
 	)
 	{
 		final IVector2 dest = getWorldFrame().isInverted() ? destination.multiplyNew(-1) : destination;
 		final double orient = getWorldFrame().isInverted() ? normalizeAngle(targetAngle + PI) : targetAngle;
 
-		if (moveConstraints.isFastMove())
-		{
-			return new BotSkillFastGlobalPosition(dest, orient, moveConstraints);
-		}
 		return new BotSkillGlobalPosition(dest, orient, moveConstraints);
 	}
 
@@ -134,7 +126,7 @@ public abstract class AMoveSkill extends ASkill
 	protected final void setLocalVelocity(
 			final IVector2 vel,
 			final double rot,
-			final IMoveConstraints moveConstraints
+			final MoveConstraints moveConstraints
 	)
 	{
 		getMatchCtrl().setSkill(new BotSkillLocalVelocity(vel, rot, moveConstraints));
@@ -144,7 +136,7 @@ public abstract class AMoveSkill extends ASkill
 	protected final void setGlobalVelocity(
 			final IVector2 vel,
 			final double rot,
-			final IMoveConstraints moveConstraints
+			final MoveConstraints moveConstraints
 	)
 	{
 		IVector2 correctedVel = getWorldFrame().isInverted() ? vel.multiplyNew(-1) : vel;
@@ -183,7 +175,6 @@ public abstract class AMoveSkill extends ASkill
 	@Override
 	protected final void doCalcActionsBeforeStateUpdate()
 	{
-
 		beforeStateUpdate();
 	}
 
@@ -196,6 +187,7 @@ public abstract class AMoveSkill extends ASkill
 		handleVelocityLimitation();
 		updateKickerDribbler(getMatchCtrl().getSkill().getKickerDribbler());
 		drawSkillName();
+		drawMultimediaControl(getMatchCtrl().getMultimediaControl());
 	}
 
 
@@ -228,7 +220,7 @@ public abstract class AMoveSkill extends ASkill
 
 	protected MoveConstraints defaultMoveConstraints()
 	{
-		return new MoveConstraints(getBot().getBotParams().getMovementLimits());
+		return MoveConstraints.from(getBot().getBotParams().getMovementLimits());
 	}
 
 
@@ -345,52 +337,32 @@ public abstract class AMoveSkill extends ASkill
 
 
 	@Override
-	public final void update(
-			final WorldFrameWrapper wfw, final ABot bot, final ShapeMap shapeMap, MatchCommand matchCommand)
+	public void update(SkillInput input)
 	{
-		super.update(wfw, bot, shapeMap, matchCommand);
-		Validate.notNull(wfw, "WorldFrameWrapper must be non-null for move-skills!");
-		worldFrame = wfw.getWorldFrame(EAiTeam.primary(bot.getColor()));
+		super.update(input);
+		Validate.notNull(input.wf(), "WorldFrameWrapper must be non-null for move-skills!");
+		worldFrame = input.wf().getWorldFrame(EAiTeam.primary(getBot().getColor()));
 		Validate.notNull(worldFrame, "WorldFrame must be non-null");
-		gameState = wfw.getGameState().toBuilder().withOurTeam(bot.getColor()).build();
-		if (worldFrame.getBots().containsKey(bot.getBotId()))
+		gameState = input.wf().getGameState().toBuilder().withOurTeam(getBot().getColor()).build();
+		if (worldFrame.getBots().containsKey(getBot().getBotId()))
 		{
-			tBot = worldFrame.getBot(bot.getBotId());
+			tBot = worldFrame.getBot(getBot().getBotId());
 		} else if (tBot == null)
 		{
-			tBot = TrackedBot.stub(bot.getBotId(), worldFrame.getTimestamp());
+			tBot = TrackedBot.stub(getBot().getBotId(), worldFrame.getTimestamp());
 		}
 	}
 
 
-	@Override
-	public BotAiInformation getBotAiInfo()
+	private void drawMultimediaControl(MultimediaControl control)
 	{
-		BotAiInformation aiInfo = super.getBotAiInfo();
-
-		String ballContact = "";
-		if (getTBot().getRobotInfo().isBarrierInterrupted())
-		{
-			ballContact += "BARRIER";
-		}
-
-		if (getTBot().getRobotInfo().getDribbleTraction() == EDribbleTractionState.LIGHT
-				|| getTBot().getRobotInfo().getDribbleTraction() == EDribbleTractionState.STRONG)
-		{
-			ballContact += " DRIBBLER";
-		}
-
-		if (getTBot().getBallContact().hasContactFromVision())
-		{
-			ballContact += " VISION";
-		}
-
-		aiInfo.setBallContact(ballContact);
-
-		double curVel = getVel().getLength2();
-		aiInfo.setVelocityCurrent(curVel);
-		aiInfo.setAngularVelocity(getTBot().getAngularVel());
-		return aiInfo;
+		List<IDrawableShape> shapes = getShapes().get(ESkillShapesLayer.MULTIMEDIA);
+		shapes.add(new DrawableCircle(
+				Circle.createCircle(getPos(), Geometry.getBotRadius() + 10),
+				control.getLedColor().getColor()
+		));
+		shapes.add(new DrawableAnnotation(getPos(), control.getSong().name())
+				.withOffset(Vector2.fromX(120)));
 	}
 
 

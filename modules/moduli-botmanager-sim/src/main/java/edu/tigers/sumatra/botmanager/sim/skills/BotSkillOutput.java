@@ -1,9 +1,5 @@
-/*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra.botmanager.sim.skills;
 
-import edu.tigers.sumatra.bot.IMoveConstraints;
 import edu.tigers.sumatra.bot.MoveConstraints;
 import edu.tigers.sumatra.botmanager.botskills.data.EKickerDevice;
 import edu.tigers.sumatra.botmanager.botskills.data.EKickerMode;
@@ -55,7 +51,7 @@ public class BotSkillOutput
 		 */
 		public Builder empty()
 		{
-			action.driveLimits(new MoveConstraints());
+			action.driveLimits(MoveConstraints.ZERO);
 			return this;
 		}
 
@@ -174,7 +170,7 @@ public class BotSkillOutput
 		 * @param driveLimits
 		 * @return this builder
 		 */
-		public Builder driveLimits(final IMoveConstraints driveLimits)
+		public Builder driveLimits(final MoveConstraints driveLimits)
 		{
 			action.driveLimits(driveLimits);
 			return this;

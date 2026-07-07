@@ -1,10 +1,8 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.view;
 
 import edu.tigers.sumatra.AMainFrame;
+import jiconfont.icons.font_awesome.FontAwesome;
+import jiconfont.swing.IconFontSwing;
 import lombok.Getter;
 
 import javax.swing.JMenu;
@@ -18,6 +16,10 @@ public class ReplayMainFrame extends AMainFrame
 {
 	private final JMenuItem shortcutMenuItem = new JMenuItem("Shortcuts");
 
+	static
+	{
+		IconFontSwing.register(FontAwesome.getIconFont());
+	}
 
 	public ReplayMainFrame()
 	{

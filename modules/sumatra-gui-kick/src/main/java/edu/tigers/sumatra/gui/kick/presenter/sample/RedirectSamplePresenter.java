@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.gui.kick.presenter.sample;
 
 import edu.tigers.sumatra.math.StatisticsMath;
@@ -24,8 +20,16 @@ public class RedirectSamplePresenter extends ASamplePresenter<RedirectModelSampl
 {
 	public RedirectSamplePresenter(final List<RedirectModelSample> samples)
 	{
+		super(false);
 		var tableModel = new RedirectTableModel(samples);
 		init(samples, tableModel);
+	}
+
+
+	@Override
+	protected boolean isFilterOutBadSamplesImplemented()
+	{
+		return true;
 	}
 
 

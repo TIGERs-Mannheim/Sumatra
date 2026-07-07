@@ -1,10 +1,7 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.metis.defense;
 
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.ai.metis.ACalculator;
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
 import edu.tigers.sumatra.ai.metis.defense.data.DefensePenAreaTargetGroup;
@@ -18,6 +15,7 @@ import edu.tigers.sumatra.drawable.DrawableLine;
 import edu.tigers.sumatra.drawable.IDrawableShape;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.BotID;
+import edu.tigers.sumatra.math.SumatraMath;
 import edu.tigers.sumatra.math.boundary.IShapeBoundary;
 import edu.tigers.sumatra.math.circle.Circle;
 import edu.tigers.sumatra.math.line.LineMath;
@@ -37,6 +35,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 
@@ -44,13 +43,13 @@ import java.util.function.Supplier;
 @RequiredArgsConstructor
 public class DefensePenAreaTargetGroupFinderCalc extends ACalculator
 {
-	@Configurable(defValue = "5.0", comment = "Distance offset to add to bot radius to determine same cluster of bots")
+	@Configurable(defValue = "5.0", comment = "Distance offset to add to bot radius to determine same cluster of bots", unit = EConfigUnit.DISTANCE_MM)
 	private static double clusterDistanceOffset = 5.0;
 
-	@Configurable(comment = "Distance between the bots", defValue = "10.0")
+	@Configurable(comment = "Distance between the bots", defValue = "10.0", unit = EConfigUnit.DISTANCE_MM)
 	private static double distBetweenBots = 10.0;
 
-	@Configurable(comment = "Gain factor for threat velocity in ProtectionState, high gain => high overshoot, low gain => defender lags behind", defValue = "0.75")
+	@Configurable(comment = "Gain factor for threat velocity in ProtectionState, high gain => high overshoot, low gain => defender lags behind", defValue = "0.75", unit = EConfigUnit.FACTOR)
 	private static double mimicThreatVelocityGain = 0.75;
 
 	private final Supplier<List<DefenseThreatAssignment>> defensePenAreaThreatAssignments;
@@ -88,7 +87,8 @@ public class DefensePenAreaTargetGroupFinderCalc extends ACalculator
 	 * @return the reduce list of target groups
 	 */
 	private List<DefensePenAreaTargetGroup> reduceThreatAssignmentsToTargetGroups(
-			final List<DefenseThreatAssignment> threatAssignments)
+			final List<DefenseThreatAssignment> threatAssignments
+	)
 	{
 		List<DefenseThreatAssignment> reducedAssignments = new ArrayList<>(threatAssignments);
 		int count = 0;
@@ -192,12 +192,14 @@ public class DefensePenAreaTargetGroupFinderCalc extends ACalculator
 		{
 			return penAreaBoundary.get().closestPoint(threat.getPos());
 		}
-		return penAreaBoundary.get().projectPoint(threat.getThreatLine().getPathEnd(), threat.getThreatLine().getPathStart());
+		return penAreaBoundary.get()
+				.projectPoint(threat.getThreatLine().getPathEnd(), threat.getThreatLine().getPathStart());
 	}
 
 
 	private List<DefensePenAreaTargetGroup> reduceClustersToTargets(
-			final List<List<DefenseThreatAssignment>> targetClusters)
+			final List<List<DefenseThreatAssignment>> targetClusters
+	)
 	{
 		List<DefensePenAreaTargetGroup> reducedTargets = new ArrayList<>(targetClusters.size());
 		// 0 = most important; Higher is less important
@@ -210,8 +212,10 @@ public class DefensePenAreaTargetGroupFinderCalc extends ACalculator
 			var threats = targetCluster.stream().map(DefenseThreatAssignment::getThreat).toList();
 			var velAdaptedMoveDest = mimicThreatGroupVelocity(threats, subTargets);
 			var velAdaptedCenterDest = mimicThreatGroupVelocity(threats, List.of(target)).getFirst();
-			var targetGroup = DefensePenAreaTargetGroup.fromTargetCluster(target, velAdaptedCenterDest, subTargets,
-					velAdaptedMoveDest, threats, priority++);
+			var targetGroup = DefensePenAreaTargetGroup.fromTargetCluster(
+					target, velAdaptedCenterDest, subTargets,
+					velAdaptedMoveDest, threats, priority++
+			);
 			reducedTargets.add(targetGroup);
 			drawTargetGroupThreatAssignments(targetCluster, targetGroup);
 		}
@@ -244,14 +248,25 @@ public class DefensePenAreaTargetGroupFinderCalc extends ACalculator
 		var offset = averageVel.scaleTo(mimicThreatVelocityGain * brakeDistance);
 
 		return moveDestinations.stream()
-				.map(dest -> dest.addNew(offset))
-				.map(dest -> penAreaBoundary.get().closestPoint(dest))
+				.map(dest -> addOffsetToPointOnBoundary(dest, offset))
 				.toList();
 	}
 
 
+	private IVector2 addOffsetToPointOnBoundary(IVector2 posOnBoundary, IVector2 offset)
+	{
+		var boundary = penAreaBoundary.get();
+		var dist = boundary.distanceFromStart(posOnBoundary);
+		var boundaryDir = boundary.getTangentialDirection(dist).orElseThrow();
+		var projectedOffset = boundaryDir.projectOntoThis(offset);
+
+		return boundary.closestPoint(posOnBoundary.addNew(projectedOffset));
+	}
+
+
 	private List<List<DefenseThreatAssignment>> sortTargetClustersByPriority(
-			List<List<DefenseThreatAssignment>> targetCluster)
+			List<List<DefenseThreatAssignment>> targetCluster
+	)
 	{
 		return targetCluster.stream()
 				.sorted(Comparator.comparingDouble(this::getNegativeThreatRating))
@@ -337,41 +352,51 @@ public class DefensePenAreaTargetGroupFinderCalc extends ACalculator
 	 */
 	private List<PenAreaSpaces> createPenAreaSpaces(final List<DefensePenAreaTargetGroup> reducedTargetGroups)
 	{
-		List<IVector2> penAreaMarkers = createPenAreaMarkers(reducedTargetGroups);
-		List<PenAreaSpaces> spaces = penAreaMarkersToSpaces(penAreaMarkers);
-		assignDefenderToSpaces(reducedTargetGroups, spaces);
-		return spaces;
-	}
+		var boundary = penAreaBoundary.get();
+		var marker = reducedTargetGroups.stream()
+				.map(DefensePenAreaTargetGroup::moveDestinations)
+				.map(destinations -> PenAreaMarker.fromDestinationsAtBoundary(boundary, destinations))
+				.distinct()
+				.sorted(Comparator.comparingDouble(PenAreaMarker::distanceStart))
+				.toList();
 
+		var filteredMarker = new ArrayList<PenAreaMarker>();
 
-	private List<IVector2> createPenAreaMarkers(final List<DefensePenAreaTargetGroup> reducedTargetGroups)
-	{
-		List<IVector2> penAreaMarkers = new ArrayList<>(reducedTargetGroups.size() + 2);
-		penAreaMarkers.addAll(
-				reducedTargetGroups.stream().map(DefensePenAreaTargetGroup::moveDestinations).flatMap(List::stream)
-						.toList());
-		penAreaMarkers.add(penAreaBoundary.get().getStart());
-		penAreaMarkers.add(penAreaBoundary.get().getEnd());
-		penAreaMarkers.sort(penAreaBoundary.get());
-		return penAreaMarkers;
-	}
+		Consumer<PenAreaMarker> appendToList = (PenAreaMarker m) -> {
 
+			if (!filteredMarker.isEmpty() && filteredMarker.getLast().overlapsWith(m))
+			{
+				filteredMarker.set(filteredMarker.size() - 1, filteredMarker.getLast().combineWith(m));
+			} else
+			{
+				filteredMarker.add(m);
+			}
+		};
 
-	private List<PenAreaSpaces> penAreaMarkersToSpaces(final List<IVector2> penAreaMarkers)
-	{
-		List<PenAreaSpaces> spaces = new ArrayList<>();
-		IVector2 lastMarker = penAreaMarkers.removeFirst();
-		for (IVector2 marker : penAreaMarkers)
+		appendToList.accept(new PenAreaMarker(0, 0));
+		marker.forEach(appendToList);
+		appendToList.accept(new PenAreaMarker(boundary.getLength(), boundary.getLength()));
+
+		var spaces = new ArrayList<PenAreaSpaces>();
+		for (int i = 1; i < filteredMarker.size(); ++i)
 		{
-			spaces.add(new PenAreaSpaces(lastMarker, marker));
-			lastMarker = marker;
+			var m1 = filteredMarker.get(i - 1);
+			var m2 = filteredMarker.get(i);
+
+			var p1 = boundary.stepAlongBoundary(m1.distanceEnd).orElseThrow();
+			var p2 = boundary.stepAlongBoundary(m2.distanceStart).orElseThrow();
+			spaces.add(new PenAreaSpaces(p1, p2));
 		}
-		return spaces;
+
+		assignDefenderToSpaces(reducedTargetGroups, spaces);
+		return Collections.unmodifiableList(spaces);
 	}
 
 
-	private void assignDefenderToSpaces(final List<DefensePenAreaTargetGroup> reducedTargetGroups,
-			final List<PenAreaSpaces> spaces)
+	private void assignDefenderToSpaces(
+			final List<DefensePenAreaTargetGroup> reducedTargetGroups,
+			final List<PenAreaSpaces> spaces
+	)
 	{
 		int defenderDestinationSum = reducedTargetGroups.stream().mapToInt(g -> g.moveDestinations().size()).sum();
 		int remainingDefender = penAreaDefender.get().size() - defenderDestinationSum;
@@ -444,8 +469,10 @@ public class DefensePenAreaTargetGroupFinderCalc extends ACalculator
 	}
 
 
-	private void drawTargetGroupThreatAssignments(List<DefenseThreatAssignment> penAreaThreatAssignments,
-			DefensePenAreaTargetGroup targetGroup)
+	private void drawTargetGroupThreatAssignments(
+			List<DefenseThreatAssignment> penAreaThreatAssignments,
+			DefensePenAreaTargetGroup targetGroup
+	)
 	{
 		penAreaThreatAssignments.forEach(
 				tc -> getShapes().add(new DrawableLine(tc.getThreat().getPos(), targetGroup.centerDest(), Color.WHITE)));
@@ -456,9 +483,11 @@ public class DefensePenAreaTargetGroupFinderCalc extends ACalculator
 	{
 		spaces.forEach(s -> getShapes().add(new DrawableLine(s.start, s.end, Color.orange)));
 		spaces.forEach(s -> getShapes().add(
-				new DrawableAnnotation(Lines.segmentFromPoints(s.start, s.end).getPathCenter(),
+				new DrawableAnnotation(
+						Lines.segmentFromPoints(s.start, s.end).getPathCenter(),
 						String.valueOf(s.numTargets),
-						Color.orange).withCenterHorizontally(true).withOffset(Vector2.fromY(-100))));
+						Color.orange
+				).withCenterHorizontally(true).withOffset(Vector2.fromY(-100))));
 	}
 
 
@@ -479,6 +508,33 @@ public class DefensePenAreaTargetGroupFinderCalc extends ACalculator
 		double distByNumTargets()
 		{
 			return penAreaBoundary.get().distanceBetween(start, end) / (numTargets + 1);
+		}
+	}
+
+	private record PenAreaMarker(double distanceStart, double distanceEnd)
+	{
+		static PenAreaMarker fromDestinationsAtBoundary(IShapeBoundary boundary, List<IVector2> destinations)
+		{
+			var distances = destinations.stream()
+					.mapToDouble(boundary::distanceFromStart)
+					.toArray();
+
+			return new PenAreaMarker(SumatraMath.min(distances), SumatraMath.max(distances));
+		}
+
+
+		boolean overlapsWith(PenAreaMarker other)
+		{
+			return other.distanceEnd >= distanceStart && other.distanceStart <= distanceEnd;
+		}
+
+
+		PenAreaMarker combineWith(PenAreaMarker other)
+		{
+			return new PenAreaMarker(
+					SumatraMath.min(distanceStart, other.distanceStart),
+					SumatraMath.max(distanceEnd, other.distanceEnd)
+			);
 		}
 	}
 }

@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.skillsystem;
 
 import edu.tigers.sumatra.drawable.IShapeLayerIdentifier;
@@ -49,6 +45,8 @@ public final class ESkillShapesLayer
 			F.category(SKILLS).layerName("Calibration"));
 	public static final IShapeLayerIdentifier MOVE_ON_PENALTY_AREA_SKILL = F.create(
 			F.category(SKILLS).layerName("Move on PenaltyArea"));
+	public static final IShapeLayerIdentifier MULTIMEDIA = F.create(
+			F.category(SKILLS).layerName("Multimedia"));
 
 	public static final IShapeLayerIdentifier MOVE_TO_DEST = F.create(
 			F.category(MOVEMENT).layerName("MoveTo destination"));

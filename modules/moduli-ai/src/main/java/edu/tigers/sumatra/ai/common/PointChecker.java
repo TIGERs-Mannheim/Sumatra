@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.common;
 
 import edu.tigers.sumatra.ai.BaseAiFrame;
@@ -39,6 +35,8 @@ public class PointChecker
 	private double theirPenAreaMargin = Geometry.getBotRadius() + RuleConstraints.getPenAreaMarginStandard() + 30;
 	@Setter
 	private double ourPenAreaMargin = 200;
+	@Setter
+	private double extraBallMargin = 0;
 
 
 	/**
@@ -229,7 +227,8 @@ public class PointChecker
 
 	private boolean isPointConformWithBallDistance(IVector2 point)
 	{
-		double distance = RuleConstraints.getStopRadius() + Geometry.getBallRadius() + Geometry.getBotRadius();
+		double distance =
+				RuleConstraints.getStopRadius() + Geometry.getBallRadius() + Geometry.getBotRadius() + extraBallMargin;
 		double maxLength = RuleConstraints.getStopRadius();
 		double length = Math.min(maxLength, worldFrame.getBall().getTrajectory().getTravelLineSegment().getLength());
 		IVector2 offset = worldFrame.getBall().getVel().scaleToNew(length);
@@ -240,7 +239,8 @@ public class PointChecker
 
 	private boolean isPointConformWithBallDistanceStatic(IVector2 point)
 	{
-		double distance = RuleConstraints.getStopRadius() + Geometry.getBallRadius() + Geometry.getBotRadius();
+		double distance =
+				RuleConstraints.getStopRadius() + Geometry.getBallRadius() + Geometry.getBotRadius() + extraBallMargin;
 		return gameState.isRunning()
 				|| worldFrame.getBall().getPos().distanceTo(point) >= distance;
 	}
@@ -273,7 +273,8 @@ public class PointChecker
 			return true;
 		}
 		ILineSegment placementLine = Lines.segmentFromPoints(worldFrame.getBall().getPos(), ballPlacementPos);
-		return placementLine.distanceTo(point) > RuleConstraints.getStopRadius() + Geometry.getBotRadius() + 10;
+		return placementLine.distanceTo(point)
+				> RuleConstraints.getStopRadius() + Geometry.getBotRadius() + 10 + extraBallMargin;
 	}
 
 

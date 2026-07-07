@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.metis.targetrater;
 
 import edu.tigers.sumatra.ai.metis.kicking.Kick;

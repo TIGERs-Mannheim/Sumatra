@@ -1,10 +1,5 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra.botmanager.botskills;
 
-import edu.tigers.sumatra.bot.MoveConstraints;
-import edu.tigers.sumatra.bot.params.BotMovementLimits;
 import edu.tigers.sumatra.botmanager.botskills.data.EKickerDevice;
 import edu.tigers.sumatra.botmanager.botskills.data.EKickerMode;
 import edu.tigers.sumatra.botmanager.botskills.data.KickerDribblerCommands;
@@ -35,7 +30,7 @@ public class BotSkillLocalForce extends AMoveBotSkill
 	 * Set force in bot local frame.
 	 *
 	 * @param xy [N]
-	 * @param w [Nm]
+	 * @param w  [Nm]
 	 */
 	public BotSkillLocalForce(final IVector2 xy, final double w)
 	{
@@ -60,9 +55,11 @@ public class BotSkillLocalForce extends AMoveBotSkill
 	 * @param kickMode
 	 */
 	@SuppressWarnings({ "squid:S00107", "unused" })
-	public BotSkillLocalForce(final IVector2 xy, final double w,
+	public BotSkillLocalForce(
+			final IVector2 xy, final double w,
 			final double dribbleSpeed, final double dribbleForce, final double kickSpeed, final EKickerDevice kickDevice,
-			final EKickerMode kickMode)
+			final EKickerMode kickMode
+	)
 	{
 		this();
 
@@ -99,13 +96,6 @@ public class BotSkillLocalForce extends AMoveBotSkill
 	public double getW()
 	{
 		return force[2] / 1000.0;
-	}
-
-
-	@Override
-	public MoveConstraints getMoveConstraints()
-	{
-		return new MoveConstraints(new BotMovementLimits());
 	}
 
 

@@ -1,6 +1,3 @@
-/*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.autoreferee.engine.calc;
 
 import edu.tigers.autoreferee.AutoRefFrame;

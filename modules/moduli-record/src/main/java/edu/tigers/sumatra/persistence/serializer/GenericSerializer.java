@@ -1,12 +1,11 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.persistence.serializer;
 
 import lombok.extern.log4j.Log4j2;
 
 import java.io.IOException;
+import java.lang.foreign.MemorySegment;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.VarHandle;
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.nio.ByteBuffer;
@@ -26,12 +25,14 @@ import java.util.Map;
  * Prefixes each object prior to serialization with an integer id to determine types during deserialization.
  * For objects with special fields (e.g. direct memory, reflection, data in transient fields)
  * custom serializers need to be written prior to serialization.
- *
+ * <p>
  * Stores the class structure metadata in a separate metadata file (with the statically typed metadataSerializer).
  * Id 0 corresponds to the special case of a null object.
+ * <p>
+ * java:S3011: Intentionally bypassing access control checks
  */
 @Log4j2
-@SuppressWarnings("rawtypes")
+@SuppressWarnings({ "rawtypes", "java:S3011" })
 public class GenericSerializer implements PrimitiveSerializer, FieldSerializer<Object>, AutoCloseable
 {
 	private static final int METADATA_VERSION = 1;
@@ -80,7 +81,7 @@ public class GenericSerializer implements PrimitiveSerializer, FieldSerializer<O
 			metadataStream = new MappedDataOutputStream(
 					FileSystems.getDefault()
 							.getPath(System.getProperty("os.name").startsWith("Windows") ? "NUL" : "/dev/null"),
-					ByteBuffer.allocate(4096)
+					MemorySegment.ofArray(new byte[4096])
 			);
 		} catch (IOException e)
 		{
@@ -250,9 +251,9 @@ public class GenericSerializer implements PrimitiveSerializer, FieldSerializer<O
 
 
 	@Override
-	public void serializeUnsafe(long offset, MappedDataOutputStream stream, Object object) throws IOException
+	public void serializeUnsafe(VarHandle handle, MappedDataOutputStream stream, Object object) throws IOException
 	{
-		serialize(stream, UNSAFE.getObject(object, offset));
+		serialize(stream, handle.get(object));
 	}
 
 
@@ -264,9 +265,31 @@ public class GenericSerializer implements PrimitiveSerializer, FieldSerializer<O
 
 
 	@Override
-	public void deserializeUnsafe(long offset, ByteBuffer buffer, Object object) throws IOException
+	public void deserializeSafe(Field field, ByteBuffer buffer, Object object)
+			throws IOException, IllegalAccessException
 	{
-		UNSAFE.putObject(object, offset, deserialize(buffer));
+		field.set(object, deserialize(buffer));
+	}
+
+
+	@Override
+	public void deserializeUnsafe(VarHandle handle, ByteBuffer buffer, Object object) throws IOException
+	{
+		handle.set(object, deserialize(buffer));
+	}
+
+
+	@Override
+	public void deserializeFinal(MethodHandle setter, ByteBuffer buffer, Object object) throws IOException
+	{
+		Object val = deserialize(buffer);
+		try
+		{
+			setter.invokeExact(object, val);
+		} catch (Throwable t)
+		{
+			throw new IOException("Failed to set final reference field", t);
+		}
 	}
 
 

@@ -1,18 +1,37 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
-
+import edu.tigers.sumatra.gradle.JvmArgs
 import org.apache.tools.ant.filters.ReplaceTokens
+import org.jetbrains.gradle.ext.Application
+import org.jetbrains.gradle.ext.JUnit
 
 plugins {
     alias(libs.plugins.sonar)
     alias(libs.plugins.versionCatalogUpdate)
     alias(libs.plugins.githubRelease)
+    alias(libs.plugins.ideaExt)
     id 'idea'
 
     id 'sumatra.java'
     id 'sumatra.jib'
     id 'sumatra.application'
+}
+
+idea {
+    project {
+        settings {
+            runConfigurations {
+                defaults(JUnit) {
+                    vmParameters = JvmArgs.PERSISTENCE_ADD_OPENS.join(' ')
+                }
+                defaults(Application) {
+                    jvmArgs = JvmArgs.ALL_JVM_ARGS.join(' ')
+                }
+                "Sumatra"(Application) {
+                    mainClass = 'edu.tigers.sumatra.Sumatra'
+                    moduleName = "${rootProject.name}.main"
+                }
+            }
+        }
+    }
 }
 
 def gitDescribe = providers.exec {
@@ -75,6 +94,10 @@ dependencies {
 
     implementation(libs.info.picocli.picocli)
     annotationProcessor(libs.info.picocli.picocli.codegen)
+
+    implementation(libs.com.github.jiconfont.jiconfont)
+    implementation(libs.com.github.jiconfont.jiconfont.font.awesome)
+    implementation(libs.com.github.jiconfont.jiconfont.swing)
 }
 
 application {
@@ -108,9 +131,9 @@ jib {
 sonarqube {
     properties {
         property "sonar.projectKey", "main_Sumatra_AXyeyj5BLG1xSGHUS0Xf"
-        property "sonar.projectVersion", gitDescribe
+        property "sonar.projectVersion", project.version
         property "sonar.host.url", System.getenv("SONARQUBE_URL")
-        property "sonar.login", System.getenv("SONARQUBE_AUTH_TOKEN")
+        property "sonar.token", System.getenv("SONARQUBE_AUTH_TOKEN")
         if (System.getenv("CI_MERGE_REQUEST_IID") != null) {
             property "sonar.pullrequest.key", System.getenv("CI_MERGE_REQUEST_IID")
             property "sonar.pullrequest.branch", System.getenv("CI_MERGE_REQUEST_SOURCE_BRANCH_NAME")
@@ -128,6 +151,10 @@ def isNonStable = { String version ->
 }
 
 versionCatalogUpdate {
+    keep {
+        // Used in buildSrc convention plugins, but not visible to the update plugin
+        versions.add("org-jacoco")
+    }
     versionSelector {
         !isNonStable(it.candidate.version)
     }

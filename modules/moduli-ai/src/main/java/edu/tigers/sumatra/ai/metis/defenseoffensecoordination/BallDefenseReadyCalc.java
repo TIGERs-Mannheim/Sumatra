@@ -1,10 +1,7 @@
-/*
- * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.metis.defenseoffensecoordination;
 
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.ai.metis.ACalculator;
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
 import edu.tigers.sumatra.ai.metis.defense.data.DefenseBallThreat;
@@ -24,9 +21,9 @@ import java.util.function.Supplier;
 @RequiredArgsConstructor
 public class BallDefenseReadyCalc extends ACalculator
 {
-	@Configurable(comment = "[m/s] Defender needs to be slower than this to be considered ready", defValue = "1.0")
+	@Configurable(comment = "Defender needs to be slower than this to be considered ready", defValue = "1.0", unit = EConfigUnit.VELOCITY_M)
 	private static double defenderMaxAllowedSpeed = 1.0;
-	@Configurable(comment = "[mm] Defender needs to be closer than this to be considered ready", defValue = "250.0")
+	@Configurable(comment = "Defender needs to be closer than this to be considered ready", defValue = "250.0", unit = EConfigUnit.DISTANCE_MM)
 	private static double maxDistanceDefenderIsConsideredClose = 250.0;
 
 	private final Supplier<Set<BotID>> bestBallDefenderCandidates;

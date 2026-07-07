@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.botmanager.sim.skills;
 
 import edu.tigers.sumatra.botmanager.botskills.BotSkillLocalForce;

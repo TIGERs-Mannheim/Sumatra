@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.gui.timer.view;
 
 import edu.tigers.sumatra.drawable.EFontSize;
@@ -27,6 +23,7 @@ import javax.swing.JMenuItem;
 import javax.swing.JPanel;
 import javax.swing.JRadioButton;
 import javax.swing.JTextField;
+import javax.swing.UIManager;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Font;
@@ -34,6 +31,7 @@ import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.MouseWheelEvent;
 import java.awt.event.MouseWheelListener;
+import java.io.Serial;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -54,6 +52,7 @@ import java.util.SortedMap;
 public class TimerChartPanel extends JPanel
 {
 	private static final Logger log = LogManager.getLogger(TimerChartPanel.class.getName());
+	@Serial
 	private static final long serialVersionUID = -422217644518603954L;
 
 	/**
@@ -177,6 +176,7 @@ public class TimerChartPanel extends JPanel
 		this.add(diagramPanel, BorderLayout.CENTER);
 
 		addMouseWheelListener(new ChartMouseWheelListener());
+		applyTheme();
 	}
 
 
@@ -316,6 +316,7 @@ public class TimerChartPanel extends JPanel
 		chart.setVisible(visible);
 	}
 
+
 	private class TextFieldKeyListener implements KeyListener
 	{
 
@@ -349,7 +350,7 @@ public class TimerChartPanel extends JPanel
 					chart.getAxisX().setRangePolicy(new RangePolicyDynamicViewport(maxRange));
 				} catch (final NumberFormatException err)
 				{
-					log.error("Could not parse range: " + txtMaxRange.getText(), err);
+					log.error("Could not parse range: {}", txtMaxRange.getText(), err);
 				}
 			}
 		}
@@ -382,11 +383,34 @@ public class TimerChartPanel extends JPanel
 					combinedFrames = Integer.parseInt(txtCombinedFrames.getText());
 				} catch (final NumberFormatException err)
 				{
-					log.error("Could not parse frames: " + txtCombinedFrames.getText(), err);
+					log.error("Could not parse frames: {}", txtCombinedFrames.getText(), err);
 				}
 			}
 		}
 	}
+
+
+	private void applyTheme()
+	{
+		Color bg = UIManager.getColor("Panel.background");
+		Color fg = UIManager.getColor("Label.foreground");
+		Color grid = fg.darker();
+
+		setBackground(bg);
+
+		if (chart != null)
+		{
+			chart.setBackground(bg);
+			chart.setForeground(fg);
+			chart.setGridColor(grid);
+
+			chart.getAxisX().getAxisTitle().setTitleColor(fg);
+			chart.getAxisY().getAxisTitle().setTitleColor(fg);
+		}
+
+		repaint();
+	}
+
 
 	private class ChartMouseWheelListener implements MouseWheelListener
 	{
@@ -401,5 +425,13 @@ public class TimerChartPanel extends JPanel
 
 			chart.getAxisY().setRangePolicy(new RangePolicyFixedViewport(new Range(0.0, MAXIMUM_DURATION + currentMaxY)));
 		}
+	}
+
+
+	@Override
+	public void updateUI()
+	{
+		super.updateUI();
+		applyTheme();
 	}
 }

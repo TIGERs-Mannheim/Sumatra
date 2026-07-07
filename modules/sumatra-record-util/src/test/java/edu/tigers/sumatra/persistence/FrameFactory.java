@@ -1,13 +1,7 @@
-/*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.persistence;
 
 import edu.tigers.sumatra.ai.AIInfoFrame;
 import edu.tigers.sumatra.ai.BaseAiFrame;
-import edu.tigers.sumatra.ai.ares.Ares;
-import edu.tigers.sumatra.ai.ares.AresData;
 import edu.tigers.sumatra.ai.athena.Athena;
 import edu.tigers.sumatra.ai.athena.AthenaAiFrame;
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
@@ -46,8 +40,7 @@ import java.util.Random;
 public class FrameFactory
 {
 	private final Metis metis = new Metis();
-	private final Athena athena = new Athena();
-	private final Ares ares = new Ares(GenericSkillSystem.forAnalysis());
+	private final Athena athena = new Athena(GenericSkillSystem.create());
 
 	private final Random rnd = new Random(0);
 
@@ -68,8 +61,6 @@ public class FrameFactory
 
 		final MetisAiFrame mFrame = metis.process(bFrame);
 		final AthenaAiFrame aFrame = athena.process(mFrame);
-
-		ares.process(aFrame, new AresData());
 
 		aFrame.getShapeMap().get(EAiShapesLayer.AI_ROLE_COLOR)
 				.add(new DrawableCircle(Circle.createCircle(Vector2.fromXY(rndInField(), rndInField()), rndPositive())));
@@ -94,7 +85,6 @@ public class FrameFactory
 		return AIInfoFrame.builder()
 				.baseAiFrame(bFrame)
 				.athenaAiFrame(aFrame)
-				.aresData(new AresData())
 				.build();
 	}
 

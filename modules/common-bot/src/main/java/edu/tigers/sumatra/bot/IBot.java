@@ -1,10 +1,6 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.bot;
 
-import edu.tigers.sumatra.bot.params.IBotParams;
+import edu.tigers.sumatra.bot.params.BotParams;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.ids.ETeamColor;
 import edu.tigers.sumatra.math.vector.IVector3;
@@ -31,7 +27,7 @@ public interface IBot
 	/**
 	 * @return
 	 */
-	IBotParams getBotParams();
+	BotParams getBotParams();
 
 	/**
 	 * @return the current bot trajectory in the coordinate system of the AI (you may have to mirror it when accessing

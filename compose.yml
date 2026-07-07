@@ -49,7 +49,7 @@ services:
 
   ssl-vision-client:
     image: robocupssl/ssl-vision-client:latest
-    command: -visionAddress 224.5.23.2:11006 -refereeAddress 224.5.23.2:11003 -visualizationAddress 224.5.23.2:11011
+    command: -visionAddress 224.5.23.2:11006 -refereeAddress 224.5.23.2:11003
     ports:
       - "8082:8082"
     profiles:

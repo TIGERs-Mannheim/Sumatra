@@ -1,10 +1,7 @@
-/*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.pandora.roles.offense;
 
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.ai.pandora.roles.ARole;
 import edu.tigers.sumatra.ai.pandora.roles.ERole;
 import edu.tigers.sumatra.geometry.Geometry;
@@ -22,10 +19,10 @@ import edu.tigers.sumatra.wp.data.DynamicPosition;
 
 public class DelayedAttackRole extends ARole
 {
-	@Configurable(comment = "Use old waiting behaviour", defValue = "true")
+	@Configurable(comment = "Use old waiting behaviour", defValue = "true", unit = EConfigUnit.BOOLEAN)
 	private static boolean useOld = true;
 
-	@Configurable(comment = "Distance from Ball when circling it", defValue = "200")
+	@Configurable(comment = "Distance from Ball when circling it", defValue = "200", unit = EConfigUnit.DISTANCE_MM)
 	private static double ballDist = 200;
 
 
@@ -54,7 +51,7 @@ public class DelayedAttackRole extends ARole
 		{
 			skill = MoveToSkill.createMoveToSkill();
 			setNewSkill(skill);
-			skill.getMoveCon().physicalObstaclesOnly();
+			skill.setMoveCon(skill.getMoveCon().withPhysicalObstaclesOnly());
 		}
 
 

@@ -1,10 +1,8 @@
-/*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra.vision.kick.estimators;
 
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.ball.trajectory.flat.FlatBallTrajectory;
 import edu.tigers.sumatra.cam.data.CamBall;
 import edu.tigers.sumatra.drawable.DrawableAnnotation;
@@ -53,11 +51,11 @@ import java.util.stream.Collectors;
 public class StraightKickEstimator implements IKickEstimator
 {
 	private static final Logger log = LogManager.getLogger(StraightKickEstimator.class.getName());
-	@Configurable(comment = "Max fitting error until this estimator is dropped [mm]", defValue = "100.0")
+	@Configurable(comment = "Max fitting error until this estimator is dropped", defValue = "100.0", unit = EConfigUnit.DISTANCE_MM)
 	private static double maxFittingError = 100.0;
-	@Configurable(comment = "Max direction deviation until this estimator is dropped [deg]", defValue = "20.0")
+	@Configurable(comment = "Max direction deviation until this estimator is dropped", defValue = "20.0", unit = EConfigUnit.ANGLE_DEG)
 	private static double maxDirectionError = 20.0;
-	@Configurable(comment = "Max number of records to keep over all cameras", defValue = "50")
+	@Configurable(comment = "Max number of records to keep over all cameras", defValue = "50", unit = EConfigUnit.COUNT)
 	private static int maxNumberOfRecords = 50;
 
 	static

@@ -1,11 +1,7 @@
-/*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.statistics;
 
-import org.apache.commons.lang.RandomStringUtils;
-import org.apache.commons.lang.builder.ToStringBuilder;
+import org.apache.commons.lang3.RandomStringUtils;
+import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.influxdb.dto.Point;
@@ -19,7 +15,7 @@ import java.util.Date;
 import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 
-import static org.apache.commons.lang.builder.ToStringStyle.SHORT_PREFIX_STYLE;
+import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
 
 /**
@@ -28,7 +24,7 @@ import static org.apache.commons.lang.builder.ToStringStyle.SHORT_PREFIX_STYLE;
  * The complete file can be uploaded to an InfluxDB with:
  *
  * <pre>
- * curl -u tigers -i -XPOST 'https://influxdb.tigers-mannheim.de/write?db=matchStats' --data-binary @build/matchStats/2019-03-24_18-59-53_sreuO.matchStats
+ * curl -u tigers -i -XPOST '<a href="https://influxdb.tigers-mannheim.de/write?db=matchStats">...</a>' --data-binary @build/matchStats/2019-03-24_18-59-53_sreuO.matchStats
  * </pre>
  */
 public class TimeSeriesFileWriter implements ITimeSeriesWriter

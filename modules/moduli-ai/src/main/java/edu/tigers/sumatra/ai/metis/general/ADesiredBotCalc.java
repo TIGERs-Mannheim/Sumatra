@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.metis.general;
 
 import edu.tigers.sumatra.ai.metis.ACalculator;
@@ -48,9 +44,9 @@ public abstract class ADesiredBotCalc extends ACalculator
 
 
 	/**
-	 * Returns a list of available bots not already assigned to another play
+	 * Returns a set of available bots not already assigned to another play
 	 *
-	 * @return List of bot ids
+	 * @return Set of bot ids
 	 */
 	protected Set<BotID> getUnassignedBots()
 	{
@@ -59,9 +55,9 @@ public abstract class ADesiredBotCalc extends ACalculator
 
 
 	/**
-	 * Returns a list of available bots not already assigned to another play
+	 * Returns a set of available bots not already assigned to another play
 	 *
-	 * @return List of bot ids
+	 * @return Set of bot ids
 	 */
 	protected Set<BotID> getUnassignedBots(int limit)
 	{

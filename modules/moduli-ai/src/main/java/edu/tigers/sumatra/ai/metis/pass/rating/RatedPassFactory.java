@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.metis.pass.rating;
 
 import edu.tigers.sumatra.ai.metis.kicking.Pass;
@@ -30,18 +26,25 @@ public class RatedPassFactory
 	{
 		passRaters.put(EPassRating.PRESSURE, new PassPressureRater());
 		passRaters.put(EPassRating.PASSABILITY, new PassabilityRater());
+		passRaters.put(EPassRating.RECEIVABILITY, new ReceivabilityRater());
 	}
 
 
-	public void update(Collection<ITrackedBot> consideredBots,
+	public void update(
+			Collection<ITrackedBot> consideredBots,
 			Collection<ITrackedBot> consideredBotsIntercept,
-			List<BotID> opponentMan2ManMarker)
+			List<BotID> opponentMan2ManMarker, BotID opponentKeeperId
+	)
 	{
-		passRaters.put(EPassRating.INTERCEPTION, new PassInterceptionMovingRobotRater(consideredBotsIntercept,
-				opponentMan2ManMarker));
-		passRaters.put(EPassRating.REFLECT_GOAL_KICK, new ReflectorRater(consideredBots));
-		passRaters.put(EPassRating.GOAL_KICK, new GoalRater(consideredBots));
-		passRaters.put(EPassRating.FINISHER, new FinisherRater(consideredBots));
+		passRaters.put(
+				EPassRating.INTERCEPTION, new PassInterceptionMovingRobotRater(
+						consideredBotsIntercept,
+						opponentMan2ManMarker
+				)
+		);
+		passRaters.put(EPassRating.REFLECT_GOAL_KICK, new ReflectorRater(consideredBots, opponentKeeperId));
+		passRaters.put(EPassRating.GOAL_KICK, new GoalRater(consideredBots, opponentKeeperId));
+		passRaters.put(EPassRating.FINISHER, new FinisherRater(consideredBots, opponentKeeperId));
 	}
 
 
@@ -50,17 +53,20 @@ public class RatedPassFactory
 			Collection<ITrackedBot> consideredBotsIntercept,
 			PassStats passStats,
 			OffensiveZones offensiveZones,
-			List<BotID> opponentMan2ManMarkers)
+			List<BotID> opponentMan2ManMarkers, BotID opponentKeeperId
+	)
 	{
-		passRaters.put(EPassRating.INTERCEPTION, new DynamicPassInterceptionMovingRobotRater(
-				consideredBotsIntercept,
-				passStats,
-				offensiveZones,
-				opponentMan2ManMarkers
-		));
-		passRaters.put(EPassRating.REFLECT_GOAL_KICK, new ReflectorRater(consideredBots));
-		passRaters.put(EPassRating.GOAL_KICK, new GoalRater(consideredBots));
-		passRaters.put(EPassRating.FINISHER, new FinisherRater(consideredBots));
+		passRaters.put(
+				EPassRating.INTERCEPTION, new DynamicPassInterceptionMovingRobotRater(
+						consideredBotsIntercept,
+						passStats,
+						offensiveZones,
+						opponentMan2ManMarkers
+				)
+		);
+		passRaters.put(EPassRating.REFLECT_GOAL_KICK, new ReflectorRater(consideredBots, opponentKeeperId));
+		passRaters.put(EPassRating.GOAL_KICK, new GoalRater(consideredBots, opponentKeeperId));
+		passRaters.put(EPassRating.FINISHER, new FinisherRater(consideredBots, opponentKeeperId));
 	}
 
 

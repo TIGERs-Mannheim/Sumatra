@@ -1,21 +1,18 @@
-/*
- * Copyright (c) 2009 - 2024, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.pathfinder.obstacles.input;
 
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import lombok.NoArgsConstructor;
 
 
 @NoArgsConstructor(access = lombok.AccessLevel.PRIVATE)
 public final class DynamicMargin
 {
-	@Configurable(defValue = "200", comment = "Base distance for extra margin")
+	@Configurable(defValue = "200", comment = "Base distance for extra margin", unit = EConfigUnit.DISTANCE_MM)
 	private static double distance = 200;
 
-	@Configurable(defValue = "3", comment = "Max velocity limit, where current velocity is capped and considered 100%")
+	@Configurable(defValue = "3", comment = "Max velocity limit, where current velocity is capped and considered 100%", unit = EConfigUnit.VELOCITY_M)
 	private static double maxVel = 3;
 
 	static

@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.skillsystem.skills.test;
 
 import edu.tigers.sumatra.botmanager.botskills.BotSkillLocalVelocity;
@@ -12,7 +8,6 @@ import edu.tigers.sumatra.botmanager.botskills.data.EKickerMode;
 import edu.tigers.sumatra.botmanager.botskills.data.ELedColor;
 import edu.tigers.sumatra.botmanager.botskills.data.ESong;
 import edu.tigers.sumatra.botmanager.botskills.data.KickerDribblerCommands;
-import edu.tigers.sumatra.botmanager.data.MultimediaControl;
 import edu.tigers.sumatra.cam.data.CamBall;
 import edu.tigers.sumatra.data.collector.ITimeSeriesDataCollectorObserver;
 import edu.tigers.sumatra.data.collector.TimeSeriesDataCollector;
@@ -190,18 +185,18 @@ public class KickSampleSkill extends AMoveSkill implements ITimeSeriesDataCollec
 		{
 			waitPos = kickPos.addNew(Vector2.fromAngle(targetAngle)
 					.multiply(-50.0 - getTBot().getCenter2DribblerDist() - Geometry.getBallRadius()));
-			setTargetPose(waitPos, targetAngle, defaultMoveConstraints().setAccMax(1.0));
+			setTargetPose(waitPos, targetAngle, defaultMoveConstraints().withAccMax(1.0));
 
-			MultimediaControl mmc = new MultimediaControl()
-					.setSong(ESong.NONE)
-					.setLedColor(ELedColor.GREEN);
-			setMultimediaControl(mmc);
 		}
 
 
 		@Override
 		public void doUpdate()
 		{
+			getMatchCtrl().getMultimediaControl()
+					.setSong(ESong.NONE)
+					.setLedColor(ELedColor.GREEN);
+
 			// check for destination reached
 			if ((getPos().distanceTo(waitPos) < 10) && (Math.abs(AngleMath.difference(getAngle(), targetAngle)) < 0.1))
 			{
@@ -342,10 +337,9 @@ public class KickSampleSkill extends AMoveSkill implements ITimeSeriesDataCollec
 		@Override
 		public void doUpdate()
 		{
-			MultimediaControl mmc = new MultimediaControl()
+			getMatchCtrl().getMultimediaControl()
 					.setSong(ESong.CHEERING)
 					.setLedColor(ELedColor.PURPLE);
-			setMultimediaControl(mmc);
 
 			ballPosFilter.update(getBall().getPos());
 
@@ -386,10 +380,9 @@ public class KickSampleSkill extends AMoveSkill implements ITimeSeriesDataCollec
 			setTargetPose(runUpPos, targetAngle, defaultMoveConstraints());
 			setCurrentTrajectory(null);
 
-			MultimediaControl mmc = new MultimediaControl()
+			getMatchCtrl().getMultimediaControl()
 					.setSong(ESong.CHEERING)
 					.setLedColor(ELedColor.RED);
-			setMultimediaControl(mmc);
 		}
 
 

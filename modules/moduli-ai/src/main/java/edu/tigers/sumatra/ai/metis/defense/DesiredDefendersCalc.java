@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.metis.defense;
 
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
@@ -18,7 +14,7 @@ import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.line.ILineSegment;
 import edu.tigers.sumatra.math.line.Lines;
 import lombok.Getter;
-import org.apache.commons.lang.Validate;
+import org.apache.commons.lang3.Validate;
 
 import java.awt.Color;
 import java.util.ArrayList;
@@ -44,7 +40,6 @@ public class DesiredDefendersCalc extends ADesiredBotCalc
 	private final Supplier<DefenseBallThreat> ballThreat;
 	private final Supplier<Optional<DefenseBallThreat>> secondaryBallThreat;
 	private final Supplier<List<DefenseBotThreat>> defenseBotThreats;
-	private final Supplier<ECrucialDefenderStrategy> crucialDefenderStrategy;
 	private final Supplier<Integer> numDefenderForBall;
 	private final Supplier<DefensePassDisruptionAssignment> defensePassDisruptionAssignment;
 
@@ -61,16 +56,15 @@ public class DesiredDefendersCalc extends ADesiredBotCalc
 			Supplier<DefenseBallThreat> ballThreat,
 			Supplier<Optional<DefenseBallThreat>> secondaryBallThreat,
 			Supplier<List<DefenseBotThreat>> defenseBotThreats,
-			Supplier<ECrucialDefenderStrategy> crucialDefenderStrategy,
 			Supplier<Integer> numDefenderForBall,
-			Supplier<DefensePassDisruptionAssignment> defensePassDisruptionAssignment)
+			Supplier<DefensePassDisruptionAssignment> defensePassDisruptionAssignment
+	)
 	{
 		super(desiredBotMap);
 		this.playNumbers = playNumbers;
 		this.ballThreat = ballThreat;
 		this.secondaryBallThreat = secondaryBallThreat;
 		this.defenseBotThreats = defenseBotThreats;
-		this.crucialDefenderStrategy = crucialDefenderStrategy;
 		this.numDefenderForBall = numDefenderForBall;
 		this.defensePassDisruptionAssignment = defensePassDisruptionAssignment;
 	}
@@ -86,7 +80,7 @@ public class DesiredDefendersCalc extends ADesiredBotCalc
 
 		desiredPassDisruptionAssignment = null;
 		var availableDefender = new ArrayList<>(getUnassignedBots());
-		for (var selector : getSelectorsOrderedByPriority(crucialDefenderStrategy.get()))
+		for (var selector : getSelectorsOrderedByPriority())
 		{
 			var result = selector.selectBestDefender(util, Collections.unmodifiableList(availableDefender));
 			var selectedBots = result.selectedBots();
@@ -121,7 +115,8 @@ public class DesiredDefendersCalc extends ADesiredBotCalc
 			}
 		}
 
-		addDesiredBots(EPlay.DEFENSIVE,
+		addDesiredBots(
+				EPlay.DEFENSIVE,
 				desiredDefenders.stream().distinct()
 						.limit(playNumbers.get().getOrDefault(EPlay.DEFENSIVE, 0))
 						.collect(Collectors.toSet())
@@ -129,25 +124,30 @@ public class DesiredDefendersCalc extends ADesiredBotCalc
 	}
 
 
-	private List<IDefenderSelector> getSelectorsOrderedByPriority(ECrucialDefenderStrategy strategy)
+	private List<IDefenderSelector> getSelectorsOrderedByPriority()
 	{
-		Stream<IDefenderSelector> ballAndPassDisrupt = switch (strategy)
+		Stream<IDefenderSelector> ballAndPassDisrupt;
+		if (defensePassDisruptionAssignment.get() == null)
 		{
-			case ONLY_BLOCKING -> Stream.of(
+			ballAndPassDisrupt = Stream.of(
 					new BallThreatSelector(ballThreat.get(), numDefenderForBall.get()),
 					new SecondaryBallThreatSelector(secondaryBallThreat.get(), numDefenderForBall.get())
 			);
-			case NO_CRUCIAL_DEFENDER, DISRUPT_PREFERRED_OVER_BLOCKING -> Stream.of(
+		} else if (defensePassDisruptionAssignment.get().isDisruptPreferredOverBlocking())
+		{
+			ballAndPassDisrupt = Stream.of(
 					new PassDisruptionSelector(Optional.ofNullable(defensePassDisruptionAssignment.get())),
 					new BallThreatSelector(ballThreat.get(), numDefenderForBall.get()),
 					new SecondaryBallThreatSelector(secondaryBallThreat.get(), numDefenderForBall.get())
 			);
-			case BLOCKING_PREFERRED_OVER_DISRUPT -> Stream.of(
+		} else
+		{
+			ballAndPassDisrupt = Stream.of(
 					new BallThreatSelector(ballThreat.get(), numDefenderForBall.get()),
 					new PassDisruptionSelector(Optional.ofNullable(defensePassDisruptionAssignment.get())),
 					new SecondaryBallThreatSelector(secondaryBallThreat.get(), numDefenderForBall.get())
 			);
-		};
+		}
 
 		return Stream.concat(
 				ballAndPassDisrupt,
@@ -165,7 +165,8 @@ public class DesiredDefendersCalc extends ADesiredBotCalc
 		{
 			ILineSegment assignmentLine = Lines.segmentFromPoints(
 					getWFrame().getBot(botId).getPos(),
-					threatAssignment.getThreat().getPos());
+					threatAssignment.getThreat().getPos()
+			);
 			shapes.add(new DrawableLine(assignmentLine, Color.MAGENTA));
 		}
 	}

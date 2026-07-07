@@ -1,10 +1,7 @@
-/*
- * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.skillsystem.skills;
 
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.drawable.DrawableAnnotation;
 import edu.tigers.sumatra.drawable.DrawableCircle;
 import edu.tigers.sumatra.drawable.DrawableLine;
@@ -16,7 +13,6 @@ import edu.tigers.sumatra.math.line.Lines;
 import edu.tigers.sumatra.math.pose.Pose;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
-import edu.tigers.sumatra.pathfinder.TrajectoryGenerator;
 import edu.tigers.sumatra.skillsystem.ESkillShapesLayer;
 import edu.tigers.sumatra.skillsystem.skills.util.PositionValidator;
 import edu.tigers.sumatra.wp.data.KickedBall;
@@ -34,19 +30,19 @@ import java.util.Optional;
  */
 public abstract class ABallArrivalSkill extends AMoveToSkill
 {
-	@Configurable(defValue = "200.0", comment = "Distance bot pos to ball [mm] to fix the target orientation of the bot.")
+	@Configurable(defValue = "200.0", comment = "Distance bot pos to ball to fix the target orientation of the bot.", unit = EConfigUnit.DISTANCE_MM)
 	private static double distThresholdToFixOrientation = 200.0;
 
-	@Configurable(defValue = "1000.0", comment = "If the receiving pos is further than this away from the rolling travel line, the ball can not reach the receiving pos")
+	@Configurable(defValue = "1000.0", comment = "If the receiving pos is further than this away from the rolling travel line, the ball can not reach the receiving pos", unit = EConfigUnit.DISTANCE_MM)
 	private static double maxDistanceToReceivingPosition = 1000.0;
 
-	@Configurable(defValue = "110.0", comment = "Margin between penalty area and bot destination [mm] (should be larger than botRadius + Geometry#getPenaltyAreaMargin()")
+	@Configurable(defValue = "110.0", comment = "Margin between penalty area and bot destination (should be larger than botRadius + Geometry#getPenaltyAreaMargin()", unit = EConfigUnit.DISTANCE_MM)
 	private static double marginBetweenDestAndPenArea = 110.0;
 
-	@Configurable(defValue = "0.1", comment = "[s] Maximum expected time the vision might deviate from the real world")
+	@Configurable(defValue = "0.1", comment = "Maximum expected time the vision might deviate from the real world", unit = EConfigUnit.TIME_S)
 	private static double maxExpectedVisionTimeDeviation = 0.1;
 
-	@Configurable(defValue = "0.0", comment = "[s] offset to the ballArrivalTime to allow tuning the timing of overshooting trajectories")
+	@Configurable(defValue = "0.0", comment = "offset to the ballArrivalTime to allow tuning the timing of overshooting trajectories", unit = EConfigUnit.TIME_S)
 	private static double ballArrivalTimeOffset = 0;
 
 	private final PositionValidator positionValidator = new PositionValidator();
@@ -57,7 +53,7 @@ public abstract class ABallArrivalSkill extends AMoveToSkill
 	@Setter
 	private double maxReceptionHeight = 0;
 	@Setter
-	private boolean useOvershoot = false;
+	private boolean useTrajectoryTricks = false;
 	private IVector2 currentBallReceivingPosition;
 	@Getter(AccessLevel.PROTECTED)
 	@Setter(AccessLevel.PROTECTED)
@@ -95,7 +91,7 @@ public abstract class ABallArrivalSkill extends AMoveToSkill
 	public void doEntryActions()
 	{
 		super.doEntryActions();
-		getMoveCon().setBallObstacle(false);
+		setMoveCon(getMoveCon().withBallObstacle(false));
 
 		// init target orientation
 		updateTargetAngle(getBall().getPos().subtractNew(getPos()).getAngle());
@@ -114,6 +110,17 @@ public abstract class ABallArrivalSkill extends AMoveToSkill
 		updateTargetAngle(calcTargetAngle(currentBallReceivingPosition));
 		updateDestination(calcDest());
 
+		if (useTrajectoryTricks)
+		{
+			var ballTime = getBall().getTrajectory().getTimeByPos(currentBallReceivingPosition);
+			updateTargetTime(ballTime + ballArrivalTimeOffset);
+			updateUseComeToAStopIfFaster(true);
+		} else
+		{
+			updateTargetTime(null);
+			updateUseComeToAStopIfFaster(false);
+		}
+
 		drawShapes();
 
 		super.doUpdate();
@@ -123,8 +130,10 @@ public abstract class ABallArrivalSkill extends AMoveToSkill
 	private IVector2 projectIdealBallReceivingPosOnBallTrajectory(IVector2 previousInterceptionPoint)
 	{
 		var distance = getBall().getTrajectory().getDistByTime(maxExpectedVisionTimeDeviation);
-		var ballLineProjectedBack = Lines.segmentFromPoints(getBall().getPos(),
-				getBall().getVel().scaleToNew(-distance).add(getBall().getPos()));
+		var ballLineProjectedBack = Lines.segmentFromPoints(
+				getBall().getPos(),
+				getBall().getVel().scaleToNew(-distance).add(getBall().getPos())
+		);
 
 		return previousInterceptionPoint.nearestTo(List.of(
 				getBall().getTrajectory().closestPointToBelow(previousInterceptionPoint, maxReceptionHeight),
@@ -165,8 +174,10 @@ public abstract class ABallArrivalSkill extends AMoveToSkill
 	{
 		IVector2 dest = receivingPosition;
 		dest = positionValidator.movePosInFrontOfOpponent(dest);
-		dest = positionValidator.movePosOutOfPenAreaWrtBall(dest, Geometry.getBallRadius(),
-				getMoveCon().getConsideredPenAreas());
+		dest = positionValidator.movePosOutOfPenAreaWrtBall(
+				dest, Geometry.getBallRadius(),
+				getMoveCon().getConsideredPenAreas()
+		);
 		dest = positionValidator.movePosInsideFieldWrtBallPos(dest);
 		currentBallReceivingPosition = dest;
 	}
@@ -180,22 +191,17 @@ public abstract class ABallArrivalSkill extends AMoveToSkill
 
 	private IVector2 calcDest()
 	{
-		IVector2 dest = BotShape.getCenterFromKickerPos(currentBallReceivingPosition, getTargetAngle(),
-				getTBot().getCenter2DribblerDist() + Geometry.getBallRadius());
+		IVector2 dest = BotShape.getCenterFromKickerPos(
+				currentBallReceivingPosition, getTargetAngle(),
+				getTBot().getCenter2DribblerDist() + Geometry.getBallRadius()
+		);
 
 		// the bot may drive through the penArea, but it should not have a destination inside,
 		// because touching the ball while being partially inside the penArea is a foul.
-		var finalDest = positionValidator.movePosOutOfPenAreaWrtBall(dest, marginBetweenDestAndPenArea,
-				getMoveCon().getConsideredPenAreas());
-
-		if (!useOvershoot)
-		{
-			return finalDest;
-		}
-
-		var ballTime = getBall().getTrajectory().getTimeByPos(currentBallReceivingPosition);
-		return TrajectoryGenerator.generateVirtualPositionToReachPointInTime(getTBot(), finalDest,
-				ballTime + ballArrivalTimeOffset);
+		return positionValidator.movePosOutOfPenAreaWrtBall(
+				dest, marginBetweenDestAndPenArea,
+				getMoveCon().getConsideredPenAreas()
+		);
 	}
 
 
@@ -218,8 +224,10 @@ public abstract class ABallArrivalSkill extends AMoveToSkill
 				getShapes().get(ESkillShapesLayer.BALL_ARRIVAL_SKILL)
 						.add(new DrawableCircle(Circle.createCircle(pos, 30), Color.magenta)));
 		getShapes().get(ESkillShapesLayer.BALL_ARRIVAL_SKILL)
-				.add(new DrawableAnnotation(getPos(), ballIsMoving() ? "ballMoving" : "ballNotMoving",
-						Vector2.fromX(200)));
+				.add(new DrawableAnnotation(
+						getPos(), ballIsMoving() ? "ballMoving" : "ballNotMoving",
+						Vector2.fromX(200)
+				));
 
 		getShapes().get(ESkillShapesLayer.BALL_ARRIVAL_SKILL)
 				.add(new DrawableLine(Lines.segmentFromOffset(getPos(), Vector2.fromAngle(desiredTargetAngle).scaleTo(200)))

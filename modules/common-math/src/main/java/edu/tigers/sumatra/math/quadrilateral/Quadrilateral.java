@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.math.quadrilateral;
 
 import edu.tigers.sumatra.math.IBoundedPath;
@@ -15,7 +11,7 @@ import edu.tigers.sumatra.math.vector.VectorAngleComparator;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.ToString;
-import org.apache.commons.lang.Validate;
+import org.apache.commons.lang3.Validate;
 
 import java.util.ArrayList;
 import java.util.Collections;

@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.metis;
 
 import edu.tigers.sumatra.ai.metis.ballinterception.BallInterceptionInformation;
@@ -24,6 +20,7 @@ import edu.tigers.sumatra.ai.metis.pass.KickOrigin;
 import edu.tigers.sumatra.ai.metis.pass.PassStats;
 import edu.tigers.sumatra.ai.metis.pass.rating.RatedPass;
 import edu.tigers.sumatra.ai.metis.redirector.RedirectorDetectionInformation;
+import edu.tigers.sumatra.ai.metis.skirmish.EBallContestStrategy;
 import edu.tigers.sumatra.ai.metis.statistics.stats.MatchStats;
 import edu.tigers.sumatra.ai.metis.support.behaviors.ESupportBehavior;
 import edu.tigers.sumatra.ai.metis.support.behaviors.SupportBehaviorPosition;
@@ -35,8 +32,6 @@ import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.pathfinder.PathFinderPrioMap;
 import edu.tigers.sumatra.pathfinder.obstacles.IObstacle;
 import edu.tigers.sumatra.skillsystem.skills.BallHandlingAdvise;
-import edu.tigers.sumatra.statemachine.IEvent;
-import edu.tigers.sumatra.statemachine.IState;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
 import lombok.Builder;
 import lombok.NonNull;
@@ -78,12 +73,6 @@ public class TacticalField
 	@NonNull
 	PathFinderPrioMap pathFinderPrioMap;
 
-
-	@Singular("roleStatemachineGraph")
-	Map<BotID, Map<IEvent, Map<IState, IState>>> roleStatemachineGraphBotMap;
-	@Singular("skillStatemachineGraph")
-	Map<BotID, Map<IEvent, Map<IState, IState>>> skillStatemachineGraphBotMap;
-
 	//
 	// Attack
 	//
@@ -119,6 +108,8 @@ public class TacticalField
 	DribblingInformation dribblingInformation;
 	@NonNull
 	PassStats passStats;
+	@NonNull
+	EBallContestStrategy ballContestStrategy;
 
 	//
 	// Support
@@ -145,6 +136,12 @@ public class TacticalField
 	IVector2 defenseSupportingBallReceptionPos;
 
 	//
+	// D/O Coordination
+	//
+	Set<BotID> crucialOffender;
+	Set<BotID> crucialDefender;
+
+	//
 	// Keeper
 	//
 	Pass keeperPass;
@@ -162,7 +159,7 @@ public class TacticalField
 		return TacticalField.builder()
 				.matchStats(new MatchStats())
 				.opponentClosestToBall(BotDistance.NULL_BOT_DISTANCE)
-				.pathFinderPrioMap(new PathFinderPrioMap())
+				.pathFinderPrioMap(PathFinderPrioMap.empty())
 				.offensiveStrategy(new OffensiveStrategy())
 				.skirmishRipFreeTarget(Vector2.zero())
 				.redirectorDetectionInformation(new RedirectorDetectionInformation())
@@ -174,6 +171,7 @@ public class TacticalField
 				.ballPossession(new BallPossession(EBallPossession.NO_ONE, EBallControl.NONE, BotID.noBot(), BotID.noBot()))
 				.dribblingInformation(new DribblingInformation(Vector2.zero(), false, BotID.noBot(), null, null, false))
 				.passStats(new PassStats(new EnumMap<>(EOffensiveZone.class), Collections.emptyList(), 0, 0, 0))
+				.ballContestStrategy(EBallContestStrategy.DRIBBLE)
 				.build();
 	}
 }

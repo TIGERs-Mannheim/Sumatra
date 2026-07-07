@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.pandora.roles.defense;
 
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
@@ -67,8 +63,9 @@ public class PassDisruptionRole extends ADefenseRole
 			final IVector2 destination = moveToValidDest(findDest());
 			skill.updateDestination(destination);
 			skill.updateTargetAngle(getBall().getVel().multiplyNew(-1).getAngle());
-			skill.getMoveCon().setIgnoredBots(getIgnoredBots());
-			skill.getMoveCon().setBallObstacle(false);
+			skill.setMoveCon(skill.getMoveCon()
+					.withIgnoredBots(getIgnoredBots())
+					.withBallObstacle(false));
 		}
 
 
@@ -101,7 +98,7 @@ public class PassDisruptionRole extends ADefenseRole
 		private Set<BotID> getIgnoredBots()
 		{
 			var opponent = getTacticalField().getOpponentPassReceiver();
-			if (getAssignment().isIgnoreOpponentPassReceiverInPathPlanning() && opponent != null)
+			if ((isCrucial() || getAssignment().isLegalCollisionSpeed()) && opponent != null)
 			{
 				return Stream.concat(
 						Stream.of(opponent.getBotId()),

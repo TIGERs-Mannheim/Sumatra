@@ -1,11 +1,8 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.pandora.plays.match.defense;
 
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.ai.athena.AthenaAiFrame;
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
 import edu.tigers.sumatra.ai.metis.defense.DefenseMath;
@@ -63,22 +60,22 @@ public class CenterBackGroup extends ADefenseGroup
 			timed -> -timed.time);
 	private static final Comparator<TimedCenterBackRole> SORT_BY_COVER_MODE = Comparator.comparing(
 			timed -> timed.role.getCoverMode());
-	@Configurable(comment = "[s] time for Bots in Group to give place to new arriving Bots, hysteresis upper limit", defValue = "0.3")
+	@Configurable(comment = "time for Bots in Group to give place to new arriving Bots, hysteresis upper limit", defValue = "0.3", unit = EConfigUnit.TIME_S)
 	private static double minTimeToGivePlaceUpper = 0.3;
-	@Configurable(comment = "[s] time for Bots in Group to give place to new arriving Bots, hysteresis lower limit", defValue = "0.25")
+	@Configurable(comment = "time for Bots in Group to give place to new arriving Bots, hysteresis lower limit", defValue = "0.25", unit = EConfigUnit.TIME_S)
 	private static double minTimeToGivePlaceLower = 0.25;
-	@Configurable(comment = "[Bot Radius] if robot is closer than this to it's final destination, make room for it", defValue = "3.0")
+	@Configurable(comment = "If robot is closer than this to it's final destination, make room for it", defValue = "3.0", unit = EConfigUnit.BOT_RADIUS)
 	private static double minDistanceToGivePlaceSufficient = 3;
-	@Configurable(comment = "[mm] Robot needs to be at least this distance close to the fastest defender to be considered close", defValue = "1000.0")
+	@Configurable(comment = "Robot needs to be at least this distance close to the fastest defender to be considered close", defValue = "1000.0", unit = EConfigUnit.DISTANCE_MM)
 	private static double minDistanceToGivePlaceNecessary = 1000;
 	@Getter
-	@Configurable(comment = "[mm] The space between the bots (actual distance = configured distance + bot diameter)", defValue = "10.0")
+	@Configurable(comment = "The space between the bots (actual distance = configured distance + bot diameter)", defValue = "10.0", unit = EConfigUnit.DISTANCE_MM)
 	private static double distanceBetweenBots = 10;
-	@Configurable(comment = "[rad] CoverModes will stay the same from the last frame, until the angle diff is larger than this", defValue = "0.1")
+	@Configurable(comment = "CoverModes will stay the same from the last frame, until the angle diff is larger than this", defValue = "0.1", unit = EConfigUnit.ANGLE_RAD)
 	private static double angleDifferenceHysteresis = 0.1;
-	@Configurable(comment = "[s] Time to project position in the future for decision making", defValue = "0.2")
+	@Configurable(comment = "Time to project position in the future for decision making", defValue = "0.2", unit = EConfigUnit.TIME_S)
 	private static double lookahead = 0.2;
-	@Configurable(comment = "[m/s] the speed the centerbacks will back off with as soon as more closeRoles arrived", defValue = "0.25")
+	@Configurable(comment = "the speed the centerbacks will back off with as soon as more closeRoles arrived", defValue = "0.25", unit = EConfigUnit.VELOCITY_M)
 	private static double backOffSpeed = 0.25;
 
 	static

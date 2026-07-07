@@ -1,13 +1,9 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.trajectory;
 
 import edu.tigers.sumatra.math.AngleMath;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2f;
-import org.apache.commons.lang.Validate;
+import org.apache.commons.lang3.Validate;
 
 import java.util.function.UnaryOperator;
 
@@ -31,6 +27,7 @@ public final class BangBangTrajectoryFactory
 	{
 		Validate.notNull(primaryDirection);
 		Validate.isTrue(!primaryDirection.isZeroVector(), "zero primary direction vector");
+		validateParameters(s0, s1, v0, vmax, acc);
 
 		final var rotation = primaryDirection.getAngle();
 		final var startToTarget = s1.subtractNew(s0).turn(-rotation);
@@ -57,6 +54,7 @@ public final class BangBangTrajectoryFactory
 			final double acc
 	)
 	{
+		validateParameters(s0, s1, v0, vmax, acc);
 		return new BangBangTrajectory2D().generate(
 				s0,
 				s1,
@@ -66,6 +64,16 @@ public final class BangBangTrajectoryFactory
 				SYNC_ACCURACY,
 				f -> f
 		);
+	}
+
+
+	private static void validateParameters(IVector2 s0, IVector2 s1, IVector2 v0, double vmax, double acc)
+	{
+		Validate.isTrue(s0.isFinite(), "initial position is not finite: ", s0);
+		Validate.isTrue(s1.isFinite(), "target position is not finite: ", s1);
+		Validate.isTrue(v0.isFinite(), "initial velocity is not finite: ", s0);
+		Validate.isTrue(vmax > 0, "max velocity must be >=0: ", vmax);
+		Validate.isTrue(acc > 0, "max acceleration must be >0: ", acc);
 	}
 
 
@@ -94,7 +102,8 @@ public final class BangBangTrajectoryFactory
 				(float) finalPos,
 				(float) adaptVel(initialVel, maxVel),
 				(float) maxVel,
-				(float) maxAcc);
+				(float) maxAcc
+		);
 	}
 
 

@@ -1,11 +1,6 @@
-/*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.botmanager.botskills;
 
 import edu.tigers.sumatra.bot.MoveConstraints;
-import edu.tigers.sumatra.bot.params.BotMovementLimits;
 import edu.tigers.sumatra.botmanager.botskills.data.EKickerDevice;
 import edu.tigers.sumatra.botmanager.botskills.data.EKickerMode;
 import edu.tigers.sumatra.botmanager.botskills.data.KickerDribblerCommands;
@@ -81,7 +76,7 @@ public abstract class ABotSkill
 	public MoveConstraints getMoveConstraints()
 	{
 		// return dummy instance for compatibility
-		return new MoveConstraints(new BotMovementLimits());
+		return MoveConstraints.ZERO;
 	}
 	
 	

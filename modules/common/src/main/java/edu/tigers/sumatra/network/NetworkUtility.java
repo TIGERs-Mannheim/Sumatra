@@ -1,7 +1,7 @@
-/*
- * Copyright (c) 2009 - 2019, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra.network;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.net.Inet4Address;
 import java.net.InetAddress;
@@ -12,9 +12,6 @@ import java.net.UnknownHostException;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 
 /**
@@ -55,7 +52,7 @@ public final class NetworkUtility
 			network = InetAddress.getByName(networkStr);
 		} catch (UnknownHostException err1)
 		{
-			log.error("Unable to parse network address: " + networkStr, err1);
+			log.error("Unable to parse network address: {}", networkStr, err1);
 			return null;
 		}
 

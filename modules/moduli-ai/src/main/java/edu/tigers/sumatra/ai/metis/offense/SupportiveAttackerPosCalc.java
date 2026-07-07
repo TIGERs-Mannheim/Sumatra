@@ -1,10 +1,7 @@
-/*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.metis.offense;
 
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.ai.metis.ACalculator;
 import edu.tigers.sumatra.ai.metis.botdistance.BotDistance;
 import edu.tigers.sumatra.ai.metis.redirector.RedirectorDetectionInformation;
@@ -26,7 +23,7 @@ import java.util.function.Supplier;
 @RequiredArgsConstructor
 public class SupportiveAttackerPosCalc extends ACalculator
 {
-	@Configurable(defValue = "1400.0")
+	@Configurable(defValue = "1400.0", unit = EConfigUnit.DISTANCE_MM)
 	private static double defaultDistToBall = 1400.0;
 
 	private final Supplier<RedirectorDetectionInformation> redirectorDetectionInformation;

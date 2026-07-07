@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.metis;
 
 import edu.tigers.sumatra.ai.metis.ballpossession.BallPossession;
@@ -32,13 +28,7 @@ public class AdvantageRuleCalc extends ACalculator
 		if (!ballInOurField)
 		{
 			//Check if we have the ball
-			if (possession == EBallPossession.WE)
-			{
-				keepPlaying = true;
-			} else
-			{
-				keepPlaying = false;
-			}
+			keepPlaying = possession == EBallPossession.WE;
 		} else
 		{
 			keepPlaying = false;

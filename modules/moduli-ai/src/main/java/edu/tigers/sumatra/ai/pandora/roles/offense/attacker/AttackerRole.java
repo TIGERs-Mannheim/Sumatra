@@ -1,24 +1,22 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.pandora.roles.offense.attacker;
 
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
 import edu.tigers.sumatra.ai.metis.ballpossession.EBallControl;
 import edu.tigers.sumatra.ai.metis.kicking.Kick;
-import edu.tigers.sumatra.ai.metis.kicking.Pass;
 import edu.tigers.sumatra.ai.metis.offense.OffensiveConstants;
 import edu.tigers.sumatra.ai.metis.offense.action.EOffensiveActionType;
 import edu.tigers.sumatra.ai.metis.offense.action.OffensiveAction;
 import edu.tigers.sumatra.ai.metis.offense.dribble.EDribblingCondition;
+import edu.tigers.sumatra.ai.metis.skirmish.EBallContestStrategy;
 import edu.tigers.sumatra.ai.pandora.roles.ARole;
 import edu.tigers.sumatra.ai.pandora.roles.ERole;
 import edu.tigers.sumatra.ai.pandora.roles.offense.attacker.states.ApproachAndStopBallState;
 import edu.tigers.sumatra.ai.pandora.roles.offense.attacker.states.ApproachBallLineState;
 import edu.tigers.sumatra.ai.pandora.roles.offense.attacker.states.DribbleState;
 import edu.tigers.sumatra.ai.pandora.roles.offense.attacker.states.DribblingKickState;
+import edu.tigers.sumatra.ai.pandora.roles.offense.attacker.states.FinisherPassState;
 import edu.tigers.sumatra.ai.pandora.roles.offense.attacker.states.FreeKickState;
 import edu.tigers.sumatra.ai.pandora.roles.offense.attacker.states.FreeSkirmishState;
 import edu.tigers.sumatra.ai.pandora.roles.offense.attacker.states.KickState;
@@ -41,11 +39,11 @@ import java.awt.Color;
 @Log4j2
 public class AttackerRole extends ARole
 {
-	@Configurable(defValue = "2000.0")
+	@Configurable(defValue = "2000.0", unit = EConfigUnit.DISTANCE_MM)
 	private static double switchToKickDist = 2000;
 
-	@Configurable(defValue = "false", comment = "Enable FreeSkirmish")
-	private static boolean enableFreeSkirmish = false;
+	@Configurable(defValue = "true", comment = "Enable FreeSkirmish", unit = EConfigUnit.BOOLEAN)
+	private static boolean enableFreeSkirmish = true;
 
 	@Getter
 	@Setter
@@ -59,6 +57,8 @@ public class AttackerRole extends ARole
 	@Setter
 	@Getter
 	private boolean physicalObstaclesOnly;
+
+	private boolean useFreeSkirmish;
 
 
 	public AttackerRole()
@@ -75,6 +75,7 @@ public class AttackerRole extends ARole
 		var dribblingKickState = new DribblingKickState(this);
 		var dribbleState = new DribbleState(this);
 		var freeSkirmishState = new FreeSkirmishState(this);
+		var finisherPassState = new FinisherPassState(this);
 		setInitialState(protectState);
 
 		// switch from protect
@@ -83,6 +84,10 @@ public class AttackerRole extends ARole
 		protectState.addTransition(this::switchToReceive, receiveState);
 		protectState.addTransition(ESkillState.SUCCESS, this::isFreeSkirmishViable, freeSkirmishState);
 		protectState.addTransition(ESkillState.SUCCESS, this::switchToDribble, dribbleState);
+		protectState.addTransition(this::switchToFinisherPass, finisherPassState);
+
+		// switch from finisher pass
+		finisherPassState.addTransition(this::finisherPasIsInvalid, protectState);
 
 		// switch from freeSkirmish
 		freeSkirmishState.addTransition(ESkillState.SUCCESS, protectState);
@@ -142,7 +147,7 @@ public class AttackerRole extends ARole
 			return false;
 		}
 
-		return opponentHasBallControl();
+		return opponentHasBallControl() && useFreeSkirmish;
 	}
 
 
@@ -201,11 +206,20 @@ public class AttackerRole extends ARole
 
 	private boolean cancelRedirect()
 	{
-		return !getBot().getBallContact().hasContact() && (action.getType() == EOffensiveActionType.RECEIVE
+		return action.getKick() == null || (!getBot().getBallContact().hasContact() && (action.getType() == EOffensiveActionType.RECEIVE
 				|| (action.getType() != EOffensiveActionType.REDIRECT_KICK
-				&& action.getType() != EOffensiveActionType.PASS));
+				&& action.getType() != EOffensiveActionType.PASS)));
 	}
 
+	private boolean switchToFinisherPass()
+	{
+		return action.getType() == EOffensiveActionType.FINISHER_PASS;
+	}
+
+	private boolean finisherPasIsInvalid()
+	{
+		return action.getType() != EOffensiveActionType.FINISHER_PASS;
+	}
 
 	private boolean switchToKick()
 	{
@@ -232,14 +246,21 @@ public class AttackerRole extends ARole
 
 
 	@Override
+	protected void beforeUpdate()
+	{
+		useFreeSkirmish = getTacticalField().getBallContestStrategy() == EBallContestStrategy.FREE_SKIRMISH;
+	}
+
+
+	@Override
 	protected void afterUpdate()
 	{
-		Pass pass = action.getPass();
+		var pass = action.getPass();
 		Kick kick = action.getKick();
 		if (pass != null)
 		{
 			var color = getAiFrame().getTeamColor().getColor();
-			var drawables = pass.createDrawables();
+			var drawables = pass.getPass().createDrawables();
 			drawables.forEach(d -> d.setColor(color));
 			getShapes(EAiShapesLayer.OFFENSE_ATTACKER).addAll(drawables);
 		} else if (kick != null)

@@ -1,10 +1,7 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.metis.defenseoffensecoordination;
 
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.ai.metis.ACalculator;
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
 import edu.tigers.sumatra.ai.metis.botdistance.BotDistance;
@@ -37,9 +34,9 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class CrucialOffenderCalc extends ACalculator
 {
-	@Configurable(defValue = "500.0")
+	@Configurable(defValue = "500.0", unit = EConfigUnit.DISTANCE_MM)
 	private static double distToBallForCrucialOffender = 500.0;
-	@Configurable(defValue = "500.0")
+	@Configurable(defValue = "500.0", unit = EConfigUnit.DISTANCE_MM)
 	private static double closestToBallOffset = 500.0;
 	private final Supplier<Optional<OngoingPass>> ongoingPass;
 	private final Supplier<BotDistance> opponentClosestToBall;
@@ -68,7 +65,7 @@ public class CrucialOffenderCalc extends ACalculator
 				.filter(e -> tigerIsCloserToBall(e) || isCloseToBall(e))
 				.collect(Collectors.toSet());
 
-		ongoingPass.get().ifPresent(e -> crucialOffender.add(e.getPass().getReceiver()));
+		ongoingPass.get().ifPresent(e -> crucialOffender.add(e.getPass().getPass().getReceiver()));
 
 		getShapes(EAiShapesLayer.DO_COORD_CRUCIAL_OFFENDERS).addAll(
 				crucialOffender.stream()

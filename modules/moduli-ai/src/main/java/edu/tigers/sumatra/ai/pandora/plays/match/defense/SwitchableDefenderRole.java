@@ -1,11 +1,7 @@
-/*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.pandora.plays.match.defense;
 
 import edu.tigers.sumatra.ai.pandora.roles.ARole;
-import org.apache.commons.lang.Validate;
+import org.apache.commons.lang3.Validate;
 
 
 /**

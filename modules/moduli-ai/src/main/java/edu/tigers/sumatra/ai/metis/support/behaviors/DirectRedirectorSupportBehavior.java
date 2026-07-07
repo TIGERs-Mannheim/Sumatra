@@ -1,10 +1,7 @@
-/*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.metis.support.behaviors;
 
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.ai.metis.offense.OffensiveConstants;
 import edu.tigers.sumatra.ai.metis.pass.KickOrigin;
 import edu.tigers.sumatra.geometry.Geometry;
@@ -18,6 +15,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
 
+
 /**
  * Go through all supportive goal positions and calculate the redirect angle from the attacker to that pos to the goal.
  * Take the pos with the smallest redirect angle, filter out too large distances, and take this as the position.
@@ -26,13 +24,13 @@ import java.util.function.Supplier;
 @RequiredArgsConstructor
 public class DirectRedirectorSupportBehavior extends ASupportBehavior
 {
-	@Configurable(comment = "Enable this behavior?", defValue = "true")
+	@Configurable(comment = "Enable this behavior?", defValue = "true", unit = EConfigUnit.BOOLEAN)
 	private static boolean enabled = true;
 
-	@Configurable(comment = "[mm]", defValue = "8000.")
+	@Configurable(defValue = "8000.", unit = EConfigUnit.DISTANCE_MM)
 	private static double maxDistance = 8000;
 
-	@Configurable(comment = "[mm]", defValue = "12000.")
+	@Configurable(defValue = "12000.", unit = EConfigUnit.DISTANCE_MM)
 	private static double maxBallTravelDist = 12000;
 
 	private final Supplier<Map<BotID, KickOrigin>> kickOrigins;
@@ -42,6 +40,11 @@ public class DirectRedirectorSupportBehavior extends ASupportBehavior
 	@Override
 	public SupportBehaviorPosition calculatePositionForRobot(BotID botID)
 	{
+		if (getAiFrame().getGameState().isNextStandardSituationForThem())
+		{
+			return SupportBehaviorPosition.notAvailable();
+		}
+
 		return kickOrigins.get().values().stream()
 				.min(Comparator.comparingDouble(e -> e.getPos().distanceTo(getWFrame().getBall().getPos())))
 				.map(kickOrigin -> calcPositionForOffensivePos(getWFrame().getBot(botID), kickOrigin.getPos()))

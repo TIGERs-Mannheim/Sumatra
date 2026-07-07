@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.referee.data;
 
 import edu.tigers.sumatra.geometry.Geometry;
@@ -31,7 +27,6 @@ public class GameState
 	ETeamColor nextForTeam;
 	@NonNull
 	ETeamColor ourTeam;
-	boolean penaltyShootout;
 	@Getter(AccessLevel.NONE)
 	IVector2 ballPlacementPosition;
 
@@ -59,7 +54,6 @@ public class GameState
 		forTeam = ETeamColor.NEUTRAL;
 		nextForTeam = ETeamColor.NEUTRAL;
 		ourTeam = ETeamColor.NEUTRAL;
-		penaltyShootout = false;
 		ballPlacementPosition = null;
 	}
 

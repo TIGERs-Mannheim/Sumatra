@@ -1,6 +1,3 @@
-/*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra.planarcurve;
 
 import edu.tigers.sumatra.math.vector.IVector2;

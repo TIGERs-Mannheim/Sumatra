@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2024, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.pandora.roles.test;
 
 import edu.tigers.sumatra.ai.metis.targetrater.AngleRangeRater;
@@ -59,7 +55,7 @@ public class DribbleKickTestRole extends ARole
 		@Override
 		protected void onUpdate()
 		{
-			skill.getMoveCon().setObstacleAvoidanceMode(EObstacleAvoidanceMode.AGGRESSIVE);
+			skill.setMoveCon(skill.getMoveCon().withObstacleAvoidanceMode(EObstacleAvoidanceMode.AGGRESSIVE));
 			skill.setStrongDribblerContactNeeded(true);
 			skill.setTarget(target);
 		}
@@ -76,6 +72,8 @@ public class DribbleKickTestRole extends ARole
 		@Override
 		protected void onUpdate()
 		{
+			skill.setMoveBackwards(true);
+
 			IVector2 botStatePos = getBot().getBotState().getPos();
 			double botStateOrient = getBot().getBotState().getOrientation();
 			IVector2 botStateKickerPos = botStatePos.addNew(Vector2.fromAngle(botStateOrient)
@@ -85,15 +83,19 @@ public class DribbleKickTestRole extends ARole
 			boolean canScoreGoalHere =
 					bestGoalKick.isPresent() && canGoalBeScored(bestGoalKick.get(), canShootClearanceTimer);
 
-			if (bestGoalKick.isPresent() && canScoreGoalHere)
+			skill.setDestination(dribbleToPos);
+			if (canScoreGoalHere)
 			{
+				// set real target + enable kick if target orientation reached
 				skill.setTarget(bestGoalKick.get().getTarget());
+				skill.setKickIfTargetOrientationReached(true);
 			} else
 			{
-				skill.setTarget(kickTarget);
+				// set default target if no on the fly target available yet
+				skill.setTarget(target);
+				skill.setKickIfTargetOrientationReached(false);
 			}
-			skill.setDestination(dribbleToPos);
-			skill.setKickIfTargetOrientationReached(canScoreGoalHere);
+			skill.setMoveCon(skill.getMoveCon().withObstacleAvoidanceMode(EObstacleAvoidanceMode.SAFE));
 		}
 
 
@@ -101,6 +103,7 @@ public class DribbleKickTestRole extends ARole
 		{
 			var rater = AngleRangeRater.forGoal(Geometry.getGoalTheir());
 			rater.setObstacles(getWFrame().getOpponentBots().values());
+			rater.setKeeperID(getAiFrame().getKeeperOpponentId());
 			return rater.rate(botStateKickerPos);
 		}
 

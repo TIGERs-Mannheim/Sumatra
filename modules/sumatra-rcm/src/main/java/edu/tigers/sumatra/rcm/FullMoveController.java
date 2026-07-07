@@ -1,11 +1,8 @@
-/*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.rcm;
 
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.bot.EFeature;
 import edu.tigers.sumatra.bot.EFeatureState;
 import edu.tigers.sumatra.bot.MoveConstraints;
@@ -24,29 +21,29 @@ import edu.tigers.sumatra.proto.BotActionCommandProtos;
 
 public class FullMoveController extends AMoveController
 {
-	@Configurable(comment = "Send smoothed velocities based on acceleration", defValue = "false")
+	@Configurable(comment = "Send smoothed velocities based on acceleration", defValue = "false", unit = EConfigUnit.BOOLEAN)
 	private static boolean smoothedVel = false;
 
-	@Configurable(defValue = "LOCAL_VEL")
+	@Configurable(defValue = "LOCAL_VEL", unit = EConfigUnit.NO_UNIT)
 	private static EMovementType moveType = EMovementType.LOCAL_VEL;
 
-	@Configurable(defValue = "3.0")
+	@Configurable(defValue = "3.0", unit = EConfigUnit.ACCELERATION_M)
 	private static double accDef = 3;
-	@Configurable(defValue = "4.0")
+	@Configurable(defValue = "4.0", unit = EConfigUnit.ACCELERATION_M)
 	private static double accMax = 4;
 
-	@Configurable(defValue = "4.0")
+	@Configurable(defValue = "4.0", unit = EConfigUnit.ACCELERATION_M)
 	private static double dccDef = 4;
-	@Configurable(defValue = "10.0")
+	@Configurable(defValue = "10.0", unit = EConfigUnit.ACCELERATION_M)
 	private static double dccMax = 10;
 
-	@Configurable(defValue = "1.0")
+	@Configurable(defValue = "1.0", unit = EConfigUnit.VELOCITY_M)
 	private static double speedDef = 1.0;
-	@Configurable(defValue = "0.1")
+	@Configurable(defValue = "0.1", unit = EConfigUnit.VELOCITY_M)
 	private static double speedMin = 0.1;
-	@Configurable(defValue = "1.5")
+	@Configurable(defValue = "1.5", unit = EConfigUnit.VELOCITY_M)
 	private static double speedMaxLow = 1.5;
-	@Configurable(defValue = "3.5")
+	@Configurable(defValue = "3.5", unit = EConfigUnit.VELOCITY_M)
 	private static double speedMaxHigh = 3.5;
 
 	static
@@ -162,7 +159,7 @@ public class FullMoveController extends AMoveController
 	private AMoveBotSkill moveWithLocalVel(final double acc, final IVector2 outVel, final double rotate)
 	{
 		final BotSkillLocalVelocity skill = new BotSkillLocalVelocity(outVel, rotate,
-				new MoveConstraints(controllerState.getBot().getBotParams().getMovementLimits()));
+				MoveConstraints.from(controllerState.getBot().getBotParams().getMovementLimits()));
 		skill.setAccMax(acc);
 		return skill;
 	}

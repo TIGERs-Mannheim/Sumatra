@@ -1,15 +1,7 @@
-/*
- * Copyright (c) 2009 - 2019, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra.filetree;
 
-import java.awt.BorderLayout;
-import java.awt.Dimension;
-import java.io.File;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
@@ -18,9 +10,14 @@ import javax.swing.event.TreeSelectionEvent;
 import javax.swing.event.TreeSelectionListener;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.TreePath;
-
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import java.awt.BorderLayout;
+import java.awt.Dimension;
+import java.io.File;
+import java.io.Serial;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 
 /**
@@ -32,6 +29,7 @@ import org.apache.logging.log4j.Logger;
 public class FileTree extends JPanel
 {
 	/**  */
+	@Serial
 	private static final long serialVersionUID = 6901756711335047357L;
 	@SuppressWarnings("unused")
 	private static final Logger log = LogManager.getLogger(FileTree.class.getName());
@@ -180,7 +178,7 @@ public class FileTree extends JPanel
 		String[] tmp = dir.list();
 		if (tmp == null)
 		{
-			log.info("Directory does not exist and will be created: " + dir.getAbsolutePath());
+			log.info("Directory does not exist and will be created: {}", dir.getAbsolutePath());
 			// noinspection ResultOfMethodCallIgnored
 			dir.mkdirs();
 			return curDir;

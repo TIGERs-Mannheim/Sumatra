@@ -1,9 +1,6 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra.botmanager;
 
-import edu.tigers.sumatra.bot.params.IBotParams;
+import edu.tigers.sumatra.bot.params.BotParams;
 import edu.tigers.sumatra.botmanager.bots.ABot;
 import edu.tigers.sumatra.botmanager.data.MatchBroadcast;
 import edu.tigers.sumatra.botparams.BotParamsManager;
@@ -138,7 +135,7 @@ public class BotManager extends AModule
 
 
 	@Override
-	public void onBotParamsUpdated(final EBotParamLabel label, final IBotParams params)
+	public void onBotParamsUpdated(final EBotParamLabel label, final BotParams params)
 	{
 		getBots().values().stream()
 				.filter(b -> b.getBotParamLabel() == label)

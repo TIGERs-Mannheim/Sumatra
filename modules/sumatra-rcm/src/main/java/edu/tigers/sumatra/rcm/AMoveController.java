@@ -1,12 +1,8 @@
-/*
- * Copyright (c) 2009 - 2019, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.rcm;
 
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
-
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.proto.BotActionCommandProtos;
 
@@ -15,13 +11,13 @@ public abstract class AMoveController implements IMoveController
 {
 	private static final double TRIGGER_THRESHOLD = 0.001;
 
-	@Configurable(defValue = "4.0")
+	@Configurable(defValue = "4.0", unit = EConfigUnit.VELOCITY_ANGULAR_RAD)
 	private static double rotateDef = 4;
 
-	@Configurable(defValue = "1.0")
+	@Configurable(defValue = "1.0", unit = EConfigUnit.VELOCITY_ANGULAR_RAD)
 	private static double rotateMin = 1;
 
-	@Configurable(defValue = "10.0")
+	@Configurable(defValue = "10.0", unit = EConfigUnit.VELOCITY_ANGULAR_RAD)
 	private static double rotateMax = 10;
 
 	static

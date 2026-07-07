@@ -1,10 +1,7 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.pandora.plays.test;
 
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
 import edu.tigers.sumatra.ai.pandora.plays.EPlay;
 import edu.tigers.sumatra.ai.pandora.plays.test.kick.ABallPreparationPlay;
@@ -32,16 +29,16 @@ import java.util.Map;
 @Log4j2
 public class SnapshotPlay extends ABallPreparationPlay
 {
-	@Configurable(defValue = "true", comment = "enables the ball placement for the snapshot play")
+	@Configurable(defValue = "true", comment = "enables the ball placement for the snapshot play", unit = EConfigUnit.BOOLEAN)
 	private static boolean enableBallPlacement = true;
 
-	@Configurable(defValue = "false", comment = "syncs movements in snapshot plays")
+	@Configurable(defValue = "false", comment = "syncs movements in snapshot plays", unit = EConfigUnit.BOOLEAN)
 	private static boolean syncMovements = false;
 
-	@Configurable(defValue = "1.0", comment = "[m/s] maximum velocity in execute state")
+	@Configurable(defValue = "1.0", comment = "maximum velocity in execute state", unit = EConfigUnit.VELOCITY_M)
 	private static double maxVelocity = 1.0;
 
-	@Configurable(defValue = "true", comment = "ignore opponent bot obstacles")
+	@Configurable(defValue = "true", comment = "ignore opponent bot obstacles", unit = EConfigUnit.BOOLEAN)
 	private static boolean ignoreOpponentObstacles = true;
 
 	private Snapshot snapshot;
@@ -157,8 +154,9 @@ public class SnapshotPlay extends ABallPreparationPlay
 				role.updateTargetAngle(snapObject.getPos().z());
 			}
 			role.setVelMax(maxVelocity);
-			role.getMoveCon().physicalObstaclesOnly();
-			role.getMoveCon().setTheirBotsObstacle(!ignoreOpponentObstacles);
+			role.setMoveCon(role.getMoveCon()
+					.withPhysicalObstaclesOnly()
+					.withTheirBotsObstacle(!ignoreOpponentObstacles));
 		}
 
 
@@ -220,8 +218,9 @@ public class SnapshotPlay extends ABallPreparationPlay
 				role.updateTargetAngle(snapObject.getPos().z());
 			}
 			role.setVelMax(maxVelocity);
-			role.getMoveCon().physicalObstaclesOnly();
-			role.getMoveCon().setTheirBotsObstacle(true);
+			role.setMoveCon(role.getMoveCon()
+					.withPhysicalObstaclesOnly()
+					.withTheirBotsObstacle(true));
 			isSyncToggleAllowed = false;
 			patrollingToMovementDestination.put(role.getBotID(), false);
 		}
@@ -236,11 +235,9 @@ public class SnapshotPlay extends ABallPreparationPlay
 
 
 		@Override
-		public void doEntryActions()
+		public void onInit()
 		{
 			findRoles(MoveRole.class).forEach(MoveRole::disableMotors);
-
-			super.doEntryActions();
 		}
 	}
 }

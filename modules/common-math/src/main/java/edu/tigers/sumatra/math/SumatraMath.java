@@ -1,11 +1,7 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.math;
 
 import net.jafama.FastMath;
-import org.apache.commons.lang.Validate;
+import org.apache.commons.lang3.Validate;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -171,6 +167,30 @@ public final class SumatraMath
 	}
 
 
+	public static double clampToZeroIfSlightlyNegative(double v)
+	{
+		return -EQUAL_TOL < v && v < 0 ? 0 : v;
+	}
+
+
+	public static double clampToZeroIfSlightlyPositive(double v)
+	{
+		return 0 < v && v < EQUAL_TOL ? 0 : v;
+	}
+
+
+	public static float clampToZeroIfSlightlyNegative(float v)
+	{
+		return -EQUAL_TOL < v && v < 0 ? 0 : v;
+	}
+
+
+	public static float clampToZeroIfSlightlyPositive(float v)
+	{
+		return 0 < v && v < EQUAL_TOL ? 0 : v;
+	}
+
+
 	/**
 	 * Project value to a relative values between 0 and 1
 	 *
@@ -184,8 +204,8 @@ public final class SumatraMath
 		double range = to - from;
 		double cappedValue = cap(value, from, to);
 		double rel = (cappedValue - from) / range;
-		Validate.isTrue(rel >= 0);
-		Validate.isTrue(rel <= 1);
+		Validate.isTrue(rel >= 0, () -> String.format("relative %f is out of range", rel));
+		Validate.isTrue(rel <= 1, () -> String.format("relative %f is out of range", rel));
 		return rel;
 	}
 
@@ -202,7 +222,7 @@ public final class SumatraMath
 	{
 		double min = Math.min(bound1, bound2);
 		double max = Math.max(bound1, bound2);
-		return Math.max(min, Math.min(max, value));
+		return Math.clamp(value, min, max);
 	}
 
 
@@ -218,7 +238,7 @@ public final class SumatraMath
 	{
 		int min = Math.min(bound1, bound2);
 		int max = Math.max(bound1, bound2);
-		return Math.max(min, Math.min(max, value));
+		return Math.clamp(value, min, max);
 	}
 
 
@@ -238,7 +258,7 @@ public final class SumatraMath
 		}
 		int min = Math.min(bound1, bound2);
 		int max = Math.max(bound1, bound2);
-		return Math.max(min, Math.min(max, Math.abs(value))) * Integer.signum(value);
+		return Math.clamp(Math.abs(value), min, max) * Integer.signum(value);
 	}
 
 
@@ -258,7 +278,7 @@ public final class SumatraMath
 		}
 		double min = Math.min(bound1, bound2);
 		double max = Math.max(bound1, bound2);
-		return Math.max(min, Math.min(max, Math.abs(value))) * Math.signum(value);
+		return Math.clamp(Math.abs(value), min, max) * Math.signum(value);
 	}
 
 
@@ -434,7 +454,7 @@ public final class SumatraMath
 		double m = cubeRoots.stream().filter(r -> r >= 0).findAny().orElse(0.0);
 		int sign = b1 > 0 ? 1 : -1;
 		double rRadicand = m * m + b2 * m + tmp;
-		Validate.isTrue(rRadicand >= 0);
+		Validate.isTrue(rRadicand >= 0, () -> String.format("rRadicand is negative: %f", rRadicand));
 		double r = sign * SumatraMath.sqrt(rRadicand);
 		double radicand1 = -m / 2 - b2 / 2 - r;
 		double radicand2 = -m / 2 - b2 / 2 + r;

@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.gui.ai.offensive.strategy.view;
 
 import edu.tigers.sumatra.ai.metis.offense.action.RatedOffensiveAction;
@@ -18,6 +14,7 @@ import javax.swing.table.DefaultTableCellRenderer;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
+import java.io.Serial;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Map;
@@ -28,6 +25,7 @@ import java.util.Map;
  */
 public class TeamOffensiveStrategyPanel extends JPanel
 {
+	@Serial
 	private static final long serialVersionUID = 5289153581163080893L;
 
 	private final TableModel playConfigurationTableModel;
@@ -57,6 +55,7 @@ public class TeamOffensiveStrategyPanel extends JPanel
 		offensiveActionsTable.setFillsViewportHeight(true);
 		offensiveActionsTable.setDefaultRenderer(Object.class, new DefaultTableCellRenderer()
 		{
+			@Serial
 			private static final long serialVersionUID = -3070324342817507587L;
 
 
@@ -111,7 +110,7 @@ public class TeamOffensiveStrategyPanel extends JPanel
 			RatedOffensiveAction action = entry.getValue();
 			var botID = entry.getKey();
 			actions[i][0] = botID.toString();
-			actions[i][1] = "invalid";
+			actions[i][1] = action.getAction().getType().toString();
 			actions[i][2] = action.getMove().toString();
 			actions[i][3] = String.valueOf((int) (action.getViability().getScore() * 100) / 100.0);
 			i++;
@@ -130,6 +129,7 @@ public class TeamOffensiveStrategyPanel extends JPanel
 		/**
 		 *
 		 */
+		@Serial
 		private static final long serialVersionUID = -8703476015733916026L;
 		private final String[] columns;
 		private String[][] data;

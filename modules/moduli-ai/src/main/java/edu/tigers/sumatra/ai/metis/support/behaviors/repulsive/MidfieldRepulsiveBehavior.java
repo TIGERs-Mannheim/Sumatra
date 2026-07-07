@@ -1,10 +1,7 @@
-/*
- * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.metis.support.behaviors.repulsive;
 
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.ai.metis.offense.action.RatedOffensiveAction;
 import edu.tigers.sumatra.ai.pandora.plays.EPlay;
 import edu.tigers.sumatra.bot.BotState;
@@ -27,21 +24,21 @@ import java.util.function.Supplier;
  */
 public class MidfieldRepulsiveBehavior extends ARepulsiveBehavior
 {
-	@Configurable(comment = "Defines whether this behavior is active of not", defValue = "true")
+	@Configurable(comment = "Defines whether this behavior is active of not", defValue = "true", unit = EConfigUnit.BOOLEAN)
 	private static boolean enabled = true;
-	@Configurable(comment = "Whether force field should be drawn or not", defValue = "false")
+	@Configurable(comment = "Whether force field should be drawn or not", defValue = "false", unit = EConfigUnit.BOOLEAN)
 	private static boolean drawing = false;
 
-	@Configurable(comment = "[mm]", defValue = "5000.0")
+	@Configurable(defValue = "5000.0", unit = EConfigUnit.DISTANCE_MM)
 	private static double magnitudeCenteringForce = 5000;
 
-	@Configurable(comment = "[mm]", defValue = "3000.0")
+	@Configurable(defValue = "3000.0", unit = EConfigUnit.STD_DEVIATION_MM)
 	private static double sigmaCenteringForce = 3000;
 
-	@Configurable(comment = "[mm]", defValue = "1500.0")
+	@Configurable(defValue = "1500.0", unit = EConfigUnit.DISTANCE_MM)
 	private static double pointOfInterestOffset = 1500;
 
-	@Configurable(comment = "[mm]", defValue = "-2000.0")
+	@Configurable(defValue = "-2000.0", unit = EConfigUnit.DISTANCE_MM)
 	private static double xPosMidfieldNotViable = -2000;
 
 	private final Supplier<Map<EPlay, Set<BotID>>> desiredBots;

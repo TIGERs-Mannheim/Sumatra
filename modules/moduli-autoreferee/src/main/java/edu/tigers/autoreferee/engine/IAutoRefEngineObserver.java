@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.autoreferee.engine;
 
 import edu.tigers.sumatra.referee.gameevent.IGameEvent;

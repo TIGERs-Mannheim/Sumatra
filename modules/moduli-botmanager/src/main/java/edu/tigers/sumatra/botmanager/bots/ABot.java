@@ -1,16 +1,11 @@
-/*
- * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.botmanager.bots;
 
 import edu.tigers.sumatra.bot.EBotType;
 import edu.tigers.sumatra.bot.ERobotHealthState;
 import edu.tigers.sumatra.bot.IBot;
 import edu.tigers.sumatra.bot.params.BotParams;
-import edu.tigers.sumatra.bot.params.IBotParams;
-import edu.tigers.sumatra.botmanager.data.MatchCommand;
 import edu.tigers.sumatra.botmanager.data.BotFeedback;
+import edu.tigers.sumatra.botmanager.data.MatchCommand;
 import edu.tigers.sumatra.botparams.EBotParamLabel;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.ids.ETeamColor;
@@ -29,7 +24,7 @@ public abstract class ABot implements IBot
 	private final BotID botId;
 	private final EBotType type;
 
-	private IBotParams botParams = new BotParams();
+	private BotParams botParams = new BotParams();
 	private TrajectoryWithTime<IVector3> curTrajectory = null;
 	private String controlledBy = "";
 
@@ -127,13 +122,13 @@ public abstract class ABot implements IBot
 
 
 	@Override
-	public final IBotParams getBotParams()
+	public final BotParams getBotParams()
 	{
 		return botParams;
 	}
 
 
-	public void setBotParams(final IBotParams botParams)
+	public void setBotParams(final BotParams botParams)
 	{
 		this.botParams = botParams;
 	}

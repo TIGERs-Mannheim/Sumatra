@@ -1,16 +1,4 @@
-/*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.wp.vis;
-
-import java.awt.Color;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.SortedMap;
-import java.util.TreeMap;
 
 import edu.tigers.sumatra.drawable.DrawablePoint;
 import edu.tigers.sumatra.drawable.DrawableWay;
@@ -24,6 +12,14 @@ import edu.tigers.sumatra.math.vector.VectorMath;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
 import edu.tigers.sumatra.wp.data.WorldFrameWrapper;
 
+import java.awt.Color;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.SortedMap;
+import java.util.TreeMap;
+
 
 /**
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
@@ -31,32 +27,32 @@ import edu.tigers.sumatra.wp.data.WorldFrameWrapper;
 public class BufferVisCalc implements IWpCalc
 {
 	private static final double MIN_ANGLE_DIFF = 0.05;
-	
+
 	private static final double TIME_BALL = 3;
 	private static final double TIME_BOTS = 3;
-	
+
 	private final SortedMap<Long, DrawablePoint> ballShapes = new TreeMap<>();
-	
+
 	private final Map<BotID, SortedMap<Long, IVector2>> buffer = new HashMap<>();
-	
-	
+
+
 	@Override
 	public void process(final WorldFrameWrapper wfw, final ShapeMap shapeMap)
 	{
 		long curTimestamp = wfw.getSimpleWorldFrame().getTimestamp();
-		
+
 		removeOldEntries(curTimestamp);
-		
+
 		addPointsToBuffer(wfw);
-		
+
 		addWayShapes(shapeMap);
-		
+
 		removeOldBallShapes(curTimestamp);
-		
+
 		addNewBallShapes(wfw, shapeMap);
 	}
-	
-	
+
+
 	private void addNewBallShapes(final WorldFrameWrapper wfw, final ShapeMap shapeMap)
 	{
 		IVector2 ballPos = wfw.getSimpleWorldFrame().getBall().getPos();
@@ -74,8 +70,8 @@ public class BufferVisCalc implements IWpCalc
 		}
 		shapeMap.get(EWpShapesLayer.BALL_BUFFER).addAll(ballShapes.values());
 	}
-	
-	
+
+
 	private void removeOldBallShapes(final long curTimestamp)
 	{
 		while (!ballShapes.isEmpty() && (((curTimestamp - ballShapes.firstKey()) / 1e9) > TIME_BALL))
@@ -83,8 +79,8 @@ public class BufferVisCalc implements IWpCalc
 			ballShapes.remove(ballShapes.firstKey());
 		}
 	}
-	
-	
+
+
 	private void addWayShapes(final ShapeMap shapeMap)
 	{
 		List<IDrawableShape> shapes = shapeMap.get(EWpShapesLayer.BOT_BUFFER);
@@ -100,8 +96,8 @@ public class BufferVisCalc implements IWpCalc
 			}
 		}
 	}
-	
-	
+
+
 	private void removeOldEntries(final long curTimestamp)
 	{
 		for (SortedMap<Long, IVector2> path : buffer.values())
@@ -112,8 +108,8 @@ public class BufferVisCalc implements IWpCalc
 			}
 		}
 	}
-	
-	
+
+
 	private void addPointsToBuffer(final WorldFrameWrapper wfw)
 	{
 		for (ITrackedBot bot : wfw.getSimpleWorldFrame().getBots().values())
@@ -131,8 +127,8 @@ public class BufferVisCalc implements IWpCalc
 			}
 		}
 	}
-	
-	
+
+
 	private void addAndFilterPathPoint(final WorldFrameWrapper wfw, final ITrackedBot bot,
 			final SortedMap<Long, IVector2> pathPoints)
 	{
@@ -140,7 +136,7 @@ public class BufferVisCalc implements IWpCalc
 		IVector2 lastPos = allPos.get(allPos.size() - 1);
 		IVector2 preLastPos = allPos.get(allPos.size() - 2);
 		IVector2 lastDir = lastPos.subtractNew(preLastPos);
-		
+
 		IVector2 nextDir = bot.getPos().subtractNew(lastPos);
 		if ((nextDir.getLength2() > 1) && (lastDir.getLength2() > 1))
 		{
@@ -152,8 +148,8 @@ public class BufferVisCalc implements IWpCalc
 			pathPoints.put(wfw.getSimpleWorldFrame().getTimestamp(), bot.getPos());
 		}
 	}
-	
-	
+
+
 	private void addPathPoint(final WorldFrameWrapper wfw, final ITrackedBot bot,
 			final SortedMap<Long, IVector2> pathPoints)
 	{
@@ -164,8 +160,8 @@ public class BufferVisCalc implements IWpCalc
 			pathPoints.put(wfw.getSimpleWorldFrame().getTimestamp(), bot.getPos());
 		}
 	}
-	
-	
+
+
 	@Override
 	public void reset()
 	{

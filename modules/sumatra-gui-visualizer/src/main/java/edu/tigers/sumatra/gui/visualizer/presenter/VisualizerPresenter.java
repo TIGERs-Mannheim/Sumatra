@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.gui.visualizer.presenter;
 
 import edu.tigers.sumatra.clock.ThreadUtil;
@@ -23,9 +19,10 @@ import edu.tigers.sumatra.wp.IWorldFrameObserver;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.log4j.Log4j2;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import javax.swing.AbstractButton;
+import javax.swing.BorderFactory;
 import javax.swing.JTextField;
 import javax.swing.JToggleButton;
 import javax.swing.KeyStroke;
@@ -80,12 +77,7 @@ public class VisualizerPresenter implements ISumatraViewPresenter, IWorldFrameOb
 	{
 		fieldPresenter.getOnFieldClicks().add(ballInteractor::onFieldClick);
 
-		connect(
-				viewPanel.getToolbar().getFancyDrawing(),
-				"fancyPainting",
-				true,
-				fieldPresenter::setFancyPainting
-		);
+		fieldPresenter.getFieldPanel().setBorder(BorderFactory.createBevelBorder(2));
 		connect(
 				viewPanel.getToolbar().getDarkMode(),
 				"darkMode",
@@ -300,7 +292,7 @@ public class VisualizerPresenter implements ISumatraViewPresenter, IWorldFrameOb
 				SumatraModel.getInstance().setUserProperty(propertiesPrefix + category.name(), String.valueOf(noDigIn));
 			}
 		});
-		viewPanel.getShapeSelectionPanel().getTree().updateUI();
+		SwingUtilities.invokeLater(() -> viewPanel.getShapeSelectionPanel().getTree().updateUI());
 	}
 
 

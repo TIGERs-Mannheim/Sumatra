@@ -1,6 +1,3 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra.gui.skills.view;
 
 import edu.tigers.sumatra.math.vector.Vector2;
@@ -16,6 +13,7 @@ import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.io.Serial;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -26,6 +24,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
  */
 public class MotorEnhancedInputPanel extends JPanel
 {
+	@Serial
 	private static final long serialVersionUID = 6741030318432376797L;
 
 	private static final int SIZE = 400;
@@ -36,18 +35,13 @@ public class MotorEnhancedInputPanel extends JPanel
 	private double latestW = 0.0;
 	private Vector2f wpLatest = Vector2f.fromXY(0, 0);
 	private double wpLatestW = 0.0;
-	/**
-	 * [m/s]
-	 */
+
 	private static final double MAX = 6.0;
 	private static final double MAX_W = 10.0;
 
 	private final List<IMotorInputPanelObserver> observers = new CopyOnWriteArrayList<>();
 
 
-	/**
-	 * Constructor.
-	 */
 	public MotorEnhancedInputPanel()
 	{
 		setMinimumSize(new Dimension(SIZE, SIZE + 55));
@@ -68,6 +62,8 @@ public class MotorEnhancedInputPanel extends JPanel
 
 		final Graphics2D g2 = (Graphics2D) g;
 
+		Color fg = getForeground();
+
 		double red = 0.0;
 		double green = 1.0;
 		for (int i = 0; i < 20; i++)
@@ -83,7 +79,8 @@ public class MotorEnhancedInputPanel extends JPanel
 				{
 					red = 1.0;
 				}
-			} else
+			}
+			else
 			{
 				if (green > 0.0)
 				{
@@ -111,7 +108,7 @@ public class MotorEnhancedInputPanel extends JPanel
 				(int) (((SIZE / 2.0) + ((SIZE / MAX) * -latest.y())) - 3), 6, 6
 		);
 
-		g2.setColor(Color.BLACK);
+		g2.setColor(fg);
 		g2.drawRect(
 				(int) (((SIZE / 2.0) + ((SIZE / MAX) * wpLatest.x())) - 3),
 				(int) (((SIZE / 2.0) + ((SIZE / MAX) * -wpLatest.y())) - 3), 6, 6
@@ -124,9 +121,8 @@ public class MotorEnhancedInputPanel extends JPanel
 		g2.setColor(Color.RED);
 		g2.drawArc(3, 3, SIZE - 6, SIZE - 6, 90, (int) ((latestW * 180) / MAX_W));
 
-		g2.setColor(Color.BLACK);
+		g2.setColor(fg);
 		g2.drawArc(6, 6, SIZE - 11, SIZE - 11, 90, (int) ((wpLatestW * 180) / MAX_W));
-
 
 		g2.setColor(Color.BLUE);
 		g2.drawString("Target", 0, SIZE);
@@ -140,29 +136,23 @@ public class MotorEnhancedInputPanel extends JPanel
 		g2.drawString(String.format(Locale.ENGLISH, "Y: %1.2f", latest.y()), SIZE - 50, SIZE + 20);
 		g2.drawString(String.format(Locale.ENGLISH, "W: %1.2f", latestW), SIZE - 50, SIZE + 30);
 
-		g2.setColor(Color.BLACK);
+		g2.setColor(fg);
 		g2.drawString("WP", SIZE - 100, SIZE);
 		g2.drawString(String.format(Locale.ENGLISH, "X: %1.2f", wpLatest.x()), SIZE - 100, SIZE + 10);
 		g2.drawString(String.format(Locale.ENGLISH, "Y: %1.2f", wpLatest.y()), SIZE - 100, SIZE + 20);
 		g2.drawString(String.format(Locale.ENGLISH, "W: %1.2f", wpLatestW), SIZE - 100, SIZE + 30);
 
-		g2.setColor(Color.BLACK);
+		g2.setColor(fg);
 		g2.drawString("Modifiers: ALT, CTRL, SHIFT. Zero all: SPACE", 0, SIZE + 45);
 	}
 
 
-	/**
-	 * @param observer
-	 */
 	public void addObserver(final IMotorInputPanelObserver observer)
 	{
 		observers.add(observer);
 	}
 
 
-	/**
-	 * @param observer
-	 */
 	public void removeObserver(final IMotorInputPanelObserver observer)
 	{
 		observers.remove(observer);
@@ -175,13 +165,11 @@ public class MotorEnhancedInputPanel extends JPanel
 		private boolean yOnly = false;
 		private boolean wModifier = false;
 
-
 		@Override
 		public void mouseClicked(final MouseEvent e)
 		{
 			mouseUpdate(e);
 		}
-
 
 		@Override
 		public void mouseEntered(final MouseEvent e)
@@ -189,13 +177,11 @@ public class MotorEnhancedInputPanel extends JPanel
 			requestFocusInWindow();
 		}
 
-
 		@Override
 		public void mouseDragged(final MouseEvent e)
 		{
 			mouseUpdate(e);
 		}
-
 
 		private void mouseUpdate(final MouseEvent e)
 		{
@@ -223,15 +209,15 @@ public class MotorEnhancedInputPanel extends JPanel
 			if (wModifier)
 			{
 				targetW = ((-xf * MAX_W) / MAX) * 2;
-			} else
+			}
+			else
 			{
 				target = Vector2.fromXY(xf, yf);
 			}
-			notifyNewVelocity(target, targetW);
 
+			notifyNewVelocity(target, targetW);
 			repaint();
 		}
-
 
 		@Override
 		public void keyPressed(final KeyEvent e)
@@ -261,7 +247,6 @@ public class MotorEnhancedInputPanel extends JPanel
 			}
 		}
 
-
 		private void notifyNewVelocity(final Vector2 xy, final double w)
 		{
 			for (final IMotorInputPanelObserver observer : observers)
@@ -269,7 +254,6 @@ public class MotorEnhancedInputPanel extends JPanel
 				observer.onSetSpeed(xy.x(), xy.y(), w);
 			}
 		}
-
 
 		@Override
 		public void keyReleased(final KeyEvent e)
@@ -290,10 +274,8 @@ public class MotorEnhancedInputPanel extends JPanel
 			}
 		}
 
-
 		@Override
-		public void keyTyped(final KeyEvent arg0)
-		{
+		public void keyTyped(final KeyEvent arg0) {
 			// not used
 		}
 	}
@@ -301,11 +283,6 @@ public class MotorEnhancedInputPanel extends JPanel
 	@FunctionalInterface
 	public interface IMotorInputPanelObserver
 	{
-		/**
-		 * @param x
-		 * @param y
-		 * @param w
-		 */
 		void onSetSpeed(double x, double y, double w);
 	}
 }

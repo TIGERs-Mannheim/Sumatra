@@ -1,6 +1,3 @@
-/*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra.wp.data;
 
 import edu.tigers.sumatra.persistence.PersistenceTable;
@@ -26,5 +23,12 @@ public class PersistenceCamDetectionFrame implements PersistenceTable.IEntry<Per
 	public long getKey()
 	{
 		return timestamp;
+	}
+
+
+	@Override
+	public void merge(PersistenceCamDetectionFrame other)
+	{
+		camFrames.putAll(other.camFrames);
 	}
 }

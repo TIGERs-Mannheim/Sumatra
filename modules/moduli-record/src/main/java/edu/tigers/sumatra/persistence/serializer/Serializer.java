@@ -1,24 +1,24 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.persistence.serializer;
 
 import lombok.Getter;
 import lombok.extern.log4j.Log4j2;
 
 import java.io.IOException;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 
 
 /**
  * Abstract class with helper functionality for all Serializers.
+ * <p>
+ * java:S3011: Intentionally bypassing access control checks
  */
 @Log4j2
+@SuppressWarnings("java:S3011")
 public abstract class Serializer<T> implements PrimitiveSerializer<T>, PrimitiveDeserializer<T>
 {
 	protected transient GenericSerializer genericSerializer;
-	private transient Constructor<T> constructor;
+	private transient Allocator<T> constructor;
 
 	/**
 	 * Numerical ID of the serializer, necessary for type reconstruction in GenericSerializer during deserialization.
@@ -50,24 +50,36 @@ public abstract class Serializer<T> implements PrimitiveSerializer<T>, Primitive
 		this.genericSerializer = genericSerializer;
 		this.id = genericSerializer.getSerializerId();
 		this.name = type.getName();
+		initAllocator(type);
 	}
 
 
 	/**
 	 * Necessary for (re-)initialization after metadata deserialization.
 	 */
-	@SuppressWarnings("unchecked")
 	public void transientInit(GenericSerializer genericSerializer)
 	{
 		this.genericSerializer = genericSerializer;
-		Class<T> type = getType();
+		initAllocator(getType());
+	}
 
+
+	@SuppressWarnings("unchecked")
+	private void initAllocator(Class<T> type)
+	{
 		try
 		{
 			constructor = type.getConstructor()::newInstance;
 		} catch (NoSuchMethodException e)
 		{
-			constructor = () -> (T) FieldSerializer.UNSAFE.allocateInstance(type);
+			Constructor<T> ctor = InstanceAllocator.serializationConstructor(type);
+			if (ctor == null)
+			{
+				throw new IllegalStateException(
+						"No zero-arg constructor and ReflectionFactory could not synthesise one for " + type, e);
+			}
+			ctor.setAccessible(true);
+			constructor = ctor::newInstance;
 		}
 	}
 
@@ -79,7 +91,10 @@ public abstract class Serializer<T> implements PrimitiveSerializer<T>, Primitive
 
 
 	/**
-	 * Allocate an instance using a zero argument constructor (if present) or unsafe allocation otherwise.
+	 * Allocate an instance via a zero-arg constructor when available, otherwise via a
+	 * {@link java.lang.reflect.Constructor} synthesised by
+	 * {@code sun.reflect.ReflectionFactory#newConstructorForSerialization} that runs
+	 * only {@code Object.<init>} (matching {@link java.io.ObjectInputStream} semantics).
 	 */
 	protected T allocate() throws IOException
 	{
@@ -100,7 +115,7 @@ public abstract class Serializer<T> implements PrimitiveSerializer<T>, Primitive
 	}
 
 
-	private interface Constructor<T>
+	private interface Allocator<T>
 	{
 		T allocate() throws InstantiationException, IllegalAccessException, InvocationTargetException;
 	}

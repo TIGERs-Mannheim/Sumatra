@@ -1,19 +1,17 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.persistence.serializer;
 
 import edu.tigers.sumatra.ids.EAiTeam;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
@@ -28,6 +26,7 @@ import java.util.Objects;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
 class SerializerTest
@@ -118,6 +117,29 @@ class SerializerTest
 				Paths.get(Objects.requireNonNull(loader.getResource("serializertest_outdated.metadata")).toURI()),
 				Paths.get(Objects.requireNonNull(loader.getResource("serializertest_outdated.db")).toURI())
 		);
+	}
+
+
+	@Test
+	void mappedFileCanBeDeletedAfterClose(@TempDir Path tmp) throws IOException
+	{
+		Path db = tmp.resolve("unmap-probe.db");
+		try (MappedDataOutputStream stream = new MappedDataOutputStream(db))
+		{
+			// Force at least one mmap allocation
+			for (int i = 0; i < 16; i++)
+			{
+				stream.write((byte) i);
+			}
+		}
+
+		// On Windows, this fails with AccessDeniedException if the mapped
+		// region wasn't released — the OS keeps the file locked while a
+		// section is mapped. Acts as a regression guard for the Arena/cleaner
+		// swap in MappedDataOutputStream#closeBuffer.
+		Files.delete(db);
+
+		assertTrue(Files.notExists(db), "Mapped file should be deletable after stream is closed");
 	}
 
 

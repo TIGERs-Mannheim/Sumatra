@@ -1,13 +1,8 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.integration;
 
 import com.github.g3force.configurable.ConfigRegistration;
 import edu.tigers.sumatra.ai.AIInfoFrame;
 import edu.tigers.sumatra.ai.BaseAiFrame;
-import edu.tigers.sumatra.ai.ares.AresData;
 import edu.tigers.sumatra.ai.athena.Athena;
 import edu.tigers.sumatra.ai.athena.AthenaAiFrame;
 import edu.tigers.sumatra.ai.metis.Metis;
@@ -26,6 +21,7 @@ import edu.tigers.sumatra.model.SumatraModel;
 import edu.tigers.sumatra.referee.data.GameState;
 import edu.tigers.sumatra.referee.data.RefereeMsg;
 import edu.tigers.sumatra.referee.proto.SslGcRefereeMessage;
+import edu.tigers.sumatra.skillsystem.DummySkillSystem;
 import edu.tigers.sumatra.snapshot.Snapshot;
 import edu.tigers.sumatra.wp.data.BallContact;
 import edu.tigers.sumatra.wp.data.ITrackedBall;
@@ -76,15 +72,15 @@ public abstract class AAiIntegrationTest
 	private boolean athenaCalled;
 	private boolean startCalled;
 
-	protected static LogEventWatcher logEventWatcher = new LogEventWatcher(Level.WARN, Level.ERROR);
+	protected static final LogEventWatcher LOG_EVENT_WATCHER = new LogEventWatcher(Level.WARN, Level.ERROR);
 
 
 	@BeforeAll
 	public static void beforeClass()
 	{
 		ConfigRegistration.setDefPath("../../config/");
-		logEventWatcher.clear();
-		logEventWatcher.start();
+		LOG_EVENT_WATCHER.clear();
+		LOG_EVENT_WATCHER.start();
 		SumatraModel.getInstance().setCurrentModuliConfig(MODULI_CONFIG);
 		SumatraModel.getInstance().loadModulesOfConfigSafe(MODULI_CONFIG);
 		Geometry.refresh();
@@ -95,7 +91,7 @@ public abstract class AAiIntegrationTest
 	@AfterAll
 	public static void afterClass()
 	{
-		logEventWatcher.stop();
+		LOG_EVENT_WATCHER.stop();
 	}
 
 
@@ -105,7 +101,7 @@ public abstract class AAiIntegrationTest
 		metisAiFrame = null;
 		athenaAiFrame = null;
 		metis = new Metis();
-		athena = new Athena();
+		athena = new Athena(DummySkillSystem.create());
 		metisCalled = false;
 		athenaCalled = false;
 		startCalled = false;
@@ -115,7 +111,7 @@ public abstract class AAiIntegrationTest
 	@AfterEach
 	public void after()
 	{
-		logEventWatcher.clear();
+		LOG_EVENT_WATCHER.clear();
 	}
 
 
@@ -124,7 +120,7 @@ public abstract class AAiIntegrationTest
 	 */
 	protected void assertNoErrorLog()
 	{
-		assertThat(logEventWatcher.getEvents(Level.ERROR)).isEmpty();
+		assertThat(LOG_EVENT_WATCHER.getEvents(Level.ERROR)).isEmpty();
 	}
 
 
@@ -133,7 +129,19 @@ public abstract class AAiIntegrationTest
 	 */
 	protected void assertNoWarnLog()
 	{
-		assertThat(logEventWatcher.getEvents(Level.WARN)).isEmpty();
+		assertThat(LOG_EVENT_WATCHER.getEvents(Level.WARN)).isEmpty();
+	}
+
+
+	/**
+	 * Check if there were warning logs during simulation
+	 */
+	protected void assertNoWarnLogIgnoringDesperationOver9000()
+	{
+		assertThat(LOG_EVENT_WATCHER.getEvents(Level.WARN).stream()
+				.filter(logEvent -> !logEvent.getMessage().getFormattedMessage()
+						.contains("No offensive action has been declared... desperation level > 9000"))
+				.toList()).isEmpty();
 	}
 
 
@@ -204,7 +212,6 @@ public abstract class AAiIntegrationTest
 		prevFrame = AIInfoFrame.builder()
 				.baseAiFrame(baseAiFrame)
 				.athenaAiFrame(athenaAiFrame)
-				.aresData(new AresData())
 				.build();
 
 		long timestamp = wfw.getSimpleWorldFrame().getTimestamp() + 16_000_000;

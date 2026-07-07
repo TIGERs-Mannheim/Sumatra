@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.botmanager.bots;
 
 import edu.tigers.sumatra.bot.BotBallState;
@@ -16,7 +12,7 @@ import edu.tigers.sumatra.botmanager.ICommandSink;
 import edu.tigers.sumatra.botmanager.botskills.data.EKickerDevice;
 import edu.tigers.sumatra.botmanager.commands.ACommand;
 import edu.tigers.sumatra.botmanager.commands.basestation.BaseStationACommand;
-import edu.tigers.sumatra.botmanager.commands.basestation.BaseStationWifiStats;
+import edu.tigers.sumatra.botmanager.commands.basestation.BaseStationWifiStatsV2;
 import edu.tigers.sumatra.botmanager.commands.tigerv2.TigerSystemConsolePrint;
 import edu.tigers.sumatra.botmanager.commands.tigerv2.TigerSystemMatchCtrl;
 import edu.tigers.sumatra.botmanager.commands.tigerv2.TigerSystemMatchFeedback;
@@ -44,7 +40,7 @@ public class CommandBasedBot extends ABot implements ICommandSink
 
 	@Getter
 	@Setter
-	private BaseStationWifiStats.BotStats wifiStats = new BaseStationWifiStats.BotStats();
+	private BaseStationWifiStatsV2.BotStats wifiStats = new BaseStationWifiStatsV2.BotStats();
 
 
 	protected CommandBasedBot(final EBotType type, final BotID id, final ICommandSink commandSink)

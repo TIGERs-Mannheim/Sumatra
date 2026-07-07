@@ -1,19 +1,11 @@
-/*
- * *********************************************************
- * Copyright (c) 2009 - 2014, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Mar 17, 2014
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
- */
 package com.github.g3force.configurable;
 
 import com.github.g3force.s2vconverter.String2ValueConverter;
 import org.apache.commons.configuration.HierarchicalConfiguration;
 import org.apache.commons.configuration.tree.ConfigurationNode;
-import org.apache.commons.lang.StringEscapeUtils;
-import org.apache.commons.lang.builder.EqualsBuilder;
-import org.apache.commons.lang.builder.HashCodeBuilder;
+import org.apache.commons.lang3.StringEscapeUtils;
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -53,6 +45,7 @@ public class ConfigAnnotationProcessor
 		private String fieldDefValue = "";
 		private String comment = "";
 		private String[] tags = {};
+		private String fieldUnit = "";
 		private Class<?> fieldType;
 
 
@@ -94,6 +87,7 @@ public class ConfigAnnotationProcessor
 					.append(comment, that.comment)
 					.append(tags, that.tags)
 					.append(fieldType, that.fieldType)
+					.append(fieldUnit, that.fieldUnit)
 					.isEquals();
 		}
 
@@ -110,6 +104,7 @@ public class ConfigAnnotationProcessor
 					.append(comment)
 					.append(tags)
 					.append(fieldType)
+					.append(fieldUnit)
 					.toHashCode();
 		}
 	}
@@ -177,6 +172,7 @@ public class ConfigAnnotationProcessor
 					fieldNode.getValue()));
 			String comment = getAttribute(fieldNode, "comment");
 			String[] tags = getAttribute(fieldNode, "tags").split(" ");
+			String unit = getAttribute(fieldNode, "unit");
 			ConfigurableFieldData fieldData = new ConfigurableFieldData();
 			fieldData.className = className;
 			fieldData.fieldName = fieldName;
@@ -184,6 +180,7 @@ public class ConfigAnnotationProcessor
 			fieldData.fieldValue = fieldValue;
 			fieldData.comment = comment;
 			fieldData.tags = tags;
+			fieldData.fieldUnit = unit;
 			if (data.containsKey(fieldData.getKey()))
 			{
 				data.get(fieldData.getKey()).fieldValue = fieldValue;
@@ -227,6 +224,7 @@ public class ConfigAnnotationProcessor
 					fdCur.fieldDefValue = fd.fieldDefValue;
 					fdCur.fieldType = fd.fieldType;
 					fdCur.tags = fd.tags;
+					fdCur.fieldUnit = fd.fieldUnit;
 				}
 			}
 		}
@@ -476,6 +474,7 @@ public class ConfigAnnotationProcessor
 						fieldData.fieldType.getName());
 				cfg.addProperty(clazzKey + "." + fieldData.fieldName + spezi + "[@tags]", escape(
 						String.join(" ", fieldData.tags)));
+				cfg.addProperty(clazzKey + "." + fieldData.fieldName + spezi + "[@unit]", fieldData.fieldUnit);
 			}
 			config.append(cfg);
 		}
@@ -595,6 +594,7 @@ public class ConfigAnnotationProcessor
 				if (cat.isEmpty() || cat.equals(category))
 				{
 					String[] tags = conf.tags();
+					String unit = conf.unit().getStringRepresentation();
 					String comment = conf.comment();
 					String[] declaredSpezis = conf.spezis();
 
@@ -656,6 +656,7 @@ public class ConfigAnnotationProcessor
 						fieldDataSpezi.comment = comment;
 						fieldDataSpezi.tags = tags;
 						fieldDataSpezi.fieldType = type;
+						fieldDataSpezi.fieldUnit = unit;
 						dataRead.add(fieldDataSpezi);
 						speziId++;
 					}

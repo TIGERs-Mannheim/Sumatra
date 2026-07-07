@@ -1,11 +1,6 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.bot;
 
 import edu.tigers.sumatra.bot.params.BotParams;
-import edu.tigers.sumatra.bot.params.IBotParams;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.IMirrorable;
 import edu.tigers.sumatra.math.vector.IVector3;
@@ -54,7 +49,9 @@ public class RobotInfo implements IMirrorable<RobotInfo>
 	@NonNull
 	private final Float kickerLevelRelative;
 	@NonNull
-	private final Float dribbleSpeed;
+	private final Float dribbleSpeedSet;
+	@NonNull
+	private final Float dribbleSpeedFeedback;
 	@Getter
 	private final int hardwareId;
 	private final BotState internalState;
@@ -62,7 +59,7 @@ public class RobotInfo implements IMirrorable<RobotInfo>
 	private final boolean barrierInterrupted;
 	@Getter
 	@NonNull
-	private final IBotParams botParams;
+	private final BotParams botParams;
 	@Getter
 	private final ERobotHealthState healthState;
 	@Getter
@@ -71,7 +68,7 @@ public class RobotInfo implements IMirrorable<RobotInfo>
 	private final BotBallState ballState;
 
 
-	private RobotInfo(final BotID botId, final long timestamp)
+	private RobotInfo(final @NonNull BotID botId, final long timestamp)
 	{
 		this.botId = botId;
 		this.timestamp = timestamp;
@@ -84,7 +81,8 @@ public class RobotInfo implements IMirrorable<RobotInfo>
 		armed = false;
 		batteryRelative = 0.0f;
 		kickerLevelRelative = 0.0f;
-		dribbleSpeed = 0.0f;
+		dribbleSpeedSet = 0.0f;
+		dribbleSpeedFeedback = 0.0f;
 		hardwareId = 255;
 		internalState = null;
 		barrierInterrupted = false;
@@ -199,9 +197,14 @@ public class RobotInfo implements IMirrorable<RobotInfo>
 	}
 
 
-	public float getDribbleSpeed()
+	public float getDribbleSpeedSet()
 	{
-		return dribbleSpeed;
+		return dribbleSpeedSet;
+	}
+
+	public float getDribbleSpeedFeedback()
+	{
+		return dribbleSpeedFeedback;
 	}
 
 

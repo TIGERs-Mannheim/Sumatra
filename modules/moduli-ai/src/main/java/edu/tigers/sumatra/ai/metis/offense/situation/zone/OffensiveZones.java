@@ -1,11 +1,8 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.metis.offense.situation.zone;
 
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.drawable.DrawableAnnotation;
 import edu.tigers.sumatra.drawable.DrawableRectangle;
 import edu.tigers.sumatra.drawable.IDrawableShape;
@@ -27,19 +24,19 @@ public class OffensiveZones
 {
 	private final Map<EOffensiveZone, OffensiveZone> zones = new EnumMap<>(EOffensiveZone.class);
 
-	@Configurable(defValue = "800.0")
+	@Configurable(defValue = "800.0", unit = EConfigUnit.DISTANCE_MM)
 	private static double penAreaAttackerSidesMargin = 800.0;
 
-	@Configurable(defValue = "1300.0")
+	@Configurable(defValue = "1300.0", unit = EConfigUnit.DISTANCE_MM)
 	private static double centerAttackerZoneWidth = 1300.0;
 
-	@Configurable(defValue = "3300.0")
+	@Configurable(defValue = "3300.0", unit = EConfigUnit.DISTANCE_MM)
 	private static double closeMidfieldCenterWidth = 3300.0;
 
-	@Configurable(defValue = "1800.0")
+	@Configurable(defValue = "1800.0", unit = EConfigUnit.DISTANCE_MM)
 	private static double closeMidfieldCenterLength = 1800.0;
 
-	@Configurable(defValue = "3000.0")
+	@Configurable(defValue = "3000.0", unit = EConfigUnit.DISTANCE_MM)
 	private static double midfieldLength = 3000.0;
 
 	static

@@ -1,11 +1,8 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.metis.m2mmarking;
 
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.ai.metis.defense.data.IDefenseThreat;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.BotID;
@@ -23,10 +20,10 @@ import java.util.Optional;
 public class Man2ManMarkerPositionFinder
 {
 
-	@Configurable(defValue = "70.0", comment = "Distance from bot center to protection line below with optimization on the protection line is allowed")
+	@Configurable(defValue = "70.0", comment = "Distance from bot center to protection line below with optimization on the protection line is allowed", unit = EConfigUnit.DISTANCE_MM)
 	private static double minDistToProtectionLine = 70.0;
 
-	@Configurable(defValue = "true", comment = "Drive to ball line first, then towards marked bot")
+	@Configurable(defValue = "true", comment = "Drive to ball line first, then towards marked bot", unit = EConfigUnit.BOOLEAN)
 	private static boolean moveToBallLineFirst = true;
 
 	static

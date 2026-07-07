@@ -1,11 +1,8 @@
-/*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.metis.pass.rating;
 
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.ai.metis.kicking.Pass;
 import edu.tigers.sumatra.ai.metis.offense.OffensiveConstants;
 import edu.tigers.sumatra.ai.metis.offense.dribble.finisher.FinisherMoveShape;
@@ -15,6 +12,7 @@ import edu.tigers.sumatra.ai.metis.targetrater.RatedTarget;
 import edu.tigers.sumatra.drawable.DrawableCircle;
 import edu.tigers.sumatra.drawable.IDrawableShape;
 import edu.tigers.sumatra.geometry.Geometry;
+import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.SumatraMath;
 import edu.tigers.sumatra.math.circle.Circle;
 import edu.tigers.sumatra.math.circle.ICircle;
@@ -30,33 +28,40 @@ import java.util.Optional;
  */
 public class FinisherRater extends APassRater
 {
-	@Configurable(defValue = "0.5")
+	@Configurable(defValue = "0.5", unit = EConfigUnit.PERCENTAGE)
 	private static double bestImprovement = 0.5;
 
-	@Configurable(defValue = "0.8")
+	@Configurable(defValue = "0.8", unit = EConfigUnit.FACTOR)
 	private static double finisherPenaltyFactor = 0.8;
 
-	@Configurable(defValue = "0.5")
+	@Configurable(defValue = "0.5", unit = EConfigUnit.FACTOR)
 	private static double timeToKickFactor = 0.5;
+
+	private final Collection<ITrackedBot> obstacles;
+	private final BotID opponentKeeperId;
 
 	static
 	{
 		ConfigRegistration.registerClass("metis", FinisherRater.class);
 	}
 
-	private final AngleRangeRater rater = AngleRangeRater.forGoal(Geometry.getGoalTheir());
 
-
-	public FinisherRater(Collection<ITrackedBot> obstacles)
+	public FinisherRater(Collection<ITrackedBot> obstacles, BotID opponentKeeperId)
 	{
-		rater.setObstacles(obstacles);
+		this.obstacles = obstacles;
+		this.opponentKeeperId = opponentKeeperId;
 	}
 
 
 	@Override
 	public double rate(Pass pass)
 	{
-		rater.setTimeToKick(pass.getPreparationTime() + pass.getDuration() * timeToKickFactor);
+		AngleRangeRater rater = AngleRangeRater.forGoal(Geometry.getGoalTheir());
+		rater.setKeeperID(opponentKeeperId);
+		rater.setObstacles(this.obstacles.stream()
+				.filter(bot -> !bot.getBotId().equals(pass.getShooter()) && !bot.getBotId().equals(pass.getReceiver()))
+				.toList());
+		rater.setTimeToKick(pass.getOpponentPreparationTime() + pass.getDuration() * timeToKickFactor);
 
 		FinisherMoveShape shape = FinisherMoveShape.generateFinisherMoveMovementShape(pass.getKick().getTarget());
 		var posOnShape = shape.stepOnShape(shape.getStepPositionOnShape(pass.getKick().getTarget()));
@@ -70,7 +75,8 @@ public class FinisherRater extends APassRater
 		var ratedSource = rater.rate(pass.getKick().getSource())
 				.orElseGet(() -> RatedTarget.ratedPoint(Geometry.getGoalTheir().getCenter(), 0));
 
-		ICircle dribblingCircle = Circle.createCircle(pass.getKick().getTarget(), OffensiveConstants.getMaxDribblingLength());
+		ICircle dribblingCircle = Circle.createCircle(
+				pass.getKick().getTarget(), OffensiveConstants.getMaxDribblingLength());
 		var samples = shape.sampleAlongFinisherMoveShape(dribblingCircle);
 
 		drawMany(() -> samples.stream().map(e -> new DrawableCircle(Circle.createCircle(e, 100)))

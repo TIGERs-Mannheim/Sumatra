@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.pandora.plays.match;
 
 import edu.tigers.sumatra.ai.metis.support.behaviors.ESupportBehavior;
@@ -33,14 +29,7 @@ public class SupportPlay extends APlay
 			var target = getTacticalField().getSupportViabilities().get(role.getBotID()).get(behavior);
 			role.setBehavior(behavior);
 			role.setTarget(target);
-			role.setAvoidPassesFromOffensive(avoidPassesFromOffensive(behavior));
 		}
-	}
-
-
-	private boolean avoidPassesFromOffensive(ESupportBehavior behavior)
-	{
-		return behavior != ESupportBehavior.FAKE_PASS_RECEIVER;
 	}
 
 

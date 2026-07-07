@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.math.penaltyarea;
 
 import edu.tigers.sumatra.math.AngleMath;

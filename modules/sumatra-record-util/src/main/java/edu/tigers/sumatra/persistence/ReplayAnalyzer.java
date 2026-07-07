@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.persistence;
 
 import edu.tigers.sumatra.ai.AIInfoFrame;
@@ -62,7 +58,7 @@ public class ReplayAnalyzer
 		db.add(WorldFrameWrapper.class, EPersistenceKeyType.SUMATRA_TIMESTAMP);
 		PersistenceTable<WorldFrameWrapper> wfwTable = db.getTable(WorldFrameWrapper.class);
 
-		ASkillSystem skillSystem = GenericSkillSystem.forAnalysis();
+		ASkillSystem skillSystem = GenericSkillSystem.create();
 		agents.put(ETeamColor.YELLOW, new Ai(EAiTeam.YELLOW, skillSystem));
 		agents.put(ETeamColor.BLUE, new Ai(EAiTeam.BLUE, skillSystem));
 

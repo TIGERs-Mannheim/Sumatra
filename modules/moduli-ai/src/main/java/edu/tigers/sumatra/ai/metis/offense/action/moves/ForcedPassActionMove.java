@@ -1,12 +1,8 @@
-/*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.metis.offense.action.moves;
 
 import edu.tigers.sumatra.ai.metis.offense.action.EActionViability;
-import edu.tigers.sumatra.ai.metis.offense.action.RatedOffensiveAction;
 import edu.tigers.sumatra.ai.metis.offense.action.OffensiveActionViability;
+import edu.tigers.sumatra.ai.metis.offense.action.RatedOffensiveAction;
 import edu.tigers.sumatra.ai.metis.pass.KickOrigin;
 import edu.tigers.sumatra.ai.metis.pass.rating.RatedPass;
 import edu.tigers.sumatra.ids.BotID;
@@ -45,7 +41,7 @@ public class ForcedPassActionMove extends AOffensiveActionMove
 						.buildPass(
 								EOffensiveActionMove.FORCED_PASS,
 								calcViability(ratedPass),
-								ratedPass.getPass()
+								ratedPass
 						));
 	}
 }

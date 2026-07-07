@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.math;
 
 import edu.tigers.sumatra.math.boundary.IShapeBoundary;
@@ -14,7 +10,7 @@ import edu.tigers.sumatra.math.line.ILine;
 import edu.tigers.sumatra.math.line.ILineSegment;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.VectorDistinctStreamFilter;
-import org.apache.commons.lang.NotImplementedException;
+import org.apache.commons.lang3.NotImplementedException;
 
 import java.util.List;
 

@@ -1,14 +1,11 @@
-/*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.bot;
 
-import java.awt.*;
+import java.awt.Color;
+
 
 /**
  * Primary robot mode.
- * 
+ *
  * @author UlrikeL
  */
 public enum ERobotMode {

@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.pandora.plays.standard.cheerings;
 
 import com.github.g3force.instanceables.IInstanceableEnum;

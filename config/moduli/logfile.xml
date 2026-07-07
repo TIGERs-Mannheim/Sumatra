@@ -65,7 +65,10 @@
 
 
     <module id="edu.tigers.sumatra.skillsystem.ASkillSystem">
-        <implementation>edu.tigers.sumatra.skillsystem.DummySkillSystem</implementation>
+        <implementation>edu.tigers.sumatra.skillsystem.GenericSkillSystem</implementation>
+
+        <dependency>edu.tigers.sumatra.botmanager.BotManager</dependency>
+        <dependency>edu.tigers.sumatra.wp.AWorldPredictor</dependency>
     </module>
 
 

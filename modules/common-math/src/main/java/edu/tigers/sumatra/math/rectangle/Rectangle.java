@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.math.rectangle;
 
 import edu.tigers.sumatra.math.AngleMath;
@@ -9,7 +5,7 @@ import edu.tigers.sumatra.math.SumatraMath;
 import edu.tigers.sumatra.math.line.ILineSegment;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2f;
-import org.apache.commons.lang.builder.HashCodeBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 
 /**

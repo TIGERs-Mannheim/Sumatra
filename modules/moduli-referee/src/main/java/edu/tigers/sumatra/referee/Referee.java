@@ -1,6 +1,3 @@
-/*
- * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra.referee;
 
 import edu.tigers.sumatra.clock.NanoTime;
@@ -23,7 +20,7 @@ import edu.tigers.sumatra.referee.source.NetworkRefereeReceiver;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.extern.log4j.Log4j2;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import java.io.File;
 import java.io.IOException;

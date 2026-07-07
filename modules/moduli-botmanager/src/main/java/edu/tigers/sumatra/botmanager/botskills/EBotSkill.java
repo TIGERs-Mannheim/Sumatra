@@ -1,6 +1,3 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra.botmanager.botskills;
 
 import com.github.g3force.instanceables.IInstanceableEnum;
@@ -85,8 +82,9 @@ public enum EBotSkill implements IInstanceableEnum
 			new InstanceableParameter(Double.TYPE, "velMax", "3"),
 			new InstanceableParameter(Double.TYPE, "velMaxW", "10"),
 			new InstanceableParameter(Double.TYPE, "accMax", "3"),
-			new InstanceableParameter(Double.TYPE, "accMaxW", "50"),
-			new InstanceableParameter(Double.TYPE, "accMaxFast", "5"))),
+			new InstanceableParameter(Double.TYPE, "accMaxW", "50")
+	)
+	),
 
 	CIRCLE_BALL(8, new InstanceableClass<>(BotSkillCircleBall.class,
 			new InstanceableParameter(Double.TYPE, "speeed", "1"),

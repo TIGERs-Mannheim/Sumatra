@@ -1,10 +1,7 @@
-/*
- * Copyright (c) 2009 - 2019, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.metis.offense;
 
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.ai.metis.ACalculator;
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
 import edu.tigers.sumatra.ai.metis.kicking.Kick;
@@ -37,10 +34,10 @@ import java.util.function.Supplier;
 @RequiredArgsConstructor
 public class BallHandlingSkillMovementCalc extends ACalculator
 {
-	@Configurable(defValue = "300.0", comment = "[mm] max dist to consider opponent bots")
+	@Configurable(defValue = "300.0", comment = "max dist to consider opponent bots", unit = EConfigUnit.DISTANCE_MM)
 	private static double maxOpponentDist = 300.0;
 
-	@Configurable(defValue = "30.0", comment = "[degree] angles to target smaller than this will not require a special movement direction")
+	@Configurable(defValue = "30.0", comment = "angles to target smaller than this will not require a special movement direction", unit = EConfigUnit.ANGLE_DEG)
 	private static double noSpecialMovementAngle = 30.0;
 
 	private final Supplier<DribbleToPos> dribbleToPos;

@@ -1,10 +1,7 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.pandora.roles.offense;
 
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
 import edu.tigers.sumatra.ai.metis.botdistance.BotDistance;
 import edu.tigers.sumatra.ai.pandora.roles.ARole;
@@ -24,7 +21,7 @@ import java.awt.Color;
 
 public class OpponentInterceptionRole extends ARole
 {
-	@Configurable(defValue = "true")
+	@Configurable(defValue = "true", unit = EConfigUnit.BOOLEAN)
 	private static boolean smartDistanceCalcAllowedForInterceptor = true;
 
 

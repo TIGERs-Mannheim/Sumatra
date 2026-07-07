@@ -1,6 +1,3 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra.gui.botparams.view;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -61,6 +58,7 @@ public class TeamEditor extends JPanel
 	private JTreeTableJson treetable;
 	private Set<String> teamNames = new HashSet<>();
 	private JCheckBox enableAutoChoice;
+	private JCheckBox enableAutoAdaption;
 
 
 	public TeamEditor()
@@ -81,6 +79,16 @@ public class TeamEditor extends JPanel
 			}
 		});
 		add(enableAutoChoice, "span 3, grow");
+
+		enableAutoAdaption = new JCheckBox(
+				"Enable automatic adaption of opponents by referee information (no effect in simulation).");
+		enableAutoAdaption.addItemListener(e -> {
+			for (ITeamEditorObserver observer : observers)
+			{
+				observer.onEnableAutoOpponentAdaption(e.getStateChange() == ItemEvent.SELECTED);
+			}
+		});
+		add(enableAutoAdaption, "span 3, grow");
 
 		for (EBotParamLabel paramLabel : EBotParamLabel.values())
 		{
@@ -163,6 +171,12 @@ public class TeamEditor extends JPanel
 	public void setInitialValueAutoSelection(boolean enable)
 	{
 		enableAutoChoice.setSelected(enable);
+	}
+
+
+	public void setInitialValueAutoAdaption(boolean enable)
+	{
+		enableAutoAdaption.setSelected(enable);
 	}
 
 
@@ -294,6 +308,8 @@ public class TeamEditor extends JPanel
 		 * @param enable
 		 */
 		void onEnableAutoOpponentChoice(boolean enable);
+
+		void onEnableAutoOpponentAdaption(boolean enable);
 	}
 
 	/**

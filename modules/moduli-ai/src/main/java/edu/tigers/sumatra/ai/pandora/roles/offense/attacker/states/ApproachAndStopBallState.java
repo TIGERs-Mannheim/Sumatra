@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.pandora.roles.offense.attacker.states;
 
 
@@ -23,7 +19,7 @@ public class ApproachAndStopBallState extends AAttackerRoleState<ApproachAndStop
 	{
 		skill.setSucceedEarly(true);
 		skill.setSucceedEarlyVel(OffensiveConstants.getBallIsRollingThreshold());
-		skill.getMoveCon().setObstacleAvoidanceMode(EObstacleAvoidanceMode.AGGRESSIVE);
+		skill.setMoveCon(skill.getMoveCon().withObstacleAvoidanceMode(EObstacleAvoidanceMode.AGGRESSIVE));
 
 		var dribblingInformation = getRole().getAiFrame().getTacticalField().getDribblingInformation();
 		boolean violationImminent = dribblingInformation.isDribblingInProgress() && dribblingInformation.isViolationImminent();

@@ -1,11 +1,9 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra.gui.kick.presenter;
 
 import edu.tigers.sumatra.gui.kick.presenter.sample.BallSamplePresenter;
-import edu.tigers.sumatra.gui.kick.presenter.sample.KickSamplePresenter;
+import edu.tigers.sumatra.gui.kick.presenter.sample.ChipKickSamplePresenter;
 import edu.tigers.sumatra.gui.kick.presenter.sample.RedirectSamplePresenter;
+import edu.tigers.sumatra.gui.kick.presenter.sample.StraightKickSamplePresenter;
 import edu.tigers.sumatra.gui.kick.view.BallKickIdentPanel;
 import edu.tigers.sumatra.model.SumatraModel;
 import edu.tigers.sumatra.modelidentification.ModelIdentificationModule;
@@ -30,7 +28,8 @@ public class BallKickIdentPresenter implements ISumatraViewPresenter
 	@Getter
 	private BallKickIdentPanel viewPanel = new BallKickIdentPanel();
 
-	private KickSamplePresenter kickPresenter;
+	private StraightKickSamplePresenter straigthKickPresenter;
+	private ChipKickSamplePresenter chipKickPresenter;
 	private RedirectSamplePresenter redirectPresenter;
 	private Map<EBallModelIdentType, BallSamplePresenter> ballPresenters = new EnumMap<>(EBallModelIdentType.class);
 
@@ -49,10 +48,12 @@ public class BallKickIdentPresenter implements ISumatraViewPresenter
 					.subscribe(getClass().getCanonicalName(), this::onDatabaseChanged);
 			var database = modelIdentificationModule.getKickSpeedObserver().getDatabase();
 
-			kickPresenter = new KickSamplePresenter(database.getKickSamples());
+			straigthKickPresenter = new StraightKickSamplePresenter(database.getKickSamples());
+			chipKickPresenter = new ChipKickSamplePresenter(database.getKickSamples());
 			redirectPresenter = new RedirectSamplePresenter(database.getRedirectSamples());
 
-			viewPanel.getTabs().add("Kick Model", kickPresenter.getContainer());
+			viewPanel.getTabs().add("Straight Kick Model", straigthKickPresenter.getContainer());
+			viewPanel.getTabs().add("Chip Kick Model", chipKickPresenter.getContainer());
 			viewPanel.getTabs().add("Redirect Model", redirectPresenter.getContainer());
 
 			for (EBallModelIdentType type : EBallModelIdentType.values())
@@ -83,7 +84,8 @@ public class BallKickIdentPresenter implements ISumatraViewPresenter
 
 			SwingUtilities.invokeLater(() -> viewPanel.getTabs().removeAll());
 
-			kickPresenter = null;
+			straigthKickPresenter = null;
+			chipKickPresenter = null;
 			redirectPresenter = null;
 			ballPresenters.clear();
 
@@ -96,7 +98,8 @@ public class BallKickIdentPresenter implements ISumatraViewPresenter
 
 	private void onDatabaseChanged(KickDatabase kickDatabase)
 	{
-		kickPresenter.update();
+		straigthKickPresenter.update();
+		chipKickPresenter.update();
 		redirectPresenter.update();
 		for (BallSamplePresenter presenter : ballPresenters.values())
 		{

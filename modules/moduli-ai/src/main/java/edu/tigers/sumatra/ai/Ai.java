@@ -1,11 +1,5 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai;
 
-import edu.tigers.sumatra.ai.ares.Ares;
-import edu.tigers.sumatra.ai.ares.AresData;
 import edu.tigers.sumatra.ai.athena.Athena;
 import edu.tigers.sumatra.ai.athena.AthenaAiFrame;
 import edu.tigers.sumatra.ai.athena.EAIControlState;
@@ -31,9 +25,9 @@ public class Ai
 	private long lastRefMsgCounter = -1;
 
 	private final Metis metis = new Metis();
-	private final Athena athena = new Athena();
+	private final Athena athena;
 	private final EAiTeam aiTeam;
-	private final Ares ares;
+	private final ASkillSystem skillSystem;
 	private final TimeSeriesStatisticsSaver timeSeriesStatisticsSaver = new TimeSeriesStatisticsSaver();
 
 
@@ -46,7 +40,8 @@ public class Ai
 	public Ai(EAiTeam aiTeam, ASkillSystem skillSystem)
 	{
 		this.aiTeam = aiTeam;
-		ares = new Ares(skillSystem);
+		this.skillSystem = skillSystem;
+		this.athena = new Athena(skillSystem);
 	}
 
 
@@ -70,7 +65,7 @@ public class Ai
 	 */
 	public void stop()
 	{
-		ares.getSkillSystem().emergencyStop(aiTeam.getTeamColor());
+		skillSystem.emergencyStop(aiTeam.getTeamColor());
 		metis.stop();
 	}
 
@@ -113,18 +108,13 @@ public class Ai
 			// Analyze
 			metisAiFrame = metis.process(baseAiFrame);
 
-			// Choose and calculate behavior
+			// Choose and calculate behavior, execute skills, collect bot AI info
 			athenaAiFrame = athena.process(metisAiFrame);
-
-			// Execute!
-			AresData aresData = new AresData();
-			ares.process(athenaAiFrame, aresData);
 
 			// ### Populate used AIInfoFrame (for visualization etc)
 			previousAIFrame = AIInfoFrame.builder()
 					.baseAiFrame(baseAiFrame)
 					.athenaAiFrame(athenaAiFrame)
-					.aresData(aresData)
 					.build();
 			captureTimeSeriesStats(startTime, previousAIFrame);
 			return previousAIFrame;
@@ -144,7 +134,7 @@ public class Ai
 				athena.onException(athenaAiFrame);
 			}
 
-			ares.getSkillSystem().reset(aiTeam.getTeamColor());
+			skillSystem.reset(aiTeam.getTeamColor());
 
 			previousAIFrame.cleanUp();
 			previousAIFrame = AIInfoFrame.fromBaseAiFrame(baseAiFrame);

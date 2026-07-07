@@ -1,10 +1,7 @@
-/*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.skillsystem.skills;
 
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.drawable.DrawableAnnotation;
 import edu.tigers.sumatra.drawable.DrawableCircle;
 import edu.tigers.sumatra.geometry.Geometry;
@@ -13,7 +10,6 @@ import edu.tigers.sumatra.ids.ETeam;
 import edu.tigers.sumatra.math.AngleMath;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
-import edu.tigers.sumatra.pathfinder.TrajectoryGenerator;
 import edu.tigers.sumatra.skillsystem.ESkillShapesLayer;
 import edu.tigers.sumatra.skillsystem.skills.redirect.RedirectConsultantFactory;
 import edu.tigers.sumatra.skillsystem.skills.util.PositionValidator;
@@ -25,7 +21,7 @@ import java.awt.Color;
 
 public class ApproachBallLineSkill extends AMoveToSkill
 {
-	@Configurable(defValue = "200.0", comment = "When distance is below, the ball is considered catched up")
+	@Configurable(defValue = "200.0", comment = "When distance is below, the ball is considered catched up", unit = EConfigUnit.DISTANCE_MM)
 	private static double minDistanceToBallLine = 200;
 	private final PositionValidator positionValidator = new PositionValidator();
 	@Setter
@@ -40,13 +36,13 @@ public class ApproachBallLineSkill extends AMoveToSkill
 	@Setter
 	private double approachFailedMinBallVel = 0.1;
 	@Setter
-	private boolean useOvershoot = false;
+	private boolean useTrajectoryTricks = false;
 
 
 	@Override
 	public void doUpdate()
 	{
-		getMoveCon().setBallObstacle(false);
+		setMoveCon(getMoveCon().withBallObstacle(false));
 
 		positionValidator.update(getWorldFrame(), getMoveCon());
 		positionValidator.getMarginToPenArea().put(ETeam.OPPONENTS, marginToTheirPenArea);
@@ -60,14 +56,17 @@ public class ApproachBallLineSkill extends AMoveToSkill
 					getBall(),
 					catchPosition,
 					target,
-					RuleConstraints.getMaxKickSpeed());
+					RuleConstraints.getMaxKickSpeed()
+			);
 
 			double redirectAngle = getBall().getVel().multiplyNew(-1).angleToAbs(Vector2.fromAngle(targetAngle))
 					.orElse(0.0);
 
 			getShapes().get(ESkillShapesLayer.APPROACH_BALL_LINE_SKILL)
-					.add(new DrawableAnnotation(catchPosition,
-							String.format("angle: %.2f", AngleMath.rad2deg(redirectAngle)), Vector2.fromY(100)));
+					.add(new DrawableAnnotation(
+							catchPosition,
+							String.format("angle: %.2f", AngleMath.rad2deg(redirectAngle)), Vector2.fromY(100)
+					));
 
 			if (redirectAngle > maximumReasonableRedirectAngle)
 			{
@@ -80,10 +79,20 @@ public class ApproachBallLineSkill extends AMoveToSkill
 
 			var center2DribblerDist = getTBot().getCenter2DribblerDist() + Geometry.getBallRadius();
 			var botToKickerPos = Vector2.fromAngle(targetAngle).scaleToNew(center2DribblerDist);
-			var dest = catchPosition.subtractNew(botToKickerPos);
+			var wantedDest = catchPosition.subtractNew(botToKickerPos);
 
-			updateDestination(calcDest(catchPosition, dest));
-			setComeToAStop(TrajectoryGenerator.isComeToAStopFaster(getTBot(), dest));
+			updateDestination(wantedDest);
+
+			if (useTrajectoryTricks)
+			{
+				var ballTime = getBall().getTrajectory().getTimeByPos(catchPosition);
+				updateTargetTime(ballTime);
+				updateUseComeToAStopIfFaster(true);
+			} else
+			{
+				updateTargetTime(null);
+				updateUseComeToAStopIfFaster(false);
+			}
 		} else
 		{
 			setComeToAStop(false);
@@ -97,18 +106,6 @@ public class ApproachBallLineSkill extends AMoveToSkill
 		super.doUpdate();
 
 		updateSkillState();
-	}
-
-
-	private IVector2 calcDest(IVector2 interceptPosition, IVector2 wantedDest)
-	{
-		if (!useOvershoot)
-		{
-			return wantedDest;
-		}
-
-		var ballTime = getBall().getTrajectory().getTimeByPos(interceptPosition);
-		return TrajectoryGenerator.generateVirtualPositionToReachPointInTime(getTBot(), wantedDest, ballTime);
 	}
 
 

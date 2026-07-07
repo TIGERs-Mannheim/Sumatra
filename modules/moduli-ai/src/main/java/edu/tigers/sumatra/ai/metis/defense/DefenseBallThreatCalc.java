@@ -1,14 +1,12 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.metis.defense;
 
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
 import edu.tigers.sumatra.ai.metis.botdistance.BotDistance;
 import edu.tigers.sumatra.ai.metis.defense.data.DefenseBallThreat;
 import edu.tigers.sumatra.ai.metis.defense.data.EDefenseBallThreatSourceType;
+import edu.tigers.sumatra.drawable.DrawableAnnotation;
 import edu.tigers.sumatra.drawable.DrawableLine;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.geometry.RuleConstraints;
@@ -35,20 +33,20 @@ import java.util.function.Supplier;
 @RequiredArgsConstructor
 public class DefenseBallThreatCalc extends ADefenseThreatCalc
 {
-	@Configurable(comment = "Lookahead for ball position", defValue = "0.1")
+	@Configurable(comment = "Lookahead for ball position", defValue = "0.1", unit = EConfigUnit.TIME_S)
 	private static double ballLookahead = 0.1;
 
-	@Configurable(comment = "Use ball direction instead of position if faster than this", defValue = "1.5")
+	@Configurable(comment = "Use ball direction instead of position if faster than this", defValue = "1.5", unit = EConfigUnit.VELOCITY_M)
 	private static double checkBallDirectionVelThreshold = 1.5;
 
-	@Configurable(comment = "Left/Right extension of goal line to use for shot-at-goal intersection", defValue = "200")
+	@Configurable(comment = "Left/Right extension of goal line to use for shot-at-goal intersection", defValue = "200", unit = EConfigUnit.DISTANCE_MM)
 	private static double goalMargin = 200;
 
-	@Configurable(comment = "Defend the closest opponent if ball is hidden", defValue = "true")
+	@Configurable(comment = "Defend the closest opponent if ball is hidden", defValue = "true", unit = EConfigUnit.BOOLEAN)
 	private static boolean defendOpponentIfBallIsHidden = true;
-	@Configurable(comment = "[m/s] Expected bot movement speed with the hidden ball to increase the search distance", defValue = "2.0")
+	@Configurable(comment = "Expected bot movement speed with the hidden ball to increase the search distance", defValue = "2.0", unit = EConfigUnit.VELOCITY_M)
 	private static double hiddenBallAndBotMovementSpeed = 2.0;
-	@Configurable(comment = "[m] Minimum search distance for hidden balls", defValue = "50.0")
+	@Configurable(comment = "Minimum search distance for hidden balls", defValue = "50.0", unit = EConfigUnit.DISTANCE_MM)
 	private static double hiddenBallMinimumSearchDistance = 50.0;
 
 	private final Supplier<KickedBall> detectedGoalKickOpponents;
@@ -61,22 +59,27 @@ public class DefenseBallThreatCalc extends ADefenseThreatCalc
 	@Getter
 	private IVector2 opponentReceivePosGuess;
 
+
 	@Override
 	public void doCalc()
 	{
 		var threatSource = threatSource();
 		var threatTarget = threatTarget(threatSource.threatPos);
 		ILineSegment threatLine = Lines.segmentFromPoints(threatSource.threatPos, threatTarget);
-		var protectionLine = centerBackProtectionLine(threatLine, minDistanceToThreat());
+		var protectionLine = centerBackProtectionLine(
+				threatLine, minDistanceToThreat(), DefenseConstants.getMaxGoOutDistanceBall());
 
-		getShapes(EAiShapesLayer.DEFENSE_BALL_THREAT).add(new DrawableLine(threatLine, Color.PINK).setStrokeWidth(10));
+		var shapes = getShapes(EAiShapesLayer.DEFENSE_BALL_THREAT);
+		shapes.add(new DrawableLine(threatLine, Color.PINK).setStrokeWidth(10));
+		shapes.add(new DrawableAnnotation(threatSource.threatPos, threatSource.type.toString(), Vector2.fromY(200)));
 
 		defenseBallThreat = new DefenseBallThreat(
 				threatSource.velocity,
 				threatLine,
 				protectionLine.orElse(null),
 				opponentPassReceiver.get(),
-				threatSource.type);
+				threatSource.type
+		);
 		drawThreat(defenseBallThreat);
 	}
 

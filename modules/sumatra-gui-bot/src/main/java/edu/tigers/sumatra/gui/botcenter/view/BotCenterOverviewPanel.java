@@ -1,6 +1,3 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra.gui.botcenter.view;
 
 import edu.tigers.sumatra.gui.botcenter.view.bots.TigerBotSummaryPanel;
@@ -11,6 +8,7 @@ import javax.swing.Box;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
+import java.io.Serial;
 import java.util.Map;
 import java.util.concurrent.ConcurrentSkipListMap;
 
@@ -22,6 +20,7 @@ import java.util.concurrent.ConcurrentSkipListMap;
  */
 public class BotCenterOverviewPanel extends JPanel
 {
+	@Serial
 	private static final long serialVersionUID = -3183090653608159807L;
 	private final Map<BotID, TigerBotSummaryPanel> botPanels = new ConcurrentSkipListMap<>(BotID.getComparator());
 	private boolean active = false;

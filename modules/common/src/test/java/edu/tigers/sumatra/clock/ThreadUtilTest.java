@@ -1,6 +1,3 @@
-/*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra.clock;
 
 import org.junit.jupiter.api.Test;

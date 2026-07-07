@@ -1,10 +1,7 @@
-/*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.metis.pass;
 
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.ai.metis.ACalculator;
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
 import edu.tigers.sumatra.ai.metis.kicking.EBallReceiveMode;
@@ -35,7 +32,7 @@ import java.util.function.Supplier;
 @Log4j2
 public class PassStatisticsCalc extends ACalculator
 {
-	@Configurable(defValue = "500.0", comment = "[mm]")
+	@Configurable(defValue = "500.0", unit = EConfigUnit.DISTANCE_MM)
 	private static double filterBlockedPassesMinDist = 500.0;
 
 	private final Supplier<Optional<OngoingPass>> ongoingPass;
@@ -84,13 +81,15 @@ public class PassStatisticsCalc extends ACalculator
 			velocities.setMaxElements(50);
 			velocities.reduceByAbsoluteDuration(getWFrame().getTimestamp());
 
-			if (getWFrame().getBots().containsKey(ongoingPassOpt.get().getPass().getReceiver()) &&
-					!getWFrame().getBot(ongoingPassOpt.get().getPass().getReceiver()).getBallContact().hasContact())
+			if (getWFrame().getBots().containsKey(ongoingPassOpt.get().getPass().getPass().getReceiver()) &&
+					!getWFrame().getBot(ongoingPassOpt.get().getPass().getPass().getReceiver()).getBallContact()
+							.hasContact())
 			{
 				velocities.add(getWFrame().getTimestamp(), getBall().getVel());
 			}
 
-			if (currentPass != null && ongoingPassOpt.get().getKickStartTime() != currentPass.getKickStartTime())
+			if (currentPass != null && ongoingPassOpt.get().getKickStartTime()
+					!= currentPass.getKickStartTime())
 			{
 				// new pass started, while old was still active
 				storeOngoingPass(currentPass);
@@ -126,7 +125,7 @@ public class PassStatisticsCalc extends ACalculator
 
 	private void storeOngoingPass(OngoingPass currentPass)
 	{
-		if (currentPass.getPass().getKick().getSource().distanceTo(getWFrame().getBall().getPos())
+		if (currentPass.getPass().getPass().getKick().getSource().distanceTo(getWFrame().getBall().getPos())
 				< filterBlockedPassesMinDist)
 		{
 			// probably an invalid pass
@@ -171,15 +170,16 @@ public class PassStatisticsCalc extends ACalculator
 
 	private void storeVelocities(OngoingPass currentPass, boolean success)
 	{
-		IVector2 plannedVel = currentPass.getPass().getKick().getTarget()
-				.subtractNew(currentPass.getPass().getKick().getSource())
-				.scaleToNew(currentPass.getPass().getReceivingSpeed());
+		IVector2 plannedVel = currentPass.getPass().getPass().getKick().getTarget()
+				.subtractNew(currentPass.getPass().getPass().getKick().getSource())
+				.scaleToNew(currentPass.getPass().getPass().getReceivingBallSpeed());
 		IVector2 actualVel = velocities.getElements().get(Math.max(0, velocities.getElements().size() - 3));
 		double actualPassDuration = (getWFrame().getTimestamp() - currentPass.getKickStartTime()) * 1e-9;
 		receiveVelocities
 				.add(new PassStatsKickReceiveVelocity(
-						plannedVel, actualVel, success, currentPass.getPass().getDuration(),
-						actualPassDuration, currentPass.getPass().getReceiveMode() == EBallReceiveMode.REDIRECT
+						plannedVel, actualVel, success, currentPass.getPass().getPass().getDuration(),
+						actualPassDuration, currentPass.getPass().getPass().getReceiveMode() == EBallReceiveMode.REDIRECT,
+						currentPass.getPass().getScores()
 				));
 	}
 

@@ -1,6 +1,3 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra.gui.referee.view;
 
 import edu.tigers.sumatra.referee.control.GcEventFactory;
@@ -10,6 +7,7 @@ import net.miginfocom.swing.MigLayout;
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
+import java.io.Serial;
 
 
 /**
@@ -17,6 +15,7 @@ import javax.swing.JComboBox;
  */
 public class ChangeStatePanel extends ARefBoxRemoteControlGeneratorPanel
 {
+	@Serial
 	private static final long serialVersionUID = -423240395071869217L;
 
 	private final JComboBox<SslGcRefereeMessage.Referee.Stage> stages;

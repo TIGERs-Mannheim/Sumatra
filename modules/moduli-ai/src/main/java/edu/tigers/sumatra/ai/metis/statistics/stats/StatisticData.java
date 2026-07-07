@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.metis.statistics.stats;
 
 import java.text.DecimalFormat;

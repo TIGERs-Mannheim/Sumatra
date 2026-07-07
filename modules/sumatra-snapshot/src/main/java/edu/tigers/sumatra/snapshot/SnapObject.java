@@ -1,6 +1,3 @@
-/*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra.snapshot;
 
 import com.github.cliftonlabs.json_simple.JsonArray;
@@ -39,10 +36,7 @@ public class SnapObject
 		this.movement = null;
 	}
 
-	/**
-	 * @return
-	 */
-	@SuppressWarnings("unchecked")
+
 	public JsonObject toJSON()
 	{
 		JsonObject obj = new JsonObject();
@@ -70,6 +64,7 @@ public class SnapObject
 		return new SnapObject(
 				JsonConverter.decodeVector3((JsonArray) obj.get("pos")),
 				JsonConverter.decodeVector3((JsonArray) obj.get("vel")),
-				JsonConverter.decodeVector2((JsonArray) obj.get("movement"), null));
+				JsonConverter.decodeVector2((JsonArray) obj.get("movement"), null)
+		);
 	}
 }

@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.skillsystem.skills.keeper;
 
 import edu.tigers.sumatra.drawable.DrawableCircle;
@@ -63,7 +59,7 @@ public class GoOutDestinationCalculator extends AKeeperDestinationCalculator
 		getShapes().get(ESkillShapesLayer.KEEPER_POSITIONING_CALCULATORS)
 				.add(new DrawableCircle(targetPosition, Geometry.getBotRadius(), circleColor));
 
-		return KeeperDestination.fromDestination(getTBot(), targetPosition);
+		return KeeperDestination.fromDestination(targetPosition);
 	}
 
 

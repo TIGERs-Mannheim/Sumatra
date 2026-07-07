@@ -1,19 +1,21 @@
-/*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.metis.pass.rating;
 
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.ai.metis.kicking.Pass;
 import edu.tigers.sumatra.ai.metis.targetrater.AngleRangeRater;
 import edu.tigers.sumatra.ai.metis.targetrater.RatedTarget;
+import edu.tigers.sumatra.drawable.IDrawableShape;
 import edu.tigers.sumatra.geometry.Geometry;
+import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.SumatraMath;
+import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
 
 import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 
 
 /**
@@ -22,30 +24,37 @@ import java.util.Collection;
  */
 public class GoalRater implements IPassRater
 {
-	@Configurable(defValue = "0.5")
+	@Configurable(defValue = "0.5", unit = EConfigUnit.PERCENTAGE)
 	private static double bestImprovement = 0.5;
 
-	@Configurable(defValue = "0.5")
+	@Configurable(defValue = "0.5", unit = EConfigUnit.FACTOR)
 	private static double timeToKickFactor = 0.5;
+
+	private final Collection<ITrackedBot> obstacles;
+	private final BotID opponentKeeperId;
 
 	static
 	{
 		ConfigRegistration.registerClass("metis", GoalRater.class);
 	}
 
-	private final AngleRangeRater rater = AngleRangeRater.forGoal(Geometry.getGoalTheir());
 
-
-	public GoalRater(Collection<ITrackedBot> obstacles)
+	public GoalRater(Collection<ITrackedBot> obstacles, BotID opponentKeeperId)
 	{
-		rater.setObstacles(obstacles);
+		this.obstacles = obstacles;
+		this.opponentKeeperId = opponentKeeperId;
 	}
 
 
 	@Override
 	public double rate(Pass pass)
 	{
-		rater.setTimeToKick(pass.getPreparationTime() + pass.getDuration() * timeToKickFactor);
+		AngleRangeRater rater = AngleRangeRater.forGoal(Geometry.getGoalTheir());
+		rater.setKeeperID(opponentKeeperId);
+		rater.setObstacles(this.obstacles.stream()
+				.filter(bot -> !bot.getBotId().equals(pass.getShooter()) && !bot.getBotId().equals(pass.getReceiver()))
+				.toList());
+		rater.setTimeToKick(pass.getOpponentPreparationTime() + pass.getDuration() * timeToKickFactor);
 
 		var ratedSource = rater.rate(pass.getKick().getSource())
 				.orElseGet(() -> RatedTarget.ratedPoint(Geometry.getGoalTheir().getCenter(), 0));

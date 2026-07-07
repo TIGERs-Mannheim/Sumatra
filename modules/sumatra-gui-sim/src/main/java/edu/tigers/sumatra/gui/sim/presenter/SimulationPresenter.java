@@ -1,12 +1,9 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.gui.sim.presenter;
 
 import com.github.cliftonlabs.json_simple.JsonException;
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.clock.FpsCounter;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.gui.sim.view.SimulationBotMgrPanel;
@@ -63,7 +60,7 @@ public class SimulationPresenter
 		           SimulationBotMgrPanel.ISimulationBotMgrObserver,
 		           ISimulatorObserver
 {
-	@Configurable(defValue = "false", comment = "Save move destinations in snapshots")
+	@Configurable(defValue = "false", comment = "Save move destinations in snapshots", unit = EConfigUnit.BOOLEAN)
 	private static boolean saveMoveDestinations = false;
 
 	static
@@ -412,10 +409,20 @@ public class SimulationPresenter
 			return;
 		}
 		final int preFactor = (botID.getTeamColor() == ETeamColor.BLUE) ? -1 : 1;
-		final IVector2 positionOnField = Vector2.fromXY(
-				-1 * preFactor * botID.getNumber() * Geometry.getBotRadius() * 4,
-				preFactor * (Geometry.getFieldWidth() * 0.5 + Geometry.getBotRadius() * 2)
-		);
+		final IVector2 positionOnField;
+		if (Geometry.getGoalSubstitutionAreaOur().xExtent() >= 2.5 * Geometry.getBotRadius())
+		{
+			positionOnField = Vector2.fromXY(
+					-1 * preFactor * Geometry.getGoalSubstitutionAreaOur().center().x(),
+					-1 * (Geometry.getGoalOur().getWidth() / 2 + Geometry.getBotRadius() * 5)
+			);
+		} else
+		{
+			positionOnField = Vector2.fromXY(
+					-1 * preFactor * botID.getNumber() * Geometry.getBotRadius() * 4,
+					preFactor * (Geometry.getFieldWidth() * 0.5 + Geometry.getBotRadius() * 2)
+			);
+		}
 		final double orientation = -1 * preFactor * AngleMath.PI_HALF;
 
 		sim.ifPresent(

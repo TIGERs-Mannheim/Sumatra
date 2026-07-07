@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.metis.general;
 
 import edu.tigers.sumatra.ai.metis.ACalculator;
@@ -69,7 +65,7 @@ public class PathFinderPrioMapCalc extends ACalculator
 
 	private PathFinderPrioMap buildPathFinderPrioMap()
 	{
-		PathFinderPrioMap map = PathFinderPrioMap.byBotId(getAiFrame().getTeamColor());
+		var map = PathFinderPrioMap.mapByBotId(getAiFrame().getTeamColor());
 		int prio = 100;
 
 		var activeBallPlacers = desiredBotsMap.get().getOrDefault(EPlay.BALL_PLACEMENT, Collections.emptySet());
@@ -86,7 +82,7 @@ public class PathFinderPrioMapCalc extends ACalculator
 		{
 			if (remainingDefenders.remove(botId))
 			{
-				map.setPriority(botId, prio--);
+				map.put(botId, prio--);
 			}
 		}
 
@@ -94,7 +90,7 @@ public class PathFinderPrioMapCalc extends ACalculator
 		{
 			if (remainingOffenders.remove(botId))
 			{
-				map.setPriority(botId, prio--);
+				map.put(botId, prio--);
 			}
 		}
 		prio = updatePrio(map, prio, activeKeepers);
@@ -102,11 +98,11 @@ public class PathFinderPrioMapCalc extends ACalculator
 		prio = updatePrio(map, prio, remainingDefenders);
 		updatePrio(map, prio, activeSupporters);
 
-		return map;
+		return PathFinderPrioMap.of(map);
 	}
 
 
-	private int updatePrio(final PathFinderPrioMap map, int prio, final Set<BotID> bots)
+	private int updatePrio(final Map<BotID, Integer> map, int prio, final Set<BotID> bots)
 	{
 		var nextPrio = prio;
 		var sortedBotIds = bots.stream()
@@ -114,7 +110,7 @@ public class PathFinderPrioMapCalc extends ACalculator
 				.toList();
 		for (BotID botId : sortedBotIds)
 		{
-			map.setPriority(botId, nextPrio--);
+			map.put(botId, nextPrio--);
 		}
 		return nextPrio;
 	}

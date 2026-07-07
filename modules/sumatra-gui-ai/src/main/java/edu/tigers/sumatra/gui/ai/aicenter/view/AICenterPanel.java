@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.gui.ai.aicenter.view;
 
 
@@ -12,6 +8,7 @@ import edu.tigers.sumatra.ids.EAiTeam;
 import javax.swing.JPanel;
 import javax.swing.JTabbedPane;
 import java.awt.BorderLayout;
+import java.io.Serial;
 
 
 /**
@@ -19,6 +16,7 @@ import java.awt.BorderLayout;
  */
 public class AICenterPanel extends JPanel
 {
+	@Serial
 	private static final long serialVersionUID = -2509991904665753934L;
 
 	private final JTabbedPane teamTabbedPane = new JTabbedPane();

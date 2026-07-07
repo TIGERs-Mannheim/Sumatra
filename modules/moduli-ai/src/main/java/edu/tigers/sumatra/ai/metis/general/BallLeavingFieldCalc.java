@@ -1,10 +1,7 @@
-/*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.metis.general;
 
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.ai.metis.ACalculator;
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
 import edu.tigers.sumatra.drawable.DrawableCircle;
@@ -32,7 +29,7 @@ import java.util.function.Supplier;
 @RequiredArgsConstructor
 public class BallLeavingFieldCalc extends ACalculator
 {
-	@Configurable(comment = "check when ball leaving field detection should be used", defValue = "false")
+	@Configurable(comment = "check when ball leaving field detection should be used", defValue = "false", unit = EConfigUnit.BOOLEAN)
 	private static boolean useBallLeavingFieldDetection = true;
 
 

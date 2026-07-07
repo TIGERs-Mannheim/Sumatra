@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.gui.ai.statistics.view;
 
 import edu.tigers.sumatra.ai.metis.statistics.stats.StatisticData;
@@ -10,6 +6,7 @@ import javax.swing.JLabel;
 import javax.swing.JTable;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
+import java.io.Serial;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -25,6 +22,7 @@ public class StatisticsTable extends JTable
 	/**
 	 * The serial Version UID for this kind of table
 	 */
+	@Serial
 	private static final long serialVersionUID = 1L;
 	DefaultTableModel model = null;
 
@@ -35,7 +33,9 @@ public class StatisticsTable extends JTable
 		for (int x = 0; x < getColumnCount(); x++)
 		{
 			if (search.equals(getColumnName(x)))
+			{
 				return x;
+			}
 		}
 		return -1;
 	}
@@ -57,7 +57,17 @@ public class StatisticsTable extends JTable
 			header.add(0, "Statistic");
 
 
-			model = new DefaultTableModel(header.toArray(), header.size());
+			model = new DefaultTableModel(header.toArray(), header.size())
+			{
+				// since this is a table that displays statistics, it makes no sense for the cells to be editable
+				// so read only they shall be
+				@Override
+				public boolean isCellEditable(int row, int column)
+				{
+					return false;
+				}
+			}
+			;
 			setModel(model);
 			getColumnModel().getColumn(0).setMinWidth(200);
 
@@ -84,10 +94,14 @@ public class StatisticsTable extends JTable
 			{
 				int col = getBotColumn(i);
 				if (col < 0)
+				{
 					continue;
+				}
 				String val = d.formattedBotStatistics().get(i);
 				if (val == null)
+				{
 					val = "0";
+				}
 
 				model.setValueAt(val, x, col);
 			}

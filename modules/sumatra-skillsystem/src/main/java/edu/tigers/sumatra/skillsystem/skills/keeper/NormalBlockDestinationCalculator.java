@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.skillsystem.skills.keeper;
 
 import edu.tigers.sumatra.drawable.DrawableLine;
@@ -69,7 +65,7 @@ public class NormalBlockDestinationCalculator extends AKeeperDestinationCalculat
 				Math.max(defensePos.x(), Geometry.getGoalOur().getCenter().x() + Geometry.getBotRadius()),
 				defensePos.y()
 		);
-		return KeeperDestination.fromDestination(getTBot(), defensePos);
+		return KeeperDestination.fromDestination(defensePos);
 	}
 
 

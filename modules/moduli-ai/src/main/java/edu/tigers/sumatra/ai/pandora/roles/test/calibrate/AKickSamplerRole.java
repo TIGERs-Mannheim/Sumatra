@@ -1,11 +1,8 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.pandora.roles.test.calibrate;
 
 import edu.tigers.sumatra.ai.pandora.roles.ARole;
 import edu.tigers.sumatra.ai.pandora.roles.ERole;
+import edu.tigers.sumatra.bot.EDribbleTractionState;
 import edu.tigers.sumatra.botmanager.botskills.data.EKickerDevice;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.math.vector.IVector2;
@@ -13,9 +10,13 @@ import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.skillsystem.skills.ATouchKickSkill;
 import edu.tigers.sumatra.skillsystem.skills.ESkillState;
 import edu.tigers.sumatra.skillsystem.skills.IdleSkill;
+import edu.tigers.sumatra.skillsystem.skills.MoveToSkill;
 import edu.tigers.sumatra.skillsystem.skills.ProtectiveGetBallSkill;
 import edu.tigers.sumatra.skillsystem.skills.SingleTouchKickSkill;
 import edu.tigers.sumatra.skillsystem.skills.TouchKickSkill;
+import edu.tigers.sumatra.skillsystem.skills.util.EDribblerMode;
+import edu.tigers.sumatra.skillsystem.skills.util.KickParams;
+import edu.tigers.sumatra.time.TimestampTimer;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -47,14 +48,18 @@ public abstract class AKickSamplerRole extends ARole
 			setInitialState(touchState);
 		} else if (kickMode == EKickMode.TOUCH)
 		{
-			var getBallState = new GetBallState();
+			var moveBehindBallAndWaitState = new MoveBehindBallAndWaitState();
+			var spinUpBallState = new SpinUpBallState();
 			var touchState = new TouchState();
 
-			getBallState.addTransition(ESkillState.SUCCESS, touchState);
+			moveBehindBallAndWaitState.addTransition(
+					moveBehindBallAndWaitState::ballStoppedAndDestinationReached, spinUpBallState);
+			spinUpBallState.addTransition(spinUpBallState::strongTractionAchieved, touchState);
+			spinUpBallState.addTransition(spinUpBallState::timeout, waitState);
 			touchState.addTransition("ballMoved", touchState::ballMoved, waitState);
-			sampleDoneState.addTransition("hasMoreSamples", sampleDoneState::hasMoreSamples, touchState);
+			sampleDoneState.addTransition("hasMoreSamples", sampleDoneState::hasMoreSamples, moveBehindBallAndWaitState);
 
-			setInitialState(getBallState);
+			setInitialState(moveBehindBallAndWaitState);
 		} else
 		{
 			throw new IllegalArgumentException("Unsupported kick mode: " + kickMode);
@@ -62,16 +67,10 @@ public abstract class AKickSamplerRole extends ARole
 	}
 
 
-	private IVector2 getKickTarget()
-	{
-		var sample = samples.getFirst();
-		return sample.kickPos.addNew(Vector2.fromAngleLength(sample.targetAngle, 1000));
-	}
-
-
 	protected static class SamplePoint
 	{
 		IVector2 kickPos;
+		IVector2 kickTarget;
 		double targetAngle;
 		double durationMs;
 		EKickerDevice device;
@@ -91,14 +90,14 @@ public abstract class AKickSamplerRole extends ARole
 
 
 		@Override
-		protected void onInit()
+		protected void onEntry()
 		{
 			initBallPos = getBall().getPos();
 			var sample = samples.getFirst();
-			skill.setTarget(getKickTarget());
+			skill.setTarget(sample.kickTarget);
 			skill.setKickerDevice(sample.device);
 			skill.setKickArmTime(sample.durationMs);
-			skill.getMoveCon().physicalObstaclesOnly();
+			skill.setMoveCon(skill.getMoveCon().withPhysicalObstaclesOnly());
 		}
 
 
@@ -132,20 +131,110 @@ public abstract class AKickSamplerRole extends ARole
 		}
 	}
 
-	private class GetBallState extends RoleState<ProtectiveGetBallSkill>
+	private class SpinUpBallState extends MoveState
 	{
-		public GetBallState()
+		IVector2 destination;
+		IVector2 initialBallPos;
+
+		TimestampTimer successTimer = new TimestampTimer(0.3);
+		TimestampTimer failTimer = new TimestampTimer(2.0);
+
+
+		@Override
+		protected void onEntry()
 		{
-			super(ProtectiveGetBallSkill::new);
+			super.onEntry();
+			destination = getPos();
+			initialBallPos = getBall().getPos();
+			failTimer.reset();
+			successTimer.reset();
 		}
 
 
 		@Override
-		protected void onInit()
+		protected void onUpdate()
 		{
-			skill.setTarget(getKickTarget());
-			skill.setStrongDribblerContactNeeded(true);
-			skill.getMoveCon().physicalObstaclesOnly();
+			super.onUpdate();
+
+			var sample = samples.getFirst();
+			var ballToTarget = sample.kickTarget.subtractNew(initialBallPos);
+			destination = initialBallPos.subtractNew(ballToTarget.scaleToNew(-50));
+
+			skill.setVelMax(0.3);
+			skill.updateTargetAngle(ballToTarget.getAngle());
+			skill.setKickParams(KickParams.disarm().withDribblerMode(EDribblerMode.HIGH_POWER));
+			skill.setMoveCon(skill.getMoveCon().withBallObstacle(false));
+
+			if (getBot().getBallContact().hasContact())
+			{
+				skill.setComeToAStop(true);
+			}
+
+			skill.updateDestination(destination);
+		}
+
+
+		public boolean strongTractionAchieved()
+		{
+			if (getBot().getRobotInfo().getDribbleTraction() == EDribbleTractionState.STRONG)
+			{
+				successTimer.update(getWFrame().getTimestamp());
+				return successTimer.isTimeUp(getWFrame().getTimestamp());
+			}
+
+			successTimer.reset();
+			return false;
+		}
+
+
+		public boolean timeout()
+		{
+			failTimer.update(getWFrame().getTimestamp());
+			return failTimer.isTimeUp(getWFrame().getTimestamp());
+		}
+	}
+
+	private class MoveBehindBallAndWaitState extends MoveState
+	{
+		IVector2 destination;
+
+		TimestampTimer successTimer = new TimestampTimer(1.0);
+
+
+		@Override
+		protected void onEntry()
+		{
+			super.onEntry();
+			destination = getPos();
+			successTimer.reset();
+		}
+
+
+		@Override
+		protected void onUpdate()
+		{
+			super.onUpdate();
+
+			var sample = samples.getFirst();
+			var ballToTarget = sample.kickTarget.subtractNew(getBall().getPos());
+			destination = getBall().getPos().subtractNew(ballToTarget.scaleToNew(300));
+			skill.updateDestination(destination);
+			skill.updateTargetAngle(ballToTarget.getAngle());
+			skill.setComeToAStop(getWFrame().getBall().getVel().getLength() > 2.0);
+			skill.setMoveCon(skill.getMoveCon().withBallObstacle(true));
+		}
+
+
+		private boolean ballStoppedAndDestinationReached()
+		{
+			if (getPos().distanceTo(destination) > 30)
+			{
+				successTimer.reset();
+				return false;
+			}
+
+			successTimer.update(getWFrame().getTimestamp());
+			return getBall().getVel().getLength() < 0.2 && successTimer.isTimeUp(getWFrame().getTimestamp());
 		}
 	}
 
@@ -172,7 +261,7 @@ public abstract class AKickSamplerRole extends ARole
 
 
 		@Override
-		public void doEntryActions()
+		public void onEntry()
 		{
 			if (samples.isEmpty())
 			{

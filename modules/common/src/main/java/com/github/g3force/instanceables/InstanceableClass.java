@@ -1,13 +1,6 @@
-/*
- * *********************************************************
- * Copyright (c) 2009 - 2014, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Jan 11, 2014
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
- */
 package com.github.g3force.instanceables;
 
+import java.io.Serial;
 import java.lang.reflect.Constructor;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -188,6 +181,7 @@ public class InstanceableClass<T>
 
 	public static class NotCreateableException extends RuntimeException
 	{
+		@Serial
 		private static final long serialVersionUID = 89775383135278930L;
 
 

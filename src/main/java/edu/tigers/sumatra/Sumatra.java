@@ -1,6 +1,3 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra;
 
 import edu.tigers.base.BaseApp;
@@ -186,7 +183,7 @@ public final class Sumatra extends BaseApp implements Runnable
 	private Boolean matchStats;
 
 
-	public static void main(final String[] args)
+	static void main(final String[] args)
 	{
 		new picocli.CommandLine(new Sumatra()).execute(args);
 	}
@@ -196,6 +193,8 @@ public final class Sumatra extends BaseApp implements Runnable
 	public void run()
 	{
 		log.info("Starting Sumatra {}", SumatraModel.getVersion());
+
+		installExceptionHandler();
 
 		// Start the UI in a separate thread first
 		runIf(!headless, this::startUi);
@@ -225,6 +224,12 @@ public final class Sumatra extends BaseApp implements Runnable
 		activateAis();
 
 		log.trace("Started Sumatra");
+	}
+
+
+	private void installExceptionHandler()
+	{
+		Thread.setDefaultUncaughtExceptionHandler((t, e) -> log.error("Uncaught exception in thread {}", t.getName(), e));
 	}
 
 

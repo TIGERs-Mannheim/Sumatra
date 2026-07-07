@@ -1,16 +1,14 @@
-/*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.metis.offense.action.moves;
 
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.ai.metis.kicking.Pass;
 import edu.tigers.sumatra.ai.metis.offense.action.EActionViability;
 import edu.tigers.sumatra.ai.metis.offense.action.OffensiveActionViability;
 import edu.tigers.sumatra.ai.metis.offense.action.RatedOffensiveAction;
 import edu.tigers.sumatra.ai.metis.offense.dribble.DribbleToPos;
 import edu.tigers.sumatra.ai.metis.pass.KickOrigin;
+import edu.tigers.sumatra.ai.metis.pass.rating.RatedPass;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.Hysteresis;
@@ -27,19 +25,19 @@ import java.util.function.Supplier;
 @RequiredArgsConstructor
 public class ProtectActionMove extends AOffensiveActionMove
 {
-	@Configurable(defValue = "0.16")
+	@Configurable(defValue = "0.16", unit = EConfigUnit.PERCENTAGE)
 	private static double minScore = 0.16;
 
-	@Configurable(defValue = "0.28", comment = "Use different minScore is far from our Goal")
+	@Configurable(defValue = "0.28", comment = "Use different minScore is far from our Goal", unit = EConfigUnit.PERCENTAGE)
 	private static double minScoreOffensiveArea = 0.28;
 
-	@Configurable(defValue = "6000.0", comment = "[mm]")
+	@Configurable(defValue = "6000.0", unit = EConfigUnit.DISTANCE_MM)
 	private static double distanceToOurGoalToBeConsideredOffensiveArea = 6000.0;
 
-	@Configurable(defValue = "true", comment = "Enable protectKick")
+	@Configurable(defValue = "true", comment = "Enable protectKick", unit = EConfigUnit.BOOLEAN)
 	private static boolean enableProtectKick = true;
 
-	@Configurable(defValue = "0.08")
+	@Configurable(defValue = "0.08", unit = EConfigUnit.PERCENTAGE)
 	private static double antiToggleBonus = 0.08;
 	private final Hysteresis ballDistanceHysteresis = new Hysteresis(distanceToOurGoalToBeConsideredOffensiveArea - 550,
 			distanceToOurGoalToBeConsideredOffensiveArea + 550);
@@ -71,7 +69,7 @@ public class ProtectActionMove extends AOffensiveActionMove
 		{
 			return Optional.of(
 					RatedOffensiveAction.buildProtectPass(EOffensiveActionMove.PROTECT_MOVE, calcViability(botId),
-							protectPass.get()));
+							RatedPass.builder().pass(protectPass.get()).build()));
 		}
 		return Optional.of(RatedOffensiveAction.buildProtect(
 				EOffensiveActionMove.PROTECT_MOVE,

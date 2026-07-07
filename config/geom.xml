@@ -1,1 +1,10 @@
-<?xml version="1.0" encoding="UTF-8"?><configuration/>
+<?xml version="1.0" encoding="UTF-8"?>
+<edu.tigers.sumatra.geometry base="edu.tigers.sumatra.geometry">
+    <BallParameters>
+        <accRoll:ROBOCUP>-450</accRoll:ROBOCUP>
+        <accSlide:ROBOCUP>-3400</accSlide:ROBOCUP>
+        <chipDampingXYFirstHop:ROBOCUP>0.55</chipDampingXYFirstHop:ROBOCUP>
+        <chipDampingXYOtherHops:ROBOCUP>0.88</chipDampingXYOtherHops:ROBOCUP>
+        <chipDampingZ:ROBOCUP>0.54</chipDampingZ:ROBOCUP>
+    </BallParameters>
+</edu.tigers.sumatra.geometry>

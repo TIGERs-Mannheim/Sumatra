@@ -1,11 +1,3 @@
-/*
- * *********************************************************
- * Copyright (c) 2009 - 2015, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 24.06.2015
- * Author(s): AndreR
- * *********************************************************
- */
 package edu.tigers.sumatra.botmanager.botskills;
 
 import edu.tigers.sumatra.botmanager.botskills.data.KickerDribblerCommands;

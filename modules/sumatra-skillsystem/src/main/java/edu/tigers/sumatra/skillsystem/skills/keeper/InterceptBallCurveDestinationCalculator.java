@@ -1,11 +1,8 @@
-/*
- * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.skillsystem.skills.keeper;
 
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.drawable.DrawableCircle;
 import edu.tigers.sumatra.drawable.DrawablePlanarCurve;
 import edu.tigers.sumatra.geometry.Geometry;
@@ -23,7 +20,7 @@ import java.util.Optional;
 
 public class InterceptBallCurveDestinationCalculator extends AInterceptBallDestinationCalculator
 {
-	@Configurable(comment = "[s] distance between samples to find optimal intercept destination", defValue = "0.03")
+	@Configurable(comment = "distance between samples to find optimal intercept destination", defValue = "0.03", unit = EConfigUnit.TIME_S)
 	private static double samplesInterceptDestinationGranularity = 0.03;
 
 	static
@@ -90,7 +87,7 @@ public class InterceptBallCurveDestinationCalculator extends AInterceptBallDesti
 		var bestPoint = findBestDestinationWithinPenArea(fallBackPoint);
 		bestPoint = adaptDestinationToChipKick(bestPoint);
 		bestPoint = moveInterceptDestinationInsideField(bestPoint);
-		return KeeperDestination.fromTimedDestination(getTBot(), bestPoint.pos, getTargetTime(bestPoint));
+		return KeeperDestination.fromTimedDestination(bestPoint.pos, getTargetTime(bestPoint));
 	}
 
 

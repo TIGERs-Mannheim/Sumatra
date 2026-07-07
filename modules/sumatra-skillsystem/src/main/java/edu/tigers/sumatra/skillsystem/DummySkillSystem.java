@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.skillsystem;
 
 import edu.tigers.sumatra.drawable.ShapeMap;
@@ -18,6 +14,20 @@ import java.util.Map;
 
 public class DummySkillSystem extends ASkillSystem
 {
+	/**
+	 * Create a standalone dummy skill system with initialized executors (not started).
+	 * Use this when the skill system is not managed by the module lifecycle.
+	 *
+	 * @return a new instance
+	 */
+	public static DummySkillSystem create()
+	{
+		final DummySkillSystem skillSystem = new DummySkillSystem();
+		skillSystem.initModule();
+		return skillSystem;
+	}
+
+
 	@Override
 	public void execute(final BotID botId, final ISkill skill)
 	{

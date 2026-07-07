@@ -1,10 +1,7 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.metis.offense;
 
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.ai.metis.ACalculator;
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
 import edu.tigers.sumatra.ai.metis.ballinterception.RatedBallInterception;
@@ -13,6 +10,7 @@ import edu.tigers.sumatra.ai.metis.botdistance.BotDistance;
 import edu.tigers.sumatra.drawable.DrawableAnnotation;
 import edu.tigers.sumatra.drawable.DrawableArrow;
 import edu.tigers.sumatra.drawable.DrawableCircle;
+import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.AngleMath;
 import edu.tigers.sumatra.math.Hysteresis;
@@ -39,19 +37,19 @@ import java.util.function.Supplier;
 @RequiredArgsConstructor
 public class BallHandlingBotCalc extends ACalculator
 {
-	@Configurable(defValue = "0.3", comment = "Time in seconds to subtract from current max traj time")
+	@Configurable(defValue = "0.3", comment = "Time in seconds to subtract from current max traj time", unit = EConfigUnit.TIME_S)
 	private static double hystTimeOffsetForNonMovingBall = 0.3;
 
-	@Configurable(defValue = "0.3", comment = "Time in seconds to subtract from current earliest ball time")
+	@Configurable(defValue = "0.3", comment = "Time in seconds to subtract from current earliest ball time", unit = EConfigUnit.TIME_S)
 	private static double hystTimeOffsetForMovingBall = 0.3;
 
-	@Configurable(defValue = "0.5", comment = "[m/s]")
+	@Configurable(defValue = "0.5", unit = EConfigUnit.VELOCITY_M)
 	private static double estimatedApproachAndStopBallCatchUpSpeed = 0.5;
 
-	@Configurable(defValue = "0.2", comment = "[s]")
+	@Configurable(defValue = "0.2", unit = EConfigUnit.TIME_S)
 	private static double approachAndStopBallTimePenalty = 0.2;
 
-	@Configurable(defValue = "1", comment = "Number of bots to assign when there are no ball interceptions")
+	@Configurable(defValue = "1", comment = "Number of bots to assign when there are no ball interceptions", unit = EConfigUnit.COUNT)
 	private static int numBotsForNonInterceptableBall = 1;
 
 	private final Supplier<EBallResponsibility> ballResponsibility;
@@ -125,7 +123,12 @@ public class BallHandlingBotCalc extends ACalculator
 						new DrawableAnnotation(bot.getPos(), String.format("%.2f", timeToCatchUp)));
 
 				var interceptions = findFastestInterceptableInterceptions(ballInterceptions.get());
-				if (!interceptions.isEmpty())
+				if (!interceptions.isEmpty()
+						&& !Geometry.getPenaltyAreaTheir()
+						.isPointInShape(getBall().getTrajectory().getPosByTime(timeToCatchUp).getXYVector())
+						&& !Geometry.getPenaltyAreaOur()
+						.isPointInShape(getBall().getTrajectory().getPosByTime(timeToCatchUp).getXYVector())
+				)
 				{
 					var fastestInterception = interceptions.getFirst();
 					if (fastestInterception.getBallInterception().getBallContactTime() > timeToCatchUp)
@@ -232,10 +235,6 @@ public class BallHandlingBotCalc extends ACalculator
 		}
 
 		var firstBot = interceptions.getFirst().getBallInterception().getBotID();
-		if (!getAiFrame().getGameState().isRunning() || interceptions.size() < 2)
-		{
-			return List.of(firstBot);
-		}
 
 		return List.of(firstBot);
 	}
@@ -259,7 +258,7 @@ public class BallHandlingBotCalc extends ACalculator
 
 		if (SumatraMath.isEqual(ballContactTime1, ballContactTime2))
 		{
-			return it1.getMinCorridorSlackTime() < it2.getMinCorridorSlackTime() ? -1 : 1;
+			return it1.getSlackTime() < it2.getSlackTime() ? -1 : 1;
 		}
 		return ballContactTime1 < ballContactTime2 ? -1 : 1;
 	}

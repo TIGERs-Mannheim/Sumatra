@@ -1,13 +1,10 @@
-/*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.autoreferee.engine.detector;
-
-import java.util.Optional;
 
 import edu.tigers.autoreferee.IAutoRefFrame;
 import edu.tigers.sumatra.referee.data.EGameState;
 import edu.tigers.sumatra.referee.gameevent.IGameEvent;
+
+import java.util.Optional;
 
 
 /**
@@ -20,21 +17,21 @@ public interface IGameEventDetector
 	 * @return
 	 */
 	boolean isActiveIn(EGameState state);
-	
-	
+
+
 	/**
 	 * @param frame
 	 * @return
 	 */
 	Optional<IGameEvent> update(IAutoRefFrame frame);
-	
-	
+
+
 	/**
 	 * Reset
 	 */
 	void reset();
-	
-	
+
+
 	/**
 	 * @return the type of the game event detector
 	 */

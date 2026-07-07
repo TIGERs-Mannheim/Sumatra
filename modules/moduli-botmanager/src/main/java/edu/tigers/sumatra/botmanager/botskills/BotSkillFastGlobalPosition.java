@@ -1,10 +1,5 @@
-/*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.botmanager.botskills;
 
-import edu.tigers.sumatra.bot.IMoveConstraints;
 import edu.tigers.sumatra.bot.MoveConstraints;
 import edu.tigers.sumatra.botmanager.botskills.data.DriveLimits;
 import edu.tigers.sumatra.botmanager.botskills.data.EKickerDevice;
@@ -33,6 +28,7 @@ public class BotSkillFastGlobalPosition extends AMoveBotSkill
 	@SerialData(type = ESerialDataType.UINT8)
 	private int accMaxW = 0;
 	@SerialData(type = ESerialDataType.UINT8)
+	@SuppressWarnings("unused") // not used anymore, but kept for command compatibility
 	private int accMaxFast = 0;
 
 	@SerialData(type = ESerialDataType.EMBEDDED)
@@ -55,7 +51,7 @@ public class BotSkillFastGlobalPosition extends AMoveBotSkill
 	 * @param orientation
 	 * @param mc
 	 */
-	public BotSkillFastGlobalPosition(final IVector2 xy, final double orientation, final IMoveConstraints mc)
+	public BotSkillFastGlobalPosition(final IVector2 xy, final double orientation, final MoveConstraints mc)
 	{
 		this();
 
@@ -68,7 +64,6 @@ public class BotSkillFastGlobalPosition extends AMoveBotSkill
 		setVelMaxW(mc.getVelMaxW());
 		setAccMax(mc.getAccMax());
 		setAccMaxW(mc.getAccMaxW());
-		setAccMaxFast(mc.getAccMaxFast());
 	}
 
 
@@ -81,11 +76,11 @@ public class BotSkillFastGlobalPosition extends AMoveBotSkill
 	 * @param velMaxW
 	 * @param accMax
 	 * @param accMaxW
-	 * @param accMaxFast
 	 */
 	@SuppressWarnings("unused") // used by UI
 	public BotSkillFastGlobalPosition(final IVector2 xy, final double orientation,
-			final double velMax, final double velMaxW, final double accMax, final double accMaxW, final double accMaxFast)
+			final double velMax, final double velMaxW, final double accMax, final double accMaxW
+	)
 	{
 		this();
 
@@ -98,7 +93,6 @@ public class BotSkillFastGlobalPosition extends AMoveBotSkill
 		setVelMaxW(velMaxW);
 		setAccMax(accMax);
 		setAccMaxW(accMaxW);
-		setAccMaxFast(accMaxFast);
 	}
 
 
@@ -154,17 +148,6 @@ public class BotSkillFastGlobalPosition extends AMoveBotSkill
 
 
 	/**
-	 * Max: 10m/s²
-	 *
-	 * @param val
-	 */
-	public final void setAccMaxFast(final double val)
-	{
-		accMaxFast = DriveLimits.toUInt8(val, DriveLimits.MAX_ACC);
-	}
-
-
-	/**
 	 * Max: 100rad/s²
 	 *
 	 * @param val
@@ -193,12 +176,6 @@ public class BotSkillFastGlobalPosition extends AMoveBotSkill
 	}
 
 
-	public double getAccMaxFast()
-	{
-		return DriveLimits.toDouble(accMaxFast, DriveLimits.MAX_ACC);
-	}
-
-
 	public double getAccMaxW()
 	{
 		return DriveLimits.toDouble(accMaxW, DriveLimits.MAX_ACC_W);
@@ -208,18 +185,11 @@ public class BotSkillFastGlobalPosition extends AMoveBotSkill
 	@Override
 	public MoveConstraints getMoveConstraints()
 	{
-		MoveConstraints moveCon = new MoveConstraints();
-		moveCon.setVelMax(getVelMax());
-		moveCon.setVelMaxFast(getVelMax());
-		moveCon.setVelMaxW(getVelMaxW());
-		moveCon.setAccMax(getAccMax());
-		moveCon.setAccMaxFast(getAccMaxFast());
-		moveCon.setAccMaxW(getAccMaxW());
-		moveCon.setJerkMax(DriveLimits.MAX_JERK);
-		moveCon.setJerkMaxW(DriveLimits.MAX_JERK_W);
-		moveCon.setFastMove(true);
-
-		return moveCon;
+		return MoveConstraints.ZERO
+				.withVelMax(getVelMax())
+				.withVelMaxW(getVelMaxW())
+				.withAccMax(getAccMax())
+				.withAccMaxW(getAccMaxW());
 	}
 
 

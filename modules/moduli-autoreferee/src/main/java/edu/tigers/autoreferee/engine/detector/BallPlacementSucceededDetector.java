@@ -1,10 +1,7 @@
-/*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.autoreferee.engine.detector;
 
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.autoreferee.EAutoRefShapesLayer;
 import edu.tigers.autoreferee.IAutoRefFrame;
 import edu.tigers.sumatra.drawable.DrawableCircle;
@@ -31,19 +28,19 @@ import java.util.stream.Collectors;
  */
 public class BallPlacementSucceededDetector extends AGameEventDetector
 {
-	@Configurable(defValue = "150.0", comment = "Minimum distance [mm] to placement pos to accept the placement")
+	@Configurable(defValue = "150.0", comment = "Minimum distance to placement pos to accept the placement", unit = EConfigUnit.DISTANCE_MM)
 	private static double ballPlacementTolerance = 150.0;
 
-	@Configurable(defValue = "0.97", comment = "Alpha value for the exponential moving average filter on the ball pos that decides if a ball is still moving")
+	@Configurable(defValue = "0.97", comment = "Alpha value for the exponential moving average filter on the ball pos that decides if a ball is still moving", unit = EConfigUnit.PERCENTAGE)
 	private static double ballMovingFilterAlpha = 0.97;
 
-	@Configurable(defValue = "50.0", comment = "Min distance [mm] between ball and bot, before ball placement is considered successful, if next command is a free kick for the placing team")
+	@Configurable(defValue = "50.0", comment = "Min distance between ball and bot, before ball placement is considered successful, if next command is a free kick for the placing team", unit = EConfigUnit.DISTANCE_MM)
 	private static double minDistanceToBallForOwnFreeKick = 50.0;
 
-	@Configurable(defValue = "500.0", comment = "Min distance [mm] between ball and bot, before ball placement is considered successful, else")
+	@Configurable(defValue = "500.0", comment = "Min distance between ball and bot, before ball placement is considered successful, else", unit = EConfigUnit.DISTANCE_MM)
 	private static double minDistanceToBallDefault = 500.0;
 
-	@Configurable(defValue = "2.0", comment = "Minimum time [s] that the ball placement must take to allow robots to move to valid positions")
+	@Configurable(defValue = "2.0", comment = "Minimum time that the ball placement must take to allow robots to move to valid positions", unit = EConfigUnit.TIME_S)
 	private static double minBallPlacementDuration = 2.0;
 
 

@@ -1,11 +1,8 @@
-/*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.metis.support.behaviors.repulsive;
 
 
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.ai.metis.offense.action.RatedOffensiveAction;
 import edu.tigers.sumatra.ai.pandora.plays.EPlay;
 import edu.tigers.sumatra.bot.BotState;
@@ -36,34 +33,35 @@ import java.util.function.Supplier;
  */
 public class AttackerRepulsiveBehavior extends ARepulsiveBehavior
 {
-	@Configurable(comment = "Defines whether this behavior is active of not", defValue = "true")
+	@Configurable(comment = "Defines whether this behavior is active of not", defValue = "true",
+			unit = EConfigUnit.BOOLEAN)
 	private static boolean enabled = true;
 
-	@Configurable(comment = "Whether force field should be drawn or not", defValue = "false")
+	@Configurable(comment = "Whether force field should be drawn or not", defValue = "false", unit = EConfigUnit.BOOLEAN)
 	private static boolean drawing = false;
 
 	// Force sigmas
-	@Configurable(comment = "[mm]", defValue = "1000.0")
+	@Configurable(defValue = "1000.0", unit = EConfigUnit.STD_DEVIATION_MM)
 	private static double sigmaGoalRepel = 1000;
-	@Configurable(comment = "[mm]", defValue = "800.0")
+	@Configurable(defValue = "800.0", unit = EConfigUnit.STD_DEVIATION_MM)
 	private static double sigmaGoalAttraction = 200;
-	@Configurable(comment = "[mm]", defValue = "800.0")
+	@Configurable(defValue = "800.0", unit = EConfigUnit.STD_DEVIATION_MM)
 	private static double sigmaPenaltyAreaAttraction = 200;
-	@Configurable(comment = "[mm]", defValue = "800.0")
+	@Configurable(defValue = "800.0", unit = EConfigUnit.STD_DEVIATION_MM)
 	private static double sigmaAngleRangePoints = 200;
 
 	// Force magnitudes
-	@Configurable(comment = "[mm]", defValue = "-3000.0")
+	@Configurable(defValue = "-3000.0", unit = EConfigUnit.DISTANCE_MM)
 	private static double magnitudeGoalRepel = -3000;
-	@Configurable(comment = "[mm]", defValue = "3000.0")
+	@Configurable(defValue = "3000.0", unit = EConfigUnit.DISTANCE_MM)
 	private static double magnitudeGoalAttraction = 3000;
-	@Configurable(comment = "[mm]", defValue = "2000.0")
+	@Configurable(defValue = "2000.0", unit = EConfigUnit.DISTANCE_MM)
 	private static double magnitudePenaltyAreaAttraction = 2000;
-	@Configurable(comment = "[mm]", defValue = "2000.0")
+	@Configurable(defValue = "2000.0", unit = EConfigUnit.DISTANCE_MM)
 	private static double magnitudeAngleRangePoints = 2000;
 
 	// special goal force variables
-	@Configurable(comment = "The target circle of the supporters", defValue = "2500.0")
+	@Configurable(comment = "The target circle of the supporters", defValue = "2500.0", unit = EConfigUnit.DISTANCE_MM)
 	private static double radiusGoal = 2500;
 
 	private final Supplier<List<IVector2>> supportiveGoalPositions;

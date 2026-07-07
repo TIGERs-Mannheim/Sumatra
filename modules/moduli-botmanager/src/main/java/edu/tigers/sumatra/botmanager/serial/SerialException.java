@@ -1,23 +1,19 @@
-/*
- * *********************************************************
- * Copyright (c) 2009 - 2013, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 24.10.2013
- * Author(s): AndreR
- * *********************************************************
- */
 package edu.tigers.sumatra.botmanager.serial;
+
+import java.io.Serial;
+
 
 /**
  * Serial parser exception class.
- * 
+ *
  * @author AndreR
  */
 public class SerialException extends Exception
 {
+	@Serial
 	private static final long serialVersionUID = 1460159527145410276L;
-	
-	
+
+
 	/**
 	 * @param message
 	 */
@@ -25,8 +21,8 @@ public class SerialException extends Exception
 	{
 		super(message);
 	}
-	
-	
+
+
 	/**
 	 * @param message
 	 * @param cause

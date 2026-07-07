@@ -1,6 +1,3 @@
-/*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra.treetable;
 
 import edu.tigers.sumatra.util.ScalingUtil;
@@ -19,12 +16,15 @@ import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JTable;
 import javax.swing.JTree;
+import javax.swing.JViewport;
 import javax.swing.KeyStroke;
 import javax.swing.ListSelectionModel;
 import javax.swing.LookAndFeel;
 import javax.swing.UIManager;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
+import javax.swing.event.TreeExpansionEvent;
+import javax.swing.event.TreeExpansionListener;
 import javax.swing.table.TableCellEditor;
 import javax.swing.table.TableCellRenderer;
 import javax.swing.tree.DefaultTreeCellRenderer;
@@ -36,7 +36,9 @@ import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.event.ActionEvent;
 import java.awt.event.MouseEvent;
+import java.io.Serial;
 import java.util.EventObject;
+import java.util.List;
 
 
 /**
@@ -67,6 +69,7 @@ public class JTreeTable extends JTable
 	/**
 	 *
 	 */
+	@Serial
 	private static final long serialVersionUID = -3052468144632521282L;
 
 	/**
@@ -88,6 +91,7 @@ public class JTreeTable extends JTable
 		// setCellEditor(anEditor) // # Potentally check for validity...?
 
 		this.getTableHeader().setReorderingAllowed(false);
+		this.getTableHeader().setResizingAllowed(false);
 
 		// Add Keyboard Actions
 		// Expand
@@ -203,6 +207,68 @@ public class JTreeTable extends JTable
 		{
 			setRowHeight(ScalingUtil.getTableRowHeight());
 		}
+
+		tree.addTreeExpansionListener(new TreeExpansionListener()
+		{
+			@Override
+			public void treeExpanded(TreeExpansionEvent event)
+			{
+				resizeColumnsToFit();
+			}
+
+
+			@Override
+			public void treeCollapsed(TreeExpansionEvent event)
+			{
+				resizeColumnsToFit();
+			}
+		});
+	}
+
+
+	public void resizeColumnsToFit()
+	{
+		for (int col = 0; col < getColumnCount(); col++)
+		{
+			TableCellRenderer headerRenderer = getColumnModel().getColumn(col).getHeaderRenderer();
+			if (headerRenderer == null)
+			{
+				headerRenderer = getTableHeader().getDefaultRenderer();
+			}
+			Component headerComp = headerRenderer.getTableCellRendererComponent(
+					this, getColumnModel().getColumn(col).getHeaderValue(), false, false, 0, col);
+			int width = headerComp.getPreferredSize().width;
+
+			for (int row = 0; row < getRowCount(); row++)
+			{
+				Component comp = prepareRenderer(getCellRenderer(row, col), row, col);
+				width = Math.max(width, comp.getPreferredSize().width);
+			}
+			getColumnModel().getColumn(col).setPreferredWidth(width + 5);
+		}
+		revalidate();
+	}
+
+
+	@Override
+	public boolean getScrollableTracksViewportWidth()
+	{
+		if (getParent() instanceof JViewport viewport)
+		{
+			return getPreferredSize().width < viewport.getWidth();
+		}
+		return super.getScrollableTracksViewportWidth();
+	}
+
+
+	@Override
+	public boolean getScrollableTracksViewportHeight()
+	{
+		if (getParent() instanceof JViewport viewport)
+		{
+			return getPreferredSize().height < viewport.getHeight();
+		}
+		return super.getScrollableTracksViewportHeight();
 	}
 
 
@@ -261,6 +327,16 @@ public class JTreeTable extends JTable
 
 
 	@Override
+	public boolean isCellEditable(int row, int column)
+	{
+		// only first two columns:
+		// 0: collapsable tree
+		// 1: value
+		return column == 0 || column == 1;
+	}
+
+
+	@Override
 	public TableCellEditor getCellEditor(final int row, final int column)
 	{
 		if (column != 1)
@@ -270,7 +346,12 @@ public class JTreeTable extends JTable
 
 		TreePath path = tree.getPathForRow(row);
 		Node node = (Node) path.getLastPathComponent();
-		ConfigurationNode attr = node.getAttributes("class").get(0);
+		List<ConfigurationNode> classAttrs = node.getAttributes("class");
+		if (classAttrs.isEmpty())
+		{
+			return super.getCellEditor(row, column);
+		}
+		ConfigurationNode attr = classAttrs.getFirst();
 
 		Class<?> classType = getClassFromValue(attr.getValue());
 		if (classType.isEnum())
@@ -314,32 +395,36 @@ public class JTreeTable extends JTable
 	 * @param value either a Class or a String
 	 * @return
 	 */
-	public Class<?> getClassFromValue(final Object value)
+	private Class<?> getClassFromValue(final Object value)
 	{
 		if (value.getClass() == Class.class)
 		{
 			return (Class<?>) value;
 		}
 		String clazz = (String) value;
-		if ("int".equals(clazz))
+		switch (clazz)
 		{
-			return Integer.TYPE;
-		}
-		if ("long".equals(clazz))
-		{
-			return Long.TYPE;
-		}
-		if ("float".equals(clazz))
-		{
-			return Float.TYPE;
-		}
-		if ("double".equals(clazz))
-		{
-			return Double.TYPE;
-		}
-		if ("boolean".equals(clazz))
-		{
-			return Boolean.TYPE;
+			case "int" ->
+			{
+				return Integer.TYPE;
+			}
+			case "long" ->
+			{
+				return Long.TYPE;
+			}
+			case "float" ->
+			{
+				return Float.TYPE;
+			}
+			case "double" ->
+			{
+				return Double.TYPE;
+			}
+			case "boolean" ->
+			{
+				return Boolean.TYPE;
+			}
+			default -> {}
 		}
 		try
 		{
@@ -360,6 +445,7 @@ public class JTreeTable extends JTable
 		/**
 		 *
 		 */
+		@Serial
 		private static final long serialVersionUID = 6816892617917678961L;
 
 		/**
@@ -469,6 +555,7 @@ public class JTreeTable extends JTable
 		/**
 		 *
 		 */
+		@Serial
 		private static final long serialVersionUID = -2591875536212318768L;
 
 
@@ -545,6 +632,7 @@ public class JTreeTable extends JTable
 		/**
 		 *
 		 */
+		@Serial
 		private static final long serialVersionUID = -5909393885929909085L;
 
 		/**

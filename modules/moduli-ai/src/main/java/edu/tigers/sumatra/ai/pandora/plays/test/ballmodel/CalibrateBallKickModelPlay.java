@@ -1,10 +1,7 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.pandora.plays.test.ballmodel;
 
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
 import edu.tigers.sumatra.ai.metis.offense.action.OffensiveAction;
 import edu.tigers.sumatra.ai.pandora.plays.EPlay;
@@ -18,15 +15,15 @@ import edu.tigers.sumatra.botmanager.botskills.data.EKickerDevice;
 import edu.tigers.sumatra.drawable.DrawableArrow;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.math.SumatraMath;
+import edu.tigers.sumatra.math.circle.Circle;
 import edu.tigers.sumatra.math.rectangle.IRectangle;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
-import edu.tigers.sumatra.skillsystem.skills.MoveToSkill;
 import edu.tigers.sumatra.statemachine.AState;
 import edu.tigers.sumatra.statemachine.TransitionableState;
 import lombok.Setter;
 import lombok.extern.log4j.Log4j2;
-import org.apache.commons.lang.NotImplementedException;
+import org.apache.commons.lang3.NotImplementedException;
 
 import java.awt.Color;
 import java.util.Comparator;
@@ -36,7 +33,7 @@ import java.util.List;
 @Log4j2
 public class CalibrateBallKickModelPlay extends ABallPreparationPlay
 {
-	@Configurable(defValue = "500", comment = "[mm] The tolerance for the ball")
+	@Configurable(defValue = "500", comment = "The tolerance for the ball", unit = EConfigUnit.DISTANCE_MM)
 	private static double placementTolerance = 500;
 
 	@Setter
@@ -204,7 +201,7 @@ public class CalibrateBallKickModelPlay extends ABallPreparationPlay
 	{
 		MoveRole moveRole = reassignRole(role, MoveRole.class, MoveRole::new);
 		moveRole.updateDestination(secondBotPos);
-		moveRole.getMoveCon().physicalObstaclesOnly();
+		moveRole.setMoveCon(moveRole.getMoveCon().withPhysicalObstaclesOnly());
 		moveRole.updateLookAtTarget(getBall());
 	}
 
@@ -224,9 +221,20 @@ public class CalibrateBallKickModelPlay extends ABallPreparationPlay
 		public void onInit()
 		{
 			getRoles().forEach(r -> switchRoles(r, new MoveRole()));
+
+			var distToBall = Geometry.getBotRadius() * 3;
 			destination = Vector2.fromPoints(getBall().getPos(), kickTarget)
-					.scaleTo(-Geometry.getBotRadius() * 3)
+					.scaleTo(-distToBall)
 					.add(getBall().getPos());
+
+			var fieldWithMargin = Geometry.getFieldWBorders().withMargin(-1.5 * Geometry.getBotRadius());
+			var keepOutAreaBall = Circle.createCircle(getBall().getPos(), distToBall);
+			var intersections = fieldWithMargin.intersectShape(keepOutAreaBall);
+
+			if (!intersections.isEmpty())
+			{
+				destination = destination.nearestTo(intersections);
+			}
 		}
 
 
@@ -235,9 +243,9 @@ public class CalibrateBallKickModelPlay extends ABallPreparationPlay
 		{
 			for (var role : findRoles(MoveRole.class))
 			{
-				role.getMoveCon().physicalObstaclesOnly();
+				role.setMinTimeAtDest(0.3);
+				role.setMoveCon(role.getMoveCon().withPhysicalObstaclesOnly());
 				role.updateLookAtTarget(getBall());
-				((MoveToSkill) role.getCurrentSkill()).setMinTimeAtDestForSuccess(0.3);
 
 				if (role == closestToBall())
 				{
@@ -252,7 +260,7 @@ public class CalibrateBallKickModelPlay extends ABallPreparationPlay
 
 		private boolean allRolesFinished()
 		{
-			return findRoles(MoveRole.class).stream().allMatch(MoveRole::isSkillStateSuccess);
+			return findRoles(MoveRole.class).stream().allMatch(MoveRole::isTargetReached);
 		}
 	}
 

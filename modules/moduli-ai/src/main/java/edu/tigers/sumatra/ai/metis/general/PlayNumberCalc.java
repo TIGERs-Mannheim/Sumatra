@@ -1,10 +1,7 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.metis.general;
 
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.ai.metis.ACalculator;
 import edu.tigers.sumatra.ai.pandora.plays.EPlay;
 import edu.tigers.sumatra.ids.BotID;
@@ -28,7 +25,7 @@ import java.util.function.Supplier;
 @RequiredArgsConstructor
 public class PlayNumberCalc extends ACalculator
 {
-	@Configurable(defValue = "true", comment = "KEEP THIS ALWAYS ACTIVE, unless you're 100% sure. This will deactivate Offense during Running")
+	@Configurable(defValue = "true", comment = "KEEP THIS ALWAYS ACTIVE, unless you're 100% sure. This will deactivate Offense during Running", unit = EConfigUnit.BOOLEAN)
 	private static boolean activateOffenseDuringRunning = true;
 
 	private final Supplier<Integer> numBallPlacementBots;
@@ -55,7 +52,7 @@ public class PlayNumberCalc extends ACalculator
 
 		interchange();
 
-		if (gameState.isPenaltyOrPreparePenalty() || gameState.isPenaltyShootout())
+		if (gameState.isPenaltyOrPreparePenalty())
 		{
 			penalty();
 		} else if (gameState.isBallPlacementForUs())
@@ -121,9 +118,8 @@ public class PlayNumberCalc extends ACalculator
 
 	private void penaltyForUs()
 	{
-		keeper();
 		attack();
-		playNumbers.put(EPlay.DEFENSIVE, Math.max(0, unassignedBots()));
+		playNumbers.put(EPlay.PENALTY_US, Math.max(0, unassignedBots()));
 	}
 
 

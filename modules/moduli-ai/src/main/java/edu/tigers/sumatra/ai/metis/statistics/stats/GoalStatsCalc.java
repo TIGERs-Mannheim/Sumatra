@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.metis.statistics.stats;
 
 import edu.tigers.sumatra.ai.BaseAiFrame;
@@ -82,7 +78,7 @@ public class GoalStatsCalc extends AStatsCalc
 			possibleBotGoals.compute(shooter.getNumber(), (id, goals) -> goals == null ? 1 : goals + 1);
 		} else
 		{
-			log.debug("Could not determine goal shooter. None of last touched bots is ours: " + ballContactBuffer);
+			log.debug("Could not determine goal shooter. None of last touched bots is ours: {}", ballContactBuffer);
 		}
 	}
 

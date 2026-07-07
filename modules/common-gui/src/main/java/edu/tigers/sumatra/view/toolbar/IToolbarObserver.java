@@ -1,6 +1,3 @@
-/*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra.view.toolbar;
 
 
@@ -17,7 +14,6 @@ public interface IToolbarObserver
 	default void onEmergencyStop()
 	{
 	}
-
 
 	/**
 	 * Start or stop record

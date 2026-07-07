@@ -1,6 +1,3 @@
-/*
- * Copyright (c) 2009 - 2016, DHBW Mannheim - Tigers Mannheim
- */
 package edu.tigers.sumatra.cam.data;
 
 import edu.tigers.sumatra.math.vector.IVector3;

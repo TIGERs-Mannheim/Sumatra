@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.metis.offense.action.moves;
 
 import com.github.g3force.instanceables.IInstanceableEnum;
@@ -50,9 +46,13 @@ public enum EOffensiveActionMove implements IInstanceableEnum
 	 */
 	RECEIVE_BALL(new InstanceableClass<>(ReceiveBallActionMove.class)),
 	/**
-	 * If theres nothing good to do, then protect the ball
+	 * If there is nothing good to do, then protect the ball
 	 */
 	PROTECT_MOVE(new InstanceableClass<>(ProtectActionMove.class)),
+	/**
+	 * Try a finisher that does a nice pass
+	 */
+	FINISHER_PASS_MOVE(new InstanceableClass<>(FinisherPassActionMove.class)),
 
 	;
 

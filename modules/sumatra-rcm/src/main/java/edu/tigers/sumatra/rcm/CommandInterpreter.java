@@ -1,11 +1,8 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.rcm;
 
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.bot.EDribblerTemperature;
 import edu.tigers.sumatra.bot.EFeature;
 import edu.tigers.sumatra.bot.EFeatureState;
@@ -28,12 +25,12 @@ public class CommandInterpreter implements ICommandInterpreter
 {
 	private static final Logger log = LogManager.getLogger(CommandInterpreter.class.getName());
 
-	@Configurable(defValue = "FULL")
+	@Configurable(defValue = "FULL", unit = EConfigUnit.NO_UNIT)
 	private static EMoveControllerType moveControllerType = EMoveControllerType.FULL;
 
-	@Configurable(comment = "Maximum kickSpeed [m/s]", defValue = "6.5")
+	@Configurable(comment = "Maximum kickSpeed", defValue = "6.5", unit = EConfigUnit.VELOCITY_M)
 	private static double maxKickSpeed = 6.0;
-	@Configurable(comment = "Maximum kickSpeed [m/s]", defValue = "5.0")
+	@Configurable(comment = "Maximum kickSpeed", defValue = "5.0", unit = EConfigUnit.VELOCITY_M)
 	private static double maxChipSpeed = 5.0;
 
 	static

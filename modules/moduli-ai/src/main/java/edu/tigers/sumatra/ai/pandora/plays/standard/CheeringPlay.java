@@ -1,6 +1,3 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra.ai.pandora.plays.standard;
 
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
@@ -22,7 +19,7 @@ import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.time.TimestampTimer;
 import lombok.Setter;
-import org.apache.commons.lang.Validate;
+import org.apache.commons.lang3.Validate;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -111,8 +108,9 @@ public class CheeringPlay extends APlay
 		positionPermutation.clear();
 		for (var role : findRoles(MoveRole.class))
 		{
-			role.getMoveCon().physicalObstaclesOnly();
-			role.getMoveCon().setBallObstacle(false);
+			role.setMoveCon(role.getMoveCon()
+					.withPhysicalObstaclesOnly()
+					.withBallObstacle(false));
 			setSong(role.getBotID(), ESong.NONE);
 
 			positionPermutation.put(role.getBotID(), count);
@@ -180,7 +178,7 @@ public class CheeringPlay extends APlay
 	{
 		resetBotsAndPermutation();
 
-		getMoveRoles().forEach(role -> role.getMoveCon().setIgnoredBots(Set.of()));
+		getMoveRoles().forEach(role -> role.setMoveCon(role.getMoveCon().withIgnoredBots(Set.of())));
 
 		state = EPlayState.DRIVING_TO_FIRST_POSITION;
 		play.initialize(this);
@@ -214,7 +212,7 @@ public class CheeringPlay extends APlay
 	{
 		play.doUpdate();
 		var rolesToIgnore = getRoles().stream().map(ARole::getBotID).collect(Collectors.toUnmodifiableSet());
-		getMoveRoles().forEach(role -> role.getMoveCon().setIgnoredBots(rolesToIgnore));
+		getMoveRoles().forEach(role -> role.setMoveCon(role.getMoveCon().withIgnoredBots(rolesToIgnore)));
 		return EPlayState.CHEERING;
 	}
 

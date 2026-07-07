@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.gui.botcenter.presenter.config;
 
 import edu.tigers.sumatra.botmanager.TigersBotManager;
@@ -11,7 +7,7 @@ import edu.tigers.sumatra.gui.botcenter.view.config.IBotConfigObserver;
 import edu.tigers.sumatra.gui.botcenter.view.config.SavedConfigFilePanel;
 import edu.tigers.sumatra.gui.botcenter.view.config.SavedConfigsPanel;
 import edu.tigers.sumatra.model.SumatraModel;
-import org.apache.commons.lang.Validate;
+import org.apache.commons.lang3.Validate;
 
 import javax.swing.JComboBox;
 import java.awt.event.ActionEvent;

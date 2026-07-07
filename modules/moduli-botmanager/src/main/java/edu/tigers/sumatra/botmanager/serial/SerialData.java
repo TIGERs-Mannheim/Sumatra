@@ -1,11 +1,3 @@
-/*
- * *********************************************************
- * Copyright (c) 2009 - 2013, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 22.10.2013
- * Author(s): AndreR
- * *********************************************************
- */
 package edu.tigers.sumatra.botmanager.serial;
 
 import java.lang.annotation.ElementType;

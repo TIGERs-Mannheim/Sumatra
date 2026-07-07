@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.pandora.roles;
 
 import com.github.g3force.instanceables.IInstanceableEnum;
@@ -30,7 +26,6 @@ import edu.tigers.sumatra.ai.pandora.roles.test.DribbleKickTestRole;
 import edu.tigers.sumatra.ai.pandora.roles.test.DribbleTestRole;
 import edu.tigers.sumatra.ai.pandora.roles.test.EDribbleTestMovement;
 import edu.tigers.sumatra.ai.pandora.roles.test.calibrate.AKickSamplerRole.EKickMode;
-import edu.tigers.sumatra.ai.pandora.roles.test.calibrate.CrookedKickSamplerRole;
 import edu.tigers.sumatra.ai.pandora.roles.test.calibrate.IdentifyBotModelRole;
 import edu.tigers.sumatra.ai.pandora.roles.test.calibrate.StraightChipKickSamplerRole;
 import edu.tigers.sumatra.ai.pandora.roles.test.kick.KickTestRole;
@@ -94,7 +89,8 @@ public enum ERole implements IInstanceableEnum
 
 	// other non-match roles
 
-	MOVE_TEST(ic(MoveTestRole.class,
+	MOVE_TEST(ic(
+			MoveTestRole.class,
 			new InstanceableParameter(MoveTestRole.EMoveMode.class, "mode", "TRAJ_VEL"),
 			new InstanceableParameter(IVector2.class, "initPos", "1400,1400"),
 			new InstanceableParameter(IVector2.class, "finalPos", "-1400,-1400"),
@@ -103,28 +99,33 @@ public enum ERole implements IInstanceableEnum
 			new InstanceableParameter(Double.TYPE, "stopAngleDeg", "180"),
 			new InstanceableParameter(Double.TYPE, "stepAngleDeg", "10"),
 			new InstanceableParameter(Double.TYPE, "angleTurn", "0"),
-			new InstanceableParameter(Boolean.TYPE, "fastMove", "false"),
 			new InstanceableParameter(Integer.TYPE, "iterations", "1"),
 			new InstanceableParameter(Boolean.TYPE, "rollOut", "false"),
-			new InstanceableParameter(Boolean.TYPE, "continuousCapture", "false"))
+			new InstanceableParameter(Boolean.TYPE, "continuousCapture", "false")
+	)
 	),
 
 	ENDURANCE(ic(EnduranceRole.class)
-			.setterParam(IVector2[].class, "destinations", "1000,1000;-1000,1000;-1000,-1000;1000,-1000",
-					EnduranceRole::setDestinations)
+			.setterParam(
+					IVector2[].class, "destinations", "1000,1000;-1000,1000;-1000,-1000;1000,-1000",
+					EnduranceRole::setDestinations
+			)
 			.setterParam(Double.TYPE, "nearDestTolerance", "10", EnduranceRole::setNearDestTolerance)
 	),
 
-	AROUND_CIRCLE_MOVE_TEST(ic(AroundCircleMoveTestRole.class,
+	AROUND_CIRCLE_MOVE_TEST(ic(
+			AroundCircleMoveTestRole.class,
 			new InstanceableParameter(IVector2.class, "initPos", "-1200,0"),
 			new InstanceableParameter(IVector2.class, "obstacleCenter", "0,0"),
 			new InstanceableParameter(Double.TYPE, "obstacleRadius", "500"),
 			new InstanceableParameter(Boolean.TYPE, "rotate", "true"),
 			new InstanceableParameter(Integer.TYPE, "iterations", "1"),
-			new InstanceableParameter(Boolean.TYPE, "continuousCapture", "true"))
+			new InstanceableParameter(Boolean.TYPE, "continuousCapture", "true")
+	)
 	),
 
-	CURVED_MOVE_TEST(ic(CurvedMoveTestRole.class,
+	CURVED_MOVE_TEST(ic(
+			CurvedMoveTestRole.class,
 			new InstanceableParameter(IVector2.class, "initPos", "1000,0"),
 			new InstanceableParameter(IVector2.class, "intermediatePos", "0,0"),
 			new InstanceableParameter(Double.TYPE, "intermediateDuration", "0.5"),
@@ -134,17 +135,20 @@ public enum ERole implements IInstanceableEnum
 			new InstanceableParameter(Double.TYPE, "finalOrientation", "0"),
 			new InstanceableParameter(IVector2.class, "primaryDir", "0,0"),
 			new InstanceableParameter(Integer.TYPE, "iterations", "1"),
-			new InstanceableParameter(Boolean.TYPE, "continuousCapture", "true"))
+			new InstanceableParameter(Boolean.TYPE, "continuousCapture", "true")
+	)
 	),
 
-	IDENTIFY_BOT_MODEL(ic(IdentifyBotModelRole.class,
+	IDENTIFY_BOT_MODEL(ic(
+			IdentifyBotModelRole.class,
 			new InstanceableParameter(IVector2.class, "startPos", "-1500,0"),
 			new InstanceableParameter(IVector2.class, "endPos", "1500,0"),
 			new InstanceableParameter(Double.TYPE, "accMaxXY", "2"),
 			new InstanceableParameter(Double.TYPE, "accMaxW", "12"),
 			new InstanceableParameter(Double[].class, "velXY", "0.5; 1.0; 1.25; 1.5"),
 			new InstanceableParameter(Double[].class, "velW", "4; 6; 8; 10"),
-			new InstanceableParameter(Integer.TYPE, "iterations", "1"))
+			new InstanceableParameter(Integer.TYPE, "iterations", "1")
+	)
 	),
 
 	DRIBBLE_KICK_TEST(ic(DribbleKickTestRole.class)
@@ -158,30 +162,24 @@ public enum ERole implements IInstanceableEnum
 			.setterParam(Boolean.class, "use full auto", "false", DribbleTestRole::setFullAuto)),
 
 
-	KICK_TEST(ic(KickTestRole.class,
+	KICK_TEST(ic(
+			KickTestRole.class,
 			new InstanceableParameter(DynamicPosition.class, "passTarget", "4500,0"),
 			new InstanceableParameter(EKickerDevice.class, "device", "STRAIGHT"),
-			new InstanceableParameter(Double.TYPE, "kickSpeed", "6.5"))
+			new InstanceableParameter(Double.TYPE, "kickSpeed", "6.5")
+	)
 	),
 
-	STRAIGHT_CHIP_KICK_SAMPLER(ic(StraightChipKickSamplerRole.class,
+	STRAIGHT_CHIP_KICK_SAMPLER(ic(
+			StraightChipKickSamplerRole.class,
 			new InstanceableParameter(EFieldSide.class, "fieldHalf", "BOTH"),
 			new InstanceableParameter(EKickerDevice.class, "kickType", "STRAIGHT"),
 			new InstanceableParameter(Double.TYPE, "durationMs", "1.0"),
 			new InstanceableParameter(EKickMode.class, "kickMode", "SINGLE_TOUCH"),
 			new InstanceableParameter(IVector2.class, "kickCorner", "1,1"),
-			new InstanceableParameter(Boolean.TYPE, "chipFromSide", "false"))
+			new InstanceableParameter(Boolean.TYPE, "chipFromSide", "false")
+	)
 	),
-
-	CROOKED_KICK_SAMPLER(ic(CrookedKickSamplerRole.class,
-			new InstanceableParameter(IVector2.class, "kickPos", "0,0"),
-			new InstanceableParameter(Double.TYPE, "orientation", "0.0"),
-			new InstanceableParameter(Double.TYPE, "kickDurationMs", "4.0"),
-			new InstanceableParameter(Double.TYPE, "offsetCenter", "20.0"),
-			new InstanceableParameter(Integer.TYPE, "numSamples", "5"),
-			new InstanceableParameter(Boolean.TYPE, "continue", "true"))
-	),
-
 
 	;
 

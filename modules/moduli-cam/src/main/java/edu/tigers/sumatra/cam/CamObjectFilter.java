@@ -1,11 +1,8 @@
-/*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.cam;
 
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.cam.data.ACamObject;
 import edu.tigers.sumatra.cam.data.CamBall;
 import edu.tigers.sumatra.cam.data.CamDetectionFrame;
@@ -25,15 +22,15 @@ import java.util.Optional;
  */
 public class CamObjectFilter
 {
-	@Configurable(comment = "Perform filtering of cam objects", defValue = "false")
+	@Configurable(comment = "Perform filtering of cam objects", defValue = "false", unit = EConfigUnit.BOOLEAN)
 	private static boolean filterEnabled = false;
 
-	@Configurable(comment = "P1 of rectangle defining a range where objects are ignored", defValue = "0.0;0.0")
+	@Configurable(comment = "P1 of rectangle defining a range where objects are ignored", defValue = "0.0;0.0", unit = EConfigUnit.VEC2)
 	private static IVector2 exclusionRectP1 = Vector2f.ZERO_VECTOR;
-	@Configurable(comment = "P2 of rectangle defining a range where objects are ignored", defValue = "0.0;0.0")
+	@Configurable(comment = "P2 of rectangle defining a range where objects are ignored", defValue = "0.0;0.0", unit = EConfigUnit.VEC2)
 	private static IVector2 exclusionRectP2 = Vector2f.ZERO_VECTOR;
 
-	@Configurable(comment = "Specified cameras will be filtered", defValue = "1;3")
+	@Configurable(comment = "Specified cameras will be filtered", defValue = "1;3", unit = EConfigUnit.NO_UNIT)
 	private static Integer[] excludedCameras = {};
 
 	static

@@ -1,20 +1,16 @@
-/*
- * Copyright (c) 2009 - 2019, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra.matlab;
-
-import java.io.File;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import matlabcontrol.MatlabConnectionException;
 import matlabcontrol.MatlabInvocationException;
 import matlabcontrol.MatlabProxy;
 import matlabcontrol.MatlabProxyFactory;
 import matlabcontrol.MatlabProxyFactoryOptions;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import java.io.File;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 
 /**
@@ -98,7 +94,7 @@ public final class MatlabConnection
 			getMatlabProxy().eval("setup");
 		} catch (MatlabInvocationException err)
 		{
-			log.warn("Could not change to default dir: " + path, err);
+			log.warn("Could not change to default dir: {}", path, err);
 		}
 	}
 

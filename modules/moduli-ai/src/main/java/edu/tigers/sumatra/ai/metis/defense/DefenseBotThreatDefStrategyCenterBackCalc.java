@@ -1,10 +1,7 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.metis.defense;
 
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.ai.metis.defense.data.DefenseBallThreat;
 import edu.tigers.sumatra.ai.metis.defense.data.DefenseBotThreatDefStrategyData;
 import edu.tigers.sumatra.ai.metis.defense.data.EDefenseBotThreatDefStrategy;
@@ -27,9 +24,9 @@ import java.util.function.Supplier;
 @RequiredArgsConstructor
 public class DefenseBotThreatDefStrategyCenterBackCalc extends ADefenseThreatCalc
 {
-	@Configurable(comment = "[mm] The distance at which opponents are considered close to ball", defValue = "350.0")
+	@Configurable(comment = "The distance at which opponents are considered close to ball", defValue = "350.0", unit = EConfigUnit.DISTANCE_MM)
 	private static double opponentsCloseToBallDistance = 350.0;
-	@Configurable(comment = "[mm] The distance at which opponents are considered close to their own PenArea and therefore completely ignored from any sort of defense", defValue = "500.0")
+	@Configurable(comment = "The distance at which opponents are considered close to their own PenArea and therefore completely ignored from any sort of defense", defValue = "500.0", unit = EConfigUnit.DISTANCE_MM)
 	private static double opponentsCloseToPenAreaDistance = 500.0;
 
 
@@ -87,14 +84,29 @@ public class DefenseBotThreatDefStrategyCenterBackCalc extends ADefenseThreatCal
 	private DefenseBotThreatDefStrategyData buildDefenseBotThreatDefStrategyData(ITrackedBot bot)
 	{
 		var threatLine = threatLineCenterBack(bot);
-		var protectionLine = centerBackProtectionLine(threatLine, Geometry.getBotRadius() * 2);
+		ILineSegment protectionLine;
+		ILineSegment protectionLineIfBotChangesToBallThreat;
+		if (getAiFrame().getGameState().isStandardSituationForThem() || getAiFrame().getGameState()
+				.isNextStandardSituationForThem())
+		{
+			protectionLine = null;
+			protectionLineIfBotChangesToBallThreat = null;
+		} else
+		{
+			protectionLine = centerBackProtectionLine(
+					threatLine, Geometry.getBotRadius() * 2, DefenseConstants.getMaxGoOutDistanceBot()).orElse(null);
+			protectionLineIfBotChangesToBallThreat = centerBackProtectionLine(
+					threatLine, Geometry.getBotRadius() * 2, DefenseConstants.getMaxGoOutDistanceBall()).orElse(null);
+
+		}
 
 		return DefenseBotThreatDefStrategyData.create(
 				EDefenseBotThreatDefStrategy.CENTER_BACK,
 				bot,
 				threatLine.getPathStart(),
 				threatLine,
-				protectionLine.orElse(null),
+				protectionLine,
+				protectionLineIfBotChangesToBallThreat,
 				defenseBallThreat.get()
 		);
 	}

@@ -1,10 +1,8 @@
-/*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra.vision.kick.estimators;
 
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.ball.BallState;
 import edu.tigers.sumatra.ball.trajectory.IBallTrajectory;
 import edu.tigers.sumatra.cam.data.CamBall;
@@ -73,19 +71,19 @@ public class ChipKickEstimator implements IKickEstimator
 	private int failures;
 
 
-	@Configurable(comment = "Minimum number of records to start estimation", defValue = "8")
+	@Configurable(comment = "Minimum number of records to start estimation", defValue = "8", unit = EConfigUnit.COUNT)
 	private static int minRecords = 8;
 
-	@Configurable(comment = "Max fitting failures until this estimator is dropped", defValue = "12")
+	@Configurable(comment = "Max fitting failures until this estimator is dropped", defValue = "12", unit = EConfigUnit.COUNT)
 	private static int maxFailures = 12;
 
-	@Configurable(comment = "Max fitting error until this estimator is dropped [mm]", defValue = "100.0")
+	@Configurable(comment = "Max fitting error until this estimator is dropped", defValue = "100.0", unit = EConfigUnit.DISTANCE_MM)
 	private static double maxFittingError = 100.0;
 
-	@Configurable(comment = "Max number of records to keep over all cameras", defValue = "50")
+	@Configurable(comment = "Max number of records to keep over all cameras", defValue = "50", unit = EConfigUnit.COUNT)
 	private static int maxNumberOfRecords = 50;
 
-	@Configurable(comment = "Estimate kick position if the ball is visible on two cameras", defValue = "false")
+	@Configurable(comment = "Estimate kick position if the ball is visible on two cameras", defValue = "false", unit = EConfigUnit.BOOLEAN)
 	private static boolean useKickPositionEstimator = false;
 
 	static

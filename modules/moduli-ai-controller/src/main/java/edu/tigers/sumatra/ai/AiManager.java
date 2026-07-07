@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai;
 
 import edu.tigers.sumatra.ai.athena.EAIControlState;
@@ -15,7 +11,7 @@ import edu.tigers.sumatra.timer.ATimer;
 import edu.tigers.sumatra.timer.ITimer;
 import edu.tigers.sumatra.wp.AWorldPredictor;
 import edu.tigers.sumatra.wp.data.WorldFrameWrapper;
-import org.apache.commons.lang.Validate;
+import org.apache.commons.lang3.Validate;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.ThreadContext;

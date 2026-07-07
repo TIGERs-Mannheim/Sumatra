@@ -1,6 +1,3 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra.gui.botcenter.view.basestation;
 
 import edu.tigers.sumatra.botmanager.commands.basestation.BaseStationEthStats;
@@ -12,6 +9,7 @@ import javax.swing.JPanel;
 import javax.swing.JProgressBar;
 import javax.swing.JTextField;
 import javax.swing.SwingConstants;
+import java.io.Serial;
 import java.util.Locale;
 
 
@@ -23,6 +21,7 @@ import java.util.Locale;
 public class BaseStationEthStatsPanel extends JPanel
 {
 	/**  */
+	@Serial
 	private static final long	serialVersionUID	= 2509698325399806711L;
 
 	// --------------------------------------------------------------------------

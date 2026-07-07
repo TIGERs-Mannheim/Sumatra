@@ -1,15 +1,12 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.persistence;
 
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.model.SumatraModel;
 import edu.tigers.sumatra.moduli.AModule;
 import edu.tigers.sumatra.moduli.exceptions.ModuleNotFoundException;
-import edu.tigers.sumatra.persistence.log.PersistenceLogEvent;
+import edu.tigers.sumatra.persistence.log.PersistenceLogCohort;
 import edu.tigers.sumatra.persistence.log.PersistenceLogRecorder;
 import edu.tigers.sumatra.referee.AReferee;
 import edu.tigers.sumatra.referee.IRefereeObserver;
@@ -32,17 +29,18 @@ public class RecordManager extends AModule implements IRefereeObserver
 	private static final Logger log = LogManager.getLogger(RecordManager.class.getName());
 	private final List<IRecordObserver> observers = new CopyOnWriteArrayList<>();
 	private final List<IRecorderHook> hooks = new CopyOnWriteArrayList<>();
-	private long lastCommandCounter = -1;
 	private PersistenceAsyncRecorder recorder = null;
 	protected String teamYellow = "";
 	protected String teamBlue = "";
 	protected String matchType = "";
 	protected String matchStage = "";
 
-	@Configurable(defValue = "false", comment = "Automatically compress recordings after they were closed")
+	@Configurable(defValue = "false", comment = "Automatically compress recordings after they were closed",
+			unit = EConfigUnit.BOOLEAN)
 	private static boolean compressOnClose = false;
 
-	@Configurable(defValue = "true", comment = "Automatically record game in tournament mode")
+	@Configurable(defValue = "true", comment = "Automatically record game in tournament mode",
+			unit = EConfigUnit.BOOLEAN)
 	private static boolean autoRecord = true;
 
 	static
@@ -92,13 +90,19 @@ public class RecordManager extends AModule implements IRefereeObserver
 
 	public void pauseRecorder()
 	{
-		recorder.pause();
+		if (recorder != null) // Can happen while starting/stopping recording due to concurrency
+		{
+			recorder.pause();
+		}
 	}
 
 
 	public void resumeRecorder()
 	{
-		recorder.resume();
+		if (recorder != null) // Can happen while starting/stopping recording due to concurrency
+		{
+			recorder.resume();
+		}
 	}
 
 
@@ -122,16 +126,6 @@ public class RecordManager extends AModule implements IRefereeObserver
 	}
 
 
-	private boolean isNoGameStage(final SslGcRefereeMessage.Referee refMsg)
-	{
-		return switch (refMsg.getStage())
-		{
-			case EXTRA_HALF_TIME, NORMAL_HALF_TIME, PENALTY_SHOOTOUT_BREAK, POST_GAME, EXTRA_TIME_BREAK -> true;
-			default -> false;
-		};
-	}
-
-
 	@Override
 	public void onNewRefereeMsg(final SslGcRefereeMessage.Referee refMsg)
 	{
@@ -142,11 +136,9 @@ public class RecordManager extends AModule implements IRefereeObserver
 			matchType = refMsg.getMatchType().toString();
 			matchStage = refMsg.getStage().toString().replace("_PRE", "");
 		}
-		if (autoRecord && SumatraModel.getInstance().isTournamentMode() && (refMsg != null)
-				&& refMsg.getCommandCounter() != lastCommandCounter)
+		if (autoRecord && SumatraModel.getInstance().isTournamentMode() && refMsg != null)
 		{
 			startStopRecording(refMsg);
-			lastCommandCounter = refMsg.getCommandCounter();
 		}
 	}
 
@@ -158,7 +150,7 @@ public class RecordManager extends AModule implements IRefereeObserver
 						|| (isPreStage(refMsg) && (refMsg.getCommand() != SslGcRefereeMessage.Referee.Command.HALT))))
 		{
 			startRecording();
-		} else if (isRecording() && isNoGameStage(refMsg))
+		} else if (isRecording() && refMsg.getStage() == SslGcRefereeMessage.Referee.Stage.POST_GAME)
 		{
 			stopRecording();
 		}
@@ -274,7 +266,7 @@ public class RecordManager extends AModule implements IRefereeObserver
 	 */
 	private PersistenceDb newPersistenceDb()
 	{
-		PersistenceDb db = PersistenceDb.withDefaultLocation(matchType, matchStage, teamYellow, teamBlue);
+		PersistenceDb db = PersistenceDb.withDefaultLocation(matchType, teamYellow, teamBlue);
 		onNewPersistenceDb(db);
 		return db;
 	}
@@ -287,7 +279,7 @@ public class RecordManager extends AModule implements IRefereeObserver
 	 */
 	protected void onNewPersistenceDb(PersistenceDb db)
 	{
-		db.add(PersistenceLogEvent.class, EPersistenceKeyType.ARBITRARY);
+		db.add(PersistenceLogCohort.class, EPersistenceKeyType.ARBITRARY);
 	}
 
 

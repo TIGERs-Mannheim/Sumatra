@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.metis.targetrater;
 
 import edu.tigers.sumatra.ai.metis.ACalculator;
@@ -41,7 +37,7 @@ public class BestGoalKickRaterCalc extends ACalculator
 	@Override
 	public void doCalc()
 	{
-		rater.update(getWFrame(), bestGoalKickPerBot);
+		rater.update(getAiFrame(), bestGoalKickPerBot);
 		rater.setWaitTime(waitTimeToNextValidGoal());
 
 		var bestGoalKicks = kickOrigins.get().values().stream()
@@ -62,6 +58,7 @@ public class BestGoalKickRaterCalc extends ACalculator
 				.collect(Collectors.toUnmodifiableMap(e -> e.getKickOrigin().getShooter(), e -> e));
 
 		getShapes(EAiShapesLayer.AI_BEST_GOAL_KICK).addAll(rater.getShapes());
+		getShapes(EAiShapesLayer.AI_BEST_REDIRECT_GOAL_KICK).addAll(rater.getRedirectShapes());
 	}
 
 

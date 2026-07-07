@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.metis.offense.action;
 
 public enum EOffensiveActionType
@@ -11,5 +7,6 @@ public enum EOffensiveActionType
 	REDIRECT_KICK,
 	DRIBBLE_KICK,
 	PROTECT,
-	RECEIVE
+	RECEIVE,
+	FINISHER_PASS
 }

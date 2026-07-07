@@ -1,10 +1,7 @@
-/*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.autoreferee.engine.detector;
 
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.autoreferee.EAutoRefShapesLayer;
 import edu.tigers.sumatra.drawable.DrawableCircle;
 import edu.tigers.sumatra.geometry.Geometry;
@@ -33,7 +30,7 @@ public class AttackerToDefenseAreaDistanceDetector extends AGameEventDetector
 {
 	private static final double INACCURACY_TOLERANCE = 15;
 
-	@Configurable(comment = "[s] The grace period for the bots to position them after a the activation of the detector", defValue = "2.0")
+	@Configurable(comment = "The grace period for the bots to position them after a the activation of the detector", defValue = "2.0", unit = EConfigUnit.TIME_S)
 	private static double gracePeriod = 2.0;
 
 	private final double requiredMargin = RuleConstraints.getBotToPenaltyAreaMarginStandard()

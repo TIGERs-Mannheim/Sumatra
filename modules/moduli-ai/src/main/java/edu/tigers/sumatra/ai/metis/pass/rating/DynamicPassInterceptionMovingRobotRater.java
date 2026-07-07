@@ -1,11 +1,8 @@
-/*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.metis.pass.rating;
 
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.ai.metis.kicking.Pass;
 import edu.tigers.sumatra.ai.metis.offense.situation.zone.OffensiveZones;
 import edu.tigers.sumatra.ai.metis.pass.PassStats;
@@ -28,18 +25,18 @@ import java.util.List;
  */
 public class DynamicPassInterceptionMovingRobotRater extends APassRater
 {
-	@Configurable(defValue = "0.15", comment = "Adjustment phase 1: max bonus for zone passes")
+	@Configurable(defValue = "0.15", comment = "Adjustment phase 1: max bonus for zone passes", unit = EConfigUnit.PERCENTAGE)
 	private static double maxDynamicAdjustment = 0.15;
 
-	@Configurable(defValue = "0.03", comment = "Adjustment phase 1: calculate bonus via past pass success history of zone passes")
+	@Configurable(defValue = "0.03", comment = "Adjustment phase 1: calculate bonus via past pass success history of zone passes", unit = EConfigUnit.PERCENTAGE)
 	private static double dynamicAdjustmentStepSize = 0.03;
 
-	@Configurable(defValue = "0.3", comment = "Adjustment phase 2: success ratio bonus multiplier")
+	@Configurable(defValue = "0.3", comment = "Adjustment phase 2: success ratio bonus multiplier", unit = EConfigUnit.FACTOR)
 	private static double dynamicAdjustmentFactor = 0.3;
-	@Configurable(defValue = "0.7", comment = "the pass success ratio that shall be achieved using dynamic adjustment")
+	@Configurable(defValue = "0.7", comment = "the pass success ratio that shall be achieved using dynamic adjustment", unit = EConfigUnit.PERCENTAGE)
 	private static double targetedPassRatio = 0.7;
 
-	@Configurable(defValue = "10", comment = "Adjustment phase 2: calculate bonus via pass success ratio")
+	@Configurable(defValue = "10", comment = "Adjustment phase 2: calculate bonus via pass success ratio", unit = EConfigUnit.COUNT)
 	private static int numOfPassesToStartDynamicScoringFactorAdjustment = 10;
 
 	static
@@ -56,7 +53,8 @@ public class DynamicPassInterceptionMovingRobotRater extends APassRater
 			Collection<ITrackedBot> consideredBots,
 			PassStats passStats,
 			OffensiveZones offensiveZones,
-			List<BotID> opponentMan2ManMarkers)
+			List<BotID> opponentMan2ManMarkers
+	)
 	{
 		passInterceptionMovingRobotRater = new PassInterceptionMovingRobotRater(consideredBots, opponentMan2ManMarkers);
 		this.passStats = passStats;
@@ -86,10 +84,10 @@ public class DynamicPassInterceptionMovingRobotRater extends APassRater
 			int nTotal = targetStats.getTotalPasses();
 			int nSuccess = targetStats.getSuccessfulPasses();
 			int nFailure = nTotal - nSuccess;
-			dynamicAdjustment = Math.min(maxDynamicAdjustment,
-					Math.max(-maxDynamicAdjustment, (nSuccess - nFailure) * dynamicAdjustmentStepSize));
+			dynamicAdjustment = Math.clamp(
+					(nSuccess - nFailure) * dynamicAdjustmentStepSize, -maxDynamicAdjustment, maxDynamicAdjustment);
 		}
-		return Math.min(1, Math.max(0, rawScore + dynamicAdjustment));
+		return Math.clamp(rawScore + dynamicAdjustment, 0, 1);
 	}
 
 

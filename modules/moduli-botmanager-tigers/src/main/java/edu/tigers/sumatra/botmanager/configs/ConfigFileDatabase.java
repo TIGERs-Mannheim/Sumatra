@@ -1,12 +1,8 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.botmanager.configs;
 
 import edu.tigers.sumatra.botmanager.commands.tigerv3.TigerConfigFileStructure;
 import lombok.Getter;
-import org.apache.commons.lang.Validate;
+import org.apache.commons.lang3.Validate;
 
 import java.util.HashMap;
 import java.util.HashSet;

@@ -1,11 +1,3 @@
-/*
- * *********************************************************
- * Copyright (c) 2009 - 2014, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Mar 17, 2014
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
- */
 package com.github.g3force.configurable;
 
 import java.lang.annotation.ElementType;
@@ -40,7 +32,10 @@ public @interface Configurable
 	/**
 	 * Set a default value. This is only needed, if field is not static.
 	 */
-	String defValue() default "";
+	String defValue();
+
+
+	EConfigUnit unit();
 
 
 	String[] defValueSpezis() default {};

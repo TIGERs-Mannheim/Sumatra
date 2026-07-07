@@ -1,10 +1,6 @@
-/*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.time;
 
-import org.apache.commons.lang.Validate;
+import org.apache.commons.lang3.Validate;
 
 import java.util.Deque;
 import java.util.concurrent.ConcurrentLinkedDeque;

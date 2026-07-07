@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.metis.general;
 
 import edu.tigers.sumatra.ai.metis.ACalculator;
@@ -68,8 +64,10 @@ public class DirectShotDetectionCalc extends ACalculator
 		Optional<KickedBall> kickEvent = getWFrame().getKickedBall();
 		if (kickEvent.isPresent() && kickEvent.get().getKickingBot().getTeamColor() == attackingTeamColor)
 		{
-			ILineSegment ballLine = Lines.segmentFromOffset(getBall().getPos(),
-					getBall().getVel().scaleToNew(Geometry.getFieldLength()));
+			ILineSegment ballLine = Lines.segmentFromOffset(
+					getBall().getPos(),
+					getBall().getVel().scaleToNew(Geometry.getFieldLength())
+			);
 			ILineSegment goalLine = attackedGoal.getLineSegment();
 			Optional<IVector2> intersection = ballLine.intersect(goalLine).asOptional();
 			if (intersection.isPresent())

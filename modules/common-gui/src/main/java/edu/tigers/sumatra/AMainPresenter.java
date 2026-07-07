@@ -1,14 +1,16 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra;
 
-import com.formdev.flatlaf.FlatIntelliJLaf;
 import com.formdev.flatlaf.FlatLightLaf;
+import com.formdev.flatlaf.intellijthemes.FlatGradiantoMidnightBlueIJTheme;
+import com.formdev.flatlaf.intellijthemes.FlatMaterialDesignDarkIJTheme;
+import com.formdev.flatlaf.intellijthemes.FlatSolarizedDarkIJTheme;
+import com.formdev.flatlaf.intellijthemes.materialthemeuilite.FlatMTMaterialDarkerIJTheme;
+import com.formdev.flatlaf.intellijthemes.materialthemeuilite.FlatMTMoonlightIJTheme;
+import com.formdev.flatlaf.intellijthemes.materialthemeuilite.FlatMTNightOwlIJTheme;
 import edu.tigers.sumatra.model.SumatraModel;
 import edu.tigers.sumatra.util.GlobalShortcuts;
 import edu.tigers.sumatra.util.ScalingUtil;
-import edu.tigers.sumatra.views.ASumatraView;
+import edu.tigers.sumatra.views.SumatraView;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.SneakyThrows;
@@ -21,13 +23,14 @@ import net.infonode.docking.theme.ShapedGradientDockingTheme;
 import net.infonode.docking.util.DockingUtil;
 import net.infonode.docking.util.MixedViewHandler;
 import net.infonode.docking.util.ViewMap;
-import net.infonode.gui.laf.InfoNodeLookAndFeel;
 import net.infonode.util.Direction;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JTextPane;
+import javax.swing.SwingUtilities;
+import javax.swing.UIManager;
 import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.Frame;
@@ -68,13 +71,18 @@ public abstract class AMainPresenter<T extends AMainFrame>
 	private final Path layoutConfigPath;
 
 	@Getter
-	private final List<ASumatraView> views;
+	private final List<SumatraView> views;
 
 	static
 	{
-		InfoNodeLookAndFeel.install();
-		FlatIntelliJLaf.installLafInfo();
 		FlatLightLaf.installLafInfo();
+		FlatMaterialDesignDarkIJTheme.installLafInfo();
+		FlatMTNightOwlIJTheme.installLafInfo();
+		FlatMTMoonlightIJTheme.installLafInfo();
+		FlatSolarizedDarkIJTheme.installLafInfo();
+		FlatGradiantoMidnightBlueIJTheme.installLafInfo();
+		FlatMTMaterialDarkerIJTheme.installLafInfo();
+		TIGERsTheme.installLafInfo();
 
 		ScalingUtil.updateBaselineSize(new JTextPane().getFont().getSize());
 		// JMenuBar on the macOS menu bar
@@ -82,7 +90,7 @@ public abstract class AMainPresenter<T extends AMainFrame>
 	}
 
 
-	protected AMainPresenter(T mainFrame, List<ASumatraView> views, String name)
+	protected AMainPresenter(T mainFrame, List<SumatraView> views, String name)
 	{
 		this.views = Collections.unmodifiableList(views);
 		this.mainFrame = mainFrame;
@@ -102,6 +110,14 @@ public abstract class AMainPresenter<T extends AMainFrame>
 		mainFrame.getMenuItemLayoutSave().addActionListener(e -> onSaveLayout());
 		mainFrame.addWindowListener(new WindowListener());
 
+		SwingUtilities.invokeLater(() -> SwingUtilities.updateComponentTreeUI(mainFrame));
+		UIManager.addPropertyChangeListener(e ->
+		{
+			if ("lookAndFeel".equals(e.getPropertyName()))
+			{
+				SwingUtilities.invokeLater(() -> SwingUtilities.updateComponentTreeUI(mainFrame));
+			}
+		});
 		mainFrame.setVisible(true);
 	}
 
@@ -109,7 +125,7 @@ public abstract class AMainPresenter<T extends AMainFrame>
 	private void initializeViews()
 	{
 		// initialize all views that are currently visible
-		for (ASumatraView view : views)
+		for (SumatraView view : views)
 		{
 			if (view.getView().isShowing() || view.getType().isForceLoad())
 			{
@@ -254,7 +270,7 @@ public abstract class AMainPresenter<T extends AMainFrame>
 	/**
 	 * Creates the root window and the views.
 	 */
-	private static RootWindow createRootWindow(List<ASumatraView> views)
+	private static RootWindow createRootWindow(List<SumatraView> views)
 	{
 		ViewMap viewMap = new ViewMap();
 		// The mixed view map makes it easy to mix static and dynamic views inside the same root window
@@ -337,10 +353,10 @@ public abstract class AMainPresenter<T extends AMainFrame>
 
 	private class RestoreView implements ActionListener
 	{
-		private final ASumatraView sumatraView;
+		private final SumatraView sumatraView;
 
 
-		public RestoreView(final ASumatraView v)
+		public RestoreView(final SumatraView v)
 		{
 			sumatraView = v;
 		}

@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
- */
-
 plugins {
     id 'sumatra.java'
 }
@@ -47,11 +43,12 @@ testing {
             }
 
             targets {
-                all {
+                configureEach {
                     testTask.configure {
                         maxHeapSize = "2g"
                         systemProperty("junit.jupiter.execution.timeout.threaddump.enabled", "true")
                         inputs.dir(file('config'))
+                        jvmArgs += edu.tigers.sumatra.gradle.JvmArgs.PERSISTENCE_ADD_OPENS
                     }
                 }
             }

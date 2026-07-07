@@ -1,6 +1,3 @@
-/*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra.sim.dynamics.bot;
 
 import edu.tigers.sumatra.control.motor.MatrixMotorModel;
@@ -14,6 +11,7 @@ import edu.tigers.sumatra.math.vector.Vector2f;
 import edu.tigers.sumatra.math.vector.Vector3;
 import edu.tigers.sumatra.trajectory.BangBangTrajectoryFactory;
 import edu.tigers.sumatra.trajectory.ITrajectory;
+import org.apache.commons.lang3.Validate;
 
 
 /**
@@ -259,10 +257,13 @@ public class SimBotDynamics
 					output.getTargetPos().getXYVector().multiplyNew(1e-3),
 					velGlobal.multiplyNew(1e-3),
 					output.getDriveLimits().getVelMax(),
-					output.getDriveLimits().getAccMax());
+					output.getDriveLimits().getAccMax()
+			);
 		}
 
-		pos = trajXy.getPositionMM(dt);
+		IVector2 newPos = trajXy.getPositionMM(dt);
+		Validate.isTrue(newPos.isFinite(), "Trajectory must be finite: ", trajXy);
+		pos = newPos;
 		velLocal.setXY(BotMath.convertGlobalBotVector2Local(trajXy.getVelocity(dt).multiplyNew(1e3), orient));
 		accLocal.setXY(BotMath.convertGlobalBotVector2Local(trajXy.getAcceleration(dt).multiplyNew(1e3), orient));
 

@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.drawable;
 
 import lombok.Builder;
@@ -12,7 +8,7 @@ import java.util.List;
 
 
 @Value
-@Builder(toBuilder = true)
+@Builder(toBuilder = true, builderMethodName = "")
 public class ShapeLayerIdentifier implements IShapeLayerIdentifier
 {
 	String id;
@@ -23,6 +19,18 @@ public class ShapeLayerIdentifier implements IShapeLayerIdentifier
 	ShapeMap.EShapeLayerPersistenceType persistenceType = ShapeMap.EShapeLayerPersistenceType.ALWAYS_PERSIST;
 	boolean visibleByDefault;
 	int orderId;
+
+
+	/**
+	 * Package-private builder to protect it from external callers.
+	 * Should only be used by the ShapeLayerIdentifierFactory.
+	 *
+	 * @return
+	 */
+	static ShapeLayerIdentifierBuilder builder()
+	{
+		return new ShapeLayerIdentifierBuilder();
+	}
 
 
 	@Override

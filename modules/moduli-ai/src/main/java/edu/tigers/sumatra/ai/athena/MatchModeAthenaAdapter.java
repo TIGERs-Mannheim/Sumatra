@@ -1,6 +1,3 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra.ai.athena;
 
 import com.github.g3force.instanceables.InstanceableClass;
@@ -35,9 +32,38 @@ public class MatchModeAthenaAdapter implements IAthenaAdapter
 	public PlayStrategy process(final MetisAiFrame metisAiFrame, final AthenaGuiInput athenaGuiInput)
 	{
 		syncTargetPlaySet(metisAiFrame.getTacticalField().getDesiredBotMap().keySet(), activePlays);
-		roleAssigner.assignRoles(activePlays, metisAiFrame.getTacticalField().getDesiredBotMap());
+		var desiredBotMap = validateBotMap(metisAiFrame.getTacticalField().getDesiredBotMap(), metisAiFrame);
+		roleAssigner.assignRoles(activePlays, desiredBotMap);
 		checkRoleCount(metisAiFrame);
 		return new PlayStrategy(Set.copyOf(activePlays));
+	}
+
+
+	private Map<EPlay, Set<BotID>> validateBotMap(Map<EPlay, Set<BotID>> desiredBotMap, MetisAiFrame frame)
+	{
+		Set<BotID> availableBots = frame.getWorldFrame().getTigerBotsAvailable().keySet();
+		Map<EPlay, Set<BotID>> validatedBotMap = new EnumMap<>(EPlay.class);
+		Set<BotID> removedBots = new HashSet<>();
+		for (var entry : desiredBotMap.entrySet())
+		{
+			Set<BotID> validBots = new HashSet<>();
+			for (BotID botID : entry.getValue())
+			{
+				if (availableBots.contains(botID))
+				{
+					validBots.add(botID);
+				} else
+				{
+					removedBots.add(botID);
+				}
+			}
+			validatedBotMap.put(entry.getKey(), validBots);
+		}
+		if (!removedBots.isEmpty())
+		{
+			log.warn("Removed desired bots that are not available: {}", removedBots);
+		}
+		return validatedBotMap;
 	}
 
 
@@ -57,8 +83,10 @@ public class MatchModeAthenaAdapter implements IAthenaAdapter
 	}
 
 
-	private void removeVanishedPlays(final Set<EPlay> targetPlaySet, final Set<APlay> activePlays,
-			final Map<EPlay, APlay> activePlaysMap)
+	private void removeVanishedPlays(
+			final Set<EPlay> targetPlaySet, final Set<APlay> activePlays,
+			final Map<EPlay, APlay> activePlaysMap
+	)
 	{
 		for (APlay aPlay : activePlaysMap.values())
 		{
@@ -71,8 +99,10 @@ public class MatchModeAthenaAdapter implements IAthenaAdapter
 	}
 
 
-	private void addNewPlays(final Set<EPlay> targetPlaySet, final Set<APlay> activePlays,
-			final Map<EPlay, APlay> activePlaysMap)
+	private void addNewPlays(
+			final Set<EPlay> targetPlaySet, final Set<APlay> activePlays,
+			final Map<EPlay, APlay> activePlaysMap
+	)
 	{
 		for (EPlay ePlay : targetPlaySet)
 		{
@@ -114,8 +144,10 @@ public class MatchModeAthenaAdapter implements IAthenaAdapter
 					.toList();
 			if (numBots != roles.size())
 			{
-				log.warn("Assigned role number does not match number of bots: numBots={}, numRoles={} | Roles: {}",
-						numBots, roles.size(), roles);
+				log.warn(
+						"Assigned role number does not match number of bots: numBots={}, numRoles={} | Roles: {}",
+						numBots, roles.size(), roles
+				);
 			} else
 			{
 				Set<BotID> uniqueSetOfBots = roles.stream().map(ARole::getBotID).collect(Collectors.toSet());

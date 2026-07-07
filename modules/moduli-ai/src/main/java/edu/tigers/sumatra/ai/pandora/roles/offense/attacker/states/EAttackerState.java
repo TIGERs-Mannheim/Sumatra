@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.pandora.roles.offense.attacker.states;
 
 
@@ -19,5 +15,6 @@ public enum EAttackerState implements IEvent
 	PROTECT,
 	SKIRMISH,
 	RECEIVE,
-	REDIRECT
+	REDIRECT,
+	FINISHER_PASS,
 }

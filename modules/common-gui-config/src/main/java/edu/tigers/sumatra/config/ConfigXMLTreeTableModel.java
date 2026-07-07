@@ -1,6 +1,3 @@
-/*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra.config;
 
 import com.github.g3force.s2vconverter.String2ValueConverter;
@@ -10,7 +7,6 @@ import org.apache.commons.configuration.HierarchicalConfiguration;
 import org.apache.commons.configuration.HierarchicalConfiguration.Node;
 import org.apache.commons.configuration.XMLConfiguration;
 import org.apache.commons.configuration.tree.ConfigurationNode;
-import org.apache.commons.lang.NotImplementedException;
 
 import javax.swing.JLabel;
 import javax.swing.JTable;
@@ -31,8 +27,9 @@ import java.util.stream.Stream;
  */
 public class ConfigXMLTreeTableModel extends ATreeTableModel
 {
-	private static final String[] COLUMNS = new String[] { "Node", "Value", "Comment", "Tags" };
-	private static final Class<?>[] CLASSES = new Class<?>[] { ITreeTableModel.class, String.class, String.class, String.class };
+	private static final String[] COLUMNS = new String[] { "Node", "Value", "Unit", "Comment" };
+	private static final Class<?>[] CLASSES = new Class<?>[] { ITreeTableModel.class, String.class, String.class,
+			String.class, };
 
 
 	private final String2ValueConverter s2vConv = String2ValueConverter.getDefault();
@@ -60,12 +57,12 @@ public class ConfigXMLTreeTableModel extends ATreeTableModel
 		{
 			case 1:
 				final Object val = node.getValue();
-				var classAttr = node.getAttributes("class");
+				String clazz = getAttribute(node, "class");
 
-				if (val == null || classAttr.isEmpty())
+				if (val == null || clazz.isEmpty())
 					break;
 
-				Class<?> classType = String2ValueConverter.getClassFromValue(classAttr.getFirst().getValue());
+				Class<?> classType = String2ValueConverter.getClassFromValue(clazz);
 				if (classType.isEnum() || (classType == Boolean.TYPE) || (classType == Boolean.class))
 				{
 					result = s2vConv.parseString(classType, val.toString());
@@ -76,25 +73,17 @@ public class ConfigXMLTreeTableModel extends ATreeTableModel
 				break;
 
 			case 2:
-				var commentAttr = node.getAttributes("comment");
-				if (!commentAttr.isEmpty())
-				{
-					result = commentAttr.getFirst().getValue().toString();
-				}
+				result += getAttribute(node, "unit");
+				break;
+
+			case 3:
+				result += getAttribute(node, "comment");
 				final org.w3c.dom.Node comment = getComment(node);
 				if (comment != null)
 				{
 					result += " " + comment.getTextContent();
 				}
 				break;
-			case 3:
-				var tags = node.getAttributes("tags");
-				if (!tags.isEmpty())
-				{
-					result = tags.getFirst().getValue().toString();
-				}
-				break;
-
 			default:
 				throw new IllegalArgumentException("Invalid value for col: " + col);
 		}
@@ -155,12 +144,12 @@ public class ConfigXMLTreeTableModel extends ATreeTableModel
 		final Node node = (Node) obj;
 		switch (col)
 		{
-			case 1:
+			case 1, 2:
 				node.setValue(value);
 				fireTreeNodesChanged(this, getPathTo(node), new int[0], new Object[0]);
 				break;
 
-			case 2:
+			case 3:
 				final org.w3c.dom.Node comment = getComment(obj);
 				if (comment != null)
 				{
@@ -168,9 +157,6 @@ public class ConfigXMLTreeTableModel extends ATreeTableModel
 					fireTreeNodesChanged(this, getPathTo(node), new int[0], new Object[0]);
 				}
 				break;
-			case 3:
-				throw new NotImplementedException("I have not seen this method ever been used for cases other than 1. If "
-						+ "you need it, please implement it yourself");
 			default:
 				throw new IllegalArgumentException();
 		}
@@ -180,18 +166,6 @@ public class ConfigXMLTreeTableModel extends ATreeTableModel
 	@Override
 	public String getToolTipText(final MouseEvent event)
 	{
-		final JTable table = (JTable) event.getSource();
-		final int row = table.rowAtPoint(event.getPoint());
-
-		// Always show the comment as tooltip
-		final Object obj = table.getValueAt(row, 2);
-		// This is the value which is actually displayed in the table: a String!
-		final String value = (String) obj;
-
-		if (!value.isEmpty())
-		{
-			return value;
-		}
 		return null;
 	}
 
@@ -199,6 +173,17 @@ public class ConfigXMLTreeTableModel extends ATreeTableModel
 	// --------------------------------------------------------------------------
 	// --- local helper functions -----------------------------------------------
 	// --------------------------------------------------------------------------
+	private String getAttribute(final ConfigurationNode node, final String name)
+	{
+		List<ConfigurationNode> attrs = node.getAttributes(name);
+		String base = "";
+		if (attrs.size() == 1)
+		{
+			base = attrs.getFirst().getValue().toString();
+		}
+		return base;
+	}
+
 	private Object[] getPathTo(final Node node)
 	{
 		// Gather path elements

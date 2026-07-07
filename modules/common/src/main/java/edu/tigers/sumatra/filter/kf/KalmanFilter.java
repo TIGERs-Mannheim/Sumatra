@@ -1,11 +1,3 @@
-/*
- * *********************************************************
- * Copyright (c) 2009 - 2016, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 23.11.2016
- * Author(s): rYan
- * *********************************************************
- */
 package edu.tigers.sumatra.filter.kf;
 
 import org.apache.commons.math3.linear.Array2DRowRealMatrix;

@@ -1,14 +1,5 @@
-/*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.skillsystem.timeseries;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-
-import edu.tigers.sumatra.bot.IMoveConstraints;
 import edu.tigers.sumatra.bot.MoveConstraints;
 import edu.tigers.sumatra.botmanager.botskills.data.EKickerDevice;
 import edu.tigers.sumatra.botmanager.botskills.data.EKickerMode;
@@ -16,6 +7,10 @@ import edu.tigers.sumatra.data.collector.IExportable;
 import edu.tigers.sumatra.ids.ETeamColor;
 import edu.tigers.sumatra.math.vector.IVector3;
 import edu.tigers.sumatra.math.vector.Vector3f;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 
 /**
@@ -37,7 +32,7 @@ public class ExportableBotInput implements IExportable
 	private double kickSpeed = 0;
 	private int kickDevice = EKickerDevice.STRAIGHT.getValue();
 	private int kickMode = EKickerMode.DISARM.getId();
-	private MoveConstraints moveConstraints = new MoveConstraints();
+	private MoveConstraints moveConstraints = MoveConstraints.ZERO;
 
 
 	/**
@@ -294,7 +289,7 @@ public class ExportableBotInput implements IExportable
 	}
 
 
-	public IMoveConstraints getMoveConstraints()
+	public MoveConstraints getMoveConstraints()
 	{
 		return moveConstraints;
 	}

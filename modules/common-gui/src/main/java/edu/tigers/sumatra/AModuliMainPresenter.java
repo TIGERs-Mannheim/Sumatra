@@ -1,19 +1,15 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra;
 
 import edu.tigers.sumatra.model.SumatraModel;
 import edu.tigers.sumatra.moduli.ModulesState;
-import edu.tigers.sumatra.views.ASumatraView;
+import edu.tigers.sumatra.views.SumatraView;
 
 import java.util.List;
 
 
 public abstract class AModuliMainPresenter<T extends AMainFrame> extends AMainPresenter<T>
 {
-	protected AModuliMainPresenter(T mainFrame, List<ASumatraView> views, String name)
+	protected AModuliMainPresenter(T mainFrame, List<SumatraView> views, String name)
 	{
 		super(mainFrame, views, name);
 	}
@@ -24,13 +20,13 @@ public abstract class AModuliMainPresenter<T extends AMainFrame> extends AMainPr
 		if (newState == ModulesState.ACTIVE)
 		{
 			onModuliStarted();
-			getViews().forEach(ASumatraView::onModuliStarted);
-			getViews().forEach(ASumatraView::start);
+			getViews().forEach(SumatraView::onModuliStarted);
+			getViews().forEach(SumatraView::start);
 		} else if (newState == ModulesState.RESOLVED && oldState == ModulesState.ACTIVE)
 		{
 			onModuliStopped();
-			getViews().forEach(ASumatraView::onModuliStopped);
-			getViews().forEach(ASumatraView::stop);
+			getViews().forEach(SumatraView::onModuliStopped);
+			getViews().forEach(SumatraView::stop);
 		}
 	}
 

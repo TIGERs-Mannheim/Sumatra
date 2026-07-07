@@ -1,9 +1,5 @@
-/*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra.botmanager.botskills;
 
-import edu.tigers.sumatra.bot.IMoveConstraints;
 import edu.tigers.sumatra.bot.MoveConstraints;
 import edu.tigers.sumatra.botmanager.botskills.data.DriveKickerDribbler;
 import edu.tigers.sumatra.botmanager.botskills.data.EKickerDevice;
@@ -38,7 +34,7 @@ public class BotSkillKickBall extends ABotSkill
 	}
 
 
-	public BotSkillKickBall(final IMoveConstraints mc)
+	public BotSkillKickBall(final MoveConstraints mc)
 	{
 		this();
 

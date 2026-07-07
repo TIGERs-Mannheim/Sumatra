@@ -1,12 +1,8 @@
-/*
- * Copyright (c) 2009 - 2019, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.statistics;
 
 import edu.tigers.sumatra.model.SumatraModel;
 import edu.tigers.sumatra.moduli.AModule;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.influxdb.InfluxDBException;

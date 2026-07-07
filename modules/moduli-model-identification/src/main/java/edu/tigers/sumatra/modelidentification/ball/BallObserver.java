@@ -1,18 +1,14 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.modelidentification.ball;
 
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.drawable.DrawableBorderText;
-import edu.tigers.sumatra.drawable.IShapeLayerIdentifier;
-import edu.tigers.sumatra.drawable.ShapeLayerIdentifier;
 import edu.tigers.sumatra.drawable.ShapeMap;
 import edu.tigers.sumatra.geometry.BallParameters;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.math.vector.Vector2;
+import edu.tigers.sumatra.modelidentification.EModelIdentificationShapesLayer;
 import edu.tigers.sumatra.vision.kick.estimators.IBallModelIdentResult;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
@@ -29,13 +25,10 @@ import java.util.function.ToDoubleFunction;
 @RequiredArgsConstructor
 public class BallObserver
 {
-	private static final IShapeLayerIdentifier SHAPE_LAYER_ID = ShapeLayerIdentifier.builder().id("Ball observer")
-			.category("Movement Observer").visibleByDefault(false).orderId(0).build();
-
-	@Configurable(defValue = "31", comment = "Max buffer size for which the median of the ball model is determined")
+	@Configurable(defValue = "31", comment = "Max buffer size for which the median of the ball model is determined", unit = EConfigUnit.COUNT)
 	private static int medianBufferSize = 31;
 
-	@Configurable(defValue = "0.2", comment = "Warn if a ball parameter deviates more than the given fraction.")
+	@Configurable(defValue = "0.2", comment = "Warn if a ball parameter deviates more than the given fraction.", unit = EConfigUnit.PERCENTAGE)
 	private static double warnOnDeviation = 0.2;
 
 	private static final Map<String, ToDoubleFunction<BallParameters>> parameterGetter = new HashMap<>();
@@ -104,7 +97,7 @@ public class BallObserver
 		int y = 12;
 		for (Map.Entry<String, Double> entry : parameters.entrySet())
 		{
-			shapeMap.get(SHAPE_LAYER_ID).add(new DrawableBorderText(
+			shapeMap.get(EModelIdentificationShapesLayer.BALL_OBSERVER).add(new DrawableBorderText(
 					Vector2.fromXY(12, y++),
 					String.format("%s: %.2f", entry.getKey(), entry.getValue())
 			));

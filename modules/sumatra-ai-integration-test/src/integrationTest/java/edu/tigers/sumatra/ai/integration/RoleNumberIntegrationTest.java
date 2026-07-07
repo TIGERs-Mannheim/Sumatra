@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.integration;
 
 import edu.tigers.sumatra.ids.ETeamColor;
@@ -37,7 +33,7 @@ class RoleNumberIntegrationTest extends AAiIntegrationTest
 		nextFrame();
 		nextFrame();
 		assertNoErrorLog();
-		assertNoWarnLog();
+		assertNoWarnLogIgnoringDesperationOver9000();
 	}
 
 

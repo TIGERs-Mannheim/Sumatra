@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.metis.defense.data;
 
 import edu.tigers.sumatra.drawable.IDrawableShape;
@@ -9,6 +5,7 @@ import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Stream;
 
@@ -43,9 +40,9 @@ public record DefenseBotThreatDefData(ITrackedBot bot,
 
 	public List<IDrawableShape> drawShapes(int index)
 	{
-		return Stream.concat(
-				Optional.ofNullable(centerBackDefStrategyData).map(data -> data.drawShapes(index)).stream(),
-				Optional.ofNullable(man2manDefStrategyData).map(data -> data.drawShapes(index)).stream()
-		).flatMap(List::stream).toList();
+		return Stream.of(centerBackDefStrategyData, man2manDefStrategyData)
+				.filter(Objects::nonNull)
+				.flatMap(e -> e.drawShapes(index))
+				.toList();
 	}
 }

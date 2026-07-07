@@ -1,20 +1,13 @@
-/*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.skillsystem.tracking;
 
-import java.io.FileWriter;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Optional;
-import java.util.function.Function;
-
-import org.apache.commons.lang.StringUtils;
-import org.apache.commons.lang.builder.ToStringBuilder;
-import org.apache.commons.lang.builder.ToStringStyle;
+import edu.tigers.sumatra.bot.State;
+import edu.tigers.sumatra.filter.DataSync;
+import edu.tigers.sumatra.math.AngleMath;
+import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.math.vector.Vector2;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.builder.ToStringBuilder;
+import org.apache.commons.lang3.builder.ToStringStyle;
 import org.apache.commons.math3.analysis.UnivariateFunction;
 import org.apache.commons.math3.optim.MaxEval;
 import org.apache.commons.math3.optim.MaxIter;
@@ -27,11 +20,13 @@ import org.apache.commons.math3.optim.univariate.UnivariatePointValuePair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import edu.tigers.sumatra.bot.State;
-import edu.tigers.sumatra.filter.DataSync;
-import edu.tigers.sumatra.math.AngleMath;
-import edu.tigers.sumatra.math.vector.IVector2;
-import edu.tigers.sumatra.math.vector.Vector2;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Optional;
+import java.util.function.Function;
 
 
 /**
@@ -124,7 +119,7 @@ public class RobotTrajectoryTracker
 	{
 		final Optional<State> targetStateOpt = getTargetState(timestamp, latency);
 		final Optional<State> measuredStateOpt = getMeasuredState(timestamp, 0.0);
-		if (!targetStateOpt.isPresent() || !measuredStateOpt.isPresent())
+		if (targetStateOpt.isEmpty() || measuredStateOpt.isEmpty())
 		{
 			return Optional.empty();
 		}

@@ -1,31 +1,25 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.gui.sim.view;
 
-import edu.tigers.sumatra.drawable.EFontSize;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.model.SumatraModel;
 import edu.tigers.sumatra.sim.SumatraSimulator;
-import edu.tigers.sumatra.util.ImageScaler;
-import edu.tigers.sumatra.util.ScalingUtil;
+import jiconfont.icons.font_awesome.FontAwesome;
+import jiconfont.swing.IconFontSwing;
 import lombok.Getter;
 import lombok.extern.log4j.Log4j2;
 
 import javax.swing.AbstractAction;
-import javax.swing.Action;
-import javax.swing.BorderFactory;
+import javax.swing.Icon;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JSlider;
 import javax.swing.JToggleButton;
+import javax.swing.UIManager;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import java.awt.Color;
-import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -44,7 +38,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 public class SimulationPanel extends JPanel
 {
 	@Serial
-	private static final long serialVersionUID = 4936408016928626573L;
+	private static final long serialVersionUID = 4936408022928626573L;
 
 	@Getter
 	private final JToggleButton btnToggleSim;
@@ -58,62 +52,58 @@ public class SimulationPanel extends JPanel
 	@Getter
 	private final JCheckBox restoreLastSnapshot = new JCheckBox("Restore on start", true);
 
+	private final JButton btnStepBwd = new JButton();
+	private final JButton btnStep = new JButton();
+	private final JButton btnRepublish = new JButton();
+	private final JButton btnReset = new JButton();
+	private final JButton btnLoadSnapshot = new JButton();
+	private final JButton btnSaveSnapshot = new JButton();
+	private final JButton btnCopySnapshot = new JButton();
+	private final JButton btnPasteSnapshot = new JButton();
+
 	private final SimulationBotMgrPanel botMgrPanel;
 
 	private final transient List<ISimulationPanelObserver> observers = new CopyOnWriteArrayList<>();
 
+	private boolean initialized = false;
 
-	/**
-	 * Default
-	 */
+
 	public SimulationPanel()
 	{
 		setLayout(new FlowLayout(FlowLayout.LEFT));
 
-		Action pauseSimulationAction = new PauseSimulationAction();
 		btnToggleSim = new JToggleButton();
-		btnToggleSim.setIcon(ImageScaler.scaleDefaultButtonImageIcon("/play.png"));
-		btnToggleSim.setBorder(BorderFactory.createEmptyBorder());
-		btnToggleSim.setBackground(new Color(0, 0, 0, 0));
+		btnSlowmotion = new JToggleButton();
+
 		btnToggleSim.setToolTipText("Pause/Play");
-		btnToggleSim.addActionListener(pauseSimulationAction);
-
-		final JButton btnStepBwd = new JButton();
-		btnStepBwd.setIcon(ImageScaler.scaleDefaultButtonImageIcon("/skipFrameBackward.png"));
-		btnStepBwd.setBorder(BorderFactory.createEmptyBorder());
-		btnStepBwd.setBackground(new Color(0, 0, 0, 1));
-		btnStepBwd.addActionListener(new StepBwdAction());
 		btnStepBwd.setToolTipText("Step backward");
-
-		final JButton btnStep = new JButton();
-		btnStep.setIcon(ImageScaler.scaleDefaultButtonImageIcon("/skipFrameForward.png"));
-		btnStep.setBorder(BorderFactory.createEmptyBorder());
-		btnStep.setBackground(new Color(0, 0, 0, 1));
-		btnStep.addActionListener(new StepAction());
 		btnStep.setToolTipText("Step forward");
-
-		final JButton btnRepublish = new JButton();
-		btnRepublish.setIcon(ImageScaler.scaleDefaultButtonImageIcon("/refresh.png"));
-		btnRepublish.setBorder(BorderFactory.createEmptyBorder());
-		btnRepublish.setBackground(new Color(0, 0, 0, 1));
-		btnRepublish.addActionListener(new RepublishAction());
 		btnRepublish.setToolTipText("Republish");
-
-		final JButton btnReset = new JButton();
-		btnReset.setIcon(ImageScaler.scaleDefaultButtonImageIcon("/reset.png"));
-		btnReset.setBorder(BorderFactory.createEmptyBorder());
-		btnReset.setBackground(new Color(0, 0, 0, 1));
-		Action resetAction = new ResetAction();
-		btnReset.addActionListener(resetAction);
 		btnReset.setToolTipText("Reset simulation");
 
-		btnSlowmotion = new JToggleButton();
-		btnSlowmotion.setIcon(ImageScaler.scaleDefaultButtonImageIcon("/slowMotion.png"));
-		btnSlowmotion.setBorder(BorderFactory.createEmptyBorder());
-		btnSlowmotion.setBackground(new Color(0, 0, 0, 1));
 		btnSlowmotion.setToolTipText("Toggle slow motion");
+
+		btnLoadSnapshot.setToolTipText("Open from file");
+		btnSaveSnapshot.setToolTipText("Save to file");
+		btnCopySnapshot.setToolTipText("Copy to clipboard");
+		btnPasteSnapshot.setToolTipText("Paste from clipboard");
+
+		// actions
+		btnToggleSim.addActionListener(new PauseSimulationAction());
+		btnStepBwd.addActionListener(new StepBwdAction());
+		btnStep.addActionListener(new StepAction());
+		btnRepublish.addActionListener(new RepublishAction());
+		btnReset.addActionListener(new ResetAction());
+		btnLoadSnapshot.addActionListener(new OpenSnapAction());
+		btnSaveSnapshot.addActionListener(new SaveSnapAction());
+		btnCopySnapshot.addActionListener(new CopySnapAction());
+		btnPasteSnapshot.addActionListener(new PasteSnapAction());
+
 		btnSlowmotion.addActionListener(e -> observers.forEach(ISimulationPanelObserver::onToggleSlowMotion));
 
+		restoreLastSnapshot.addActionListener(new RestoreLastSnapshotListener());
+
+		// slider
 		sliderSpeed = new JSlider(-9, 1, 0);
 		sliderSpeed.setMajorTickSpacing(5);
 		sliderSpeed.setMinorTickSpacing(1);
@@ -122,53 +112,12 @@ public class SimulationPanel extends JPanel
 		sliderSpeed.addChangeListener(new SpeedListener());
 
 		lblSpeed = new JLabel("x1");
-		lblSpeed.setPreferredSize(new Dimension((int) (ScalingUtil.getFontSize(EFontSize.MEDIUM) * 3.0),
-				lblSpeed.getMaximumSize().height));
-
 		lblRelativeTime = new JLabel("(x1)");
-		lblRelativeTime.setPreferredSize(
-				new Dimension((int) (ScalingUtil.getFontSize(EFontSize.MEDIUM) * 4.0),
-						lblRelativeTime.getMaximumSize().height));
-
 		lblTime = new JLabel("-");
-		lblTime.setPreferredSize(new Dimension((int) (ScalingUtil.getFontSize(EFontSize.MEDIUM) * 8.0),
-				lblTime.getMaximumSize().height));
-		var btnLoadSnapshot = new JButton();
-		btnLoadSnapshot.setIcon(ImageScaler.scaleDefaultButtonImageIcon("/open.png"));
-		btnLoadSnapshot.setBorder(BorderFactory.createEmptyBorder());
-		btnLoadSnapshot.setBackground(new Color(0, 0, 0, 1));
-		btnLoadSnapshot.setToolTipText("Open from file");
-		Action loadAction = new OpenSnapAction();
-		btnLoadSnapshot.addActionListener(loadAction);
-
-		final JButton btnSaveSnapshot = new JButton();
-		btnSaveSnapshot.setIcon(ImageScaler.scaleDefaultButtonImageIcon("/save.png"));
-		btnSaveSnapshot.setBorder(BorderFactory.createEmptyBorder());
-		btnSaveSnapshot.setBackground(new Color(0, 0, 0, 1));
-		btnSaveSnapshot.setToolTipText("Save to file");
-		Action saveAction = new SaveSnapAction();
-		btnSaveSnapshot.addActionListener(saveAction);
-
-		final JButton btnCopySnapshot = new JButton();
-		btnCopySnapshot.setIcon(ImageScaler.scaleDefaultButtonImageIcon("/copy.png"));
-		btnCopySnapshot.setBorder(BorderFactory.createEmptyBorder());
-		btnCopySnapshot.setBackground(new Color(0, 0, 0, 1));
-		btnCopySnapshot.setToolTipText("Copy to clipboard");
-		Action copyAction = new CopySnapAction();
-		btnCopySnapshot.addActionListener(copyAction);
-
-		final JButton btnPasteSnapshot = new JButton();
-		btnPasteSnapshot.setIcon(ImageScaler.scaleDefaultButtonImageIcon("/paste.png"));
-		btnPasteSnapshot.setBorder(BorderFactory.createEmptyBorder());
-		btnPasteSnapshot.setBackground(new Color(0, 0, 0, 1));
-		btnPasteSnapshot.setToolTipText("Paste from clipboard");
-		Action pasteAction = new PasteSnapAction();
-		btnPasteSnapshot.addActionListener(pasteAction);
-
-		restoreLastSnapshot.addActionListener(new RestoreLastSnapshotListener());
 
 		botMgrPanel = new SimulationBotMgrPanel();
 
+		// layout
 		add(btnToggleSim);
 		add(btnStepBwd);
 		add(btnStep);
@@ -182,10 +131,48 @@ public class SimulationPanel extends JPanel
 		add(sliderSpeed);
 		add(btnSlowmotion);
 		add(lblSpeed);
-
 		add(lblRelativeTime);
 		add(lblTime);
 		add(botMgrPanel);
+
+		initialized = true;
+		setRunning(false);
+		updateIcons();
+	}
+
+
+	@Override
+	public void updateUI()
+	{
+		super.updateUI();
+		if (initialized)
+		{
+			updateIcons();
+		}
+	}
+
+
+	private void updateIcons()
+	{
+		Color c = UIManager.getColor("Label.foreground");
+
+		updateToggleSimIcon(c);
+
+		btnToggleSim.setIcon(IconFontSwing.buildIcon(FontAwesome.PLAY, 22, c));
+		updateToggleSimIcon(c);
+
+		btnStepBwd.setIcon(IconFontSwing.buildIcon(FontAwesome.STEP_BACKWARD, 22, c));
+		btnStep.setIcon(IconFontSwing.buildIcon(FontAwesome.STEP_FORWARD, 22, c));
+
+		btnRepublish.setIcon(IconFontSwing.buildIcon(FontAwesome.REFRESH, 22, c));
+		btnReset.setIcon(IconFontSwing.buildIcon(FontAwesome.UNDO, 22, c));
+
+		btnLoadSnapshot.setIcon(IconFontSwing.buildIcon(FontAwesome.FOLDER_OPEN, 22, c));
+		btnSaveSnapshot.setIcon(IconFontSwing.buildIcon(FontAwesome.FLOPPY_O, 22, c));
+		btnCopySnapshot.setIcon(IconFontSwing.buildIcon(FontAwesome.CLIPBOARD, 22, c));
+		btnPasteSnapshot.setIcon(IconFontSwing.buildIcon(FontAwesome.FILES_O, 22, c));
+
+		btnSlowmotion.setIcon(IconFontSwing.buildIcon(FontAwesome.CLOCK_O, 22, c));
 	}
 
 
@@ -239,8 +226,10 @@ public class SimulationPanel extends JPanel
 		{
 			for (BotID botID : BotID.getAll())
 			{
-				botMgrPanel.setBotAvailable(botID,
-						SumatraModel.getInstance().getModule(SumatraSimulator.class).isBotRegistered(botID));
+				botMgrPanel.setBotAvailable(
+						botID,
+						SumatraModel.getInstance().getModule(SumatraSimulator.class).isBotRegistered(botID)
+				);
 			}
 		}
 	}
@@ -270,16 +259,34 @@ public class SimulationPanel extends JPanel
 	}
 
 
+	private Icon iconPlay(Color c)
+	{
+		return IconFontSwing.buildIcon(FontAwesome.PLAY, 22, c);
+	}
+
+
+	private Icon iconPause(Color c)
+	{
+		return IconFontSwing.buildIcon(FontAwesome.PAUSE, 22, c);
+	}
+
+
+	private void updateToggleSimIcon(Color c)
+	{
+		btnToggleSim.setIcon(
+				btnToggleSim.isSelected()
+						? iconPause(c)
+						: iconPlay(c)
+		);
+	}
+
+
 	public void setRunning(boolean running)
 	{
 		btnToggleSim.setSelected(running);
-		if (running)
-		{
-			btnToggleSim.setIcon(ImageScaler.scaleDefaultButtonImageIcon("/pause.png"));
-		} else
-		{
-			btnToggleSim.setIcon(ImageScaler.scaleDefaultButtonImageIcon("/play.png"));
-		}
+
+		Color c = UIManager.getColor("Label.foreground");
+		updateToggleSimIcon(c);
 	}
 
 

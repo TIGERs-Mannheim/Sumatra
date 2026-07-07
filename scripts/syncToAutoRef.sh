@@ -1,9 +1,5 @@
 #!/usr/bin/env bash
 
-#
-# Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
-#
-
 # stop on error
 set -e
 

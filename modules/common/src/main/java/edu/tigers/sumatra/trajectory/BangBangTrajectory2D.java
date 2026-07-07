@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.trajectory;
 
 import edu.tigers.sumatra.math.AngleMath;
@@ -24,8 +20,22 @@ import java.util.function.UnaryOperator;
 @ToString
 class BangBangTrajectory2D implements ITrajectory<IVector2>
 {
-	final BangBangTrajectory1D x = new BangBangTrajectory1D();
-	final BangBangTrajectory1D y = new BangBangTrajectory1D();
+	final BangBangTrajectory1D x;
+	final BangBangTrajectory1D y;
+
+
+	BangBangTrajectory2D()
+	{
+		this.x = new BangBangTrajectory1D();
+		this.y = new BangBangTrajectory1D();
+	}
+
+
+	BangBangTrajectory2D(BangBangTrajectory1D x, BangBangTrajectory1D y)
+	{
+		this.x = x;
+		this.y = y;
+	}
 
 
 	@Override

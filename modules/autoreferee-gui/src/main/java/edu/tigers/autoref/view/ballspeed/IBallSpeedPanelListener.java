@@ -1,11 +1,3 @@
-/*
- * *********************************************************
- * Copyright (c) 2009 - 2016, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Jun 15, 2016
- * Author(s): "Lukas Magel"
- * *********************************************************
- */
 package edu.tigers.autoref.view.ballspeed;
 
 /**

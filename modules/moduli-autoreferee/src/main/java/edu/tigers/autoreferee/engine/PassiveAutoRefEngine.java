@@ -1,17 +1,9 @@
-/*
- * *********************************************************
- * Copyright (c) 2009 - 2016, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Mar 3, 2016
- * Author(s): "Lukas Magel"
- * *********************************************************
- */
 package edu.tigers.autoreferee.engine;
-
-import java.util.Set;
 
 import edu.tigers.autoreferee.IAutoRefFrame;
 import edu.tigers.autoreferee.engine.detector.EGameEventDetectorType;
+
+import java.util.Set;
 
 
 /**
@@ -23,8 +15,8 @@ public class PassiveAutoRefEngine extends AutoRefEngine
 	{
 		super(activeDetectors);
 	}
-	
-	
+
+
 	@Override
 	public void process(final IAutoRefFrame frame)
 	{

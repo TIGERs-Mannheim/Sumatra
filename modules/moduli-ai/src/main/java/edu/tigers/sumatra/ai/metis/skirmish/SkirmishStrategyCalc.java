@@ -1,10 +1,7 @@
-/*
- * Copyright (c) 2009 - 2024, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.metis.skirmish;
 
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.ai.metis.ACalculator;
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
 import edu.tigers.sumatra.ai.metis.botdistance.BotDistance;
@@ -32,22 +29,22 @@ import java.util.function.Supplier;
 @RequiredArgsConstructor
 public class SkirmishStrategyCalc extends ACalculator
 {
-	@Configurable(defValue = "2100.0", comment = "[mm] distance to pen area at which we switch between bully strategy and rip free")
+	@Configurable(defValue = "2100.0", comment = "distance to pen area at which we switch between bully strategy and rip free", unit = EConfigUnit.DISTANCE_MM)
 	private static double switchingDistanceBulliesAndRipFree = 2100.0;
-	@Configurable(defValue = "500.0", comment = "[mm] Hysteresis size")
+	@Configurable(defValue = "500.0", comment = "Hysteresis size", unit = EConfigUnit.DISTANCE_MM)
 	private static double switchingDistanceHysteresisSize = 500.0;
 
-	@Configurable(defValue = "800.0", comment = "[mm]")
+	@Configurable(defValue = "800.0", unit = EConfigUnit.DISTANCE_MM)
 	private static double noDefaultBehaviorDistance = 800.0;
 
-	@Configurable(defValue = "200.0", comment = "[mm] distance while skirmish is still pending and we are preparing")
+	@Configurable(defValue = "200.0", comment = "distance while skirmish is still pending and we are preparing", unit = EConfigUnit.DISTANCE_MM)
 	private static double distanceDuringPrepare = 200.0;
 
-	@Configurable(defValue = "0.15", comment = "[%] Min stuckness score necessary to activate bullies")
+	@Configurable(defValue = "0.15", comment = "Min stuckness score necessary to activate bullies", unit = EConfigUnit.PERCENTAGE)
 	private static double minStucknessScoreForBullies = 0.15;
-	@Configurable(defValue = "0.75", comment = "[%] Min stuckness score necessary to activate bodyguards")
+	@Configurable(defValue = "0.75", comment = "Min stuckness score necessary to activate bodyguards", unit = EConfigUnit.PERCENTAGE)
 	private static double minStucknessScoreForBodyguards = 0.75;
-	@Configurable(defValue = "0.9", comment = "[%] Min stuckness score necessary to activate rip free move")
+	@Configurable(defValue = "0.9", comment = "Min stuckness score necessary to activate rip free move", unit = EConfigUnit.PERCENTAGE)
 	private static double minStucknessScoreForRipFree = 0.9;
 
 	private final Supplier<ESkirmishCategory> situation;
@@ -65,6 +62,20 @@ public class SkirmishStrategyCalc extends ACalculator
 			switchingDistanceBulliesAndRipFree - 0.5 * switchingDistanceHysteresisSize,
 			switchingDistanceBulliesAndRipFree + 0.5 * switchingDistanceHysteresisSize
 	);
+
+
+	@Override
+	protected boolean isCalculationNecessary()
+	{
+		return tigerClosestToBall.get().getBotId().isBot();
+	}
+
+
+	@Override
+	protected void reset()
+	{
+		skirmishStrategy = SkirmishStrategy.none();
+	}
 
 
 	@Override
@@ -276,8 +287,10 @@ public class SkirmishStrategyCalc extends ACalculator
 		double sgnToUs = Math.signum(weToBall.x());
 		IVector dir = ourPos.subtractNew(ballPos).normalizeNew().getNormalVector();
 		dir = Vector2.fromXY(dir.x() * sgnWanted, dir.y() * sgnToUs);
-		IVector2 unscaled = Vector2.fromXY(ballPos.x() - ((250 + Geometry.getBotRadius()) * sgnToUs) * dir.x(),
-				ballPos.y() + (-450 * sgnWanted) * dir.y()).addNew(weToBall.scaleToNew(-300));
+		IVector2 unscaled = Vector2.fromXY(
+				ballPos.x() - ((250 + Geometry.getBotRadius()) * sgnToUs) * dir.x(),
+				ballPos.y() + (-450 * sgnWanted) * dir.y()
+		).addNew(weToBall.scaleToNew(-300));
 		return new SkirmishStrategy(
 				ESkirmishStrategyType.RIP_FREE,
 				List.of(ballPos.addNew(unscaled.subtractNew(ballPos).scaleToNew(500)))

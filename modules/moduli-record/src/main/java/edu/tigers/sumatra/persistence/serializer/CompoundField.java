@@ -1,14 +1,15 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.persistence.serializer;
 
 import lombok.Getter;
 import lombok.extern.log4j.Log4j2;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
+import java.lang.invoke.VarHandle;
 import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
@@ -32,7 +33,8 @@ public class CompoundField<T>
 	@Getter
 	private transient Class<?> type;
 	private transient Field field;
-	private transient long offset;
+	private transient VarHandle handle;
+	private transient MethodHandle finalSetter;
 	private transient FieldSerializer<?> fieldSerializer;
 
 
@@ -108,7 +110,20 @@ public class CompoundField<T>
 
 	public void serializeUnsafe(MappedDataOutputStream stream, Object object) throws IOException
 	{
-		fieldSerializer.serializeUnsafe(offset, stream, object);
+		try
+		{
+			if (handle != null)
+			{
+				// VarHandle.get is supported on final instance fields too — only set is restricted.
+				fieldSerializer.serializeUnsafe(handle, stream, object);
+			} else
+			{
+				fieldSerializer.serializeSafe(field, stream, object);
+			}
+		} catch (IllegalAccessException e)
+		{
+			throw new IOException("Could not serialize " + this, e);
+		}
 	}
 
 
@@ -127,13 +142,30 @@ public class CompoundField<T>
 			return;
 		}
 
-		fieldSerializer.deserializeUnsafe(offset, buffer, object);
+		try
+		{
+			if (finalSetter != null)
+			{
+				// VarHandle.set is unsupported on final fields; use a pre-bound MethodHandle setter
+				// (from Lookup.unreflectSetter after setAccessible(true)) — the JDK-sanctioned
+				// escape hatch with much lower per-call overhead than Field.setXxx reflection.
+				fieldSerializer.deserializeFinal(finalSetter, buffer, object);
+			} else if (handle != null)
+			{
+				fieldSerializer.deserializeUnsafe(handle, buffer, object);
+			} else
+			{
+				fieldSerializer.deserializeSafe(field, buffer, object);
+			}
+		} catch (IllegalAccessException e)
+		{
+			throw new IOException("Could not deserialize " + this, e);
+		}
 	}
 
 
 	// Accessibility bypass is necessary for private field (de-)serialization
-	// Replacement for objectFieldOffset would be in jdk.internal.misc.Unsafe - which needs a java call change for access
-	@SuppressWarnings({ "deprecation", "java:S3011" })
+	@SuppressWarnings("java:S3011")
 	private void init(GenericSerializer genericSerializer, boolean unsafe)
 	{
 		fieldSerializer = getFieldSerializer(genericSerializer, type);
@@ -145,7 +177,27 @@ public class CompoundField<T>
 
 		if (unsafe)
 		{
-			offset = FieldSerializer.UNSAFE.objectFieldOffset(field);
+			try
+			{
+				MethodHandles.Lookup lookup = MethodHandles.privateLookupIn(
+						field.getDeclaringClass(), MethodHandles.lookup());
+				// VarHandle works for reads on every instance field (read-only on finals).
+				handle = lookup.unreflectVarHandle(field);
+				if (Modifier.isFinal(field.getModifiers()))
+				{
+					// VarHandle.set is unsupported on finals. Lookup.unreflectSetter on a
+					// setAccessible(true) field returns a MethodHandle that bypasses the final
+					// check — far cheaper per-call than Field.setXxx reflection.
+					field.setAccessible(true);
+					Class<?> ft = field.getType();
+					MethodType target = MethodType.methodType(
+							void.class, Object.class, ft.isPrimitive() ? ft : Object.class);
+					finalSetter = lookup.unreflectSetter(field).asType(target);
+				}
+			} catch (IllegalAccessException e)
+			{
+				throw new IllegalStateException("Could not obtain accessor for " + this, e);
+			}
 		} else
 		{
 			field.setAccessible(true);

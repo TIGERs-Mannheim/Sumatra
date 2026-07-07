@@ -1,9 +1,7 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.autoreferee.engine.detector;
 
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.geometry.RuleConstraints;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.vector.IVector2;
@@ -27,9 +25,9 @@ import java.util.stream.Collectors;
 @Log4j2
 public class BotStopSpeedDetector extends AGameEventDetector
 {
-	@Configurable(comment = "[s] Grace period before reporting any events", defValue = "2.0")
+	@Configurable(comment = "Grace period before reporting any events", defValue = "2.0", unit = EConfigUnit.TIME_S)
 	private static double gracePeriod = 2.0;
-	@Configurable(comment = "[s] The number of milliseconds that a bot needs violate the stop speed limit to be reported (to compensate known bad vision filter detections)", defValue = "0.3")
+	@Configurable(comment = "The number of milliseconds that a bot needs violate the stop speed limit to be reported (to compensate known bad vision filter detections)", defValue = "0.3", unit = EConfigUnit.TIME_S)
 	private static double minViolationDuration = 0.3;
 
 	private final Map<BotID, Violator> violatorMap = new HashMap<>();

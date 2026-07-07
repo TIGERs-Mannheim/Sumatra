@@ -1,6 +1,3 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra.gui.ai.aicenter.view;
 
 import com.github.g3force.instanceables.IInstanceableObserver;
@@ -30,6 +27,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
+import java.io.Serial;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -43,6 +41,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 @Log4j2
 public class RoleControlPanel extends JPanel
 {
+	@Serial
 	private static final long serialVersionUID = -6902947971327765508L;
 	private static final Color ERROR_COLOR = Color.RED;
 	private static final Color DEFAULT_COLOR = Color.WHITE;

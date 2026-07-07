@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.metis.pass.rating;
 
 import lombok.Getter;
@@ -43,6 +39,11 @@ public enum EPassRating
 	 * Rating of the pressure made on the opponents
 	 */
 	PRESSURE("pr"),
+
+	/**
+	 * Rating of how good the ball is receivable
+	 */
+	RECEIVABILITY("re"),
 
 	;
 

@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.pandora.roles.offense.attacker.states;
 
 
@@ -31,7 +27,7 @@ public class KickState extends AAttackerRoleState<TouchKickSkill>
 	@Override
 	protected void doStandardUpdate()
 	{
-		skill.getMoveCon().setObstacleAvoidanceMode(EObstacleAvoidanceMode.AGGRESSIVE);
+		skill.setMoveCon(skill.getMoveCon().withObstacleAvoidanceMode(EObstacleAvoidanceMode.AGGRESSIVE));
 		skill.setTarget(
 				Optional.of(getRole().getAction().getKick().getTarget()).orElse(Geometry.getGoalTheir().getCenter()));
 		skill.setPassRange(getRole().getAction().getKick().getAimingTolerance());

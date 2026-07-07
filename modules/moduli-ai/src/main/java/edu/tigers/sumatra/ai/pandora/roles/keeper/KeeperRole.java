@@ -1,10 +1,7 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.pandora.roles.keeper;
 
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.ai.common.KeepDistanceToBall;
 import edu.tigers.sumatra.ai.common.PointChecker;
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
@@ -30,15 +27,16 @@ import edu.tigers.sumatra.math.line.LineMath;
 import edu.tigers.sumatra.math.line.Lines;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
+import edu.tigers.sumatra.skillsystem.data.RobotTarget;
 import edu.tigers.sumatra.skillsystem.skills.AMoveToSkill;
 import edu.tigers.sumatra.skillsystem.skills.CriticalKeeperSkill;
 import edu.tigers.sumatra.skillsystem.skills.ESkillState;
 import edu.tigers.sumatra.skillsystem.skills.GetBallContactSkill;
-import edu.tigers.sumatra.skillsystem.skills.MoveToSkill;
 import edu.tigers.sumatra.skillsystem.skills.MoveWithBallSkill;
 import edu.tigers.sumatra.skillsystem.skills.RamboKeeperSkill;
 import edu.tigers.sumatra.skillsystem.skills.util.EDribblerMode;
 import edu.tigers.sumatra.skillsystem.skills.util.KickParams;
+import edu.tigers.sumatra.skillsystem.skills.util.RobotTargetChecker;
 import edu.tigers.sumatra.skillsystem.skills.util.TargetAngleReachedChecker;
 import edu.tigers.sumatra.statemachine.TransitionableState;
 import edu.tigers.sumatra.time.TimestampTimer;
@@ -51,32 +49,32 @@ import java.awt.Color;
  */
 public class KeeperRole extends ARole
 {
-	@Configurable(comment = "[s] lock target this much time prior to panicking", defValue = "1.0")
+	@Configurable(comment = "lock target this much time prior to panicking", defValue = "1.0", unit = EConfigUnit.TIME_S)
 	private static double passTargetLockTime = 1.0;
-	@Configurable(comment = "[s] prior to held-ball foul, do not aim at all anymore", defValue = "0.5")
+	@Configurable(comment = "prior to held-ball foul, do not aim at all anymore", defValue = "0.5", unit = EConfigUnit.TIME_S)
 	private static double passPanicTime = 0.5;
 
 
-	@Configurable(comment = "[rad/s] maximal angular velocity while handling the ball", defValue = "3")
+	@Configurable(comment = "Maximal angular velocity while handling the ball", defValue = "3", unit = EConfigUnit.VELOCITY_ANGULAR_RAD)
 	private static double ballHandlingMaxVelW = 3;
-	@Configurable(comment = "[m/s] maximal velocity while handling the ball", defValue = "1")
+	@Configurable(comment = "maximal velocity while handling the ball", defValue = "1", unit = EConfigUnit.VELOCITY_M)
 	private static double ballHandlingMaxVel = 1;
-	@Configurable(comment = "[rad/s2] maximal angular acceleration while handling the ball", defValue = "2")
+	@Configurable(comment = "maximal angular acceleration while handling the ball", defValue = "2", unit = EConfigUnit.ACCELERATION_ANGULAR_RAD)
 	private static double ballHandlingMaxAccW = 2;
-	@Configurable(comment = "[m/s^2] maximal acceleration while handling the ball", defValue = "1.5")
+	@Configurable(comment = "maximal acceleration while handling the ball", defValue = "1.5", unit = EConfigUnit.ACCELERATION_M)
 	private static double ballHandlingMaxAcc = 1.5;
-	@Configurable(comment = "Dribbling Mode while receiving the ball", defValue = "DEFAULT")
+	@Configurable(comment = "Dribbling Mode while receiving the ball", defValue = "DEFAULT", unit = EConfigUnit.NO_UNIT)
 	private static EDribblerMode receiveDribblerMode = EDribblerMode.DEFAULT;
-	@Configurable(comment = "Dribbling Mode while handling the ball", defValue = "HIGH_POWER")
+	@Configurable(comment = "Dribbling Mode while handling the ball", defValue = "HIGH_POWER", unit = EConfigUnit.NO_UNIT)
 	private static EDribblerMode ballHandlingDribblerMode = EDribblerMode.HIGH_POWER;
 
-	@Configurable(comment = "[rad] The approximate tolerance when the angle is considered to be reached", defValue = "0.15")
+	@Configurable(comment = "The approximate tolerance when the angle is considered to be reached", defValue = "0.15", unit = EConfigUnit.ANGLE_RAD)
 	private static double roughAngleTolerance = 0.15;
 
-	@Configurable(defValue = "0.4", comment = "[s] The max time to wait until angle is considered reached while within tolerance")
+	@Configurable(defValue = "0.4", comment = "The max time to wait until angle is considered reached while within tolerance", unit = EConfigUnit.TIME_S)
 	private static double maxTimeTargetAngleReached = 0.4;
 
-	@Configurable(defValue = "100", comment = "[mm] Distance between bot and ball during MoveInFrontOfBall state")
+	@Configurable(defValue = "100", comment = "Distance between bot and ball during MoveInFrontOfBall state", unit = EConfigUnit.DISTANCE_MM)
 	private static double moveInFrontDistance = 100;
 
 
@@ -306,14 +304,16 @@ public class KeeperRole extends ARole
 
 	private void setupBallHandlingSkill(AMoveToSkill skill)
 	{
-		skill.getMoveCon().physicalObstaclesOnly();
-		skill.getMoveCon().setBallObstacle(false);
-		skill.getMoveCon().setBotsObstacle(false);
+		skill.setMoveCon(skill.getMoveCon()
+				.withPhysicalObstaclesOnly()
+				.withBallObstacle(false)
+				.withBotsObstacle(false));
 
-		skill.getMoveConstraints().setVelMaxW(ballHandlingMaxVelW);
-		skill.getMoveConstraints().setAccMaxW(ballHandlingMaxAccW);
-		skill.getMoveConstraints().setVelMax(ballHandlingMaxVel);
-		skill.getMoveConstraints().setAccMax(ballHandlingMaxAcc);
+		skill.setMoveConstraints(skill.getMoveConstraints()
+				.withVelMaxW(ballHandlingMaxVelW)
+				.withAccMaxW(ballHandlingMaxAccW)
+				.withVelMax(ballHandlingMaxVel)
+				.withAccMax(ballHandlingMaxAcc));
 	}
 
 
@@ -342,6 +342,11 @@ public class KeeperRole extends ARole
 
 	private KickParams panicKick(EDribblerMode dribblerMode)
 	{
+		if (getBot().getRobotInfo().getBotParams().getKickerSpecs().getMaxAbsoluteChipVelocity() < 0.1)
+		{
+			return KickParams.disarm().withDribblerMode(dribblerMode);
+		}
+
 		var ballTravel = Lines.halfLineFromDirection(getBot().getPos(), Vector2.fromAngle(getBot().getAngleByTime(0)));
 		var intersections = Geometry.getField().intersectPerimeterPath(ballTravel);
 		var maxChipSpeed = new KickSpeedFactory().maxChip(getBot());
@@ -388,11 +393,11 @@ public class KeeperRole extends ARole
 		protected void onUpdate()
 		{
 			skill.setBallHandlingKickParams(createBallHandlingKickParams(receiveDribblerMode));
-			skill.getMoveCon().setBallObstacle(false);
+			skill.setMoveCon(skill.getMoveCon().withBallObstacle(false));
 		}
 	}
 
-	private class KeeperStoppedState extends RoleState<MoveToSkill>
+	private class KeeperStoppedState extends MoveState
 	{
 		private final KeepDistanceToBall keepDistanceToBall = new KeepDistanceToBall(new PointChecker()
 				.checkBallDistances()
@@ -400,16 +405,10 @@ public class KeeperRole extends ARole
 				.checkPointFreeOfBots());
 
 
-		public KeeperStoppedState()
-		{
-			super(MoveToSkill::new);
-		}
-
-
 		@Override
 		protected void onUpdate()
 		{
-			skill.getMoveCon().physicalObstaclesOnly();
+			skill.setMoveCon(skill.getMoveCon().withPhysicalObstaclesOnly());
 
 			var dest = LineMath.stepAlongLine(
 							Geometry.getGoalOur().bisection(getBall().getPos()), getBall().getPos(),
@@ -421,50 +420,31 @@ public class KeeperRole extends ARole
 		}
 	}
 
-	private class MoveToPenaltyAreaState extends RoleState<MoveToSkill>
+	private class MoveToPenaltyAreaState extends MoveState
 	{
-		public MoveToPenaltyAreaState()
-		{
-			super(MoveToSkill::new);
-		}
-
-
 		@Override
-		public void onInit()
+		public void onEntry()
 		{
-			skill.getMoveCon().physicalObstaclesOnly();
-			skill.getMoveCon().setBallObstacle(false);
-			// if game is running, get into penArea as fast as possible (in STOP, we are limited to stop speed anyway)
-			skill.getMoveConstraints().setFastMove(true);
+			skill.setMoveCon(skill.getMoveCon()
+					.withPhysicalObstaclesOnly()
+					.withBallObstacle(false));
 			skill.updateDestination(Geometry.getPenaltyAreaOur().getRectangle().center());
 			skill.updateLookAtTarget(Geometry.getCenter());
 		}
 	}
 
-	private class PreparePenaltyState extends RoleState<MoveToSkill>
+	private class PreparePenaltyState extends MoveState
 	{
-		PreparePenaltyState()
-		{
-			super(MoveToSkill::new);
-		}
-
-
 		@Override
-		protected void onInit()
+		protected void onEntry()
 		{
-			skill.getMoveCon().physicalObstaclesOnly();
+			skill.setMoveCon(skill.getMoveCon().withPhysicalObstaclesOnly());
 			skill.updateDestination(Geometry.getGoalOur().getCenter().addNew(Vector2.fromX(Geometry.getBotRadius() - 20)));
 		}
 	}
 
-	private class InterceptRollingBallState extends RoleState<MoveToSkill>
+	private class InterceptRollingBallState extends MoveState
 	{
-		public InterceptRollingBallState()
-		{
-			super(MoveToSkill::new);
-		}
-
-
 		@Override
 		protected void onUpdate()
 		{
@@ -478,10 +458,11 @@ public class KeeperRole extends ARole
 
 
 		@Override
-		protected void onInit()
+		protected void onEntry()
 		{
-			skill.getMoveCon().physicalObstaclesOnly();
-			skill.getMoveCon().setBallObstacle(false);
+			skill.setMoveCon(skill.getMoveCon()
+					.withPhysicalObstaclesOnly()
+					.withBallObstacle(false));
 			skill.updateDestination(getInterceptDestination());
 			skill.updateLookAtTarget(getBall());
 		}
@@ -494,14 +475,18 @@ public class KeeperRole extends ARole
 		}
 	}
 
-	private class MoveInFrontOfBallState extends RoleState<MoveToSkill>
+	private class MoveInFrontOfBallState extends MoveState
 	{
-		private TimestampTimer ballStoppedTimer = new TimestampTimer(0.1);
+		private final TimestampTimer ballStoppedTimer = new TimestampTimer(0.1);
+		private final RobotTargetChecker targetChecker = new RobotTargetChecker();
+		private RobotTarget target = new RobotTarget();
 
 
-		public MoveInFrontOfBallState()
+		@Override
+		protected void onEntry()
 		{
-			super(MoveToSkill::new);
+			super.onEntry();
+			target = target.withLookAtTarget(getBall());
 		}
 
 
@@ -509,16 +494,16 @@ public class KeeperRole extends ARole
 		protected void onUpdate()
 		{
 			var placementPos = getPlacementPos(KeeperBehaviorCalc.ballMarginUpper());
-			var destination = getApproachDestination();
+			IVector2 destination = getApproachDestination();
+			target = target.withDestination(destination);
 			var stage = getApproachStage(destination);
 			configureMovementConstraints(stage);
+
+			skill.setRobotTarget(target);
+
 			getShapes(EAiShapesLayer.KEEPER_BEHAVIOR)
 					.add(new DrawableAnnotation(getPos().addNew(Vector2.fromY(200)), stage.toString(), true));
-
-
-			skill.updateDestination(destination);
 			getShapes(EAiShapesLayer.KEEPER_BEHAVIOR).add(new DrawableLine(destination, placementPos, Color.RED));
-			skill.updateLookAtTarget(getBall());
 
 			if (getBall().getVel().getLength2() < 0.1)
 			{
@@ -528,7 +513,7 @@ public class KeeperRole extends ARole
 				ballStoppedTimer.reset();
 			}
 
-			movedInFront = skill.getSkillState() == ESkillState.SUCCESS && ballStoppedTimer.isTimeUp(
+			movedInFront = isTargetReached() && ballStoppedTimer.isTimeUp(
 					getWFrame().getTimestamp());
 		}
 
@@ -537,6 +522,12 @@ public class KeeperRole extends ARole
 		protected void onExit()
 		{
 			movedInFront = false;
+		}
+
+
+		private boolean isTargetReached()
+		{
+			return targetChecker.isTargetReached(getWFrame(), getBotID(), target);
 		}
 
 
@@ -569,31 +560,35 @@ public class KeeperRole extends ARole
 
 		private void configureMovementConstraints(EApproachStage stage)
 		{
-			skill.getMoveCon().physicalObstaclesOnly();
+			skill.setMoveCon(skill.getMoveCon().withPhysicalObstaclesOnly());
 			switch (stage)
 			{
 				case FAR ->
 				{
-					skill.getMoveCon().setGoalPostsObstacle(true);
-					skill.getMoveCon().setBallObstacle(true);
-					skill.getMoveCon().setDistanceToBall(moveInFrontDistance / 2);
-					skill.getMoveConstraints().setVelMax(SumatraMath.max(0.1, getBot().getMoveConstraints().getVelMax()));
+					skill.setMoveCon(skill.getMoveCon()
+							.withGoalPostsObstacle(true)
+							.withBallObstacle(true)
+							.withDistanceToBall(moveInFrontDistance / 2));
+					skill.setMoveConstraints(skill.getMoveConstraints()
+							.withVelMax(SumatraMath.max(0.1, getBot().getMoveConstraints().getVelMax())));
 				}
 				case MEDIUM ->
 				{
-					skill.getMoveCon().setGoalPostsObstacle(false);
-					skill.getMoveCon().setBallObstacle(true);
-					skill.getMoveCon().setDistanceToBall(moveInFrontDistance / 2);
-					skill.getMoveConstraints().setVelMax(ballHandlingMaxVel / 2);
+					skill.setMoveCon(skill.getMoveCon()
+							.withGoalPostsObstacle(false)
+							.withBallObstacle(true)
+							.withDistanceToBall(moveInFrontDistance / 2));
+					skill.setMoveConstraints(skill.getMoveConstraints().withVelMax(ballHandlingMaxVel / 2));
 				}
 				case CLOSE ->
 				{
-					skill.getMoveCon().setGoalPostsObstacle(false);
 					var margin = calcWantedPerimeterDistanceToBall() - (Geometry.getBotRadius()
 							- getBot().getCenter2DribblerDist());
-					skill.getMoveCon().setBallObstacle(margin > 0);
-					skill.getMoveCon().setDistanceToBall(margin > 0 ? margin / 2 : null);
-					skill.getMoveConstraints().setVelMax(ballHandlingMaxVel / 2);
+					skill.setMoveCon(skill.getMoveCon()
+							.withGoalPostsObstacle(false)
+							.withBallObstacle(margin > 0)
+							.withDistanceToBall(margin > 0 ? margin / 2 : null));
+					skill.setMoveConstraints(skill.getMoveConstraints().withVelMax(ballHandlingMaxVel / 2));
 				}
 			}
 		}
@@ -644,27 +639,27 @@ public class KeeperRole extends ARole
 		}
 	}
 
-	private class SpinUpState extends RoleState<MoveToSkill>
+	private class SpinUpState extends MoveState
 	{
-		IVector2 targetPos;
-		double targetAngle;
+		private final RobotTargetChecker targetChecker = new RobotTargetChecker().setMinTimeAtDest(0.1);
+		private RobotTarget target;
 
 		TimestampTimer stuckTimer = new TimestampTimer(0.3);
 
 
-		SpinUpState()
+		@Override
+		protected void onEntry()
 		{
-			super(MoveToSkill::new);
+			super.onEntry();
+			target = new RobotTarget(getTargetPos(), getBot().getOrientation());
+			skill.setRobotTarget(target);
+			stuckTimer.reset();
 		}
 
 
-		@Override
-		protected void onInit()
+		private boolean isTargetReached()
 		{
-			targetPos = getTargetPos();
-			targetAngle = getBot().getAngleByTime(0);
-			skill.setMinTimeAtDestForSuccess(0.1);
-			stuckTimer.reset();
+			return targetChecker.isTargetReached(getWFrame(), getBotID(), target);
 		}
 
 
@@ -672,10 +667,8 @@ public class KeeperRole extends ARole
 		protected void onUpdate()
 		{
 			setupBallHandlingSkill(skill);
-			skill.updateDestination(targetPos);
-			skill.updateTargetAngle(targetAngle);
 
-			if (skill.getSkillState() != ESkillState.SUCCESS)
+			if (!isTargetReached())
 			{
 				spinUpFinished = false;
 			} else
@@ -727,7 +720,7 @@ public class KeeperRole extends ARole
 
 
 		@Override
-		protected void onInit()
+		protected void onEntry()
 		{
 			updateTargetPose(getPlacementPos(KeeperBehaviorCalc.ballMarginUpper()));
 		}
@@ -753,21 +746,15 @@ public class KeeperRole extends ARole
 	}
 
 
-	private class PassState extends RoleState<MoveToSkill>
+	private class PassState extends MoveState
 	{
 
 		IVector2 targetDestination;
 		private TargetAngleReachedChecker targetAngleReachedChecker;
 
 
-		PassState()
-		{
-			super(MoveToSkill::new);
-		}
-
-
 		@Override
-		protected void onInit()
+		protected void onEntry()
 		{
 			targetAngleReachedChecker = new TargetAngleReachedChecker(roughAngleTolerance, maxTimeTargetAngleReached);
 			targetDestination = getPos();
@@ -792,17 +779,10 @@ public class KeeperRole extends ARole
 			{
 				target = Geometry.getGoalTheir().getCenter();
 				tolerance = 0.1;
-				if (getBot().getRobotInfo().getBotParams().getKickerSpecs().getMaxAbsoluteChipVelocity() > 0)
-				{
-					paramsIfAimed = KickParams.chip(
-							getBot().getRobotInfo().getBotParams().getKickerSpecs().getMaxAbsoluteChipVelocity()
-					).withDribblerMode(ballHandlingDribblerMode);
-				} else
-				{
-					paramsIfAimed = KickParams.straight(
-							getBot().getRobotInfo().getBotParams().getKickerSpecs().getMaxAbsoluteStraightVelocity()
-					).withDribblerMode(ballHandlingDribblerMode);
-				}
+				paramsIfAimed = KickParams.chip(
+						getBot().getRobotInfo().getBotParams().getKickerSpecs().getMaxAbsoluteChipVelocity()
+				).withDribblerMode(ballHandlingDribblerMode);
+
 			} else
 			{
 				target = keeperPass.getKick().getTarget();
@@ -821,7 +801,8 @@ public class KeeperRole extends ARole
 
 			targetAngleReachedChecker.update(targetAngle, currentAngle, getWFrame().getTimestamp());
 
-			if (targetAngleReachedChecker.isReached())
+			if (targetAngleReachedChecker.isReached()
+					&& getBot().getRobotInfo().getBotParams().getKickerSpecs().getMaxAbsoluteChipVelocity() > 0.1)
 			{
 				skill.setKickParams(paramsIfAimed);
 			} else

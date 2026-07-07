@@ -2,6 +2,10 @@ plugins {
     id 'jacoco'
 }
 
+configurations {
+    mockitoAgent
+}
+
 dependencies {
     // Support junit 5
     testImplementation(platform(libs.org.junit.bom))
@@ -10,7 +14,10 @@ dependencies {
 
     // Add common test tools
     testImplementation(libs.org.assertj.assertj.core)
-    testImplementation(libs.org.mockito.mockito.all)
+    testImplementation(libs.org.mockito.mockito.core)
+    mockitoAgent(libs.org.mockito.mockito.core) {
+        transitive = false
+    }
 }
 
 test {
@@ -20,6 +27,8 @@ test {
         html.required = true
     }
     exclude '**/*IntegrationTest.class'
+    jvmArgs += "-javaagent:${configurations.mockitoAgent.asPath}"
+    jvmArgs += edu.tigers.sumatra.gradle.JvmArgs.PERSISTENCE_ADD_OPENS
 }
 
 jacoco {

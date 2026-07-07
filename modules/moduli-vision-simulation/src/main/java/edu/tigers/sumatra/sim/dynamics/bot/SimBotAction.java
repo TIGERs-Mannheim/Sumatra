@@ -1,13 +1,10 @@
 package edu.tigers.sumatra.sim.dynamics.bot;
 
-import org.apache.commons.lang.Validate;
-
-import edu.tigers.sumatra.bot.IMoveConstraints;
 import edu.tigers.sumatra.bot.MoveConstraints;
-import edu.tigers.sumatra.bot.params.BotMovementLimits;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.IVector3;
 import edu.tigers.sumatra.math.vector.IVectorN;
+import org.apache.commons.lang3.Validate;
 
 
 /**
@@ -24,7 +21,7 @@ public class SimBotAction
 	private final EDriveMode modeXY;
 	private final EDriveMode modeW;
 
-	private final IMoveConstraints driveLimits;
+	private final MoveConstraints driveLimits;
 	private final boolean strictVelocityLimit;
 
 	private final double kickSpeed;
@@ -92,7 +89,7 @@ public class SimBotAction
 	}
 
 
-	public IMoveConstraints getDriveLimits()
+	public MoveConstraints getDriveLimits()
 	{
 		return driveLimits;
 	}
@@ -138,7 +135,7 @@ public class SimBotAction
 		private IVector2 primaryDirection;
 		private EDriveMode modeXY = EDriveMode.OFF;
 		private EDriveMode modeW = EDriveMode.OFF;
-		private IMoveConstraints driveLimits;
+		private MoveConstraints driveLimits;
 		private boolean strictVelocityLimit;
 		private double kickSpeed = 0;
 		private boolean chip = false;
@@ -167,7 +164,7 @@ public class SimBotAction
 		{
 			modeXY = EDriveMode.OFF;
 			modeW = EDriveMode.OFF;
-			driveLimits = new MoveConstraints(new BotMovementLimits());
+			driveLimits = MoveConstraints.ZERO;
 			return this;
 		}
 
@@ -178,6 +175,7 @@ public class SimBotAction
 		 */
 		public Builder targetPos(final IVector3 targetPos)
 		{
+			Validate.isTrue(targetPos.isFinite(), "targetPos must be finite: ", targetPos);
 			this.targetPos = targetPos;
 			return this;
 		}
@@ -189,6 +187,7 @@ public class SimBotAction
 		 */
 		public Builder targetVelLocal(final IVector3 targetVelLocal)
 		{
+			Validate.isTrue(targetVelLocal.isFinite(), "targetVelLocal must be finite: ", targetVelLocal);
 			this.targetVelLocal = targetVelLocal;
 			return this;
 		}
@@ -200,6 +199,7 @@ public class SimBotAction
 		 */
 		public Builder targetWheelVel(final IVectorN targetWheelVel)
 		{
+			Validate.isTrue(targetWheelVel.isFinite(), "targetWheelVel must be finite: ", targetWheelVel);
 			this.targetWheelVel = targetWheelVel;
 			return this;
 		}
@@ -211,6 +211,7 @@ public class SimBotAction
 		 */
 		public Builder primaryDirection(final IVector2 primaryDirection)
 		{
+			Validate.isTrue(primaryDirection.isFinite(), "primaryDirection must be finite: ", primaryDirection);
 			this.primaryDirection = primaryDirection;
 			return this;
 		}
@@ -242,7 +243,7 @@ public class SimBotAction
 		 * @param driveLimits
 		 * @return this builder
 		 */
-		public Builder driveLimits(final IMoveConstraints driveLimits)
+		public Builder driveLimits(final MoveConstraints driveLimits)
 		{
 			this.driveLimits = driveLimits;
 			return this;
@@ -266,6 +267,7 @@ public class SimBotAction
 		 */
 		public Builder kickSpeed(final double kickSpeed)
 		{
+			Validate.isTrue(Double.isFinite(kickSpeed), "kickSpeed must be finite: ", kickSpeed);
 			this.kickSpeed = kickSpeed;
 			return this;
 		}

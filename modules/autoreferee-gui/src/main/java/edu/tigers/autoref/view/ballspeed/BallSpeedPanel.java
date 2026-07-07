@@ -1,6 +1,3 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.autoref.view.ballspeed;
 
 import edu.tigers.autoref.view.generic.FixedTimeRangeChartPanel;
@@ -71,7 +68,6 @@ public class BallSpeedPanel extends JPanel
 		timeRangeSlider.setPaintLabels(true);
 		timeRangeSlider.setMajorTickSpacing(30);
 		timeRangeSlider.setMinorTickSpacing(10);
-		timeRangeSlider.setBackground(Color.WHITE);
 		timeRangeSlider.setToolTipText("Adjust the ball speed time range [s] (Resets the graph!)");
 		timeRangeSlider.addChangeListener(e -> {
 			if (!timeRangeSlider.getValueIsAdjusting())
@@ -83,7 +79,6 @@ public class BallSpeedPanel extends JPanel
 
 		JCheckBox stopChartCheckbox = new JCheckBox("Pause when not RUNNING");
 		stopChartCheckbox.setSelected(true);
-		stopChartCheckbox.setBackground(Color.WHITE);
 		stopChartCheckbox.addActionListener(e -> {
 			boolean newValue = stopChartCheckbox.isSelected();
 			informObserver(observer -> observer.stopChartValueChanged(newValue));
@@ -100,7 +95,6 @@ public class BallSpeedPanel extends JPanel
 		southPanel.add(lineMaxDescription);
 		southPanel.add(lineInitialDescription);
 		southPanel.add(lineSpeedDescription);
-		southPanel.setBackground(Color.WHITE);
 		southPanel.add(pauseButton);
 		southPanel.add(resumeButton);
 		southPanel.add(stopChartCheckbox);

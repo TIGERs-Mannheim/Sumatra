@@ -1,6 +1,3 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra.ai.metis.general;
 
 import edu.tigers.sumatra.ai.metis.ACalculator;
@@ -9,7 +6,6 @@ import edu.tigers.sumatra.ai.pandora.plays.EPlay;
 import edu.tigers.sumatra.botmanager.botskills.data.ELedColor;
 import edu.tigers.sumatra.botmanager.botskills.data.ESong;
 import edu.tigers.sumatra.botmanager.data.MultimediaControl;
-import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.AObjectID;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.referee.data.EGameState;
@@ -80,11 +76,7 @@ public class MultimediaCalc extends ACalculator
 		botsByPlay(EPlay.DEFENSIVE).forEach(id -> getControl(id).setLedColor(ELedColor.LIGHT_BLUE));
 		botsByPlay(EPlay.KEEPER).forEach(id -> getControl(id).setLedColor(ELedColor.BLUE));
 		botsByPlay(EPlay.BALL_PLACEMENT).forEach(id -> getControl(id).setLedColor(ELedColor.PURPLE));
-		botsByPlay(EPlay.INTERCHANGE).forEach(id -> {
-			boolean atFieldBorder = Geometry.getField().maxY() - Math.abs(getWFrame().getBot(id).getPos().y())
-					< 2 * Geometry.getBotRadius();
-			getControl(id).setLedColor(blinkRed && atFieldBorder ? ELedColor.RED : ELedColor.OFF);
-		});
+		botsByPlay(EPlay.INTERCHANGE).forEach(id -> getControl(id).setLedColor(blinkRed ? ELedColor.RED : ELedColor.OFF));
 		attacker().ifPresent(id -> getControl(id).setLedColor(ELedColor.PURPLE));
 		crucialDefender().forEach(id -> getControl(id).setLedColor(ELedColor.GREEN));
 	}
@@ -197,14 +189,11 @@ public class MultimediaCalc extends ACalculator
 
 	private void blinkInInterchangePlay()
 	{
-		if (!blinkingTimer.isRunning())
-		{
-			blinkingTimer.start(getWFrame().getTimestamp());
-		}
+		blinkingTimer.update(getWFrame().getTimestamp());
 		if (blinkingTimer.isTimeUp(getWFrame().getTimestamp()))
 		{
 			blinkRed = !blinkRed;
-			blinkingTimer.update(getWFrame().getTimestamp());
+			blinkingTimer.reset();
 		}
 	}
 }

@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
- */
-
 plugins {
     id 'sumatra.java'
     id 'java-library'
@@ -18,7 +14,12 @@ dependencies {
 
     implementation(libs.org.apache.logging.log4j.log4j.api)
 
-    implementation(libs.io.humble.humble.video.noarch)
+    implementation(libs.org.jcodec.jcodec)
+    implementation(libs.org.jcodec.jcodec.javase)
     implementation(libs.com.jidesoft.jide.oss)
     implementation(libs.commons.lang)
+
+    implementation(libs.com.github.jiconfont.jiconfont)
+    implementation(libs.com.github.jiconfont.jiconfont.font.awesome)
+    implementation(libs.com.github.jiconfont.jiconfont.swing)
 }

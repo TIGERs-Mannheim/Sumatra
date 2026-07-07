@@ -1,6 +1,3 @@
-/*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra.botmanager.sim.skills;
 
 import edu.tigers.sumatra.bot.MoveConstraints;
@@ -47,11 +44,9 @@ public class BotSkillSineSim implements IBotSkillSim
 		double velY = skill.getVel().y() * val * 1000;
 		double velW = skill.getVel().z() * val;
 
-		MoveConstraints moveCon = skill.getMoveConstraints();
-		moveCon.setAccMax(DriveLimits.MAX_ACC);
-		moveCon.setAccMaxW(DriveLimits.MAX_ACC_W);
-		moveCon.setJerkMax(DriveLimits.MAX_JERK);
-		moveCon.setJerkMaxW(DriveLimits.MAX_JERK_W);
+		MoveConstraints moveCon = skill.getMoveConstraints()
+				.withAccMax(DriveLimits.MAX_ACC)
+				.withAccMaxW(DriveLimits.MAX_ACC_W);
 		
 		return BotSkillOutput.Builder.create()
 				.driveLimits(moveCon)

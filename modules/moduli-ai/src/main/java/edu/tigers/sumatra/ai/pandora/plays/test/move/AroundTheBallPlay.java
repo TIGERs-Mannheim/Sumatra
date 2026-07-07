@@ -1,6 +1,3 @@
-/*
- * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra.ai.pandora.plays.test.move;
 
 import edu.tigers.sumatra.ai.pandora.plays.APlay;
@@ -49,7 +46,7 @@ public class AroundTheBallPlay extends APlay
 
 			final IVector2 destination = ballPos.addNew(direction.turnNew(turn));
 
-			moveRole.getMoveCon().physicalObstaclesOnly();
+			moveRole.setMoveCon(moveRole.getMoveCon().withPhysicalObstaclesOnly());
 			moveRole.updateDestination(destination);
 			moveRole.updateLookAtTarget(getBall());
 			turn -= AngleMath.PI / 5.0;

@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.pandora.roles;
 
 import edu.tigers.sumatra.skillsystem.skills.ASkill;
@@ -63,11 +59,17 @@ public class RoleStateExtern<T extends ASkill> extends TransitionableState
 
 
 	@Override
-	public void doEntryActions()
+	protected final void onInit()
 	{
 		skill = supplier.get();
 		role.setNewSkill(skill);
-		super.doEntryActions();
+		onEntry();
+	}
+
+
+	protected void onEntry()
+	{
+		// can be overridden by subclasses
 	}
 
 

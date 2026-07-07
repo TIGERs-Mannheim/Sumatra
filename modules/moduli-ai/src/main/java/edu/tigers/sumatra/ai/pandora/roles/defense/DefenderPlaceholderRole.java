@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.pandora.roles.defense;
 
 import edu.tigers.sumatra.ai.pandora.roles.ERole;
@@ -34,10 +30,11 @@ public class DefenderPlaceholderRole extends ADefenseRole
 	private class DefaultState extends MoveState
 	{
 		@Override
-		protected void onInit()
+		protected void onEntry()
 		{
-			skill.getMoveCon().setGameStateObstacle(!getAiFrame().getGameState().isStop());
-			skill.getMoveCon().setBallObstacle(false);
+			skill.setMoveCon(skill.getMoveCon()
+					.withGameStateObstacle(!getAiFrame().getGameState().isStop())
+					.withBallObstacle(false));
 		}
 
 

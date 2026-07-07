@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.math.circle;
 
 import edu.tigers.sumatra.math.AngleMath;
@@ -114,11 +110,11 @@ class CircleTest
 	@Test
 	void testCircleFrom3Points()
 	{
-		IVector2 P1 = Vector2.fromXY(0, 1);
-		IVector2 P2 = Vector2.fromXY(1, 0);
-		IVector2 P3 = Vector2.fromXY(2, 1);
+		IVector2 p1 = Vector2.fromXY(0, 1);
+		IVector2 p2 = Vector2.fromXY(1, 0);
+		IVector2 p3 = Vector2.fromXY(2, 1);
 
-		ICircle circle = Circle.from3Points(P1, P2, P3).orElseThrow(() -> new AssertionError("No circle found"));
+		ICircle circle = Circle.from3Points(p1, p2, p3).orElseThrow(() -> new AssertionError("No circle found"));
 
 		assertEquals(1.0, circle.radius(), 1e-10);
 		assertEquals(1.0, circle.center().x(), 1e-10);
@@ -132,11 +128,11 @@ class CircleTest
 	@Test
 	void testInvalidCircleFrom3Points()
 	{
-		IVector2 P1 = Vector2.fromXY(0, 0);
-		IVector2 P2 = Vector2.fromXY(1, 0);
-		IVector2 P3 = Vector2.fromXY(2, 0);
+		IVector2 p1 = Vector2.fromXY(0, 0);
+		IVector2 p2 = Vector2.fromXY(1, 0);
+		IVector2 p3 = Vector2.fromXY(2, 0);
 
-		if (Circle.from3Points(P1, P2, P3).isPresent())
+		if (Circle.from3Points(p1, p2, p3).isPresent())
 		{
 			fail();
 		}
@@ -149,11 +145,11 @@ class CircleTest
 	@Test
 	void testSmallCircleFrom3Points()
 	{
-		IVector2 P1 = Vector2.fromXY(0, 1e-9);
-		IVector2 P2 = Vector2.fromXY(1e-9, 0);
-		IVector2 P3 = Vector2.fromXY(2e-9, 1e-9);
+		IVector2 p1 = Vector2.fromXY(0, 1e-9);
+		IVector2 p2 = Vector2.fromXY(1e-9, 0);
+		IVector2 p3 = Vector2.fromXY(2e-9, 1e-9);
 
-		ICircle circle = Circle.from3Points(P1, P2, P3).orElseThrow(() -> new AssertionError("No circle found"));
+		ICircle circle = Circle.from3Points(p1, p2, p3).orElseThrow(() -> new AssertionError("No circle found"));
 
 		assertEquals(1e-9, circle.radius(), 1e-20);
 		assertEquals(1e-9, circle.center().x(), 1e-20);
@@ -164,10 +160,10 @@ class CircleTest
 	@Test
 	void testCircleFrom2Points()
 	{
-		IVector2 P1 = Vector2.fromXY(1, 0);
-		IVector2 P2 = Vector2.fromXY(-1, 0);
+		IVector2 p1 = Vector2.fromXY(1, 0);
+		IVector2 p2 = Vector2.fromXY(-1, 0);
 
-		ICircle circle = Circle.from2Points(P1, P2);
+		ICircle circle = Circle.from2Points(p1, p2);
 
 		assertEquals(1, circle.radius(), Double.MIN_VALUE);
 		assertEquals(0, circle.center().x(), Double.MIN_VALUE);
@@ -487,5 +483,20 @@ class CircleTest
 			IBoundedPathComplianceChecker.checkCompliance(circle, true);
 			I2DShapeComplianceChecker.checkCompliance(circle, true);
 		}
+	}
+
+
+	@Test
+	void testTangentialDirection()
+	{
+		var circle = Circle.createCircle(Vector2f.ZERO_VECTOR, 1);
+		assertThat(circle.getTangentialDirection(0 * AngleMath.PI_HALF)).isEqualTo(Vector2.fromY(1));
+		assertThat(circle.getTangentialDirection(0.5 * AngleMath.PI_HALF)).isEqualTo(Vector2.fromXY(-1, 1).normalize());
+		assertThat(circle.getTangentialDirection(1 * AngleMath.PI_HALF)).isEqualTo(Vector2.fromX(-1));
+		assertThat(circle.getTangentialDirection(2 * AngleMath.PI_HALF)).isEqualTo(Vector2.fromY(-1));
+		assertThat(circle.getTangentialDirection(3 * AngleMath.PI_HALF)).isEqualTo(Vector2.fromX(1));
+		assertThat(circle.getTangentialDirection(4 * AngleMath.PI_HALF)).isEqualTo(Vector2.fromY(1));
+		assertThat(circle.getTangentialDirection(8 * AngleMath.PI_HALF)).isEqualTo(Vector2.fromY(1));
+		assertThat(circle.getTangentialDirection(100 * AngleMath.PI_HALF)).isEqualTo(Vector2.fromY(1));
 	}
 }

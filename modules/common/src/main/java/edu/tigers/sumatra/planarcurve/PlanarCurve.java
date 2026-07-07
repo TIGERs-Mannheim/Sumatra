@@ -1,13 +1,10 @@
-/*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra.planarcurve;
 
 import edu.tigers.sumatra.math.SumatraMath;
 import edu.tigers.sumatra.math.line.ILineBase;
 import edu.tigers.sumatra.math.rectangle.IRectangle;
 import edu.tigers.sumatra.math.vector.IVector2;
-import org.apache.commons.lang.Validate;
+import org.apache.commons.lang3.Validate;
 import org.apache.commons.math3.util.Pair;
 
 import java.util.ArrayList;
@@ -86,8 +83,10 @@ public class PlanarCurve
 		var lastSegment = segments.get(segments.size() - 1);
 		double tQuery = lastSegment.getDuration();
 
-		return new PlanarCurveState(lastSegment.getPosition(tQuery), lastSegment.getVelocity(tQuery),
-				lastSegment.getAcc());
+		return new PlanarCurveState(
+				lastSegment.getPosition(tQuery), lastSegment.getVelocity(tQuery),
+				lastSegment.getAcc()
+		);
 	}
 
 
@@ -132,8 +131,10 @@ public class PlanarCurve
 	 * @param tEnd
 	 * @return
 	 */
-	public static PlanarCurve fromPositionVelocityAndAcceleration(final IVector2 pos, final IVector2 vel,
-			final IVector2 acc, final double tEnd)
+	public static PlanarCurve fromPositionVelocityAndAcceleration(
+			final IVector2 pos, final IVector2 vel,
+			final IVector2 acc, final double tEnd
+	)
 	{
 		List<PlanarCurveSegment> list = new ArrayList<>();
 		list.add(PlanarCurveSegment.fromSecondOrder(pos, vel, acc, 0, tEnd));
@@ -273,29 +274,50 @@ public class PlanarCurve
 	 * @param curve
 	 * @return
 	 */
-	public double getMinimumDistanceToCurve(final PlanarCurve curve)
+	public double getTimeWithMinimumDistanceToCurve(final PlanarCurve curve)
 	{
 		List<Pair<PlanarCurveSegment, PlanarCurveSegment>> combined = combineCurves(segments, curve.getSegments());
 
-		double min = combined.get(0).getFirst().getPos().distanceTo(combined.get(0).getSecond().getPos());
+		double min = combined.getFirst().getFirst().getPos().distanceToSqr(combined.getFirst().getSecond().getPos());
+		double tMin = combined.getFirst().getFirst().getStartTime();
 
 		for (Pair<PlanarCurveSegment, PlanarCurveSegment> part : combined)
 		{
+			double tStart = part.getFirst().getStartTime();
 			double tDuration = part.getFirst().getDuration();
 
 			List<Double> roots = new ArrayList<>(minDistanceRoots(part.getFirst(), part.getSecond()));
 			roots.add(tDuration);
 
-			double dist = roots.stream().filter(r -> (r > 0) && (r <= (tDuration)))
-					.mapToDouble(r -> part.getFirst().getPosition(r).distanceTo(part.getSecond().getPosition(r))).min()
-					.orElse(Double.POSITIVE_INFINITY);
-
-			if (dist < min)
+			for (var root : roots)
 			{
-				min = dist;
+				if (root <= 0 || root > tDuration)
+				{
+					continue;
+				}
+
+				var dist = part.getFirst().getPosition(root).distanceToSqr(part.getSecond().getPosition(root));
+				if (dist < min)
+				{
+					min = dist;
+					tMin = tStart + root;
+				}
 			}
 		}
-		return min;
+		return tMin;
+	}
+
+
+	/**
+	 * Calculate minimum distance of this curve to another curve.
+	 *
+	 * @param curve
+	 * @return
+	 */
+	public double getMinimumDistanceToCurve(final PlanarCurve curve)
+	{
+		var tMin = getTimeWithMinimumDistanceToCurve(curve);
+		return getPos(tMin).distanceTo(curve.getPos(tMin));
 	}
 
 
@@ -321,8 +343,10 @@ public class PlanarCurve
 	{
 		List<Double> intersectionTimes = new ArrayList<>();
 
-		PlanarCurveSegment lineSegment = PlanarCurveSegment.fromFirstOrder(line.supportVector(), line.directionVector(),
-				0, 1.0);
+		PlanarCurveSegment lineSegment = PlanarCurveSegment.fromFirstOrder(
+				line.supportVector(), line.directionVector(),
+				0, 1.0
+		);
 
 		for (PlanarCurveSegment ourSegment : segments)
 		{
@@ -370,8 +394,10 @@ public class PlanarCurve
 	 * @return
 	 */
 	@SuppressWarnings({ "squid:S3776", "squid:MethodCyclomaticComplexity", "squid:S134" })
-	private List<Pair<PlanarCurveSegment, PlanarCurveSegment>> combineCurves(final List<PlanarCurveSegment> curveA,
-			final List<PlanarCurveSegment> curveB)
+	private List<Pair<PlanarCurveSegment, PlanarCurveSegment>> combineCurves(
+			final List<PlanarCurveSegment> curveA,
+			final List<PlanarCurveSegment> curveB
+	)
 	{
 		List<Pair<PlanarCurveSegment, PlanarCurveSegment>> combined = new ArrayList<>();
 
@@ -702,8 +728,10 @@ public class PlanarCurve
 	 * @return
 	 */
 	@SuppressWarnings("squid:MethodCyclomaticComplexity")
-	private Pair<List<Double>, List<Double>> intersectSecOrderToFirstOrder(final PlanarCurveSegment first,
-			final PlanarCurveSegment sec, boolean unboundFirstOrder)
+	private Pair<List<Double>, List<Double>> intersectSecOrderToFirstOrder(
+			final PlanarCurveSegment first,
+			final PlanarCurveSegment sec, boolean unboundFirstOrder
+	)
 	{
 		List<Double> intersectionsFirst = new ArrayList<>();
 		List<Double> intersectionsSec = new ArrayList<>();

@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.gui.ai.offensive.statistics.view;
 
 import edu.tigers.sumatra.ai.metis.pass.PassStats;
@@ -19,6 +15,8 @@ import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
 
 import javax.swing.JPanel;
+import javax.swing.JTabbedPane;
+import javax.swing.UIManager;
 import java.awt.BasicStroke;
 import java.awt.BorderLayout;
 import java.awt.Color;
@@ -41,9 +39,11 @@ class VariableSizeScatterRenderer extends XYLineAndShapeRenderer
 	private final double durationRange;
 
 
-	public VariableSizeScatterRenderer(List<List<Double>> seriesDurations,
+	public VariableSizeScatterRenderer(
+			List<List<Double>> seriesDurations,
 			double minDuration, double maxDuration,
-			double minSize, double maxSize)
+			double minSize, double maxSize
+	)
 	{
 		super(false, true);
 		this.seriesDurations = seriesDurations;
@@ -66,7 +66,7 @@ class VariableSizeScatterRenderer extends XYLineAndShapeRenderer
 		double duration = seriesDurations.get(series).get(item);
 		double normalizedDuration = (duration - minDuration) / durationRange;
 		double diameter = minSize + (maxSize - minSize) * normalizedDuration;
-		diameter = Math.max(minSize, Math.min(maxSize, diameter));
+		diameter = Math.clamp(diameter, minSize, maxSize);
 		double radius = diameter / 2.0;
 		return new Ellipse2D.Double(-radius, -radius, diameter, diameter);
 	}
@@ -76,9 +76,13 @@ class VariableSizeScatterRenderer extends XYLineAndShapeRenderer
 	public boolean equals(Object o)
 	{
 		if (!(o instanceof VariableSizeScatterRenderer that))
+		{
 			return false;
+		}
 		if (!super.equals(o))
+		{
 			return false;
+		}
 		return Double.compare(minDuration, that.minDuration) == 0
 				&& Double.compare(minSize, that.minSize) == 0 && Double.compare(maxSize, that.maxSize) == 0
 				&& Double.compare(durationRange, that.durationRange) == 0 && Objects.equals(
@@ -93,7 +97,6 @@ class VariableSizeScatterRenderer extends XYLineAndShapeRenderer
 	}
 }
 
-
 public class TeamOffensiveStatisticsPanel extends JPanel
 {
 	@Serial
@@ -101,6 +104,7 @@ public class TeamOffensiveStatisticsPanel extends JPanel
 
 	private transient PassStats passStats;
 	private final ChartPanel chartPanel;
+	private final JTabbedPane tabbedPane;
 
 	private static final Color PLANNED_SUCCESS_COLOR = Color.GREEN.darker();
 	private static final Color ACTUAL_SUCCESS_COLOR = Color.BLUE;
@@ -111,7 +115,7 @@ public class TeamOffensiveStatisticsPanel extends JPanel
 	private static final Color LINE_FAILURE_COLOR = Color.GRAY;
 
 	private static final double MIN_MARKER_DIAMETER = 5.0;
-	private static final double MAX_MARKER_DIAMETER = 15.0;
+	private static final double MAX_MARKER_DIAMETER = 20.0;
 
 	@Setter
 	private boolean filterRegular;
@@ -122,9 +126,14 @@ public class TeamOffensiveStatisticsPanel extends JPanel
 	public TeamOffensiveStatisticsPanel()
 	{
 		setLayout(new BorderLayout());
+
+		tabbedPane = new JTabbedPane();
+		add(tabbedPane, BorderLayout.CENTER);
+
 		JFreeChart chart = createEmptyChart();
 		chartPanel = new ChartPanel(chart);
-		add(chartPanel, BorderLayout.CENTER);
+		tabbedPane.addTab("Pass Stats", chartPanel);
+		tabbedPane.addTab("Pass Success Ratio", new PassStatsHistogram(passStats));
 	}
 
 
@@ -132,6 +141,42 @@ public class TeamOffensiveStatisticsPanel extends JPanel
 	{
 		this.passStats = passStats;
 		updateChart();
+		tabbedPane.setComponentAt(1, new PassStatsHistogram(passStats));
+	}
+
+
+	private void styleChart(JFreeChart chart)
+	{
+		XYPlot plot = chart.getXYPlot();
+
+		Color bg = UIManager.getColor("Panel.background");
+		Color fg = UIManager.getColor("Label.foreground");
+		Color grid = fg.darker();
+
+		setupChart(chart, plot, bg, fg, grid);
+	}
+
+
+	private void setupChart(JFreeChart chart, XYPlot plot, Color bg, Color fg, Color grid)
+	{
+		plot.setBackgroundPaint(bg);
+		plot.setDomainGridlinePaint(grid);
+		plot.setRangeGridlinePaint(grid);
+		plot.setAxisOffset(new RectangleInsets(5.0, 5.0, 5.0, 5.0));
+		chart.setBackgroundPaint(bg);
+
+		chart.getTitle().setPaint(fg);
+
+		if (chart.getLegend() != null)
+		{
+			chart.getLegend().setItemPaint(fg);
+			chart.getLegend().setBackgroundPaint(bg);
+		}
+
+		plot.getDomainAxis().setLabelPaint(fg);
+		plot.getRangeAxis().setLabelPaint(fg);
+		plot.getDomainAxis().setTickLabelPaint(fg);
+		plot.getRangeAxis().setTickLabelPaint(fg);
 	}
 
 
@@ -143,12 +188,15 @@ public class TeamOffensiveStatisticsPanel extends JPanel
 				"Angle (degrees)",
 				"Velocity (m/s)",
 				dataset,
-				PlotOrientation.VERTICAL, true, true, false);
+				PlotOrientation.VERTICAL, true, true, false
+		);
 		XYPlot plot = chart.getXYPlot();
 		plot.setBackgroundPaint(Color.white);
 		plot.setDomainGridlinePaint(Color.lightGray);
 		plot.setRangeGridlinePaint(Color.lightGray);
 		plot.setAxisOffset(new RectangleInsets(5.0, 5.0, 5.0, 5.0));
+
+		styleChart(chart);
 		return chart;
 	}
 
@@ -194,6 +242,7 @@ public class TeamOffensiveStatisticsPanel extends JPanel
 
 		int successLineIndex = 0;
 		int failureLineIndex = 0;
+
 		for (PassStatsKickReceiveVelocity vel : velocities.collect(Collectors.toSet()))
 		{
 			double plannedAngle = vel.planned().getAngle();
@@ -247,10 +296,12 @@ public class TeamOffensiveStatisticsPanel extends JPanel
 		);
 
 		XYPlot plot = chart.getXYPlot();
-		plot.setBackgroundPaint(Color.white);
-		plot.setDomainGridlinePaint(Color.lightGray);
-		plot.setRangeGridlinePaint(Color.lightGray);
-		plot.setAxisOffset(new RectangleInsets(5.0, 5.0, 5.0, 5.0));
+
+		Color bg = UIManager.getColor("Panel.background");
+		Color fg = UIManager.getColor("Label.foreground");
+		Color grid = fg.darker();
+
+		setupChart(chart, plot, bg, fg, grid);
 
 		VariableSizeScatterRenderer scatterRenderer = new VariableSizeScatterRenderer(
 				allScatterDurations,
@@ -259,12 +310,19 @@ public class TeamOffensiveStatisticsPanel extends JPanel
 				MIN_MARKER_DIAMETER,
 				MAX_MARKER_DIAMETER
 		);
+
 		plot.setRenderer(0, scatterRenderer);
 
 		scatterRenderer.setSeriesPaint(0, PLANNED_SUCCESS_COLOR);
 		scatterRenderer.setSeriesPaint(1, PLANNED_FAILURE_COLOR);
 		scatterRenderer.setSeriesPaint(2, ACTUAL_SUCCESS_COLOR);
 		scatterRenderer.setSeriesPaint(3, ACTUAL_FAILURE_COLOR);
+
+		var ellipseShape = new Ellipse2D.Double(-4, -4, 8, 8);
+		scatterRenderer.setSeriesShape(0, ellipseShape);
+		scatterRenderer.setSeriesShape(1, ellipseShape);
+		scatterRenderer.setSeriesShape(2, ellipseShape);
+		scatterRenderer.setSeriesShape(3, ellipseShape);
 
 		plot.setDataset(1, successLineDataset);
 		XYLineAndShapeRenderer successLineRenderer = new XYLineAndShapeRenderer(true, false);
@@ -281,34 +339,21 @@ public class TeamOffensiveStatisticsPanel extends JPanel
 		for (int i = 0; i < failureLineDataset.getSeriesCount(); i++)
 		{
 			failureLineRenderer.setSeriesPaint(i, LINE_FAILURE_COLOR);
-			failureLineRenderer.setSeriesStroke(i, new BasicStroke(1.5f, BasicStroke.CAP_BUTT,
-					BasicStroke.JOIN_MITER, 10.0f, new float[] { 5.0f, 3.0f }, 0.0f));
+			failureLineRenderer.setSeriesStroke(
+					i, new BasicStroke(
+							1.5f, BasicStroke.CAP_BUTT,
+							BasicStroke.JOIN_MITER, 10.0f, new float[] { 5.0f, 3.0f }, 0.0f
+					)
+			);
 			failureLineRenderer.setSeriesVisibleInLegend(i, false);
 		}
 		plot.setRenderer(2, failureLineRenderer);
 
 		LegendItemCollection legendItems = new LegendItemCollection();
-		var legend1 = scatterRenderer.getLegendItem(0, 0);
-		var legend2 = scatterRenderer.getLegendItem(0, 1);
-		var legend3 = scatterRenderer.getLegendItem(0, 2);
-		var legend4 = scatterRenderer.getLegendItem(0, 3);
-
-		if (legend1 != null)
-		{
-			legendItems.add(legend1);
-		}
-		if (legend2 != null)
-		{
-			legendItems.add(legend2);
-		}
-		if (legend3 != null)
-		{
-			legendItems.add(legend3);
-		}
-		if (legend4 != null)
-		{
-			legendItems.add(legend4);
-		}
+		legendItems.add(scatterRenderer.getLegendItem(0, 0));
+		legendItems.add(scatterRenderer.getLegendItem(0, 1));
+		legendItems.add(scatterRenderer.getLegendItem(0, 2));
+		legendItems.add(scatterRenderer.getLegendItem(0, 3));
 		plot.setFixedLegendItems(legendItems);
 
 		chartPanel.setChart(chart);

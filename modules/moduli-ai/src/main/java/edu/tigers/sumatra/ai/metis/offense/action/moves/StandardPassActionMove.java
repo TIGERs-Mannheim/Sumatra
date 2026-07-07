@@ -1,10 +1,7 @@
-/*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.metis.offense.action.moves;
 
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.ai.metis.kicking.EBallReceiveMode;
 import edu.tigers.sumatra.ai.metis.offense.OffensiveConstants;
 import edu.tigers.sumatra.ai.metis.offense.action.EActionViability;
@@ -29,10 +26,10 @@ import java.util.function.Supplier;
 public class StandardPassActionMove extends AOffensiveActionMove
 {
 
-	@Configurable(defValue = "0.17")
+	@Configurable(defValue = "0.17", unit = EConfigUnit.PERCENTAGE)
 	private static double antiToggleBonus = 0.17;
 
-	@Configurable(defValue = "10.0", comment = "[deg] orientation considered small enough to force pass")
+	@Configurable(defValue = "10.0", comment = "orientation considered small enough to force pass", unit = EConfigUnit.ANGLE_DEG)
 	private static double orientationThresholdAngle = 10;
 
 	private final Supplier<Map<KickOrigin, RatedPass>> selectedPasses;
@@ -96,7 +93,7 @@ public class StandardPassActionMove extends AOffensiveActionMove
 		return Optional.of(
 				RatedOffensiveAction.buildPass(
 						EOffensiveActionMove.STANDARD_PASS, viability,
-						ratedPass.getPass()
+						ratedPass
 				));
 	}
 

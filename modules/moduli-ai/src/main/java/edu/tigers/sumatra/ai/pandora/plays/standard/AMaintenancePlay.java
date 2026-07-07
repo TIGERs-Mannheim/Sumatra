@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.pandora.plays.standard;
 
 import edu.tigers.sumatra.ai.common.PointChecker;
@@ -39,6 +35,7 @@ public abstract class AMaintenancePlay extends APlay
 	protected AMaintenancePlay(EPlay play)
 	{
 		super(play);
+		pointChecker.setExtraBallMargin(500);
 	}
 
 
@@ -49,15 +46,6 @@ public abstract class AMaintenancePlay extends APlay
 		return getWorldFrame().getBots().values().stream()
 				.filter(b -> !ownBots.contains(b.getBotId()))
 				.noneMatch(bot -> bot.getPosByTime(1).distanceTo(point) < distance);
-	}
-
-
-	@Override
-	protected ARole onAddRole()
-	{
-		MoveRole role = new MoveRole();
-		role.getMoveCon().physicalObstaclesOnly();
-		return role;
 	}
 
 
@@ -127,7 +115,7 @@ public abstract class AMaintenancePlay extends APlay
 
 	protected void updateTimer(List<MoveRole> roles)
 	{
-		if (roles.isEmpty() || roles.stream().allMatch(MoveRole::isSkillStateSuccess))
+		if (roles.isEmpty() || roles.stream().allMatch(MoveRole::isTargetReached))
 		{
 			completionTimer.update(getWorldFrame().getTimestamp());
 		} else

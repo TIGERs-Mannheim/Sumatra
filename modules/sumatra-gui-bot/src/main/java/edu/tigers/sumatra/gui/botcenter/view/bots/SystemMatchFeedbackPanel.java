@@ -1,6 +1,3 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra.gui.botcenter.view.bots;
 
 import edu.tigers.sumatra.bot.EFeature;
@@ -25,6 +22,7 @@ import javax.swing.JToggleButton;
 import java.awt.Color;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.Serial;
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
@@ -40,6 +38,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
  */
 public class SystemMatchFeedbackPanel extends JPanel
 {
+	@Serial
 	private static final long serialVersionUID = 2431222411313088184L;
 
 	private final JProgressBar kickerLevel = new JProgressBar(0, 1000);

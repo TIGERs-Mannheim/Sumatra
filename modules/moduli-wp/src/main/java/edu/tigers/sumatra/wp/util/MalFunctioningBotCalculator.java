@@ -1,11 +1,8 @@
-/*
- * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.wp.util;
 
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.bot.BotState;
 import edu.tigers.sumatra.bot.ERobotMode;
 import edu.tigers.sumatra.bot.RobotInfo;
@@ -30,13 +27,13 @@ import java.util.Map;
 @Log4j2
 public class MalFunctioningBotCalculator
 {
-	@Configurable(defValue = "5", comment = "[s] Min time without movement to be considered mal functioning")
+	@Configurable(defValue = "5", comment = "Min time without movement to be considered mal functioning", unit = EConfigUnit.TIME_S)
 	private static int minTimeNotMoved = 5;
-	@Configurable(defValue = "0.1", comment = "[rad] Min orientation change to consider as rotation")
+	@Configurable(defValue = "0.1", comment = "Min orientation change to consider as rotation", unit = EConfigUnit.ANGLE_RAD)
 	private static double minOrientationChange = 0.1;
-	@Configurable(defValue = "100", comment = "[mm] Min position distance to consider as movement")
+	@Configurable(defValue = "100", comment = "Min position distance to consider as movement", unit = EConfigUnit.DISTANCE_MM)
 	private static double minPosDiff = 100;
-	@Configurable(defValue = "true", comment = "Consider constant rotation as additional condition for malfunction")
+	@Configurable(defValue = "true", comment = "Consider constant rotation as additional condition for malfunction", unit = EConfigUnit.BOOLEAN)
 	private static boolean useRotationCriteria = true;
 
 	static

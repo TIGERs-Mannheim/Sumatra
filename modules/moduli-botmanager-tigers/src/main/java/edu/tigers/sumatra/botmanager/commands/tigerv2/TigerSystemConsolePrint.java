@@ -1,24 +1,16 @@
-/*
- * *********************************************************
- * Copyright (c) 2009 - 2013, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 16.04.2013
- * Author(s): AndreR
- * *********************************************************
- */
 package edu.tigers.sumatra.botmanager.commands.tigerv2;
-
-import java.nio.charset.StandardCharsets;
 
 import edu.tigers.sumatra.botmanager.commands.ACommand;
 import edu.tigers.sumatra.botmanager.commands.ECommand;
 import edu.tigers.sumatra.botmanager.serial.SerialData;
 import edu.tigers.sumatra.botmanager.serial.SerialData.ESerialDataType;
 
+import java.nio.charset.StandardCharsets;
+
 
 /**
  * Simple text messages from a tigerv2 bot.
- * 
+ *
  * @author AndreR
  */
 public class TigerSystemConsolePrint extends ACommand
@@ -38,30 +30,30 @@ public class TigerSystemConsolePrint extends ACommand
 		RIGHT(8),
 		/** */
 		KD(0x10);
-		
+
 		private final int id;
-		
-		
+
+
 		ConsolePrintSource(final int id)
 		{
 			this.id = id;
 		}
-		
-		
+
+
 		/**
 		 * Get id of source.
-		 * 
+		 *
 		 * @return
 		 */
 		public int getId()
 		{
 			return id;
 		}
-		
-		
+
+
 		/**
 		 * Convert an id to an enum.
-		 * 
+		 *
 		 * @param id 1 (MAIN) or 2 (MEDIA)
 		 * @return enum
 		 */
@@ -74,11 +66,11 @@ public class TigerSystemConsolePrint extends ACommand
 					return s;
 				}
 			}
-			
+
 			return UNKNOWN;
 		}
 	}
-	
+
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
@@ -86,8 +78,8 @@ public class TigerSystemConsolePrint extends ACommand
 	private int source;
 	@SerialData(type = ESerialDataType.TAIL)
 	private byte[] textData;
-	
-	
+
+
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
@@ -96,13 +88,13 @@ public class TigerSystemConsolePrint extends ACommand
 	{
 		super(ECommand.CMD_SYSTEM_CONSOLE_PRINT);
 	}
-	
-	
+
+
 	// --------------------------------------------------------------------------
 	// --- methods --------------------------------------------------------------
 	// --------------------------------------------------------------------------
-	
-	
+
+
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
@@ -113,8 +105,8 @@ public class TigerSystemConsolePrint extends ACommand
 	{
 		return ConsolePrintSource.getSourceConstant(source);
 	}
-	
-	
+
+
 	/**
 	 * @param source the source to set
 	 */
@@ -122,17 +114,17 @@ public class TigerSystemConsolePrint extends ACommand
 	{
 		this.source = source.getId();
 	}
-	
-	
+
+
 	/**
 	 * @return the text
 	 */
 	public String getText()
 	{
-		return new String(textData, 0, textData.length, StandardCharsets.US_ASCII);
+		return new String(textData, StandardCharsets.US_ASCII);
 	}
-	
-	
+
+
 	/**
 	 * @param text the text to set
 	 */

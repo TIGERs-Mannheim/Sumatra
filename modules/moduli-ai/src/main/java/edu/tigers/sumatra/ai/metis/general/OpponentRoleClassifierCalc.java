@@ -1,10 +1,7 @@
-/*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.metis.general;
 
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.ai.metis.ACalculator;
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
 import edu.tigers.sumatra.data.TimeLimitedBuffer;
@@ -36,7 +33,7 @@ import java.util.function.Supplier;
 @RequiredArgsConstructor
 public class OpponentRoleClassifierCalc extends ACalculator
 {
-	@Configurable(comment = "[s] time to keep past man2man marker active", defValue = "0.4")
+	@Configurable(comment = "time to keep past man2man marker active", defValue = "0.4", unit = EConfigUnit.TIME_S)
 	private static double timeToKeepPastMan2ManMarkerActive = 0.4;
 
 	private final Map<BotID, Long> man2manMarkerRobotStartTimes = new HashMap<>();

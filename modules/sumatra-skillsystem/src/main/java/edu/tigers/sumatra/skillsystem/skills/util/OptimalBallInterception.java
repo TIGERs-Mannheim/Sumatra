@@ -1,18 +1,14 @@
-/*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.skillsystem.skills.util;
 
 import edu.tigers.sumatra.ball.trajectory.IBallTrajectory;
-import edu.tigers.sumatra.bot.IMoveConstraints;
+import edu.tigers.sumatra.bot.MoveConstraints;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.math.botshape.BotShape;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.pathfinder.TrajectoryGenerator;
 import edu.tigers.sumatra.trajectory.ITrajectory;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
-import org.apache.commons.lang.Validate;
+import org.apache.commons.lang3.Validate;
 import org.apache.commons.math3.exception.TooManyEvaluationsException;
 import org.apache.commons.math3.exception.TooManyIterationsException;
 import org.apache.commons.math3.optim.ConvergenceChecker;
@@ -39,7 +35,7 @@ public final class OptimalBallInterception
 
 	private final IBallTrajectory ballTrajectory;
 	private final ITrackedBot bot;
-	private final IMoveConstraints mc;
+	private final MoveConstraints mc;
 
 
 	private OptimalBallInterception(final Builder builder)
@@ -164,7 +160,7 @@ public final class OptimalBallInterception
 	{
 		private IBallTrajectory ballTrajectory;
 		private ITrackedBot tBot;
-		private IMoveConstraints mc;
+		private MoveConstraints mc;
 
 
 		private Builder()
@@ -193,7 +189,7 @@ public final class OptimalBallInterception
 		 * @param mc the {@code moveConstraints} to set
 		 * @return a reference to this Builder
 		 */
-		public Builder withMoveConstraints(final IMoveConstraints mc)
+		public Builder withMoveConstraints(final MoveConstraints mc)
 		{
 			this.mc = mc;
 			return this;

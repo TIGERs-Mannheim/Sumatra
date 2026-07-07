@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.math.circle;
 
 import edu.tigers.sumatra.math.AngleMath;
@@ -67,8 +63,10 @@ public class Arc implements IArc
 	 * @param rotation
 	 * @return
 	 */
-	public static IArc createArc(final IVector2 center, final double radius, final double startAngle,
-			final double rotation)
+	public static IArc createArc(
+			final IVector2 center, final double radius, final double startAngle,
+			final double rotation
+	)
 	{
 		return new Arc(center, radius, startAngle, rotation);
 	}
@@ -113,9 +111,13 @@ public class Arc implements IArc
 	public final boolean equals(final Object o)
 	{
 		if (this == o)
+		{
 			return true;
+		}
 		if (!(o instanceof IArc arc))
+		{
 			return false;
+		}
 
 		return center.equals(arc.center())
 				&& SumatraMath.isEqual(radius, arc.radius())
@@ -268,15 +270,35 @@ public class Arc implements IArc
 	@Override
 	public IVector2 stepAlongPath(double stepSize)
 	{
-		var angle = AngleMath.normalizeAngle(startAngle + (stepSize / getLength() * rotation));
+		var angle = AngleMath.normalizeAngle(startAngle + (stepSize / radius * Math.signum(rotation)));
 		return center.addNew(Vector2.fromX(radius).turn(angle));
 	}
 
 
+	/**
+	 * For Arcs with more than 360° rotation, this will always return the distance from start on the first rotation.
+	 */
 	@Override
 	public double distanceFromStart(IVector2 pointOnPath)
 	{
+
 		var anglePointOnPath = Vector2.fromPoints(center, pointOnPath).getAngle();
-		return AngleMath.diffAbs(startAngle, anglePointOnPath) * radius;
+		var diff = AngleMath.difference(anglePointOnPath, startAngle);
+
+		if (SumatraMath.isZero(diff) || Math.signum(rotation) == Math.signum(diff))
+		{
+			return Math.abs(diff) * radius;
+		}
+
+		return (AngleMath.PI_TWO - Math.abs(diff)) * radius;
+	}
+
+
+	@Override
+	public IVector2 getTangentialDirection(double stepSize)
+	{
+		return Vector2.fromAngle(AngleMath.normalizeAngle(startAngle +
+				(stepSize / radius + AngleMath.PI_HALF) * Math.signum(rotation)
+		));
 	}
 }

@@ -1,16 +1,11 @@
-/*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.metis.defense.data;
+
+import edu.tigers.sumatra.ids.BotID;
+import org.apache.commons.lang3.builder.ToStringBuilder;
+import org.apache.commons.lang3.builder.ToStringStyle;
 
 import java.util.Collections;
 import java.util.Set;
-
-import org.apache.commons.lang.builder.ToStringBuilder;
-import org.apache.commons.lang.builder.ToStringStyle;
-
-import edu.tigers.sumatra.ids.BotID;
 
 
 /**
@@ -20,11 +15,11 @@ public class DefenseThreatAssignment
 {
 	private final IDefenseThreat threat;
 	private final Set<BotID> botIds;
-	
-	
+
+
 	/**
 	 * Creates a new DefenseThreatAssignment
-	 * 
+	 *
 	 * @param threat
 	 * @param botIds
 	 */
@@ -33,20 +28,20 @@ public class DefenseThreatAssignment
 		this.threat = threat;
 		this.botIds = Collections.unmodifiableSet(botIds);
 	}
-	
-	
+
+
 	public IDefenseThreat getThreat()
 	{
 		return threat;
 	}
-	
-	
+
+
 	public Set<BotID> getBotIds()
 	{
 		return botIds;
 	}
-	
-	
+
+
 	@Override
 	public String toString()
 	{

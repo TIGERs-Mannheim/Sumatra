@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.math.boundary;
 
 import edu.tigers.sumatra.math.I2DShape;
@@ -28,14 +24,16 @@ public class ShapeBoundary implements IShapeBoundary
 	IVector2 end;
 	@Getter(AccessLevel.PRIVATE)
 	List<IBoundedPath> edges;
+	double length;
 
 
 	public ShapeBoundary(I2DShape shape)
 	{
 		this.shape = shape;
 		edges = shape.getPerimeterPath();
-		start = edges.get(0).getPathStart();
-		end = edges.get(edges.size() - 1).getPathEnd();
+		start = edges.getFirst().getPathStart();
+		end = edges.getLast().getPathEnd();
+		length = edges.stream().mapToDouble(IBoundedPath::getLength).sum();
 	}
 
 
@@ -122,7 +120,7 @@ public class ShapeBoundary implements IShapeBoundary
 		var edge2 = edgeOf(p2);
 		if (edge1 == edge2)
 		{
-			return p1.distanceTo(p2);
+			return Math.abs(edge1.distanceFromStart(p1) - edge1.distanceFromStart(p2));
 		}
 
 		boolean started = false;
@@ -133,11 +131,11 @@ public class ShapeBoundary implements IShapeBoundary
 			{
 				if (edge1 == edge)
 				{
-					distance += edge1.getPathStart().distanceTo(p1);
+					distance += edge.distanceFromStart(p1);
 					return distance;
 				} else if (edge2 == edge)
 				{
-					distance += edge2.getPathStart().distanceTo(p2);
+					distance += edge.distanceFromStart(p2);
 					return distance;
 				} else
 				{
@@ -147,11 +145,11 @@ public class ShapeBoundary implements IShapeBoundary
 			{
 				if (edge1 == edge)
 				{
-					distance += edge1.getPathEnd().distanceTo(p1);
+					distance += edge.getLength() - edge.distanceFromStart(p1);
 					started = true;
 				} else if (edge2 == edge)
 				{
-					distance += edge2.getPathEnd().distanceTo(p2);
+					distance += edge.getLength() - edge.distanceFromStart(p2);
 					started = true;
 				}
 			}
@@ -176,8 +174,8 @@ public class ShapeBoundary implements IShapeBoundary
 		var edge2 = edgeOf(cp2);
 		if (edge1 == edge2)
 		{
-			double distance1 = edge1.getPathStart().distanceToSqr(cp1);
-			double distance2 = edge2.getPathStart().distanceToSqr(cp2);
+			double distance1 = edge1.distanceFromStart(cp1);
+			double distance2 = edge2.distanceFromStart(cp2);
 			if (distance1 < distance2)
 			{
 				return -1;
@@ -205,7 +203,11 @@ public class ShapeBoundary implements IShapeBoundary
 	@Override
 	public Optional<IVector2> stepAlongBoundary(double distance)
 	{
-		return stepAlongBoundary(start, distance);
+		if (distance < 0)
+		{
+			return Optional.empty();
+		}
+		return stepAlongBoundary(edges.getFirst(), distance);
 	}
 
 
@@ -231,6 +233,44 @@ public class ShapeBoundary implements IShapeBoundary
 		}
 		return nextEdge(edge)
 				.map(e -> stepAlongBoundary(e, distance - edgeDist))
+				.filter(Optional::isPresent)
+				.map(Optional::get);
+	}
+
+
+	@Override
+	public Optional<IVector2> getTangentialDirection(double distance)
+	{
+		if (distance < 0)
+		{
+			return Optional.empty();
+		}
+		return getTangentialDirection(edges.getFirst(), distance);
+	}
+
+
+	@Override
+	public Optional<IVector2> getTangentialDirection(IVector2 start, double distance)
+	{
+		if (distance < 0)
+		{
+			return Optional.empty();
+		}
+		var edge = edgeOf(start);
+		var distanceFromStart = edge.distanceFromStart(start);
+		return getTangentialDirection(edge, distance + distanceFromStart);
+	}
+
+
+	private Optional<IVector2> getTangentialDirection(final IBoundedPath edge, final double distance)
+	{
+		double edgeDist = edge.getLength();
+		if (edgeDist + 1e-6 >= distance)
+		{
+			return Optional.of(edge.getTangentialDirection(distance));
+		}
+		return nextEdge(edge)
+				.map(e -> getTangentialDirection(e, distance - edgeDist))
 				.filter(Optional::isPresent)
 				.map(Optional::get);
 	}

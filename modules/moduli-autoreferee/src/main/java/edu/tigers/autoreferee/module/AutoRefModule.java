@@ -1,6 +1,3 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.autoreferee.module;
 
 import edu.tigers.autoreferee.IAutoRefObserver;

@@ -1,11 +1,3 @@
-/*
- * *********************************************************
- * Copyright (c) 2009 - 2016, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 05.09.2016
- * Author(s): rYan
- * *********************************************************
- */
 package edu.tigers.sumatra.botmanager.commands.tigerv3;
 
 import edu.tigers.sumatra.botmanager.commands.ACommand;

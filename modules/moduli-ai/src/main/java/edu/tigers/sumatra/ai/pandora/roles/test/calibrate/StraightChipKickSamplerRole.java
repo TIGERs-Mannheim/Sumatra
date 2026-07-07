@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.pandora.roles.test.calibrate;
 
 import edu.tigers.sumatra.ai.pandora.plays.test.ballmodel.EFieldSide;
@@ -34,6 +30,7 @@ public class StraightChipKickSamplerRole extends AKickSamplerRole
 		samples.clear();
 
 		SamplePoint p = new SamplePoint();
+		p.kickTarget = Vector2.zero();
 		p.rightOffset = 0;
 		p.device = kickerDevice;
 		p.durationMs = shootDurationMs;
@@ -90,6 +87,7 @@ public class StraightChipKickSamplerRole extends AKickSamplerRole
 
 		var sample = new SamplePoint();
 		sample.device = kickerDevice;
+		sample.kickTarget = kickTarget;
 		sample.kickPos = kickPos;
 		sample.targetAngle = Vector2.fromPoints(kickPos, kickTarget).getAngle();
 		sample.durationMs = shootDurationMs;

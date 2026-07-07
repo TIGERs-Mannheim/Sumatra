@@ -1,9 +1,7 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra.skillsystem.skills;
 
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.drawable.DrawableCircle;
 import edu.tigers.sumatra.drawable.DrawableLine;
 import edu.tigers.sumatra.geometry.Geometry;
@@ -33,13 +31,13 @@ import java.util.stream.Stream;
 @Log4j2
 public class MoveOnShapeBoundarySkill extends AMoveToSkill
 {
-	@Configurable(comment = "[mm] For destinations further away than this value, intermediate destinations will be generated", defValue = "600.0")
+	@Configurable(comment = "For destinations further away than this value, intermediate destinations will be generated", defValue = "600.0", unit = EConfigUnit.DISTANCE_MM)
 	private static double brakeDistance = 600.0;
-	@Configurable(comment = "[mm] If we are closer to this and want to drive around a corner stop ignoring companions ahead", defValue = "180.0")
+	@Configurable(comment = "If we are closer to this and want to drive around a corner stop ignoring companions ahead", defValue = "180.0", unit = EConfigUnit.DISTANCE_MM)
 	private static double atCornerDistance = 180.0;
-	@Configurable(comment = "[mm] If companion is closer to the boundary ahead than this stop ignoring him", defValue = "140.0")
+	@Configurable(comment = "If companion is closer to the boundary ahead than this stop ignoring him", defValue = "140.0", unit = EConfigUnit.DISTANCE_MM)
 	private static double distanceToSegment = 140.0;
-	@Configurable(comment = "[mm] If companion is inside shape with this boundary avoid him to allow him to leave the shape", defValue = "-50")
+	@Configurable(comment = "If companion is inside shape with this boundary avoid him to allow him to leave the shape", defValue = "-50", unit = EConfigUnit.DISTANCE_MM)
 	private static double innerBoundaryToConsider = -50;
 
 	@Setter
@@ -61,10 +59,11 @@ public class MoveOnShapeBoundarySkill extends AMoveToSkill
 	@Override
 	public void doEntryActions()
 	{
-		getMoveCon().setBallObstacle(false);
 		// bots are obstacle, but the considered bots are set below
-		getMoveCon().setOurBotsObstacle(true);
-		getMoveCon().setTheirBotsObstacle(true);
+		setMoveCon(getMoveCon()
+				.withBallObstacle(false)
+				.withOurBotsObstacle(true)
+				.withTheirBotsObstacle(true));
 
 		super.doEntryActions();
 	}
@@ -73,10 +72,11 @@ public class MoveOnShapeBoundarySkill extends AMoveToSkill
 	@Override
 	public void doUpdate()
 	{
-		getMoveCon().setBallObstacle(false);
+		setMoveCon(getMoveCon().withBallObstacle(false));
 
 		var destinationWithType = findDestination();
 		updateDestination(destinationWithType.destination);
+		updateUseComeToAStopIfFaster(true);
 		updateTargetAngle(getAngleByOurGoal(destinationWithType.destination));
 		updateIgnoredBots(destinationWithType);
 		super.doUpdate();
@@ -130,7 +130,7 @@ public class MoveOnShapeBoundarySkill extends AMoveToSkill
 				getIgnoredCompanions(destinationWithType)
 						.filter(this::isBotWellOutsideShape)
 		).collect(Collectors.toUnmodifiableSet());
-		getMoveCon().setIgnoredBots(allIgnored);
+		setMoveCon(getMoveCon().withIgnoredBots(allIgnored));
 	}
 
 

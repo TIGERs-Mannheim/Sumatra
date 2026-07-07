@@ -1,34 +1,30 @@
-/*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra.filter.tracking;
-
-import org.apache.commons.lang.Validate;
-import org.apache.commons.math3.linear.MatrixUtils;
-import org.apache.commons.math3.linear.RealMatrix;
-import org.apache.commons.math3.linear.RealVector;
 
 import edu.tigers.sumatra.filter.kf.KalmanFilter;
 import edu.tigers.sumatra.math.SumatraMath;
+import org.apache.commons.lang3.Validate;
+import org.apache.commons.math3.linear.MatrixUtils;
+import org.apache.commons.math3.linear.RealMatrix;
+import org.apache.commons.math3.linear.RealVector;
 
 
 /**
  * Simple tracking filter based on a linear Kalman filter.
  * State vector includes position and velocity.
  * Only position can be measured.
- * 
+ *
  * @author AndreR
  */
 public class TrackingFilterPosVel1D extends KalmanFilter
 {
 	private double	modelError;
-	
+
 	private long	lastTimestamp;
-	
-	
+
+
 	/**
 	 * Create tracking filter.
-	 * 
+	 *
 	 * @param initialPos
 	 * @param covariance initial covariance of all states
 	 * @param modelErr model error
@@ -39,21 +35,21 @@ public class TrackingFilterPosVel1D extends KalmanFilter
 			final double measErr, final long timestamp)
 	{
 		super(2, 1, 1);
-		
+
 		stateEstimation.setEntry(0, initialPos);
 		errorCovariance = MatrixUtils.createRealIdentityMatrix(2).scalarMultiply(covariance);
-		
+
 		measurementMatrix.setEntry(0, 0, 1);
-		
+
 		setMeasurementError(measErr);
 		setModelError(modelErr);
 		lastTimestamp = timestamp;
 	}
-	
-	
+
+
 	/**
 	 * Create tracking filter.
-	 * 
+	 *
 	 * @param initialState
 	 * @param covariance initial covariance of all states
 	 * @param modelErr model error
@@ -64,23 +60,23 @@ public class TrackingFilterPosVel1D extends KalmanFilter
 			final double measErr, final long timestamp)
 	{
 		super(2, 1, 1);
-		
+
 		Validate.isTrue(initialState.getDimension() == 2);
-		
+
 		stateEstimation = initialState.copy();
 		errorCovariance = MatrixUtils.createRealIdentityMatrix(2).scalarMultiply(covariance);
-		
+
 		measurementMatrix.setEntry(0, 0, 1);
-		
+
 		setMeasurementError(measErr);
 		setModelError(modelErr);
 		lastTimestamp = timestamp;
 	}
-	
-	
+
+
 	/**
 	 * Create tracking filter.
-	 * 
+	 *
 	 * @param initialState
 	 * @param initialCovariance
 	 * @param modelErr model error
@@ -91,53 +87,53 @@ public class TrackingFilterPosVel1D extends KalmanFilter
 			final double modelErr, final double measErr, final long timestamp)
 	{
 		super(2, 1, 1);
-		
+
 		Validate.isTrue(initialState.getDimension() == 2, "State vector size must be 2");
 		Validate.isTrue(initialCovariance.isSquare(), "Covariance matrix must be square");
 		Validate.isTrue(initialCovariance.getRowDimension() == 2, "Covariance matrix size must be 2x2");
-		
+
 		stateEstimation = initialState.copy();
 		errorCovariance = initialCovariance.copy();
-		
+
 		measurementMatrix.setEntry(0, 0, 1);
-		
+
 		setMeasurementError(measErr);
 		setModelError(modelErr);
 		lastTimestamp = timestamp;
 	}
-	
-	
+
+
 	/**
 	 * Create tracking filter. Deep copy constructor.
-	 * 
+	 *
 	 * @param orig
 	 * @param timestamp
 	 */
 	public TrackingFilterPosVel1D(final TrackingFilterPosVel1D orig, final long timestamp)
 	{
 		super(orig);
-		
+
 		setModelError(orig.modelError);
 		lastTimestamp = timestamp;
 	}
-	
-	
+
+
 	public void setMeasurementError(final double error)
 	{
 		measurementNoiseCovariance.setEntry(0, 0, error);
 	}
-	
-	
+
+
 	public void setModelError(final double error)
 	{
 		modelError = error;
 	}
-	
-	
+
+
 	/**
 	 * Predict the filter estimate to a given timestamp when no new measurement is available.
 	 * No correction will be performed.
-	 * 
+	 *
 	 * @param timestamp time in nanoseconds
 	 */
 	public void predict(final long timestamp)
@@ -147,42 +143,42 @@ public class TrackingFilterPosVel1D extends KalmanFilter
 		{
 			return;
 		}
-		
+
 		lastTimestamp = timestamp;
-		
+
 		updateMatrices(dt);
-		
+
 		predict();
 	}
-	
-	
+
+
 	/**
 	 * Correct filter estimate with a new measurement.
-	 * 
+	 *
 	 * @param position
 	 */
 	public void correct(final double position)
 	{
 		correct(MatrixUtils.createRealVector(new double[] { position }));
 	}
-	
-	
+
+
 	public long getLastTimestamp()
 	{
 		return lastTimestamp;
 	}
-	
-	
+
+
 	public double getPositionEstimate()
 	{
 		return stateEstimation.getEntry(0);
 	}
-	
-	
+
+
 	/**
 	 * Get position estimate at a specific time.
 	 * Uses simple extrapolation with constant velocity model.
-	 * 
+	 *
 	 * @param timestamp time in nanoseconds
 	 * @return
 	 */
@@ -191,43 +187,47 @@ public class TrackingFilterPosVel1D extends KalmanFilter
 		double p = getPositionEstimate();
 		double v = getVelocityEstimate();
 		double dt = (timestamp - lastTimestamp) * 1e-9;
-		
+
 		return p + (dt * v);
 	}
-	
-	
+
+
 	public double getPositionUncertainty()
 	{
 		return SumatraMath.sqrt(errorCovariance.getEntry(0, 0));
 	}
-	
-	
+
+
 	public double getVelocityUncertainty()
 	{
 		return SumatraMath.sqrt(errorCovariance.getEntry(1, 1));
 	}
-	
-	
+
+
 	public double getPositionInnovation()
 	{
 		return innovation.getEntry(0);
 	}
-	
-	
+
+
 	public double getVelocityEstimate()
 	{
 		return stateEstimation.getEntry(1);
 	}
-	
-	
+
+
 	private void updateMatrices(final double dt)
 	{
 		transitionMatrix.setEntry(0, 0, 1);
 		transitionMatrix.setEntry(0, 1, dt);
 		transitionMatrix.setEntry(1, 0, 0);
 		transitionMatrix.setEntry(1, 1, 1);
-		
-		// optimal process noise error if we assume white noise on acceleration with zero mean
+
+		// Calculations for dt1, dt2, dt3 are derived from assuming a continuous-time white noise for the acceleration
+		// with zero mean
+		//
+		// sigma is chosen such that dt3 = modelError
+
 		double sigma = SumatraMath.sqrt((3.0 * modelError) / dt) / dt;
 		double dt3 = (1.0 / 3.0) * dt * dt * dt * sigma * sigma;
 		double dt2 = (1.0 / 2.0) * dt * dt * sigma * sigma;

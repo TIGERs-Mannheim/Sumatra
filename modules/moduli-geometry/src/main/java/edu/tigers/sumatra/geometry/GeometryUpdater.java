@@ -1,11 +1,8 @@
-/*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.geometry;
 
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.cam.ACam;
 import edu.tigers.sumatra.cam.ICamFrameObserver;
 import edu.tigers.sumatra.cam.data.CamGeometry;
@@ -24,13 +21,13 @@ public class GeometryUpdater extends AModule
 {
 	private static final Logger log = LogManager.getLogger(GeometryUpdater.class.getName());
 
-	@Configurable(comment = "Receive geometry from SSL vision", defValue = "true")
+	@Configurable(comment = "Receive geometry from SSL vision", defValue = "true", unit = EConfigUnit.BOOLEAN)
 	private static boolean receiveGeometry = true;
 
-	@Configurable(comment = "Receive ball models from SSL vision", defValue = "true")
+	@Configurable(comment = "Receive ball models from SSL vision", defValue = "true", unit = EConfigUnit.BOOLEAN)
 	private static boolean receiveBallModels = true;
 
-	@Configurable(comment = "Receive geometry from SSL vision, but only once!", defValue = "false")
+	@Configurable(comment = "Receive geometry from SSL vision, but only once!", defValue = "false", unit = EConfigUnit.BOOLEAN)
 	private static boolean receiveGeometryOnceOnly = false;
 
 	private boolean geometryReceived = false;

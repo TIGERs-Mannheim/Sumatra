@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.sim.collision.ball;
 
 import edu.tigers.sumatra.ids.BotID;

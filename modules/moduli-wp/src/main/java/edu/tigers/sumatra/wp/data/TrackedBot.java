@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.wp.data;
 
 import edu.tigers.sumatra.bot.BotState;
@@ -18,7 +14,7 @@ import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.IVector3;
 import edu.tigers.sumatra.math.vector.Vector3;
 import edu.tigers.sumatra.trajectory.ITrajectory;
-import org.apache.commons.lang.Validate;
+import org.apache.commons.lang3.Validate;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -175,7 +171,7 @@ public final class TrackedBot implements ITrackedBot
 	@Override
 	public MoveConstraints getMoveConstraints()
 	{
-		return new MoveConstraints(getRobotInfo().getBotParams().getMovementLimits());
+		return MoveConstraints.from(getRobotInfo().getBotParams().getMovementLimits());
 	}
 
 
@@ -356,7 +352,8 @@ public final class TrackedBot implements ITrackedBot
 		numbers.add(filteredState == null ? 0 : 1);
 		numbers.add(robotInfo.getKickSpeed());
 		numbers.add(robotInfo.isChip() ? 1 : 0);
-		numbers.add(robotInfo.getDribbleSpeed());
+		numbers.add(robotInfo.getDribbleSpeedSet());
+		numbers.add(robotInfo.getDribbleSpeedFeedback());
 		numbers.add(robotInfo.isBarrierInterrupted() ? 1 : 0);
 		numbers.add(tAssembly);
 		numbers.addAll(Vector3.zero().getNumberList()); // buffered_pos
@@ -371,7 +368,7 @@ public final class TrackedBot implements ITrackedBot
 	public List<String> getHeaders()
 	{
 		return Arrays.asList("id", "color", "timestamp", "pos_x", "pos_y", "pos_z", "vel_x", "vel_y", "vel_z", "acc_x",
-				"acc_y", "acc_z", "visible", "kickSpeed", "isChip", "dribbleRpm", "barrierInterrupted", "tAssembly",
+				"acc_y", "acc_z", "visible", "kickSpeed", "isChip", "dribbleSet", "dribbleFB", "barrierInterrupted", "tAssembly",
 				"buffered_pos_x", "buffered_pos_y", "buffered_pos_z",
 				"buffered_vel_x", "buffered_vel_y", "buffered_vel_z",
 				"dist2Traj",

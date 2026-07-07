@@ -1,12 +1,10 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra.gui.botcenter.view.bots;
 
 import edu.tigers.sumatra.gui.botcenter.view.BcBotPingPanel;
 import net.miginfocom.swing.MigLayout;
 
 import javax.swing.JPanel;
+import java.io.Serial;
 
 
 /**
@@ -16,6 +14,7 @@ import javax.swing.JPanel;
  */
 public class ManualControlPanel extends JPanel
 {
+	@Serial
 	private static final long serialVersionUID = 7379644742395703062L;
 
 	private BcBotPingPanel pingPanel = new BcBotPingPanel();

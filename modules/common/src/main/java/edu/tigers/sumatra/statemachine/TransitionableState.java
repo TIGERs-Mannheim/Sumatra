@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.statemachine;
 
 import lombok.RequiredArgsConstructor;
@@ -63,15 +59,21 @@ public abstract class TransitionableState extends AState
 	}
 
 
+	protected void afterUpdate()
+	{
+		// can be overwritten
+	}
+
+
 	@Override
-	public void doEntryActions()
+	public final void doEntryActions()
 	{
 		onInit();
 	}
 
 
 	@Override
-	public void doExitActions()
+	public final void doExitActions()
 	{
 		onExit();
 	}
@@ -94,5 +96,6 @@ public abstract class TransitionableState extends AState
 			}
 		}
 		onUpdate();
+		afterUpdate();
 	}
 }

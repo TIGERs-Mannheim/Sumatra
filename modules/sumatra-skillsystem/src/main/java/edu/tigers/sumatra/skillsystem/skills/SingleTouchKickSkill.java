@@ -1,10 +1,7 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.skillsystem.skills;
 
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.bot.State;
 import edu.tigers.sumatra.drawable.DrawableAnnotation;
 import edu.tigers.sumatra.drawable.DrawableLine;
@@ -34,37 +31,37 @@ import java.awt.Color;
 @NoArgsConstructor
 public class SingleTouchKickSkill extends ATouchKickSkill
 {
-	@Configurable(comment = "Speed in chill mode", defValue = "2.0")
+	@Configurable(comment = "Speed in chill mode", defValue = "2.0", unit = EConfigUnit.VELOCITY_M)
 	private static double chillVel = 2.0;
 
-	@Configurable(comment = "Acceleration in chill model", defValue = "2.0")
+	@Configurable(comment = "Acceleration in chill model", defValue = "2.0", unit = EConfigUnit.ACCELERATION_M)
 	private static double chillAcc = 2.0;
 
-	@Configurable(comment = "The distance between kicker and ball to keep before kicking the ball", defValue = "15.0")
+	@Configurable(comment = "The distance between kicker and ball to keep before kicking the ball", defValue = "15.0", unit = EConfigUnit.DISTANCE_MM)
 	private static double minDistBeforeKick = 15;
 
-	@Configurable(defValue = "120.0")
+	@Configurable(defValue = "120.0", unit = EConfigUnit.DISTANCE_MM)
 	private static double maxAroundBallMargin = 120;
 
-	@Configurable(defValue = "0.3", comment = "The approximate tolerance when the angle is considered to be reached")
+	@Configurable(defValue = "0.3", comment = "The approximate tolerance when the angle is considered to be reached", unit = EConfigUnit.ANGLE_RAD)
 	private static double roughAngleTolerance = 0.3;
 
-	@Configurable(defValue = "1.0", comment = "The max time to wait until angle is considered reached while within tolerance")
+	@Configurable(defValue = "1.0", comment = "The max time to wait until angle is considered reached while within tolerance", unit = EConfigUnit.TIME_S)
 	private static double maxTimeTargetAngleReached = 1.0;
 
-	@Configurable(defValue = "-150", comment = "Max dist to push ball")
+	@Configurable(defValue = "-150", comment = "Max dist to push ball", unit = EConfigUnit.DISTANCE_MM)
 	private static double maxPushDist = -150;
 
-	@Configurable(defValue = "-100", comment = "Charge rate for min margin charger")
+	@Configurable(defValue = "-100", comment = "Charge rate for min margin charger", unit = EConfigUnit.VELOCITY_MM)
 	private static double minMarginChargeRate = -100;
 
-	@Configurable(defValue = "50", comment = "Lower threshold for min margin charger")
+	@Configurable(defValue = "50", comment = "Lower threshold for min margin charger", unit = EConfigUnit.DISTANCE_MM)
 	private static double minMarginLowerThreshold = 50;
 
-	@Configurable(defValue = "80", comment = "Upper threshold for min margin charger")
+	@Configurable(defValue = "80", comment = "Upper threshold for min margin charger", unit = EConfigUnit.DISTANCE_MM)
 	private static double minMarginUpperThreshold = 80;
 
-	@Configurable(defValue = "DEFAULT", comment = "Dribbler mode")
+	@Configurable(defValue = "DEFAULT", comment = "Dribbler mode", unit = EConfigUnit.NO_UNIT)
 	private static EDribblerMode dribblerMode = EDribblerMode.DEFAULT;
 
 	private final TargetAngleReachedChecker targetAngleReachedChecker = new TargetAngleReachedChecker(
@@ -126,9 +123,10 @@ public class SingleTouchKickSkill extends ATouchKickSkill
 	public void doEntryActions()
 	{
 		super.doEntryActions();
-		getMoveConstraints().setVelMax(chillVel);
-		getMoveCon().setBallObstacle(false);
-		getMoveCon().setGameStateObstacle(false);
+		setMoveConstraints(getMoveConstraints().withVelMax(chillVel));
+		setMoveCon(getMoveCon()
+				.withBallObstacle(false)
+				.withGameStateObstacle(false));
 		initBallPos = getBall().getPos();
 		dist2Ball = minDistBeforeKick;
 
@@ -148,9 +146,9 @@ public class SingleTouchKickSkill extends ATouchKickSkill
 	@Override
 	public void doUpdate()
 	{
-		if (getVel().getLength2() <= getMoveConstraints().getVelMax())
+		if (getVel().getLength2() <= chillVel)
 		{
-			getMoveConstraints().setAccMax(chillAcc);
+			setMoveConstraints(getMoveConstraints().withAccMax(chillAcc));
 		}
 
 		IVector2 dest = AroundBallCalc

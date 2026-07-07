@@ -1,6 +1,3 @@
-/*
- * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra.ai.pandora.roles.test.calibrate;
 
 import edu.tigers.sumatra.ai.pandora.roles.ARole;
@@ -186,7 +183,7 @@ public class IdentifyBotModelRole extends ARole
 			standStillTimer.reset();
 
 			MoveToSkill move = MoveToSkill.createMoveToSkill();
-			move.getMoveCon().physicalObstaclesOnly();
+			move.setMoveCon(move.getMoveCon().withPhysicalObstaclesOnly());
 			move.updateDestination(dest);
 			move.updateTargetAngle(orientation);
 			setNewSkill(move);
@@ -282,9 +279,9 @@ public class IdentifyBotModelRole extends ARole
 			bw.start();
 
 			BotSkillWrapperSkill spinSkill = new BotSkillWrapperSkill();
-			MoveConstraints mc = new MoveConstraints(getBot().getRobotInfo().getBotParams().getMovementLimits());
-			mc.setAccMax(accMaxXY);
-			mc.setAccMaxW(accMaxW);
+			MoveConstraints mc = MoveConstraints.from(getBot().getRobotInfo().getBotParams().getMovementLimits())
+					.withAccMax(accMaxXY)
+					.withAccMaxW(accMaxW);
 			BotSkillLocalVelocity botSkill = new BotSkillLocalVelocity(Vector2.zero(), wSpeed, mc);
 			spinSkill.setSkill(botSkill);
 			setNewSkill(spinSkill);
@@ -304,9 +301,6 @@ public class IdentifyBotModelRole extends ARole
 			final double HOLD_SPIN_SPEED = 3e9;
 			if (!isRollout && ((getWFrame().getTimestamp() - tHoldSpeed) >= HOLD_SPIN_SPEED))
 			{
-				MoveConstraints mc = new MoveConstraints(getBot().getRobotInfo().getBotParams().getMovementLimits());
-				mc.setAccMax(accMaxXY);
-				mc.setAccMaxW(accMaxW);
 				BotSkillLocalForce rolloutSkill = new BotSkillLocalForce();
 
 				BotSkillWrapperSkill skill = new BotSkillWrapperSkill();

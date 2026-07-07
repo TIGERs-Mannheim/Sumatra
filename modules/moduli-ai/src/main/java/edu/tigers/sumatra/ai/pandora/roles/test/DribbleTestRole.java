@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2024, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.pandora.roles.test;
 
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
@@ -20,7 +16,7 @@ import edu.tigers.sumatra.skillsystem.skills.dribbling.DragBallSkill;
 import edu.tigers.sumatra.time.TimestampTimer;
 import lombok.Setter;
 import lombok.extern.log4j.Log4j2;
-import org.apache.commons.lang.NotImplementedException;
+import org.apache.commons.lang3.NotImplementedException;
 
 import java.awt.Color;
 
@@ -102,10 +98,9 @@ public class DribbleTestRole extends ARole
 
 
 		@Override
-		protected void onInit()
+		protected void onEntry()
 		{
-			super.onInit();
-
+			super.onEntry();
 			contactPos = null;
 			contactBallPos = null;
 			currentState = EDribbleTestState.MOVE_TO_CENTER;
@@ -120,10 +115,11 @@ public class DribbleTestRole extends ARole
 		@Override
 		protected void onUpdate()
 		{
-			skill.getMoveCon().setPenaltyAreaOurObstacle(false);
-			skill.getMoveCon().setPenaltyAreaTheirObstacle(false);
-			skill.getMoveCon().setGameStateObstacle(false);
-			skill.getMoveCon().setObstacleAvoidanceMode(EObstacleAvoidanceMode.AGGRESSIVE);
+			skill.setMoveCon(skill.getMoveCon()
+					.withPenaltyAreaOurObstacle(false)
+					.withPenaltyAreaTheirObstacle(false)
+					.withGameStateObstacle(false)
+					.withObstacleAvoidanceMode(EObstacleAvoidanceMode.AGGRESSIVE));
 			skill.setStrongDribblerContactNeeded(true);
 
 			IVector2 practiceLocationToBall = getBall().getPos().subtractNew(practiceLocation);
@@ -148,9 +144,10 @@ public class DribbleTestRole extends ARole
 		@Override
 		protected void onUpdate()
 		{
-			skill.getMoveCon().setPenaltyAreaOurObstacle(false);
-			skill.getMoveCon().setPenaltyAreaTheirObstacle(false);
-			skill.getMoveCon().setGameStateObstacle(false);
+			skill.setMoveCon(skill.getMoveCon()
+					.withPenaltyAreaOurObstacle(false)
+					.withPenaltyAreaTheirObstacle(false)
+					.withGameStateObstacle(false));
 			if (currentState == EDribbleTestState.MOVE_TO_CENTER)
 			{
 				moveToCenter();

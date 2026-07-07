@@ -1,6 +1,3 @@
-/*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.autoreferee.engine.log;
 
 import edu.tigers.sumatra.referee.data.RefereeMsg;

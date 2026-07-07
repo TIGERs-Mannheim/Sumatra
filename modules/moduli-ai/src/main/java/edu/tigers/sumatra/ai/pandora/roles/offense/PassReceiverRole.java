@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.pandora.roles.offense;
 
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
@@ -16,7 +12,6 @@ import edu.tigers.sumatra.drawable.DrawableArrow;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.math.line.Lines;
 import edu.tigers.sumatra.math.vector.Vector2;
-import edu.tigers.sumatra.skillsystem.skills.MoveToSkill;
 import edu.tigers.sumatra.skillsystem.skills.redirect.RedirectConsultantFactory;
 import lombok.Getter;
 import lombok.Setter;
@@ -67,20 +62,16 @@ public class PassReceiverRole extends ARole
 	}
 
 
-	private class DefaultState extends RoleState<MoveToSkill>
+	private class DefaultState extends MoveState
 	{
-		private DefaultState()
-		{
-			super(MoveToSkill::new);
-		}
-
-
 		@Override
-		protected void onInit()
+		protected void onEntry()
 		{
 			if (physicalObstaclesOnly)
 			{
-				skill.getMoveCon().physicalObstaclesOnly();
+				skill.setMoveCon(skill.getMoveCon()
+						.withPhysicalObstaclesOnly()
+						.withBallObstacle(false));
 			}
 		}
 
@@ -105,8 +96,6 @@ public class PassReceiverRole extends ARole
 					Vector2.fromAngleLength(targetAngle, getBot().getCenter2DribblerDist() + Geometry.getBallRadius()));
 			skill.updateDestination(dest);
 
-			skill.getMoveCon().setBallObstacle(dest.distanceTo(getPos()) > 500);
-
 			receivingPositionReachedIn = skill.getDestinationReachedIn();
 			draw();
 		}
@@ -121,7 +110,7 @@ public class PassReceiverRole extends ARole
 				if (angle < OffensiveConstants.getMaximumReasonableRedirectAngle())
 				{
 					var incomingBallVel = incomingPass.getKick().getKickVel().getXYVector()
-							.scaleToNew(incomingPass.getReceivingSpeed());
+							.scaleToNew(incomingPass.getReceivingBallSpeed());
 					var desiredBallVel = outgoingKick.getKickVel().getXYVector();
 					return RedirectConsultantFactory.createDefault().getTargetAngle(incomingBallVel, desiredBallVel);
 				}

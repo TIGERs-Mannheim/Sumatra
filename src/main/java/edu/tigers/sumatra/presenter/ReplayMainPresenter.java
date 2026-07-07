@@ -1,21 +1,16 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.presenter;
 
-import edu.tigers.autoref.view.ballspeed.BallSpeedView;
-import edu.tigers.autoref.view.gamelog.GameLogView;
+import edu.tigers.autoref.presenter.BallSpeedPresenter;
+import edu.tigers.autoref.presenter.GameLogPresenter;
 import edu.tigers.sumatra.AMainPresenter;
 import edu.tigers.sumatra.clock.ThreadUtil;
-import edu.tigers.sumatra.gui.ai.botoverview.BotOverviewView;
-import edu.tigers.sumatra.gui.ai.offensive.interceptions.OffensiveInterceptionsView;
-import edu.tigers.sumatra.gui.ai.offensive.statistics.OffensiveStatisticsView;
-import edu.tigers.sumatra.gui.ai.offensive.strategy.OffensiveStrategyView;
-import edu.tigers.sumatra.gui.ai.statistics.StatisticsView;
-import edu.tigers.sumatra.gui.ai.support.SupportBehaviorsView;
-import edu.tigers.sumatra.gui.log.LogView;
-import edu.tigers.sumatra.gui.replay.ReplayControlView;
+import edu.tigers.sumatra.gui.ai.botoverview.presenter.BotOverviewPresenter;
+import edu.tigers.sumatra.gui.ai.offensive.interceptions.presenter.OffensiveInterceptionsPresenter;
+import edu.tigers.sumatra.gui.ai.offensive.statistics.presenter.OffensiveStatisticsPresenter;
+import edu.tigers.sumatra.gui.ai.offensive.strategy.presenter.OffensiveStrategyPresenter;
+import edu.tigers.sumatra.gui.ai.statistics.presenter.StatisticsPresenter;
+import edu.tigers.sumatra.gui.ai.support.presenter.SupportBehaviorsPresenter;
+import edu.tigers.sumatra.gui.log.presenter.LogPresenter;
 import edu.tigers.sumatra.gui.replay.presenter.IReplayController;
 import edu.tigers.sumatra.gui.replay.presenter.ReplayAutoRefReCalcController;
 import edu.tigers.sumatra.gui.replay.presenter.ReplayCamDetectionController;
@@ -25,8 +20,8 @@ import edu.tigers.sumatra.gui.replay.presenter.ReplayShapeMapController;
 import edu.tigers.sumatra.gui.replay.presenter.ReplayWfwController;
 import edu.tigers.sumatra.gui.replay.view.IReplayControlPanelObserver;
 import edu.tigers.sumatra.gui.replay.view.IReplayPositionObserver;
-import edu.tigers.sumatra.gui.visualizer.VisualizerView;
 import edu.tigers.sumatra.gui.visualizer.presenter.VisualizerPresenter;
+import edu.tigers.sumatra.persistence.EPersistenceKeyType;
 import edu.tigers.sumatra.persistence.PersistenceDb;
 import edu.tigers.sumatra.persistence.PersistenceTable;
 import edu.tigers.sumatra.referee.data.EGameState;
@@ -40,9 +35,9 @@ import edu.tigers.sumatra.snapshot.SnapshotController;
 import edu.tigers.sumatra.thread.NamedThreadFactory;
 import edu.tigers.sumatra.util.ShortcutsDialog;
 import edu.tigers.sumatra.view.ReplayMainFrame;
-import edu.tigers.sumatra.views.ASumatraView;
 import edu.tigers.sumatra.views.ESumatraViewType;
 import edu.tigers.sumatra.views.ISumatraPresenter;
+import edu.tigers.sumatra.views.SumatraView;
 import edu.tigers.sumatra.wp.IWorldFrameObserver;
 import edu.tigers.sumatra.wp.data.WorldFrameWrapper;
 import lombok.extern.log4j.Log4j2;
@@ -90,12 +85,12 @@ public class ReplayMainPresenter extends AMainPresenter<ReplayMainFrame>
 	{
 		super(new ReplayMainFrame(), createViews(), "replay");
 
-		getMainFrame().getShortcutMenuItem().addActionListener(actionEvent -> new ShortcutsDialog(getMainFrame()));
+		getMainFrame().getShortcutMenuItem().addActionListener(_ -> new ShortcutsDialog(getMainFrame()));
 
 		addReplayController(new ReplayAiReCalcController(getViews()));
 		addReplayController(new ReplayAiController(getViews()));
 
-		for (ASumatraView view : getViews())
+		for (SumatraView view : getViews())
 		{
 			if (view.getType() == ESumatraViewType.REPLAY_CONTROL)
 			{
@@ -127,20 +122,20 @@ public class ReplayMainPresenter extends AMainPresenter<ReplayMainFrame>
 	}
 
 
-	private static List<ASumatraView> createViews()
+	private static List<SumatraView> createViews()
 	{
 		return List.of(
-				new LogView(false),
-				new ReplayControlView(),
-				new GameLogView(),
-				new VisualizerView(),
-				new BallSpeedView(),
-				new BotOverviewView(),
-				new StatisticsView(),
-				new OffensiveStrategyView(),
-				new OffensiveStatisticsView(),
-				new OffensiveInterceptionsView(),
-				new SupportBehaviorsView()
+				new SumatraView(ESumatraViewType.LOG, () -> new LogPresenter(false)),
+				new SumatraView(ESumatraViewType.REPLAY_CONTROL, ReplayControlPresenter::new),
+				new SumatraView(ESumatraViewType.AUTOREFEREE_GAME_LOG, GameLogPresenter::new),
+				new SumatraView(ESumatraViewType.VISUALIZER, VisualizerPresenter::new),
+				new SumatraView(ESumatraViewType.BALL_SPEED, BallSpeedPresenter::new),
+				new SumatraView(ESumatraViewType.BOT_OVERVIEW, BotOverviewPresenter::new),
+				new SumatraView(ESumatraViewType.STATISTICS, StatisticsPresenter::new),
+				new SumatraView(ESumatraViewType.OFFENSIVE_STRATEGY, OffensiveStrategyPresenter::new),
+				new SumatraView(ESumatraViewType.OFFENSIVE_STATISTICS, OffensiveStatisticsPresenter::new),
+				new SumatraView(ESumatraViewType.OFFENSIVE_INTERCEPTIONS, OffensiveInterceptionsPresenter::new),
+				new SumatraView(ESumatraViewType.SUPPORT_BEHAVIORS, SupportBehaviorsPresenter::new)
 		);
 	}
 
@@ -167,7 +162,7 @@ public class ReplayMainPresenter extends AMainPresenter<ReplayMainFrame>
 	private Stream<ISumatraPresenter> getPresenters()
 	{
 		return getViews().stream()
-				.flatMap(ASumatraView::getPresenters);
+				.flatMap(SumatraView::getPresenters);
 	}
 
 
@@ -353,15 +348,23 @@ public class ReplayMainPresenter extends AMainPresenter<ReplayMainFrame>
 
 	private void cutTableAsync(String lengthString)
 	{
+		long length = (long) (Double.parseDouble(lengthString) * 1e9);
 		long end = refreshThread.getCurrentTime();
-		long start = end - (long) (Double.parseDouble(lengthString) * 1e9);
+
+		var wfwTable = db.getTable(WorldFrameWrapper.class);
+		long unixEnd = wfwTable.get(wfwTable.getNearestKey(end)).getUnixTimestamp();
 
 		PersistenceDb cutDb = new PersistenceDb(
 				Path.of(db.getDbPath() + "-cut-" + refreshThread.currentTimeFormatted("HH_mm_ss-SSS"))
 		);
 
 		log.info("Creating replay cut {}", cutDb.getDbPath());
-		db.forEachTable(table -> copySection(cutDb, table, start, end));
+		db.forEachTable(table -> {
+			if(table.getKeyType() == EPersistenceKeyType.SUMATRA_TIMESTAMP)
+				copySection(cutDb, table, end - length, end);
+			else
+				copySection(cutDb, table, unixEnd - length, unixEnd);
+		});
 
 		cutDb.setCompressOnClose(true);
 		cutDb.close();
@@ -386,7 +389,8 @@ public class ReplayMainPresenter extends AMainPresenter<ReplayMainFrame>
 		Long time = table.getNearestKey(start);
 		while (time != null && time < end)
 		{
-			cutTable.write(table.get(time));
+			T data = table.get(time);
+			cutDb.getIoExecutor().execute(() -> cutTable.write(data));
 			time = table.getNextKey(time);
 		}
 	}

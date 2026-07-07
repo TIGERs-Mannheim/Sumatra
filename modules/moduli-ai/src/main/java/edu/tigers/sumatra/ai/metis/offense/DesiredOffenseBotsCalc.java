@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.metis.offense;
 
 import edu.tigers.sumatra.ai.metis.ACalculator;
@@ -20,8 +16,11 @@ import java.util.stream.Stream;
 @RequiredArgsConstructor
 public class DesiredOffenseBotsCalc extends ACalculator
 {
+	// bots that actually do something with the ball
 	private final Supplier<List<BotID>> ballHandlingBots;
+	// bots that do other things with the opponents (block, interfere, etc.)
 	private final Supplier<Map<BotID, IVector2>> supportiveAttackers;
+	// bots that are about to be passed to
 	private final Supplier<List<BotID>> passReceivers;
 
 	@Getter

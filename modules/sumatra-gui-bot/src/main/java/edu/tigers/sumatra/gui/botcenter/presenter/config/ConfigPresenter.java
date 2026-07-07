@@ -1,6 +1,3 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra.gui.botcenter.presenter.config;
 
 import edu.tigers.sumatra.botmanager.ACommandBasedBotManager;
@@ -87,7 +84,7 @@ public class ConfigPresenter implements IBotConfigPanelObserver, IConfigFileData
 
 		cfgFile.setValues(read);
 
-		log.info("Config complete:" + cfgFile.getName());
+		log.info("Config complete:{}", cfgFile.getName());
 
 		SwingUtilities.invokeLater(() -> configPanel.addConfigFile(
 				cfgFile,

@@ -1,11 +1,7 @@
-/*
- * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.skillsystem.skills;
 
 import com.github.g3force.configurable.Configurable;
-import edu.tigers.sumatra.bot.IMoveConstraints;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.bot.MoveConstraints;
 import edu.tigers.sumatra.botmanager.botskills.data.DriveLimits;
 import edu.tigers.sumatra.drawable.DrawableAnnotation;
@@ -33,12 +29,12 @@ import edu.tigers.sumatra.pathfinder.obstacles.IObstacle;
 import edu.tigers.sumatra.pathfinder.obstacles.ObstacleGenerator;
 import edu.tigers.sumatra.pathfinder.obstacles.input.DynamicMargin;
 import edu.tigers.sumatra.skillsystem.ESkillShapesLayer;
+import edu.tigers.sumatra.skillsystem.data.RobotTarget;
 import edu.tigers.sumatra.skillsystem.skills.util.DoubleChargingValue;
 import edu.tigers.sumatra.trajectory.TrajectoryWithTime;
 import edu.tigers.sumatra.trajectory.TrajectoryXyw;
 import edu.tigers.sumatra.wp.data.DynamicPosition;
 import edu.tigers.sumatra.wp.data.ITrackedObject;
-import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.log4j.Log4j2;
@@ -54,40 +50,44 @@ public abstract class AMoveToSkill extends AMoveSkill
 {
 	private static final DecimalFormat DF_2 = new DecimalFormat("#.##");
 
-	@Configurable(defValue = "false")
+	@Configurable(defValue = "false", unit = EConfigUnit.BOOLEAN)
 	private static boolean debugShapes = false;
 
-	@Configurable(defValue = "0.05", comment = "Time offset [s] to add to brake time to compensate reaction time")
+	@Configurable(defValue = "0.05", comment = "Time offset to add to brake time to compensate reaction time", unit = EConfigUnit.TIME_S)
 	private static double brakeReactionTime = 0.05;
 
-	@Configurable(defValue = "0.6", comment = "Velocity [m/s] to subtract from current velocity when calculating brake time")
+	@Configurable(defValue = "0.6", comment = "Velocity to subtract from current velocity when calculating brake time", unit = EConfigUnit.VELOCITY_M)
 	private static double brakeVelTolerance = 0.6;
 
-	@Configurable(defValue = "0.5", comment = "Minimum velocity [m/s] to limit the max velocity to when no good path is found")
+	@Configurable(defValue = "0.5", comment = "Minimum velocity to limit the max velocity to when no good path is found", unit = EConfigUnit.VELOCITY_M)
 	private static double maxRobotSpeedLimiterMinVel = 0.5;
 
-	@Configurable(defValue = "5", comment = "Rate [m/s²] that the limited velocity is increased")
+	@Configurable(defValue = "5", comment = "Rate that the limited velocity is increased", unit = EConfigUnit.ACCELERATION_M)
 	private static double maxRobotSpeedLimiterIncreaseRate = 5;
 
-	@Configurable(defValue = "-5", comment = "Rate [m/s²] that the limited velocity is decreased")
+	@Configurable(defValue = "-5", comment = "Rate that the limited velocity is decreased", unit = EConfigUnit.ACCELERATION_M)
 	private static double maxRobotSpeedLimiterDecreaseRate = -5;
 
 
-	@Getter
-	private final MovementCon moveCon = new MovementCon();
-	private final ObstacleGenerator obstacleGen = new ObstacleGenerator(moveCon);
+	private final ObstacleGenerator obstacleGen = new ObstacleGenerator();
 	private final PathFinderInputProcessor inputProcessor = new PathFinderInputProcessor();
 	private final IPathFinder finder = new PathFinder();
 	private DoubleChargingValue maxRobotSpeedLimiter;
+	private PathFinderPrioMap prioMap;
 
 	@Getter
-	private MoveConstraints moveConstraints = new MoveConstraints();
+	@Setter
+	private MovementCon moveCon = MovementCon.DEFAULT;
 
-	@Getter(AccessLevel.PROTECTED)
-	private IVector2 destination;
-	@Getter(AccessLevel.PROTECTED)
-	private Double targetAngle;
-	private DynamicPosition lookAtTarget;
+	@Getter
+	@Setter
+	private MoveConstraints moveConstraints = MoveConstraints.ZERO;
+
+	@Setter
+	private RobotTarget robotTarget = new RobotTarget();
+
+	private Double targetTime;
+	private boolean useComeToAStopIfFaster = false;
 
 	@Getter
 	@Setter
@@ -99,13 +99,20 @@ public abstract class AMoveToSkill extends AMoveSkill
 	@Setter
 	private boolean comeToAStop = false;
 
+	@Override
+	public void update(SkillInput input)
+	{
+		super.update(input);
+		this.prioMap = input.prioMap();
+	}
+
 
 	@Override
 	public void doEntryActions()
 	{
 		super.doEntryActions();
-		moveConstraints.resetLimits(getBot().getBotParams().getMovementLimits());
-		double maxVel = getBot().getBotParams().getMovementLimits().getVelMaxFast();
+		moveConstraints = MoveConstraints.from(getBot().getBotParams().getMovementLimits());
+		double maxVel = getBot().getBotParams().getMovementLimits().getVelMax();
 		maxRobotSpeedLimiter = new DoubleChargingValue(
 				maxVel,
 				maxRobotSpeedLimiterIncreaseRate,
@@ -130,23 +137,40 @@ public abstract class AMoveToSkill extends AMoveSkill
 		updateFields();
 
 		MoveConstraints currentMoveConstraints = limitRobotSpeed(
-				new MoveConstraints(moveConstraints).limit(getBot().getBotParams().getMovementLimits())
+				moveConstraints.limitedBy(getBot().getBotParams().getMovementLimits())
+		);
+		var virtualDestination = determineVirtualDestination(currentMoveConstraints);
+
+		List<IObstacle> obstacles = obstacleGen.generateObstacles(
+				getWorldFrame(),
+				getBot().getBotId(),
+				getGameState(),
+				moveCon,
+				prioMap
 		);
 
-		List<IObstacle> obstacles = obstacleGen.generateObstacles(getWorldFrame(), getBot().getBotId(), getGameState());
-
-		PathFinderInput pathFinderInput = getPathFinderInput(currentMoveConstraints, obstacles);
+		PathFinderInput pathFinderInput = getPathFinderInput(currentMoveConstraints, obstacles, virtualDestination);
 		Optional<PathFinderResult> pathResult = finder.calcPath(pathFinderInput);
 		pathResult.ifPresent(this::drawPathFinderResult);
 
-		if (comeToAStop)
+		if (comeToAStop || virtualDestination.useComeToAStop)
 		{
+			getShapes().get(ESkillShapesLayer.PATH).add(
+					new DrawableCircle(Circle.createCircle(getTBot().getPos(), 100))
+							.setColor(Color.magenta)
+							.setStrokeWidth(30)
+			);
 			performBrake(currentMoveConstraints);
 			destinationReachedIn = Double.POSITIVE_INFINITY;
 		} else if (pathResult.isEmpty() || needToBrake(pathResult.get()))
 		{
+			getShapes().get(ESkillShapesLayer.PATH).add(
+					new DrawableCircle(Circle.createCircle(getTBot().getPos(), 100))
+							.setColor(Color.pink)
+							.setStrokeWidth(30)
+			);
 			maxRobotSpeedLimiter.setChargeMode(DoubleChargingValue.ChargeMode.DECREASE);
-			performBrake(currentMoveConstraints);
+			currentMoveConstraints = performBrake(currentMoveConstraints);
 			drawDirectPath(pathFinderInput, currentMoveConstraints);
 			destinationReachedIn = Double.POSITIVE_INFINITY;
 		} else
@@ -187,29 +211,76 @@ public abstract class AMoveToSkill extends AMoveSkill
 	private double brakeTime()
 	{
 		double vel = Math.max(0, getTBot().getVel().getLength2() - brakeVelTolerance);
-		return vel / getTBot().getMoveConstraints().getAccMaxDerived() + brakeReactionTime;
+		return vel / getTBot().getMoveConstraints().getAccMax() + brakeReactionTime;
 	}
 
 
-	private void performBrake(MoveConstraints currentMoveConstraints)
+	private MoveConstraints performBrake(MoveConstraints currentMoveConstraints)
 	{
-		getShapes().get(ESkillShapesLayer.PATH).add(
-				new DrawableCircle(Circle.createCircle(getTBot().getPos(), 100))
-						.setColor(Color.pink)
-						.setStrokeWidth(30)
-		);
-
-		currentMoveConstraints.setAccMax(currentMoveConstraints.getBrkMax());
-		currentMoveConstraints.setAccMaxW(DriveLimits.MAX_ACC_W);
-		currentMoveConstraints.setJerkMax(DriveLimits.MAX_JERK);
-		currentMoveConstraints.setJerkMaxW(DriveLimits.MAX_JERK_W);
+		MoveConstraints brakeConstraints = currentMoveConstraints
+				.withAccMax(currentMoveConstraints.getBrkMax())
+				.withAccMaxW(DriveLimits.MAX_ACC_W);
 
 		currentTrajectory = null;
-		setLocalVelocity(Vector2.zero(), 0, currentMoveConstraints);
+		setLocalVelocity(Vector2.zero(), 0, brakeConstraints);
+		return brakeConstraints;
 	}
 
 
-	private PathFinderInput getPathFinderInput(MoveConstraints currentMoveConstraints, List<IObstacle> obstacles)
+	private VirtualDestination determineVirtualDestination(MoveConstraints currentMoveConstraints)
+	{
+		if (targetTime == null)
+		{
+			// No targetTime set -> the virtual destination is just the actual destination
+			return new VirtualDestination(
+					robotTarget.getDestination(getWorldFrame(), getBotId()),
+					useComeToAStopIfFaster && TrajectoryGenerator.isComeToAStopFaster(
+							currentMoveConstraints,
+							getPos(),
+							getVel(),
+							robotTarget.getDestination(getWorldFrame(), getBotId())
+					)
+			);
+		}
+
+
+		Color color = getTBot().getBotId().getTeamColor().getColor();
+		double radius = Geometry.getBotRadius() + 5;
+
+		getShapes().get(ESkillShapesLayer.MOVE_TO_DEST).add(
+				new DrawableAnnotation(
+						robotTarget.getDestination(getWorldFrame(), getBotId()), String.format("%.2fs", targetTime))
+						.withCenterHorizontally(true)
+						.setColor(color)
+		);
+
+		getShapes().get(ESkillShapesLayer.MOVE_TO_DEST).add(
+				new DrawableBot(
+						robotTarget.getDestination(getWorldFrame(), getBotId()),
+						robotTarget.getTargetAngle(getWorldFrame(), getBotId()),
+						color, radius, radius
+				)
+		);
+
+		var timedTraj = TrajectoryGenerator.generateTimedPositionTrajectory(
+				currentMoveConstraints,
+				getPos(),
+				getVel(),
+				robotTarget.getDestination(getWorldFrame(), getBotId()),
+				targetTime
+		);
+		return new VirtualDestination(
+				timedTraj.getFinalDestination(),
+				useComeToAStopIfFaster && TrajectoryGenerator.isComeToAStopFasterTimed(
+						currentMoveConstraints,
+						timedTraj
+				)
+		);
+	}
+
+
+	private PathFinderInput getPathFinderInput(
+			MoveConstraints currentMoveConstraints, List<IObstacle> obstacles, VirtualDestination virtualDestination)
 	{
 		long timestamp = getWorldFrame().getTimestamp();
 		PathFinderInput.PathFinderInputBuilder inputBuilder = PathFinderInput.fromBot(getTBot().getBotState());
@@ -218,7 +289,7 @@ public abstract class AMoveToSkill extends AMoveSkill
 				.timestamp(timestamp)
 				.moveConstraints(currentMoveConstraints)
 				.obstacles(obstacles)
-				.dest(destination)
+				.dest(virtualDestination.position())
 				.build();
 
 		inputProcessor.setShapeMap(debugShapes ? getShapes() : null);
@@ -227,6 +298,7 @@ public abstract class AMoveToSkill extends AMoveSkill
 
 		Color color = getTBot().getBotId().getTeamColor().getColor();
 		double radius = Geometry.getBotRadius() + 25;
+		double targetAngle = robotTarget.getTargetAngle(getWorldFrame(), getBotId());
 		getShapes().get(ESkillShapesLayer.MOVE_TO_DEST).add(
 				new DrawableBot(input.getDest(), targetAngle, color, radius, radius)
 		);
@@ -255,24 +327,19 @@ public abstract class AMoveToSkill extends AMoveSkill
 
 	private MoveConstraints limitRobotSpeed(MoveConstraints currentMoveConstraints)
 	{
-		if (getGameState().isVelocityLimited())
-		{
-			return currentMoveConstraints
-					.setVelMax(Math.min(moveConstraints.getVelMax(), getMaxStopSpeed()))
-					.setVelMaxFast(Math.min(moveConstraints.getVelMaxFast(), getMaxStopSpeed()));
-		}
+		double cap = getGameState().isVelocityLimited() ? getMaxStopSpeed() : maxRobotSpeedLimiter.getValue();
 		return currentMoveConstraints
-				.setVelMax(Math.min(moveConstraints.getVelMax(), maxRobotSpeedLimiter.getValue()))
-				.setVelMaxFast(Math.min(moveConstraints.getVelMaxFast(), maxRobotSpeedLimiter.getValue()));
+				.withVelMax(Math.min(moveConstraints.getVelMax(), cap));
 	}
 
 
 	private void executePath(
 			TrajPath trajPath,
-			IMoveConstraints currentMoveConstraints
+			MoveConstraints currentMoveConstraints
 	)
 	{
 		var dest = trajPath.getNextDestination(0);
+		var targetAngle = robotTarget.getTargetAngle(getWorldFrame(), getBotId());
 		setTargetPose(dest, targetAngle, currentMoveConstraints);
 
 		var trajW = TrajectoryGenerator.generateRotationTrajectory(getTBot(), targetAngle, currentMoveConstraints);
@@ -284,7 +351,10 @@ public abstract class AMoveToSkill extends AMoveSkill
 		);
 
 		getShapes().get(ESkillShapesLayer.PATH_DEBUG).add(
-				new DrawableAnnotation(destination, "tt: " + DF_2.format(trajPath.getTotalTime()))
+				new DrawableAnnotation(
+						robotTarget.getDestination(getWorldFrame(), getBotId()),
+						"tt: " + DF_2.format(trajPath.getTotalTime())
+				)
 		);
 		if (debugShapes)
 		{
@@ -312,20 +382,11 @@ public abstract class AMoveToSkill extends AMoveSkill
 
 	private void updateFields()
 	{
-		moveCon.update(getTBot());
-		if (destination == null)
+		if (prioMap == null)
 		{
-			destination = getTBot().getPos();
+			prioMap = PathFinderPrioMap.byBotId(getTBot().getTeamColor());
 		}
 
-		if (lookAtTarget != null)
-		{
-			lookAtTarget = lookAtTarget.update(getWorldFrame());
-			targetAngle = lookAtTarget.getPos().subtractNew(getPos()).getAngle(0);
-		} else if (targetAngle == null)
-		{
-			targetAngle = getTBot().getOrientation();
-		}
 		finder.setShapeMap(debugShapes ? getShapes() : null);
 	}
 
@@ -335,17 +396,16 @@ public abstract class AMoveToSkill extends AMoveSkill
 	 */
 	protected void updateDestination(final IVector2 destination)
 	{
-		this.destination = destination;
+		robotTarget = robotTarget.withDestination(destination);
 	}
 
 
 	/**
 	 * @param angle [rad]
 	 */
-	protected void updateTargetAngle(final double angle)
+	protected void updateTargetAngle(final Double angle)
 	{
-		targetAngle = angle;
-		lookAtTarget = null;
+		robotTarget = robotTarget.withTargetAngle(angle);
 	}
 
 
@@ -356,7 +416,7 @@ public abstract class AMoveToSkill extends AMoveSkill
 	 */
 	protected void updateLookAtTarget(final DynamicPosition lookAtTarget)
 	{
-		this.lookAtTarget = lookAtTarget;
+		robotTarget = robotTarget.withLookAtTarget(lookAtTarget);
 	}
 
 
@@ -380,9 +440,44 @@ public abstract class AMoveToSkill extends AMoveSkill
 	}
 
 
-	@Override
-	public void setPrioMap(final PathFinderPrioMap prioMap)
+	/**
+	 * The time in s from now at which the robot shall reach its destination.
+	 * If this is set, the robot might use overshooting trajectories.
+	 * This may be null if no targetTime is wanted
+	 *
+	 * @param targetTime time at which the destination shall be reached or null
+	 */
+	protected void updateTargetTime(Double targetTime)
 	{
-		moveCon.setPrioMap(prioMap);
+		this.targetTime = targetTime;
 	}
+
+
+	/**
+	 * A control flag to allow the robot to use the isComeToAStopFaster feature.
+	 * If this is set, the robot might use an emergency break for faster direction changes
+	 * This may be null if no targetTime is wanted
+	 *
+	 * @param
+	 */
+	protected void updateUseComeToAStopIfFaster(boolean useComeToAStopIfFaster)
+	{
+		this.useComeToAStopIfFaster = useComeToAStopIfFaster;
+	}
+
+
+	protected IVector2 getDestination()
+	{
+		return robotTarget.getDestination(getWorldFrame(), getBotId());
+	}
+
+
+	protected double getTargetAngle()
+	{
+		return robotTarget.getTargetAngle(getWorldFrame(), getBotId());
+	}
+
+
+	private record VirtualDestination(IVector2 position, boolean useComeToAStop)
+	{}
 }

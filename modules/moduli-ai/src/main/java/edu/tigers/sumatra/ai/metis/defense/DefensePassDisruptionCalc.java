@@ -1,11 +1,8 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.metis.defense;
 
 
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.ai.metis.ACalculator;
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
 import edu.tigers.sumatra.ai.metis.defense.data.DefenseBallThreat;
@@ -26,6 +23,7 @@ import edu.tigers.sumatra.pathfinder.TrajectoryGenerator;
 import edu.tigers.sumatra.trajectory.ITrajectory;
 import edu.tigers.sumatra.wp.data.ITrackedBall;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
+import edu.tigers.sumatra.wp.data.KickedBall;
 import edu.tigers.sumatra.wp.data.WorldFrame;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -44,22 +42,27 @@ import java.util.stream.Stream;
 @RequiredArgsConstructor
 public class DefensePassDisruptionCalc extends ACalculator
 {
-	@Configurable(defValue = "false", comment = "Draw more shapes stored in an extra layer")
+	@Configurable(defValue = "false", comment = "Draw more shapes stored in an extra layer", unit = EConfigUnit.BOOLEAN)
 	private static boolean drawDebugShapes = false;
-	@Configurable(defValue = "0.8", comment = "[m/s] if our robot is slower than this on the disturbance pos it is allowed to risk a collision")
+	@Configurable(defValue = "0.8", comment = "if our robot is slower than this on the disturbance pos it is allowed to risk a collision", unit = EConfigUnit.VELOCITY_M)
 	private static double maxVelToRiskCollision = 0.8;
-	@Configurable(defValue = "1.3", comment = "The factor multiplied to the maximum time our offense has to reach it's intercept point")
+	@Configurable(defValue = "1.3", comment = "The factor multiplied to the maximum time our offense has to reach it's intercept point", unit = EConfigUnit.FACTOR)
 	private static double offenseTimeFactor = 1.3;
-	@Configurable(defValue = "1.3", comment = "[s] A constant offset added to the maximum time our offense has to reach it's intercept point")
+	@Configurable(defValue = "0.1", comment = "A constant offset added to the maximum time our offense has to reach it's intercept point", unit = EConfigUnit.TIME_S)
 	private static double offenseTimeOffset = 0.1;
-	@Configurable(defValue = "0.3", comment = "[m/s] Tolerance the actual disruption point can have from the best one regarding the velocity")
+	@Configurable(defValue = "0.3", comment = "Tolerance the actual disruption point can have from the best one regarding the velocity", unit = EConfigUnit.VELOCITY_M)
 	private static double toleranceVel = 0.3;
-	@Configurable(defValue = "10.0", comment = "[mm] Tolerance the actual disruption point can have from the best one regarding the distance")
+	@Configurable(defValue = "10.0", comment = "Tolerance the actual disruption point can have from the best one regarding the distance", unit = EConfigUnit.DISTANCE_MM)
 	private static double toleranceDist = 10.0;
+	@Configurable(defValue = "OUR_OFFENSE_IS_FIRST", comment = "The required constellation to prefer disrupt over blocking", unit = EConfigUnit.NO_UNIT)
+	private static EOffenseOpponentConstellation requiredConstellation = EOffenseOpponentConstellation.OUR_OFFENSE_IS_FIRST;
+	@Configurable(defValue = "true", comment = "Is the DefensePassDisruption Logic active", unit = EConfigUnit.BOOLEAN)
+	private static boolean active = true;
 
 	private final Supplier<Set<BotID>> crucialOffender;
 	private final Supplier<DefenseBallThreat> ballThreat;
 	private final Supplier<Optional<OngoingPass>> ongoingPass;
+	private final Supplier<KickedBall> detectedGoalKickTigers;
 
 	@Getter
 	private DefensePassDisruptionAssignment currentAssignment = null;
@@ -80,9 +83,11 @@ public class DefensePassDisruptionCalc extends ACalculator
 	@Override
 	protected boolean isCalculationNecessary()
 	{
-		return getAiFrame().getGameState().isGameRunning()
+		return active
+				&& getAiFrame().getGameState().isGameRunning()
 				&& ballThreat.get().getSourceType() == EDefenseBallThreatSourceType.PASS_RECEIVE
-				&& ongoingPass.get().isEmpty();
+				&& ongoingPass.get().isEmpty()
+				&& detectedGoalKickTigers.get() == null;
 	}
 
 
@@ -96,13 +101,19 @@ public class DefensePassDisruptionCalc extends ACalculator
 				.min(Comparator.comparingDouble(BallTimePosDist::time))
 				.orElse(null);
 		var opponent = createOpponentTimePosDist();
+
 		var newConstellation = determineOffenseOpponentConstellation(lastConstellation, offense, opponent);
+		if (newConstellation.getDangerousness() < lastConstellation.getDangerousness())
+		{
+			// New constellation is less dangerous -> Reevaluate if a disruption is still feasible and necessary
+			lastData = null;
+		}
 
 		DisruptionData newData;
 
 		if (lastData != null)
 		{
-			newData = updateDisruptionData(lastData, opponent)
+			newData = updateDisruptionData(lastData, opponent, newConstellation)
 					.orElseGet(() -> findNewDisruptionData(offense, opponent, newConstellation).orElse(null));
 		} else
 		{
@@ -112,7 +123,7 @@ public class DefensePassDisruptionCalc extends ACalculator
 		if (newData != null)
 		{
 			currentAssignment = newData.buildAssignment(newConstellation);
-			getShapes(EAiShapesLayer.DEFENSE_PASS_DISRUPTION).addAll(newData.draw(true).toList());
+			getShapes(EAiShapesLayer.DEFENSE_PASS_DISRUPTION).addAll(newData.draw(true, newConstellation).toList());
 		} else
 		{
 			currentAssignment = null;
@@ -176,7 +187,8 @@ public class DefensePassDisruptionCalc extends ACalculator
 	}
 
 
-	private Optional<DisruptionData> updateDisruptionData(DisruptionData oldData, BallTimePosDist opponent)
+	private Optional<DisruptionData> updateDisruptionData(
+			DisruptionData oldData, BallTimePosDist opponent, EOffenseOpponentConstellation constellation)
 	{
 		if (oldData.opponentReceiver != opponentPassReceiver)
 		{
@@ -194,7 +206,7 @@ public class DefensePassDisruptionCalc extends ACalculator
 
 		return newStrategy
 				.filter(strategy -> strategy.disruption.dist <= opponent.dist)
-				.map(strategy -> DisruptionData.fromStrategy(oldData.opponentReceiver, strategy))
+				.map(strategy -> DisruptionData.fromStrategy(oldData.opponentReceiver, constellation, strategy))
 				.filter(data -> data.feasibility.category != EFeasibilityCategory.UNFEASIBLE);
 	}
 
@@ -215,7 +227,7 @@ public class DefensePassDisruptionCalc extends ACalculator
 		if (drawDebugShapes)
 		{
 			getShapes(EAiShapesLayer.DEFENSE_PASS_DISRUPTION_DEBUG).addAll(
-					disruptionData.stream().flatMap(data -> data.draw(false)).toList()
+					disruptionData.stream().flatMap(data -> data.draw(false, constellation)).toList()
 			);
 		}
 
@@ -259,7 +271,7 @@ public class DefensePassDisruptionCalc extends ACalculator
 	)
 	{
 		return createDisruptionStrategies(defender, offense, opponent, constellation).stream()
-				.map(strategy -> DisruptionData.fromStrategy(opponentPassReceiver, strategy))
+				.map(strategy -> DisruptionData.fromStrategy(opponentPassReceiver, constellation, strategy))
 				.toList();
 	}
 
@@ -314,6 +326,12 @@ public class DefensePassDisruptionCalc extends ACalculator
 	}
 
 
+	static boolean isDisruptPreferredOverBlocking(EOffenseOpponentConstellation constellation)
+	{
+		return constellation.dangerousness >= requiredConstellation.dangerousness;
+	}
+
+
 	private EOffenseOpponentConstellation determineOffenseOpponentConstellation(
 			EOffenseOpponentConstellation constellationPrior,
 			BallTimePosDist offense,
@@ -344,13 +362,6 @@ public class DefensePassDisruptionCalc extends ACalculator
 		return EOffenseOpponentConstellation.OUR_OFFENSE_IS_FIRST;
 	}
 
-
-	private enum EOffenseOpponentConstellation
-	{
-		OUR_OFFENSE_IS_FIRST_WITH_MARGIN,
-		OUR_OFFENSE_IS_FIRST,
-		OPPONENT_IS_FIRST_OR_CLOSE
-	}
 
 	private enum EFeasibilityCategory
 	{
@@ -430,10 +441,8 @@ public class DefensePassDisruptionCalc extends ACalculator
 			return new DisruptionStrategy(
 					ballTimePosDist,
 					defenderBot,
-					TrajectoryGenerator.generatePositionTrajectoryToReachPointInTime(
-							defenderBot, ballTimePosDist.pos,
-							ballTimePosDist.time
-					),
+					TrajectoryGenerator.generateTimedPositionTrajectory(
+							defenderBot, ballTimePosDist.pos, ballTimePosDist.time),
 					EDefensePassDisruptionStrategyType.DISRUPT_PASS,
 					wFrame.getTimestamp()
 			);
@@ -503,16 +512,19 @@ public class DefensePassDisruptionCalc extends ACalculator
 		}
 
 
-		Stream<IDrawableShape> draw(Color color)
+		Stream<IDrawableShape> draw(Color color, EOffenseOpponentConstellation constellation)
 		{
 			return Stream.concat(
 					disruption.draw(color),
 					Stream.of(
 							new DrawableAnnotation(
-									disruption.pos.addNew(Vector2.fromY(135)),
+									disruption.pos.addNew(Vector2.fromY(155)),
 									String.format(
-											"%s%n%.2f s | %.2f mm | %.2f m/s", type, trajectory.getTotalTime(),
-											distAtIntercept(), velAtIntercept()
+											"%s%n%.2f s | %.2f mm | %.2f m/s%n%s", type, trajectory.getTotalTime(),
+											distAtIntercept(), velAtIntercept(),
+											isDisruptPreferredOverBlocking(constellation) ?
+													"DISRUPT_OVER_BLOCKING" :
+													"BLOCKING_OVER_DISRUPT"
 									), color
 							)
 					)
@@ -527,20 +539,23 @@ public class DefensePassDisruptionCalc extends ACalculator
 	private record DisruptionData(
 			BotID opponentReceiver,
 			DisruptionStrategy strategy,
-			Feasibility feasibility
+			Feasibility feasibility,
+			EOffenseOpponentConstellation constellation
 	)
 	{
-		static DisruptionData fromStrategy(BotID opponentReceiver, DisruptionStrategy strategy)
+		static DisruptionData fromStrategy(
+				BotID opponentReceiver, EOffenseOpponentConstellation constellation, DisruptionStrategy strategy)
 		{
 			return new DisruptionData(
 					opponentReceiver,
 					strategy,
-					strategy.determineFeasibility()
+					strategy.determineFeasibility(),
+					constellation
 			);
 		}
 
 
-		Stream<IDrawableShape> draw(boolean highlighted)
+		Stream<IDrawableShape> draw(boolean highlighted, EOffenseOpponentConstellation constellation)
 		{
 
 			var pos = strategy.disruption.pos;
@@ -554,7 +569,7 @@ public class DefensePassDisruptionCalc extends ACalculator
 				};
 				return Stream.concat(
 						Stream.of(new DrawableLine(strategy.defender.getPos(), pos, color).setStrokeWidth(10)),
-						strategy.draw(color)
+						strategy.draw(color, constellation)
 				);
 			}
 			var color = switch (feasibility.category)
@@ -574,10 +589,23 @@ public class DefensePassDisruptionCalc extends ACalculator
 					strategy.defender.getBotId(),
 					strategy.disruption.pos,
 					strategy.trajectory.getFinalDestination(),
-					constellation != EOffenseOpponentConstellation.OUR_OFFENSE_IS_FIRST_WITH_MARGIN,
+					isDisruptPreferredOverBlocking(constellation),
 					strategy.trajectory.getVelocity(strategy.disruption.time).getLength() < maxVelToRiskCollision,
 					strategy.type
 			);
 		}
+	}
+
+	@RequiredArgsConstructor
+	private enum EOffenseOpponentConstellation
+	{
+		OUR_OFFENSE_IS_FIRST_WITH_MARGIN(0),
+		OUR_OFFENSE_IS_FIRST(1),
+		OPPONENT_IS_FIRST_OR_CLOSE(2),
+
+		;
+
+		@Getter
+		private final int dangerousness;
 	}
 }

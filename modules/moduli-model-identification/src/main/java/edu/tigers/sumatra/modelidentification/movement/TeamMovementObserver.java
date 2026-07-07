@@ -1,11 +1,8 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.modelidentification.movement;
 
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.bot.params.BotMovementLimits;
 import edu.tigers.sumatra.cam.data.CamRobot;
 import edu.tigers.sumatra.ids.BotID;
@@ -20,25 +17,25 @@ import java.util.stream.Collectors;
 
 public class TeamMovementObserver
 {
-	@Configurable(defValue = "2000", comment = "Minimum sample amount to start parameter determination")
+	@Configurable(defValue = "2000", comment = "Minimum sample amount to start parameter determination", unit = EConfigUnit.COUNT)
 	private static int minSamples = 2000;
 
-	@Configurable(defValue = "5.0", comment = "Maximum velocity limit [m/s]")
+	@Configurable(defValue = "5.0", comment = "Maximum velocity limit", unit = EConfigUnit.VELOCITY_M)
 	private static double maximumVelocity = 5.0;
-	@Configurable(defValue = "0.1", comment = "Minimum velocity for acceleration determination [m/s]")
+	@Configurable(defValue = "0.1", comment = "Minimum velocity for acceleration determination", unit = EConfigUnit.VELOCITY_M)
 	private static double minimumVelocity = 0.1;
-	@Configurable(defValue = "10.0", comment = "Maximum acceleration limit [m/s²]")
+	@Configurable(defValue = "10.0", comment = "Maximum acceleration limit ", unit = EConfigUnit.ACCELERATION_M)
 	private static double maximumAcceleration = 10.0;
 
-	@Configurable(defValue = "0.995", comment = "Selected velocity percentile")
+	@Configurable(defValue = "0.995", comment = "Selected velocity percentile", unit = EConfigUnit.PERCENTAGE)
 	private static double velocityPercentile = 0.995;
-	@Configurable(defValue = "0.75", comment = "Selected acceleration percentile")
+	@Configurable(defValue = "0.75", comment = "Selected acceleration percentile", unit = EConfigUnit.PERCENTAGE)
 	private static double accelerationPercentile = 0.75;
-	@Configurable(defValue = "0.95", comment = "Selected breaking percentile")
+	@Configurable(defValue = "0.95", comment = "Selected breaking percentile", unit = EConfigUnit.PERCENTAGE)
 	private static double breakingPercentile = 0.95;
 
-	@Configurable(defValue = "10.0", comment = "Decimal place precision")
-	private static double decimalPlacePrecision = 10.0;
+	@Configurable(defValue = "10", comment = "Decimal place precision", unit = EConfigUnit.COUNT)
+	private static int decimalPlacePrecision = 10;
 
 	static
 	{
@@ -89,11 +86,13 @@ public class TeamMovementObserver
 	}
 
 
-	public void publish(BotMovementLimits limits)
+	public BotMovementLimits publish(BotMovementLimits limits)
 	{
-		publish(velHistogram, velocityPercentile, limits::setVelMax);
-		publish(accHistogram, accelerationPercentile, limits::setAccMax);
-		publish(brkHistogram, breakingPercentile, limits::setBrkMax);
+		var builder = limits.toBuilder();
+		publish(velHistogram, velocityPercentile, builder::velMax);
+		publish(accHistogram, accelerationPercentile, builder::accMax);
+		publish(brkHistogram, breakingPercentile, builder::brkMax);
+		return builder.build();
 	}
 
 
@@ -103,7 +102,7 @@ public class TeamMovementObserver
 			return;
 
 		setter.accept(
-				Math.round(histogram.getPercentile(percentile) * decimalPlacePrecision) / decimalPlacePrecision
+				(double) Math.round(histogram.getPercentile(percentile) * decimalPlacePrecision) / decimalPlacePrecision
 		);
 	}
 

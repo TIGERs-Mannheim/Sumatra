@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.math;
 
 import edu.tigers.sumatra.math.vector.IVector2;
@@ -44,13 +40,13 @@ public interface IBoundedPath extends IPath
 
 
 	/**
-	 * Step the requested absolute distance along this line segment.
-	 * If this segment has a length {@code l} and the parameter was set to an absolute value which equals {@code l / 2}
-	 * then this method will return the point which is located exactly in between the two support points of this line
-	 * segment.
+	 * Step the requested absolute distance along this path.
+	 * If this path has a length {@code l} and the parameter was set to an absolute value which equals {@code l / 2}
+	 * then this method will return the point on path which is located exactly in between the two support points of this
+	 * path
 	 *
 	 * @param stepSize The absolute length of the step to make along this line
-	 * @return The resulting vector if this segment is valid or one of the two support points if it is not valid.
+	 * @return The resulting vector if this path is valid or one of the two support points if it is not valid.
 	 */
 	IVector2 stepAlongPath(double stepSize);
 
@@ -63,4 +59,12 @@ public interface IBoundedPath extends IPath
 	 * @return
 	 */
 	double distanceFromStart(IVector2 pointOnPath);
+
+	/**
+	 * Step the requested absolute distance along this path and get the tangential direction of the path at this point
+	 *
+	 * @param stepSize The absolute length of the step to make along this line
+	 * @return The resulting vector if this path is valid or one of the two support points if it is not valid.
+	 */
+	IVector2 getTangentialDirection(double stepSize);
 }

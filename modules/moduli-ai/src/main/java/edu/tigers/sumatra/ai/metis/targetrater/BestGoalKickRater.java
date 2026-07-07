@@ -1,11 +1,9 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.metis.targetrater;
 
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
+import edu.tigers.sumatra.ai.BaseAiFrame;
 import edu.tigers.sumatra.ai.metis.kicking.KickFactory;
 import edu.tigers.sumatra.ai.metis.pass.KickOrigin;
 import edu.tigers.sumatra.drawable.ColorPickerFactory;
@@ -47,22 +45,22 @@ public class BestGoalKickRater
 {
 	private static final DecimalFormat DF = new DecimalFormat("0.00");
 
-	@Configurable(comment = "The maximum reasonable angle [rad] for redirects", defValue = "1.2")
+	@Configurable(comment = "The maximum reasonable angle for redirects", defValue = "1.2", unit = EConfigUnit.ANGLE_RAD)
 	private static double maximumReasonableRedirectAngle = 1.2;
 
-	@Configurable(defValue = "10")
+	@Configurable(defValue = "10", unit = EConfigUnit.COUNT)
 	private static int maxIterationsForPrediction = 10;
 
-	@Configurable(defValue = "1.0")
+	@Configurable(defValue = "1.0", unit = EConfigUnit.FACTOR)
 	private static double rotationTimeFactor = 1.0;
 
-	@Configurable(comment = "[0-1] Defender might not be able to drive perfectly as soon as kick detected (1 -> perfect driving)", defValue = "0.9")
+	@Configurable(comment = "Defender might not be able to drive perfectly as soon as kick detected (1 -> perfect driving)", defValue = "0.9", unit = EConfigUnit.PERCENTAGE)
 	private static double noneOptimalDriveFactor = 0.9;
 
-	@Configurable(comment = "[0-1] shorten the goal by this factor", defValue = "0.05")
+	@Configurable(comment = "shorten the goal by this factor", defValue = "0.05", unit = EConfigUnit.PERCENTAGE)
 	private static double shortenGoalFactor = 0.05;
 
-	@Configurable(defValue = "1.3", comment = "Rotation time multiplier")
+	@Configurable(defValue = "1.3", comment = "Rotation time multiplier", unit = EConfigUnit.FACTOR)
 	private static double rotationTimeMultiplier = 1.3;
 
 	static
@@ -81,20 +79,23 @@ public class BestGoalKickRater
 
 	@Getter
 	private List<IDrawableShape> shapes = new ArrayList<>();
+	@Getter
+	private List<IDrawableShape> redirectShapes = new ArrayList<>();
 	private Map<BotID, GoalKick> previousBestGoalKickPerBot;
 
 
-	public void update(WorldFrame worldFrame)
+	public void update(BaseAiFrame aiFrame)
 	{
-		update(worldFrame, Map.of());
+		update(aiFrame, Map.of());
 	}
 
 
-	public void update(WorldFrame worldFrame, Map<BotID, GoalKick> bestGoalKickPerBot)
+	public void update(BaseAiFrame aiFrame, Map<BotID, GoalKick> bestGoalKickPerBot)
 	{
 		shapes.clear();
+		redirectShapes.clear();
 		this.previousBestGoalKickPerBot = bestGoalKickPerBot;
-		this.worldFrame = worldFrame;
+		this.worldFrame = aiFrame.getWorldFrame();
 		kickFactory.update(worldFrame);
 
 		// we create a shortened goal line to prevent kicks very close to the goal post.
@@ -105,7 +106,7 @@ public class BestGoalKickRater
 		var shortenedEnd = goalEnd.addNew(startToEnd.multiplyNew(-shortenGoalFactor / 2.0));
 		var shortenedGoalLineSegment = Lines.segmentFromPoints(shortenedStart, shortenedEnd);
 		angleRangeRater = AngleRangeRater.forLineSegment(shortenedGoalLineSegment);
-
+		angleRangeRater.setKeeperID(aiFrame.getKeeperOpponentId());
 		angleRangeRater.setNoneOptimalDriveFactor(noneOptimalDriveFactor);
 	}
 
@@ -141,28 +142,28 @@ public class BestGoalKickRater
 	{
 		var data = generateBestGoalKickRaterData(kickOrigin);
 
-		List<GoalKick> goalKicks = new ArrayList<>();
-		List<GoalKick> redirectGoalKicks = new ArrayList<>();
-
 		var goalKickCandidatesClockwise = simulateRotation(ERotationDirection.CLOCKWISE, data);
-		goalKicks.addAll(goalKickCandidatesClockwise.directGoalKicks);
-		redirectGoalKicks.addAll(goalKickCandidatesClockwise.redirectGoalKicks);
+		List<GoalKick> goalKicks = new ArrayList<>(goalKickCandidatesClockwise.directGoalKicks);
+		List<GoalKick> redirectGoalKicks = new ArrayList<>(goalKickCandidatesClockwise.redirectGoalKicks);
 
 		var goalKickCandidatesCounterClockwise = simulateRotation(ERotationDirection.COUNTER_CLOCKWISE, data);
 		goalKicks.addAll(goalKickCandidatesCounterClockwise.directGoalKicks);
 		redirectGoalKicks.addAll(goalKickCandidatesCounterClockwise.redirectGoalKicks);
 
 		var redirectGoalKicksFiltered = redirectGoalKicks.stream()
-				.filter(e -> calcRotationTime(data, e.getRatedTarget()) * rotationTimeMultiplier < data.kickOrigin.getImpactTime())
+				.filter(e -> calcRotationTime(data, e.getRatedTarget()) * rotationTimeMultiplier
+						< data.kickOrigin.getImpactTime())
 				.toList();
 
 		shapes.addAll(angleRangeRater.createDebugShapes());
+		redirectShapes.addAll(angleRangeRater.createDebugShapes());
 
-		shapes
-				.add(new DrawableAnnotation(
+		shapes.add(new DrawableAnnotation(
 						kickOrigin.getPos(),
-						String.format("Found %d GoalKickTargets", goalKicks.size())
+				String.format("Found %d GoalKickTargets", goalKicks.size())
 				).withOffset(Vector2f.fromY(200)));
+		redirectShapes.add(new DrawableAnnotation(kickOrigin.getPos(),
+				String.format("Found %d GoalKickTargets", redirectGoalKicks.size())).withOffset(Vector2f.fromY(250)));
 		var closestPerfectGoalKick = goalKicks.stream()
 				.filter(goalKick -> goalKick.getRatedTarget().getScore() >= 1.0)
 				.min(Comparator.comparingDouble(goalKick -> calcRotationTime(data, goalKick.getRatedTarget())));
@@ -233,7 +234,14 @@ public class BestGoalKickRater
 					.filter(e -> isBallRedirectReasonable(data.kickOrigin, e.getTarget()))
 					.max(Comparator.comparingDouble(IRatedTarget::getScore));
 
-			drawSimStep(data.kickOrigin.getPos(), ratedTarget.orElse(null), angle, calcRotationTime(data, angle), step);
+			shapes.addAll(
+					drawSimStep(data.kickOrigin.getPos(), ratedTarget.orElse(null), angle, calcRotationTime(data, angle),
+							step)
+			);
+			redirectShapes.addAll(
+					drawSimStep(data.kickOrigin.getPos(), ratedRedirectTarget.orElse(null), angle,
+							calcRotationTime(data, angle), step)
+			);
 			ratedTarget.ifPresent(
 					target -> goalKicks.add(generateGoalKick(data.kickOrigin, target, calcAimingTolerance(target))));
 
@@ -289,7 +297,7 @@ public class BestGoalKickRater
 	}
 
 
-	private void drawSimStep(
+	private List<IDrawableShape> drawSimStep(
 			final IVector2 origin, final IRatedTarget target, final double angle,
 			final double time, final int step
 	)
@@ -297,13 +305,16 @@ public class BestGoalKickRater
 		if (target != null)
 		{
 			ILineSegment line = Lines.segmentFromPoints(origin, target.getTarget());
-			shapes.add(new DrawableLine(line, Color.BLACK));
-			shapes.add(new DrawableAnnotation(
+			return List.of(
+					new DrawableLine(line, Color.BLACK),
+					new DrawableAnnotation(
 					line.getPathEnd(),
-					String.format("%d: ", step) + DF.format(target.getScore()) + " | " + DF.format(angle) + " | " + DF
-							.format(time)
-			).withOffset(Vector2f.fromX(100.0)));
+							String.format("%d: ", step) + DF.format(target.getScore()) + " | " + DF.format(angle) + " | " + DF
+									.format(time)
+			).withOffset(Vector2f.fromX(100.0))
+			);
 		}
+		return List.of();
 	}
 
 

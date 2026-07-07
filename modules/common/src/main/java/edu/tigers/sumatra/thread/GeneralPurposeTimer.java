@@ -1,11 +1,3 @@
-/*
- * *********************************************************
- * Copyright (c) 2009 - 2010, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 11.09.2010
- * Author(s): AndreR
- * *********************************************************
- */
 package edu.tigers.sumatra.thread;
 
 import java.util.Timer;

@@ -1,6 +1,3 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra.gui.botparams.view;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -85,7 +82,7 @@ public class ConfigJSONTreeTableModel extends ATreeTableModel
 			return null;
 		}
 
-		Iterator<Map.Entry<String, JsonNode>> iter = entry.node.fields();
+		Iterator<Map.Entry<String, JsonNode>> iter = entry.node.properties().iterator();
 		Map.Entry<String, JsonNode> child = iter.next();
 
 		for (int i = 0; i < index; i++)
@@ -105,7 +102,7 @@ public class ConfigJSONTreeTableModel extends ATreeTableModel
 
 		int index = 0;
 
-		Iterator<JsonNode> iter = parentEntry.node.elements();
+		Iterator<JsonNode> iter = parentEntry.node.values();
 		while (iter.hasNext())
 		{
 			JsonNode child = iter.next();

@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.skillsystem;
 
 import edu.tigers.sumatra.botmanager.bots.ABot;
@@ -10,15 +6,12 @@ import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.ids.ETeamColor;
 import edu.tigers.sumatra.moduli.AModule;
 import edu.tigers.sumatra.skillsystem.skills.ISkill;
-import edu.tigers.sumatra.thread.NamedThreadFactory;
 import edu.tigers.sumatra.wp.data.WorldFrameWrapper;
-import lombok.Getter;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 
 /**
@@ -26,9 +19,32 @@ import java.util.concurrent.Executors;
  */
 public abstract class ASkillSystem extends AModule
 {
-	@Getter
-	private ExecutorService executorService;
+	protected final Map<BotID, SkillExecutor> executors = new ConcurrentHashMap<>();
 	private final List<ISkillSystemObserver> observers = new CopyOnWriteArrayList<>();
+
+
+	@Override
+	public void initModule()
+	{
+		BotID.getAll().forEach(botID -> executors.put(botID, new SkillExecutor(botID)));
+	}
+
+
+	@Override
+	public void deinitModule()
+	{
+		executors.clear();
+	}
+
+
+	/**
+	 * @param botId the bot id
+	 * @return the skill executor for the given bot
+	 */
+	public SkillExecutor getExecutor(BotID botId)
+	{
+		return executors.get(botId);
+	}
 
 
 	/**
@@ -57,21 +73,15 @@ public abstract class ASkillSystem extends AModule
 	public abstract List<ISkill> getCurrentSkills(final ETeamColor teamColor);
 
 
+	/**
+	 * Process all skill executors synchronously.
+	 * This is used for replay recalc only.
+	 *
+	 * @param wfw
+	 * @param teamColor
+	 * @return
+	 */
 	public abstract Map<BotID, ShapeMap> process(final WorldFrameWrapper wfw, final ETeamColor teamColor);
-
-
-	@Override
-	public void startModule()
-	{
-		executorService = Executors.newCachedThreadPool(new NamedThreadFactory("SkillExecutor"));
-	}
-
-
-	@Override
-	public void stopModule()
-	{
-		executorService.shutdown();
-	}
 
 
 	/**

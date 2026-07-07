@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.gui.visualizer.presenter;
 
 import edu.tigers.sumatra.clock.FpsCounter;
@@ -40,12 +36,15 @@ import javax.swing.SwingUtilities;
 import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.Image;
+import java.awt.Toolkit;
+import java.awt.datatransfer.StringSelection;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -206,12 +205,6 @@ public class VisualizerFieldPresenter implements ISumatraPresenter, IWorldFrameO
 	}
 
 
-	public void setFancyPainting(boolean state)
-	{
-		fieldPane.setFancyPainting(state);
-	}
-
-
 	public void setDarkMode(boolean state)
 	{
 		fieldPane.getTransformation().setDarkMode(state);
@@ -361,6 +354,15 @@ public class VisualizerFieldPresenter implements ISumatraPresenter, IWorldFrameO
 		public void mouseClicked(final MouseEvent e)
 		{
 			IVector2 globalPos = getMousePointGlobal(e.getX(), e.getY());
+
+			if (SwingUtilities.isLeftMouseButton(e) && e.isAltDown() && e.isControlDown())
+			{
+				String coordText = String.format(Locale.US, "%.2f, %.2f", globalPos.x(), globalPos.y());
+				Toolkit.getDefaultToolkit()
+						.getSystemClipboard()
+						.setContents(new StringSelection(coordText), null);
+			}
+
 			onFieldClicks.forEach(c -> c.onInteraction(globalPos, e));
 		}
 

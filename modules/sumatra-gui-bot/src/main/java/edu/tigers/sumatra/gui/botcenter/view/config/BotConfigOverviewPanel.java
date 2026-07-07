@@ -1,6 +1,3 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra.gui.botcenter.view.config;
 
 import edu.tigers.sumatra.gui.botcenter.view.bots.ConsolePanel;
@@ -18,6 +15,7 @@ import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
+import java.io.Serial;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -27,6 +25,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
  */
 public class BotConfigOverviewPanel extends JPanel
 {
+	@Serial
 	private static final long serialVersionUID = 1320083400713333902L;
 	private final JComboBox<BotID> cmbBots = new JComboBox<>();
 

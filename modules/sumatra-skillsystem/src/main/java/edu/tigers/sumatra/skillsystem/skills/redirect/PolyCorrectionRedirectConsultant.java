@@ -1,11 +1,8 @@
-/*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.skillsystem.skills.redirect;
 
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import com.github.g3force.configurable.IConfigClient;
 import com.github.g3force.configurable.IConfigObserver;
 import edu.tigers.sumatra.math.vector.IVector2;
@@ -23,7 +20,9 @@ class PolyCorrectionRedirectConsultant implements IRedirectConsultant
 	@Configurable(
 			comment = "f(angle,vIn,vOut) = p0 + p1*angle + p2*vIn + p3*vOut",
 			spezis = { "", "SIMULATOR" },
-			defValueSpezis = {"0.0;0.20131;0.0;0.0", "0.0;0.37855;0.0;0.0"}
+			defValueSpezis = { "0.0;0.20131;0.0;0.0", "0.0;0.37855;0.0;0.0" },
+			unit = EConfigUnit.NO_UNIT,
+			defValue = "0.0"
 	)
 	private static Double[] angleParams = new Double[] { 0.0 };
 

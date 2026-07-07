@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.pandora.roles.offense.attacker.states;
 
 
@@ -23,9 +19,9 @@ public class RedirectState extends AAttackerRoleState<RedirectBallSkill>
 
 
 	@Override
-	protected void onInit()
+	protected void onEntry()
 	{
-		super.onInit();
+		super.onEntry();
 		skill.setBallSpeedHysteresis(new Hysteresis(
 				OffensiveConstants.getAbortBallInterceptionVelThreshold(),
 				OffensiveConstants.getBallIsRollingThreshold()));
@@ -43,13 +39,14 @@ public class RedirectState extends AAttackerRoleState<RedirectBallSkill>
 	protected void doStandardUpdate()
 	{
 		// State is only activated when close. Let it hold its position!
-		skill.getMoveCon().setObstacleAvoidanceMode(EObstacleAvoidanceMode.AGGRESSIVE);
-		skill.getMoveCon().setTheirBotsObstacle(false);
+		skill.setMoveCon(skill.getMoveCon()
+				.withObstacleAvoidanceMode(EObstacleAvoidanceMode.AGGRESSIVE)
+				.withTheirBotsObstacle(false));
 		skill.setBallReceivingPosition(getRole().getAction().getBallContactPos());
 		skill.setTarget(getRole().getAction().getKick().getTarget());
 		skill.setDesiredKickParams(getRole().getAction().getKick().getKickParams());
 		skill.setMaxReceptionHeight(OffensiveConstants.getMaxInterceptHeight());
-		skill.setUseOvershoot(OffensiveConstants.isAllowOvershootingBallInterceptions());
+		skill.setUseTrajectoryTricks(OffensiveConstants.isAllowTrajectoryTricksWhileReceiving());
 	}
 
 
@@ -57,11 +54,11 @@ public class RedirectState extends AAttackerRoleState<RedirectBallSkill>
 	protected void doFallbackUpdate()
 	{
 		// State is only activated when close. Let it hold its position!
-		skill.getMoveCon().setTheirBotsObstacle(false);
+		skill.setMoveCon(skill.getMoveCon().withTheirBotsObstacle(false));
 		skill.setBallReceivingPosition(getRole().getPos());
 		skill.setTarget(Geometry.getCenter());
 		skill.setDesiredKickParams(KickParams.maxStraight());
 		skill.setMaxReceptionHeight(OffensiveConstants.getMaxInterceptHeight());
-		skill.setUseOvershoot(OffensiveConstants.isAllowOvershootingBallInterceptions());
+		skill.setUseTrajectoryTricks(OffensiveConstants.isAllowTrajectoryTricksWhileReceiving());
 	}
 }

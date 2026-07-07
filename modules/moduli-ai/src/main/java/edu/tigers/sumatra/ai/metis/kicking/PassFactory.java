@@ -1,11 +1,8 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.metis.kicking;
 
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.wp.data.WorldFrame;
@@ -20,14 +17,14 @@ import java.util.stream.Stream;
 public class PassFactory
 {
 	@Getter
-	@Configurable(defValue = "3.2", comment = "Default maximum ball speed when receiving the ball")
+	@Configurable(defValue = "3.2", comment = "Default maximum ball speed when receiving the ball", unit = EConfigUnit.VELOCITY_M)
 	private static double defaultMaxReceivingBallSpeedStraight = 3.2;
 
 	@Getter
-	@Configurable(defValue = "2.5", comment = "Default maximum ball speed when receiving the ball")
+	@Configurable(defValue = "2.5", comment = "Default maximum ball speed when receiving the ball", unit = EConfigUnit.VELOCITY_M)
 	private static double defaultMaxReceivingBallSpeedChip = 2.5;
 
-	@Configurable(defValue = "0.1", comment = "Minimum receiving speed")
+	@Configurable(defValue = "0.1", comment = "Minimum receiving speed", unit = EConfigUnit.VELOCITY_M)
 	private static double minReceivingSpeed = 0.1;
 
 	static
@@ -107,8 +104,10 @@ public class PassFactory
 	 * @param receiver the robot that receives the pass
 	 * @return
 	 */
-	public Optional<Pass> chip(IVector2 source, IVector2 target, BotID shooter, BotID receiver,
-			EBallReceiveMode receiveMode)
+	public Optional<Pass> chip(
+			IVector2 source, IVector2 target, BotID shooter, BotID receiver,
+			EBallReceiveMode receiveMode
+	)
 	{
 		return chip(source, target, shooter, receiver, 0.0, 0.0, receiveMode);
 	}
@@ -122,7 +121,6 @@ public class PassFactory
 	 * @param shooter         the robot that performs the pass
 	 * @param receiver        the robot that receives the pass
 	 * @param minPassDuration the minimum duration that the ball must travel till it reaches the target
-	 * @param preparationTime the time that the shooter will need to prepare the pass
 	 * @return
 	 */
 	public Optional<Pass> chip(
@@ -138,7 +136,8 @@ public class PassFactory
 		var distance = source.distanceTo(target);
 		var shooterBot = worldFrame.getBot(shooter);
 		var maxSpeed = kickSpeedFactory.maxChip(shooterBot);
-		var speed = kickSpeedFactory.chip(distance, getMaxReceivingBallSpeedChip(), maxSpeed, minPassDuration);
+		// Add small offset to minDuration to avoid floating point inaccuracies in the duration check below
+		var speed = kickSpeedFactory.chip(distance, getMaxReceivingBallSpeedChip(), maxSpeed, minPassDuration + 0.01);
 		var consultant = worldFrame.getBall().getChipConsultant();
 		var duration = consultant.getTimeForKick(distance, speed);
 		var receivingSpeed = consultant.getVelForKickByTime(speed, duration);
@@ -152,6 +151,7 @@ public class PassFactory
 		var kick = kickFactory.chip(source, target, speed);
 
 		return Optional.of(new Pass(
+				EPassType.CHIP,
 				kick,
 				receiver,
 				shooter,
@@ -172,8 +172,10 @@ public class PassFactory
 	 * @param receiver the robot that receives the pass
 	 * @return
 	 */
-	public Optional<Pass> straight(IVector2 source, IVector2 target, BotID shooter, BotID receiver,
-			EBallReceiveMode receiveMode)
+	public Optional<Pass> straight(
+			IVector2 source, IVector2 target, BotID shooter, BotID receiver,
+			EBallReceiveMode receiveMode
+	)
 	{
 		return straight(source, target, shooter, receiver, 0.0, 0.0, receiveMode);
 	}
@@ -216,6 +218,7 @@ public class PassFactory
 		var kick = kickFactory.straight(source, target, speed);
 
 		return Optional.of(new Pass(
+				EPassType.STRAIGHT,
 				kick,
 				receiver,
 				shooter,
@@ -224,5 +227,40 @@ public class PassFactory
 				preparationTime,
 				receiveMode
 		));
+	}
+
+
+	/**
+	 * Create a pass with a straight kick that is designed to be received while moving.
+	 *
+	 * @param source          the pass origin, e.g. the ball position
+	 * @param target          the location where the ball is passed to
+	 * @param shooter         the robot that performs the pass
+	 * @param receiver        the robot that receives the pass
+	 * @param minPassDuration the minimum duration that the ball must travel till it reaches the target
+	 * @param preparationTime the time that the shooter will need to prepare the pass
+	 * @return
+	 */
+	public Optional<Pass> through(
+			IVector2 source,
+			IVector2 target,
+			BotID shooter,
+			BotID receiver,
+			double minPassDuration,
+			double preparationTime,
+			EBallReceiveMode receiveMode
+	)
+	{
+		return straight(source, target, shooter, receiver, minPassDuration, preparationTime, receiveMode)
+				.map(straight -> new Pass(
+						EPassType.THROUGH,
+						straight.getKick(),
+						straight.getReceiver(),
+						straight.getShooter(),
+						straight.getReceivingBallSpeed(),
+						straight.getDuration(),
+						straight.getOpponentPreparationTime(),
+						straight.getReceiveMode()
+				));
 	}
 }

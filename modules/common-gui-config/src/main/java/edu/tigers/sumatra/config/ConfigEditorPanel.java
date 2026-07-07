@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.config;
 
 import lombok.NonNull;
@@ -185,6 +181,7 @@ public class ConfigEditorPanel extends JPanel
 		);
 
 		var description = stringsToCheck
+				.filter(Objects::nonNull)
 				.map(s -> s.split(" "))
 				.flatMap(Arrays::stream)
 				.map(String::strip)

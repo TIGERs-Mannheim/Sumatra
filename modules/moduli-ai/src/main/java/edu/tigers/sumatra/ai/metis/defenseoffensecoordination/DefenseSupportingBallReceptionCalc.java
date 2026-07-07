@@ -1,10 +1,7 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.metis.defenseoffensecoordination;
 
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.ai.metis.ACalculator;
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
 import edu.tigers.sumatra.ai.metis.ballinterception.RatedBallInterception;
@@ -41,9 +38,9 @@ public class DefenseSupportingBallReceptionCalc extends ACalculator
 			EDefenseBallThreatSourceType.PASS_RECEIVE,
 			EDefenseBallThreatSourceType.BALL
 	);
-	@Configurable(comment = "[s] minimum SlackTime we require for the attacker", defValue = "-0.5")
+	@Configurable(comment = "minimum SlackTime we require for the attacker", defValue = "-0.5", unit = EConfigUnit.TIME_S)
 	private static double maximumSlackTime = -0.5;
-	@Configurable(comment = "[mm] minimal margin that will always be held between defense and offense", defValue = "150")
+	@Configurable(comment = "minimal margin that will always be held between defense and offense", defValue = "150", unit = EConfigUnit.DISTANCE_MM)
 	private static double marginBetween = 150;
 
 	private final Supplier<List<DefenseThreatAssignment>> outerThreatAssignments;
@@ -121,7 +118,7 @@ public class DefenseSupportingBallReceptionCalc extends ACalculator
 	private boolean doesAttackerHaveEnoughTimeForReceive(BotID attacker)
 	{
 		var interception = ballInterceptions.get().get(attacker);
-		return interception != null && interception.getMinCorridorSlackTime() <= maximumSlackTime;
+		return interception != null && interception.getSlackTime() <= maximumSlackTime;
 	}
 
 
@@ -156,7 +153,7 @@ public class DefenseSupportingBallReceptionCalc extends ACalculator
 		}
 
 		var ballInterception = ballInterceptions.get().get(attacker);
-		if (ballInterception == null || ballInterception.getMinCorridorSlackTime() > maximumSlackTime)
+		if (ballInterception == null || ballInterception.getSlackTime() > maximumSlackTime)
 		{
 			return Optional.empty();
 		}

@@ -1,11 +1,3 @@
-/*
- * *********************************************************
- * Copyright (c) 2009 - 2011, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 28.11.2011
- * Author(s): Gero
- * *********************************************************
- */
 package com.github.g3force.configurable;
 
 import org.w3c.dom.DOMConfiguration;
@@ -64,7 +56,7 @@ public class PrettyXMLOutputStream extends OutputStream
 		{
 			// Parse document from buffer
 			final DocumentBuilderFactory f = DocumentBuilderFactory.newInstance();
-			Document doc = null;
+			Document doc;
 			try
 			{
 				final DocumentBuilder b = f.newDocumentBuilder();

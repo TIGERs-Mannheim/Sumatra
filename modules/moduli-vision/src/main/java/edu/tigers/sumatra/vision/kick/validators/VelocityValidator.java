@@ -1,10 +1,8 @@
-/*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra.vision.kick.validators;
 
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.cam.data.CamBall;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.vision.data.FilteredVisionBot;
@@ -22,7 +20,7 @@ import java.util.stream.Collectors;
  */
 public class VelocityValidator implements IKickValidator
 {
-	@Configurable(defValue = "600.0", comment = "Minimum required ball velocity [mm/s]")
+	@Configurable(defValue = "600.0", comment = "Minimum required ball velocity ", unit = EConfigUnit.VELOCITY_MM)
 	private static double minVelocity = 600.0;
 
 	static

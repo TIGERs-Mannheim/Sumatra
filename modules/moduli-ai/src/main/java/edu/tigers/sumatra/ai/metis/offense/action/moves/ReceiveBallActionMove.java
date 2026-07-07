@@ -1,13 +1,10 @@
-/*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.metis.offense.action.moves;
 
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.ai.metis.offense.action.EActionViability;
-import edu.tigers.sumatra.ai.metis.offense.action.RatedOffensiveAction;
 import edu.tigers.sumatra.ai.metis.offense.action.OffensiveActionViability;
+import edu.tigers.sumatra.ai.metis.offense.action.RatedOffensiveAction;
 import edu.tigers.sumatra.ai.metis.pass.KickOrigin;
 import edu.tigers.sumatra.ai.metis.pass.rating.RatedPass;
 import edu.tigers.sumatra.ids.BotID;
@@ -24,13 +21,12 @@ import java.util.function.Supplier;
 @RequiredArgsConstructor
 public class ReceiveBallActionMove extends AOffensiveActionMove
 {
-	@Configurable(defValue = "0.21")
+	@Configurable(defValue = "0.21", unit = EConfigUnit.PERCENTAGE)
 	private static double minScore = 0.21;
 
-	@Configurable(defValue = "0.05")
+	@Configurable(defValue = "0.05", unit = EConfigUnit.PERCENTAGE)
 	private static double antiToggleBonus = 0.05;
 
-	private final Supplier<Map<KickOrigin, RatedPass>> selectedPasses;
 	private final Supplier<Map<BotID, KickOrigin>> kickOrigins;
 
 
@@ -39,13 +35,7 @@ public class ReceiveBallActionMove extends AOffensiveActionMove
 		if (kickOrigin == null || kickOrigin.isReached())
 		{
 			// No origin means no interception, thus ball can/should not be received
-			return new OffensiveActionViability(EActionViability.FALSE, 0.0);
-		}
-		var pass = selectedPasses.get().get(kickOrigin);
-		if (pass == null)
-		{
-			// there is a kick origin, but no pass for it -> receive
-			return new OffensiveActionViability(EActionViability.TRUE, 1.0);
+			return new OffensiveActionViability(EActionViability.PARTIALLY, 0.0);
 		}
 		return new OffensiveActionViability(EActionViability.PARTIALLY, calcViabilityScore(botId));
 	}

@@ -10,7 +10,7 @@
 *.iml
 **/Sumatra.log
 sonarlint
-s101plugin.properties
+s101plugin.properties8
 .idea/artifacts
 *state-store.json.stream
 .DS_Store
@@ -30,3 +30,8 @@ out
 **/test/generated_tests
 **/integrationTest/generated
 /modules/moduli-autoreferee/config/autoref-tests
+
+.classpath
+.project
+.settings
+bin

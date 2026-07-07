@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.data;
 
 /**
@@ -17,12 +13,11 @@ public enum EBotInformation
 	KICKER_DEVICE("Kicker Device"),
 	DRIBBLER_SPEED("Dribbler Speed [m/s]"),
 	VELOCITY_CURRENT("Velocity [m/s]"),
-	VELOCITY_MAX("Max Velocity [m/s]"),
 	VELOCITY_LIMIT("Velocity Limit [m/s]"),
 	ANGULAR_VELOCITY("Angular Velocity [rad/s]"),
-	ANGULAR_VEL_MAX("Max Angular Velocity [rad/s]"),
 	ANGULAR_VEL_LIMIT("Angular Velocity Limit [rad/s]"),
 	ACCELERATION_LIMIT("Acceleration Limit [m/s²]"),
+	DRIBBLER_SPEED_FEEDBACK("Dribbler Speed Feedback [m/s]"),
 	DRIBBLE_FORCE("Dribble force [N]"),
 	DRIBBLE_TRACTION("Dribble traction"),
 	BALL_OBSERVATION("Ball observation"),
@@ -41,9 +36,10 @@ public enum EBotInformation
 	LAST_FEEDBACK("Last feedback"),
 	RF_TX_PACKETS("RF Tx packets"),
 	RF_RX_PACKETS("RF Rx packets"),
+	RF_TX_PACKETS_LOST("RF Tx packets lost"),
+	RF_RX_PACKETS_LOST("RF Rx packets lost"),
 	RF_LINK_QUALITY("RF link quality"),
-	RF_BOT_RSSI("RF bot RSSI"),
-	RF_BS_RSSI("RF BS RSSI"),
+	RF_BASE_RX_RSSI("RF base Rx RSSI"),
 
 	;
 

@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.pandora.roles.offense.attacker.states;
 
 import edu.tigers.sumatra.ai.pandora.roles.offense.attacker.AttackerRole;
@@ -22,7 +18,7 @@ public class DribbleState extends AAttackerRoleState<DragBallSkill>
 	@Override
 	protected void doStandardUpdate()
 	{
-		skill.getMoveCon().setObstacleAvoidanceMode(EObstacleAvoidanceMode.AGGRESSIVE);
+		skill.setMoveCon(skill.getMoveCon().withObstacleAvoidanceMode(EObstacleAvoidanceMode.AGGRESSIVE));
 		var dribbleToPos = getRole().getAction().getDribbleToPos();
 		if (dribbleToPos != null && dribbleToPos.getDribbleToDestination() != null)
 		{
@@ -30,11 +26,13 @@ public class DribbleState extends AAttackerRoleState<DragBallSkill>
 			if (dribbleToPos.getDribbleToDestination().distanceTo(getRole().getPos()) < Geometry.getBotRadius() * 2.5)
 			{
 				// hold your ground!
-				skill.getMoveCon().setObstacleAvoidanceMode(EObstacleAvoidanceMode.AGGRESSIVE);
-				skill.getMoveCon().setTheirBotsObstacle(false);
+				skill.setMoveCon(skill.getMoveCon()
+						.withObstacleAvoidanceMode(EObstacleAvoidanceMode.AGGRESSIVE)
+						.withTheirBotsObstacle(false));
 			} else {
-				skill.getMoveCon().setObstacleAvoidanceMode(EObstacleAvoidanceMode.NORMAL);
-				skill.getMoveCon().setTheirBotsObstacle(true);
+				skill.setMoveCon(skill.getMoveCon()
+						.withObstacleAvoidanceMode(EObstacleAvoidanceMode.NORMAL)
+						.withTheirBotsObstacle(true));
 			}
 		}
 

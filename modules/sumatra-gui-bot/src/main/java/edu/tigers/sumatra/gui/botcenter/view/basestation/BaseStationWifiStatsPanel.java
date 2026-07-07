@@ -1,10 +1,7 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra.gui.botcenter.view.basestation;
 
-import edu.tigers.sumatra.botmanager.commands.basestation.BaseStationWifiStats;
-import edu.tigers.sumatra.botmanager.commands.basestation.BaseStationWifiStats.BotStats;
+import edu.tigers.sumatra.botmanager.commands.basestation.BaseStationWifiStatsV2;
+import edu.tigers.sumatra.botmanager.commands.basestation.BaseStationWifiStatsV2.BotStats;
 import edu.tigers.sumatra.ids.BotID;
 import net.miginfocom.swing.MigLayout;
 
@@ -16,6 +13,7 @@ import javax.swing.JProgressBar;
 import javax.swing.JTextField;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
+import java.io.Serial;
 import java.util.ArrayList;
 import java.util.Locale;
 import java.util.Map;
@@ -30,22 +28,29 @@ import java.util.TreeMap;
 public class BaseStationWifiStatsPanel extends JPanel
 {
 
-	/**  */
-	private static final long						serialVersionUID	= -9048719448114258641L;
+	/**
+	 *
+	 */
+	@Serial
+	private static final long serialVersionUID = -9048719448114258641L;
 
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
-	private final Map<BotID, WifiStatsPanel>	wifiPanels			= new TreeMap<>(BotID.getComparator());
-	private final WifiStatsHeaderPanel			headerPanel			= new WifiStatsHeaderPanel();
-	private final JTextField						updateRate			= new JTextField();
-	private final JLabel								updateRateText		= new JLabel("Update Rate:");
+	private final Map<BotID, WifiStatsPanel> wifiPanels = new TreeMap<>(BotID.getComparator());
+	private final WifiStatsHeaderPanel headerPanel = new WifiStatsHeaderPanel();
+	private final JTextField updateRate = new JTextField();
+	private final JLabel updateRateText = new JLabel("Update Rate:");
 
 
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
-	/** Default constructor. */
+
+
+	/**
+	 * Default constructor.
+	 */
 	public BaseStationWifiStatsPanel()
 	{
 		setLayout(new MigLayout("wrap 1"));
@@ -90,14 +95,16 @@ public class BaseStationWifiStatsPanel extends JPanel
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
+
+
 	/**
 	 * @param stats
 	 */
-	public void setStats(final BaseStationWifiStats stats)
+	public void setStats(final BaseStationWifiStatsV2 stats)
 	{
 		boolean panelsModified = false;
 
-		updateRate.setText(stats.getUpdateRate() + "Hz");
+		updateRate.setText(String.format("%.1fHz", stats.getUpdateRate()));
 
 		for (BotID id : new ArrayList<>(wifiPanels.keySet()))
 		{
@@ -108,7 +115,7 @@ public class BaseStationWifiStatsPanel extends JPanel
 			}
 		}
 
-		for (int i = 0; i < BaseStationWifiStats.NUM_BOTS; i++)
+		for (int i = 0; i < BaseStationWifiStatsV2.NUM_BOTS; i++)
 		{
 			BotStats botStats = stats.getBotStats()[i];
 			if (botStats.getBotId().isUninitializedID())
@@ -122,7 +129,7 @@ public class BaseStationWifiStatsPanel extends JPanel
 				panelsModified = true;
 			}
 
-			wifiPanels.get(botStats.getBotId()).setStats(botStats, stats.getUpdateRate());
+			wifiPanels.get(botStats.getBotId()).setStats(botStats, stats.getModuleStats());
 		}
 
 		if (panelsModified)
@@ -131,9 +138,13 @@ public class BaseStationWifiStatsPanel extends JPanel
 		}
 	}
 
+
 	private static class WifiStatsHeaderPanel extends JPanel
 	{
-		/**  */
+		/**
+		 *
+		 */
+		@Serial
 		private static final long serialVersionUID = -3542692054124461579L;
 
 
@@ -152,15 +163,17 @@ public class BaseStationWifiStatsPanel extends JPanel
 
 	private static class WifiStatsPanel extends JPanel
 	{
-		/**  */
-		private static final long		serialVersionUID	= 9205204622066410833L;
+		/**
+		 *
+		 */
+		@Serial
+		private static final long serialVersionUID = 9205204622066410833L;
 
-		private final JProgressBar[]	nrfStats				= new JProgressBar[4];
-		private final JProgressBar[]	queueStats			= new JProgressBar[2];
-		private final JLabel[]			queueTraffic		= new JLabel[2];
-		private final JProgressBar		linkQuality;
+		private final JProgressBar[] rfStats = new JProgressBar[4];
+		private final JLabel[] queueStats = new JLabel[2];
+		private final JProgressBar linkQuality;
 
-		private final JLabel				id;
+		private final JLabel id;
 
 
 		public WifiStatsPanel()
@@ -179,66 +192,45 @@ public class BaseStationWifiStatsPanel extends JPanel
 
 			for (int i = 0; i < 4; i++)
 			{
-				if (i == 1)
-				{
-					add(new JLabel("N/A", SwingConstants.CENTER));
-				} else
-				{
-					nrfStats[i] = new JProgressBar(0, 1000);
-					nrfStats[i].setStringPainted(true);
-					add(nrfStats[i]);
-				}
+				rfStats[i] = new JProgressBar(0, 1000);
+				rfStats[i].setStringPainted(true);
+				add(rfStats[i]);
 			}
 
 			for (int i = 0; i < 2; i++)
 			{
-				queueTraffic[i] = new JLabel("", SwingConstants.CENTER);
+				queueStats[i] = new JLabel("", SwingConstants.CENTER);
 			}
 
-			for (int i = 0; i < 2; i++)
-			{
-				queueStats[i] = new JProgressBar(0, 1000);
-				queueStats[i].setStringPainted(true);
-			}
-
-			add(queueTraffic[0]);
-			add(queueStats[0]);
-			add(queueTraffic[1]);
-			add(queueStats[1]);
+			add(queueStats[0], "span 2 1");
+			add(queueStats[1], "span 2 1");
 		}
 
 
-		/**
-		 * Set bot statistics.
-		 *
-		 * @param stats
-		 * @param rate
-		 */
-		public void setStats(final BotStats stats, final int rate)
+		public void setStats(BotStats stats, BaseStationWifiStatsV2.ModuleStats moduleStats)
 		{
-			doSetStats(stats, rate);
+			doSetStats(stats, moduleStats);
 		}
 
 
 		@SuppressWarnings("squid:S1192")
-		private void doSetStats(final BotStats stats, final int rate)
+		private void doSetStats(BotStats stats, BaseStationWifiStatsV2.ModuleStats moduleStats)
 		{
-			nrfStats[0].setValue((int) (stats.rf.getTxSaturation(rate) * 1000));
-			nrfStats[2].setValue((int) (stats.rf.getRxSaturation(rate) * 1000));
-			nrfStats[3].setValue((int) (stats.rf.getRxLoss() * 1000));
+			rfStats[0].setValue((int) ((stats.buf.txBytesTotal / moduleStats.getBytesPerSecondPerRobotSlot()) * 1000));
+			rfStats[1].setValue((int) (stats.getTxLoss() * 1000));
+			rfStats[2].setValue((int) ((stats.buf.rxBytesTotal / moduleStats.getBytesPerSecondPerRobotSlot()) * 1000));
+			rfStats[3].setValue((int) (stats.getRxLoss() * 1000));
 
-			nrfStats[0].setString(String.format("%5d / %5d", stats.rf.txPackets, stats.rf.txBytes));
-			nrfStats[2].setString(String.format("%5d / %5d", stats.rf.rxPackets, stats.rf.rxBytes));
-			nrfStats[3].setString(String.format(Locale.ENGLISH, "%5.2f%%", stats.rf.getRxLoss() * 100));
+			rfStats[0].setString(String.format("%5d / %5d", stats.buf.txPacketsTotal, stats.buf.txBytesTotal));
+			rfStats[1].setString(String.format(Locale.ENGLISH, "%5.2f%%", stats.getTxLoss() * 100));
+			rfStats[2].setString(String.format("%5d / %5d", stats.buf.rxPacketsTotal, stats.buf.rxBytesTotal));
+			rfStats[3].setString(String.format(Locale.ENGLISH, "%5.2f%%", stats.getRxLoss() * 100));
 
-			queueStats[0].setValue((int) (stats.queue.getTxLoss() * 1000));
-			queueStats[1].setValue((int) (stats.queue.getRxLoss() * 1000));
+			long rxErrors = stats.buf.rxBufferOverruns + stats.buf.rxBufferDataOverflows + stats.buf.rxCrcErrors
+					+ stats.buf.rxCobsDecodingErrors;
 
-			queueStats[0].setString(String.format(Locale.ENGLISH, "%5.2f%%", stats.queue.getTxLoss() * 100));
-			queueStats[1].setString(String.format(Locale.ENGLISH, "%5.2f%%", stats.queue.getRxLoss() * 100));
-
-			queueTraffic[0].setText(String.format("%5d / %5d", stats.queue.txPackets, stats.queue.txBytes));
-			queueTraffic[1].setText(String.format("%5d / %5d", stats.queue.rxPackets, stats.queue.rxBytes));
+			queueStats[0].setText(String.format("TX Underrun: %5d", stats.buf.txBufferUnderrun));
+			queueStats[1].setText(String.format("RX Buf Error: %5d", rxErrors));
 
 			linkQuality.setValue((int) (stats.getLinkQuality() * 1000));
 			linkQuality.setString(String.format(Locale.ENGLISH, "%3.0f%%", stats.getLinkQuality() * 100));

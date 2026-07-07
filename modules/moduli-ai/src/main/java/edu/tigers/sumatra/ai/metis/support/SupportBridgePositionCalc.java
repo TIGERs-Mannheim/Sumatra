@@ -1,10 +1,7 @@
-/*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.metis.support;
 
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.ai.common.PointChecker;
 import edu.tigers.sumatra.ai.metis.ACalculator;
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
@@ -27,6 +24,7 @@ import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.movingrobot.IMovingRobot;
 import edu.tigers.sumatra.movingrobot.MovingRobotFactory;
+import edu.tigers.sumatra.movingrobot.MovingRobotParams;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -46,28 +44,28 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class SupportBridgePositionCalc extends ACalculator
 {
-	@Configurable(comment = "Max moving bot Horizon", defValue = "0.8")
+	@Configurable(comment = "Max moving bot Horizon", defValue = "0.8", unit = EConfigUnit.TIME_S)
 	private static double maxHorizon = 0.8;
 
-	@Configurable(defValue = "0.1", comment = "Reaction time of opponent [s] for MovingRobots. Predicts constant velocity in this time.")
+	@Configurable(defValue = "0.1", comment = "Reaction time of opponent for MovingRobots. Predicts constant velocity in this time.", unit = EConfigUnit.TIME_S)
 	private static double opponentBotReactionTime = 0.1;
 
-	@Configurable(comment = "[mm]", defValue = "9000.")
+	@Configurable(defValue = "9000.", unit = EConfigUnit.DISTANCE_MM)
 	private static double maxPassDistance = 9000;
 
-	@Configurable(comment = "[mm]", defValue = "5000.")
+	@Configurable(defValue = "5000.", unit = EConfigUnit.DISTANCE_MM)
 	private static double maxShootDistance = 5000;
 
-	@Configurable(comment = "[deg]", defValue = "3.")
+	@Configurable(defValue = "3.", unit = EConfigUnit.ANGLE_DEG)
 	private static double minArcWidth = 3;
 
-	@Configurable(comment = "[deg]", defValue = "15.")
+	@Configurable(defValue = "15.", unit = EConfigUnit.ANGLE_DEG)
 	private static double minAngleToSightLine = 15;
 
-	@Configurable(comment = "[mm]", defValue = "1500.")
+	@Configurable(defValue = "1500.", unit = EConfigUnit.DISTANCE_MM)
 	private static double minDistToOffensive = 1500;
 
-	@Configurable(comment = "[deg]", defValue = "17.")
+	@Configurable(defValue = "17.", unit = EConfigUnit.ANGLE_DEG)
 	private static double maxArcWidth = 17;
 
 	private final Supplier<Map<BotID, KickOrigin>> kickOrigins;
@@ -114,7 +112,7 @@ public class SupportBridgePositionCalc extends ACalculator
 
 	private void drawPositions(List<IVector2> bridgePositions)
 	{
-		List<IDrawableShape> shapes = getShapes(EAiShapesLayer.SUPPORT_ACTIVE_ROLES);
+		List<IDrawableShape> shapes = getShapes(EAiShapesLayer.SUPPORT_BRIDGE_POSITION_CALC);
 		for (IVector2 pos : bridgePositions)
 		{
 			DrawableCircle dCircle = new DrawableCircle(pos, Geometry.getBotRadius() / 2, Color.YELLOW);
@@ -215,15 +213,20 @@ public class SupportBridgePositionCalc extends ACalculator
 	{
 		Map<BotID, IMovingRobot> movingRobots = getAiFrame().getWorldFrame().getOpponentBots().values().stream()
 				.filter(b -> b.getPos().distanceTo(center) < radius)
-				.collect(Collectors.toMap(ITrackedBot::getBotId,
+				.collect(Collectors.toMap(
+						ITrackedBot::getBotId,
 						bot -> MovingRobotFactory.acceleratingRobot(
-								bot.getPos(),
-								bot.getVel(),
-								bot.getRobotInfo().getBotParams().getMovementLimits().getVelMax(),
-								bot.getRobotInfo().getBotParams().getMovementLimits().getAccMax(),
-								Geometry.getBotRadius() + Geometry.getBallRadius(),
-								opponentBotReactionTime
-						)));
+								MovingRobotParams.builder()
+										.position(bot.getPos())
+										.velocity(bot.getVel())
+										.vLimit(bot.getRobotInfo().getBotParams().getMovementLimits().getVelMax())
+										.aLimit(bot.getRobotInfo().getBotParams().getMovementLimits().getAccMax())
+										.brkLimit(bot.getRobotInfo().getBotParams().getMovementLimits().getAccMax())
+										.radius(Geometry.getBotRadius() + Geometry.getBallRadius())
+										.reactionTime(opponentBotReactionTime)
+										.build()
+						)
+				));
 
 		FullAngleRangeGenerator generator = new FullAngleRangeGenerator(
 				new ArrayList<>(movingRobots.values()),

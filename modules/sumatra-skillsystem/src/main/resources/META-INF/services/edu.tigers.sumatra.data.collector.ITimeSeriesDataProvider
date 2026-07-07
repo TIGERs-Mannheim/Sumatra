@@ -1,6 +1,2 @@
-#
-# Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
-#
-
 edu.tigers.sumatra.skillsystem.timeseries.TimeSeriesBotInputDataProvider
 edu.tigers.sumatra.skillsystem.timeseries.TimeSeriesBotOutputDataProvider

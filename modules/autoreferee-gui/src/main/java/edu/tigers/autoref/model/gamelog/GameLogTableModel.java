@@ -1,20 +1,17 @@
-/*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.autoref.model.gamelog;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import edu.tigers.autoreferee.engine.log.GameLogEntry;
 
 import javax.swing.JTable;
 import javax.swing.SwingUtilities;
 import javax.swing.table.AbstractTableModel;
 import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableModel;
-
-import edu.tigers.autoreferee.engine.log.GameLogEntry;
+import java.io.Serial;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 
 /**
@@ -24,13 +21,14 @@ import edu.tigers.autoreferee.engine.log.GameLogEntry;
  */
 public class GameLogTableModel extends AbstractTableModel
 {
+	@Serial
 	private static final long serialVersionUID = -8160241136867692587L;
 	private static final List<String> COLUMNS = Collections
 			.unmodifiableList(Arrays.asList("Time", "Game Time", "Type", "Event"));
-	
+
 	private final List<GameLogEntry> entries = new ArrayList<>();
-	
-	
+
+
 	public void add(GameLogEntry entry)
 	{
 		SwingUtilities.invokeLater(() -> {
@@ -39,8 +37,8 @@ public class GameLogTableModel extends AbstractTableModel
 			fireTableRowsInserted(id, id);
 		});
 	}
-	
-	
+
+
 	public void onClear()
 	{
 		SwingUtilities.invokeLater(() -> {
@@ -48,36 +46,36 @@ public class GameLogTableModel extends AbstractTableModel
 			fireTableDataChanged();
 		});
 	}
-	
-	
+
+
 	@Override
 	public int getRowCount()
 	{
 		return entries.size();
 	}
-	
-	
+
+
 	@Override
 	public int getColumnCount()
 	{
 		return COLUMNS.size();
 	}
-	
-	
+
+
 	@Override
 	public String getColumnName(final int column)
 	{
 		return COLUMNS.get(column);
 	}
-	
-	
+
+
 	@Override
 	public Class<?> getColumnClass(final int columnIndex)
 	{
 		return GameLogEntry.class;
 	}
-	
-	
+
+
 	@Override
 	public Object getValueAt(final int rowIndex, final int columnIndex)
 	{
@@ -88,12 +86,12 @@ public class GameLogTableModel extends AbstractTableModel
 		 */
 		return entries.get(rowIndex);
 	}
-	
-	
+
+
 	/**
 	 * Remove entries that have a larger timestamp that the given one.
 	 * This will clear events when going backwards in time in a replay window.
-	 * 
+	 *
 	 * @param timestamp
 	 */
 	public void removeTooRecentEntries(final long timestamp)

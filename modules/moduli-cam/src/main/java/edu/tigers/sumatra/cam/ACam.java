@@ -1,14 +1,13 @@
-/*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra.cam;
 
 import edu.tigers.sumatra.cam.data.CamDetectionFrame;
 import edu.tigers.sumatra.cam.data.CamGeometry;
 import edu.tigers.sumatra.cam.data.CamObjectFilterParams;
 import edu.tigers.sumatra.cam.proto.SslVisionDetection.SSL_DetectionFrame;
+import edu.tigers.sumatra.cam.proto.SslVisionWrapper;
 import edu.tigers.sumatra.cam.proto.SslVisionWrapper.SSL_WrapperPacket;
 import edu.tigers.sumatra.moduli.AModule;
+import lombok.Getter;
 
 import java.util.List;
 import java.util.Optional;
@@ -24,6 +23,9 @@ public abstract class ACam extends AModule
 
 	private final CamDetectionConverter camDetectionConverter = new CamDetectionConverter();
 	private final CamObjectFilter camObjectFilter = new CamObjectFilter();
+
+	@Getter
+	private SslVisionWrapper.SSL_Source camSource = SslVisionWrapper.SSL_Source.SSL_SOURCE_UNKNOWN;
 
 
 	@Override
@@ -79,6 +81,11 @@ public abstract class ACam extends AModule
 
 	protected void notifyNewVisionPacket(final SSL_WrapperPacket packet)
 	{
+		if (packet.hasSource())
+		{
+			camSource = packet.getSource();
+		}
+
 		for (ICamFrameObserver observer : observers)
 		{
 			observer.onNewVisionPacket(packet);

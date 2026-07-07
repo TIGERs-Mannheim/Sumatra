@@ -1,10 +1,7 @@
-/*
- * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.metis.test;
 
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.ai.metis.ACalculator;
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
 import edu.tigers.sumatra.ai.metis.defense.DefenseThreatRater;
@@ -45,56 +42,59 @@ import java.util.function.ToDoubleFunction;
 @RequiredArgsConstructor
 public class DebugGridTestCalc extends ACalculator
 {
-	@Configurable(defValue = "false")
+	@Configurable(defValue = "false", unit = EConfigUnit.BOOLEAN)
 	private static boolean enableGrid = false;
-	@Configurable(defValue = "false")
+	@Configurable(defValue = "false", unit = EConfigUnit.BOOLEAN)
 	private static boolean enableSinglePoint = false;
-	@Configurable(defValue = "YELLOW")
+	@Configurable(defValue = "YELLOW", unit = EConfigUnit.NO_UNIT)
 	private static ETeamColor enabledForTeam = ETeamColor.YELLOW;
 
-	@Configurable(defValue = "120")
+	@Configurable(defValue = "120", unit = EConfigUnit.COUNT)
 	private static int numX = 120;
-	@Configurable(defValue = "90")
+	@Configurable(defValue = "90", unit = EConfigUnit.COUNT)
 	private static int numY = 90;
 
-	@Configurable(defValue = "PASS_TARGET_RATING", comment = "The type of rating to display")
+	@Configurable(defValue = "PASS_TARGET_RATING", comment = "The type of rating to display", unit = EConfigUnit.NO_UNIT)
 	private static EGridType type = EGridType.PASS_TARGET_RATING;
 
-	@Configurable(defValue = "INTERCEPTION", comment = "The pass rating to display, if type is PASS_TARGET_RATING")
+	@Configurable(defValue = "INTERCEPTION", comment = "The pass rating to display, if type is PASS_TARGET_RATING", unit = EConfigUnit.NO_UNIT)
 	private static EPassRating passRating = EPassRating.INTERCEPTION;
 
-	@Configurable(defValue = "false", comment = "Use dynamic pass interception rating based on pass stats")
+	@Configurable(defValue = "false", comment = "Use dynamic pass interception rating based on pass stats", unit = EConfigUnit.BOOLEAN)
 	private static boolean useDynamicInterceptionRating = false;
 
-	@Configurable(defValue = "-1", comment = "The point of interest, meaning depends on rating. -1 -> ball")
+	@Configurable(defValue = "-1", comment = "The point of interest, meaning depends on rating. -1 -> ball", unit = EConfigUnit.NO_UNIT)
 	private static DynamicPosition poi = new DynamicPosition(BallID.instance());
 
 	@SuppressWarnings("MismatchedReadAndWriteOfArray") // the array changes through reflection
-	@Configurable(defValue = "15 B; 15 Y", comment = "ignored bots, meaning depends on rating")
+	@Configurable(defValue = "15 B; 15 Y", comment = "ignored bots, meaning depends on rating", unit = EConfigUnit.BOT_ID)
 	private static BotID[] ignoredBots = new BotID[0];
 
-	@Configurable(defValue = "-1", comment = "shooter bot, -1: choose automatically")
+	@Configurable(defValue = "-1", comment = "shooter bot, -1: choose automatically", unit = EConfigUnit.BOT_ID)
 	private static int shooter = -1;
 
-	@Configurable(defValue = "-1", comment = "receiver bot, -1: no receiver")
+	@Configurable(defValue = "-1", comment = "receiver bot, -1: no receiver", unit = EConfigUnit.BOT_ID)
 	private static int receiver = -1;
 
-	@Configurable(defValue = "false", comment = "Choose receiver automatically")
+	@Configurable(defValue = "false", comment = "Choose receiver automatically", unit = EConfigUnit.BOOLEAN)
 	private static boolean chooseReceiverAutomatically = false;
 
-	@Configurable(defValue = "false", comment = "Draw the scores into the grid")
+	@Configurable(defValue = "false", comment = "Draw the scores into the grid", unit = EConfigUnit.BOOLEAN)
 	private static boolean drawNumbers = false;
 
-	@Configurable(defValue = "0,0", comment = "Single point to rate and display, for individual debugging")
+	@Configurable(defValue = "0,0", comment = "Single point to rate and display, for individual debugging", unit = EConfigUnit.VEC2)
 	private static IVector2 singlePoint = Vector2.zero();
 
-	@Configurable(defValue = "true")
+	@Configurable(defValue = "true", unit = EConfigUnit.BOOLEAN)
 	private static boolean considerStraight = true;
 
-	@Configurable(defValue = "true")
+	@Configurable(defValue = "true", unit = EConfigUnit.BOOLEAN)
 	private static boolean considerChip = true;
 
-	@Configurable(defValue = "false")
+	@Configurable(defValue = "true", unit = EConfigUnit.BOOLEAN)
+	private static boolean considerThrough = true;
+
+	@Configurable(defValue = "false", unit = EConfigUnit.BOOLEAN)
 	private static boolean printGridCalculationTime = false;
 
 
@@ -186,7 +186,7 @@ public class DebugGridTestCalc extends ACalculator
 	private void bestGoalKickRating()
 	{
 		var rater = new BestGoalKickRater();
-		rater.update(getWFrame());
+		rater.update(getAiFrame());
 		ToDoubleFunction<IVector2> ratingFunction = pos -> rater.rateKickOrigin(
 						new KickOrigin(pos, shooter(), Double.POSITIVE_INFINITY)).goalKick()
 				.map(e -> e.getRatedTarget().getScore())
@@ -206,7 +206,8 @@ public class DebugGridTestCalc extends ACalculator
 				// Sort by distance to ball as rough estimate to get the closest bots first
 				.sorted(new BotDistanceComparator(getBall().getPos()))
 				.toList();
-		var consideredBotsIntercept = consideredBots.stream().filter(e -> e.getBotId() != getAiFrame().getKeeperOpponentId()).toList();
+		var consideredBotsIntercept = consideredBots.stream()
+				.filter(e -> e.getBotId() != getAiFrame().getKeeperOpponentId()).toList();
 		if (useDynamicInterceptionRating)
 		{
 			ratingFactory.updateDynamic(
@@ -214,10 +215,14 @@ public class DebugGridTestCalc extends ACalculator
 					consideredBotsIntercept,
 					passStats.get(),
 					offensiveZones.get(),
-					opponentMan2ManMarkers.get());
+					opponentMan2ManMarkers.get(),
+					getAiFrame().getKeeperOpponentId()
+			);
 		} else
 		{
-			ratingFactory.update(consideredBots, consideredBotsIntercept, opponentMan2ManMarkers.get());
+			ratingFactory.update(consideredBots, consideredBotsIntercept, opponentMan2ManMarkers.get(),
+					getAiFrame().getKeeperOpponentId()
+			);
 		}
 
 		drawFullField(pos -> ratePassTargetRating(ratingFactory, pos, EMode.GRID));
@@ -231,7 +236,7 @@ public class DebugGridTestCalc extends ACalculator
 		KickOrigin kickOrigin = new KickOrigin(pointOfInterest, shooter(), Double.POSITIVE_INFINITY);
 		List<Pass> passes = passCreator.createPasses(kickOrigin, pos, receiver(pos))
 				.stream()
-				.filter(pass -> (pass.isChip() && considerChip) || (!pass.isChip() && considerStraight))
+				.filter(this::isPassConsidered)
 				.toList();
 		if (mode == EMode.SINGLE_POINT)
 		{
@@ -243,6 +248,17 @@ public class DebugGridTestCalc extends ACalculator
 				.mapToDouble(pass -> ratingFactory.rate(pass).getScore(passRating))
 				.max()
 				.orElse(0.0);
+	}
+
+
+	private boolean isPassConsidered(Pass pass)
+	{
+		return switch (pass.getType())
+		{
+			case STRAIGHT -> considerStraight;
+			case CHIP -> considerChip;
+			case THROUGH -> considerThrough;
+		};
 	}
 
 

@@ -1,14 +1,11 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.gui.replay.presenter;
 
 import edu.tigers.sumatra.gui.log.presenter.LogPresenter;
 import edu.tigers.sumatra.persistence.PersistenceDb;
+import edu.tigers.sumatra.persistence.log.PersistenceLogCohort;
 import edu.tigers.sumatra.persistence.log.PersistenceLogEvent;
-import edu.tigers.sumatra.views.ASumatraView;
 import edu.tigers.sumatra.views.ESumatraViewType;
+import edu.tigers.sumatra.views.SumatraView;
 import edu.tigers.sumatra.wp.data.WorldFrameWrapper;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.LogEvent;
@@ -24,16 +21,16 @@ public class ReplayLogController implements IReplayController
 {
 	private static final long LOG_BUFFER_BEFORE = 500;
 	private static final long LOG_BUFFER_AFTER = 500;
-	private List<PersistenceLogEvent> logEventBuffer = null;
+	private List<PersistenceLogCohort> logEventBuffer = null;
 	private List<LogEvent> lastLogEventsPast = new LinkedList<>();
 	private List<LogEvent> lastLogEventsFuture = new LinkedList<>();
 
 	private LogPresenter logPresenter;
 
 
-	public ReplayLogController(List<ASumatraView> sumatraViews)
+	public ReplayLogController(List<SumatraView> sumatraViews)
 	{
-		for (ASumatraView view : sumatraViews)
+		for (SumatraView view : sumatraViews)
 		{
 			if (view.getType() == ESumatraViewType.LOG)
 			{
@@ -71,6 +68,7 @@ public class ReplayLogController implements IReplayController
 			final Log4jLogEvent barrierEvent = Log4jLogEvent.newBuilder()
 					.setLoggerName(this.getClass().getCanonicalName())
 					.setLevel(Level.FATAL)
+					.setTimeMillis(unixTimestamp)
 					.setMessage(new SimpleMessage(
 							"------------------------------------------------ Past to Future barrier ------------------------------------------------"))
 					.build();
@@ -86,22 +84,30 @@ public class ReplayLogController implements IReplayController
 	}
 
 
-	private void updateLogEvents(final long curTime, final List<LogEvent> logEventsPast,
-			final List<LogEvent> logEventsFuture)
+	private void updateLogEvents(
+			final long msTimeStamp, final List<LogEvent> logEventsPast,
+			final List<LogEvent> logEventsFuture
+	)
 	{
-		long timeStamp = curTime;
-		for (PersistenceLogEvent event : logEventBuffer)
+		for (PersistenceLogCohort cohort : logEventBuffer)
 		{
-			if ((event.getTimestamp() >= (timeStamp - LOG_BUFFER_BEFORE))
-					&& (event.getTimestamp() <= (timeStamp + LOG_BUFFER_AFTER))
-					&& logPresenter.checkFilters(event.getLogEvent()))
+			if ((cohort.getKey() < msTimeStamp - LOG_BUFFER_BEFORE)
+					|| (cohort.getKey() > msTimeStamp + LOG_BUFFER_AFTER))
 			{
-				if (event.getTimestamp() >= timeStamp)
+				continue;
+			}
+
+			for (PersistenceLogEvent event : cohort.getEvents())
+			{
+				if (logPresenter.checkFilters(event.getLogEvent()))
 				{
-					logEventsFuture.add(event.getLogEvent());
-				} else
-				{
-					logEventsPast.add(event.getLogEvent());
+					if (event.getTimestamp() >= msTimeStamp)
+					{
+						logEventsFuture.add(event.getLogEvent());
+					} else
+					{
+						logEventsPast.add(event.getLogEvent());
+					}
 				}
 			}
 		}
@@ -114,7 +120,7 @@ public class ReplayLogController implements IReplayController
 		{
 			if (db != null)
 			{
-				logEventBuffer = db.getTable(PersistenceLogEvent.class).load();
+				logEventBuffer = db.getTable(PersistenceLogCohort.class).load();
 			} else
 			{
 				logEventBuffer = new ArrayList<>(0);

@@ -1,10 +1,7 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.metis.ballplacement;
 
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.ai.metis.ACalculator;
 import edu.tigers.sumatra.ai.pandora.plays.EPlay;
 import edu.tigers.sumatra.ids.BotID;
@@ -23,7 +20,7 @@ import java.util.stream.Stream;
 @RequiredArgsConstructor
 public class BallPlacementBotsCalc extends ACalculator
 {
-	@Configurable(defValue = "true")
+	@Configurable(defValue = "true", unit = EConfigUnit.BOOLEAN)
 	private static boolean useSecondBallPlacer = true;
 
 	private final Supplier<List<BotID>> botsToInterchange;

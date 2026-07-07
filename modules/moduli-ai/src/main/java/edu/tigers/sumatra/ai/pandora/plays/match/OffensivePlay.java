@@ -1,12 +1,11 @@
-/*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra.ai.pandora.plays.match;
 
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.ai.metis.kicking.KickFactory;
 import edu.tigers.sumatra.ai.metis.kicking.Pass;
+import edu.tigers.sumatra.ai.metis.pass.rating.RatedPass;
 import edu.tigers.sumatra.ai.metis.redirector.ERecommendedReceiverAction;
 import edu.tigers.sumatra.ai.pandora.plays.APlay;
 import edu.tigers.sumatra.ai.pandora.plays.EPlay;
@@ -37,7 +36,7 @@ import java.util.Optional;
 public class OffensivePlay extends APlay
 {
 
-	@Configurable(defValue = "true", comment = "enables the primary that tackles enemy receivers")
+	@Configurable(defValue = "true", comment = "enables the primary that tackles enemy receivers", unit = EConfigUnit.BOOLEAN)
 	private static boolean enableDisruptor = true;
 
 	private final KickFactory kickFactory = new KickFactory();
@@ -101,6 +100,7 @@ public class OffensivePlay extends APlay
 		return getAiFrame().getTacticalField().getOffensiveActions().values().stream()
 				.map(e -> e.getAction().getPass())
 				.filter(Objects::nonNull)
+				.map(RatedPass::getPass)
 				.filter(pass -> pass.getReceiver().equals(botID))
 				.findFirst();
 

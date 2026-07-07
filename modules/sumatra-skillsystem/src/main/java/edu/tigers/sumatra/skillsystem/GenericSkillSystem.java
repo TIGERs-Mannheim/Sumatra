@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.skillsystem;
 
 import com.github.g3force.configurable.ConfigRegistration;
@@ -14,6 +10,7 @@ import edu.tigers.sumatra.ids.ETeamColor;
 import edu.tigers.sumatra.model.SumatraModel;
 import edu.tigers.sumatra.skillsystem.skills.ISkill;
 import edu.tigers.sumatra.skillsystem.skills.IdleSkill;
+import edu.tigers.sumatra.thread.NamedThreadFactory;
 import edu.tigers.sumatra.wp.AWorldPredictor;
 import edu.tigers.sumatra.wp.IWorldFrameObserver;
 import edu.tigers.sumatra.wp.data.WorldFrameWrapper;
@@ -21,7 +18,8 @@ import edu.tigers.sumatra.wp.data.WorldFrameWrapper;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 
 /**
@@ -40,55 +38,45 @@ public class GenericSkillSystem extends ASkillSystem
 		}
 	}
 
-	private final Map<BotID, SkillExecutor> executors = new ConcurrentHashMap<>();
-
+	private ExecutorService executorService;
 	private AWorldPredictor wp;
 
 
 	/**
-	 * Create a dedicated skill system with dummy bots for simulation
+	 * Create a dedicated skill system with dummy bots for simulation.
+	 * Use this when the skill system is not managed by the module lifecycle.
 	 *
 	 * @return a new instance
 	 */
-	public static GenericSkillSystem forAnalysis()
+	public static GenericSkillSystem create()
 	{
 		final GenericSkillSystem skillSystem = new GenericSkillSystem();
-		BotID.getAll().forEach(skillSystem::addSkillExecutor);
+		skillSystem.initModule();
 		return skillSystem;
-	}
-
-
-	private void addSkillExecutor(final BotID botID)
-	{
-		SkillExecutor se = new SkillExecutor(botID);
-		se.addPostHook(this);
-		executors.put(botID, se);
 	}
 
 
 	@Override
 	public void initModule()
 	{
-		BotID.getAll().forEach(this::addSkillExecutor);
-	}
-
-
-	@Override
-	public void deinitModule()
-	{
-		executors.clear();
+		super.initModule();
+		executors.values().forEach(e -> e.addPostHook(this));
 	}
 
 
 	@Override
 	public void startModule()
 	{
-		super.startModule();
-		executors.values().forEach(e -> e.start(getExecutorService()));
+		executorService = Executors.newCachedThreadPool(new NamedThreadFactory("SkillExecutor"));
+		executors.values().forEach(e -> e.start(executorService));
 
 		SumatraModel.getInstance().getModuleOpt(BotManager.class).ifPresent(botManager -> {
 			botManager.getOnBotOnline().subscribe(getClass().getCanonicalName(), this::onBotAdded);
 			botManager.getOnBotOffline().subscribe(getClass().getCanonicalName(), this::onBotRemoved);
+			for (ABot bot : botManager.getBots().values())
+			{
+				onBotAdded(bot);
+			}
 		});
 
 		wp = SumatraModel.getInstance().getModule(AWorldPredictor.class);
@@ -102,6 +90,10 @@ public class GenericSkillSystem extends ASkillSystem
 		emergencyStop();
 
 		SumatraModel.getInstance().getModuleOpt(BotManager.class).ifPresent(botManager -> {
+			for (ABot bot : botManager.getBots().values())
+			{
+				onBotRemoved(bot.getBotId());
+			}
 			botManager.getOnBotOnline().unsubscribe(getClass().getCanonicalName());
 			botManager.getOnBotOffline().unsubscribe(getClass().getCanonicalName());
 		});
@@ -112,7 +104,7 @@ public class GenericSkillSystem extends ASkillSystem
 		}
 
 		executors.values().forEach(SkillExecutor::stop);
-		super.stopModule();
+		executorService.shutdown();
 	}
 
 

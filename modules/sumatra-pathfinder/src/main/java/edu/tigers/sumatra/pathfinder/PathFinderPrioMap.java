@@ -1,12 +1,12 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra.pathfinder;
 
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.ids.ETeamColor;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.Value;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -15,10 +15,12 @@ import java.util.Set;
 /**
  * A Priority map that prioritizes bots before others in path planning
  */
+@Value
+@AllArgsConstructor(access = lombok.AccessLevel.PRIVATE)
 public class PathFinderPrioMap
 {
 	@Getter
-	private final Map<BotID, Integer> map = new HashMap<>();
+	Map<BotID, Integer> map;
 
 
 	/**
@@ -27,28 +29,20 @@ public class PathFinderPrioMap
 	 * @param myTeam
 	 * @return
 	 */
-	public static PathFinderPrioMap byBotId(final ETeamColor myTeam)
+	public static Map<BotID, Integer> mapByBotId(final ETeamColor myTeam)
 	{
-		PathFinderPrioMap map = new PathFinderPrioMap();
+		Map<BotID, Integer> map = new HashMap<>();
 		for (BotID botId : BotID.getAll(myTeam))
 		{
-			map.map.put(botId, botId.getNumber());
+			map.put(botId, botId.getNumber());
 		}
 		return map;
 	}
 
 
-	/**
-	 * No other bot is preferred over botId
-	 *
-	 * @param botId
-	 * @return
-	 */
-	public static PathFinderPrioMap onlyMe(final BotID botId)
+	public static PathFinderPrioMap byBotId(ETeamColor myTeam)
 	{
-		PathFinderPrioMap map = new PathFinderPrioMap();
-		map.map.put(botId, 1);
-		return map;
+		return of(mapByBotId(myTeam));
 	}
 
 
@@ -59,17 +53,13 @@ public class PathFinderPrioMap
 	 */
 	public static PathFinderPrioMap empty()
 	{
-		return new PathFinderPrioMap();
+		return new PathFinderPrioMap(Map.of());
 	}
 
 
-	/**
-	 * @param botId
-	 * @param prio
-	 */
-	public void setPriority(final BotID botId, final int prio)
+	public static PathFinderPrioMap of(final Map<BotID, Integer> map)
 	{
-		map.put(botId, prio);
+		return new PathFinderPrioMap(Collections.unmodifiableMap(map));
 	}
 
 

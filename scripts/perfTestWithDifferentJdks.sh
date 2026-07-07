@@ -1,8 +1,4 @@
 #!/usr/bin/env bash
-#
-# Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
-#
-
 JDKS="/usr/lib/jvm/java-11-openjdk /usr/lib/jvm/java-16-graalvm /usr/lib/jvm/java-11-graalvm /usr/lib/jvm/zulu-16"
 
 mkdir -p perf

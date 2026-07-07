@@ -1,0 +1,87 @@
+{
+  "selectedParams": {
+    "YELLOW_LIVE": "YELLOW",
+    "BLUE_LIVE": "BLUE",
+    "SIMULATION_YELLOW": "YELLOW",
+    "SIMULATION_BLUE": "BLUE",
+    "TIGER_V2020": "YELLOW",
+    "OPPONENT": "BLUE"
+  },
+  "entries": {
+    "Unknown": {
+      "movementLimits": {
+        "velMax": 0.0,
+        "accMax": 0.0,
+        "brkMax": 0.0,
+        "velMaxW": 0.0,
+        "accMaxW": 0.0
+      },
+      "dimensions": {
+        "center2DribblerDist": 75.0,
+        "diameter": 180.0,
+        "height": 150.0
+      },
+      "kickerSpecs": {
+        "chipAngle": 45.0,
+        "maxAbsoluteChipVelocity": 8.0,
+        "maxAbsoluteStraightVelocity": 8.0
+      },
+      "dribblerSpecs": {
+        "defaultSpeed": 4.0,
+        "defaultForce": 3.0,
+        "highPowerSpeed": 5.0,
+        "highPowerForce": 5.0
+      }
+    },
+    "YELLOW": {
+      "movementLimits": {
+        "velMax": 3.2,
+        "accMax": 3.0,
+        "brkMax": 5.1,
+        "velMaxW": 20.0,
+        "accMaxW": 50.0
+      },
+      "dimensions": {
+        "center2DribblerDist": 73.0,
+        "diameter": 178.0,
+        "height": 148.0
+      },
+      "kickerSpecs": {
+        "chipAngle": 40.0,
+        "maxAbsoluteChipVelocity": 7.5,
+        "maxAbsoluteStraightVelocity": 6.5
+      },
+      "dribblerSpecs": {
+        "defaultSpeed": 3.0,
+        "defaultForce": 2.0,
+        "highPowerSpeed": 6.0,
+        "highPowerForce": 4.0
+      }
+    },
+    "BLUE": {
+      "movementLimits": {
+        "velMax": 2.5,
+        "accMax": 2.0,
+        "brkMax": 4.0,
+        "velMaxW": 15.0,
+        "accMaxW": 40.0
+      },
+      "dimensions": {
+        "center2DribblerDist": 70.0,
+        "diameter": 179.0,
+        "height": 145.0
+      },
+      "kickerSpecs": {
+        "chipAngle": 42.0,
+        "maxAbsoluteChipVelocity": 8.0,
+        "maxAbsoluteStraightVelocity": 8.0
+      },
+      "dribblerSpecs": {
+        "defaultSpeed": 4.5,
+        "defaultForce": 3.5,
+        "highPowerSpeed": 5.5,
+        "highPowerForce": 5.0
+      }
+    }
+  }
+}

@@ -1,16 +1,11 @@
-/*
- * Copyright (c) 2009 - 2019, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.timer;
 
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-
+import edu.tigers.sumatra.clock.Dormouse;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import edu.tigers.sumatra.clock.Dormouse;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 
 /**
@@ -92,7 +87,7 @@ public class SumatraTimer extends ATimer
 		Long startTime = startTimes.remove(timerId);
 		if (startTime == null)
 		{
-			log.error("Asynchron timer: " + timable + " stop called before start or multiple times.");
+			log.error("Asynchron timer: {} stop called before start or multiple times.", timable);
 			return;
 		}
 		addTiming(timerId, stopTime - startTime);

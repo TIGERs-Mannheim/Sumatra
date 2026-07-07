@@ -1,20 +1,12 @@
-/*
- * *********************************************************
- * Copyright (c) 2009 - 2011, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 31.03.2011
- * Author(s): AndreR
- * *********************************************************
- */
 package edu.tigers.sumatra.botmanager.commands.tiger;
-
-import java.util.Arrays;
 
 import edu.tigers.sumatra.botmanager.commands.ACommand;
 import edu.tigers.sumatra.botmanager.commands.ECommand;
 import edu.tigers.sumatra.botmanager.serial.SerialByteConverter;
 import edu.tigers.sumatra.botmanager.serial.SerialData;
 import edu.tigers.sumatra.botmanager.serial.SerialData.ESerialDataType;
+
+import java.util.Arrays;
 
 
 /**
@@ -32,8 +24,8 @@ public class TigerSystemPong extends ACommand
 	private int		id;
 	@SerialData(type = ESerialDataType.TAIL)
 	private byte[]	payload;
-	
-	
+
+
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
@@ -43,26 +35,26 @@ public class TigerSystemPong extends ACommand
 	public TigerSystemPong()
 	{
 		super(ECommand.CMD_SYSTEM_PONG);
-		
+
 		id = 0;
 	}
-	
-	
+
+
 	/**
 	 * @param id
 	 */
 	public TigerSystemPong(final int id)
 	{
 		super(ECommand.CMD_SYSTEM_PONG);
-		
+
 		this.id = id;
 	}
-	
-	
+
+
 	// --------------------------------------------------------------------------
 	// --- methods --------------------------------------------------------------
 	// --------------------------------------------------------------------------
-	
+
 	/**
 	 * @return
 	 */
@@ -86,8 +78,8 @@ public class TigerSystemPong extends ACommand
 		}
 		return true;
 	}
-	
-	
+
+
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
@@ -98,8 +90,8 @@ public class TigerSystemPong extends ACommand
 	{
 		return id;
 	}
-	
-	
+
+
 	/**
 	 * @param id the id to set
 	 */
@@ -107,8 +99,8 @@ public class TigerSystemPong extends ACommand
 	{
 		this.id = id;
 	}
-	
-	
+
+
 	/**
 	 * @return the payload
 	 */

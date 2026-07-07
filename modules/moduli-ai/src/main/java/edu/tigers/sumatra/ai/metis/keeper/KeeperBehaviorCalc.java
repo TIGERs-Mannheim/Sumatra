@@ -1,10 +1,7 @@
-/*
- * Copyright (c) 2009 - 2024, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.metis.keeper;
 
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.ai.metis.ACalculator;
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
 import edu.tigers.sumatra.ai.metis.ballinterception.BallInterception;
@@ -47,29 +44,27 @@ import java.util.stream.Stream;
 public class KeeperBehaviorCalc extends ACalculator
 {
 	private static final IVector2 DEFAULT_POS = Geometry.getPenaltyAreaOur().getRectangle().center();
-	@Configurable(comment = "[s] Time offset that we think the opponent needs to react to rambo", defValue = "0.3")
+	@Configurable(comment = "Time offset that we think the opponent needs to react to rambo", defValue = "0.3", unit = EConfigUnit.TIME_S)
 	private static double ramboTimeOffset = 0.3;
-	@Configurable(comment = "[mm] Minimum distance between pen area boundary and ball to try chipping", defValue = "200")
+	@Configurable(comment = "Minimum distance between pen area boundary and ball to try chipping", defValue = "200", unit = EConfigUnit.DISTANCE_MM)
 	private static double minMarginToChip = 200;
-	@Configurable(comment = "[mm] How much space we assume to need for ball handling", defValue = "50")
+	@Configurable(comment = "How much space we assume to need for ball handling", defValue = "50", unit = EConfigUnit.DISTANCE_MM)
 	private static double ballHandlingExtraMargin = 50;
 
-	@Configurable(comment = "[s] Interception slack time considered safe", defValue = "-0.25")
+	@Configurable(comment = "Interception slack time considered safe", defValue = "-0.25", unit = EConfigUnit.TIME_S)
 	private static double slackTimeConsideredSafe = -0.25;
-	@Configurable(comment = "[s] Interception slack time considered safe", defValue = "0.4")
-	private static double corridorWidthConsideredSafe = 0.4;
-	@Configurable(comment = "[m/s] Max speed of ball in PenArea to consider it less dangerous.", defValue = "0.2")
+	@Configurable(comment = "Max speed of ball in PenArea to consider it less dangerous.", defValue = "0.2", unit = EConfigUnit.VELOCITY_M)
 	private static double maxBallSpeedToAllowSlowApproach = 0.2;
-	@Configurable(comment = "[m/s] Lower min speed of ball necessary for ball interception", defValue = "0.1")
+	@Configurable(comment = "Lower min speed of ball necessary for ball interception", defValue = "0.1", unit = EConfigUnit.VELOCITY_M)
 	private static double minBallSpeedForInterceptLower = 0.1;
-	@Configurable(comment = "[m/s] Upper min speed of ball necessary for ball interception", defValue = "1.0")
+	@Configurable(comment = "Upper min speed of ball necessary for ball interception", defValue = "1.0", unit = EConfigUnit.VELOCITY_M)
 	private static double minBallSpeedForInterceptUpper = 1.0;
-	@Configurable(comment = "[0...1] A higher value will increase the uncertainty applied to the ball prediction", defValue = "0.15")
+	@Configurable(comment = "A higher value will increase the uncertainty applied to the ball prediction", defValue = "0.15", unit = EConfigUnit.FACTOR)
 	private static double factorVelocityToBallStopUncertainty = 0.15;
-	@Configurable(comment = "Opponent ball dist to chill", defValue = "1000.0")
+	@Configurable(comment = "Opponent ball dist to chill", defValue = "1000.0", unit = EConfigUnit.DISTANCE_MM)
 	private static double opponentToBallDistToChill = 1000;
 
-	@Configurable(comment = "[0-1] Required pass intercept-ability rating to consider ball will not be intercepted, the higher the safer we need to be", defValue = "0.95")
+	@Configurable(comment = "Required pass intercept-ability rating to consider ball will not be intercepted, the higher the safer we need to be", defValue = "0.95", unit = EConfigUnit.PERCENTAGE)
 	private static double minPassRatingForUndisturbedBall = 0.95;
 
 
@@ -340,7 +335,7 @@ public class KeeperBehaviorCalc extends ACalculator
 
 		var maxVel = 0.1 + 0.9 * SumatraMath.relative(botDist, 3 * Geometry.getBotRadius(), opponentToBallDistToChill);
 		var opponentVel = getWFrame().getBot(opponentClosestToBall.get().getBotId()).getVel().getLength2();
-		return maxVel >= opponentVel;
+		return  opponentVel >= maxVel;
 	}
 
 
@@ -439,13 +434,13 @@ public class KeeperBehaviorCalc extends ACalculator
 		{
 			return false;
 		}
+
 		if (isGoalKick())
 		{
-			return interception.getMinCorridorSlackTime() < 2 * slackTimeConsideredSafe
-					|| interception.getCorridorLength() > 2 * corridorWidthConsideredSafe;
+			return interception.getSlackTime() < 2 * slackTimeConsideredSafe;
 		}
-		return interception.getMinCorridorSlackTime() < slackTimeConsideredSafe
-				|| interception.getCorridorLength() > corridorWidthConsideredSafe;
+
+		return interception.getSlackTime() < slackTimeConsideredSafe;
 	}
 
 

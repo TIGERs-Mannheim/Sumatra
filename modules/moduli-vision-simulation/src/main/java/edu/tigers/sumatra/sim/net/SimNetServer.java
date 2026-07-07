@@ -1,11 +1,8 @@
-/*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.sim.net;
 
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import com.google.protobuf.InvalidProtocolBufferException;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.ids.ETeamColor;
@@ -44,7 +41,7 @@ public class SimNetServer
 {
 	private static final Logger log = LogManager.getLogger(SimNetServer.class);
 
-	@Configurable(defValue = "14242", comment = "The listen port of the simulation server")
+	@Configurable(defValue = "14242", comment = "The listen port of the simulation server", unit = EConfigUnit.NO_UNIT)
 	private static int port = 14242;
 
 	static

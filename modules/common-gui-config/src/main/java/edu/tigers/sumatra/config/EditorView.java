@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.config;
 
 import edu.tigers.sumatra.model.SumatraModel;
@@ -19,11 +15,13 @@ import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
+import javax.swing.JTable;
 import javax.swing.ScrollPaneConstants;
 import javax.swing.event.TableModelEvent;
 import javax.swing.event.TreeExpansionEvent;
 import javax.swing.event.TreeExpansionListener;
 import java.awt.event.ActionEvent;
+import java.io.Serial;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -34,6 +32,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
  */
 public class EditorView extends JPanel
 {
+	@Serial
 	private static final long serialVersionUID = -7098099480668190062L;
 
 	private static final boolean DISABLE_APPLY = false;
@@ -67,6 +66,7 @@ public class EditorView extends JPanel
 		// Apply
 		applyAction = new AbstractAction("Apply")
 		{
+			@Serial
 			private static final long serialVersionUID = 1L;
 
 
@@ -84,6 +84,7 @@ public class EditorView extends JPanel
 
 		saveAction = new AbstractAction("Save")
 		{
+			@Serial
 			private static final long serialVersionUID = 1L;
 
 
@@ -101,6 +102,7 @@ public class EditorView extends JPanel
 
 		Action reloadAction = new AbstractAction("Reload")
 		{
+			@Serial
 			private static final long serialVersionUID = 1L;
 
 
@@ -136,8 +138,8 @@ public class EditorView extends JPanel
 			}
 		});
 		listenForExpansionEvents = false;
+		treetable.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
 		treetable.getTree().addTreeExpansionListener(new MyTreeExpansionListener());
-		scrollpane.add(treetable);
 		scrollpane.setViewportView(treetable);
 	}
 
@@ -167,6 +169,7 @@ public class EditorView extends JPanel
 			model.getAllTreePaths().forEach(this::applyExpansions);
 			listenForExpansionEvents = true;
 		}
+		treetable.resizeColumnsToFit();
 	}
 
 
@@ -202,7 +205,9 @@ public class EditorView extends JPanel
 	public void initialReload()
 	{
 		if (wasLoaded)
+		{
 			return;
+		}
 
 		reload();
 	}
@@ -287,15 +292,18 @@ public class EditorView extends JPanel
 		return configKey;
 	}
 
+
 	public void setReferenceConfig(HierarchicalConfiguration config)
 	{
 		referenceConfig = config;
 	}
 
+
 	public HierarchicalConfiguration getReferenceConfig()
 	{
 		return referenceConfig;
 	}
+
 
 	private class MyTreeExpansionListener implements TreeExpansionListener
 	{

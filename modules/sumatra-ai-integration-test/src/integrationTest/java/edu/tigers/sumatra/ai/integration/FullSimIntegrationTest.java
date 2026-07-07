@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.integration;
 
 import edu.tigers.sumatra.ai.integration.blocker.AiSimTimeBlocker;
@@ -50,7 +46,8 @@ class FullSimIntegrationTest extends AFullSimIntegrationTest
 
 		ICircle aroundBallCircle = Circle.createCircle(
 				lastWorldFrameWrapper.getSimpleWorldFrame().getBall().getPos(),
-				RuleConstraints.getStopRadius() + Geometry.getBotRadius());
+				RuleConstraints.getStopRadius() + Geometry.getBotRadius()
+		);
 		Map<ETeamColor, List<ITrackedBot>> botsNearBall = lastWorldFrameWrapper.getSimpleWorldFrame().getBots().values()
 				.stream()
 				.filter(b -> aroundBallCircle.isPointInShape(b.getPos()))

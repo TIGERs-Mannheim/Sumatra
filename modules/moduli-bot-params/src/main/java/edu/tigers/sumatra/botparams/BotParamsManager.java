@@ -1,6 +1,3 @@
-/*
- * Copyright (c) 2009 - 2019, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra.botparams;
 
 
@@ -11,18 +8,19 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import edu.tigers.sumatra.bot.params.BotParams;
-import edu.tigers.sumatra.bot.params.IBotParams;
 import edu.tigers.sumatra.botparams.BotParamsDatabase.IBotParamsDatabaseObserver;
 import edu.tigers.sumatra.model.SumatraModel;
 import edu.tigers.sumatra.moduli.AModule;
 import edu.tigers.sumatra.referee.AReferee;
 import edu.tigers.sumatra.referee.IRefereeObserver;
 import edu.tigers.sumatra.referee.proto.SslGcRefereeMessage;
+import lombok.Setter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -47,7 +45,7 @@ public class BotParamsManager extends AModule implements IBotParamsDatabaseObser
 	@Override
 	public void initModule()
 	{
-		database = loadDatabase();
+		database = loadDatabase(databaseFile());
 		database.addObserver(this);
 		refObserver = new RefereeObserver();
 
@@ -80,12 +78,18 @@ public class BotParamsManager extends AModule implements IBotParamsDatabaseObser
 	 */
 	public void activateAutomaticChoiceOfOpponent(boolean enable)
 	{
-		refObserver.enableAutomaticallySettingOpponent(enable);
+		refObserver.setAutoSetOpponent(enable);
+	}
+
+
+	public void activateAutomaticAdaptionOfOpponent(boolean enable)
+	{
+		refObserver.setAutoLiveOpponent(enable);
 	}
 
 
 	@Override
-	public IBotParams get(final EBotParamLabel label)
+	public BotParams get(final EBotParamLabel label)
 	{
 		return database.getSelectedParams(label);
 	}
@@ -93,12 +97,23 @@ public class BotParamsManager extends AModule implements IBotParamsDatabaseObser
 
 	private void saveDatabase()
 	{
-		File file = Paths.get(DATABASE_FILE).toFile();
+		saveDatabase(databaseFile(), database);
+	}
 
+
+	private static File databaseFile()
+	{
+		return Paths.get(DATABASE_FILE).toFile();
+	}
+
+
+	static void saveDatabase(final File file, final BotParamsDatabase database)
+	{
+		String lineFeed = detectLineFeed(file);
 		ObjectMapper mapper = new ObjectMapper();
 		mapper.enable(SerializationFeature.INDENT_OUTPUT);
 		mapper.setDefaultPrettyPrinter(new DefaultPrettyPrinter()
-				.withObjectIndenter(new DefaultIndenter().withLinefeed(System.lineSeparator()))
+				.withObjectIndenter(new DefaultIndenter().withLinefeed(lineFeed))
 				.withSeparators(DEFAULT_SEPARATORS.withObjectFieldValueSpacing(Separators.Spacing.AFTER))
 		);
 
@@ -112,9 +127,32 @@ public class BotParamsManager extends AModule implements IBotParamsDatabaseObser
 	}
 
 
-	private BotParamsDatabase loadDatabase()
+	private static String detectLineFeed(final File file)
 	{
-		File file = Paths.get(DATABASE_FILE).toFile();
+		if (file.exists())
+		{
+			try
+			{
+				String content = Files.readString(file.toPath());
+				if (content.contains("\r\n"))
+				{
+					return "\r\n";
+				}
+				if (content.contains("\n"))
+				{
+					return "\n";
+				}
+			} catch (IOException e)
+			{
+				log.warn("Could not read existing database to detect line feed: {}", file, e);
+			}
+		}
+		return System.lineSeparator();
+	}
+
+
+	static BotParamsDatabase loadDatabase(final File file)
+	{
 		if (file.exists())
 		{
 			log.debug("Open existing bot params database");
@@ -126,7 +164,7 @@ public class BotParamsManager extends AModule implements IBotParamsDatabaseObser
 				return mapper.readValue(file, BotParamsDatabase.class);
 			} catch (IOException e)
 			{
-				log.error(String.format("Could not read from database: %s", file), e);
+				log.error("Could not read from database: {}", file, e);
 			}
 		}
 		log.info("Initializing empty bot params database");
@@ -179,7 +217,7 @@ public class BotParamsManager extends AModule implements IBotParamsDatabaseObser
 	}
 
 
-	private void notifyBotParamsUpdated(final EBotParamLabel label, final IBotParams params)
+	private void notifyBotParamsUpdated(final EBotParamLabel label, final BotParams params)
 	{
 		for (IBotParamsManagerObserver observer : observers)
 		{
@@ -200,13 +238,16 @@ public class BotParamsManager extends AModule implements IBotParamsDatabaseObser
 		 * @param label
 		 * @param params
 		 */
-		void onBotParamsUpdated(EBotParamLabel label, IBotParams params);
+		void onBotParamsUpdated(EBotParamLabel label, BotParams params);
 	}
 
 	private class RefereeObserver implements IRefereeObserver
 	{
 		private AReferee referee;
+		@Setter
 		private boolean autoSetOpponent;
+		@Setter
+		private boolean autoLiveOpponent;
 
 
 		public RefereeObserver()
@@ -229,37 +270,33 @@ public class BotParamsManager extends AModule implements IBotParamsDatabaseObser
 		}
 
 
-		public void enableAutomaticallySettingOpponent(boolean enable)
-		{
-			autoSetOpponent = enable;
-		}
-
-
 		@Override
 		public void onNewRefereeMsg(final SslGcRefereeMessage.Referee msg)
 		{
-			if (!autoSetOpponent || SumatraModel.getInstance().isSimulation())
+			if (SumatraModel.getInstance().isSimulation())
+			{
 				return;
-			String expectedAITeam = "TIGERs";
-			String blueTeam = msg.getBlue().getName();
+			}
+
 			String yellowTeam = msg.getYellow().getName();
-			String opponentTeam;
-			if (blueTeam.equals(yellowTeam) || yellowTeam.contains(expectedAITeam))
-			{
-				opponentTeam = blueTeam;
-			} else
-			{
-				opponentTeam = yellowTeam;
-			}
-			if (opponentTeam.contains(expectedAITeam))
-			{
-				opponentTeam = database.getTeamStringForLabel(EBotParamLabel.TIGER_V2020);
-			}
+			boolean opponentIsBlue = yellowTeam.contains("TIGERs");
+			String opponentTeam = opponentIsBlue ? msg.getBlue().getName() : yellowTeam;
+
 			if (!database.getEntries().containsKey(opponentTeam))
-				return;
+			{
+				database.copyEntry(opponentTeam, "Unknown");
+			}
 
-			database.setTeamForLabel(EBotParamLabel.OPPONENT, opponentTeam);
+			if (autoSetOpponent)
+			{
+				database.setTeamForLabel(EBotParamLabel.OPPONENT, opponentTeam);
+			}
 
+			if (autoLiveOpponent)
+			{
+				database.setTeamForLabel(
+						opponentIsBlue ? EBotParamLabel.BLUE_LIVE : EBotParamLabel.YELLOW_LIVE, opponentTeam);
+			}
 		}
 	}
 }

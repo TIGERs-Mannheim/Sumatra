@@ -1,6 +1,3 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra.gui.botparams.presenter;
 
 import edu.tigers.sumatra.bot.params.BotParams;
@@ -24,6 +21,7 @@ import javax.swing.SwingUtilities;
 public class BotParamsPresenter implements ISumatraViewPresenter, ITeamEditorObserver, IBotParamsDatabaseObserver
 {
 	private final String autoSelectionKey = BotParamsPresenter.class.getCanonicalName() + ".enableAutoSelection";
+	private final String autoAdaptionKey = BotParamsPresenter.class.getCanonicalName() + ".enableAutoAdaption";
 	@Getter
 	private final TeamEditor viewPanel = new TeamEditor();
 	private BotParamsManager paramsManager;
@@ -40,6 +38,8 @@ public class BotParamsPresenter implements ISumatraViewPresenter, ITeamEditorObs
 			paramsManager.getDatabase().addObserver(this);
 			viewPanel.setInitialValueAutoSelection(
 					Boolean.parseBoolean(SumatraModel.getInstance().getUserProperty(autoSelectionKey)));
+			viewPanel.setInitialValueAutoAdaption(
+					Boolean.parseBoolean(SumatraModel.getInstance().getUserProperty(autoAdaptionKey)));
 		});
 	}
 
@@ -86,6 +86,14 @@ public class BotParamsPresenter implements ISumatraViewPresenter, ITeamEditorObs
 	{
 		paramsManager.activateAutomaticChoiceOfOpponent(enable);
 		SumatraModel.getInstance().setUserProperty(autoSelectionKey, String.valueOf(enable));
+	}
+
+
+	@Override
+	public void onEnableAutoOpponentAdaption(boolean enable)
+	{
+		paramsManager.activateAutomaticAdaptionOfOpponent(enable);
+		SumatraModel.getInstance().setUserProperty(autoAdaptionKey, String.valueOf(enable));
 	}
 
 

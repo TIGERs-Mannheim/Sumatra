@@ -1,10 +1,7 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.metis.support.behaviors;
 
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
 import edu.tigers.sumatra.ai.metis.ballpossession.BallPossession;
 import edu.tigers.sumatra.ai.metis.ballpossession.EBallPossession;
@@ -61,19 +58,19 @@ import static edu.tigers.sumatra.pathfinder.TrajectoryGenerator.generatePosition
 @RequiredArgsConstructor
 public class PenaltyAreaAttackerBehavior extends ASupportBehavior
 {
-	@Configurable(comment = "Defines whether this behavior is active or not", defValue = "true")
+	@Configurable(comment = "Defines whether this behavior is active or not", defValue = "true", unit = EConfigUnit.BOOLEAN)
 	private static boolean enabled = true;
 
-	@Configurable(comment = "Activation distance from center line [mm]", defValue = "2500.0")
+	@Configurable(comment = "Activation distance from center line", defValue = "2500.0", unit = EConfigUnit.DISTANCE_MM)
 	private static double minDistanceToCenter = 2500.0;
 
-	@Configurable(comment = "Check for n points in each line Segment", defValue = "4")
+	@Configurable(comment = "Check for n points in each line Segment", defValue = "4", unit = EConfigUnit.COUNT)
 	private static int nPoints = 4;
 
-	@Configurable(defValue = "2.0", comment = "Margin between penalty area and bot destination [bot radius]")
+	@Configurable(defValue = "2.0", comment = "Margin between penalty area and bot destination", unit = EConfigUnit.BOT_RADIUS)
 	private static double marginBetweenDestAndPenArea = 2.0;
 
-	@Configurable(defValue = "1250.0", comment = "Closest bot within this distance to a target position claims it. Everyone else receives score 0 at this position")
+	@Configurable(defValue = "1250.0", comment = "Closest bot within this distance to a target position claims it. Everyone else receives score 0 at this position", unit = EConfigUnit.DISTANCE_MM)
 	private static double claimTargetDistance = 1250.0;
 
 	private final PassFactory passFactory = new PassFactory();
@@ -90,7 +87,8 @@ public class PenaltyAreaAttackerBehavior extends ASupportBehavior
 	{
 		passFactory.update(getWFrame());
 		ratedPassFactory.update(getWFrame().getOpponentBots().values(), getWFrame().getOpponentBots().values(),
-				Collections.emptyList());
+				Collections.emptyList(), getAiFrame().getKeeperOpponentId()
+		);
 
 		return kickOrigins.get().values().stream()
 				.map(kickOrigin -> calculatePositionForKickOrigin(botID, kickOrigin.getPos()))

@@ -1,16 +1,12 @@
-/*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.skillsystem.timeseries;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 
 import edu.tigers.sumatra.botmanager.commands.tigerv2.TigerSystemMatchFeedback;
 import edu.tigers.sumatra.data.collector.IExportable;
 import edu.tigers.sumatra.ids.ETeamColor;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 
 /**
@@ -22,11 +18,11 @@ public class ExportableBotOutput implements IExportable
 	private final ETeamColor color;
 	private final long tReceive;
 	private final TigerSystemMatchFeedback feedback;
-	
-	
+
+
 	/**
 	 * Create data structure
-	 * 
+	 *
 	 * @param id
 	 * @param color
 	 * @param tReceive
@@ -40,8 +36,8 @@ public class ExportableBotOutput implements IExportable
 		this.tReceive = tReceive;
 		this.feedback = feedback;
 	}
-	
-	
+
+
 	@Override
 	public List<Number> getNumberList()
 	{
@@ -52,8 +48,8 @@ public class ExportableBotOutput implements IExportable
 		numbers.addAll(feedback.getNumberList());
 		return numbers;
 	}
-	
-	
+
+
 	@Override
 	public List<String> getHeaders()
 	{

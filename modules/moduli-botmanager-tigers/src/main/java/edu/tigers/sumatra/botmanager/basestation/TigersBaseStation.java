@@ -1,11 +1,8 @@
-/*
- * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.botmanager.basestation;
 
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import com.github.g3force.configurable.IConfigClient;
 import com.github.g3force.configurable.IConfigObserver;
 import edu.tigers.sumatra.botmanager.commands.ACommand;
@@ -33,21 +30,21 @@ public class TigersBaseStation implements IConfigObserver
 	private static final String CONFIG_CAT = "botmgr";
 	private static final int BASE_STATION_TIMEOUT = 1000;
 
-	@Configurable(defValue = "192.168.60.210", spezis = { "ROBOCUP", "LAB", "ANDRE", "TISCH" })
+	@Configurable(defValue = "192.168.60.210", spezis = { "ROBOCUP", "LAB", "ANDRE", "TISCH" }, unit = EConfigUnit.URL)
 	private static String host = "192.168.60.210";
 
-	@Configurable(defValue = "10201")
+	@Configurable(defValue = "10201", unit = EConfigUnit.NO_UNIT)
 	private static int dstPort = 10201;
 
 	@Getter
-	@Configurable(spezis = { "ROBOCUP", "LAB", "ANDRE", "TISCH" }, defValue = "20")
+	@Configurable(spezis = { "ROBOCUP", "LAB", "ANDRE", "TISCH" }, defValue = "20", unit = EConfigUnit.NO_UNIT)
 	private static int channel = 20;
 
-	@Configurable(comment = "Fix the runtime regardless of the number of bot that are connected.", defValue = "false")
+	@Configurable(comment = "Fix the runtime regardless of the number of bot that are connected.", defValue = "false", unit = EConfigUnit.BOOLEAN)
 	private static boolean fixedRuntime = false;
 
-	@Configurable(comment = "Max communication slots to open for communication to bots", defValue = "11")
-	private static int maxBots = 11;
+	@Configurable(comment = "Max communication slots to open for communication to bots", defValue = "13", unit = EConfigUnit.COUNT)
+	private static int maxBots = 13;
 
 	private RobustUnicastUdpTransceiver transceiver;
 

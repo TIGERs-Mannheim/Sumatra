@@ -1,21 +1,22 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.metis.targetrater;
 
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.drawable.DrawableAnnotation;
+import edu.tigers.sumatra.drawable.DrawableArrow;
 import edu.tigers.sumatra.drawable.DrawableCircle;
 import edu.tigers.sumatra.drawable.DrawableTriangle;
 import edu.tigers.sumatra.drawable.IDrawableShape;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.geometry.Goal;
+import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.I2DShape;
 import edu.tigers.sumatra.math.SumatraMath;
 import edu.tigers.sumatra.math.circle.ICircle;
 import edu.tigers.sumatra.math.line.ILineSegment;
+import edu.tigers.sumatra.math.line.LineMath;
+import edu.tigers.sumatra.math.line.Lines;
 import edu.tigers.sumatra.math.triangle.Triangle;
 import edu.tigers.sumatra.math.triangle.TriangleMath;
 import edu.tigers.sumatra.math.vector.IVector2;
@@ -49,19 +50,23 @@ public class AngleRangeRater implements ITargetRater
 {
 	private static final DecimalFormat DF = new DecimalFormat("0.00");
 
-	@Configurable(comment = "[s] Max time horizon to consider for moving robots", defValue = "2.0")
+	@Configurable(comment = "Max time horizon to consider for moving robots", defValue = "2.0", unit = EConfigUnit.TIME_S)
 	private static double maxHorizon = 2.0;
 
-	@Configurable(comment = "[s] The time a robot needs to react to the ball movement", defValue = "0.12")
+	@Configurable(comment = "The time a robot needs to react to the ball movement", defValue = "0.12",
+			unit = EConfigUnit.TIME_S)
 	private static double timeForBotToReact = 0.12;
 
-	@Configurable(comment = "[rad] The angle that is considered a safe goal. Any higher angle will not improve the score", defValue = "0.3")
+	@Configurable(comment = "The angle that is considered a safe goal. Any higher angle will not improve the score",
+			defValue = "0.3", unit = EConfigUnit.ANGLE_RAD)
 	private static double probablyAGoalAngle = 0.3;
 
-	@Configurable(comment = "[s] maxVel that considers opponent bots are reacting", defValue = "1.5")
+	@Configurable(comment = "maxVel that considers opponent bots are reacting", defValue = "1.5",
+			unit = EConfigUnit.TIME_S)
 	private static double maxOpponentReactionVel = 1.5;
 
-	@Configurable(comment = "[0-1] How good can the opponents use time before kick to improve the position", defValue = "0.1")
+	@Configurable(comment = "How good can the opponents use time before kick to improve the position",
+			defValue = "0.1", unit = EConfigUnit.PERCENTAGE)
 	private static double timeBeforeReactionUsageFactor = 0.1;
 
 	static
@@ -74,6 +79,9 @@ public class AngleRangeRater implements ITargetRater
 
 	@Setter
 	private Collection<ITrackedBot> obstacles = Collections.emptyList();
+
+	@Setter
+	private BotID keeperID = BotID.noBot();
 
 	/**
 	 * Take care when settings this value.
@@ -110,7 +118,6 @@ public class AngleRangeRater implements ITargetRater
 
 
 	/**
-	 *
 	 * @param segment
 	 * @return
 	 */
@@ -118,6 +125,7 @@ public class AngleRangeRater implements ITargetRater
 	{
 		return new AngleRangeRater(AngleRangeGenerator.forLineSegment(segment));
 	}
+
 
 	@Override
 	public Optional<IRatedTarget> rate(final IVector2 origin)
@@ -135,6 +143,20 @@ public class AngleRangeRater implements ITargetRater
 		movingObstacleGen.setTimeBeforeReactionUsageFactor(timeBeforeReactionUsageFactor);
 
 		var newContext = new LastContext();
+		newContext.customMovementDestinations = obstacles.stream()
+				.filter(bot -> keeperID.equals(bot.getBotId()))
+				.collect(Collectors.toMap(
+						e -> e,
+						bot -> estimateKeeperMovementTarget(origin, bot, angleRangeGenerator.getLineSegment())
+				));
+
+		movingObstacleGen.setCustomMovementDestinations(newContext.getCustomMovementDestinations().entrySet().stream()
+				.collect(Collectors.toMap(
+						e -> e.getKey().getBotId(),
+						Map.Entry::getValue
+				)));
+
+
 		newContext.botTimeToReact =
 				obstacles.stream().collect(Collectors.toMap(Function.identity(), this::getTimeForBotToReact));
 
@@ -182,6 +204,31 @@ public class AngleRangeRater implements ITargetRater
 	}
 
 
+	private IVector2 estimateKeeperMovementTarget(IVector2 kickOrigin, ITrackedBot keeper, ILineSegment goalLine)
+	{
+		var bisector = TriangleMath.bisector(kickOrigin, goalLine.getPathStart(), goalLine.getPathEnd());
+		var targetLine = Lines.segmentFromPoints(
+				LineMath.stepAlongLine(
+						kickOrigin,
+						bisector,
+						Math.min(bisector.distanceTo(kickOrigin) / 2, 2 * Geometry.getBotRadius())
+				),
+				bisector
+		);
+
+		var velAlongLine = targetLine.directionVector().projectOntoThis(keeper.getVel());
+		var velAlongLineLength = velAlongLine.getLength();
+		var acc = velAlongLineLength / keeper.getVel().getLength() * keeper.getMoveConstraints().getAccMax();
+
+		var brkDist = 0.5 * velAlongLineLength * (velAlongLineLength / acc);
+		var closestPoint = targetLine.closestPointOnPath(keeper.getPos());
+
+		return targetLine.closestPointOnPath(
+				closestPoint.addNew(velAlongLine.scaleTo(brkDist * 1000))
+		);
+	}
+
+
 	@Override
 	public List<IDrawableShape> createDebugShapes()
 	{
@@ -193,8 +240,10 @@ public class AngleRangeRater implements ITargetRater
 		var obstacleCircles = lastContext.drawableObstacles();
 		var ranges = lastContext.drawableAngleRanges();
 		var reactions = lastContext.drawableReactionTimes();
-		var time2KickShape = List.of(new DrawableAnnotation(lastContext.origin, DF.format(timeToKick)));
-		return Stream.of(obstacleCircles, ranges, time2KickShape, reactions)
+		var movementDest = lastContext.drawableCustomMovementDestinations();
+		var time2KickShape = List.of(
+				new DrawableAnnotation(lastContext.origin, String.format("timeToKick: %.2f", timeToKick)));
+		return Stream.of(obstacleCircles, ranges, time2KickShape, reactions, movementDest)
 				.flatMap(Collection::stream).map(IDrawableShape.class::cast).toList();
 	}
 
@@ -213,13 +262,16 @@ public class AngleRangeRater implements ITargetRater
 		private List<ICircle> circleObstacles;
 		private List<AngleRange> uncoveredAngleRanges;
 		private Map<ITrackedBot, Double> botTimeToReact;
+		private Map<ITrackedBot, IVector2> customMovementDestinations;
 
 
 		public List<IDrawableShape> drawableReactionTimes()
 		{
 			return botTimeToReact.entrySet().stream().map(
-							e -> new DrawableAnnotation(e.getKey().getPos(), String.format("%.2f", e.getValue()),
-									Vector2.zero()).setColor(Color.BLUE))
+							e -> new DrawableAnnotation(
+									e.getKey().getPos(), String.format("react: %.2f", e.getValue()),
+									Vector2.zero()
+							).setColor(Color.BLUE))
 					.map(IDrawableShape.class::cast)
 					.toList();
 		}
@@ -252,6 +304,15 @@ public class AngleRangeRater implements ITargetRater
 			}
 
 			return shapes;
+		}
+
+
+		public List<IDrawableShape> drawableCustomMovementDestinations()
+		{
+			return customMovementDestinations.entrySet().stream()
+					.map(e -> DrawableArrow.fromPositions(e.getKey().getPos(), e.getValue()).setColor(Color.CYAN))
+					.map(IDrawableShape.class::cast)
+					.toList();
 		}
 	}
 }

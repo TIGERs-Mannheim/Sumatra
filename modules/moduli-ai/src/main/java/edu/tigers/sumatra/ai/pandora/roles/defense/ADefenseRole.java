@@ -1,10 +1,7 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.pandora.roles.defense;
 
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
 import edu.tigers.sumatra.ai.pandora.roles.ARole;
 import edu.tigers.sumatra.ai.pandora.roles.ERole;
@@ -31,15 +28,19 @@ import java.awt.Color;
  */
 public abstract class ADefenseRole extends ARole
 {
-	@Configurable(comment = "The chipped ball will leave the field with the n-th touchdown", defValue = "3")
+	@Configurable(comment = "The chipped ball will leave the field with the n-th touchdown", defValue = "3",
+			unit = EConfigUnit.COUNT)
 	private static int nthChipTouchdownOutOfField = 3;
-	@Configurable(comment = "[mm] Activate kicker if ball is closer than this", defValue = "500.0")
+	@Configurable(comment = "Activate kicker if ball is closer than this", defValue = "500.0",
+			unit = EConfigUnit.DISTANCE_MM)
 	private static double kickerToBallActivationDistance = 500.0;
-	@Configurable(defValue = "10.0", comment = "[mm] Min distance to penalty area")
+	@Configurable(defValue = "10.0", comment = "Min distance to penalty area", unit = EConfigUnit.DISTANCE_MM)
 	private static double minDistToPenaltyArea = 10.0;
-	@Configurable(comment = "[mm] Margin applied to goal for goal shot detection.", defValue = "500.0")
+	@Configurable(comment = "Margin applied to goal for goal shot detection.", defValue = "500.0",
+			unit = EConfigUnit.DISTANCE_MM)
 	private static double goalShotDetectionMargin = 500.0;
-	@Configurable(comment = "[s] Time difference between the idealBotTime and idealBallTime", defValue = "0.3")
+	@Configurable(comment = "Time difference between the idealBotTime and idealBallTime", defValue = "0.3",
+			unit = EConfigUnit.TIME_S)
 	private static double idealTimeToReachDest = 0.3;
 
 
@@ -59,6 +60,11 @@ public abstract class ADefenseRole extends ARole
 
 	protected KickParams calcKickParams()
 	{
+		if (getBot().getRobotInfo().getBotParams().getKickerSpecs().getMaxAbsoluteChipVelocity() < 0.1)
+		{
+			return KickParams.disarm();
+		}
+
 		final double kickSpeed = calculateArmChipSpeedDuringDefense();
 		return KickParams.chip(kickSpeed).withDribblerMode(kickSpeed > 0 ? EDribblerMode.DEFAULT : EDribblerMode.OFF);
 	}
@@ -160,6 +166,12 @@ public abstract class ADefenseRole extends ARole
 	}
 
 
+	protected boolean isCrucial()
+	{
+		return getAiFrame().getTacticalField().getCrucialDefender().contains(getBotID());
+	}
+
+
 	private double adaptKickSpeedToBotVel(double targetAngle, double kickSpeed)
 	{
 		var targetVel = Vector2.fromAngleLength(targetAngle, kickSpeed);
@@ -181,27 +193,9 @@ public abstract class ADefenseRole extends ARole
 		Double time;
 
 
-		public boolean comeToAStopIsFaster()
-		{
-			if (time == null)
-			{
-				return TrajectoryGenerator.isComeToAStopFaster(getBot(), pos);
-			} else
-			{
-				return TrajectoryGenerator.isComeToAStopFasterToReachPointInTime(getBot(), pos, time);
-			}
-		}
-
-
 		public IVector2 validPos()
 		{
-			var validDest = moveToValidDest(pos);
-			if (time == null)
-			{
-				return validDest;
-			}
-
-			return TrajectoryGenerator.generateVirtualPositionToReachPointInTime(getBot(), validDest, time);
+			return moveToValidDest(pos);
 		}
 	}
 }

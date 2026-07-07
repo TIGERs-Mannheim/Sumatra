@@ -1,23 +1,15 @@
-/*
- * *********************************************************
- * Copyright (c) 2009 - 2011, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 21.09.2011
- * Author(s): osteinbrecher
- * *********************************************************
- */
 package edu.tigers.sumatra.ids;
+
+import edu.tigers.sumatra.export.INumberListable;
 
 import java.awt.Color;
 import java.util.ArrayList;
 import java.util.List;
 
-import edu.tigers.sumatra.export.INumberListable;
-
 
 /**
  * Team colors.
- * 
+ *
  * @author Oliver Steinbrecher
  */
 public enum ETeamColor implements INumberListable
@@ -25,16 +17,16 @@ public enum ETeamColor implements INumberListable
 	YELLOW(0),
 	BLUE(1),
 	NEUTRAL(2);
-	
+
 	private final int id;
-	
-	
+
+
 	ETeamColor(final int id)
 	{
 		this.id = id;
 	}
-	
-	
+
+
 	/**
 	 * @return the id
 	 */
@@ -42,8 +34,8 @@ public enum ETeamColor implements INumberListable
 	{
 		return id;
 	}
-	
-	
+
+
 	/**
 	 * @param color
 	 * @return
@@ -54,19 +46,19 @@ public enum ETeamColor implements INumberListable
 		{
 			case YELLOW:
 				return BLUE;
-			
+
 			case BLUE:
 				return YELLOW;
-			
+
 			case NEUTRAL:
 				return NEUTRAL;
-			
+
 			default:
 				throw new IllegalStateException();
 		}
 	}
-	
-	
+
+
 	/**
 	 * @return
 	 */
@@ -74,8 +66,8 @@ public enum ETeamColor implements INumberListable
 	{
 		return new ETeamColor[] { YELLOW, BLUE };
 	}
-	
-	
+
+
 	/**
 	 * @return
 	 */
@@ -83,8 +75,8 @@ public enum ETeamColor implements INumberListable
 	{
 		return opposite(this);
 	}
-	
-	
+
+
 	/**
 	 * @return
 	 */
@@ -102,11 +94,11 @@ public enum ETeamColor implements INumberListable
 				throw new IllegalStateException();
 		}
 	}
-	
-	
+
+
 	/**
 	 * Returns true if {@code color} is set to either {@code BLUE} or {@code YELLOW}
-	 * 
+	 *
 	 * @param color
 	 * @return true if the parameter is set to a color
 	 */
@@ -114,19 +106,19 @@ public enum ETeamColor implements INumberListable
 	{
 		return color != NEUTRAL;
 	}
-	
-	
+
+
 	/**
 	 * Returns true if {@code color} is set to either {@code BLUE} or {@code YELLOW}
-	 * 
+	 *
 	 * @return true if the parameter is set to a color
 	 */
 	public boolean isNonNeutral()
 	{
 		return isNonNeutral(this);
 	}
-	
-	
+
+
 	@Override
 	public List<Number> getNumberList()
 	{
@@ -134,8 +126,8 @@ public enum ETeamColor implements INumberListable
 		numbers.add(this.getId());
 		return numbers;
 	}
-	
-	
+
+
 	/**
 	 * @param value
 	 * @return

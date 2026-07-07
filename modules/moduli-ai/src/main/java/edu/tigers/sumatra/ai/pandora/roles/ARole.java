@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.pandora.roles;
 
 import edu.tigers.sumatra.ai.athena.AthenaAiFrame;
@@ -28,7 +24,6 @@ import lombok.Getter;
 import lombok.extern.log4j.Log4j2;
 
 import java.util.List;
-import java.util.Map;
 import java.util.function.Supplier;
 
 
@@ -460,9 +455,11 @@ public abstract class ARole
 		protected IVector2 adjustMovePositionWhenItsInvalid(IVector2 dest)
 		{
 			IVector2 dest1 = adjustPositionWhenNearBot(dest);
-			return SkillUtil.movePosOutOfPenAreaWrtBall(dest1, getBall(),
+			return SkillUtil.movePosOutOfPenAreaWrtBall(
+					dest1, getBall(),
 					Geometry.getPenaltyAreaTheir().withMargin(Geometry.getBotRadius()),
-					Geometry.getPenaltyAreaOur().withMargin(Geometry.getBotRadius()));
+					Geometry.getPenaltyAreaOur().withMargin(Geometry.getBotRadius())
+			);
 		}
 	}
 
@@ -473,11 +470,5 @@ public abstract class ARole
 		{
 			super(supplier, ARole.this);
 		}
-	}
-
-
-	public Map<IEvent, Map<IState, IState>> getStateGraph()
-	{
-		return stateMachine.getTransitions();
 	}
 }

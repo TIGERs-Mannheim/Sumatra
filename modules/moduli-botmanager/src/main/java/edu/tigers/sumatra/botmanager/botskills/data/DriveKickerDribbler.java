@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.botmanager.botskills.data;
 
 import edu.tigers.sumatra.bot.MoveConstraints;
@@ -85,14 +81,10 @@ public class DriveKickerDribbler
 
 	public MoveConstraints getMoveConstraints()
 	{
-		MoveConstraints moveCon = new MoveConstraints();
-		moveCon.setVelMax(getVelMax());
-		moveCon.setVelMaxW(getVelMaxW());
-		moveCon.setAccMax(getAccMax());
-		moveCon.setAccMaxW(getAccMaxW());
-		moveCon.setJerkMax(DriveLimits.MAX_JERK);
-		moveCon.setJerkMaxW(DriveLimits.MAX_JERK_W);
-
-		return moveCon;
+		return MoveConstraints.ZERO
+				.withVelMax(getVelMax())
+				.withVelMaxW(getVelMaxW())
+				.withAccMax(getAccMax())
+				.withAccMaxW(getAccMaxW());
 	}
 }

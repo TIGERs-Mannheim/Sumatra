@@ -1,13 +1,11 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.vision;
 
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.cam.data.CamRobot;
 import edu.tigers.sumatra.ids.BotID;
+import lombok.extern.log4j.Log4j2;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -18,12 +16,13 @@ import java.util.Map;
 /**
  * Track the overall quality/visibility of each robot by counting the number of detection over a fixed time horizon.
  */
+@Log4j2
 public class RobotQualityInspector
 {
-	@Configurable(defValue = "20.0", comment = "The time horizon [s] back into past to measure the quality")
+	@Configurable(defValue = "20.0", comment = "The time horizon back into past to measure the quality", unit = EConfigUnit.TIME_S)
 	private static double trackingTimeHorizon = 20.0;
 
-	@Configurable(defValue = "0.05", comment = "If the quality of a robot is below this, it will not be passed out")
+	@Configurable(defValue = "0.05", comment = "If the quality of a robot is below this, it will not be passed out", unit = EConfigUnit.PERCENTAGE)
 	private static double robotQualityThreshold = 0.05;
 
 	static
@@ -66,6 +65,12 @@ public class RobotQualityInspector
 		}
 
 		double trackingTime = (camRobot.getTimestamp() - initialTimestamp) / 1e9;
+		if (trackingTime < 0)
+		{
+			// May happen, as we run on camRobots on all cameras
+			log.debug("Negative tracking time: {}", trackingTime);
+			return;
+		}
 		double time = Math.min(trackingTime, trackingTimeHorizon);
 		maxPossibleDetectionsPerCam = time / avgDt;
 	}
@@ -78,9 +83,9 @@ public class RobotQualityInspector
 		{
 			while (!timestamps.isEmpty())
 			{
-				if (timestamps.get(0) < timestamp)
+				if (timestamps.getFirst() < timestamp)
 				{
-					timestamps.remove(0);
+					timestamps.removeFirst();
 				} else
 				{
 					break;

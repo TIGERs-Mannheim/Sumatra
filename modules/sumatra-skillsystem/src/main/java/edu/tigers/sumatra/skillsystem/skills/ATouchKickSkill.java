@@ -1,10 +1,7 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.skillsystem.skills;
 
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.botmanager.botskills.data.EKickerDevice;
 import edu.tigers.sumatra.skillsystem.skills.util.KickParams;
 import lombok.Setter;
@@ -15,7 +12,7 @@ import lombok.Setter;
  */
 public abstract class ATouchKickSkill extends ABallHandlingSkill
 {
-	@Configurable(defValue = "1.2")
+	@Configurable(defValue = "1.2", unit = EConfigUnit.VELOCITY_M)
 	protected static double maxBallSpeed = 1.2;
 
 	@Setter

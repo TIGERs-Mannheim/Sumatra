@@ -1,11 +1,8 @@
-/*
- * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.skillsystem.skills.keeper;
 
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.math.line.Lines;
 import edu.tigers.sumatra.math.vector.IVector2;
@@ -18,7 +15,7 @@ import java.util.List;
 
 public abstract class AInterceptBallDestinationCalculator extends AKeeperDestinationCalculator
 {
-	@Configurable(comment = "The radius to try intercepting the chip-kicked ball within", defValue = "500.0")
+	@Configurable(comment = "The radius to try intercepting the chip-kicked ball within", defValue = "500.0", unit = EConfigUnit.DISTANCE_MM)
 	protected static double maxChipInterceptDist = 500.0;
 
 	static
@@ -29,7 +26,7 @@ public abstract class AInterceptBallDestinationCalculator extends AKeeperDestina
 
 	protected DestWithTrajectory buildDestWithTrajectory(IVector2 dest, double tt)
 	{
-		var trajectory = TrajectoryGenerator.generatePositionTrajectoryToReachPointInTime(getTBot(), dest, tt);
+		var trajectory = TrajectoryGenerator.generateTimedPositionTrajectory(getTBot(), dest, tt);
 		var posAtTt = trajectory.getPositionMM(tt);
 		var distAtTt = posAtTt.distanceTo(dest);
 		var velAtTt = trajectory.getVelocity(tt).getLength();

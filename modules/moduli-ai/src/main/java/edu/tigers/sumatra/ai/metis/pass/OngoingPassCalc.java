@@ -1,16 +1,13 @@
-/*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.metis.pass;
 
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.ai.metis.ACalculator;
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
 import edu.tigers.sumatra.ai.metis.kicking.OngoingPass;
-import edu.tigers.sumatra.ai.metis.kicking.Pass;
 import edu.tigers.sumatra.ai.metis.offense.action.EOffensiveActionType;
 import edu.tigers.sumatra.ai.metis.offense.situation.zone.OffensiveZones;
+import edu.tigers.sumatra.ai.metis.pass.rating.RatedPass;
 import edu.tigers.sumatra.data.TimeLimitedBuffer;
 import edu.tigers.sumatra.drawable.DrawableAnnotation;
 import edu.tigers.sumatra.drawable.DrawableArrow;
@@ -38,34 +35,34 @@ import java.util.Optional;
 @Log4j2
 public class OngoingPassCalc extends ACalculator
 {
-	@Configurable(defValue = "0.5", comment = "Time horizon [s] of the pass buffer")
+	@Configurable(defValue = "0.5", comment = "Time horizon of the pass buffer", unit = EConfigUnit.TIME_S)
 	private static double passBufferHorizon = 0.5;
 
-	@Configurable(defValue = "0.1", comment = "[s]")
+	@Configurable(defValue = "0.1", unit = EConfigUnit.TIME_S)
 	private static double timePassReceiverHasToArriveBeforePassToReceiveSuccessful = 0.1;
 
-	@Configurable(defValue = "0.3", comment = "[m/s]")
+	@Configurable(defValue = "0.3", unit = EConfigUnit.VELOCITY_M)
 	private static double maxVelToReceiveBallSuccessfully = 0.3;
 
-	@Configurable(defValue = "10", comment = "Max passes to keep in buffer")
+	@Configurable(defValue = "10", comment = "Max passes to keep in buffer", unit = EConfigUnit.COUNT)
 	private static int maxPassesToRemember = 10;
 
-	@Configurable(defValue = "45.0", comment = "min Angle to accept new KickEvent direction [deg]")
+	@Configurable(defValue = "45.0", comment = "min Angle to accept new KickEvent direction ", unit = EConfigUnit.ANGLE_DEG)
 	private static double maxAcceptableKickEventAngleChange = 45.0;
 
-	@Configurable(defValue = "0.5", comment = "Min score to accept pass")
+	@Configurable(defValue = "0.5", comment = "Min score to accept pass", unit = EConfigUnit.PERCENTAGE)
 	private static double minBallKickWithPassFitScore = 0.5;
 
-	@Configurable(defValue = "0.7", comment = "Min velocity [m/s] of the ball to consider")
+	@Configurable(defValue = "0.7", comment = "Min velocity of the ball to consider", unit = EConfigUnit.VELOCITY_M)
 	private static double minKickVelocity = 0.7;
 
-	@Configurable(defValue = "0.2", comment = "Min kick fit age [s] after which passes can be rejected")
+	@Configurable(defValue = "0.2", comment = "Min kick fit age after which passes can be rejected", unit = EConfigUnit.TIME_S)
 	private static double minKickFitAge = 0.2;
 
-	@Configurable(defValue = "0.2", comment = "hyt bonus score [0,1] will be applied twice very early after the kick")
+	@Configurable(defValue = "0.2", comment = "hysteresis bonus score will be applied twice very early after the kick", unit = EConfigUnit.PERCENTAGE)
 	private static double keepCurrentPassHyst = 0.2;
 
-	private final TimeLimitedBuffer<Pass> passBuffer = new TimeLimitedBuffer<>();
+	private final TimeLimitedBuffer<RatedPass> passBuffer = new TimeLimitedBuffer<>();
 
 	private OngoingPass ongoingPass;
 
@@ -110,7 +107,7 @@ public class OngoingPassCalc extends ACalculator
 		oldKickFitState = kickFitState;
 		visualizeKickFitState(kickFitState);
 
-		List<Pass> consideredPasses = new ArrayList<>(passBuffer.getElements());
+		List<RatedPass> consideredPasses = new ArrayList<>(passBuffer.getElements());
 		getOngoingPass().map(OngoingPass::getPass).ifPresent(consideredPasses::add);
 
 		IVector2 averagePassTarget = getAveragePassTarget(consideredPasses, kickFitState);
@@ -125,7 +122,7 @@ public class OngoingPassCalc extends ACalculator
 		{
 			// after some time we trust the kick fit state and choose the pass close to the kick fit state
 			ongoingPass = consideredPasses.stream()
-					.filter(pass -> getWFrame().getTigerBotsAvailable().containsKey(pass.getReceiver()))
+					.filter(pass -> getWFrame().getTigerBotsAvailable().containsKey(pass.getPass().getReceiver()))
 					.max(Comparator.comparing(p -> ballKickWithPassFitScore(kickFitState, p)))
 					.filter(pass -> acceptPass(kickFitState, pass))
 					.map(this::updatePass)
@@ -134,8 +131,8 @@ public class OngoingPassCalc extends ACalculator
 		{
 			// initially we do not trust the kick fit state and only consider passes that are close to the average pass target
 			ongoingPass = consideredPasses.stream()
-					.filter(pass -> getWFrame().getTigerBotsAvailable().containsKey(pass.getReceiver()))
-					.min(Comparator.comparing(e -> e.getKick().getTarget().distanceTo(averagePassTarget)))
+					.filter(pass -> getWFrame().getTigerBotsAvailable().containsKey(pass.getPass().getReceiver()))
+					.min(Comparator.comparing(e -> e.getPass().getKick().getTarget().distanceTo(averagePassTarget)))
 					.filter(pass -> isOngoingPassTrustworthy(pass, kickFitState))
 					.map(this::updatePass)
 					.orElse(null);
@@ -147,9 +144,11 @@ public class OngoingPassCalc extends ACalculator
 
 	private void generateZoneGeometry()
 	{
-		OffensiveZones.OffensiveZoneGeometry geometry = new OffensiveZones.OffensiveZoneGeometry(Geometry.getFieldWidth(),
+		OffensiveZones.OffensiveZoneGeometry geometry = new OffensiveZones.OffensiveZoneGeometry(
+				Geometry.getFieldWidth(),
 				Geometry.getFieldLength(), Geometry.getPenaltyAreaTheir().getPosCorner(),
-				Geometry.getPenaltyAreaTheir().getNegCorner());
+				Geometry.getPenaltyAreaTheir().getNegCorner()
+		);
 		if (oldGeometry == null || !oldGeometry.equals(geometry))
 		{
 			zones = OffensiveZones.generateDefaultOffensiveZones(geometry);
@@ -168,30 +167,32 @@ public class OngoingPassCalc extends ACalculator
 				.stream()
 				.map(botId -> getAiFrame().getPrevFrame().getTacticalField().getOffensiveActions().get(botId))
 				.filter(Objects::nonNull)
-				.anyMatch(ratedAction -> ratedAction.getAction().getType() == EOffensiveActionType.PASS);
+				.anyMatch(ratedAction ->
+						ratedAction.getAction().getType() == EOffensiveActionType.PASS ||
+								ratedAction.getAction().getType() == EOffensiveActionType.FINISHER_PASS);
 
 		var activePass = getActivePass();
 
 		if (isPassAction)
 		{
 			activePass
-					.filter(p -> getWFrame().getBots().containsKey(p.getShooter()))
+					.filter(p -> getWFrame().getBots().containsKey(p.getPass().getShooter()))
 					.ifPresent(this::addPassIfOrientationMatches);
 		}
 		passBuffer.reduceByAbsoluteDuration(getWFrame().getTimestamp());
 	}
 
 
-	private IVector2 getAveragePassTarget(List<Pass> consideredPasses, KickedBall kickFitState)
+	private IVector2 getAveragePassTarget(List<RatedPass> consideredPasses, KickedBall kickFitState)
 	{
 		IVector2 sumOfPassTargets = Vector2.zero();
 		int numOfUsedPasses = 0;
-		for (Pass pass : consideredPasses)
+		for (var pass : consideredPasses)
 		{
-			IVector2 passTarget = pass.getKick().getTarget();
+			IVector2 passTarget = pass.getPass().getKick().getTarget();
 
 			double angleDiff = kickFitState.getKickVel().getXYVector()
-					.angleToAbs(pass.getKick().getKickVel().getXYVector())
+					.angleToAbs(pass.getPass().getKick().getKickVel().getXYVector())
 					.orElse(AngleMath.PI_TWO);
 			if (angleDiff < AngleMath.deg2rad(maxAcceptableKickEventAngleChange))
 			{
@@ -208,15 +209,16 @@ public class OngoingPassCalc extends ACalculator
 	 *
 	 * @param pass
 	 */
-	private void addPassIfOrientationMatches(Pass pass)
+	private void addPassIfOrientationMatches(RatedPass pass)
 	{
-		var shooter = getWFrame().getBot(pass.getShooter());
+		var shooter = getWFrame().getBot(pass.getPass().getShooter());
 		if (shooter == null)
 		{
 			return;
 		}
 		double shooterOrientation = shooter.getOrientation();
-		double angleDiff = AngleMath.diffAbs(pass.getKick().getKickVel().getXYVector().getAngle(), shooterOrientation);
+		double angleDiff = AngleMath.diffAbs(
+				pass.getPass().getKick().getKickVel().getXYVector().getAngle(), shooterOrientation);
 		if (angleDiff < AngleMath.deg2rad(30))
 		{
 			passBuffer.add(getWFrame().getTimestamp(), pass);
@@ -224,11 +226,12 @@ public class OngoingPassCalc extends ACalculator
 	}
 
 
-	private void visualizePassBuffer(List<Pass> consideredPasses)
+	private void visualizePassBuffer(List<RatedPass> consideredPasses)
 	{
 		consideredPasses.forEach(e ->
 				getShapes(EAiShapesLayer.OFFENSE_ONGOING_PASS)
-						.add(new DrawableCircle(Circle.createCircle(e.getKick().getTarget(), 30), Color.ORANGE).setFill(true)
+						.add(new DrawableCircle(
+								Circle.createCircle(e.getPass().getKick().getTarget(), 30), Color.ORANGE).setFill(true)
 						));
 	}
 
@@ -242,7 +245,7 @@ public class OngoingPassCalc extends ACalculator
 	}
 
 
-	private boolean acceptPass(KickedBall kickFitState, Pass pass)
+	private boolean acceptPass(KickedBall kickFitState, RatedPass pass)
 	{
 		if (!isKickFitStateTrustworthy(kickFitState))
 		{
@@ -264,18 +267,19 @@ public class OngoingPassCalc extends ACalculator
 	}
 
 
-	private OngoingPass updatePass(Pass pass)
+	private OngoingPass updatePass(RatedPass pass)
 	{
-		if (ongoingPass != null && ongoingPass.getPass().equals(pass))
+		if (ongoingPass != null && ongoingPass.getPass().getPass().equals(pass.getPass()))
 		{
 			// ongoingPass is still valid
-			var receivingBot = getWFrame().getTiger(pass.getReceiver());
+			var receivingBot = getWFrame().getTiger(pass.getPass().getReceiver());
 			var receiverKickerPos = receivingBot.getBotKickerPos();
 			var ballPos = getBall().getPos();
 			if (!ongoingPass.isPassLineBeenReachedByReceiver() &&
 					getBall().getTrajectory().getTravelLine().distanceTo(receiverKickerPos) < Geometry.getBotRadius() &&
 					receivingBot.getVel().getLength2() < maxVelToReceiveBallSuccessfully &&
-					getWFrame().getBall().getTrajectory().getTimeByDist(ballPos.distanceTo(pass.getKick().getTarget()))
+					getWFrame().getBall().getTrajectory()
+							.getTimeByDist(ballPos.distanceTo(pass.getPass().getKick().getTarget()))
 							> timePassReceiverHasToArriveBeforePassToReceiveSuccessful)
 			{
 				// update ongoing pass with ball reached Information
@@ -287,9 +291,9 @@ public class OngoingPassCalc extends ACalculator
 			return ongoingPass;
 		}
 
-		long startTime = getWFrame().getTimestamp();
-		var originatingZone = zones.getZoneByPoint(pass.getKick().getSource());
-		var targetZone = zones.getZoneByPoint(pass.getKick().getTarget());
+		long startTime = oldKickFitState.getKickTimestamp();
+		var originatingZone = zones.getZoneByPoint(pass.getPass().getKick().getSource());
+		var targetZone = zones.getZoneByPoint(pass.getPass().getKick().getTarget());
 
 		if (originatingZone.isEmpty() || targetZone.isEmpty())
 		{
@@ -308,15 +312,15 @@ public class OngoingPassCalc extends ACalculator
 	}
 
 
-	private double ballKickWithPassFitScore(KickedBall ballKickFitState, Pass pass)
+	private double ballKickWithPassFitScore(KickedBall ballKickFitState, RatedPass pass)
 	{
 		double angleDiff = ballKickFitState.getKickVel().getXYVector()
-				.angleToAbs(pass.getKick().getKickVel().getXYVector())
+				.angleToAbs(pass.getPass().getKick().getKickVel().getXYVector())
 				.orElse(AngleMath.PI_TWO);
 
 		double score = SumatraMath.relative(angleDiff, AngleMath.deg2rad(maxAcceptableKickEventAngleChange), 0);
 		var currentOngoingPass = getOngoingPass();
-		if (currentOngoingPass.isPresent() && currentOngoingPass.get().getPass().equals(pass))
+		if (currentOngoingPass.isPresent() && currentOngoingPass.get().getPass().getPass().equals(pass.getPass()))
 		{
 			score += keepCurrentPassHyst;
 		}
@@ -332,7 +336,7 @@ public class OngoingPassCalc extends ACalculator
 	}
 
 
-	private boolean isOngoingPassTrustworthy(Pass pass, KickedBall kickFitState)
+	private boolean isOngoingPassTrustworthy(RatedPass pass, KickedBall kickFitState)
 	{
 		var timeSinceKick = (getWFrame().getTimestamp() - kickFitState.getKickTimestamp()) / 1e9;
 		if (timeSinceKick < 0.3 * minKickFitAge)
@@ -347,12 +351,12 @@ public class OngoingPassCalc extends ACalculator
 	}
 
 
-	private Optional<Pass> getActivePass()
+	private Optional<RatedPass> getActivePass()
 	{
 		var keeperPass = getAiFrame().getPrevFrame().getTacticalField().getKeeperPass();
 		if (keeperPass != null)
 		{
-			return Optional.of(keeperPass);
+			return Optional.of(RatedPass.builder().pass(keeperPass).build());
 		}
 		return getAiFrame().getPrevFrame().getTacticalField().getOffensiveStrategy()
 				.getAttackerBot()
@@ -363,8 +367,8 @@ public class OngoingPassCalc extends ACalculator
 
 	private void drawOngoingPass(OngoingPass pass)
 	{
-		IVector2 kickOrigin = pass.getPass().getKick().getSource();
-		IVector2 kickTarget = pass.getPass().getKick().getTarget();
+		IVector2 kickOrigin = pass.getPass().getPass().getKick().getSource();
+		IVector2 kickTarget = pass.getPass().getPass().getKick().getTarget();
 		IVector2 kickLine = kickTarget.subtractNew(kickOrigin);
 		getShapes(EAiShapesLayer.OFFENSE_ONGOING_PASS).add(
 				new DrawableAnnotation(kickOrigin, pass.getOriginatingZone().name(), Color.BLUE));
@@ -375,10 +379,9 @@ public class OngoingPassCalc extends ACalculator
 						.setColor(new Color(0, 255, 191, 100))
 		);
 		getShapes(EAiShapesLayer.OFFENSE_ONGOING_PASS).addAll(
-				pass.getPass().createDrawables().stream()
+				pass.getPass().getPass().createDrawables().stream()
 						.map(s -> s.setColor(new Color(0, 255, 191, 100)))
 						.toList()
 		);
 	}
-
 }

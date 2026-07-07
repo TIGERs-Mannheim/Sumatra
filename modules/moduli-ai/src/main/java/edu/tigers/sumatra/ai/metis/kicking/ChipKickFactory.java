@@ -1,11 +1,8 @@
-/*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.metis.kicking;
 
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.botmanager.botskills.data.EKickerDevice;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.geometry.RuleConstraints;
@@ -26,13 +23,13 @@ import java.util.Optional;
  */
 public class ChipKickFactory
 {
-	@Configurable(defValue = "50.0", comment = "Front width of chip kick detection quadrilateral")
+	@Configurable(defValue = "50.0", comment = "Front width of chip kick detection quadrilateral", unit = EConfigUnit.DISTANCE_MM)
 	private static double offsetWidthFront = 50.0;
 
-	@Configurable(defValue = "65.0", comment = "Back width of chip kick detection quadrilateral")
+	@Configurable(defValue = "65.0", comment = "Back width of chip kick detection quadrilateral", unit = EConfigUnit.DISTANCE_MM)
 	private static double offsetWidthBack = 65.0;
 
-	@Configurable(defValue = "0.25", comment = "Prediction time for robot obstacles.")
+	@Configurable(defValue = "0.25", comment = "Prediction time for robot obstacles.", unit = EConfigUnit.TIME_S)
 	private static double botPredictionTime = 0.25;
 
 

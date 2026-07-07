@@ -1,12 +1,9 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra.gui.botcenter.presenter;
 
 import edu.tigers.sumatra.botmanager.TigersBotManager;
 import edu.tigers.sumatra.botmanager.basestation.TigersBaseStation;
 import edu.tigers.sumatra.botmanager.commands.basestation.BaseStationEthStats;
-import edu.tigers.sumatra.botmanager.commands.basestation.BaseStationWifiStats;
+import edu.tigers.sumatra.botmanager.commands.basestation.BaseStationWifiStatsV2;
 import edu.tigers.sumatra.botmanager.communication.ENetworkState;
 import edu.tigers.sumatra.gui.botcenter.view.basestation.BaseStationControlPanel.IBaseStationControlPanelObserver;
 import edu.tigers.sumatra.gui.botcenter.view.basestation.BaseStationPanel;
@@ -54,7 +51,7 @@ public class BaseStationPresenter
 	}
 
 
-	private void onNewBaseStationWifiStats(final BaseStationWifiStats stats)
+	private void onNewBaseStationWifiStats(final BaseStationWifiStatsV2 stats)
 	{
 		wifiStatsThrottler.execute(() -> SwingUtilities.invokeLater(() -> bsPanel.getWifiStatsPanel().setStats(stats)));
 	}
@@ -62,10 +59,7 @@ public class BaseStationPresenter
 
 	private void onNewBaseStationEthStats(final BaseStationEthStats stats)
 	{
-		ethStatsThrottler.execute(() -> SwingUtilities.invokeLater(() -> {
-			bsPanel.getEthStatsPanel().setStats(stats);
-			bsPanel.getNtpStatsPanel().setStats(stats);
-		}));
+		ethStatsThrottler.execute(() -> SwingUtilities.invokeLater(() -> bsPanel.getEthStatsPanel().setStats(stats)));
 	}
 
 

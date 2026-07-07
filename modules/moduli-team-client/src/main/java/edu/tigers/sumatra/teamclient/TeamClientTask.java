@@ -1,11 +1,8 @@
-/*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.teamclient;
 
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import com.google.protobuf.ByteString;
 import edu.tigers.sumatra.ai.AIInfoFrame;
 import edu.tigers.sumatra.geometry.Geometry;
@@ -22,7 +19,7 @@ import edu.tigers.sumatra.referee.proto.SslGcRconTeam.TeamToController;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -39,7 +36,7 @@ public class TeamClientTask implements Runnable, GameControllerProtocol.IConnect
 	private static final String DEFAULT_HOSTNAME = "localhost";
 	private static final int DEFAULT_PORT = 10008;
 	private static final long PING_INTERVAL = 1_000_000_000;
-	@Configurable(comment = "KEEP THIS OFF AT ALL TIME - deactivates automatic requesting of a keeper ID", defValue = "false")
+	@Configurable(comment = "KEEP THIS OFF AT ALL TIME - deactivates automatic requesting of a keeper ID", defValue = "false", unit = EConfigUnit.BOOLEAN)
 	private static boolean ignoreMissingKeeper = false;
 
 	static

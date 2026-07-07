@@ -1,10 +1,7 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.metis.support.behaviors;
 
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
 import edu.tigers.sumatra.ai.metis.ballpossession.BallPossession;
 import edu.tigers.sumatra.ai.metis.ballpossession.EBallPossession;
@@ -17,6 +14,7 @@ import edu.tigers.sumatra.drawable.DrawableLine;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.circle.Circle;
+import edu.tigers.sumatra.time.TimestampTimer;
 import lombok.RequiredArgsConstructor;
 
 import java.awt.Color;
@@ -29,21 +27,20 @@ import static edu.tigers.sumatra.ai.metis.defense.data.EDefenseBallThreatSourceT
 @RequiredArgsConstructor
 public class AggressiveMan2ManMarkerBehavior extends ASupportBehavior
 {
-	@Configurable(comment = "Defines whether this behavior is active of not", defValue = "true")
+	@Configurable(comment = "Defines whether this behavior is active of not", defValue = "true", unit = EConfigUnit.BOOLEAN)
 	private static boolean enabled = true;
-	@Configurable(comment = "If validity is higher than this, the Behavior will be used", defValue = "0.3")
+	@Configurable(comment = "If validity is higher than this, the Behavior will be used", defValue = "0.3", unit = EConfigUnit.PERCENTAGE)
 	private static double minValidity = 0.3;
-	@Configurable(comment = "Weight for the redirect threat", defValue = "1.0")
+	@Configurable(comment = "Weight for the redirect threat", defValue = "1.0", unit = EConfigUnit.FACTOR)
 	private static double weightRedirectThreat = 1.0;
-	@Configurable(comment = "Weight for the PassDistance", defValue = "1.0")
+	@Configurable(comment = "Weight for the PassDistance", defValue = "1.0", unit = EConfigUnit.FACTOR)
 	private static double weightPassDistance = 1.0;
-	@Configurable(comment = "Constant to divide by to calculate validity", defValue = "2000.0")
-	private static double validityDivisor = 2000.0;
 
 	private final Supplier<BallPossession> ballPossession;
 	private final Supplier<Map<BotID, DefenseBotThreat>> supporterToBotThreatMapping;
 	private final Supplier<DefenseBallThreat> defenseBallThreat;
 	private final Man2ManMarkerPositionFinder man2ManMarkerPositionFinder = new Man2ManMarkerPositionFinder();
+	private final TimestampTimer ballInsidePenAreaTheirTimer = new TimestampTimer(0.3);
 
 
 	@Override
@@ -113,10 +110,28 @@ public class AggressiveMan2ManMarkerBehavior extends ASupportBehavior
 	private double getMinValidity()
 	{
 		var gameState = getAiFrame().getGameState();
-		if (gameState.isNextStandardSituationForThem() || gameState.isFreeKickForThem())
+		if (gameState.isNextStandardSituationForThem() || gameState.isFreeKickForThem() || isBallInsidePenAreaTheir())
 		{
 			return 0;
 		}
 		return minValidity;
+	}
+
+
+	private boolean isBallInsidePenAreaTheir()
+	{
+		var penAreaTheir = Geometry.getPenaltyAreaTheir().withMargin(Geometry.getBotRadius());
+		var ballPosFuture = getWFrame().getBall().getTrajectory().getPosByTime(0.3).getXYVector();
+		if (penAreaTheir.isPointInShape(getWFrame().getBall().getPos())
+				&& penAreaTheir.isPointInShape(ballPosFuture)
+				&& getWFrame().getBall().getVel().getLength() < 0.3)
+		{
+			ballInsidePenAreaTheirTimer.update(getWFrame().getTimestamp());
+		} else
+		{
+			ballInsidePenAreaTheirTimer.reset();
+		}
+
+		return ballInsidePenAreaTheirTimer.isTimeUp(getWFrame().getTimestamp());
 	}
 }

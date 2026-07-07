@@ -1,6 +1,3 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra.gui.rcm.view;
 
 import edu.tigers.sumatra.rcm.DynamicAxis;
@@ -150,7 +147,7 @@ public class ButtonSelectAction
 				}
 				if (withinTolerance(pollData, compsValueMap.get(pressedComponent)))
 				{
-					log.info("Axis range: [" + minValue + ";" + maxValue + "]");
+					log.info("Axis range: [{};{}]", minValue, maxValue);
 					eComp.component = new DynamicAxis(pressedComponent, minValue, maxValue);
 					pressedComponents.add(eComp);
 				}

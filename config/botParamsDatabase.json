@@ -13,12 +13,8 @@
         "velMax": 3.2,
         "accMax": 3.0,
         "brkMax": 5.1,
-        "jerkMax": 20.0,
         "velMaxW": 20.0,
-        "accMaxW": 50.0,
-        "jerkMaxW": 1000.0,
-        "velMaxFast": 3.0,
-        "accMaxFast": 4.0
+        "accMaxW": 50.0
       },
       "dimensions": {
         "center2DribblerDist": 75.0,
@@ -42,12 +38,8 @@
         "velMax": 3.1,
         "accMax": 3.4,
         "brkMax": 6.0,
-        "jerkMax": 20.0,
         "velMaxW": 20.0,
-        "accMaxW": 50.0,
-        "jerkMaxW": 1000.0,
-        "velMaxFast": 3.0,
-        "accMaxFast": 4.0
+        "accMaxW": 50.0
       },
       "dimensions": {
         "center2DribblerDist": 75.0,
@@ -69,14 +61,10 @@
     "TIGERs v2020": {
       "movementLimits": {
         "velMax": 3.0,
-        "accMax": 3.0,
-        "brkMax": 6.0,
-        "jerkMax": 20.0,
+        "accMax": 2.5,
+        "brkMax": 5.0,
         "velMaxW": 20.0,
-        "accMaxW": 50.0,
-        "jerkMaxW": 1000.0,
-        "velMaxFast": 4.0,
-        "accMaxFast": 3.0
+        "accMaxW": 50.0
       },
       "dimensions": {
         "center2DribblerDist": 71.5,
@@ -89,10 +77,10 @@
         "maxAbsoluteStraightVelocity": 7.5
       },
       "dribblerSpecs": {
-        "defaultSpeed": 2.0,
-        "defaultForce": 4.0,
-        "highPowerSpeed": 2.0,
-        "highPowerForce": 6.0
+        "defaultSpeed": 3.0,
+        "defaultForce": 5.0,
+        "highPowerSpeed": 3.0,
+        "highPowerForce": 5.0
       }
     },
     "Simulation": {
@@ -100,12 +88,8 @@
         "velMax": 3.0,
         "accMax": 3.0,
         "brkMax": 6.0,
-        "jerkMax": 20.0,
         "velMaxW": 20.0,
-        "accMaxW": 50.0,
-        "jerkMaxW": 1000.0,
-        "velMaxFast": 4.0,
-        "accMaxFast": 3.5
+        "accMaxW": 50.0
       },
       "dimensions": {
         "center2DribblerDist": 71.5,
@@ -129,12 +113,8 @@
         "velMax": 2.8,
         "accMax": 3.0,
         "brkMax": 5.8,
-        "jerkMax": 20.0,
         "velMaxW": 20.0,
-        "accMaxW": 50.0,
-        "jerkMaxW": 1000.0,
-        "velMaxFast": 3.0,
-        "accMaxFast": 3.0
+        "accMaxW": 50.0
       },
       "dimensions": {
         "center2DribblerDist": 75.0,
@@ -158,12 +138,8 @@
         "velMax": 3.0,
         "accMax": 3.5,
         "brkMax": 6.0,
-        "jerkMax": 20.0,
         "velMaxW": 20.0,
-        "accMaxW": 50.0,
-        "jerkMaxW": 1000.0,
-        "velMaxFast": 4.0,
-        "accMaxFast": 3.0
+        "accMaxW": 50.0
       },
       "dimensions": {
         "center2DribblerDist": 74.0,
@@ -187,12 +163,8 @@
         "velMax": 3.0,
         "accMax": 3.0,
         "brkMax": 3.0,
-        "jerkMax": 20.0,
         "velMaxW": 20.0,
-        "accMaxW": 50.0,
-        "jerkMaxW": 1000.0,
-        "velMaxFast": 3.0,
-        "accMaxFast": 4.0
+        "accMaxW": 50.0
       },
       "dimensions": {
         "center2DribblerDist": 75.0,
@@ -216,12 +188,8 @@
         "velMax": 3.2,
         "accMax": 3.3,
         "brkMax": 5.6,
-        "jerkMax": 20.0,
         "velMaxW": 20.0,
-        "accMaxW": 50.0,
-        "jerkMaxW": 1000.0,
-        "velMaxFast": 3.0,
-        "accMaxFast": 4.0
+        "accMaxW": 50.0
       },
       "dimensions": {
         "center2DribblerDist": 75.0,
@@ -245,12 +213,8 @@
         "velMax": 2.2,
         "accMax": 2.0,
         "brkMax": 3.0,
-        "jerkMax": 20.0,
         "velMaxW": 20.0,
-        "accMaxW": 50.0,
-        "jerkMaxW": 1000.0,
-        "velMaxFast": 3.0,
-        "accMaxFast": 4.0
+        "accMaxW": 50.0
       },
       "dimensions": {
         "center2DribblerDist": 75.0,
@@ -274,12 +238,8 @@
         "velMax": 2.5,
         "accMax": 1.5,
         "brkMax": 3.0,
-        "jerkMax": 20.0,
         "velMaxW": 20.0,
-        "accMaxW": 50.0,
-        "jerkMaxW": 1000.0,
-        "velMaxFast": 2.5,
-        "accMaxFast": 2.0
+        "accMaxW": 50.0
       },
       "dimensions": {
         "center2DribblerDist": 75.0,
@@ -300,15 +260,11 @@
     },
     "Junior Superteam": {
       "movementLimits": {
-        "velMax": 1.0,
+        "velMax": 1.5,
         "accMax": 2.0,
         "brkMax": 6.0,
-        "jerkMax": 20.0,
         "velMaxW": 20.0,
-        "accMaxW": 50.0,
-        "jerkMaxW": 1000.0,
-        "velMaxFast": 1.0,
-        "accMaxFast": 2.0
+        "accMaxW": 50.0
       },
       "dimensions": {
         "center2DribblerDist": 71.5,

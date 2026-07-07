@@ -1,16 +1,15 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.pandora.roles.defense;
 
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
+import edu.tigers.sumatra.ai.metis.defense.data.EDefenseThreatType;
 import edu.tigers.sumatra.ai.pandora.roles.ARole;
 import edu.tigers.sumatra.ai.pandora.roles.ERole;
 import edu.tigers.sumatra.drawable.DrawableCircle;
 import edu.tigers.sumatra.drawable.DrawableLine;
 import edu.tigers.sumatra.geometry.Geometry;
+import edu.tigers.sumatra.ids.AObjectID;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.AngleMath;
 import edu.tigers.sumatra.math.line.ILineSegment;
@@ -28,7 +27,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 
 /**
@@ -36,10 +34,10 @@ import java.util.stream.Stream;
  */
 public class CenterBackRole extends AOuterDefenseRole
 {
-	@Configurable(comment = "Distance [mm] from bot pos to final dest at which the rush back state switches to normal defend.", defValue = "2000.0")
+	@Configurable(comment = "Distance from bot pos to final dest at which the rush back state switches to normal defend.", defValue = "2000.0", unit = EConfigUnit.DISTANCE_MM)
 	private static double rushBackToDefendSwitchThreshold = 2000.0;
 
-	@Configurable(comment = "Start with rushing back until close to dest", defValue = "true")
+	@Configurable(comment = "Start with rushing back until close to dest", defValue = "true", unit = EConfigUnit.BOOLEAN)
 	private static boolean useRushBackState = true;
 
 	@Setter
@@ -141,24 +139,40 @@ public class CenterBackRole extends AOuterDefenseRole
 	@Override
 	protected Set<BotID> ignoredBots()
 	{
-		if (closeCompanions.contains(getBotID()))
+		var botIds = new HashSet<AObjectID>();
+
+		if (threat.getType() == EDefenseThreatType.BALL)
 		{
-			return Stream.concat(
-							companions.stream()
-									.map(ARole::getBotID)
-									.filter(botID -> !botID.equals(getBotID()))
-									.filter(botID -> !closeCompanions.contains(botID)),
-							companions.stream()
-									.filter(bot -> !bot.getBotID().equals(getBotID()))
-									.filter(bot -> closeCompanions.contains(bot.getBotID()))
-									.filter(this::companionIsMoving)
-									.map(ARole::getBotID)
-					)
-					.collect(Collectors.toUnmodifiableSet());
+			// Ignore collisions with closest opponent bot due to their high risk of hindering positioning and becoming the major threat.
+			botIds.add(getAiFrame().getTacticalField().getOpponentClosestToBall().getBotId());
 		} else
 		{
-			return Set.of();
+			botIds.add(threat.getObjectId());
 		}
+
+		if (closeCompanions.contains(getBotID()))
+		{
+			botIds.addAll(
+					companions.stream()
+							.map(ARole::getBotID)
+							.filter(botID -> !botID.equals(getBotID()))
+							.filter(botID -> !closeCompanions.contains(botID))
+							.toList()
+			);
+			botIds.addAll(
+					companions.stream()
+							.filter(bot -> !bot.getBotID().equals(getBotID()))
+							.filter(bot -> closeCompanions.contains(bot.getBotID()))
+							.filter(this::companionIsMoving)
+							.map(ARole::getBotID)
+							.toList()
+			);
+		}
+
+		return botIds.stream()
+				.filter(AObjectID::isBot)
+				.map(BotID.class::cast)
+				.collect(Collectors.toUnmodifiableSet());
 	}
 
 
@@ -189,7 +203,7 @@ public class CenterBackRole extends AOuterDefenseRole
 
 
 	/**
-	 * Rushing back from the front to the back of the field, using fastMove mode.
+	 * Rushing back from the front to the back of the field.
 	 */
 	private class RushBackState extends MoveState
 	{
@@ -199,10 +213,8 @@ public class CenterBackRole extends AOuterDefenseRole
 
 
 		@Override
-		protected void onInit()
+		protected void onEntry()
 		{
-			skill.getMoveConstraints().setFastMove(true);
-
 			ILineSegment protectionLine = protectionLine();
 
 			IVector2 normalDir = protectionLine.directionVector().getNormalVector();
@@ -216,10 +228,10 @@ public class CenterBackRole extends AOuterDefenseRole
 		{
 			if (isNotBetweenBallAndGoal())
 			{
-				skill.getMoveCon().setCustomObstacles(offensePassObstacles());
+				skill.setMoveCon(skill.getMoveCon().withCustomObstacles(offensePassObstacles()));
 			} else
 			{
-				skill.getMoveCon().setCustomObstacles(List.of());
+				skill.setMoveCon(skill.getMoveCon().withCustomObstacles(List.of()));
 			}
 
 			IVector2 finalDest = findRushBackDest();

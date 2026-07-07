@@ -1,11 +1,8 @@
-/*
- * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.metis.support.behaviors.repulsive;
 
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.ai.metis.offense.action.RatedOffensiveAction;
 import edu.tigers.sumatra.ai.pandora.plays.EPlay;
 import edu.tigers.sumatra.bot.BotState;
@@ -34,50 +31,50 @@ import java.util.Set;
 public class RepulsivePassReceiverForceGenerator
 {
 	// Sigmas
-	@Configurable(comment = "[mm]", defValue = "2500.0")
+	@Configurable(defValue = "2500.0", unit = EConfigUnit.STD_DEVIATION_MM)
 	private static double sigmaBallAttraction = 2500;
-	@Configurable(comment = "[mm]", defValue = "400.0")
+	@Configurable(defValue = "400.0", unit = EConfigUnit.STD_DEVIATION_MM)
 	private static double sigmaBehindOpponentLine = 400;
-	@Configurable(comment = "[mm]", defValue = "400.0")
+	@Configurable(defValue = "400.0", unit = EConfigUnit.STD_DEVIATION_MM)
 	private static double sigmaFreeLine = 400;
 	// Magnitudes
-	@Configurable(comment = "[mm]", defValue = "3500.0")
+	@Configurable(defValue = "3500.0", unit = EConfigUnit.DISTANCE_MM)
 	private static double magnitudeBallAttraction = 3500;
-	@Configurable(comment = "[mm]", defValue = "-1000.0")
+	@Configurable(defValue = "-1000.0", unit = EConfigUnit.DISTANCE_MM)
 	private static double magnitudeBehindOpponentLine = -1000;
-	@Configurable(comment = "[mm]", defValue = "2500.0")
+	@Configurable(defValue = "2500.0", unit = EConfigUnit.DISTANCE_MM)
 	private static double magnitudeFreeLine = 2500;
-	@Configurable(comment = "Optimal pass distance", defValue = "2000.0")
+	@Configurable(comment = "Optimal pass distance", defValue = "2000.0", unit = EConfigUnit.DISTANCE_MM)
 	private static double radiusMeanBallDistance = 2000.0;
-	@Configurable(comment = "degree", defValue = "30.0")
+	@Configurable(defValue = "30.0", unit = EConfigUnit.ANGLE_DEG)
 	private static double minAngleForFreeLine = 30;
 
 	// Sigmas
-	@Configurable(comment = "[mm]", defValue = "1250.0")
+	@Configurable(defValue = "1250.0", unit = EConfigUnit.STD_DEVIATION_MM)
 	private static double sigmaOpponentBot = 1250;
-	@Configurable(comment = "[mm]", defValue = "1800.0")
+	@Configurable(defValue = "1800.0", unit = EConfigUnit.STD_DEVIATION_MM)
 	private static double sigmaTeamBot = 1800.0;
-	@Configurable(comment = "[mm]", defValue = "300.0")
+	@Configurable(defValue = "300.0", unit = EConfigUnit.STD_DEVIATION_MM)
 	private static double sigmaFieldBorderRepel = 300;
-	@Configurable(comment = "[mm]", defValue = "300.0")
+	@Configurable(defValue = "300.0", unit = EConfigUnit.STD_DEVIATION_MM)
 	private static double sigmaBallRepel = 300;
-	@Configurable(comment = "[mm]", defValue = "400.0")
+	@Configurable(defValue = "400.0", unit = EConfigUnit.STD_DEVIATION_MM)
 	private static double sigmaGoalSight = 400;
-	@Configurable(comment = "[mm]", defValue = "400.0")
+	@Configurable(defValue = "400.0", unit = EConfigUnit.STD_DEVIATION_MM)
 	private static double sigmaPassLine = 400;
 
 	// Magnitudes
-	@Configurable(comment = "[mm]", defValue = "-1500.0")
+	@Configurable(defValue = "-1500.0", unit = EConfigUnit.DISTANCE_MM)
 	private static double magnitudeOpponentBot = -1500.0;
-	@Configurable(comment = "[mm]", defValue = "-1750.0")
+	@Configurable(defValue = "-1750.0", unit = EConfigUnit.DISTANCE_MM)
 	private static double magnitudeTeamBot = -1750.0;
-	@Configurable(comment = "[mm]", defValue = "-3000.0")
+	@Configurable(defValue = "-3000.0", unit = EConfigUnit.DISTANCE_MM)
 	private static double magnitudeFieldBorderRepel = -3000;
-	@Configurable(comment = "[mm]", defValue = "-2000.0")
+	@Configurable(defValue = "-2000.0", unit = EConfigUnit.DISTANCE_MM)
 	private static double magnitudeBallRepel = -2000;
-	@Configurable(comment = "[mm]", defValue = "-2500.0")
+	@Configurable(defValue = "-2500.0", unit = EConfigUnit.DISTANCE_MM)
 	private static double magnitudeGoalSight = -2500;
-	@Configurable(comment = "[mm]", defValue = "-2500.0")
+	@Configurable(defValue = "-2500.0", unit = EConfigUnit.DISTANCE_MM)
 	private static double magnitudePassLine = -2500;
 
 	static
@@ -110,7 +107,8 @@ public class RepulsivePassReceiverForceGenerator
 			Collection<ITrackedBot> supporter,
 			BotState affectedBot,
 			double sigma,
-			double magnitude)
+			double magnitude
+	)
 	{
 		return supporter.stream()
 				.filter(b -> !b.getBotId().equals(affectedBot.getBotId()))
@@ -125,7 +123,8 @@ public class RepulsivePassReceiverForceGenerator
 		return offensiveActions.values().stream()
 				.map(e -> e.getAction().getPass())
 				.filter(Objects::nonNull)
-				.map(pass -> Lines.segmentFromPoints(pass.getKick().getSource(), pass.getKick().getTarget()))
+				.map(pass -> Lines.segmentFromPoints(
+						pass.getPass().getKick().getSource(), pass.getPass().getKick().getTarget()))
 				.map(line -> line.closestPointOnPath(affectedBot.getPos()))
 				.map(referencePoint -> new Force(referencePoint, sigmaPassLine, magnitudePassLine))
 				.toList();
@@ -208,9 +207,11 @@ public class RepulsivePassReceiverForceGenerator
 	}
 
 
-	public List<Force> getRepulsivePassReceiverForces(WorldFrame worldFrame, BotState affectedBot,
+	public List<Force> getRepulsivePassReceiverForces(
+			WorldFrame worldFrame, BotState affectedBot,
 			Collection<ITrackedBot> supporter,
-			Collection<ITrackedBot> opponents)
+			Collection<ITrackedBot> opponents
+	)
 	{
 		double distToBallSqr = affectedBot.getPos().distanceToSqr(worldFrame.getBall().getPos());
 		int idx = (int) desiredBots.get(EPlay.SUPPORT).stream()

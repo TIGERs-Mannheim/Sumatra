@@ -1,6 +1,3 @@
-/*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra.vision.kick.estimators.chip;
 
 import edu.tigers.sumatra.cam.data.CamBall;

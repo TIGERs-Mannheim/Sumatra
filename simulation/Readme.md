@@ -9,21 +9,21 @@ Then, pull the required docker images, using one of the following methods:
 
 1. Pull from TIGERs GitLab registry (requires login):
 
-```shell
-# Create an access token in GitLab and use it to login (only for TIGERs members)
-docker login registry.gitlab.tigers-mannheim.de
-# Pull the images
-docker compose --profile watch pull
-```
+    ```shell
+    # Create an access token in GitLab and use it to login (only for TIGERs members)
+    docker login registry.gitlab.tigers-mannheim.de
+    # Pull the images
+    docker compose --profile watch pull
+    ```
 
 2. Build sumatra image locally:
 
-```shell
-# Build image with Jib
-./gradlew jibDockerBuild
-# Pull remaining images (ignore errors about not being able to pull sumatra)
-docker compose --profile watch pull
-```
+    ```shell
+    # Build image with Jib
+    ./gradlew jibDockerBuild
+    # Pull remaining images (ignore errors about not being able to pull sumatra)
+    docker compose --profile watch pull
+    ```
 
 ## Activate statistics collection
 

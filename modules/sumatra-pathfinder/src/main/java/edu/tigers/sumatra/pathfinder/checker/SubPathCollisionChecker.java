@@ -1,12 +1,9 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.pathfinder.checker;
 
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
-import edu.tigers.sumatra.bot.IMoveConstraints;
+import com.github.g3force.configurable.EConfigUnit;
+import edu.tigers.sumatra.bot.MoveConstraints;
 import edu.tigers.sumatra.drawable.DrawablePlanarCurve;
 import edu.tigers.sumatra.drawable.ShapeMap;
 import edu.tigers.sumatra.math.vector.IVector2;
@@ -33,7 +30,7 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class SubPathCollisionChecker
 {
-	@Configurable(comment = "The step size in [s] to use for stepping from current position to sub destination", defValue = "0.2")
+	@Configurable(comment = "The step size in to use for stepping from current position to sub destination", defValue = "0.2", unit = EConfigUnit.TIME_S)
 	private static double stepSizeOnSubPath = 0.2;
 
 	static
@@ -48,7 +45,7 @@ public class SubPathCollisionChecker
 	private final List<IObstacle> movingObstacles;
 
 	private final ShapeMap shapeMap;
-	private final IMoveConstraints moveConstraints;
+	private final MoveConstraints moveConstraints;
 	private final IVector2 dest;
 	private final List<PathFinderResult> rejectedResults = new ArrayList<>();
 

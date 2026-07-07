@@ -1,11 +1,3 @@
-/*
- * *********************************************************
- * Copyright (c) 2009 - 2013, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 09.06.2013
- * Author(s): AndreR
- * *********************************************************
- */
 package edu.tigers.sumatra.botmanager.commands.basestation;
 
 import edu.tigers.sumatra.botmanager.commands.ACommand;

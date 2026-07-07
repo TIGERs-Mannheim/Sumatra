@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.botmanager;
 
 import edu.tigers.sumatra.bot.ERobotHealthState;
@@ -88,7 +84,8 @@ public class RobotInfoProvider implements IRobotInfoProvider
 				.withBotParams(bot.getBotParams())
 				.withChip(mc.getSkill().getDevice().equals(EKickerDevice.CHIP))
 				.withArmed(mc.getSkill().getMode().equals(EKickerMode.ARM))
-				.withDribbleSpeed((float) mc.getSkill().getDribbleSpeed())
+				.withDribbleSpeedSet((float) mc.getSkill().getDribbleSpeed())
+				.withDribbleSpeedFeedback((float) fb.getDribbleSpeed())
 				.withHardwareId(fb.getHardwareId())
 				.withInternalState(fb.getInternalState().orElse(null))
 				.withKickerLevelRelative((float) fb.getKickerLevelRelative())

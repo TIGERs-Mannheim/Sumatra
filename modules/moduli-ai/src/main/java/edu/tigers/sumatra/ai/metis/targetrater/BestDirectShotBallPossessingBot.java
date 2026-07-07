@@ -1,11 +1,8 @@
-/*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.metis.targetrater;
 
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.drawable.DrawableCircle;
 import edu.tigers.sumatra.drawable.DrawableLine;
 import edu.tigers.sumatra.drawable.DrawableTriangle;
@@ -43,16 +40,16 @@ import java.util.Optional;
 public class BestDirectShotBallPossessingBot
 {
 
-	@Configurable(comment = "Angle which indicates a shot in this angle is a goal in almost every case", defValue = "0.3")
+	@Configurable(comment = "Angle which indicates a shot in this angle is a goal in almost every case", defValue = "0.3", unit = EConfigUnit.ANGLE_RAD)
 	private static double probablyAGoalAngle = 0.3;
 
-	@Configurable(comment = "opponent shot speed", defValue = "8.0")
+	@Configurable(comment = "opponent shot speed", defValue = "8.0", unit = EConfigUnit.VELOCITY_M)
 	private static double shotVelocityOpponent = 8.0;
 
-	@Configurable(comment = "Factor used to describe how often the opponent reaches its maximum velocity and acceleration", defValue = "0.8")
+	@Configurable(comment = "Factor used to describe how often the opponent reaches its maximum velocity and acceleration", defValue = "0.8", unit = EConfigUnit.PERCENTAGE)
 	private static double opponentAccuracy = 0.8;
 
-	@Configurable(comment = "Delay which a opponent has to recognise and react on an incoming shot", defValue = "0.3")
+	@Configurable(comment = "Delay which a opponent has to recognise and react on an incoming shot", defValue = "0.3", unit = EConfigUnit.TIME_S)
 	private static double opponentReactionTime = 0.3;
 
 
@@ -161,8 +158,10 @@ public class BestDirectShotBallPossessingBot
 			{
 				double radius = Geometry.getBotRadius()
 						+ opponentAccuracy * 1000 * Math.max(timePassed - opponentReactionTime, 0)
-								* Math.min(bot.getMoveConstraints().getAccMax() * (timePassed - opponentReactionTime),
-										bot.getMoveConstraints().getVelMax());
+						* Math.min(
+						bot.getMoveConstraints().getAccMax() * (timePassed - opponentReactionTime),
+						bot.getMoveConstraints().getVelMax()
+				);
 
 				VaguePosition vaguePosition = new VaguePosition(bot.getPosByTime(timePassed), radius);
 

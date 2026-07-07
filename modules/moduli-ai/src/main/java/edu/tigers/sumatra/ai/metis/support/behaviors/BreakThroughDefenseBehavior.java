@@ -1,10 +1,7 @@
-/*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.metis.support.behaviors;
 
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
 import edu.tigers.sumatra.ai.metis.kicking.EBallReceiveMode;
 import edu.tigers.sumatra.ai.metis.kicking.PassFactory;
@@ -51,35 +48,35 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class BreakThroughDefenseBehavior extends ASupportBehavior
 {
-	@Configurable(comment = "Defines whether this behavior is active of not", defValue = "true")
+	@Configurable(comment = "Defines whether this behavior is active of not", defValue = "true", unit = EConfigUnit.BOOLEAN)
 	private static boolean enabled = true;
 
-	@Configurable(comment = "Defender width", defValue = "500")
+	@Configurable(comment = "Defender width", defValue = "500", unit = EConfigUnit.DISTANCE_MM)
 	private static int defensiveCircleWidth = 500;
 
-	@Configurable(comment = "Min gap size for attak", defValue = "500")
+	@Configurable(comment = "Min gap size for attak", defValue = "500", unit = EConfigUnit.DISTANCE_MM)
 	private static int minGapSize = 800;
 
 	@Getter
-	@Configurable(comment = "Max number of team members at penalty area", defValue = "1")
+	@Configurable(comment = "Max number of team members at penalty area", defValue = "1", unit = EConfigUnit.COUNT)
 	private static int maxNumberAtPenaltyArea = 1;
 
-	@Configurable(comment = "Always try to keep the specified margin from the PenArea [bot radius]", defValue = "2.5")
+	@Configurable(comment = "Always try to keep the specified margin from the PenArea", defValue = "2.5", unit = EConfigUnit.BOT_RADIUS)
 	private static double penAreaSafetyMargin = 2.5;
 
-	@Configurable(comment = "Only consider a position if passScore > Threshold", defValue = "0.15")
+	@Configurable(comment = "Only consider a position if passScore > Threshold", defValue = "0.15", unit = EConfigUnit.PERCENTAGE)
 	private static double passScoreThreshold = 0.15;
 
-	@Configurable(comment = "Area to limit the number of tiger bots to [mm]", defValue = "1000.0")
+	@Configurable(comment = "Area to limit the number of tiger bots to", defValue = "1000.0", unit = EConfigUnit.DISTANCE_MM)
 	private static double penAreaSearchRadius = 1000.0;
 
-	@Configurable(comment = "How many defenders are allowed near a breakthrough point", defValue = "3")
+	@Configurable(comment = "How many defenders are allowed near a breakthrough point", defValue = "3", unit = EConfigUnit.COUNT)
 	private static int opponentsLimit = 3;
 
-	@Configurable(comment = "Radius around possible position to check for nearby defenders", defValue = "1500.0")
+	@Configurable(comment = "Radius around possible position to check for nearby defenders", defValue = "1500.0", unit = EConfigUnit.DISTANCE_MM)
 	private static double searchCircleRadius = 1500.0;
 
-	@Configurable(comment = "Score of the viability that should be computed by using the loneliness rating [0-1]", defValue = "0.75")
+	@Configurable(comment = "Score of the viability that should be computed by using the loneliness rating", defValue = "0.75", unit = EConfigUnit.PERCENTAGE)
 	private static double maximumLonelinessScore = 0.75;
 
 	private final PassFactory passFactory = new PassFactory();
@@ -91,7 +88,8 @@ public class BreakThroughDefenseBehavior extends ASupportBehavior
 	{
 		passFactory.update(getWFrame());
 		ratedPassFactory.update(getWFrame().getOpponentBots().values(), getWFrame().getOpponentBots().values(),
-				Collections.emptyList());
+				Collections.emptyList(), getAiFrame().getKeeperOpponentId()
+		);
 
 		if (!getAiFrame().getGameState().isRunning())
 		{

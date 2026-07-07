@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.rcm;
 
 import com.github.cliftonlabs.json_simple.JsonException;
@@ -103,7 +99,14 @@ public class RcmActionMap
 				RcmActionMapping mapping = RcmActionMapping.fromJSON(jsonObj);
 				actionMappings.add(mapping);
 			}
-			configValues.replaceAll((k, v) -> (Double) jsonMap.get(k.name()));
+			configValues.replaceAll((k, v) -> {
+				Object value = jsonMap.get(k.name());
+				if (value instanceof Number number)
+				{
+					return number.doubleValue();
+				}
+				throw new IllegalArgumentException("Invalid config value type for key: " + k.name());
+			});
 			configName = file.getName();
 			log.info("Loaded {}", file.getName());
 		} catch (IOException err)

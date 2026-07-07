@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.math.circle;
 
 import edu.tigers.sumatra.math.AngleMath;
@@ -420,7 +416,7 @@ public class Circle implements ICircle
 	@Override
 	public IVector2 stepAlongPath(double stepSize)
 	{
-		var angle = AngleMath.normalizeAngle(stepSize / getLength() * AngleMath.PI_TWO);
+		var angle = AngleMath.normalizeAngle(stepSize / radius);
 		return center.addNew(Vector2.fromX(radius).turn(angle));
 	}
 
@@ -436,5 +432,12 @@ public class Circle implements ICircle
 		{
 			return anglePointOnPath * radius;
 		}
+	}
+
+
+	@Override
+	public IVector2 getTangentialDirection(double stepSize)
+	{
+		return Vector2.fromAngle(AngleMath.normalizeAngle(stepSize / radius) + AngleMath.PI_HALF);
 	}
 }

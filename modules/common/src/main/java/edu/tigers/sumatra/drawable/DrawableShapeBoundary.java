@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.drawable;
 
 import edu.tigers.sumatra.math.I2DShape;
@@ -10,7 +6,7 @@ import edu.tigers.sumatra.math.boundary.IShapeBoundary;
 import edu.tigers.sumatra.math.circle.IArc;
 import edu.tigers.sumatra.math.circle.ICircle;
 import edu.tigers.sumatra.math.line.ILineSegment;
-import org.apache.commons.lang.NotImplementedException;
+import org.apache.commons.lang3.NotImplementedException;
 
 import java.awt.Color;
 import java.awt.Graphics2D;

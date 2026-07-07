@@ -1,10 +1,8 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.skillsystem.skills;
 
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
+import edu.tigers.sumatra.bot.MoveConstraints;
 import edu.tigers.sumatra.drawable.DrawableArrow;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.math.AngleMath;
@@ -27,37 +25,39 @@ import java.awt.Color;
 @NoArgsConstructor
 public class TouchKickSkill extends ATouchKickSkill
 {
-	@Configurable(defValue = "HIGH_POWER")
+	@Configurable(defValue = "HIGH_POWER", unit = EConfigUnit.NO_UNIT)
 	private static EDribblerMode dribblerMode = EDribblerMode.HIGH_POWER;
 
-	@Configurable(defValue = "20", comment = "Maximum angular velocity [rad/s] for this skill")
+	@Configurable(defValue = "20", comment = "Maximum angular velocity for this skill", unit = EConfigUnit.VELOCITY_ANGULAR_RAD)
 	private static double maxAngularVelocity = 20;
 
-	@Configurable(defValue = "2", comment = "Maximum acceleration [m/s²] when having ball contact")
+	@Configurable(defValue = "2", comment = "Maximum acceleration when having ball contact", unit = EConfigUnit.ACCELERATION_M)
 	private static double ballContactAccMax = 2;
 
-	@Configurable(defValue = "25.0", comment = "Maximum rotation acc [rad/s²] when having ball contact")
+	@Configurable(defValue = "25.0", comment = "Maximum rotation acc when having ball contact", unit = EConfigUnit.ACCELERATION_ANGULAR_RAD)
 	private static double ballContactAccMaxW = 25.0;
 
-	@Configurable(defValue = "0.047", comment = "Lookahead [s] on the orientation for aiming")
+	@Configurable(defValue = "0.047", comment = "Lookahead on the orientation for aiming", unit = EConfigUnit.TIME_S)
 	private static double orientationLookaheadKickerArm = 0.047;
 
-	@Configurable(defValue = "3.0", comment = "[deg]")
+	@Configurable(defValue = "3.0", unit = EConfigUnit.ANGLE_DEG)
 	private static double targetReachedArmEarlyOverstepCheck = 3.0;
 
-	@Configurable(defValue = "0.01", comment = "Lookahead [s] on the orientation for aiming for simulation")
+	@Configurable(defValue = "0.01", comment = "Lookahead on the orientation for aiming for simulation", unit = EConfigUnit.TIME_S)
 	private static double orientationLookaheadKickerArmSimulation = 0.01;
 
-	@Configurable(defValue = "true", comment = "Arm kicker early to compensate the rotation during the transmission delay")
+	@Configurable(defValue = "true", comment = "Arm kicker early to compensate the rotation during the transmission delay", unit = EConfigUnit.BOOLEAN)
 	private static boolean enableArmEarlyReality = true;
 
-	@Configurable(defValue = "true", comment = "Same as enableArmEarlyReality, but this configurable is used while simulating")
+	@Configurable(defValue = "true", comment = "Same as enableArmEarlyReality, but this configurable is used while simulating", unit = EConfigUnit.BOOLEAN)
 	private static boolean enableArmEarlySimulation = true;
 
-	@Configurable(defValue = "true", comment = "Enable kick direction compensation")
+	@Configurable(defValue = "true", comment = "Enable kick direction compensation", unit = EConfigUnit.BOOLEAN)
 	private static boolean enableKickDirectionCompensation = true;
 
 	private double maxBallSpeedThreshold;
+
+	private IVector2 oldTarget;
 
 	private IVector2 initBallPos;
 
@@ -78,7 +78,7 @@ public class TouchKickSkill extends ATouchKickSkill
 	public void doEntryActions()
 	{
 		super.doEntryActions();
-		getMoveCon().setBallObstacle(false);
+		setMoveCon(getMoveCon().withBallObstacle(false));
 		initBallPos = getBall().getPos();
 		maxBallSpeedThreshold = Math.max(maxBallSpeed, getBall().getVel().getLength2() + 0.1);
 		keepKickerArmedTimer.reset();
@@ -90,13 +90,14 @@ public class TouchKickSkill extends ATouchKickSkill
 	{
 		if (getTBot().getBallContact().hadContact(0.1))
 		{
-			getMoveConstraints().setAccMax(ballContactAccMax);
-			getMoveConstraints().setAccMaxW(ballContactAccMaxW);
+			setMoveConstraints(getMoveConstraints()
+					.withAccMax(ballContactAccMax)
+					.withAccMaxW(ballContactAccMaxW));
 		} else
 		{
-			getMoveConstraints().resetLimits(getBot().getBotParams().getMovementLimits());
+			setMoveConstraints(MoveConstraints.from(getBot().getBotParams().getMovementLimits()));
 		}
-		getMoveConstraints().setVelMaxW(maxAngularVelocity);
+		setMoveConstraints(getMoveConstraints().withVelMaxW(maxAngularVelocity));
 
 		if (armKicker())
 		{
@@ -141,6 +142,10 @@ public class TouchKickSkill extends ATouchKickSkill
 		{
 			// starting timer
 			keepKickerArmedTimer.start(getWorldFrame().getTimestamp());
+			oldTarget = target;
+		} else if (oldTarget != null && oldTarget.distanceTo(target) > 500)
+		{
+			keepKickerArmedTimer.reset();
 		}
 
 		return isFocused() || armEarly || (keepKickerArmedTimer.isRunning() && !keepKickerArmedTimer.isTimeUp(
@@ -181,6 +186,9 @@ public class TouchKickSkill extends ATouchKickSkill
 
 		IVector2 plannedKick = Vector2.fromAngleLength(plannedBallVelAngle, getKickSpeed());
 		IVector2 kick = plannedKick.subtractNew(compensationVel);
+
+		getShapes().get(ESkillShapesLayer.KICK_SKILL)
+				.add(DrawableArrow.fromPositions(getBallPos(), plannedKick).setColor(Color.RED.darker()));
 
 		getShapes().get(ESkillShapesLayer.KICK_SKILL_COMP)
 				.add(new DrawableArrow(getBallPos(), kick.multiplyNew(1000), Color.ORANGE.darker()));

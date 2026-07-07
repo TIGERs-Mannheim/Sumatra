@@ -1,19 +1,18 @@
-/*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra.ai;
 
-import edu.tigers.sumatra.ai.ares.AresData;
-import edu.tigers.sumatra.ai.ares.IAresData;
 import edu.tigers.sumatra.ai.athena.AthenaAiFrame;
 import edu.tigers.sumatra.ai.athena.IPlayStrategy;
 import edu.tigers.sumatra.ai.athena.PlayStrategy;
+import edu.tigers.sumatra.ai.data.BotAiInformation;
 import edu.tigers.sumatra.ai.metis.MetisAiFrame;
 import edu.tigers.sumatra.ai.metis.TacticalField;
+import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.wp.data.WorldFrame;
 import lombok.Builder;
 import lombok.Value;
 import lombok.experimental.Delegate;
+
+import java.util.Map;
 
 
 /**
@@ -26,7 +25,6 @@ public class AIInfoFrame
 	@Delegate
 	BaseAiFrame baseAiFrame;
 	AthenaAiFrame athenaAiFrame;
-	IAresData aresData;
 
 
 	/**
@@ -49,7 +47,6 @@ public class AIInfoFrame
 		return AIInfoFrame.builder()
 				.baseAiFrame(baseAiFrame)
 				.athenaAiFrame(athenaAiFrame)
-				.aresData(new AresData())
 				.build();
 	}
 
@@ -63,5 +60,11 @@ public class AIInfoFrame
 	public IPlayStrategy getPlayStrategy()
 	{
 		return athenaAiFrame.getPlayStrategy();
+	}
+
+
+	public Map<BotID, BotAiInformation> getBotAiInformation()
+	{
+		return athenaAiFrame.getBotAiInformation();
 	}
 }

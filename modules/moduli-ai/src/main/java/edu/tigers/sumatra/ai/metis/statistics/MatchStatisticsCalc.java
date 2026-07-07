@@ -1,10 +1,7 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.metis.statistics;
 
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.ai.metis.ACalculator;
 import edu.tigers.sumatra.ai.metis.ballpossession.BallPossession;
 import edu.tigers.sumatra.ai.metis.botdistance.BotDistance;
@@ -47,7 +44,7 @@ public class MatchStatisticsCalc extends ACalculator
 	@Getter
 	private MatchStats matchStatistics;
 
-	@Configurable(defValue = "true", comment = "Enable statistics calculation")
+	@Configurable(defValue = "true", comment = "Enable statistics calculation", unit = EConfigUnit.BOOLEAN)
 	private static boolean enabled = true;
 
 

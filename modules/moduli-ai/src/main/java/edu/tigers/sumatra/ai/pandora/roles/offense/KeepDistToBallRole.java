@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.pandora.roles.offense;
 
 import edu.tigers.sumatra.ai.common.KeepDistanceToBall;
@@ -12,7 +8,6 @@ import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.geometry.RuleConstraints;
 import edu.tigers.sumatra.math.line.LineMath;
 import edu.tigers.sumatra.math.vector.IVector2;
-import edu.tigers.sumatra.skillsystem.skills.MoveToSkill;
 
 
 /**
@@ -35,14 +30,8 @@ public class KeepDistToBallRole extends ARole
 	}
 
 
-	private class DefaultState extends RoleState<MoveToSkill>
+	private class DefaultState extends MoveState
 	{
-		public DefaultState()
-		{
-			super(MoveToSkill::new);
-		}
-
-
 		@Override
 		protected void onUpdate()
 		{

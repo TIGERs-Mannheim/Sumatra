@@ -1,9 +1,7 @@
-/*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.autoreferee.engine.detector;
 
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.geometry.RuleConstraints;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.referee.data.EGameState;
@@ -19,13 +17,13 @@ import java.util.Optional;
  */
 public class BallSpeedingDetector extends AGameEventDetector
 {
-	@Configurable(comment = "[m/s] The ball is not considered to be too fast if above this threshold to prevent false positives", defValue = "12.0")
+	@Configurable(comment = "The ball is not considered to be too fast if above this threshold to prevent false positives", defValue = "12.0", unit = EConfigUnit.VELOCITY_M)
 	private static double topSpeedThreshold = 12.0;
 
-	@Configurable(comment = "Max waiting time [s]", defValue = "0.8")
+	@Configurable(comment = "Max waiting time", defValue = "0.8", unit = EConfigUnit.TIME_S)
 	private static double maxWaitingTime = 0.8;
 
-	@Configurable(comment = "Min waiting time [s]", defValue = "0.1")
+	@Configurable(comment = "Min waiting time", defValue = "0.1", unit = EConfigUnit.TIME_S)
 	private static double minWaitingTime = 0.1;
 
 

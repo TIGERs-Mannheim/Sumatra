@@ -1,9 +1,7 @@
-/*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra.ai.metis.botdistance;
 
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.ai.metis.ACalculator;
 import edu.tigers.sumatra.ids.ETeam;
 import edu.tigers.sumatra.math.line.Lines;
@@ -22,7 +20,7 @@ import java.util.List;
  */
 public class BotToBallDistanceCalc extends ACalculator
 {
-	@Configurable(comment = "Lookahead for ball position", defValue = "0.3")
+	@Configurable(comment = "Lookahead for ball position", defValue = "0.3", unit = EConfigUnit.TIME_S)
 	private static double ballLookahead = 0.3;
 
 	@Getter

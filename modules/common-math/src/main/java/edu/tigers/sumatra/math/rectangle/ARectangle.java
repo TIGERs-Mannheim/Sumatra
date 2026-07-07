@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.math.rectangle;
 
 import com.github.cliftonlabs.json_simple.JsonObject;

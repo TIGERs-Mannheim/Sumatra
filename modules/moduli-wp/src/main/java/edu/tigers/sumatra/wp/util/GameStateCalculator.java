@@ -1,11 +1,8 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.wp.util;
 
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.ids.ETeamColor;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.referee.data.EGameState;
@@ -25,7 +22,7 @@ import java.util.Optional;
 @Log4j2
 public class GameStateCalculator
 {
-	@Configurable(comment = "Ball movement tolerance", defValue = "50")
+	@Configurable(comment = "Ball movement tolerance", defValue = "50", unit = EConfigUnit.DISTANCE_MM)
 	private static double ballMovedDistanceTol = 50;
 
 	static
@@ -99,13 +96,11 @@ public class GameStateCalculator
 
 	private void processStage(final Stage stage, final GameState.GameStateBuilder builder)
 	{
-		builder.withPenaltyShootout(false);
 		switch (stage)
 		{
 			case NORMAL_HALF_TIME, EXTRA_TIME_BREAK, EXTRA_HALF_TIME, PENALTY_SHOOTOUT_BREAK ->
 					builder.withState(EGameState.BREAK).withForTeam(ETeamColor.NEUTRAL);
 			case POST_GAME -> builder.withState(EGameState.POST_GAME).withForTeam(ETeamColor.NEUTRAL);
-			case PENALTY_SHOOTOUT -> builder.withPenaltyShootout(true);
 			default ->
 			{
 				if (lastGameState.getState() == EGameState.BREAK || lastGameState.getState() == EGameState.POST_GAME)

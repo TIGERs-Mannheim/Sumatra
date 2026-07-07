@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.metis.interchange;
 
 import edu.tigers.sumatra.ai.metis.general.ADesiredBotCalc;

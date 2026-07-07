@@ -1,11 +1,6 @@
-/*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.sim.net;
 
 import edu.tigers.sumatra.ball.BallState;
-import edu.tigers.sumatra.bot.IMoveConstraints;
 import edu.tigers.sumatra.bot.MoveConstraints;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.ids.ETeamColor;
@@ -88,15 +83,13 @@ public final class ProtoToLocalMapper
 	}
 
 
-	public static IMoveConstraints mapDriveLimits(final SimBotActionOuterClass.DriveLimits d)
+	public static MoveConstraints mapDriveLimits(final SimBotActionOuterClass.DriveLimits d)
 	{
-		final MoveConstraints m = new MoveConstraints();
-		m.setVelMax(d.getVelMax());
-		m.setAccMax(d.getAccMax());
-		m.setJerkMax(d.getJerkMax());
-		m.setVelMaxW(d.getVelMaxW());
-		m.setAccMaxW(d.getAccMaxW());
-		m.setJerkMaxW(d.getJerkMaxW());
-		return m;
+		return MoveConstraints.ZERO
+				.withVelMax(d.getVelMax())
+				.withAccMax(d.getAccMax())
+				.withBrkMax(d.getBrkMax())
+				.withVelMaxW(d.getVelMaxW())
+				.withAccMaxW(d.getAccMaxW());
 	}
 }

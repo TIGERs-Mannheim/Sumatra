@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.view;
 
 import net.miginfocom.swing.MigLayout;
@@ -59,9 +55,9 @@ public class BaseStationPanel extends JPanel
 	}
 
 
-	public void setUpdateRate(final int updateRate)
+	public void setUpdateRate(double updateRate)
 	{
-		rate.setText(String.format("Rate: %3dHz", updateRate));
+		rate.setText(String.format("Rate: %.1fHz", updateRate));
 	}
 
 

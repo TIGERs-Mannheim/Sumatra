@@ -1,11 +1,8 @@
-/*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.rcm;
 
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.botmanager.botskills.ABotSkill;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.BotID;
@@ -62,7 +59,7 @@ public class PollingService
 	private long timeSkillStarted = System.nanoTime();
 	private long timeLastInput = System.nanoTime();
 
-	@Configurable(comment = "Timeout [s] after controller times out (bot gets unassigned)", defValue = "180")
+	@Configurable(comment = "Timeout after controller times out (bot gets unassigned)", defValue = "180", unit = EConfigUnit.TIME_S)
 	private static int controllerTimeout = 180;
 
 
@@ -404,7 +401,7 @@ public class PollingService
 			}
 		} catch (Throwable err)
 		{
-			log.error("Could not create skill " + skill, err);
+			log.error("Could not create skill {}", skill, err);
 		}
 	}
 

@@ -1,11 +1,8 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.metis.statistics.stats;
 
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
 import edu.tigers.sumatra.ai.metis.goal.EPossibleGoal;
 import edu.tigers.sumatra.ids.BotID;
@@ -24,13 +21,13 @@ import java.util.stream.Collectors;
  */
 public class DirectShotsStatsCalc extends AEventWatchingStatsCalc<DirectShotsStatsCalcWatchData>
 {
-	@Configurable(comment = "[m/s] The minimal Ball velocity that a shot is considered", defValue = "3.0")
+	@Configurable(comment = "The minimal Ball velocity that a shot is considered", defValue = "3.0", unit = EConfigUnit.VELOCITY_M)
 	private static double minimalBallVelocity = 3.0;
-	@Configurable(comment = "[mm] The minimal Ball travel distance that a shot is considered", defValue = "100.0")
+	@Configurable(comment = "The minimal Ball travel distance that a shot is considered", defValue = "100.0", unit = EConfigUnit.DISTANCE_MM)
 	private static double maxSkirmishBallTravelDistance = 100.0;
-	@Configurable(comment = "[s] Time span after the direct shot, in which a Goal will still be counted", defValue = "1.0")
+	@Configurable(comment = "Time span after the direct shot, in which a Goal will still be counted", defValue = "1.0", unit = EConfigUnit.TIME_S)
 	private static double timeAfterDirectShot = 1.0;
-	@Configurable(comment = "[s] DeadTime", defValue = "10.0")
+	@Configurable(comment = "DeadTime", defValue = "10.0", unit = EConfigUnit.TIME_S)
 	private static double deadTimeAfterOccurrence = 10.0;
 
 	static

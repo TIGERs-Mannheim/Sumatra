@@ -1,6 +1,3 @@
-/*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra.skillsystem.skills.test;
 
 import edu.tigers.sumatra.bot.MoveConstraints;
@@ -18,7 +15,6 @@ import edu.tigers.sumatra.skillsystem.skills.AMoveSkill;
 import edu.tigers.sumatra.trajectory.ITrajectory;
 import lombok.Setter;
 
-import java.util.Optional;
 
 
 /**
@@ -75,8 +71,14 @@ public class MoveBangBangSkill extends AMoveSkill
 	public void doEntryActions()
 	{
 		moveConstraints = defaultMoveConstraints();
-		Optional.ofNullable(accMax).ifPresent(moveConstraints::setAccMax);
-		Optional.ofNullable(velMax).ifPresent(moveConstraints::setVelMax);
+		if (accMax != null)
+		{
+			moveConstraints = moveConstraints.withAccMax(accMax);
+		}
+		if (velMax != null)
+		{
+			moveConstraints = moveConstraints.withVelMax(velMax);
+		}
 
 		trajXY = TrajectoryGenerator.generatePositionTrajectory(getTBot(), dest, moveConstraints);
 		trajW = TrajectoryGenerator.generateRotationTrajectory(getTBot(), orient, moveConstraints);

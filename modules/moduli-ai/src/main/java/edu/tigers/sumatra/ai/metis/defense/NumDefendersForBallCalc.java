@@ -1,10 +1,7 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.metis.defense;
 
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.ai.metis.ACalculator;
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
 import edu.tigers.sumatra.ai.metis.ballresponsibility.EBallResponsibility;
@@ -33,15 +30,15 @@ import java.util.function.Supplier;
 @RequiredArgsConstructor
 public class NumDefendersForBallCalc extends ACalculator
 {
-	@Configurable(comment = "[mm] Extra margin used for goal coverage calculations during free kicks", defValue = "200.0")
+	@Configurable(comment = "Extra margin used for goal coverage calculations during free kicks", defValue = "200.0", unit = EConfigUnit.DISTANCE_MM)
 	private static double freeKickExtraMarginToBall = 200.0;
-	@Configurable(comment = "[rad] Max uncovered angle allowed during free kicks for each meter of distance", defValue = "0.03")
+	@Configurable(comment = "Max uncovered angle allowed during free kicks for each meter of distance", defValue = "0.03", unit = EConfigUnit.ANGLE_RAD)
 	private static double freeKickMaxUncoveredAnglePerMeterDistance = 0.03;
 
-	@Configurable(comment = "Max number of defenders for covering the ball", defValue = "2")
+	@Configurable(comment = "Max number of defenders for covering the ball", defValue = "2", unit = EConfigUnit.COUNT)
 	private static int maxDefendersForBallThreat = 2;
 
-	@Configurable(comment = "Minimum number of defenders if the ball responsibility is at the defense", defValue = "1")
+	@Configurable(comment = "Minimum number of defenders if the ball responsibility is at the defense", defValue = "1", unit = EConfigUnit.COUNT)
 	private static int minDefendersForBallThreatWhenBallResponsibilityDefense = 1;
 
 

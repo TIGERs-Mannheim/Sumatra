@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2024, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.cam.data;
 
 import edu.tigers.sumatra.math.rectangle.IRectangle;

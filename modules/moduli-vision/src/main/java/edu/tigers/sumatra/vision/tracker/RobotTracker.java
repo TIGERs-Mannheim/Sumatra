@@ -1,10 +1,8 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra.vision.tracker;
 
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.cam.data.CamRobot;
 import edu.tigers.sumatra.drawable.DrawableAnnotation;
 import edu.tigers.sumatra.drawable.DrawableBotShape;
@@ -17,7 +15,7 @@ import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.math.vector.Vector2f;
 import edu.tigers.sumatra.vision.data.FilteredVisionBot;
-import org.apache.commons.lang.Validate;
+import org.apache.commons.lang3.Validate;
 import org.apache.commons.math3.linear.ArrayRealVector;
 import org.apache.commons.math3.linear.RealVector;
 
@@ -48,25 +46,25 @@ public class RobotTracker
 	private int health = 2;
 
 
-	@Configurable(defValue = "100.0")
+	@Configurable(defValue = "100.0", unit = EConfigUnit.VARIANCE_MM)
 	private static double initialCovarianceXY = 100.0;
-	@Configurable(defValue = "0.1")
+	@Configurable(defValue = "0.1", unit = EConfigUnit.VARIANCE_MM)
 	private static double modelErrorXY = 0.1;
-	@Configurable(defValue = "20.0")
+	@Configurable(defValue = "20.0", unit = EConfigUnit.VARIANCE_MM)
 	private static double measErrorXY = 20.0;
-	@Configurable(defValue = "100.0")
+	@Configurable(defValue = "100.0", unit = EConfigUnit.VARIANCE_RAD)
 	private static double initialCovarianceW = 100.0;
-	@Configurable(defValue = "0.1")
+	@Configurable(defValue = "0.1", unit = EConfigUnit.VARIANCE_RAD)
 	private static double modelErrorW = 0.1;
-	@Configurable(defValue = "2.0")
+	@Configurable(defValue = "2.0", unit = EConfigUnit.VARIANCE_RAD)
 	private static double measErrorW = 2.0;
-	@Configurable(defValue = "1.5", comment = "Factor to weight stdDeviation during tracker merging, reasonable range: 1.0 - 2.0. High values lead to more jitter")
+	@Configurable(defValue = "1.5", comment = "Factor to weight stdDeviation during tracker merging, reasonable range: 1.0 - 2.0. High values lead to more jitter", unit = EConfigUnit.FACTOR)
 	private static double mergePower = 1.5;
-	@Configurable(defValue = "6000.0", comment = "Maximum assumed robot speed in [mm/s] to filter outliers")
+	@Configurable(defValue = "6000.0", comment = "Maximum assumed robot speed in to filter outliers", unit = EConfigUnit.VELOCITY_MM)
 	private static double maxLinearVel = 6000.0;
-	@Configurable(defValue = "30.0", comment = "Maximum assumed angular robot speed in [rad/s] to filter outliers")
+	@Configurable(defValue = "30.0", comment = "Maximum assumed angular robot speed in [rad/s] to filter outliers", unit = EConfigUnit.VELOCITY_ANGULAR_RAD)
 	private static double maxAngularVel = 30.0;
-	@Configurable(defValue = "20", comment = "Reciprocal health is used as uncertainty, increased on update, decreased on prediction")
+	@Configurable(defValue = "20", comment = "Reciprocal health is used as uncertainty, increased on update, decreased on prediction", unit = EConfigUnit.NO_UNIT)
 	private static int maxHealth = 20;
 
 	static

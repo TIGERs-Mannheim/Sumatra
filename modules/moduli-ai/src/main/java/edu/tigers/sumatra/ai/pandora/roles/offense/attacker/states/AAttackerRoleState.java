@@ -1,11 +1,8 @@
-/*
- * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.pandora.roles.offense.attacker.states;
 
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.ai.pandora.roles.RoleStateExtern;
 import edu.tigers.sumatra.ai.pandora.roles.offense.attacker.AttackerRole;
 import edu.tigers.sumatra.geometry.Geometry;
@@ -23,10 +20,10 @@ public abstract class AAttackerRoleState<T extends AMoveToSkill> extends RoleSta
 	@Getter
 	private AttackerRole role;
 
-	@Configurable(defValue = "PROTECT")
+	@Configurable(defValue = "PROTECT", unit = EConfigUnit.NO_UNIT)
 	private static EAttackerState forcedState = EAttackerState.PROTECT;
 
-	@Configurable(comment = "if true, forces state set in forcedState to be active", defValue = "false")
+	@Configurable(comment = "if true, forces state set in forcedState to be active", defValue = "false", unit = EConfigUnit.BOOLEAN)
 	private static boolean forceAttackerState = false;
 
 	@Getter
@@ -54,11 +51,11 @@ public abstract class AAttackerRoleState<T extends AMoveToSkill> extends RoleSta
 
 
 	@Override
-	protected void onInit()
+	protected void onEntry()
 	{
 		if (getRole().isPhysicalObstaclesOnly())
 		{
-			skill.getMoveCon().physicalObstaclesOnly();
+			skill.setMoveCon(skill.getMoveCon().withPhysicalObstaclesOnly());
 		}
 	}
 

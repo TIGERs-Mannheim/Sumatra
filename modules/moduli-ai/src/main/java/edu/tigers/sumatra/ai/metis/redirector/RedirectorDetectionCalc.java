@@ -1,9 +1,7 @@
-/*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra.ai.metis.redirector;
 
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.ai.metis.ACalculator;
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
 import edu.tigers.sumatra.ai.metis.pass.KickOrigin;
@@ -41,9 +39,9 @@ import java.util.function.Supplier;
 @RequiredArgsConstructor
 public class RedirectorDetectionCalc extends ACalculator
 {
-	@Configurable(defValue = "0.3", comment = "[s]")
+	@Configurable(defValue = "0.3", unit = EConfigUnit.TIME_S)
 	private static double opponentRequiredSlackTime = 0.3;
-	@Configurable(comment = "Enable double attacker", defValue = "true")
+	@Configurable(comment = "Enable double attacker", defValue = "true", unit = EConfigUnit.BOOLEAN)
 	private static boolean enableDoubleAttacker = true;
 	private final Supplier<Map<BotID, KickOrigin>> kickOrigins;
 	@Getter
@@ -169,7 +167,7 @@ public class RedirectorDetectionCalc extends ACalculator
 
 	private ITrajectory<IVector2> generateTrajectory(ITrackedBot bot, IVector2 dest)
 	{
-		var moveConstraints = new MoveConstraints(bot.getMoveConstraints()).setPrimaryDirection(Vector2.zero());
+		var moveConstraints = bot.getMoveConstraints().withPrimaryDirection(Vector2.zero());
 		return TrajectoryGenerator.generatePositionTrajectory(moveConstraints, bot.getPos(), bot.getVel(), dest);
 	}
 

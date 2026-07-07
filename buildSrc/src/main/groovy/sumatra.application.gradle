@@ -3,10 +3,7 @@ plugins {
 }
 
 application {
-    applicationDefaultJvmArgs = [
-            '-Dsun.java2d.d3d=false',
-            '-Djava.net.preferIPv4Stack=true',
-    ]
+    applicationDefaultJvmArgs = edu.tigers.sumatra.gradle.JvmArgs.ALL_JVM_ARGS
 }
 
 // Version is set to null to skip it completely in the artifact names.

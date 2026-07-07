@@ -1,11 +1,8 @@
-/*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.metis.kicking;
 
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.geometry.RuleConstraints;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.skillsystem.skills.util.KickParams;
@@ -15,7 +12,7 @@ import lombok.Setter;
 
 public class KickFactory
 {
-	@Configurable(defValue = "0.0", comment = "Default aiming tolerance for goal kicks")
+	@Configurable(defValue = "0.0", comment = "Default aiming tolerance for goal kicks", unit = EConfigUnit.ANGLE_RAD)
 	private static double defaultAimingTolerance = 0.0;
 
 	static

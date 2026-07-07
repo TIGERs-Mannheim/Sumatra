@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2024, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.movingrobot;
 
 import edu.tigers.sumatra.math.circle.Circle;
@@ -9,17 +5,32 @@ import edu.tigers.sumatra.math.circle.ICircle;
 import edu.tigers.sumatra.math.tube.ITube;
 import edu.tigers.sumatra.math.tube.Tube;
 import edu.tigers.sumatra.math.vector.IVector2;
-import lombok.RequiredArgsConstructor;
 
 
-@RequiredArgsConstructor
 public abstract class AMovingRobot implements IMovingRobot
 {
-	private final IVector2 pos;
-	private final IVector2 dir;
-	private final double radius;
+	protected final IVector2 pos;
+	protected final IVector2 dir;
+	protected final double radius;
 	protected final double speed;
 	private final double reactionDuration;
+
+	private final double vLimit;
+	protected final double aLimit;
+	protected final double brkLimit;
+
+
+	protected AMovingRobot(MovingRobotParams params)
+	{
+		this.pos = params.position();
+		this.dir = params.velocity().normalizeNew();
+		this.radius = params.radius();
+		this.speed = params.velocity().getLength2();
+		this.reactionDuration = params.reactionTime();
+		this.vLimit = params.vLimit();
+		this.aLimit = params.aLimit();
+		this.brkLimit = params.brkLimit();
+	}
 
 
 	@Override
@@ -80,4 +91,42 @@ public abstract class AMovingRobot implements IMovingRobot
 	 */
 	abstract MovingOffsets forwardBackwardOffset(double t);
 
+
+	/**
+	 * Calculate maximum possible extraDistance that can be covered with a robot with a current velocity
+	 * {@param vStartEnd} and a remaining timespan {@param tRemaining},while ensuring that the bot has {@param vStartEnd}
+	 * exit speed after the timespan
+	 *
+	 * @param vStartEnd  velocity the Bot has before and after {@param tRemaining}
+	 * @param tRemaining
+	 * @return
+	 */
+	protected double maximizeDistance(
+			double vStartEnd,
+			double tRemaining // time tRemaining without brake time (time from vStartEnd to 0)
+	)
+	{
+		double vMinRemaining = Math.min(vStartEnd, vLimit); // During remaining time we will never go slower
+		double vMaxRemaining = vLimit; // We are trying to reach this velocity
+		double velHeadroom = vMaxRemaining - vMinRemaining;
+
+		double tAccToMaxTheoreticalVel = velHeadroom / aLimit;
+		double tBrkFromMaxTheoreticalVel = velHeadroom / brkLimit;
+		double tToVelMaxAndBack = tAccToMaxTheoreticalVel + tBrkFromMaxTheoreticalVel;
+
+		double distVMin = vMinRemaining * tRemaining;
+		double distVHeadroom;
+		if (tToVelMaxAndBack <= tRemaining)
+		{
+			// Enough time to use full headroom -> Trapezoidal form
+			distVHeadroom = (velHeadroom * (tRemaining - 0.5 * tToVelMaxAndBack));
+
+		} else
+		{
+			// Not enough time to use full vel headroom -> Triangle form
+			var velHeadroomReached = (aLimit * brkLimit * tRemaining) / (aLimit + brkLimit);
+			distVHeadroom = (velHeadroomReached * 0.5 * tRemaining);
+		}
+		return distVMin + distVHeadroom;
+	}
 }

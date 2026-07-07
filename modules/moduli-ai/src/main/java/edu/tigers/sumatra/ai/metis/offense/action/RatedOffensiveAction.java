@@ -1,15 +1,10 @@
-/*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.metis.offense.action;
 
 import edu.tigers.sumatra.ai.metis.kicking.Kick;
-import edu.tigers.sumatra.ai.metis.kicking.Pass;
 import edu.tigers.sumatra.ai.metis.offense.action.moves.EOffensiveActionMove;
 import edu.tigers.sumatra.ai.metis.offense.dribble.DribbleToPos;
+import edu.tigers.sumatra.ai.metis.pass.rating.RatedPass;
 import edu.tigers.sumatra.math.vector.IVector2;
-import edu.tigers.sumatra.skillsystem.skills.util.KickParams;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -38,16 +33,11 @@ public class RatedOffensiveAction
 	}
 
 
-	public Optional<KickParams> getKickParams()
-	{
-		return action.getKickOpt().map(Kick::getKickParams);
-	}
-
-
 	public static RatedOffensiveAction buildProtect(
 			@NonNull EOffensiveActionMove move,
 			@NonNull OffensiveActionViability viability,
-			@NonNull DribbleToPos dribbleToPos)
+			@NonNull DribbleToPos dribbleToPos
+	)
 	{
 		return RatedOffensiveAction.builder()
 				.move(move)
@@ -56,11 +46,26 @@ public class RatedOffensiveAction
 				.build();
 	}
 
+	public static RatedOffensiveAction buildFinisherPass(
+			@NonNull EOffensiveActionMove move,
+			@NonNull OffensiveActionViability viability,
+			@NonNull DribbleToPos dribbleToPos,
+			@NonNull RatedPass pass
+	)
+	{
+		return RatedOffensiveAction.builder()
+				.move(move)
+				.viability(viability)
+				.action(OffensiveAction.buildFinisherPass(dribbleToPos, pass))
+				.build();
+	}
+
 
 	public static RatedOffensiveAction buildPass(
 			@NonNull EOffensiveActionMove move,
 			@NonNull OffensiveActionViability viability,
-			@NonNull Pass pass)
+			@NonNull RatedPass pass
+	)
 	{
 		return RatedOffensiveAction.builder()
 				.move(move)
@@ -69,10 +74,12 @@ public class RatedOffensiveAction
 				.build();
 	}
 
+
 	public static RatedOffensiveAction buildProtectPass(
 			@NonNull EOffensiveActionMove move,
 			@NonNull OffensiveActionViability viability,
-			@NonNull Pass pass)
+			@NonNull RatedPass pass
+	)
 	{
 		return RatedOffensiveAction.builder()
 				.move(move)
@@ -85,7 +92,8 @@ public class RatedOffensiveAction
 	public static RatedOffensiveAction buildKick(
 			@NonNull EOffensiveActionMove move,
 			@NonNull OffensiveActionViability viability,
-			@NonNull Kick kick)
+			@NonNull Kick kick
+	)
 	{
 		return RatedOffensiveAction.builder()
 				.move(move)
@@ -98,7 +106,8 @@ public class RatedOffensiveAction
 	public static RatedOffensiveAction buildRedirectKick(
 			@NonNull EOffensiveActionMove move,
 			@NonNull OffensiveActionViability viability,
-			@NonNull Kick kick)
+			@NonNull Kick kick
+	)
 	{
 		return RatedOffensiveAction.builder()
 				.move(move)
@@ -112,7 +121,8 @@ public class RatedOffensiveAction
 			@NonNull EOffensiveActionMove move,
 			@NonNull OffensiveActionViability viability,
 			@NonNull Kick kick,
-			@NonNull DribbleToPos dribbleToPos)
+			@NonNull DribbleToPos dribbleToPos
+	)
 	{
 		return RatedOffensiveAction.builder()
 				.move(move)
@@ -125,7 +135,8 @@ public class RatedOffensiveAction
 	public static RatedOffensiveAction buildReceive(
 			@NonNull EOffensiveActionMove move,
 			@NonNull OffensiveActionViability viability,
-			IVector2 ballContactPos)
+			IVector2 ballContactPos
+	)
 	{
 		return RatedOffensiveAction.builder()
 				.move(move)

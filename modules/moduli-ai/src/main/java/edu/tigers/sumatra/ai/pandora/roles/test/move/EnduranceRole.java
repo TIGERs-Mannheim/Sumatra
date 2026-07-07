@@ -1,13 +1,8 @@
-/*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.pandora.roles.test.move;
 
 import edu.tigers.sumatra.ai.pandora.roles.ARole;
 import edu.tigers.sumatra.ai.pandora.roles.ERole;
 import edu.tigers.sumatra.math.vector.IVector2;
-import edu.tigers.sumatra.skillsystem.skills.MoveToSkill;
 import lombok.Setter;
 
 
@@ -30,15 +25,9 @@ public class EnduranceRole extends ARole
 	}
 
 
-	private class DefaultState extends RoleState<MoveToSkill>
+	private class DefaultState extends MoveState
 	{
 		private int currentDestinationIdx = 0;
-
-
-		public DefaultState()
-		{
-			super(MoveToSkill::new);
-		}
 
 
 		@Override
@@ -50,7 +39,7 @@ public class EnduranceRole extends ARole
 				currentDestinationIdx = (currentDestinationIdx + 1) % destinations.length;
 			}
 			skill.updateDestination(currentDestination);
-			skill.updateTargetAngle(0);
+			skill.updateTargetAngle(0.0);
 		}
 	}
 }

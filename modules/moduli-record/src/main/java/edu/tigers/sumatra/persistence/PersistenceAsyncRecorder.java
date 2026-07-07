@@ -1,41 +1,33 @@
-/*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.persistence;
 
-import edu.tigers.sumatra.thread.NamedThreadFactory;
 import lombok.extern.log4j.Log4j2;
-import org.apache.commons.lang.Validate;
-import org.apache.commons.lang.time.DurationFormatUtils;
+import org.apache.commons.lang3.time.DurationFormatUtils;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 
 /**
- * Record on a separate thread
+ * Record on a separate thread.
+ * <p>
+ * All scheduled flushes run on the {@link PersistenceDb#getIoExecutor() db's IO executor}, the same
+ * single thread that opens and closes the table streams. This is required because
+ * {@link edu.tigers.sumatra.persistence.serializer.MappedDataOutputStream} uses confined arenas.
  */
 @Log4j2
 public class PersistenceAsyncRecorder
 {
 
-	private static final int TIME_OFFSET = 10;
+	private static final int FLUSH_PERIOD_MS = 10;
 
-	private final RecordSaver recordSaver = new RecordSaver();
 	private final PersistenceDb db;
 	private final List<IPersistenceRecorder> recorders = new ArrayList<>();
+	private ScheduledFuture<?> flushTask;
 	private boolean paused = false;
 
 
-	/**
-	 * Create recorder with given persistence
-	 *
-	 * @param db
-	 */
 	public PersistenceAsyncRecorder(final PersistenceDb db)
 	{
 		this.db = db;
@@ -48,30 +40,37 @@ public class PersistenceAsyncRecorder
 	}
 
 
-	/**
-	 * Start recording
-	 */
 	public void start()
 	{
 		log.debug("Starting recording");
 		recorders.forEach(IPersistenceRecorder::start);
+		flushTask = db.getIoExecutor().scheduleWithFixedDelay(
+				this::flush, FLUSH_PERIOD_MS, FLUSH_PERIOD_MS, TimeUnit.MILLISECONDS);
 		log.info("Started recording");
 	}
 
 
 	/**
-	 * Stop recording
+	 * Initiate shutdown without waiting for the IO to drain. The final flush, period log and
+	 * table close run on the IO thread; the executor is shut down so it terminates once those
+	 * tasks finish. Use {@link #awaitStop()} to block until everything is on disk.
 	 */
 	public void stop()
 	{
 		recorders.forEach(IPersistenceRecorder::stop);
-		recordSaver.close();
+		if (flushTask != null)
+		{
+			flushTask.cancel(false);
+			flushTask = null;
+		}
+		// Final flush + period log run on the IO thread, ahead of the close that is enqueued
+		// onto the same single-threaded executor and shuts it down.
+		db.getIoExecutor().execute(this::flush);
+		db.getIoExecutor().execute(this::printPeriod);
+		db.initiateClose();
 	}
 
 
-	/**
-	 * Pause all recorders by calling their stop method
-	 */
 	public synchronized void pause()
 	{
 		if (!paused)
@@ -82,9 +81,6 @@ public class PersistenceAsyncRecorder
 	}
 
 
-	/**
-	 * Resume all recorders after they have been paused
-	 */
 	public synchronized void resume()
 	{
 		if (paused)
@@ -96,18 +92,11 @@ public class PersistenceAsyncRecorder
 
 
 	/**
-	 * Block until database is stopped.
+	 * Block until the database I/O has fully drained.
 	 */
 	public void awaitStop()
 	{
-		try
-		{
-			Validate.isTrue(recordSaver.execService.awaitTermination(60, TimeUnit.SECONDS));
-		} catch (InterruptedException e)
-		{
-			log.error("Interrupted while awaiting termination", e);
-			Thread.currentThread().interrupt();
-		}
+		db.awaitClose(60, TimeUnit.SECONDS);
 	}
 
 
@@ -117,61 +106,27 @@ public class PersistenceAsyncRecorder
 	}
 
 
-	private class RecordSaver implements Runnable
+	private void flush()
 	{
-		private final ScheduledExecutorService execService;
-
-
-		RecordSaver()
+		try
 		{
-			execService = Executors.newSingleThreadScheduledExecutor(new NamedThreadFactory("RecordSaver"));
-			execService.scheduleWithFixedDelay(this, TIME_OFFSET, TIME_OFFSET, TimeUnit.MILLISECONDS);
+			recorders.forEach(IPersistenceRecorder::flush);
+		} catch (Exception e)
+		{
+			log.error("Unexpected exception while flushing", e);
 		}
+	}
 
 
-		@Override
-		public void run()
+	private void printPeriod()
+	{
+		Long firstKey = db.getFirstKey();
+		Long lastKey = db.getLastKey();
+		if (firstKey != null && lastKey != null)
 		{
-			try
-			{
-				recorders.forEach(IPersistenceRecorder::flush);
-			} catch (Exception e)
-			{
-				log.error("Unexpected exception while flushing", e);
-			}
-		}
-
-
-		private void printPeriod()
-		{
-			Long firstKey = db.getFirstKey();
-			Long lastKey = db.getLastKey();
-			if (firstKey != null && lastKey != null)
-			{
-				long duration = (long) ((lastKey - firstKey) / 1e6);
-				String period = DurationFormatUtils.formatDuration(duration, "HH:mm:ss", true);
-				log.info("Stop recording with a period of {}", period);
-			}
-		}
-
-
-		private void close()
-		{
-			execService.execute(this);
-			execService.execute(this::printPeriod);
-			execService.execute(db::close);
-			execService.shutdown();
-			try
-			{
-				boolean terminated = execService.awaitTermination(10, TimeUnit.SECONDS);
-				if (!terminated)
-				{
-					log.warn("Could not terminate record saver within 10s");
-				}
-			} catch (InterruptedException e)
-			{
-				Thread.currentThread().interrupt();
-			}
+			long duration = (long) ((lastKey - firstKey) / 1e6);
+			String period = DurationFormatUtils.formatDuration(duration, "HH:mm:ss", true);
+			log.info("Stop recording with a period of {}", period);
 		}
 	}
 }

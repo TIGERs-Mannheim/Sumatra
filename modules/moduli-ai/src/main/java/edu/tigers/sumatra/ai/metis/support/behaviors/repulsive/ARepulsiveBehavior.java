@@ -1,10 +1,7 @@
-/*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.metis.support.behaviors.repulsive;
 
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
 import edu.tigers.sumatra.ai.metis.support.behaviors.ASupportBehavior;
 import edu.tigers.sumatra.ai.metis.support.behaviors.SupportBehaviorPosition;
@@ -48,23 +45,28 @@ import static java.lang.Math.exp;
 @RequiredArgsConstructor
 public abstract class ARepulsiveBehavior extends ASupportBehavior
 {
-	@Configurable(comment = "Margin around the field which robots should not move into", defValue = "200.0")
+	@Configurable(comment = "Margin around the field which robots should not move into", defValue = "200.0",
+			unit = EConfigUnit.DISTANCE_MM)
 	private static double fieldMargin = 200.0;
-	@Configurable(comment = "Margin around our penalty area which robots should not move into", defValue = "1000.0")
+	@Configurable(comment = "Margin around our penalty area which robots should not move into", defValue = "1000.0",
+			unit = EConfigUnit.DISTANCE_MM)
 	private static double penAreaOurMargin = 1000.0;
-	@Configurable(comment = "Margin around their penalty area which robots should not move into", defValue = "270.0")
+	@Configurable(comment = "Margin around their penalty area which robots should not move into", defValue = "270.0",
+			unit = EConfigUnit.DISTANCE_MM)
 	private static double penAreaTheirMargin = 270.0;
 
-	@Configurable(defValue = "50.0", comment = "Extra margin [mm] to add to forbidden areas")
+	@Configurable(defValue = "50.0", comment = "Extra margin to add to forbidden areas", unit = EConfigUnit.DISTANCE_MM)
 	private static double extraMargin = 50.0;
 
-	@Configurable(defValue = "100", comment = "Number of arrows to draw for debugging (horizontal)")
+	@Configurable(defValue = "100", comment = "Number of arrows to draw for debugging (horizontal)",
+			unit = EConfigUnit.COUNT)
 	private static int debugArrowsHorizontal = 100;
 
-	@Configurable(defValue = "50", comment = "Number of arrows to draw for debugging (vertical)")
+	@Configurable(defValue = "50", comment = "Number of arrows to draw for debugging (vertical)",
+			unit = EConfigUnit.COUNT)
 	private static int debugArrowsVertical = 50;
 
-	@Configurable(defValue = "10", comment = "Number of steps to follow the forces")
+	@Configurable(defValue = "10", comment = "Number of steps to follow the forces", unit = EConfigUnit.COUNT)
 	private static int numberOfLookAHeads = 10;
 
 	private final Color color;

@@ -1,13 +1,15 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.pandora.roles.defense;
 
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
+import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
 import edu.tigers.sumatra.ai.metis.defense.data.IDefenseThreat;
 import edu.tigers.sumatra.ai.metis.offense.action.EOffensiveActionType;
 import edu.tigers.sumatra.ai.pandora.roles.ERole;
+import edu.tigers.sumatra.drawable.DrawableAnnotation;
+import edu.tigers.sumatra.drawable.DrawableArrow;
+import edu.tigers.sumatra.drawable.DrawableBotShape;
+import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.AngleMath;
 import edu.tigers.sumatra.math.line.ILineSegment;
@@ -18,6 +20,7 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.awt.Color;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -29,9 +32,9 @@ import java.util.Set;
  */
 public abstract class AOuterDefenseRole extends ADefenseRole
 {
-	@Configurable(comment = "Gain factor for threat velocity in ProtectionState, high gain => high overshoot, low gain => defender lags behind", defValue = "0.75")
+	@Configurable(comment = "Gain factor for threat velocity in ProtectionState, high gain => high overshoot, low gain => defender lags behind", defValue = "0.75", unit = EConfigUnit.FACTOR)
 	private static double mimicThreatVelocityGain = 0.75;
-	@Configurable(comment = "[deg] The angle to determine if the CenterBack is between Ball and Goal", defValue = "45.0")
+	@Configurable(comment = "The angle to determine if the CenterBack is between Ball and Goal", defValue = "45.0", unit = EConfigUnit.ANGLE_DEG)
 	private static double betweenBallAndGoalAngle = 45.0;
 
 	@Setter
@@ -135,33 +138,42 @@ public abstract class AOuterDefenseRole extends ADefenseRole
 
 			skill.updateDestination(defendDestination.validPos());
 			skill.updateTargetAngle(protectionTargetAngle());
-			skill.setComeToAStop(defendDestination.comeToAStopIsFaster());
+			skill.updateTargetTime(defendDestination.getTime());
+			skill.updateUseComeToAStopIfFaster(true);
 
-			skill.getMoveCon().setIgnoredBots(ignoredBots());
+			getShapes(EAiShapesLayer.DEFENSE_OUTER_DEFENDER).addAll(List.of(
+					new DrawableBotShape(
+							defendDestination.validPos(), protectionTargetAngle(), Geometry.getBotRadius(),
+							Geometry.getOpponentCenter2DribblerDist()
+					).setColor(Color.GREEN),
+					DrawableArrow.fromPositions(defendDestination.getPos(), defendDestination.validPos())
+							.setColor(Color.BLUE),
+					new DrawableAnnotation(
+							defendDestination.validPos(),
+							String.format("%.3f", defendDestination.getTime()),
+							true
+					)
+			));
+
+			skill.setMoveCon(skill.getMoveCon().withIgnoredBots(ignoredBots()));
 			if (isNotBetweenBallAndGoal())
 			{
-				skill.getMoveCon().setCustomObstacles(offensePassObstacles());
+				skill.setMoveCon(skill.getMoveCon().withCustomObstacles(offensePassObstacles()));
 			} else
 			{
-				skill.getMoveCon().setCustomObstacles(List.of());
+				skill.setMoveCon(skill.getMoveCon().withCustomObstacles(List.of()));
 			}
-			skill.getMoveCon().setBallObstacle(false);
+			skill.setMoveCon(skill.getMoveCon().withBallObstacle(false));
 
-			if (!threat.getObjectId().isBall())
+			if (threat.getObjectId().isBall())
 			{
-				skill.getMoveCon().setObstacleAvoidanceMode(EObstacleAvoidanceMode.AGGRESSIVE);
+				skill.setMoveCon(skill.getMoveCon().withObstacleAvoidanceMode(EObstacleAvoidanceMode.AGGRESSIVE));
 			} else
 			{
-				skill.getMoveCon().setObstacleAvoidanceMode(EObstacleAvoidanceMode.NORMAL);
+				skill.setMoveCon(skill.getMoveCon().withObstacleAvoidanceMode(EObstacleAvoidanceMode.NORMAL));
 			}
-			forceObstacleAvoidanceMode().ifPresent(mode -> skill.getMoveCon().setObstacleAvoidanceMode(mode));
-			skill.getMoveConstraints().setFastMove(useFastMove());
-		}
-
-
-		private boolean useFastMove()
-		{
-			return skill.getDestination().distanceTo(getPos()) > 4000;
+			forceObstacleAvoidanceMode().ifPresent(
+					mode -> skill.setMoveCon(skill.getMoveCon().withObstacleAvoidanceMode(mode)));
 		}
 	}
 }

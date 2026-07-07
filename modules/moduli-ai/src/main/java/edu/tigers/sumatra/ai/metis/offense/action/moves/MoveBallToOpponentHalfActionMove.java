@@ -1,11 +1,8 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.metis.offense.action.moves;
 
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.ai.metis.ballpossession.BallPossession;
 import edu.tigers.sumatra.ai.metis.ballpossession.EBallControl;
 import edu.tigers.sumatra.ai.metis.botdistance.BotDistance;
@@ -17,6 +14,7 @@ import edu.tigers.sumatra.ai.metis.offense.action.EActionViability;
 import edu.tigers.sumatra.ai.metis.offense.action.OffensiveActionViability;
 import edu.tigers.sumatra.ai.metis.offense.action.RatedOffensiveAction;
 import edu.tigers.sumatra.ai.metis.pass.KickOrigin;
+import edu.tigers.sumatra.ai.metis.pass.rating.RatedPass;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.vector.IVector2;
@@ -33,16 +31,16 @@ import java.util.function.Supplier;
 @RequiredArgsConstructor
 public class MoveBallToOpponentHalfActionMove extends AOffensiveActionMove
 {
-	@Configurable(comment = "Viability for GoToOtherHalf, this value should always he higher than the minScore from ProtectActionMove", defValue = "0.28")
+	@Configurable(comment = "Viability for GoToOtherHalf, this value should always he higher than the minScore from ProtectActionMove", defValue = "0.28", unit = EConfigUnit.PERCENTAGE)
 	private static double defaultGoToOtherHalfViability = 0.28;
 
-	@Configurable(comment = "Factor to reduce GoToOtherHalf viability during own kickoff", defValue = "0.5")
+	@Configurable(comment = "Factor to reduce GoToOtherHalf viability during own kickoff", defValue = "0.5", unit = EConfigUnit.FACTOR)
 	private static double kickoffGoToOtherHalfViabilityFactor = 0.5;
 
-	@Configurable(comment = "X-Value at which this action is activated", defValue = "-500.0")
+	@Configurable(comment = "X-Value at which this action is activated", defValue = "-500.0", unit = EConfigUnit.DISTANCE_MM)
 	private static double decisionValueX = -500.0;
 
-	@Configurable(comment = "[mm] No opponent closer than this to the ball -> it is not dangerous", defValue = "2000.0")
+	@Configurable(comment = "No opponent closer than this to the ball -> it is not dangerous", defValue = "2000.0", unit = EConfigUnit.DISTANCE_MM)
 	private static double opponentIsCloseDistance = 2000.0;
 
 	static
@@ -61,8 +59,18 @@ public class MoveBallToOpponentHalfActionMove extends AOffensiveActionMove
 
 	private OffensiveActionViability calcViability(IVector2 kickSource, boolean isRollingBall, IVector2 passReceiver)
 	{
-		if (isRollingBall && OffensiveMath.getRedirectAngle(getBall().getPos(), passReceiver,
-				Geometry.getGoalTheir().getCenter()) > OffensiveConstants.getMaximumReasonableRedirectAngle())
+		boolean isStandard = getAiFrame().getGameState().isFreeKickForUs() ||
+				getAiFrame().getGameState().isKickoffForUs();
+		boolean isNearOurCorner =
+				Math.abs(getWFrame().getBall().getPos().x() - Geometry.getGoalOur().getCenter().x()) < decisionValueX;
+		if (isStandard && isNearOurCorner)
+		{
+			return new OffensiveActionViability(EActionViability.PARTIALLY, defaultGoToOtherHalfViability);
+		}
+
+		if (isRollingBall && OffensiveMath.getRedirectAngle(
+				getBall().getPos(), passReceiver, Geometry.getGoalTheir().getCenter())
+				> OffensiveConstants.getMaximumReasonableRedirectAngle())
 		{
 			return new OffensiveActionViability(EActionViability.FALSE, 0.0);
 		}
@@ -78,8 +86,10 @@ public class MoveBallToOpponentHalfActionMove extends AOffensiveActionMove
 		}
 		if (getAiFrame().getGameState().isKickoffForUs())
 		{
-			return new OffensiveActionViability(EActionViability.PARTIALLY,
-					calcViabilityScore() * kickoffGoToOtherHalfViabilityFactor);
+			return new OffensiveActionViability(
+					EActionViability.PARTIALLY,
+					calcViabilityScore() * kickoffGoToOtherHalfViabilityFactor
+			);
 		}
 		return new OffensiveActionViability(EActionViability.PARTIALLY, calcViabilityScore());
 	}
@@ -98,9 +108,12 @@ public class MoveBallToOpponentHalfActionMove extends AOffensiveActionMove
 		return passFactory.chip(kickSource, target, botId, BotID.noBot(), EBallReceiveMode.DONT_CARE)
 				.map(value -> RatedOffensiveAction.buildPass(
 						EOffensiveActionMove.MOVE_BALL_TO_OPPONENT_HALF,
-						calcViability(kickSource,
+						calcViability(
+								kickSource,
 								getBall().getVel().getLength() > OffensiveConstants.getBallIsRollingThreshold(),
-								getWFrame().getBot(botId).getPos()), value));
+								getWFrame().getBot(botId).getPos()
+						), RatedPass.builder().pass(value).build()
+				));
 	}
 
 

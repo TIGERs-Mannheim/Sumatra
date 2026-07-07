@@ -1,10 +1,7 @@
-/*
- * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.skillsystem.skills;
 
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.bot.EDribbleTractionState;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.math.AngleMath;
@@ -17,13 +14,13 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class ReceiveBallSkill extends ABallArrivalSkill
 {
-	@Configurable(defValue = "0.1", comment = "Delay to wait starting from the first barrier interrupted signal")
+	@Configurable(defValue = "0.1", comment = "Delay to wait starting from the first barrier interrupted signal", unit = EConfigUnit.TIME_S)
 	private static double receiveDelay = 0.1;
 
-	@Configurable(defValue = "HIGH_POWER")
+	@Configurable(defValue = "HIGH_POWER", unit = EConfigUnit.NO_UNIT)
 	private static EDribblerMode dribblerMode = EDribblerMode.HIGH_POWER;
 
-	@Configurable(defValue = "false")
+	@Configurable(defValue = "false", unit = EConfigUnit.BOOLEAN)
 	private static boolean stopDribbling = false;
 
 	private final TimestampTimer receiveDelayTimer = new TimestampTimer(receiveDelay);

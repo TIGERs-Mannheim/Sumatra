@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.sim.collision.ball;
 
 import edu.tigers.sumatra.math.circle.Circle;
@@ -20,12 +16,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  */
-@SuppressWarnings("OptionalGetWithoutIsPresent")
-public class CircleCollisionObjectTest
+class CircleCollisionObjectTest
 {
 
 	@Test
-	public void testCollision()
+	void testCollision()
 	{
 		IVector2 center = Vector2.fromXY(100, -200);
 		ICircle circle = Circle.createCircle(center, 300);
@@ -75,7 +70,7 @@ public class CircleCollisionObjectTest
 
 
 	@Test
-	public void testInsideCollision()
+	void testInsideCollision()
 	{
 		IVector2 center = Vector2.fromXY(100, -200);
 		ICircle circle = Circle.createCircle(center, 300);
@@ -110,7 +105,7 @@ public class CircleCollisionObjectTest
 
 
 	@Test
-	public void testSurfaceVel()
+	void testSurfaceVel()
 	{
 		// Position in mm, mm
 		// Velocities in m/s, m/s, rad/s

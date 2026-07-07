@@ -1,13 +1,9 @@
-/*
- * Copyright (c) 2009 - 2019, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.data.collector;
 
 import com.github.cliftonlabs.json_simple.JsonObject;
 import edu.tigers.sumatra.export.CSVExporter;
 import edu.tigers.sumatra.thread.NamedThreadFactory;
-import org.apache.commons.lang.Validate;
+import org.apache.commons.lang3.Validate;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 

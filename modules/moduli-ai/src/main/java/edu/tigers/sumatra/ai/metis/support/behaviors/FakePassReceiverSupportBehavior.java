@@ -1,10 +1,7 @@
-/*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.metis.support.behaviors;
 
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
 import edu.tigers.sumatra.ai.metis.kicking.OngoingPass;
 import edu.tigers.sumatra.ai.metis.offense.action.RatedOffensiveAction;
@@ -38,16 +35,16 @@ import static java.lang.Math.min;
 @RequiredArgsConstructor
 public class FakePassReceiverSupportBehavior extends ASupportBehavior
 {
-	@Configurable(comment = "Defines whether this behavior is active of not", defValue = "true")
+	@Configurable(comment = "Defines whether this behavior is active of not", defValue = "true", unit = EConfigUnit.BOOLEAN)
 	private static boolean enabled = true;
 
-	@Configurable(comment = "Min distance to both passing bots[mm]", defValue = "1300")
+	@Configurable(comment = "Min distance to both passing bots", defValue = "1300", unit = EConfigUnit.DISTANCE_MM)
 	private static int minDistanceToPassingBots = 1300;
 
-	@Configurable(comment = "Distance between passline and FakePassReceiverSupportBehavior[mm]", defValue = "80")
-	private static int distanceToPassLine = 80;
+	@Configurable(comment = "Distance between passline and FakePassReceiverSupportBehavior", defValue = "100", unit = EConfigUnit.DISTANCE_MM)
+	private static int distanceToPassLine = 100;
 
-	@Configurable(comment = "Max time to fakePosition[sec]", defValue = "1.0")
+	@Configurable(comment = "Max time to fakePosition", defValue = "1.0", unit = EConfigUnit.TIME_S)
 	private static double maxTimeToDestination = 1;
 
 	private final Supplier<Map<BotID, RatedOffensiveAction>> offensiveActions;
@@ -84,9 +81,9 @@ public class FakePassReceiverSupportBehavior extends ASupportBehavior
 								.filter(Objects::nonNull),
 						ongoingPass.get().stream()
 								.map(OngoingPass::getPass)
-								.filter(e -> canOngoingPassBeTrusted.get().orElse(false))
+								.filter(_ -> canOngoingPassBeTrusted.get().orElse(false))
 				)
-				.map(pass -> Lines.segmentFromPoints(pass.getKick().getSource(), pass.getKick().getTarget()));
+				.map(pass -> Lines.segmentFromPoints(pass.getPass().getKick().getSource(), pass.getPass().getKick().getTarget()));
 	}
 
 

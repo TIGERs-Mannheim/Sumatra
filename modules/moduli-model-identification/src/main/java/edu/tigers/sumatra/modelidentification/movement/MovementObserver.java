@@ -1,11 +1,8 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.modelidentification.movement;
 
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.bot.params.BotMovementLimits;
 import edu.tigers.sumatra.bot.params.BotParams;
 import edu.tigers.sumatra.botparams.BotParamsManager;
@@ -14,11 +11,10 @@ import edu.tigers.sumatra.cam.ICamFrameObserver;
 import edu.tigers.sumatra.cam.data.CamDetectionFrame;
 import edu.tigers.sumatra.drawable.DrawableBorderText;
 import edu.tigers.sumatra.drawable.IDrawableShape;
-import edu.tigers.sumatra.drawable.IShapeLayerIdentifier;
-import edu.tigers.sumatra.drawable.ShapeLayerIdentifier;
 import edu.tigers.sumatra.drawable.ShapeMap;
 import edu.tigers.sumatra.ids.ETeamColor;
 import edu.tigers.sumatra.math.vector.Vector2;
+import edu.tigers.sumatra.modelidentification.EModelIdentificationShapesLayer;
 import edu.tigers.sumatra.referee.data.EGameState;
 import edu.tigers.sumatra.referee.data.GameState;
 import edu.tigers.sumatra.wp.IWorldFrameObserver;
@@ -42,12 +38,9 @@ import static edu.tigers.sumatra.ids.ETeamColor.YELLOW;
 @RequiredArgsConstructor
 public class MovementObserver implements IWorldFrameObserver, ICamFrameObserver
 {
-	private static final IShapeLayerIdentifier SHAPE_LAYER_ID = ShapeLayerIdentifier.builder().id("Bot observer")
-			.layerName("Bot observer").category("Movement Observer").visibleByDefault(false).orderId(0).build();
-
-	@Configurable(defValue = "500", comment = "Update the observed values every x world frames")
+	@Configurable(defValue = "500", comment = "Update the observed values every x world frames", unit = EConfigUnit.COUNT)
 	private static int updateEvery = 500;
-	@Configurable(defValue = "5", comment = "Distance between camera frames used for vel and acc determination")
+	@Configurable(defValue = "5", comment = "Distance between camera frames used for vel and acc determination", unit = EConfigUnit.COUNT)
 	private static int frameDistance = 5;
 
 	static
@@ -112,13 +105,13 @@ public class MovementObserver implements IWorldFrameObserver, ICamFrameObserver
 	public void fillShapeMap(ShapeMap shapeMap)
 	{
 		int y = 12;
-		List<IDrawableShape> shapes = shapeMap.get(SHAPE_LAYER_ID);
+		List<IDrawableShape> shapes = shapeMap.get(EModelIdentificationShapesLayer.BOT_OBSERVER);
 
 		for (final ETeamColor color : ETeamColor.yellowBlueValues())
 		{
 			EBotParamLabel label = teamToLabel(color);
 			BotParams params = botParamsManager.getDatabase().getSelectedParams(label);
-			BotMovementLimits limits = (BotMovementLimits) params.getMovementLimits();
+			BotMovementLimits limits = params.getMovementLimits();
 			shapes.add(new DrawableBorderText(
 					Vector2.fromXY(1, y++),
 					String.format("MaxVel: %.1f", limits.getVelMax())
@@ -141,8 +134,8 @@ public class MovementObserver implements IWorldFrameObserver, ICamFrameObserver
 		{
 			EBotParamLabel label = teamToLabel(color);
 			BotParams params = botParamsManager.getDatabase().getSelectedParams(label);
-			BotMovementLimits limits = (BotMovementLimits) params.getMovementLimits();
-			teamObservers.get(color).publish(limits);
+			BotMovementLimits limits = teamObservers.get(color).publish(params.getMovementLimits());
+			params.setMovementLimits(limits);
 			botParamsManager.onEntryUpdated(botParamsManager.getDatabase().getTeamStringForLabel(label), params);
 		}
 	}

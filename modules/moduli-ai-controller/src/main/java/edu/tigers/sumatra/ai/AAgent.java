@@ -1,6 +1,3 @@
-/*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra.ai;
 
 import edu.tigers.sumatra.ai.athena.EAIControlState;
@@ -14,29 +11,15 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * This is the base class for every agent who wants to control our robots!
- * 
+ *
  * @author Gero
  */
 public abstract class AAgent extends AModule
 {
 	private final List<IAIObserver> observers = new CopyOnWriteArrayList<>();
 	private final List<IVisualizationFrameObserver> visObservers = new CopyOnWriteArrayList<>();
-	
-	
-	@Override
-	public void initModule()
-	{
-		// nothing to do
-	}
-	
-	
-	@Override
-	public void deinitModule()
-	{
-		// nothing to do
-	}
-	
-	
+
+
 	/**
 	 * @param observer
 	 */
@@ -44,8 +27,8 @@ public abstract class AAgent extends AModule
 	{
 		visObservers.add(observer);
 	}
-	
-	
+
+
 	/**
 	 * @param observer
 	 */
@@ -53,8 +36,8 @@ public abstract class AAgent extends AModule
 	{
 		visObservers.remove(observer);
 	}
-	
-	
+
+
 	/**
 	 * @param o
 	 */
@@ -62,8 +45,8 @@ public abstract class AAgent extends AModule
 	{
 		observers.add(o);
 	}
-	
-	
+
+
 	/**
 	 * @param o
 	 */
@@ -71,8 +54,8 @@ public abstract class AAgent extends AModule
 	{
 		observers.remove(o);
 	}
-	
-	
+
+
 	protected void notifyAiModeChanged(final EAiTeam aiTeam, final EAIControlState mode)
 	{
 		for (IAIObserver observer : observers)
@@ -80,39 +63,39 @@ public abstract class AAgent extends AModule
 			observer.onAiModeChanged(aiTeam, mode);
 		}
 	}
-	
-	
+
+
 	/**
 	 * Reset agent
 	 */
 	public abstract void reset();
-	
-	
+
+
 	/**
 	 * @param aiTeam
 	 * @param mode
 	 */
 	public abstract void changeMode(final EAiTeam aiTeam, final EAIControlState mode);
-	
-	
+
+
 	/**
 	 * @param mode
 	 */
 	public abstract void changeMode(final EAIControlState mode);
-	
-	
+
+
 	/**
-	 * Get the ai of the give ai team, if it is running
-	 * 
+	 * Get the AI of the give AI team, if it is running
+	 *
 	 * @param selectedTeam
 	 * @return
 	 */
 	public abstract Optional<Ai> getAi(final EAiTeam selectedTeam);
-	
-	
+
+
 	/**
 	 * This function is used to notify the last {@link AIInfoFrame} to visualization observers.
-	 * 
+	 *
 	 * @param lastAIInfoframe
 	 */
 	protected void notifyNewAIInfoFrame(final AIInfoFrame lastAIInfoframe)
@@ -122,11 +105,11 @@ public abstract class AAgent extends AModule
 			o.onNewAIInfoFrame(lastAIInfoframe);
 		}
 	}
-	
-	
+
+
 	/**
 	 * This function is used to notify the last {@link AIInfoFrame} to visualization observers.
-	 * 
+	 *
 	 * @param lastAIInfoframe
 	 */
 	protected void notifyNewAIInfoFrameVisualize(final VisualizationFrame lastAIInfoframe)
@@ -140,8 +123,8 @@ public abstract class AAgent extends AModule
 			o.onNewVisualizationFrame(lastAIInfoframe);
 		}
 	}
-	
-	
+
+
 	protected void notifyAIStopped(final EAiTeam aiTeam)
 	{
 		for (final IVisualizationFrameObserver o : visObservers)

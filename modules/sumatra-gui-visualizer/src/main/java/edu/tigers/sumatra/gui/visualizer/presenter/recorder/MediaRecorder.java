@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.gui.visualizer.presenter.recorder;
 
 import edu.tigers.sumatra.drawable.ShapeMap;
@@ -26,7 +22,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
-
 @Log4j2
 @RequiredArgsConstructor
 public class MediaRecorder
@@ -36,6 +31,7 @@ public class MediaRecorder
 
 	@Getter
 	private final FieldPane fieldPane = new FieldPane();
+
 	private Recorder recorder;
 
 
@@ -60,16 +56,18 @@ public class MediaRecorder
 		if (recorder != null)
 		{
 			log.warn("Can not start recording: Recorder already active");
+			return;
 		}
-		recorder = new Recorder(null, shapeLayerSupplier);
-		try
+
+		Recorder r = new Recorder(null, shapeLayerSupplier);
+
+		if (!r.startCaptureFullField())
 		{
-			recorder.startCaptureFullField();
-		} catch (IOException e)
-		{
-			recorder = null;
-			log.error("Failed to capture video", e);
+			log.error("Failed to start full-field video recording");
+			return;
 		}
+
+		recorder = r;
 	}
 
 
@@ -81,16 +79,18 @@ public class MediaRecorder
 		if (recorder != null)
 		{
 			log.warn("Can not start recording: Recorder already active");
+			return;
 		}
-		recorder = new Recorder(currentFieldPane, shapeLayerSupplier);
-		try
+
+		Recorder r = new Recorder(currentFieldPane, shapeLayerSupplier);
+
+		if (!r.startCaptureCurrentSelection())
 		{
-			recorder.startCaptureCurrentSelection();
-		} catch (IOException e)
-		{
-			recorder = null;
-			log.error("Failed to capture video", e);
+			log.error("Failed to start current-selection video recording");
+			return;
 		}
+
+		recorder = r;
 	}
 
 
@@ -100,6 +100,7 @@ public class MediaRecorder
 		{
 			return;
 		}
+
 		recorder.stop();
 		recorder = null;
 	}
@@ -128,12 +129,15 @@ public class MediaRecorder
 		final double yLen = ((-currentOffsetY) / currentScale) * 2;
 		final double oldLenX = (xLen) * currentScale;
 		final double oldLenY = (yLen) * currentScale;
+
 		double normalizedScale = currentScale * Math.min(
 				fieldPane.getWidth() / (double) currentWidth,
 				fieldPane.getHeight() / (double) currentHeight
 		);
+
 		final double newLenX = (xLen) * normalizedScale;
 		final double newLenY = (yLen) * normalizedScale;
+
 		double offsetX = (currentOffsetX - ((newLenX - oldLenX) / 2.0));
 		double offsetY = (currentOffsetY - ((newLenY - oldLenY) / 2.0));
 
@@ -154,8 +158,10 @@ public class MediaRecorder
 	private Path newFilePath(String prefix, String ending)
 	{
 		Files.createDirectories(BASE_SCREENCAST_PATH);
+
 		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss");
 		sdf.setTimeZone(TimeZone.getDefault());
+
 		String filename = prefix + "_" + sdf.format(new Date()) + ending;
 		return BASE_SCREENCAST_PATH.resolve(filename).toAbsolutePath();
 	}
@@ -163,7 +169,11 @@ public class MediaRecorder
 
 	private BufferedImage createImage()
 	{
-		return new BufferedImage(fieldPane.getWidth(), fieldPane.getHeight(), BufferedImage.TYPE_INT_ARGB);
+		return new BufferedImage(
+				fieldPane.getWidth(),
+				fieldPane.getHeight(),
+				BufferedImage.TYPE_INT_ARGB
+		);
 	}
 
 
@@ -174,7 +184,8 @@ public class MediaRecorder
 			Path path = newFilePath("screenshot", ".png");
 			ImageIO.write(image, "png", path.toFile());
 			log.info("Finished saving screenshot to: {}", path);
-		} catch (IOException e)
+		}
+		catch (IOException e)
 		{
 			log.warn("Could not take Screenshot", e);
 		}
@@ -184,44 +195,93 @@ public class MediaRecorder
 	@RequiredArgsConstructor
 	private class Recorder
 	{
-		private final VideoExporter videoExporter = new VideoExporter(
-				newFilePath("screencast", ".mp4"),
-				fieldPane.getWidth(),
-				fieldPane.getHeight()
-		);
 		private final FieldPane currentFieldPane;
 		private final Supplier<List<ShapeMap.ShapeLayer>> shapeLayerSupplier;
 		private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
+		private VideoExporter videoExporter;
 
-		public void startCaptureFullField() throws IOException
+
+		boolean startCaptureFullField()
 		{
-			videoExporter.start();
-			scheduler.scheduleAtFixedRate(() -> run(this::captureFullscreen), 0, PERIOD, TimeUnit.MILLISECONDS);
+			try
+			{
+				videoExporter = new VideoExporter(
+						newFilePath("screencast", ".mp4"),
+						fieldPane.getWidth(),
+						fieldPane.getHeight()
+				);
+
+				videoExporter.start();
+
+				scheduler.scheduleAtFixedRate(
+						() -> run(this::captureFullscreen),
+						0,
+						PERIOD,
+						TimeUnit.MILLISECONDS
+				);
+
+				return true;
+			}
+			catch (Exception e)
+			{
+				log.error("Failed to start full-field recording", e);
+				stop();
+				return false;
+			}
 		}
 
 
-		public void startCaptureCurrentSelection() throws IOException
+		boolean startCaptureCurrentSelection()
 		{
-			videoExporter.start();
-			scheduler.scheduleAtFixedRate(() -> run(this::captureCurrentSelection), 0, PERIOD, TimeUnit.MILLISECONDS);
+			try
+			{
+				videoExporter = new VideoExporter(
+						newFilePath("screencast", ".mp4"),
+						fieldPane.getWidth(),
+						fieldPane.getHeight()
+				);
+
+				videoExporter.start();
+
+				scheduler.scheduleAtFixedRate(
+						() -> run(this::captureCurrentSelection),
+						0,
+						PERIOD,
+						TimeUnit.MILLISECONDS
+				);
+
+				return true;
+			}
+			catch (Exception e)
+			{
+				log.error("Failed to start current-selection recording", e);
+				stop();
+				return false;
+			}
 		}
 
 
-		public void stop()
+		void stop()
 		{
 			scheduler.shutdown();
+
 			try
 			{
 				if (!scheduler.awaitTermination(10, TimeUnit.SECONDS))
 				{
 					log.warn("Timed out waiting for video recorder to terminate");
 				}
-			} catch (InterruptedException e)
+			}
+			catch (InterruptedException e)
 			{
 				Thread.currentThread().interrupt();
 			}
-			videoExporter.stop();
+
+			if (videoExporter != null)
+			{
+				videoExporter.stop();
+			}
 		}
 
 
@@ -230,9 +290,10 @@ public class MediaRecorder
 			try
 			{
 				runnable.run();
-			} catch (OutOfMemoryError outOfMemoryError)
+			}
+			catch (OutOfMemoryError e)
 			{
-				log.error("Run out of memory. Stop video recording", outOfMemoryError);
+				log.error("Out of memory while recording video. Stopping recorder.", e);
 				stop();
 			}
 		}
@@ -240,7 +301,12 @@ public class MediaRecorder
 
 		private void captureFullscreen()
 		{
-			List<ShapeMap.ShapeLayer> shapeLayers = shapeLayerSupplier.get();
+			if (videoExporter == null)
+			{
+				return;
+			}
+
+			var shapeLayers = shapeLayerSupplier.get();
 			var image = paintFullField(shapeLayers);
 			videoExporter.addImageToVideo(image);
 		}
@@ -248,7 +314,12 @@ public class MediaRecorder
 
 		private void captureCurrentSelection()
 		{
-			List<ShapeMap.ShapeLayer> shapeLayers = shapeLayerSupplier.get();
+			if (videoExporter == null)
+			{
+				return;
+			}
+
+			var shapeLayers = shapeLayerSupplier.get();
 			var image = paintCurrentSelection(currentFieldPane, shapeLayers);
 			videoExporter.addImageToVideo(image);
 		}

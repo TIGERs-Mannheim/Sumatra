@@ -1,10 +1,7 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.skillsystem.skills;
 
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.botmanager.botskills.data.EKickerDevice;
 import edu.tigers.sumatra.drawable.DrawableAnnotation;
 import edu.tigers.sumatra.drawable.DrawableLine;
@@ -31,7 +28,7 @@ public class RedirectBallSkill extends ABallArrivalSkill
 	private final TimestampTimer redirectDoneTimer = new TimestampTimer(0.1);
 	private final IRedirectConsultant redirectConsultant = RedirectConsultantFactory.createDefault();
 
-	@Configurable(defValue = "DEFAULT")
+	@Configurable(defValue = "DEFAULT", unit = EConfigUnit.NO_UNIT)
 	private static EDribblerMode dribblerMode = EDribblerMode.DEFAULT;
 
 	@Setter

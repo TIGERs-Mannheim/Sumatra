@@ -1,11 +1,8 @@
-/*
- * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.metis.kicking;
 
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.ball.trajectory.IBallConsultant;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.geometry.RuleConstraints;
@@ -27,7 +24,7 @@ import java.util.Optional;
 @Log4j2
 public class KickSpeedFactory
 {
-	@Configurable(comment = "Number of touchdowns before a chipped pass can be received", defValue = "6")
+	@Configurable(comment = "Number of touchdowns before a chipped pass can be received", defValue = "6", unit = EConfigUnit.COUNT)
 	private static int touchdownsForPasses = 6;
 
 	static

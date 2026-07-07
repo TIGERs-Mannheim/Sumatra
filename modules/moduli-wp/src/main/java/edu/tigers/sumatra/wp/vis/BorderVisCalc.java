@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.wp.vis;
 
 import edu.tigers.sumatra.drawable.DrawableCircle;
@@ -25,7 +21,7 @@ import java.util.stream.Stream;
 
 
 /**
- * Generate field lines
+ * Generate field line
  */
 public class BorderVisCalc implements IWpCalc
 {
@@ -41,8 +37,12 @@ public class BorderVisCalc implements IWpCalc
 		var lengthHalf = Geometry.getFieldLength() / 2.0;
 		var lengthQuarter = Geometry.getFieldLength() / 4.0;
 
+
+		var field = Geometry.getFieldWBorders();
+
 		shapeMap.get(EWpShapesLayer.FIELD_BACKGROUND)
-				.add(new DrawableFieldBackground(Geometry.getField(), Geometry.getBoundaryWidth()));
+				.add(new DrawableFieldBackground(field, 0));
+
 		drawLine(shapes, new DrawableRectangle(Geometry.getField()));
 		drawLine(shapes, new DrawableCircle(Geometry.getCenterCircle()));
 		drawLine(shapes, new DrawableLine(Vector2.fromY(-widthHalf), Vector2.fromY(widthHalf)));
@@ -51,10 +51,14 @@ public class BorderVisCalc implements IWpCalc
 
 		List<IDrawableShape> additionalShapes = shapeMap.get(EWpShapesLayer.FIELD_LINES_ADDITIONAL);
 		drawLine(additionalShapes, new DrawableLine(Vector2.fromX(-lengthHalf), Vector2.fromX(lengthHalf)));
-		drawLine(additionalShapes,
-				new DrawableLine(Vector2.fromXY(-lengthQuarter, -widthHalf), Vector2.fromXY(-lengthQuarter, widthHalf)));
-		drawLine(additionalShapes,
-				new DrawableLine(Vector2.fromXY(lengthQuarter, -widthHalf), Vector2.fromXY(lengthQuarter, widthHalf)));
+		drawLine(
+				additionalShapes,
+				new DrawableLine(Vector2.fromXY(-lengthQuarter, -widthHalf), Vector2.fromXY(-lengthQuarter, widthHalf))
+		);
+		drawLine(
+				additionalShapes,
+				new DrawableLine(Vector2.fromXY(lengthQuarter, -widthHalf), Vector2.fromXY(lengthQuarter, widthHalf))
+		);
 
 
 		Color ourColor = wfw.getRefereeMsg().getNegativeHalfTeam() == ETeamColor.BLUE ? Color.blue : Color.yellow;
@@ -69,6 +73,13 @@ public class BorderVisCalc implements IWpCalc
 			shapes.add(new DrawablePoint(Geometry.getPenaltyMarkTheir()).withSize(markSize).setColor(Color.WHITE));
 			shapes.add(new DrawablePoint(Geometry.getPenaltyMarkOur()).withSize(markSize).setColor(Color.WHITE));
 		}
+
+		shapeMap.get(EWpShapesLayer.FIELD_LINES_ADDITIONAL)
+				.add(new DrawableRectangle(Geometry.getGoalSubstitutionAreaOur()).setColor(Color.ORANGE));
+
+		shapeMap.get(EWpShapesLayer.FIELD_LINES_ADDITIONAL)
+				.add(new DrawableRectangle(Geometry.getGoalSubstitutionAreaTheir()).setColor(Color.ORANGE));
+
 	}
 
 
@@ -84,15 +95,17 @@ public class BorderVisCalc implements IWpCalc
 		var x = Math.abs(goal.getCenter().x());
 		var width = goal.getWidth();
 
-		var positiveFront = Vector2.fromXY(x + Geometry.getLineWidth() / 2 + GOAL_BORDER_WIDTH_MM / 2,
-				width / 2 + GOAL_BORDER_WIDTH_MM / 2).multiply(sign);
-		var negativeFront = Vector2.fromXY(x + Geometry.getLineWidth() / 2 + GOAL_BORDER_WIDTH_MM / 2,
-				-width / 2 - GOAL_BORDER_WIDTH_MM / 2).multiply(sign);
+		var positiveFront = Vector2.fromXY(
+				x + Geometry.getLineWidth() / 2 + GOAL_BORDER_WIDTH_MM / 2,
+				width / 2 + GOAL_BORDER_WIDTH_MM / 2
+		).multiply(sign);
+		var negativeFront = Vector2.fromXY(
+				x + Geometry.getLineWidth() / 2 + GOAL_BORDER_WIDTH_MM / 2,
+				-width / 2 - GOAL_BORDER_WIDTH_MM / 2
+		).multiply(sign);
 
 		var backDistance = SumatraMath.max(
-				Geometry.getBoundaryWidth() - GOAL_BORDER_WIDTH_MM - Geometry.getLineWidth() / 2,
-				goal.getDepth()
-		);
+				Geometry.getBoundaryWidthGoalLine() - GOAL_BORDER_WIDTH_MM, goal.getDepth());
 
 		var backOffset = Vector2.fromX(backDistance).multiply(sign);
 		var middleOffset = Vector2.fromX(goal.getDepth()).multiply(sign);
@@ -104,11 +117,10 @@ public class BorderVisCalc implements IWpCalc
 		var negativeMiddle = negativeFront.addNew(middleOffset);
 
 		Stream.of(
-						new DrawableLine(positiveFront, positiveBack),
-						new DrawableLine(negativeFront, negativeBack),
-						new DrawableLine(positiveMiddle, negativeMiddle)
-				)
-				.map(shape -> shape.setColor(color).setStrokeWidth(GOAL_BORDER_WIDTH_MM))
-				.forEach(shapes::add);
+				new DrawableLine(positiveFront, positiveBack), new DrawableLine(negativeFront, negativeBack),
+				new DrawableLine(positiveMiddle, negativeMiddle)
+		).map(shape -> shape.setColor(color).setStrokeWidth(GOAL_BORDER_WIDTH_MM)).forEach(shapes::add);
 	}
+
+
 }

@@ -1,10 +1,8 @@
-/*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra.vision.tracker;
 
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.cam.data.CamBall;
 import edu.tigers.sumatra.filter.tracking.TrackingFilterPosVel2D;
 import edu.tigers.sumatra.math.rectangle.IRectangle;
@@ -14,7 +12,7 @@ import edu.tigers.sumatra.vision.data.FilteredVisionBall;
 import edu.tigers.sumatra.vision.data.RobotCollisionShape;
 import edu.tigers.sumatra.vision.data.RobotCollisionShape.CollisionResult;
 import edu.tigers.sumatra.vision.data.RobotCollisionShape.ECollisionLocation;
-import org.apache.commons.lang.Validate;
+import org.apache.commons.lang3.Validate;
 import org.apache.commons.math3.linear.RealVector;
 
 import java.util.List;
@@ -40,19 +38,19 @@ public class BallTracker
 	private double maxDistance = -1.0;
 
 
-	@Configurable(defValue = "1000.0")
+	@Configurable(defValue = "1000.0", unit = EConfigUnit.VARIANCE_MM)
 	private static double initialCovarianceXY = 1000.0;
-	@Configurable(defValue = "0.1")
+	@Configurable(defValue = "0.1", unit = EConfigUnit.VARIANCE_MM)
 	private static double modelError = 0.1;
-	@Configurable(defValue = "100.0")
+	@Configurable(defValue = "100.0", unit = EConfigUnit.VARIANCE_MM)
 	private static double measError = 100.0;
-	@Configurable(defValue = "15000.0", comment = "Maximum assumed ball speed in [mm/s] to filter outliers")
+	@Configurable(defValue = "15000.0", comment = "Maximum assumed ball speed in to filter outliers", unit = EConfigUnit.VELOCITY_MM)
 	private static double maxLinearVel = 15000.0;
-	@Configurable(defValue = "1.5", comment = "Factor to weight stdDeviation during tracker merging, reasonable range: 1.0 - 2.0. High values lead to more jitter")
+	@Configurable(defValue = "1.5", comment = "Factor to weight stdDeviation during tracker merging, reasonable range: 1.0 - 2.0. High values lead to more jitter", unit = EConfigUnit.FACTOR)
 	private static double mergePower = 1.5;
-	@Configurable(defValue = "20", comment = "Reciprocal health is used as uncertainty, increased on update, decreased on prediction")
+	@Configurable(defValue = "20", comment = "Reciprocal health is used as uncertainty, increased on update, decreased on prediction", unit = EConfigUnit.NO_UNIT)
 	private static int maxHealth = 20;
-	@Configurable(defValue = "3", comment = "How many updates are required until this tracker is grown up?")
+	@Configurable(defValue = "3", comment = "How many updates are required until this tracker is grown up?", unit = EConfigUnit.COUNT)
 	private static int grownUpAge = 3;
 
 	static

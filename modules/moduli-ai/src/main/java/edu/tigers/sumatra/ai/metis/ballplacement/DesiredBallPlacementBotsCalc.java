@@ -1,6 +1,3 @@
-/*
- * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra.ai.metis.ballplacement;
 
 import edu.tigers.sumatra.ai.metis.general.ADesiredBotCalc;

@@ -1,11 +1,8 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.pathfinder.finder;
 
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.drawable.DrawableAnnotation;
 import edu.tigers.sumatra.drawable.DrawableCircle;
 import edu.tigers.sumatra.drawable.ShapeMap;
@@ -27,7 +24,7 @@ public class PathFinder implements IPathFinder
 {
 	private static final double TIME_CORRECTION_RANGE = 0.02;
 
-	@Configurable(comment = "The initial offset to start with checking for collisions", defValue = "0.1")
+	@Configurable(comment = "The initial offset to start with checking for collisions", defValue = "0.1", unit = EConfigUnit.TIME_S)
 	private static double initialTimeOffset = 0.1;
 
 	static

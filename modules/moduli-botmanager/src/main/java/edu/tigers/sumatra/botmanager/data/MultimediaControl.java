@@ -1,6 +1,3 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra.botmanager.data;
 
 
@@ -17,6 +14,8 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class MultimediaControl
 {
+	public static final MultimediaControl DEFAULT = new MultimediaControl();
+
 	private ELedColor ledColor = ELedColor.OFF;
 	private ESong song = ESong.NONE;
 

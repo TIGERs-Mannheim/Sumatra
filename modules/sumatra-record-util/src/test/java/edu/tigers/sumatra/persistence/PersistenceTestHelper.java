@@ -1,6 +1,3 @@
-/*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra.persistence;
 
 import edu.tigers.sumatra.ai.AIInfoFrame;
@@ -8,7 +5,7 @@ import edu.tigers.sumatra.ai.PersistenceAiFrame;
 import edu.tigers.sumatra.ai.VisualizationFrame;
 import edu.tigers.sumatra.ids.ETeamColor;
 import edu.tigers.sumatra.wp.data.WorldFrameWrapper;
-import org.apache.commons.lang.Validate;
+import org.apache.commons.lang3.Validate;
 
 import java.io.File;
 import java.io.IOException;
@@ -121,7 +118,7 @@ public class PersistenceTestHelper
 	 */
 	public List<PersistenceAiFrame> createOneRecordFrame()
 	{
-		return createOneRecordFrame(frameFactory.createWorldFrameWrapper(0, 0));
+		return createOneRecordFrame(frameFactory.createWorldFrameWrapper(0, 1));
 	}
 	
 	

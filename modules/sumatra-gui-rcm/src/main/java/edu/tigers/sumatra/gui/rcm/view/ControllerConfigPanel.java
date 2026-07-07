@@ -1,6 +1,3 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra.gui.rcm.view;
 
 import edu.tigers.sumatra.gui.rcm.presenter.IRCMConfigChangedObserver;
@@ -12,6 +9,7 @@ import javax.swing.JPanel;
 import javax.swing.JTextField;
 import java.awt.event.FocusEvent;
 import java.awt.event.FocusListener;
+import java.io.Serial;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -20,15 +18,16 @@ import java.util.logging.Logger;
 
 /**
  * Panel for controller configs
- * 
+ *
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  */
 public class ControllerConfigPanel extends JPanel
 {
+	@Serial
 	private static final long serialVersionUID = -7083335280756862591L;
 	private final List<IRCMConfigChangedObserver> observers = new CopyOnWriteArrayList<>();
-	
-	
+
+
 	/**
 	 * @param observer
 	 */
@@ -36,8 +35,8 @@ public class ControllerConfigPanel extends JPanel
 	{
 		observers.add(observer);
 	}
-	
-	
+
+
 	/**
 	 * @param observer
 	 */
@@ -45,8 +44,8 @@ public class ControllerConfigPanel extends JPanel
 	{
 		observers.remove(observer);
 	}
-	
-	
+
+
 	/**
 	 * @param config
 	 */
@@ -61,16 +60,16 @@ public class ControllerConfigPanel extends JPanel
 			add(label);
 			add(txtField);
 		}
-		
+
 	}
-	
-	
+
+
 	private class ChangeListener implements FocusListener
 	{
 		private final JTextField txtField;
 		private final ERcmControllerConfig config;
-		
-		
+
+
 		/**
 		 * @param txtField
 		 * @param config
@@ -81,15 +80,15 @@ public class ControllerConfigPanel extends JPanel
 			this.txtField = txtField;
 			this.config = config;
 		}
-		
-		
+
+
 		@Override
 		public void focusGained(final FocusEvent e)
 		{
 			// empty
 		}
-		
-		
+
+
 		@Override
 		public void focusLost(final FocusEvent e)
 		{

@@ -1,11 +1,6 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.skillsystem.skills;
 
 import edu.tigers.sumatra.geometry.Geometry;
-import edu.tigers.sumatra.pathfinder.TrajectoryGenerator;
 
 
 public class RamboKeeperSkill extends AMoveToSkill
@@ -13,10 +8,11 @@ public class RamboKeeperSkill extends AMoveToSkill
 	@Override
 	public void doEntryActions()
 	{
-		getMoveCon().setPenaltyAreaOurObstacle(false);
-		getMoveCon().setFieldBorderObstacle(false);
-		getMoveCon().setBotsObstacle(false);
-		getMoveCon().setBallObstacle(false);
+		setMoveCon(getMoveCon()
+				.withPenaltyAreaOurObstacle(false)
+				.withFieldBorderObstacle(false)
+				.withBotsObstacle(false)
+				.withBallObstacle(false));
 
 		super.doEntryActions();
 	}
@@ -29,15 +25,11 @@ public class RamboKeeperSkill extends AMoveToSkill
 		var defPoint = Geometry.getGoalOur().bisection(ballPosition);
 		var direction = ballPosition.subtractNew(defPoint);
 
-		var destination = TrajectoryGenerator.generateVirtualPositionToReachPointInTime(
-				getTBot(),
-				ballPosition,
-				0.0
-		);
-
-		updateDestination(destination);
-		updateLookAtTarget(getBall());
-		getMoveConstraints().setPrimaryDirection(direction); // first move between goalLine
+		updateDestination(ballPosition);
+		updateTargetAngle(0.0);
+		updateTargetTime(0.0);
+		updateUseComeToAStopIfFaster(true);
+		setMoveConstraints(getMoveConstraints().withPrimaryDirection(direction)); // first move between goalLine
 
 		super.doUpdate();
 	}

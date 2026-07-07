@@ -1,22 +1,10 @@
-/*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.skillsystem.skills;
 
 import edu.tigers.sumatra.ai.data.BotAiInformation;
-import edu.tigers.sumatra.botmanager.bots.ABot;
-import edu.tigers.sumatra.botmanager.data.MatchCommand;
-import edu.tigers.sumatra.botmanager.data.MultimediaControl;
-import edu.tigers.sumatra.drawable.ShapeMap;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.vector.IVector3;
-import edu.tigers.sumatra.pathfinder.PathFinderPrioMap;
 import edu.tigers.sumatra.skillsystem.ASkillSystem;
 import edu.tigers.sumatra.trajectory.TrajectoryWithTime;
-import edu.tigers.sumatra.wp.data.WorldFrameWrapper;
-
-import java.util.concurrent.ExecutorService;
 
 
 /**
@@ -24,18 +12,10 @@ import java.util.concurrent.ExecutorService;
  */
 public interface ISkill
 {
-	/**
-	 * @param wfw
-	 * @param bot
-	 * @param shapeMap
-	 */
-	void update(WorldFrameWrapper wfw, ABot bot, final ShapeMap shapeMap, MatchCommand matchCommand);
+	void update(SkillInput input);
 
 
-	/**
-	 * @param timestamp
-	 */
-	void calcActions(long timestamp);
+	void calcActions();
 
 
 	/**
@@ -49,11 +29,6 @@ public interface ISkill
 	 */
 	void calcEntryActions();
 
-
-	default void setPrioMap(final PathFinderPrioMap prioMap)
-	{
-		// ignore it by default
-	}
 
 	/**
 	 * @return
@@ -74,26 +49,11 @@ public interface ISkill
 
 
 	/**
-	 * @param control
-	 */
-	void setMultimediaControl(final MultimediaControl control);
-
-
-	/**
 	 * Create bot ai infos based on current state
 	 *
 	 * @return new bot ai info structure
 	 */
 	BotAiInformation getBotAiInfo();
-
-	/**
-	 * Set the executor service for path planning.
-	 *
-	 * @param executorService
-	 */
-	default void setExecutorService(ExecutorService executorService)
-	{
-	}
 
 	/**
 	 * @return the last applied trajectory

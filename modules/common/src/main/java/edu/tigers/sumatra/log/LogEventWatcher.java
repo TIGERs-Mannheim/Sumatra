@@ -1,11 +1,5 @@
-/*
- * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.log;
 
-import edu.tigers.sumatra.log.ILogEventConsumer;
-import edu.tigers.sumatra.log.SumatraAppender;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.core.LogEvent;

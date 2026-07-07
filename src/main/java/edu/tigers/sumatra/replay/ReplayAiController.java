@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.replay;
 
 import edu.tigers.sumatra.ai.IVisualizationFrameObserver;
@@ -9,7 +5,7 @@ import edu.tigers.sumatra.ai.PersistenceAiFrame;
 import edu.tigers.sumatra.ai.VisualizationFrame;
 import edu.tigers.sumatra.gui.replay.presenter.IReplayController;
 import edu.tigers.sumatra.persistence.PersistenceDb;
-import edu.tigers.sumatra.views.ASumatraView;
+import edu.tigers.sumatra.views.SumatraView;
 
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -20,9 +16,9 @@ public class ReplayAiController implements IReplayController
 	private final List<IVisualizationFrameObserver> visFrameObservers = new CopyOnWriteArrayList<>();
 
 
-	public ReplayAiController(List<ASumatraView> sumatraViews)
+	public ReplayAiController(List<SumatraView> sumatraViews)
 	{
-		for (ASumatraView view : sumatraViews)
+		for (SumatraView view : sumatraViews)
 		{
 			if (view.getPresenter() instanceof IVisualizationFrameObserver)
 			{

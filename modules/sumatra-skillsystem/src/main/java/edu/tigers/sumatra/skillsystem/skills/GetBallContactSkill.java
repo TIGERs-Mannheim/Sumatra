@@ -1,10 +1,7 @@
-/*
- * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.skillsystem.skills;
 
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.drawable.DrawableLine;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.math.AngleMath;
@@ -24,19 +21,19 @@ import java.awt.Color;
  */
 public class GetBallContactSkill extends AMoveToSkill
 {
-	@Configurable(defValue = "300", comment = "Max dist [mm] to push towards an invisible ball")
+	@Configurable(defValue = "300", comment = "Max dist to push towards an invisible ball", unit = EConfigUnit.DISTANCE_MM)
 	private static double maxApproachBallExtraDist = 300;
 
-	@Configurable(defValue = "50", comment = "Offset [mm] to add to the boundary margin for the position validator")
+	@Configurable(defValue = "50", comment = "Offset to add to the boundary margin for the position validator", unit = EConfigUnit.DISTANCE_MM)
 	private static double boundaryMarginOffset = 50;
 
-	@Configurable(comment = "How fast to accelerate when getting ball contact", defValue = "1.0")
+	@Configurable(comment = "How fast to accelerate when getting ball contact", defValue = "1.0", unit = EConfigUnit.ACCELERATION_M)
 	private static double getContactAcc = 1.0;
 
-	@Configurable(comment = "Min contact time [s] to reach before coming to a stop", defValue = "0.1")
+	@Configurable(comment = "Min contact time to reach before coming to a stop", defValue = "0.1", unit = EConfigUnit.TIME_S)
 	private static double minContactTime = 0.1;
 
-	@Configurable(comment = "Min contact time [s] to reach before succeeding", defValue = "0.1")
+	@Configurable(comment = "Min contact time to reach before succeeding", defValue = "0.1", unit = EConfigUnit.TIME_S)
 	private static double minSuccessContactTime = 0.1;
 
 	private double cachedOrientation;
@@ -75,7 +72,7 @@ public class GetBallContactSkill extends AMoveToSkill
 		setKickParams(KickParams.disarm().withDribblerMode(EDribblerMode.DEFAULT));
 
 		// We just drive a bit forward to get contact with the ball, just ignore everything
-		getMoveCon().noObstacles();
+		setMoveCon(getMoveCon().withNoObstacles());
 	}
 
 
@@ -98,7 +95,7 @@ public class GetBallContactSkill extends AMoveToSkill
 
 		if (getVel().getLength2() <= getMoveConstraints().getVelMax())
 		{
-			getMoveConstraints().setAccMax(getContactAcc);
+			setMoveConstraints(getMoveConstraints().withAccMax(getContactAcc));
 		}
 
 		positionValidator.update(getWorldFrame(), getMoveCon());

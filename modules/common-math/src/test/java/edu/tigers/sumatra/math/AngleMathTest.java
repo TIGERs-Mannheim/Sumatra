@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.math;
 
 import org.junit.jupiter.api.Test;
@@ -29,13 +25,13 @@ class AngleMathTest
 	@Test
 	void testNormalizeAngle()
 	{
-		assertEquals(AngleMath.normalizeAngle(4.6f * AngleMath.PI), 0.6 * AngleMath.PI, ACCURACY);
-		assertEquals(AngleMath.normalizeAngle(-4.6f * AngleMath.PI), -0.6f * AngleMath.PI, ACCURACY);
-		assertEquals(AngleMath.normalizeAngle(3.6f * AngleMath.PI), -0.4f * AngleMath.PI, ACCURACY);
-		assertEquals(AngleMath.normalizeAngle(-3.6f * AngleMath.PI), 0.4 * AngleMath.PI, ACCURACY);
-		assertEquals(AngleMath.normalizeAngle(5.001f * AngleMath.PI), -0.999f * AngleMath.PI, ACCURACY);
-		assertEquals(AngleMath.normalizeAngle(5f * AngleMath.PI), AngleMath.PI, ACCURACY);
-		assertEquals(AngleMath.normalizeAngle(4f * AngleMath.PI), 0, ACCURACY);
+		assertEquals(0.6 * AngleMath.PI, AngleMath.normalizeAngle(4.6f * AngleMath.PI), ACCURACY);
+		assertEquals(-0.6f * AngleMath.PI, AngleMath.normalizeAngle(-4.6f * AngleMath.PI), ACCURACY);
+		assertEquals(-0.4f * AngleMath.PI, AngleMath.normalizeAngle(3.6f * AngleMath.PI), ACCURACY);
+		assertEquals(0.4 * AngleMath.PI, AngleMath.normalizeAngle(-3.6f * AngleMath.PI), ACCURACY);
+		assertEquals(-0.999f * AngleMath.PI, AngleMath.normalizeAngle(5.001f * AngleMath.PI), ACCURACY);
+		assertEquals(AngleMath.PI, AngleMath.normalizeAngle(5f * AngleMath.PI), ACCURACY);
+		assertEquals(0, AngleMath.normalizeAngle(4f * AngleMath.PI), ACCURACY);
 	}
 
 
@@ -43,17 +39,17 @@ class AngleMathTest
 	void testTrigonometry()
 	{
 		// sin
-		assertEquals(SumatraMath.sin(AngleMath.PI), 0, ACCURACY);
-		assertEquals(SumatraMath.sin(4.5f), -0.9775301, ACCURACY);
-		assertEquals(SumatraMath.sin(-34), -0.529, ACCURACY);
+		assertEquals(0, SumatraMath.sin(AngleMath.PI), ACCURACY);
+		assertEquals(-0.9775301, SumatraMath.sin(4.5f), ACCURACY);
+		assertEquals(-0.529, SumatraMath.sin(-34), ACCURACY);
 
 		// cos
-		assertEquals(SumatraMath.cos(5), 0.28366, ACCURACY);
-		assertEquals(SumatraMath.cos(-0.1f), 0.9950, ACCURACY);
+		assertEquals(0.28366, SumatraMath.cos(5), ACCURACY);
+		assertEquals(0.9950, SumatraMath.cos(-0.1f), ACCURACY);
 
 		// tan
-		assertEquals(SumatraMath.tan(3), -0.1425, ACCURACY);
-		assertEquals(SumatraMath.tan(-2), 2.185, ACCURACY);
+		assertEquals(-0.1425, SumatraMath.tan(3), ACCURACY);
+		assertEquals(2.185, SumatraMath.tan(-2), ACCURACY);
 	}
 
 

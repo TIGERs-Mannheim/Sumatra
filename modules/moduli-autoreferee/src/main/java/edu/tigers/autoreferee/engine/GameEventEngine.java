@@ -1,6 +1,3 @@
-/*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.autoreferee.engine;
 
 import com.github.g3force.configurable.ConfigRegistration;
@@ -16,7 +13,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 
 /**
@@ -44,7 +40,7 @@ public class GameEventEngine
 					allDetectors.add(inst);
 				} catch (InstanceableClass.NotCreateableException e)
 				{
-					log.error("Could not instantiate calculator: " + eCalc, e);
+					log.error("Could not instantiate calculator: {}", eCalc, e);
 				}
 			}
 		}
@@ -66,7 +62,7 @@ public class GameEventEngine
 		List<IGameEventDetector> detectors = this.allDetectors.stream()
 				.filter(d -> activeDetectors.contains(d.getType()))
 				.filter(d -> d.isActiveIn(currentState.getState()))
-				.collect(Collectors.toList());
+				.toList();
 
 		/*
 		 * Reset the detectors which have now become active

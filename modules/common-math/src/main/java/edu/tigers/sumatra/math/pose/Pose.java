@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.math.pose;
 
 import edu.tigers.sumatra.math.AngleMath;
@@ -81,5 +77,11 @@ public class Pose implements IMirrorable<Pose>
 		IVector2 posDiff = pose.pos.subtractNew(pos).multiply(percentage);
 		IVector2 intpPos = pos.addNew(posDiff);
 		return Pose.from(intpPos, intpOrientation);
+	}
+
+
+	public boolean isFinite()
+	{
+		return pos.isFinite() && Double.isFinite(orientation);
 	}
 }

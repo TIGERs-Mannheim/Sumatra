@@ -1,12 +1,12 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra.referee.source;
 
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
+import edu.tigers.sumatra.network.BroadcastUDPReceiver;
 import edu.tigers.sumatra.network.MulticastUDPReceiver;
 import edu.tigers.sumatra.network.NetworkUtility;
+import edu.tigers.sumatra.network.UDPReceiver;
 import edu.tigers.sumatra.referee.proto.SslGcRefereeMessage;
 import lombok.Setter;
 import lombok.extern.log4j.Log4j2;
@@ -27,7 +27,7 @@ public class NetworkRefereeReceiver extends ARefereeMessageSource implements Run
 {
 	private static final int BUFFER_SIZE = 10000;
 
-	@Configurable
+	@Configurable(defValue = "", unit = EConfigUnit.NO_UNIT)
 	private static String network;
 
 	@Setter
@@ -36,7 +36,7 @@ public class NetworkRefereeReceiver extends ARefereeMessageSource implements Run
 	private String address;
 
 	private Thread referee;
-	private MulticastUDPReceiver receiver;
+	private UDPReceiver receiver;
 
 	private InetAddress refBoxAddress = null;
 
@@ -63,7 +63,10 @@ public class NetworkRefereeReceiver extends ARefereeMessageSource implements Run
 		// --- Choose network-interface
 		NetworkInterface nif = NetworkUtility.chooseNetworkInterface(network, 3);
 
-		if (nif == null)
+		if (!address.startsWith("224"))
+		{
+			receiver = new BroadcastUDPReceiver("0.0.0.0", port);
+		} else if (nif == null)
 		{
 			log.debug("No nif for referee specified, will try all.");
 			receiver = new MulticastUDPReceiver(address, port);
@@ -133,7 +136,13 @@ public class NetworkRefereeReceiver extends ARefereeMessageSource implements Run
 		{
 			expectIOE = true;
 
-			receiver.close();
+			try
+			{
+				receiver.close();
+			} catch (Exception e)
+			{
+				throw new RuntimeException(e);
+			}
 
 			receiver = null;
 		}

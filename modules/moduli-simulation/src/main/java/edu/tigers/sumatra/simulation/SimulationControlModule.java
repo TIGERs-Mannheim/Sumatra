@@ -1,11 +1,8 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.simulation;
 
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import com.github.g3force.configurable.IConfigClient;
 import com.github.g3force.configurable.IConfigObserver;
 import edu.tigers.sumatra.bot.State;
@@ -62,36 +59,36 @@ public class SimulationControlModule extends AModule
 {
 	private static final double BUFFER_HORIZON = 0.1;
 
-	@Configurable(defValue = "10300", comment = "The control port")
+	@Configurable(defValue = "10300", comment = "The control port", unit = EConfigUnit.NO_UNIT)
 	private static int controlPort = 10300;
-	@Configurable(defValue = "10301", comment = "The blue team port")
+	@Configurable(defValue = "10301", comment = "The blue team port", unit = EConfigUnit.NO_UNIT)
 	private static int blueTeamPort = 10301;
-	@Configurable(defValue = "10302", comment = "The yellow team port")
+	@Configurable(defValue = "10302", comment = "The yellow team port", unit = EConfigUnit.NO_UNIT)
 	private static int yellowTeamPort = 10302;
 
-	@Configurable(defValue = "true", comment = "Enable control of the blue team")
+	@Configurable(defValue = "true", comment = "Enable control of the blue team", unit = EConfigUnit.BOOLEAN)
 	private static boolean controlBlueTeam = true;
-	@Configurable(defValue = "true", comment = "Enable control of the yellow team")
+	@Configurable(defValue = "true", comment = "Enable control of the yellow team", unit = EConfigUnit.BOOLEAN)
 	private static boolean controlYellowTeam = true;
 
-	@Configurable(defValue = "0.005")
+	@Configurable(defValue = "0.005", unit = EConfigUnit.FACTOR)
 	private static double pXyGain = 0.005;
-	@Configurable(defValue = "0.5")
+	@Configurable(defValue = "0.5", unit = EConfigUnit.VELOCITY_M)
 	private static double pXyMax = 0.5;
-	@Configurable(defValue = "5.0")
+	@Configurable(defValue = "5.0", unit = EConfigUnit.FACTOR)
 	private static double pRotGain = 5;
-	@Configurable(defValue = "1.0")
+	@Configurable(defValue = "1.0", unit = EConfigUnit.VELOCITY_ANGULAR_RAD)
 	private static double pRotMax = 1;
 
-	@Configurable(defValue = "0.05")
+	@Configurable(defValue = "0.05", unit = EConfigUnit.TIME_S)
 	private static double delay = 0.05;
-	@Configurable(comment = "Max allowed bot speed in stop phases", defValue = "1.3")
+	@Configurable(comment = "Max allowed bot speed in stop phases", defValue = "1.3", unit = EConfigUnit.VELOCITY_M)
 	private static double stopSpeedLimit = 1.3;
 
-	@Configurable(defValue = "150.0", comment = "Max allowed divergence from actual position, before resetting the state")
+	@Configurable(defValue = "150.0", comment = "Max allowed divergence from actual position, before resetting the state", unit = EConfigUnit.DISTANCE_MM)
 	private static double maxDivergence = 150;
 
-	@Configurable(defValue = "")
+	@Configurable(defValue = "", unit = EConfigUnit.NO_UNIT)
 	private static String staticHostname = "";
 
 	static

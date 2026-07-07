@@ -1,10 +1,7 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.metis.ballresponsibility;
 
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.ai.metis.ACalculator;
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
 import edu.tigers.sumatra.ai.metis.botdistance.BotDistance;
@@ -33,31 +30,34 @@ import java.util.function.Supplier;
 @RequiredArgsConstructor
 public class BallResponsibilityCalc extends ACalculator
 {
-	@Configurable(defValue = "200.0")
+	@Configurable(defValue = "200.0", unit = EConfigUnit.DISTANCE_MM)
 	private static double marginForNoOffensiveWhenBallNearOurPen = 200;
 
-	@Configurable(defValue = "150.0")
+	@Configurable(defValue = "150.0", unit = EConfigUnit.DISTANCE_MM)
 	private static double hysteresisForNoOffensiveWhenBallNearOurPen = 150;
 
-	@Configurable(defValue = "20.0")
+	@Configurable(defValue = "20.0", unit = EConfigUnit.DISTANCE_MM)
 	private static double marginForNoOffensiveWhenBallNearOpponentPen = 20;
 
-	@Configurable(defValue = "50.0")
+	@Configurable(defValue = "50.0", unit = EConfigUnit.DISTANCE_MM)
 	private static double hysteresisForNoOffensiveWhenBallNearOpponentPen = 50;
 
-	@Configurable(defValue = "false")
+	@Configurable(defValue = "false", unit = EConfigUnit.BOOLEAN)
 	private static boolean noOffensiveWhenBallInOpponentPenArea = false;
 
-	@Configurable(defValue = "1300.0")
+	@Configurable(defValue = "1300.0", unit = EConfigUnit.DISTANCE_MM)
 	private static double minMarginToOurPenAreaForIntercept = 1300;
 
-	@Configurable(comment = "Distance [mm] from opponent kicker to ball where it gets safe for the keeper to get the ball", defValue = "450")
+	@Configurable(comment = "Distance from opponent kicker to ball where it gets safe for the keeper to get the ball", defValue = "450", unit = EConfigUnit.DISTANCE_MM)
 	private static double opponentBotBallPossessionDistance = 450;
 
-	@Configurable(comment = "Margin [mm] on penalty Area where keeper can still get the ball", defValue = "200")
+	@Configurable(comment = "Margin on penalty Area where keeper can still get the ball", defValue = "200", unit = EConfigUnit.DISTANCE_MM)
 	private static double getBallPenaltyAreaMargin = 200;
 
-	@Configurable(comment = "Margin [mm] on penalty Area where keeper can safely get the ball", defValue = "-50")
+	@Configurable(comment = "Min num available TIGERs required for offensive interception during free kick", defValue = "6", unit = EConfigUnit.COUNT)
+	private static int minNumBotsToAllowFreeKickInterceptor = 6;
+
+	@Configurable(comment = "Margin on penalty Area where keeper can safely get the ball", defValue = "-50", unit = EConfigUnit.DISTANCE_MM)
 	private static double safeBallPenaltyAreaMargin = -50;
 	private final Supplier<BotDistance> opponentClosestToBall;
 	@Getter
@@ -74,8 +74,10 @@ public class BallResponsibilityCalc extends ACalculator
 		var hudColor = getWFrame().getTeamColor();
 		double posX = 1.0;
 		getShapes(EAiShapesLayer.AI_BALL_RESPONSIBILITY).add(
-				new DrawableBorderText(Vector2.fromXY(posX, hudColor == ETeamColor.BLUE ? 10.3 : 12.0),
-						"Ball Responsibility: " + ballResponsibility)
+				new DrawableBorderText(
+						Vector2.fromXY(posX, hudColor == ETeamColor.BLUE ? 10.3 : 12.0),
+						"Ball Responsibility: " + ballResponsibility
+				)
 						.setColor(getAiFrame().getTeamColor().getColor()));
 	}
 
@@ -86,7 +88,7 @@ public class BallResponsibilityCalc extends ACalculator
 		{
 			return EBallResponsibility.KEEPER;
 		}
-		if (ballIsOrWillStopInsidePenaltyArea() || noInterceptorRequired())
+		if (ballIsOrWillStopInsidePenaltyArea() || noOffensiveInterceptorPossible())
 		{
 			return EBallResponsibility.DEFENSE;
 		}
@@ -233,10 +235,12 @@ public class BallResponsibilityCalc extends ACalculator
 	}
 
 
-	private boolean noInterceptorRequired()
+	private boolean noOffensiveInterceptorPossible()
 	{
-		return getAiFrame().getGameState().isStandardSituationForThem()
-				&& tooNearToOurPenAreaForIntercept();
+		return (getAiFrame().getGameState().isStandardSituationForThem()
+				|| getAiFrame().getGameState().isNextStandardSituationForThem())
+				&& (tooNearToOurPenAreaForIntercept()
+				|| getWFrame().getTigerBotsAvailable().size() < minNumBotsToAllowFreeKickInterceptor);
 	}
 
 

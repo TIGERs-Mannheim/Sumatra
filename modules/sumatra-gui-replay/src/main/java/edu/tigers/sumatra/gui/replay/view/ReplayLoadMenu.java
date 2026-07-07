@@ -1,13 +1,10 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra.gui.replay.view;
 
 import edu.tigers.sumatra.model.SumatraModel;
 import edu.tigers.sumatra.persistence.PersistenceDb;
 import edu.tigers.sumatra.persistence.RecordManager;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang.exception.ExceptionUtils;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -23,6 +20,7 @@ import java.awt.event.ActionListener;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
+import java.io.Serial;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -31,7 +29,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.stream.Collectors;
 
 
 /**
@@ -40,6 +37,7 @@ import java.util.stream.Collectors;
 @SuppressWarnings("squid:S2250") // Collection methods with O(n) performance should be used carefully
 public class ReplayLoadMenu extends JMenu
 {
+	@Serial
 	private static final long serialVersionUID = 1L;
 	private static final Logger log = LogManager.getLogger(ReplayLoadMenu.class.getName());
 
@@ -60,7 +58,7 @@ public class ReplayLoadMenu extends JMenu
 			boolean dirCreated = path.mkdirs();
 			if (dirCreated)
 			{
-				log.debug("Created folders for persistencePath " + path);
+				log.debug("Created folders for persistencePath {}", path);
 			}
 		}
 		fileFilter = new RecordDbFilter();
@@ -107,7 +105,7 @@ public class ReplayLoadMenu extends JMenu
 				dirs = new ArrayList<>();
 			} else
 			{
-				dirs = Arrays.stream(files).sorted().collect(Collectors.toList());
+				dirs = Arrays.stream(files).sorted().toList();
 			}
 			if (!dirs.isEmpty())
 			{
@@ -313,7 +311,7 @@ public class ReplayLoadMenu extends JMenu
 			if (JOptionPane.showConfirmDialog(null, "Do you want to delete '" + filename + "'?", "Confirm deletion",
 					JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION)
 			{
-				log.info("Deleting '" + filename + "'...");
+				log.info("Deleting '{}'...", filename);
 				try
 				{
 					File file = new File(filename);

@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.replay;
 
 import edu.tigers.sumatra.ai.AIInfoFrame;
@@ -18,8 +14,8 @@ import edu.tigers.sumatra.ids.ETeamColor;
 import edu.tigers.sumatra.model.SumatraModel;
 import edu.tigers.sumatra.persistence.PersistenceDb;
 import edu.tigers.sumatra.skillsystem.GenericSkillSystem;
-import edu.tigers.sumatra.views.ASumatraView;
 import edu.tigers.sumatra.views.ESumatraViewType;
+import edu.tigers.sumatra.views.SumatraView;
 import edu.tigers.sumatra.wp.IWorldFrameObserver;
 import edu.tigers.sumatra.wp.data.WorldFrameWrapper;
 
@@ -45,14 +41,14 @@ public class ReplayAiReCalcController implements IReplayController
 	private final Map<EAiTeam, Ai> ais = new EnumMap<>(EAiTeam.class);
 	private final Set<EAiTeam> aisToBeStopped = new HashSet<>();
 	private final Map<EAiTeam, ShapeMapSource> shapeMapSources = new EnumMap<>(EAiTeam.class);
-	private GenericSkillSystem skillSystem = GenericSkillSystem.forAnalysis();
+	private final GenericSkillSystem skillSystem = GenericSkillSystem.create();
 	private long lastTimestamp = 0;
 	private boolean runSkills = false;
 
 
-	public ReplayAiReCalcController(List<ASumatraView> sumatraViews)
+	public ReplayAiReCalcController(List<SumatraView> sumatraViews)
 	{
-		for (ASumatraView view : sumatraViews)
+		for (SumatraView view : sumatraViews)
 		{
 			view.getPresenters()
 					.filter(IWorldFrameObserver.class::isInstance)

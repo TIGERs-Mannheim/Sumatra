@@ -1,10 +1,8 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra.cam;
 
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import com.github.g3force.configurable.IConfigClient;
 import com.github.g3force.configurable.IConfigObserver;
 import edu.tigers.sumatra.cam.data.CamGeometry;
@@ -14,12 +12,14 @@ import edu.tigers.sumatra.gamelog.EMessageType;
 import edu.tigers.sumatra.gamelog.GameLogMessage;
 import edu.tigers.sumatra.gamelog.GameLogRecorder;
 import edu.tigers.sumatra.model.SumatraModel;
+import edu.tigers.sumatra.network.BroadcastUDPReceiver;
 import edu.tigers.sumatra.network.IReceiverObserver;
 import edu.tigers.sumatra.network.MulticastUDPReceiver;
 import edu.tigers.sumatra.network.NetworkUtility;
+import edu.tigers.sumatra.network.UDPReceiver;
 import lombok.Setter;
 import lombok.extern.log4j.Log4j2;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -46,7 +46,7 @@ public class SSLVisionCam extends ACam implements Runnable, IReceiverObserver, I
 	@Setter
 	private static String customAddress;
 
-	@Configurable(comment = "Enter a network address to limit network to a certain network interface")
+	@Configurable(comment = "Enter a network address to limit network to a certain network interface", defValue = "", unit = EConfigUnit.URL)
 	private static String network = "";
 
 	static
@@ -55,7 +55,7 @@ public class SSLVisionCam extends ACam implements Runnable, IReceiverObserver, I
 	}
 
 	private Thread cam;
-	private MulticastUDPReceiver receiver;
+	private UDPReceiver receiver;
 	private boolean expectIOE = false;
 	private int port;
 	private String address;
@@ -81,16 +81,20 @@ public class SSLVisionCam extends ACam implements Runnable, IReceiverObserver, I
 	public void startModule()
 	{
 		final NetworkInterface nif = NetworkUtility.chooseNetworkInterface(network, 3);
-		if (nif == null)
+
+		if (!address.startsWith("224"))
+		{
+			receiver = new BroadcastUDPReceiver("0.0.0.0", port);
+		} else if (nif == null)
 		{
 			log.debug("No nif for vision-cam specified, will try all.");
 			receiver = new MulticastUDPReceiver(address, port);
 		} else
 		{
-			log.debug("Chose nif for vision-cam: " + nif.getDisplayName());
+			log.debug("Chose nif for vision-cam: {}", nif.getDisplayName());
 			receiver = new MulticastUDPReceiver(address, port, nif);
+			receiver.addObserver(this);
 		}
-		receiver.addObserver(this);
 
 		gameLogRecorder = SumatraModel.getInstance().getModuleOpt(GameLogRecorder.class).orElse(null);
 
@@ -205,7 +209,13 @@ public class SSLVisionCam extends ACam implements Runnable, IReceiverObserver, I
 		if (receiver != null)
 		{
 			expectIOE = true;
-			receiver.close();
+			try
+			{
+				receiver.close();
+			} catch (Exception e)
+			{
+				throw new RuntimeException(e);
+			}
 			receiver = null;
 		}
 	}

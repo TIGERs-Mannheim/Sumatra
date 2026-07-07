@@ -1,10 +1,6 @@
-/*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra.botmanager.botskills;
 
 import edu.tigers.sumatra.bot.MoveConstraints;
-import edu.tigers.sumatra.bot.params.BotMovementLimits;
 import edu.tigers.sumatra.botmanager.botskills.data.DriveLimits;
 import edu.tigers.sumatra.botmanager.botskills.data.KickerDribblerCommands;
 import edu.tigers.sumatra.botmanager.serial.SerialData;
@@ -158,13 +154,10 @@ public class BotSkillGlobalVelXyPosW extends AMoveBotSkill
 	@Override
 	public MoveConstraints getMoveConstraints()
 	{
-		MoveConstraints moveCon = new MoveConstraints(new BotMovementLimits());
-		moveCon.setVelMaxW(getVelMaxW());
-		moveCon.setAccMax(getAccMax());
-		moveCon.setAccMaxW(getAccMaxW());
-		moveCon.setJerkMax(getJerkMax());
-		
-		return moveCon;
+		return MoveConstraints.ZERO
+				.withVelMaxW(getVelMaxW())
+				.withAccMax(getAccMax())
+				.withAccMaxW(getAccMaxW());
 	}
 	
 	

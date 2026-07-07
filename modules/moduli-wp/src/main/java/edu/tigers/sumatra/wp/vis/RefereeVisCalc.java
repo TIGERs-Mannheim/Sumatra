@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.wp.vis;
 
 import edu.tigers.sumatra.drawable.DrawableBorderText;
@@ -115,12 +111,14 @@ public class RefereeVisCalc implements IWpCalc
 		String gameEvents = "Events: " + msg.getGameEvents().stream().map(IGameEvent::getType).map(Enum::name)
 				.collect(Collectors.joining(","));
 		String proposedGameEvents = "Proposed: " + proposedGameEventGroups(msg.getGameEventProposalGroups());
+		String timestamp = "Timestamp: " + msg.getPacketTimestamp() / 1000;
 
 
 		txtShapes.add(text(8, 0, nextStateAndCommand));
 		txtShapes.add(text(8, 1, gameEvents));
 		txtShapes.add(text(8, 2, proposedGameEvents));
-		txtShapes.add(text(8, 3, getSubstitutionString(msg)));
+		txtShapes.add(text(8, 3, timestamp));
+		txtShapes.add(text(8, 4, getSubstitutionString(msg)));
 
 		shapeMap.get(EWpShapesLayer.REFEREE_HEADER).addAll(txtShapes);
 		paintShapes(shapeMap.get(EWpShapesLayer.REFEREE_HEADER), wfw);

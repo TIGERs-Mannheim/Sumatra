@@ -1,15 +1,11 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.metis.ballinterception;
 
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.ai.metis.offense.OffensiveConstants;
 import edu.tigers.sumatra.ball.trajectory.IBallTrajectory;
 import edu.tigers.sumatra.bot.EDribbleTractionState;
-import edu.tigers.sumatra.bot.MoveConstraints;
 import edu.tigers.sumatra.drawable.DrawableAnnotation;
 import edu.tigers.sumatra.drawable.DrawableArrow;
 import edu.tigers.sumatra.drawable.DrawableCircle;
@@ -30,15 +26,17 @@ import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.math.vector.Vector2f;
 import edu.tigers.sumatra.pathfinder.TrajectoryGenerator;
 import edu.tigers.sumatra.trajectory.ITrajectory;
+import edu.tigers.sumatra.trajectory.TimedTrajectory2D;
 import edu.tigers.sumatra.wp.data.ITrackedBall;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
 import edu.tigers.sumatra.wp.data.WorldFrame;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
+import lombok.extern.log4j.Log4j2;
 
 import java.awt.Color;
-import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -51,17 +49,19 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import static edu.tigers.sumatra.math.SumatraMath.cap;
 
 
+@Log4j2
 @RequiredArgsConstructor
 public class BallInterceptor
 {
-	private static final DecimalFormat DF = new DecimalFormat("0.00");
-	@Configurable(defValue = "5.0", comment = "[m/s] Max considered ball speed")
+	@Configurable(defValue = "5.0", comment = "Max considered ball speed", unit = EConfigUnit.VELOCITY_M)
 	private static double maxBallSpeed = 5.0;
-	@Configurable(defValue = "300.0", comment = "[mm]")
+	@Configurable(defValue = "300.0", unit = EConfigUnit.DISTANCE_MM)
 	private static double stepSize = 300.0;
 
 	static
@@ -69,8 +69,8 @@ public class BallInterceptor
 		ConfigRegistration.registerClass("metis", BallInterceptor.class);
 	}
 
-	private final Function<BotID, Optional<IVector2>> preferredInterceptPosition;
-	private final Function<BotID, Optional<IVector2>> previousInterceptPosition;
+	private final Function<BotID, Optional<PreviousBallInterception>> preferredInterceptPosition;
+	private final Function<BotID, Optional<PreviousBallInterception>> previousInterceptPosition;
 	private final Supplier<IBallTrajectory> ballTrajectorySupplier;
 	private final Color shapeColor;
 
@@ -106,54 +106,47 @@ public class BallInterceptor
 		for (var botId : consideredBots)
 		{
 			var bot = wFrame.getBot(botId);
+
 			var iterations = iterateOverBallTravelLine(bot, interceptionPoints);
 
 			var previousInterception = getPreviousInterceptionIteration(bot);
 			if (previousInterception.isPresent())
 			{
 				// replace bot target iteration with near sampled iteration(s)
-				iterations.removeIf(
-						e -> Math.abs(e.getBallTravelTime() - previousInterception.get().getBallTravelTime()) < 0.1);
+				iterations.removeIf(e -> Math.abs(e.ballTravelTime() - previousInterception.get().ballTravelTime()) < 0.1);
 				iterations.add(previousInterception.get());
 			}
 
-			iterations.removeIf(e -> !Double.isFinite(e.getBallTravelTime()));
-			iterations.sort(Comparator.comparingDouble(InterceptionIteration::getBallTravelTime));
+			iterations.removeIf(e -> !Double.isFinite(e.ballTravelTime()));
+			iterations.sort(Comparator.comparingDouble(CombinedInterceptionIteration::ballTravelTime));
 
-			var zeroCrossings = findZeroCrossings(iterations);
-			var corridors = findCorridors(zeroCrossings);
+			var parameterizedBest = findBestInterceptionIteration(bot, iterations);
+			var params = parameterizedBest.map(e -> e.params).orElseGet(finderParams::getLast);
+			var best = parameterizedBest.map(e -> buildRatedBallInterceptionFromIteration(botId, e.applyParams()));
 
-			Optional<RatedBallInterception> ballInterception = Optional.empty();
-			for (var params : finderParams)
-			{
-				ballInterception = findTargetInterception(iterations, corridors, botId, previousInterception.orElse(null),
-						params);
-				if (ballInterception.isPresent())
-				{
-					break;
-				}
-			}
-
-			var targetTime = ballInterception.map(e -> e.getBallInterception().getBallContactTime()).orElse(0.0);
-			ballInterception.ifPresentOrElse(
-					e -> interceptionMap.put(botId, e),
-					() -> keepPositionUntilPassVanishes(wFrame.getBall(), bot, previousInterception.orElse(null))
-							.ifPresent(e -> interceptionMap.put(botId, e))
-			);
+			var targetTime = best.map(e -> e.getBallInterception().getBallContactTime()).orElse(0.0);
+			best.ifPresent(e -> interceptionMap.put(botId, e));
 
 			var information = BallInterceptionInformation.builder()
-					.initialIterations(iterations)
-					.zeroAxisChanges(zeroCrossings)
-					.interceptionCorridors(corridors)
+					.initialIterations(iterations.stream().map(e -> e.applyParams(params)).toList())
 					.interceptionTargetTime(targetTime)
-					.oldInterception(previousInterception.orElse(null))
+					.oldInterception(previousInterception.map(e -> e.applyParams(params)).orElse(null))
 					.build();
-
 			informationMap.put(botId, information);
 
-			shapes.add(new DrawableAnnotation(bot.getPos(),
-					(ballInterception.isPresent() ? "T" : "F") + DF.format(targetTime))
-					.withOffset(Vector2f.fromX(-200)));
+			shapes.add(new DrawableAnnotation(
+					bot.getPos(),
+					String.format(
+							"ok=%c, tt=%.02f, st=%.02f%n" + "os=%c, max_st=%.02f",
+							best.isPresent() ? 'y' : 'n',
+							targetTime,
+							best.map(RatedBallInterception::getSlackTime).orElse(0.0),
+							params.isOvershootAllowed() ? 'y' : 'n',
+							params.maxSlackTimeToAccept()
+					)
+			)
+					.withOffset(Vector2f.fromX(100)));
+
 		}
 		return new BallInterceptorResult(
 				Collections.unmodifiableMap(interceptionMap),
@@ -162,14 +155,16 @@ public class BallInterceptor
 	}
 
 
-	private Optional<InterceptionIteration> getPreviousInterceptionIteration(ITrackedBot bot)
+	private Optional<CombinedInterceptionIteration> getPreviousInterceptionIteration(ITrackedBot bot)
 	{
 		var preferredPosition = preferredInterceptPosition.apply(bot.getBotId())
 				.map(this::projectPointOntoBallTrajectory)
+				.map(this::moveOutsideExclusionAreas)
 				.filter(this::isPositionLegal)
 				.map(p -> createInterceptionIterationFromPreviousTarget(bot, p, true));
 		var previousPosition = previousInterceptPosition.apply(bot.getBotId())
 				.map(this::projectPointOntoBallTrajectory)
+				.map(this::moveOutsideExclusionAreas)
 				.filter(this::isPositionLegal)
 				.map(p -> createInterceptionIterationFromPreviousTarget(bot, p, false));
 
@@ -178,22 +173,13 @@ public class BallInterceptor
 			// here we want to prefer the preferred position. However, if the bot seems to already intercept the old position,
 			// then the bot should keep doing so.
 			if (bot.getPos().distanceTo(
-					ballTrajectory.getPosByTime(previousPosition.get().getBallTravelTime()).getXYVector())
-					> Geometry.getBotRadius() * 2.0 && previousPosition.get().getBallTravelTime() < 0.2)
+					ballTrajectory.getPosByTime(previousPosition.get().ballTravelTime()).getXYVector())
+					> Geometry.getBotRadius() * 2.0 && previousPosition.get().ballTravelTime() < 0.2)
 			{
 				// bot is already very close to the destination
 				// ball impact is imminent
-				// Thus, we rather keep or old point and flag it as preferred instead of the new preferred one
-				var prev = previousPosition.get();
-				return Optional.of(InterceptionIteration.builder()
-						.ballTravelTime(prev.getBallTravelTime())
-						.slackTime(prev.getSlackTime())
-						.includedSlackTimeBonus(prev.getIncludedSlackTimeBonus())
-						.isPreferred(true)
-						.distanceAtOvershoot(prev.getDistanceAtOvershoot())
-						.velocityAtOvershoot(prev.getVelocityAtOvershoot())
-						.build()
-				);
+				// Thus, we rather keep our old point and flag it as preferred instead of the new preferred one
+				return previousPosition.map(prev -> prev.toBuilder().isPreferred(true).build());
 			} else
 			{
 				return preferredPosition;
@@ -203,6 +189,29 @@ public class BallInterceptor
 			return preferredPosition;
 		}
 		return previousPosition;
+	}
+
+
+	private PreviousBallInterception moveOutsideExclusionAreas(PreviousBallInterception interceptionPoint)
+	{
+		if (isPositionLegal(interceptionPoint))
+		{
+			return interceptionPoint;
+		}
+
+		for (var exclusionArea : exclusionAreas)
+		{
+			if (exclusionArea.isPointInShape(interceptionPoint))
+			{
+				var intersection = exclusionArea.intersectPerimeterPath(ballTrajectory.getTravelLine());
+				if (intersection.size() == 1 && intersection.getFirst().distanceTo(interceptionPoint) < 300)
+				{
+					getShapes().add(DrawableArrow.fromPositions(interceptionPoint, intersection.getFirst()));
+					return new PreviousBallInterception(intersection.getFirst(), interceptionPoint.isOvershooting());
+				}
+			}
+		}
+		return interceptionPoint;
 	}
 
 
@@ -239,116 +248,106 @@ public class BallInterceptor
 	}
 
 
-	private Optional<RatedBallInterception> keepPositionUntilPassVanishes(ITrackedBall ball, ITrackedBot bot,
-			InterceptionIteration previousInterception)
+	private boolean keepPositionUntilPassVanishes(
+			ParameterizedIteration parameterizedIteration,
+			ITrackedBot bot
+	)
 	{
-		var leadPointOnLine = ball.getTrajectory().getTravelLineSegment().closestPointOnPath(bot.getBotKickerPos());
-		boolean isBotCloseToBallLine = ball.getTrajectory().getTravelLineSegment().distanceTo(bot.getBotKickerPos())
-				< Geometry.getBotRadius() * 2.0;
-
-		var ballContactTime = ball.getTrajectory().getTimeByDist(leadPointOnLine.distanceTo(ball.getPos()));
-		boolean ballImpactIsImminent = ballContactTime < 0.3;
-
-		if (isBotCloseToBallLine && ballImpactIsImminent)
+		var iteration = parameterizedIteration.iteration();
+		if (!iteration.isPrevious())
 		{
-			var destination = leadPointOnLine;
-			if (previousInterception != null)
-			{
-				destination = ball.getTrajectory().getPosByTime(previousInterception.getBallTravelTime()).getXYVector();
-			}
-
-			var totalBotTravelTime = generateTrajectoryPair(bot, destination).normalTrajectory().getTotalTime();
-
-			shapes.add(new DrawableAnnotation(leadPointOnLine, "bot_time: " + DF.format(totalBotTravelTime),
-					Vector2.fromY(-150)).setColor(Color.WHITE));
-
-			// just a validity check.
-			if (totalBotTravelTime < ballContactTime + 1)
-			{
-				shapes.add(new DrawableAnnotation(leadPointOnLine, "forcing intercept", Vector2.fromY(-100)).setColor(
-						Color.WHITE));
-				return Optional.of(
-						new RatedBallInterception(new BallInterception(bot.getBotId(), ballContactTime, destination), 0, 0));
-			}
+			return false;
 		}
-		return Optional.empty();
+
+		var targetPos = ballTrajectory.getPosByTime(iteration.ballTravelTime()).getXYVector();
+		if (bot.getPos().distanceTo(targetPos) > Geometry.getBotRadius() * 2)
+		{
+			return false;
+		}
+
+		var ballContactTime = iteration.ballTravelTime();
+		if (ballContactTime > 0.3)
+		{
+			return false;
+		}
+
+		var totalBotTravelTime = iteration.ballTravelTime
+				+ parameterizedIteration.getInterceptionInfo().slackTime
+				+ iteration.includedSlackTimeBonus;
+
+		shapes.add(new DrawableAnnotation(
+				targetPos, String.format("bot_time: %.02f", totalBotTravelTime),
+				Vector2.fromY(-150)
+		).setColor(Color.WHITE));
+
+		return true;
 	}
 
 
-	private Optional<RatedBallInterception> findTargetInterception(List<InterceptionIteration> iterations,
-			List<InterceptionCorridor> corridors, BotID botID, InterceptionIteration previousInterception,
-			InterceptionFinderParameters finderParams)
+	private Optional<ParameterizedIteration> findBestInterceptionIteration(
+			ITrackedBot bot,
+			List<CombinedInterceptionIteration> initialIterations
+	)
 	{
-		return corridors.stream().filter(e -> isCorridorLongEnough(e, previousInterception))
-				.map(c -> findBestInterceptionIteration(iterations, c, previousInterception, finderParams))
-				.flatMap(Optional::stream)
-				.map(it -> findBallInterception(botID, it)).findAny();
-	}
-
-
-	private Optional<RatedInterceptionIteration> findBestInterceptionIteration(
-			List<InterceptionIteration> initialIterations, InterceptionCorridor corridor,
-			InterceptionIteration previousInterception, InterceptionFinderParameters finderParams)
-	{
-		double startTime = corridor.getStartTime();
-		double endTime = corridor.getEndTime();
-
-		double minSlackTimeInCorridor = initialIterations.stream()
-				.filter(e -> e.getBallTravelTime() >= startTime && e.getBallTravelTime() < endTime)
-				.filter(e -> isPositionLegal(ballTrajectory.getPosByTime(e.getBallTravelTime()).getXYVector()))
-				.map(InterceptionIteration::getSlackTime).min(Comparator.comparingDouble(e -> e)).orElse(0.0);
-
-		if (previousInterception != null && previousInterception.isPreferred()
-				&& previousInterception.getBallTravelTime() >= startTime
-				&& previousInterception.getBallTravelTime() < endTime)
-		{
-			// previousInterception is a pass target and within corridor range
-			return Optional.of(
-					new RatedInterceptionIteration(previousInterception, endTime - startTime, minSlackTimeInCorridor));
-		}
-
 		return initialIterations.stream()
-				.filter(it -> it.getBallTravelTime() >= startTime && it.getBallTravelTime() < endTime)
-				.filter(e -> isPositionLegal(ballTrajectory.getPosByTime(e.getBallTravelTime()).getXYVector()))
-				.filter(it -> isIterationInterceptable(it, finderParams))
-				.map(e -> new RatedInterceptionIteration(e, endTime - startTime, minSlackTimeInCorridor)).findFirst();
+				.filter(e -> isPositionLegal(ballTrajectory.getPosByTime(e.ballTravelTime()).getXYVector()))
+				.flatMap(e -> e.applyParamsList(finderParams))
+				.filter(e -> isIterationInterceptable(bot, e))
+				.min(this::bestInterceptionIterationComparator);
 	}
 
 
-	private RatedBallInterception findBallInterception(BotID botID, RatedInterceptionIteration iteration)
+	private int bestInterceptionIterationComparator(ParameterizedIteration paramIt1, ParameterizedIteration paramIt2)
 	{
-		var interceptTime = iteration.getIteration().getBallTravelTime();
-		var interceptionTarget = ballTrajectory.getPosByTime(interceptTime).getXYVector();
-		return new RatedBallInterception(new BallInterception(botID, interceptTime, interceptionTarget),
-				iteration.getCorridorLength(), iteration.getMinCorridorSlackTime());
+		// First sort by isPreferred yes/no
+		if (paramIt1.iteration.isPreferred != paramIt2.iteration.isPreferred)
+		{
+			return paramIt1.iteration.isPreferred ? -1 : 1;
+		}
+
+		// Then by params Index inside the list of InterceptionFinderParameters
+		if (paramIt1.paramsIndex != paramIt2.paramsIndex)
+		{
+			return Integer.compare(paramIt1.paramsIndex, paramIt2.paramsIndex);
+		}
+
+		// Finally by the ballTravelTime
+		return Double.compare(paramIt1.iteration.ballTravelTime(), paramIt2.iteration.ballTravelTime());
 	}
 
 
-	private boolean isIterationInterceptable(InterceptionIteration iteration, InterceptionFinderParameters finderParams)
+	private boolean isIterationInterceptable(
+			ITrackedBot bot,
+			ParameterizedIteration parameterizedIteration
+	)
 	{
-		var ballTravelTime = iteration.getBallTravelTime();
-		var slackTime = iteration.getSlackTime();
+		var iteration = parameterizedIteration.iteration;
+		var params = parameterizedIteration.params;
 
-		// Check if already close to the target
-		if (ballTravelTime < 0.5 && slackTime < 0.2)
+		var ballTravelTime = iteration.ballTravelTime();
+		var interceptInfo = parameterizedIteration.getInterceptionInfo();
+		var slackTime = interceptInfo.slackTime();
+
+		// current iteration is previous iteration and is imminent
+		if (iteration.isPrevious() && keepPositionUntilPassVanishes(parameterizedIteration, bot))
 		{
 			return true;
 		}
 
 		// Check if timing is okay
-		if (slackTime > finderParams.maxSlackTimeToAccept())
+		if (slackTime > params.maxSlackTimeToAccept())
 		{
-			if (finderParams.isOvershootAllowed())
-			{
-				if (iteration.getDistanceAtOvershoot() > 0.1
-						|| iteration.getVelocityAtOvershoot() > finderParams.maxVelocityAtInterceptWithOvershoot())
-				{
-					return false;
-				}
-			} else
-			{
-				return false;
-			}
+			return false;
+		}
+
+		if (iteration.isPreferred())
+		{
+			return true;
+		}
+
+		if (interceptInfo.botVelAtInterceptTime() > params.maxVelocityAtInterceptWithOvershoot())
+		{
+			return false;
 		}
 
 		// Check if z-position is okay
@@ -365,119 +364,14 @@ public class BallInterceptor
 	}
 
 
-	private boolean isCorridorLongEnough(final InterceptionCorridor interceptionCorridor,
-			InterceptionIteration previousInterception)
+	private RatedBallInterception buildRatedBallInterceptionFromIteration(BotID botID, InterceptionIteration iteration)
 	{
-		if (interceptionCorridor.getStartTime() < 1.0)
-		{
-			// ball collision imminent, do not abort intercept!
-			return true;
-		}
-
-		double startTime = interceptionCorridor.getStartTime();
-		double endTime = interceptionCorridor.getEndTime();
-
-		boolean isPreviousInterceptionAPassInValidCorridor = previousInterception != null
-				&& previousInterception.isPreferred()
-				&& previousInterception.getBallTravelTime() >= startTime
-				&& previousInterception.getBallTravelTime() < endTime;
-		if (isPreviousInterceptionAPassInValidCorridor)
-		{
-			// we accept planned passes even if they are very close calls to catch.
-			return interceptionCorridor.getEndTime() - interceptionCorridor.getStartTime() > 0;
-		}
-
-		return interceptionCorridor.getEndTime() - interceptionCorridor.getStartTime() > 0.2;
-	}
-
-
-	private List<InterceptionCorridor> findCorridors(List<InterceptionZeroAxisCrossing> crossings)
-	{
-		var corridors = new ArrayList<InterceptionCorridor>();
-		var startCorridorFound = false;
-		double startCorridorTime = 0;
-		for (var axisCrossing : crossings)
-		{
-			double ballTravelTime = axisCrossing.getBallTravelTime();
-			if (axisCrossing.isPositiveCrossing())
-			{
-				// changed from negative to positive, end of corridor
-				corridors.add(createCorridor(startCorridorTime, ballTravelTime));
-				startCorridorFound = false;
-			} else
-			{
-				// changed from positive to negative, start of corridor
-				startCorridorTime = ballTravelTime;
-				startCorridorFound = true;
-			}
-		}
-
-		if (startCorridorFound)
-		{
-			double endCorridorTime = ballTrajectory.getTimeByVel(0);
-			corridors.add(createCorridor(startCorridorTime, endCorridorTime));
-		}
-		return corridors;
-	}
-
-
-	private InterceptionCorridor createCorridor(double startCorridorTime, double endCorridorTime)
-	{
-		double end = ballTrajectory.getDistByTime(endCorridorTime);
-		double start = ballTrajectory.getDistByTime(startCorridorTime);
-		double width = end - start;
-		return new InterceptionCorridor(startCorridorTime, endCorridorTime, width);
-	}
-
-
-	private List<InterceptionZeroAxisCrossing> findZeroCrossings(List<InterceptionIteration> iterations)
-	{
-		if (iterations.isEmpty())
-		{
-			return Collections.emptyList();
-		}
-
-		var zeroCrossings = new ArrayList<InterceptionZeroAxisCrossing>();
-		var previousPoint = iterations.getFirst();
-		var wasPositive = previousPoint.getSlackTime() > 0;
-		for (var it : iterations)
-		{
-			if (isIterationInvalid(it))
-			{
-				continue;
-			}
-
-			if (wasPositive && it.getSlackTime() < 0)
-			{
-				// changed from positive to negative
-				wasPositive = false;
-				double ballTravelTime = getBallTravelTimeFromZeroCrossing(previousPoint, it);
-				zeroCrossings.add(new InterceptionZeroAxisCrossing(ballTravelTime, false));
-			} else if (!wasPositive && it.getSlackTime() > 0)
-			{
-				// changed from negative to positive
-				wasPositive = true;
-				double ballTravelTime = getBallTravelTimeFromZeroCrossing(previousPoint, it);
-				zeroCrossings.add(new InterceptionZeroAxisCrossing(ballTravelTime, true));
-			}
-			previousPoint = it;
-		}
-		return zeroCrossings;
-	}
-
-
-	private boolean isIterationInvalid(InterceptionIteration it)
-	{
-		return !Double.isFinite(it.getBallTravelTime()) || !Double.isFinite(it.getSlackTime());
-	}
-
-
-	private double getBallTravelTimeFromZeroCrossing(InterceptionIteration oldPoint, InterceptionIteration it)
-	{
-		double m =
-				(oldPoint.getSlackTime() - it.getSlackTime()) / (-it.getBallTravelTime() + oldPoint.getBallTravelTime());
-		double b = it.getSlackTime() - m * it.getBallTravelTime();
-		return -b / m;
+		var interceptTime = iteration.getBallTravelTime();
+		var interceptionTarget = ballTrajectory.getPosByTime(interceptTime).getXYVector();
+		return new RatedBallInterception(
+				new BallInterception(botID, interceptTime, interceptionTarget), iteration.getSlackTime(),
+				iteration.isOvershooting()
+		);
 	}
 
 
@@ -562,15 +456,22 @@ public class BallInterceptor
 	}
 
 
-	private List<InterceptionIteration> iterateOverBallTravelLine(ITrackedBot bot, List<IVector2> interceptionPoints)
+	private List<CombinedInterceptionIteration> iterateOverBallTravelLine(
+			ITrackedBot bot,
+			List<IVector2> interceptionPoints
+	)
 	{
-		return interceptionPoints.stream().map(point -> createInterceptionIteration(bot, point))
+		return interceptionPoints.stream()
+				.map(point -> createInterceptionIteration(bot, point))
 				.collect(Collectors.toCollection(ArrayList::new));
 	}
 
 
-	private InterceptionIteration createInterceptionIterationFromPreviousTarget(ITrackedBot bot, IVector2 target,
-			boolean isPreferred)
+	private CombinedInterceptionIteration createInterceptionIterationFromPreviousTarget(
+			ITrackedBot bot,
+			PreviousBallInterception target,
+			boolean isPreferred
+	)
 	{
 		shapes.add(new DrawableCircle(Circle.createCircle(target, 50), Color.RED));
 		shapes.add(new DrawableCircle(Circle.createCircle(target, 20), shapeColor));
@@ -583,43 +484,75 @@ public class BallInterceptor
 		{
 			bonusValue = 0;
 		}
-		return createInterceptionIteration(trajectoryPair, target, bonusValue, isPreferred);
+		return createInterceptionIteration(trajectoryPair, bonusValue, isPreferred, true, target.isOvershooting());
 	}
 
 
-	private InterceptionIteration createInterceptionIteration(ITrackedBot bot, IVector2 target)
+	private CombinedInterceptionIteration createInterceptionIteration(
+			ITrackedBot bot,
+			IVector2 target
+	)
 	{
 		var trajectoryPair = generateTrajectoryPair(bot, target);
-		return createInterceptionIteration(trajectoryPair, target, 0, false);
+		return createInterceptionIteration(trajectoryPair, 0, false, false, false);
 	}
 
 
-	private InterceptionIteration createInterceptionIteration(TrajectoryPair trajectoryPair, IVector2 target,
-			double bonusValue, boolean isPreferred)
+	private CombinedInterceptionIteration createInterceptionIteration(
+			InterceptionTrajectories interceptionTrajectories,
+			double bonusValue,
+			boolean isPreferred,
+			boolean isPrevious,
+			boolean overshooting
+	)
 	{
-		var timeBot2Target = trajectoryPair.normalTrajectory().getTotalTime();
 		// Assumption: target is on the rolling ball travel line
-		var timeBall2Target = ballTrajectory.getTimeByPos(target);
-		var overshootDistance = trajectoryPair.overshootTrajectory().getPositionMM(timeBall2Target).distanceTo(target);
-		var overshootVelocity = trajectoryPair.overshootTrajectory().getVelocity(timeBot2Target).getLength();
-		var slackTime = timeBot2Target - timeBall2Target;
-		return InterceptionIteration.builder()
+		var timeBall2Target = interceptionTrajectories.overshootTrajectory().getTargetTime();
+
+		double appliedNoOvershootBonus = overshooting ? 0 : bonusValue;
+		var infoNoOvershoot = new InterceptionInformation(
+				interceptionTrajectories.normalTrajectory().getTotalTime() - timeBall2Target -
+						(isPreferred ? bonusValue : appliedNoOvershootBonus),
+				false,
+				interceptionTrajectories.normalTrajectory().getVelocity(timeBall2Target).getLength()
+		);
+
+		var timeBot2TargetOvershooting = SumatraMath.max(
+				interceptionTrajectories.overshootTrajectory().getTimeAtTargetX(),
+				interceptionTrajectories.overshootTrajectory().getTimeAtTargetY()
+		);
+
+		double appliedOvershootBonus = overshooting ? bonusValue : 0;
+		var infoOvershoot = new InterceptionInformation(
+				timeBot2TargetOvershooting - timeBall2Target -
+						(isPreferred ? bonusValue : appliedOvershootBonus),
+				timeBot2TargetOvershooting < interceptionTrajectories.normalTrajectory().getTotalTime(),
+				interceptionTrajectories.overshootTrajectory().getVelocity(timeBall2Target).getLength()
+		);
+
+		return CombinedInterceptionIteration.builder()
+				.interceptPos(interceptionTrajectories.normalTrajectory().getFinalDestination())
+				.botInfoNoOvershoot(infoNoOvershoot)
+				.botInfoOvershoot(infoOvershoot)
 				.ballTravelTime(timeBall2Target)
-				.slackTime(slackTime - bonusValue)
 				.includedSlackTimeBonus(bonusValue)
+				.isPrevious(isPrevious)
 				.isPreferred(isPreferred)
-				.distanceAtOvershoot(overshootDistance)
-				.velocityAtOvershoot(overshootVelocity)
+				.ballPosZ(interceptionTrajectories.ballPosZ())
+				.ballVelZ(interceptionTrajectories.ballVelZ())
 				.build();
 	}
 
 
-	private TrajectoryPair generateTrajectoryPair(ITrackedBot bot, IVector2 target)
+	private InterceptionTrajectories generateTrajectoryPair(
+			ITrackedBot bot,
+			IVector2 target
+	)
 	{
 		var ballDir = ballTrajectory.getTravelLine().directionVector();
 		var ballTime = ballTrajectory.getTimeByPos(target);
 
-		var moveConstraints = new MoveConstraints(bot.getMoveConstraints()).setPrimaryDirection(Vector2.zero());
+		var moveConstraints = bot.getMoveConstraints().withPrimaryDirection(Vector2.zero());
 		var offset = bot.getCenter2DribblerDist() + Geometry.getBallRadius();
 
 		// We want to avoid knowing how the bot rotates around the interception target.
@@ -631,11 +564,16 @@ public class BallInterceptor
 		var botPos = BotShape.getCenterFromKickerPos(bot.getBotKickerPos(Geometry.getBallRadius()), orientation, offset);
 		var botVel = bot.getVel();
 
+		var stopping = TrajectoryGenerator.generatePositionTrajectory(moveConstraints, botPos, botVel, destination);
+		var overshooting = TrajectoryGenerator.generateTimedPositionTrajectory(
+				moveConstraints, botPos, botVel, destination, ballTime);
+
 		// if kickPos == target, then the trajectory time is 0
-		return new TrajectoryPair(
-				TrajectoryGenerator.generatePositionTrajectory(moveConstraints, botPos, botVel, destination),
-				TrajectoryGenerator.generatePositionTrajectoryToReachPointInTime(moveConstraints, botPos, botVel,
-						destination, ballTime)
+		return new InterceptionTrajectories(
+				stopping,
+				overshooting,
+				ballTrajectory.getPosByTime(ballTime).z(),
+				ballTrajectory.getVelByTime(ballTime).z()
 		);
 	}
 
@@ -651,7 +589,7 @@ public class BallInterceptor
 	}
 
 
-	private IVector2 projectPointOntoBallTrajectory(IVector2 position)
+	private PreviousBallInterception projectPointOntoBallTrajectory(PreviousBallInterception position)
 	{
 		List<ILineSegment> travelLines;
 		if (isAllowedToInterceptChipped)
@@ -662,12 +600,12 @@ public class BallInterceptor
 			travelLines = ballTrajectory.getTravelLinesRolling();
 		}
 
-
 		var projected = travelLines
 				.stream()
 				.map(line -> line.closestPointOnPath(position))
 				.toList();
-		return position.nearestTo(projected);
+		var nearest = position.nearestTo(projected);
+		return new PreviousBallInterception(nearest, position.isOvershooting());
 	}
 
 
@@ -690,10 +628,86 @@ public class BallInterceptor
 	{
 	}
 
-	private record TrajectoryPair(
+	private record InterceptionTrajectories(
 			ITrajectory<IVector2> normalTrajectory,
-			ITrajectory<IVector2> overshootTrajectory
+			TimedTrajectory2D overshootTrajectory, // target time is ball travel time
+			double ballPosZ,
+			double ballVelZ
 	)
 	{
+	}
+
+	private record InterceptionInformation(
+			double slackTime,
+			boolean isOvershooting,
+			double botVelAtInterceptTime
+	)
+	{}
+
+
+	@Builder(toBuilder = true)
+	private record CombinedInterceptionIteration(
+			InterceptionInformation botInfoNoOvershoot,
+			InterceptionInformation botInfoOvershoot,
+
+			IVector2 interceptPos,
+
+			double ballTravelTime,
+			double includedSlackTimeBonus,
+			boolean isPrevious,
+			boolean isPreferred,
+
+			double ballPosZ,
+			double ballVelZ
+	)
+	{
+
+		public InterceptionInformation getInterceptionInfo(InterceptionFinderParameters params)
+		{
+			if (!params.isOvershootAllowed())
+			{
+				return botInfoNoOvershoot;
+			}
+
+			return botInfoOvershoot;
+		}
+
+
+		public InterceptionIteration applyParams(InterceptionFinderParameters params)
+		{
+			var info = getInterceptionInfo(params);
+			return InterceptionIteration.builder()
+					.ballTravelTime(ballTravelTime)
+					.slackTime(info.slackTime)
+					.includedSlackTimeBonus(includedSlackTimeBonus)
+					.isOvershooting(info.isOvershooting)
+					.build();
+		}
+
+
+		public Stream<ParameterizedIteration> applyParamsList(List<InterceptionFinderParameters> paramsList)
+		{
+			return IntStream.range(0, paramsList.size())
+					.mapToObj(i -> new ParameterizedIteration(i, paramsList.get(i), this));
+		}
+	}
+
+	private record ParameterizedIteration(
+			int paramsIndex,
+			InterceptionFinderParameters params,
+			CombinedInterceptionIteration iteration
+	)
+	{
+
+		public InterceptionInformation getInterceptionInfo()
+		{
+			return iteration.getInterceptionInfo(params);
+		}
+
+
+		public InterceptionIteration applyParams()
+		{
+			return iteration.applyParams(params);
+		}
 	}
 }

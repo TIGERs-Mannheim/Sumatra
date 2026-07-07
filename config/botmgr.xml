@@ -1,1 +1,6 @@
-<?xml version="1.0" encoding="UTF-8"?><configuration/>
+<?xml version="1.0" encoding="UTF-8"?>
+<edu.tigers.sumatra.botmanager.basestation.TigersBaseStation
+        base="edu.tigers.sumatra.botmanager.basestation.TigersBaseStation">
+    <channel:ROBOCUP>80</channel:ROBOCUP>
+    <host:ROBOCUP>tigerbase4.local</host:ROBOCUP>
+</edu.tigers.sumatra.botmanager.basestation.TigersBaseStation>

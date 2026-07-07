@@ -1,10 +1,6 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.pathfinder.finder;
 
-import edu.tigers.sumatra.bot.IMoveConstraints;
+import edu.tigers.sumatra.bot.MoveConstraints;
 import edu.tigers.sumatra.bot.State;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.pathfinder.obstacles.IObstacle;
@@ -25,7 +21,7 @@ import java.util.List;
 public class PathFinderInput
 {
 	long timestamp;
-	IMoveConstraints moveConstraints;
+	MoveConstraints moveConstraints;
 	IVector2 pos;
 	IVector2 vel;
 	IVector2 dest;

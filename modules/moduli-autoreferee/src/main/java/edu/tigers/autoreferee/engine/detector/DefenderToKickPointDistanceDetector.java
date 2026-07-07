@@ -1,10 +1,7 @@
-/*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.autoreferee.engine.detector;
 
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import com.google.common.collect.Sets;
 import edu.tigers.autoreferee.AutoRefUtil;
 import edu.tigers.sumatra.geometry.Geometry;
@@ -33,7 +30,7 @@ import java.util.stream.Collectors;
  */
 public class DefenderToKickPointDistanceDetector extends AGameEventDetector
 {
-	@Configurable(comment = "Margin [mm] to be added as a tolerance", defValue = "20.0")
+	@Configurable(comment = "Margin to be added as a tolerance", defValue = "20.0", unit = EConfigUnit.DISTANCE_MM)
 	private static double margin = 20;
 
 	private final Map<BotID, Long> lastViolators = new HashMap<>();

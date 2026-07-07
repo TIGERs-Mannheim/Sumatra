@@ -1,11 +1,8 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.pathfinder.finder;
 
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.drawable.DrawablePoint;
 import edu.tigers.sumatra.drawable.IDrawableShape;
 import edu.tigers.sumatra.drawable.ShapeMap;
@@ -28,10 +25,10 @@ import java.util.function.Predicate;
 
 public class PathFinderInputProcessor
 {
-	@Configurable(defValue = "100", comment = "The step distance [mm] to between points to check for an acceptable position")
+	@Configurable(defValue = "100", comment = "The step distance to between points to check for an acceptable position", unit = EConfigUnit.DISTANCE_MM)
 	private static double acceptablePosFinderDistanceStepSize = 100;
 
-	@Configurable(defValue = "1000", comment = "The maximum number of iterations to search for an acceptable position")
+	@Configurable(defValue = "1000", comment = "The maximum number of iterations to search for an acceptable position", unit = EConfigUnit.COUNT)
 	private static int acceptablePosFinderMaxIterations = 1000;
 
 	static

@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.pandora.roles.test.move;
 
 import edu.tigers.sumatra.ai.pandora.roles.ARole;
@@ -22,8 +18,8 @@ import edu.tigers.sumatra.statemachine.IEvent;
 import edu.tigers.sumatra.statemachine.IState;
 import lombok.extern.log4j.Log4j2;
 
-import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 
@@ -53,7 +49,8 @@ public class AroundCircleMoveTestRole extends ARole
 			final double obstacleRadius,
 			final boolean rotate,
 			final int iterations,
-			final boolean continuousCapture)
+			final boolean continuousCapture
+	)
 	{
 		super(ERole.AROUND_CIRCLE_MOVE_TEST);
 		this.obstacleCenter = obstacleCenter;
@@ -105,14 +102,22 @@ public class AroundCircleMoveTestRole extends ARole
 		@Override
 		public void doEntryActions()
 		{
-			collectorObserver.parameters.put("velMax",
-					String.format("%.1f", getBot().getRobotInfo().getBotParams().getMovementLimits().getVelMax()));
-			collectorObserver.parameters.put("accMax",
-					String.format("%.1f", getBot().getRobotInfo().getBotParams().getMovementLimits().getAccMax()));
-			collectorObserver.parameters.put("velMaxW",
-					String.format("%.1f", getBot().getRobotInfo().getBotParams().getMovementLimits().getVelMaxW()));
-			collectorObserver.parameters.put("accMaxW",
-					String.format("%.1f", getBot().getRobotInfo().getBotParams().getMovementLimits().getAccMaxW()));
+			collectorObserver.parameters.put(
+					"velMax",
+					String.format("%.1f", getBot().getRobotInfo().getBotParams().getMovementLimits().getVelMax())
+			);
+			collectorObserver.parameters.put(
+					"accMax",
+					String.format("%.1f", getBot().getRobotInfo().getBotParams().getMovementLimits().getAccMax())
+			);
+			collectorObserver.parameters.put(
+					"velMaxW",
+					String.format("%.1f", getBot().getRobotInfo().getBotParams().getMovementLimits().getVelMaxW())
+			);
+			collectorObserver.parameters.put(
+					"accMaxW",
+					String.format("%.1f", getBot().getRobotInfo().getBotParams().getMovementLimits().getAccMaxW())
+			);
 
 			if (continuousCapture)
 			{
@@ -203,8 +208,9 @@ public class AroundCircleMoveTestRole extends ARole
 			MoveToSkill skill = MoveToSkill.createMoveToSkill();
 			skill.updateDestination(dest);
 			skill.updateTargetAngle(destOrientation);
-			skill.getMoveCon().physicalObstaclesOnly();
-			skill.getMoveCon().setBallObstacle(false);
+			skill.setMoveCon(skill.getMoveCon()
+					.withPhysicalObstaclesOnly()
+					.withBallObstacle(false));
 			setNewSkill(skill);
 		}
 
@@ -267,12 +273,13 @@ public class AroundCircleMoveTestRole extends ARole
 			MoveToSkill skill = MoveToSkill.createMoveToSkill();
 			skill.updateDestination(dest);
 			skill.updateTargetAngle(destOrientation);
-			skill.getMoveCon().physicalObstaclesOnly();
-			skill.getMoveCon().setBallObstacle(false);
-			skill.getMoveCon().setBotsObstacle(false);
-			skill.getMoveCon().setCustomObstacles(Collections
-					.singletonList(
-							new GenericCircleObstacle("circle", Circle.createCircle(obstacleCenter, obstacleRadius))));
+			skill.setMoveCon(skill.getMoveCon()
+					.withPhysicalObstaclesOnly()
+					.withBallObstacle(false)
+					.withBotsObstacle(false)
+					.withCustomObstacles(
+							List.of(new GenericCircleObstacle("circle", Circle.createCircle(obstacleCenter, obstacleRadius)))
+					));
 			setNewSkill(skill);
 		}
 	}

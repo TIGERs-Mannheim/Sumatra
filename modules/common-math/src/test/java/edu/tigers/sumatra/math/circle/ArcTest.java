@@ -1,27 +1,25 @@
-/*
- * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.math.circle;
 
 import edu.tigers.sumatra.math.AngleMath;
 import edu.tigers.sumatra.math.I2DShapeComplianceChecker;
 import edu.tigers.sumatra.math.IBoundedPathComplianceChecker;
 import edu.tigers.sumatra.math.line.Lines;
+import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.math.vector.Vector2f;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.function.Function;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.within;
 
 
-public class ArcTest
+class ArcTest
 {
 	@Test
-	public void testIsPointInShape()
+	void testIsPointInShape()
 	{
 		var arc = Arc.createArc(Vector2.fromX(2), 1, 0, AngleMath.PI);
 		assertThat(arc.isPointInShape(Vector2.fromXY(2, 0))).isTrue();
@@ -34,11 +32,23 @@ public class ArcTest
 		assertThat(arc.isPointInShape(Vector2.fromXY(0.999, 0))).isFalse();
 		assertThat(arc.isPointInShape(Vector2.fromXY(2, 1.001))).isFalse();
 		assertThat(arc.isPointInShape(Vector2.fromXY(2, -1.001))).isFalse();
+
+		var longArc = Arc.createArc(Vector2.fromX(2), 1, 0, 4 * AngleMath.PI);
+		assertThat(longArc.isPointInShape(Vector2.fromXY(2, 0))).isTrue();
+		assertThat(longArc.isPointInShape(Vector2.fromXY(3, 0))).isTrue();
+		assertThat(longArc.isPointInShape(Vector2.fromXY(1, 0))).isTrue();
+		assertThat(longArc.isPointInShape(Vector2.fromXY(2, 1))).isTrue();
+		assertThat(longArc.isPointInShape(Vector2.fromXY(2, -1))).isTrue();
+
+		assertThat(longArc.isPointInShape(Vector2.fromXY(3.001, 0))).isFalse();
+		assertThat(longArc.isPointInShape(Vector2.fromXY(0.999, 0))).isFalse();
+		assertThat(longArc.isPointInShape(Vector2.fromXY(2, 1.001))).isFalse();
+		assertThat(longArc.isPointInShape(Vector2.fromXY(2, -1.001))).isFalse();
 	}
 
 
 	@Test
-	public void testWithMargin()
+	void testWithMargin()
 	{
 		var arc = Arc.createArc(Vector2f.fromY(3), 2, 0.12, -0.112);
 		var withMargin = arc.withMargin(-0.1);
@@ -55,7 +65,7 @@ public class ArcTest
 
 
 	@Test
-	public void testGetPerimeterPath()
+	void testGetPerimeterPath()
 	{
 		var arc = Arc.createArc(Vector2f.ZERO_VECTOR, 1, 0, AngleMath.PI);
 		assertThat(arc.getPerimeterPath()).containsExactlyInAnyOrder(
@@ -63,79 +73,99 @@ public class ArcTest
 				Lines.segmentFromPoints(Vector2.zero(), Vector2.fromX(1)),
 				Lines.segmentFromPoints(Vector2.fromX(-1), Vector2.zero())
 		);
+
+		var longArc = Arc.createArc(Vector2f.ZERO_VECTOR, 1, 0, 3 * AngleMath.PI);
+		assertThat(longArc.getPerimeterPath()).containsExactlyInAnyOrder(
+				longArc,
+				Lines.segmentFromPoints(Vector2.zero(), Vector2.fromX(1)),
+				Lines.segmentFromPoints(Vector2.fromX(-1), Vector2.zero())
+		);
 	}
 
 
 	@Test
-	public void testPointsAroundPerimeter()
+	void testPointsAroundPerimeter()
 	{
-		var arc = Arc.createArc(Vector2.fromX(2), 1, -0.1, AngleMath.PI + 0.2);
-		assertThat(arc.nearestPointInside(arc.center())).isEqualTo(arc.center());
-		assertThat(arc.nearestPointOnPerimeterPath(arc.center())).isEqualTo(Vector2.fromX(2));
-		assertThat(arc.nearestPointOutside(arc.center())).isEqualTo(Vector2.fromX(2));
-
-		var segments = List.of(
-				Lines.segmentFromPoints(Vector2.fromXY(2.999, 0), Vector2.fromXY(3.001, 0)),
-				Lines.segmentFromPoints(Vector2.fromXY(1.001, 0), Vector2.fromXY(0.999, 0)),
-				Lines.segmentFromPoints(Vector2.fromXY(2, 0.999), Vector2.fromXY(2, 1.001)),
-				Lines.segmentFromPoints(Vector2.fromXY(2, 0.001), Vector2.fromXY(2, -0.001))
+		var arcs = List.of(
+				Arc.createArc(Vector2.fromX(2), 1, -0.1, AngleMath.PI + 0.2),
+				Arc.createArc(Vector2.fromX(2), 1, 0.1, 2 * AngleMath.PI),
+				Arc.createArc(Vector2.fromX(2), 1, 0.1, 4 * AngleMath.PI)
 		);
-
-		for (var segment : segments)
+		for (var arc : arcs)
 		{
-			assertThat(arc.nearestPointInside(segment.getPathStart())).isEqualTo(segment.getPathStart());
-			assertThat(arc.nearestPointInside(segment.getPathCenter())).isEqualTo(segment.getPathCenter());
-			assertThat(arc.nearestPointInside(segment.getPathEnd())).isEqualTo(segment.getPathCenter());
+			assertThat(arc.nearestPointInside(arc.center())).isEqualTo(arc.center());
+			assertThat(arc.nearestPointOnPerimeterPath(arc.center())).isEqualTo(Vector2.fromX(2));
+			assertThat(arc.nearestPointOutside(arc.center())).isEqualTo(Vector2.fromX(2));
 
-			assertThat(arc.nearestPointOutside(segment.getPathStart())).isEqualTo(segment.getPathCenter());
-			assertThat(arc.nearestPointOutside(segment.getPathCenter())).isEqualTo(segment.getPathCenter());
-			assertThat(arc.nearestPointOutside(segment.getPathEnd())).isEqualTo(segment.getPathEnd());
+			var segments = List.of(
+					Lines.segmentFromPoints(Vector2.fromXY(2.999, 0), Vector2.fromXY(3.001, 0)),
+					Lines.segmentFromPoints(Vector2.fromXY(1.001, 0), Vector2.fromXY(0.999, 0)),
+					Lines.segmentFromPoints(Vector2.fromXY(2, 0.999), Vector2.fromXY(2, 1.001)),
+					Lines.segmentFromPoints(Vector2.fromXY(2, 0.001), Vector2.fromXY(2, -0.001))
+			);
 
-			assertThat(arc.nearestPointOnPerimeterPath(segment.getPathStart())).isEqualTo(segment.getPathCenter());
-			assertThat(arc.nearestPointOnPerimeterPath(segment.getPathCenter())).isEqualTo(segment.getPathCenter());
-			assertThat(arc.nearestPointOnPerimeterPath(segment.getPathEnd())).isEqualTo(segment.getPathCenter());
+			for (var segment : segments)
+			{
+				assertThat(arc.nearestPointInside(segment.getPathStart())).isEqualTo(segment.getPathStart());
+				assertThat(arc.nearestPointInside(segment.getPathCenter())).isEqualTo(segment.getPathCenter());
+				assertThat(arc.nearestPointInside(segment.getPathEnd())).isEqualTo(segment.getPathCenter());
+
+				assertThat(arc.nearestPointOutside(segment.getPathStart())).isEqualTo(segment.getPathCenter());
+				assertThat(arc.nearestPointOutside(segment.getPathCenter())).isEqualTo(segment.getPathCenter());
+				assertThat(arc.nearestPointOutside(segment.getPathEnd())).isEqualTo(segment.getPathEnd());
+
+				assertThat(arc.nearestPointOnPerimeterPath(segment.getPathStart())).isEqualTo(segment.getPathCenter());
+				assertThat(arc.nearestPointOnPerimeterPath(segment.getPathCenter())).isEqualTo(segment.getPathCenter());
+				assertThat(arc.nearestPointOnPerimeterPath(segment.getPathEnd())).isEqualTo(segment.getPathCenter());
+			}
 		}
 	}
 
 
 	@Test
-	public void testPointsAroundPath()
+	void testPointsAroundPath()
 	{
-
-		var arc = Arc.createArc(Vector2.fromX(2), 1, -0.1, AngleMath.PI + 0.2);
-		assertThat(arc.nearestPointInside(arc.center())).isEqualTo(arc.center());
-		assertThat(arc.nearestPointOnPerimeterPath(arc.center())).isEqualTo(Vector2.fromX(2));
-		assertThat(arc.nearestPointOutside(arc.center())).isEqualTo(Vector2.fromX(2));
-
-		var segments = List.of(
-				Lines.segmentFromPoints(Vector2.fromXY(2.999, 0), Vector2.fromXY(3.001, 0)),
-				Lines.segmentFromPoints(Vector2.fromXY(1.001, 0), Vector2.fromXY(0.999, 0)),
-				Lines.segmentFromPoints(Vector2.fromXY(2, 0.999), Vector2.fromXY(2, 1.001))
+		var arcs = List.of(
+				Arc.createArc(Vector2.fromX(2), 1, -0.1, AngleMath.PI + 0.2),
+				Arc.createArc(Vector2.fromX(2), 1, 0.1, 2 * AngleMath.PI),
+				Arc.createArc(Vector2.fromX(2), 1, 0.1, 4 * AngleMath.PI)
 		);
-
-		for (var segment : segments)
+		for (var arc : arcs)
 		{
-			assertThat(arc.closestPointOnPath(segment.getPathStart())).isEqualTo(segment.getPathCenter());
-			assertThat(arc.closestPointOnPath(segment.getPathCenter())).isEqualTo(segment.getPathCenter());
-			assertThat(arc.closestPointOnPath(segment.getPathEnd())).isEqualTo(segment.getPathCenter());
+			assertThat(arc.nearestPointInside(arc.center())).isEqualTo(arc.center());
+			assertThat(arc.nearestPointOnPerimeterPath(arc.center())).isEqualTo(Vector2.fromX(2));
+			assertThat(arc.nearestPointOutside(arc.center())).isEqualTo(Vector2.fromX(2));
 
-			assertThat(arc.distanceTo(segment.getPathStart())).isCloseTo(0.001, within(1e-10));
-			assertThat(arc.distanceTo(segment.getPathCenter())).isCloseTo(0, within(1e-10));
-			assertThat(arc.distanceTo(segment.getPathEnd())).isCloseTo(0.001, within(1e-10));
+			var segments = List.of(
+					Lines.segmentFromPoints(Vector2.fromXY(2.999, 0), Vector2.fromXY(3.001, 0)),
+					Lines.segmentFromPoints(Vector2.fromXY(1.001, 0), Vector2.fromXY(0.999, 0)),
+					Lines.segmentFromPoints(Vector2.fromXY(2, 0.999), Vector2.fromXY(2, 1.001))
+			);
 
-			assertThat(arc.distanceToSqr(segment.getPathStart())).isCloseTo(0.000001, within(1e-10));
-			assertThat(arc.distanceToSqr(segment.getPathCenter())).isCloseTo(0, within(1e-10));
-			assertThat(arc.distanceToSqr(segment.getPathEnd())).isCloseTo(0.000001, within(1e-10));
+			for (var segment : segments)
+			{
+				assertThat(arc.closestPointOnPath(segment.getPathStart())).isEqualTo(segment.getPathCenter());
+				assertThat(arc.closestPointOnPath(segment.getPathCenter())).isEqualTo(segment.getPathCenter());
+				assertThat(arc.closestPointOnPath(segment.getPathEnd())).isEqualTo(segment.getPathCenter());
 
-			assertThat(arc.isPointOnPath(segment.getPathStart())).isFalse();
-			assertThat(arc.isPointOnPath(segment.getPathCenter())).isTrue();
-			assertThat(arc.isPointOnPath(segment.getPathEnd())).isFalse();
+				assertThat(arc.distanceTo(segment.getPathStart())).isCloseTo(0.001, within(1e-10));
+				assertThat(arc.distanceTo(segment.getPathCenter())).isCloseTo(0, within(1e-10));
+				assertThat(arc.distanceTo(segment.getPathEnd())).isCloseTo(0.001, within(1e-10));
+
+				assertThat(arc.distanceToSqr(segment.getPathStart())).isCloseTo(0.000001, within(1e-10));
+				assertThat(arc.distanceToSqr(segment.getPathCenter())).isCloseTo(0, within(1e-10));
+				assertThat(arc.distanceToSqr(segment.getPathEnd())).isCloseTo(0.000001, within(1e-10));
+
+				assertThat(arc.isPointOnPath(segment.getPathStart())).isFalse();
+				assertThat(arc.isPointOnPath(segment.getPathCenter())).isTrue();
+				assertThat(arc.isPointOnPath(segment.getPathEnd())).isFalse();
+			}
 		}
 	}
 
 
 	@Test
-	public void testIntersectPerimeterPathLine()
+	void testIntersectPerimeterPathLine()
 	{
 		// Data generated with GeoGebra
 		var arc = Arc.createArc(Vector2f.ZERO_VECTOR, 1, 0, AngleMath.PI);
@@ -149,7 +179,7 @@ public class ArcTest
 
 
 	@Test
-	public void testIntersectPerimeterPathHalfLine()
+	void testIntersectPerimeterPathHalfLine()
 	{
 		// Data generated with GeoGebra
 		var arc = Arc.createArc(Vector2f.ZERO_VECTOR, 1, 0, AngleMath.PI);
@@ -167,7 +197,7 @@ public class ArcTest
 
 
 	@Test
-	public void testIntersectPerimeterPathLineSegment()
+	void testIntersectPerimeterPathLineSegment()
 	{
 		// Data generated with GeoGebra
 		var arc = Arc.createArc(Vector2f.ZERO_VECTOR, 1, 0, AngleMath.PI);
@@ -188,7 +218,7 @@ public class ArcTest
 
 
 	@Test
-	public void testIntersectPerimeterPathCircle()
+	void testIntersectPerimeterPathCircle()
 	{
 		// Data generated with GeoGebra
 		var arc = Arc.createArc(Vector2f.ZERO_VECTOR, 1, 0, AngleMath.PI);
@@ -202,7 +232,7 @@ public class ArcTest
 
 
 	@Test
-	public void testIntersectPerimeterPathArc()
+	void testIntersectPerimeterPathArc()
 	{
 		// Data generated with GeoGebra
 		var arc1 = Arc.createArc(Vector2f.ZERO_VECTOR, 1, 0, AngleMath.PI);
@@ -218,7 +248,7 @@ public class ArcTest
 
 
 	@Test
-	public void testIsValid()
+	void testIsValid()
 	{
 		var center = Vector2f.ZERO_VECTOR;
 		var proper = Arc.createArc(center, 1, 0, 0.1);
@@ -232,7 +262,7 @@ public class ArcTest
 
 
 	@Test
-	public void testGetPathPoints()
+	void testGetPathPoints()
 	{
 		var radius = 1.0;
 		var arc = Arc.createArc(Vector2f.ZERO_VECTOR, radius, 0, AngleMath.PI);
@@ -249,7 +279,7 @@ public class ArcTest
 
 
 	@Test
-	public void testGetPathLength()
+	void testGetPathLength()
 	{
 		var arc = Arc.createArc(Vector2f.ZERO_VECTOR, 1, 0, AngleMath.PI);
 		assertThat(arc.getLength()).isCloseTo(AngleMath.PI, within(1e-6));
@@ -266,7 +296,7 @@ public class ArcTest
 
 
 	@Test
-	public void testStepAlongPath()
+	void testStepAlongPath()
 	{
 		var arc = Arc.createArc(Vector2f.ZERO_VECTOR, 1, 0, AngleMath.PI);
 		assertThat(arc.stepAlongPath(0 * AngleMath.PI_HALF)).isEqualTo(Vector2.fromX(1));
@@ -280,7 +310,7 @@ public class ArcTest
 
 
 	@Test
-	public void testCompliance()
+	void testCompliance()
 	{
 		var arcs = List.of(
 				Arc.createArc(Vector2f.ZERO_VECTOR, 1, 0, AngleMath.PI),
@@ -292,6 +322,42 @@ public class ArcTest
 			IBoundedPathComplianceChecker.checkCompliance(arc, false);
 			I2DShapeComplianceChecker.checkCompliance(arc, true);
 		}
+	}
+
+
+	@Test
+	void testDistanceFromStart()
+	{
+		var arc = Arc.createArc(Vector2f.ZERO_VECTOR, 1, 0, 1.5 * AngleMath.PI);
+		Function<Integer, IVector2> vec = factor -> Vector2.fromAngleLength(factor * AngleMath.PI_QUART, 1);
+		var length = 1 * AngleMath.PI_TWO * (AngleMath.PI_QUART / AngleMath.PI_TWO);
+
+		assertThat(arc.distanceFromStart(vec.apply(0))).isCloseTo(0 * length, within(1e-6));
+		assertThat(arc.distanceFromStart(vec.apply(1))).isCloseTo(1 * length, within(1e-6));
+		assertThat(arc.distanceFromStart(vec.apply(2))).isCloseTo(2 * length, within(1e-6));
+		assertThat(arc.distanceFromStart(vec.apply(3))).isCloseTo(3 * length, within(1e-6));
+		assertThat(arc.distanceFromStart(vec.apply(4))).isCloseTo(4 * length, within(1e-6));
+		assertThat(arc.distanceFromStart(vec.apply(5))).isCloseTo(5 * length, within(1e-6));
+		assertThat(arc.distanceFromStart(vec.apply(6))).isCloseTo(6 * length, within(1e-6));
+		assertThat(arc.distanceFromStart(vec.apply(7))).isCloseTo(7 * length, within(1e-6));
+		assertThat(arc.distanceFromStart(vec.apply(8))).isCloseTo(0 * length, within(1e-6));
+		assertThat(arc.distanceFromStart(vec.apply(9))).isCloseTo(1 * length, within(1e-6));
+		assertThat(arc.distanceFromStart(vec.apply(10))).isCloseTo(2 * length, within(1e-6));
+	}
+
+
+	@Test
+	void testTangentialDirection()
+	{
+		var arc = Arc.createArc(Vector2f.ZERO_VECTOR, 1, 0, AngleMath.PI);
+		assertThat(arc.getTangentialDirection(0 * AngleMath.PI_HALF)).isEqualTo(Vector2.fromY(1));
+		assertThat(arc.getTangentialDirection(0.5 * AngleMath.PI_HALF)).isEqualTo(Vector2.fromXY(-1, 1).normalize());
+		assertThat(arc.getTangentialDirection(1 * AngleMath.PI_HALF)).isEqualTo(Vector2.fromX(-1));
+		assertThat(arc.getTangentialDirection(2 * AngleMath.PI_HALF)).isEqualTo(Vector2.fromY(-1));
+		assertThat(arc.getTangentialDirection(3 * AngleMath.PI_HALF)).isEqualTo(Vector2.fromX(1));
+		assertThat(arc.getTangentialDirection(4 * AngleMath.PI_HALF)).isEqualTo(Vector2.fromY(1));
+		assertThat(arc.getTangentialDirection(8 * AngleMath.PI_HALF)).isEqualTo(Vector2.fromY(1));
+		assertThat(arc.getTangentialDirection(100 * AngleMath.PI_HALF)).isEqualTo(Vector2.fromY(1));
 	}
 }
 

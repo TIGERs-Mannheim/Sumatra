@@ -1,12 +1,9 @@
-/*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.metis.offense.action;
 
 import edu.tigers.sumatra.ai.metis.kicking.Kick;
 import edu.tigers.sumatra.ai.metis.kicking.Pass;
 import edu.tigers.sumatra.ai.metis.offense.dribble.DribbleToPos;
+import edu.tigers.sumatra.ai.metis.pass.rating.RatedPass;
 import edu.tigers.sumatra.ai.metis.pass.target.IPassTarget;
 import edu.tigers.sumatra.ai.metis.pass.target.PassTarget;
 import edu.tigers.sumatra.math.vector.IVector2;
@@ -28,7 +25,7 @@ import java.util.Optional;
 public class OffensiveAction
 {
 	EOffensiveActionType type;
-	Pass pass;
+	RatedPass pass;
 	Kick kick;
 	IVector2 ballContactPos;
 	DribbleToPos dribbleToPos;
@@ -47,7 +44,8 @@ public class OffensiveAction
 
 
 	public static OffensiveAction buildRedirectKick(
-			@NonNull Kick kick)
+			@NonNull Kick kick
+	)
 	{
 		return OffensiveAction.builder()
 				.kick(kick)
@@ -61,7 +59,7 @@ public class OffensiveAction
 	public Optional<Kick> getKickOpt()
 	{
 		return Optional.ofNullable(pass)
-				.map(Pass::getKick)
+				.map(e -> e.getPass().getKick())
 				.or(() -> Optional.ofNullable(kick));
 	}
 
@@ -74,12 +72,14 @@ public class OffensiveAction
 
 	public Optional<IPassTarget> getPassTarget()
 	{
-		return Optional.ofNullable(pass).map(p -> new PassTarget(p.getKick().getTarget(), p.getReceiver()));
+		return Optional.ofNullable(pass)
+				.map(p -> new PassTarget(p.getPass().getKick().getTarget(), p.getPass().getReceiver()));
 	}
 
 
 	public static OffensiveAction buildProtect(
-			@NonNull DribbleToPos dribbleToPos)
+			@NonNull DribbleToPos dribbleToPos
+	)
 	{
 		return OffensiveAction.builder()
 				.type(EOffensiveActionType.PROTECT)
@@ -88,26 +88,41 @@ public class OffensiveAction
 				.build();
 	}
 
+	public static OffensiveAction buildFinisherPass(
+			@NonNull DribbleToPos dribbleToPos,
+			@NonNull RatedPass pass
+	)
+	{
+		return OffensiveAction.builder()
+				.type(EOffensiveActionType.FINISHER_PASS)
+				.dribbleToPos(dribbleToPos)
+				.pass(pass)
+				.build();
+	}
+
 
 	public static OffensiveAction buildPass(
-			@NonNull Pass pass)
+			@NonNull RatedPass pass
+	)
 	{
 		return OffensiveAction.builder()
 				.pass(pass)
-				.kick(pass.getKick())
-				.ballContactPos(pass.getKick().getSource())
+				.kick(pass.getPass().getKick())
+				.ballContactPos(pass.getPass().getKick().getSource())
 				.type(EOffensiveActionType.PASS)
 				.forcePushDuringKick(false)
 				.build();
 	}
 
+
 	public static OffensiveAction buildProtectPass(
-			@NonNull Pass pass)
+			@NonNull RatedPass pass
+	)
 	{
 		return OffensiveAction.builder()
 				.pass(pass)
-				.kick(pass.getKick())
-				.ballContactPos(pass.getKick().getSource())
+				.kick(pass.getPass().getKick())
+				.ballContactPos(pass.getPass().getKick().getSource())
 				.type(EOffensiveActionType.PASS)
 				.forcePushDuringKick(true)
 				.build();
@@ -115,7 +130,8 @@ public class OffensiveAction
 
 
 	public static OffensiveAction buildKick(
-			@NonNull Kick kick)
+			@NonNull Kick kick
+	)
 	{
 		return OffensiveAction.builder()
 				.kick(kick)
@@ -128,7 +144,8 @@ public class OffensiveAction
 
 	public static OffensiveAction buildDribbleKick(
 			@NonNull Kick kick,
-			@NonNull DribbleToPos dribbleToPos)
+			@NonNull DribbleToPos dribbleToPos
+	)
 	{
 		return OffensiveAction.builder()
 				.kick(kick)
@@ -140,7 +157,8 @@ public class OffensiveAction
 
 
 	public static OffensiveAction buildReceive(
-			IVector2 ballContactPos)
+			IVector2 ballContactPos
+	)
 	{
 		return OffensiveAction.builder()
 				.type(EOffensiveActionType.RECEIVE)

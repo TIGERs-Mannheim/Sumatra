@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.gui.visualizer.presenter;
 
 import edu.tigers.sumatra.gui.visualizer.presenter.callbacks.FieldScaler;

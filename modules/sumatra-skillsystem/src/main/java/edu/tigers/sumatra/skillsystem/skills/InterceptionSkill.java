@@ -1,10 +1,8 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra.skillsystem.skills;
 
 
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.drawable.DrawableCircle;
 import edu.tigers.sumatra.drawable.DrawableLine;
 import edu.tigers.sumatra.geometry.Geometry;
@@ -30,7 +28,7 @@ import java.util.List;
  */
 public class InterceptionSkill extends AMoveSkill
 {
-	@Configurable(defValue = "150.0")
+	@Configurable(defValue = "150.0", unit = EConfigUnit.DISTANCE_MM)
 	private static double interceptionSkillSecurityDist = 150;
 
 	@Setter

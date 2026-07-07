@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.math.vector;
 
 import edu.tigers.sumatra.math.AngleMath;
@@ -21,6 +17,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.within;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
@@ -31,77 +28,77 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class Vector2Test
 {
 	private static final double ACCURACY = 0.001;
-	
-	
+
+
 	@Test
 	void testTurnNew()
 	{
 		final Vector2 input = Vector2.fromXY(1, 0);
 		Vector2 expected = Vector2.fromXY(0, 1);
 		Vector2 output;
-		
+
 		output = input.turnNew(AngleMath.PI / 2.0);
 		assertEquals(output.x(), expected.x(), ACCURACY);
 		assertEquals(output.y(), expected.y(), ACCURACY);
-		
+
 		output = input.turnNew(-AngleMath.PI / 2.0);
 		expected = Vector2.fromXY(0, -1);
 		assertEquals(output.x(), expected.x(), ACCURACY);
 		assertEquals(output.y(), expected.y(), ACCURACY);
-		
+
 		output = input.turnNew(4 * AngleMath.PI);
 		expected = Vector2.copy(input);
 		assertEquals(output.x(), expected.x(), ACCURACY);
 		assertEquals(output.y(), expected.y(), ACCURACY);
 	}
-	
-	
+
+
 	@Test
 	void testScaleToNew()
 	{
 		Vector2 input = Vector2.fromXY(1, 0);
 		Vector2 expected = Vector2.fromXY(5, 0);
 		Vector2 output;
-		
+
 		output = input.scaleToNew(5);
 		assertEquals(output.x(), expected.x(), ACCURACY);
 		assertEquals(output.y(), expected.y(), ACCURACY);
-		
+
 		input = Vector2.fromXY(0, -1);
 		expected = Vector2.fromXY(0, 0.5);
 		output = input.scaleToNew(-0.5f);
 		assertEquals(output.x(), expected.x(), ACCURACY);
 		assertEquals(output.y(), expected.y(), ACCURACY);
-		
+
 		input = Vector2.fromXY(0, 0);
 		expected = Vector2.fromXY(0, 0);
 		output = input.scaleToNew(-8);
 		assertEquals(output.x(), expected.x(), ACCURACY);
 		assertEquals(output.y(), expected.y(), ACCURACY);
-		
+
 	}
-	
-	
+
+
 	@Test
 	void testAdd()
 	{
 		Vector2 vec1 = Vector2.fromXY(2, 1);
 		Vector2 vec2 = Vector2.fromXY(3, 4);
-		
+
 		vec1.add(vec2);
 		assertEquals(Vector2.fromXY(5, 5), vec1);
-		
+
 		vec1 = Vector2.fromXY(-2, 0);
 		vec1.add(vec2);
 		assertEquals(Vector2.fromXY(1, 4), vec1);
-		
+
 		vec1 = Vector2.fromXY(-2, -3);
 		vec2 = Vector2.fromXY(-1, 5);
 		vec1.add(vec2);
 		assertEquals(Vector2.fromXY(-3, 2), vec1);
 	}
-	
-	
+
+
 	@Test
 	void testAddNew()
 	{
@@ -109,20 +106,20 @@ class Vector2Test
 		Vector2 vec2 = Vector2.fromXY(1, 2);
 		Vector2 result = vec1.addNew(vec2);
 		assertEquals(Vector2.fromXY(6, 9), result);
-		
+
 		vec1 = Vector2.fromXY(-3, 0);
 		vec2 = Vector2.fromXY(4, 2);
 		result = vec1.addNew(vec2);
 		assertEquals(Vector2.fromXY(1, 2), result);
-		
+
 		vec1 = Vector2.fromXY(-3, 5);
 		vec2 = Vector2.fromXY(-4, -2);
 		result = vec1.addNew(vec2);
 		assertEquals(Vector2.fromXY(-7, 3), result);
 		assertEquals(Vector2.fromXY(-3, 5), vec1);
 	}
-	
-	
+
+
 	@Test
 	void testMultiply()
 	{
@@ -130,25 +127,25 @@ class Vector2Test
 		double factor = 4.5;
 		vec1.multiply(factor);
 		assertEquals(Vector2.fromXY(18, 31.5), vec1);
-		
+
 		vec1 = Vector2.fromXY(1, 1);
 		factor = AngleMath.PI;
 		vec1.multiply(factor);
-		assertEquals(vec1.x(), factor, ACCURACY);
-		assertEquals(vec1.y(), factor, ACCURACY);
-		
+		assertEquals(factor, vec1.x(), ACCURACY);
+		assertEquals(factor, vec1.y(), ACCURACY);
+
 		vec1 = Vector2.fromXY(3, -5);
 		factor = -2.1f;
 		vec1.multiply(factor);
-		assertEquals(vec1.x(), -6.3f, ACCURACY);
-		assertEquals(vec1.y(), 10.5, ACCURACY);
-		
+		assertEquals(-6.3f, vec1.x(), ACCURACY);
+		assertEquals(10.5, vec1.y(), ACCURACY);
+
 		factor = 0;
 		vec1.multiply(factor);
 		assertThat(Vector2.fromXY(0, 0).isCloseTo(vec1)).isTrue();
 	}
-	
-	
+
+
 	@Test
 	void testMultiplyNewFactor()
 	{
@@ -156,26 +153,26 @@ class Vector2Test
 		double factor = 4.5;
 		Vector2 result = vec1.multiplyNew(factor);
 		assertEquals(Vector2.fromXY(18, 31.5), result);
-		
+
 		vec1 = Vector2.fromXY(1, 1);
 		factor = AngleMath.PI;
 		result = vec1.multiplyNew(factor);
-		assertEquals(result.x(), factor, ACCURACY);
-		assertEquals(result.y(), factor, ACCURACY);
+		assertEquals(factor, result.x(), ACCURACY);
+		assertEquals(factor, result.y(), ACCURACY);
 		assertEquals(Vector2.fromXY(1, 1), vec1);
-		
+
 		vec1 = Vector2.fromXY(3, -5);
 		factor = -2.1f;
 		result = vec1.multiplyNew(factor);
-		assertEquals(result.x(), -6.3f, ACCURACY);
-		assertEquals(result.y(), 10.5, ACCURACY);
-		
+		assertEquals(-6.3f, result.x(), ACCURACY);
+		assertEquals(10.5, result.y(), ACCURACY);
+
 		factor = 0;
 		result = vec1.multiplyNew(factor);
 		assertThat(Vector2.fromXY(0, 0).isCloseTo(result)).isTrue();
 	}
-	
-	
+
+
 	@Test
 	void testMultiplyNewVector()
 	{
@@ -183,8 +180,8 @@ class Vector2Test
 		assertThat(Vector2.fromXY(1, 1).multiplyNew(Vector2.fromXY(1, 1))).isEqualTo(Vector2.fromXY(1, 1));
 		assertThat(Vector2.fromXY(42, 1337).multiplyNew(Vector2.fromXY(5, 2))).isEqualTo(Vector2.fromXY(210, 2674));
 	}
-	
-	
+
+
 	@Test
 	void testSubtract()
 	{
@@ -192,19 +189,19 @@ class Vector2Test
 		Vector2 vec2 = Vector2.fromXY(3, 5);
 		vec1.subtract(vec2);
 		assertEquals(Vector2.fromXY(1, -3), vec1);
-		
+
 		vec1 = Vector2.fromXY(1, 5);
 		vec2 = Vector2.fromXY(-2, 5);
 		vec1.subtract(vec2);
 		assertEquals(Vector2.fromXY(3, 0), vec1);
-		
+
 		vec2 = Vector2.fromXY(2.4f, -3.1f);
 		vec1.subtract(vec2);
-		assertEquals(vec1.x(), 0.6, ACCURACY);
-		assertEquals(vec1.y(), 3.1, ACCURACY);
+		assertEquals(0.6, vec1.x(), ACCURACY);
+		assertEquals(3.1, vec1.y(), ACCURACY);
 	}
-	
-	
+
+
 	@Test
 	void testSubtractNew()
 	{
@@ -212,83 +209,83 @@ class Vector2Test
 		Vector2 vec2 = Vector2.fromXY(1, 2);
 		Vector2 result = vec1.subtractNew(vec2);
 		assertEquals(Vector2.fromXY(4, 5), result);
-		
+
 		vec1 = Vector2.fromXY(-3, 0);
 		vec2 = Vector2.fromXY(4, 2);
 		result = vec1.subtractNew(vec2);
 		assertEquals(Vector2.fromXY(-7, -2), result);
-		
+
 		vec1 = Vector2.fromXY(-3, 5);
 		vec2 = Vector2.fromXY(-4, -2);
 		result = vec1.subtractNew(vec2);
 		assertEquals(Vector2.fromXY(1, 7), result);
 		assertEquals(Vector2.fromXY(-3, 5), vec1);
 	}
-	
-	
+
+
 	@Test
 	void testScaleTo()
 	{
 		Vector2 vec1 = Vector2.fromXY(3, -4);
 		vec1.scaleTo(15.0f);
 		assertEquals(Vector2.fromXY(9, -12), vec1);
-		
+
 		vec1 = Vector2.fromXY(2.5f, 2.5);
 		vec1.scaleTo(12.5f);
-		assertEquals(vec1.x(), 8.8388, ACCURACY);
-		assertEquals(vec1.y(), 8.8388, ACCURACY);
-		
+		assertEquals(8.8388, vec1.x(), ACCURACY);
+		assertEquals(8.8388, vec1.y(), ACCURACY);
+
 		vec1 = Vector2.fromXY(0, 0);
 		vec1.scaleTo(8);
 		assertEquals(Vector2.fromXY(0, 0), vec1);
 	}
-	
-	
+
+
 	@Test
 	void testTurn()
 	{
 		Vector2 vec1 = Vector2.fromXY(1, 0);
 		vec1.turn(AngleMath.PI);
-		assertEquals(vec1.x(), -1, ACCURACY);
-		assertEquals(vec1.y(), 0, ACCURACY);
-		
+		assertEquals(-1, vec1.x(), ACCURACY);
+		assertEquals(0, vec1.y(), ACCURACY);
+
 		vec1 = Vector2.fromXY(1, 0);
 		vec1.turn(AngleMath.PI * (1.5f));
-		assertEquals(vec1.x(), 0, ACCURACY);
-		assertEquals(vec1.y(), -1, ACCURACY);
-		
+		assertEquals(0, vec1.x(), ACCURACY);
+		assertEquals(-1, vec1.y(), ACCURACY);
+
 		vec1 = Vector2.fromXY(1, 0);
 		vec1.turn(AngleMath.PI * (-0.5f));
-		assertEquals(vec1.x(), 0, ACCURACY);
-		assertEquals(vec1.y(), -1, ACCURACY);
-		
+		assertEquals(0, vec1.x(), ACCURACY);
+		assertEquals(-1, vec1.y(), ACCURACY);
+
 		vec1 = Vector2.fromXY(0, 0);
 		vec1.turn(AngleMath.PI * (1.5f));
-		assertEquals(vec1.x(), 0, ACCURACY);
-		assertEquals(vec1.y(), 0, ACCURACY);
+		assertEquals(0, vec1.x(), ACCURACY);
+		assertEquals(0, vec1.y(), ACCURACY);
 	}
-	
-	
+
+
 	@Test
 	void testTurnTo()
 	{
 		Vector2 vec1 = Vector2.fromXY(1, 0);
 		vec1.turnTo(AngleMath.PI);
-		assertEquals(vec1.x(), -1, ACCURACY);
-		assertEquals(vec1.y(), 0, ACCURACY);
-		
+		assertEquals(-1, vec1.x(), ACCURACY);
+		assertEquals(0, vec1.y(), ACCURACY);
+
 		vec1 = Vector2.fromXY(1, 0);
 		vec1.turnTo(AngleMath.PI * (-0.5f));
-		assertEquals(vec1.x(), 0, ACCURACY);
-		assertEquals(vec1.y(), -1, ACCURACY);
-		
+		assertEquals(0, vec1.x(), ACCURACY);
+		assertEquals(-1, vec1.y(), ACCURACY);
+
 		vec1 = Vector2.fromXY(0, 0);
 		vec1.turnTo(AngleMath.PI);
-		assertEquals(vec1.x(), 0, ACCURACY);
-		assertEquals(vec1.y(), 0, ACCURACY);
+		assertEquals(0, vec1.x(), ACCURACY);
+		assertEquals(0, vec1.y(), ACCURACY);
 	}
-	
-	
+
+
 	@Test
 	void testScalarProduct()
 	{
@@ -296,19 +293,19 @@ class Vector2Test
 		Vector2 vec2 = Vector2.fromXY(-4, 2);
 		double result = vec1.scalarProduct(vec2);
 		assertEquals(2f, result, ACCURACY);
-		
+
 		vec1 = Vector2.fromXY(1, 3);
 		vec2 = Vector2.fromXY(0, 0);
 		result = vec1.scalarProduct(vec2);
 		assertEquals(0f, result, ACCURACY);
-		
+
 		vec1 = Vector2.fromXY(2.1f, 3);
 		vec2 = Vector2.fromXY(10f, 1.5);
 		result = vec1.scalarProduct(vec2);
 		assertEquals(25.5f, result, ACCURACY);
 	}
-	
-	
+
+
 	@Test
 	void testNormalize()
 	{
@@ -317,8 +314,8 @@ class Vector2Test
 		assertThat(Vector2.zero().normalize().getLength2()).isCloseTo(0, within(1e-6));
 		assertThat(Vector2.zero().normalizeNew().getLength2()).isCloseTo(0, within(1e-6));
 	}
-	
-	
+
+
 	@Test
 	void testGetLength2()
 	{
@@ -327,8 +324,8 @@ class Vector2Test
 		assertThat(Vector2.fromXY(2, 2).getLength2()).isCloseTo(Math.sqrt(8), within(1e-6));
 		assertThat(Vector2.fromXY(42, -1337).getLength2()).isCloseTo(Vector2.fromXY(42, -1337).getLength(), within(1e-6));
 	}
-	
-	
+
+
 	@Test
 	void testGetAngle()
 	{
@@ -339,32 +336,32 @@ class Vector2Test
 		assertThat(Vector2.zero().getAngle(42)).isCloseTo(42.0, within(ACCURACY));
 		assertThat(Vector2.fromX(1).getAngle(42)).isCloseTo(0.0, within(ACCURACY));
 	}
-	
-	
+
+
 	@Test
 	void testEquals()
 	{
 		Vector2 vec1 = Vector2.fromXY(5, 0);
 		Vector2 vec2 = Vector2.fromXY(5, 0);
-		Boolean result = vec1.equals(vec2);
+		boolean result = vec1.equals(vec2);
 		assertTrue(result);
-		
+
 		vec1 = Vector2.fromXY(3.1f, 1.4);
 		vec2 = Vector2.fromXY(3.1f, 1.4);
 		result = vec1.equals(vec2);
 		assertTrue(result);
-		
+
 		vec1 = Vector2.fromXY(3.1f, 1.4);
 		vec2 = Vector2.fromXY(3.1f, 1.3);
 		result = vec1.equals(vec2);
-		assertTrue(!result);
-		
+		assertFalse(result);
+
 		EqualsVerifier.forClass(Vector2.class)
 				.suppress(Warning.NONFINAL_FIELDS)
 				.verify();
 	}
-	
-	
+
+
 	@Test
 	void testFromAngle()
 	{
@@ -373,16 +370,16 @@ class Vector2Test
 		assertThat(Vector2.fromAngle(AngleMath.PI).getAngle()).isCloseTo(AngleMath.PI, within(ACCURACY));
 		assertThat(Vector2.fromAngle(3 * AngleMath.PI).getAngle()).isCloseTo(AngleMath.PI, within(ACCURACY));
 	}
-	
-	
+
+
 	@Test
 	void testFromPoints()
 	{
 		assertThat(Vector2.fromPoints(Vector2.fromXY(0, 0), Vector2.fromXY(1, 1))).isEqualTo(Vector2.fromXY(1, 1));
 		assertThat(Vector2.fromPoints(Vector2.fromXY(1, 0), Vector2.fromXY(2, 1))).isEqualTo(Vector2.fromXY(1, 1));
 	}
-	
-	
+
+
 	@Test
 	void testValueOf()
 	{
@@ -392,8 +389,8 @@ class Vector2Test
 		assertThat(Vector2.valueOf("21+21,1*42").isCloseTo(Vector2.fromXY(42, 42))).isTrue();
 		assertThat(Vector2.valueOf("1+2*3-7,2/4").isCloseTo(Vector2.fromXY(0, 0.5))).isTrue();
 	}
-	
-	
+
+
 	@Test
 	void testSet()
 	{
@@ -405,8 +402,8 @@ class Vector2Test
 		assertThat(vector.isCloseTo(Vector2.fromXY(42, 21))).isTrue();
 		assertThatThrownBy(() -> vector.set(2, 1)).isInstanceOfAny(IllegalArgumentException.class);
 	}
-	
-	
+
+
 	@Test
 	void testRealVector()
 	{
@@ -416,8 +413,8 @@ class Vector2Test
 		assertThat(Vector2.fromReal(realVector).isCloseTo(Vector2.fromXY(0, 42))).isTrue();
 		assertThat(Vector2.fromReal(realVector).toRealVector()).isEqualTo(realVector);
 	}
-	
-	
+
+
 	@Test
 	void testIsZeroVector()
 	{
@@ -426,8 +423,8 @@ class Vector2Test
 		assertThat(Vector2.fromXY(1e-8, 1e-8).isZeroVector()).isTrue();
 		assertThat(Vector2.fromXY(1e-2, 0).isZeroVector()).isFalse();
 	}
-	
-	
+
+
 	@Test
 	void testIsFinite()
 	{
@@ -435,16 +432,16 @@ class Vector2Test
 		assertThat(Vector2.fromX(Double.NaN).isFinite()).isFalse();
 		assertThat(Vector2.fromX(Double.POSITIVE_INFINITY).isFinite()).isFalse();
 	}
-	
-	
+
+
 	@Test
 	void testGetSaveableString()
 	{
 		assertThat(Vector2.fromXY(42, 1337).getSaveableString())
 				.isEqualTo(42d + ";" + 1337d);
 	}
-	
-	
+
+
 	@Test
 	void testNumberList()
 	{
@@ -454,16 +451,16 @@ class Vector2Test
 		IVector newVector = Vector2.fromNumberList(nbrList);
 		assertThat(newVector).isEqualTo(vector);
 	}
-	
-	
+
+
 	@Test
 	void testToArray()
 	{
 		IVector2 vector = Vector2.fromXY(42, 1337);
 		assertThat(vector.toArray()).isEqualTo(new double[] { 42d, 1337d });
 	}
-	
-	
+
+
 	@Test
 	void testToString()
 	{
@@ -474,22 +471,22 @@ class Vector2Test
 		IVector2 vector3 = Vector2.fromXY(0, 0.01);
 		assertThat(vector3.toString()).isEqualTo("[0.000,0.010|l=0.010|a=1.571]");
 	}
-	
-	
+
+
 	@Test
 	void testToJSON()
 	{
 		assertThat(Vector2.fromXY(42, 1337).toJSON().toJson()).isEqualTo("{\"dim1\":1337.0,\"dim0\":42.0}");
 	}
-	
-	
+
+
 	@Test
 	void testToJsonArray()
 	{
 		assertThat(Vector2.fromXY(42, 1337).toJsonArray().toJson()).isEqualTo("[42.0,1337.0]");
 	}
-	
-	
+
+
 	@Test
 	void testIsCloseTo()
 	{
@@ -498,8 +495,8 @@ class Vector2Test
 		assertThat(Vector2.fromXY(42, 1337).isCloseTo(Vector2.fromXY(42, 1337), 1e-6)).isTrue();
 		assertThat(Vector2.fromXY(42, 1337).isCloseTo(Vector3.zero())).isFalse();
 	}
-	
-	
+
+
 	@Test
 	void testMeanVector()
 	{
@@ -514,8 +511,8 @@ class Vector2Test
 		assertThat(muVector.isCloseTo(muRefVector, 1e-2)).withFailMessage("expected: %s, but: %s", muVector, muRefVector)
 				.isTrue();
 	}
-	
-	
+
+
 	@Test
 	void testVarianceVector()
 	{
@@ -530,8 +527,8 @@ class Vector2Test
 		assertThat(varVector.isCloseTo(varRefVector, 1e-2))
 				.withFailMessage("expected: %s, but: %s", varVector, varRefVector).isTrue();
 	}
-	
-	
+
+
 	@Test
 	void testStdVector()
 	{
@@ -546,8 +543,8 @@ class Vector2Test
 		assertThat(stdVector.isCloseTo(stdRefVector, 1e-2))
 				.withFailMessage("expected: %s, but: %s", stdVector, stdRefVector).isTrue();
 	}
-	
-	
+
+
 	@Test
 	void testGet()
 	{
@@ -556,8 +553,8 @@ class Vector2Test
 		assertThat(vector.get(1)).isEqualTo(vector.y());
 		assertThatThrownBy(() -> vector.get(2)).isExactlyInstanceOf(IllegalArgumentException.class);
 	}
-	
-	
+
+
 	@Test
 	void testAbs()
 	{
@@ -565,8 +562,8 @@ class Vector2Test
 		assertThat(Vector2.fromXY(-42, 1337).absNew()).isEqualTo(Vector2.fromXY(42, 1337));
 		assertThat(Vector2.fromXY(-42, -1337).absNew()).isEqualTo(Vector2.fromXY(42, 1337));
 	}
-	
-	
+
+
 	@Test
 	void testGetNormalVector()
 	{
@@ -574,8 +571,8 @@ class Vector2Test
 		assertThat(Vector2.fromXY(1, 1).getNormalVector()).isEqualTo(Vector2.fromXY(1, -1));
 		assertThat(Vector2.fromXY(0, 1).getNormalVector()).isEqualTo(Vector2.fromXY(1, -0));
 	}
-	
-	
+
+
 	@Test
 	void testIsVertical()
 	{
@@ -583,8 +580,8 @@ class Vector2Test
 		assertThat(Vector2.fromY(1).isVertical()).isTrue();
 		assertThat(Vector2.fromXY(1, 1).isVertical()).isFalse();
 	}
-	
-	
+
+
 	@Test
 	void testIsHorizontal()
 	{
@@ -592,15 +589,15 @@ class Vector2Test
 		assertThat(Vector2.fromY(1).isHorizontal()).isFalse();
 		assertThat(Vector2.fromXY(1, 1).isHorizontal()).isFalse();
 	}
-	
-	
+
+
 	@Test
 	void testGetXYZVector()
 	{
 		assertThat(Vector2.fromXY(42, 1337).getXYZVector()).isEqualTo(Vector3.fromXYZ(42, 1337, 0));
 	}
-	
-	
+
+
 	@Test
 	void testDistanceTo()
 	{
@@ -610,8 +607,8 @@ class Vector2Test
 		assertThat(Vector2.fromXY(42, 1337).distanceTo(Vector2.fromXY(42, 337))).isEqualTo(1000.0);
 		assertThat(Vector2.fromXY(-42, 1337).distanceTo(Vector2.fromXY(42, 1337))).isEqualTo(84.0);
 	}
-	
-	
+
+
 	@Test
 	void testIsParallelTo()
 	{
@@ -622,8 +619,8 @@ class Vector2Test
 		assertThat(Vector2.fromY(1).isParallelTo(Vector2.fromY(1))).isTrue();
 		assertThat(Vector2.fromXY(3, 7).isParallelTo(Vector2.fromXY(6, 14))).isTrue();
 	}
-	
-	
+
+
 	@Test
 	void testAngleTo()
 	{
@@ -633,8 +630,8 @@ class Vector2Test
 		assertThat(Vector2.fromX(1).angleTo(Vector2.fromX(1)).get()).isEqualTo(0.0, within(ACCURACY));
 		assertThat(Vector2.zero().angleTo(Vector2.fromX(-1)).isPresent()).isFalse();
 	}
-	
-	
+
+
 	@Test
 	void testAngleToAbs()
 	{
@@ -644,8 +641,8 @@ class Vector2Test
 		assertThat(Vector2.fromX(1).angleToAbs(Vector2.fromX(1)).get()).isEqualTo(0.0, within(ACCURACY));
 		assertThat(Vector2.zero().angleToAbs(Vector2.fromX(-1)).isPresent()).isFalse();
 	}
-	
-	
+
+
 	@Test
 	void testNearestTo()
 	{

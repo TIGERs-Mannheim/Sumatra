@@ -1,11 +1,8 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.pathfinder.acceptor;
 
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.math.SumatraMath;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.pathfinder.finder.PathFinderResult;
@@ -13,7 +10,7 @@ import edu.tigers.sumatra.pathfinder.finder.PathFinderResult;
 
 public class MotionLessObstacleResultAcceptor implements PathFinderResultAcceptor
 {
-	@Configurable(defValue = "4", comment = "Max collision time [s] where threshold for relative distance is 1")
+	@Configurable(defValue = "4", comment = "Max collision time where threshold for relative distance is 1", unit = EConfigUnit.TIME_S)
 	private static double thresholdMaxCollisionTime = 4;
 
 	static

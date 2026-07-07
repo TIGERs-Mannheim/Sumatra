@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.pandora.plays.standard;
 
 import edu.tigers.sumatra.ai.common.KeepDistanceToBall;
@@ -111,8 +107,9 @@ public abstract class ABallPlacementPlay extends APlay
 		receivingMoveRole.updateLookAtTarget(getBall());
 		boolean isReadyForPass = receivingMoveRole.isDestinationReached();
 
-		receivingMoveRole.getMoveCon().physicalObstaclesOnly();
-		receivingMoveRole.getMoveCon().setBallObstacle(!isReadyForPass);
+		receivingMoveRole.setMoveCon(receivingMoveRole.getMoveCon()
+				.withPhysicalObstaclesOnly()
+				.withBallObstacle(!isReadyForPass));
 		if (isReadyForPass)
 		{
 			receivingMoveRole.setDestinationAdjuster((aiFrame, destination, botID) -> destination);

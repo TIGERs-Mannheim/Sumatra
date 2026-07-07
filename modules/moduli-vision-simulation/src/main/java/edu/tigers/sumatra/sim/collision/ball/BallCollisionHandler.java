@@ -1,10 +1,7 @@
-/*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.sim.collision.ball;
 
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.ball.BallState;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.geometry.Goal;
@@ -32,9 +29,9 @@ import java.util.stream.Stream;
 public class BallCollisionHandler
 {
 	private static final double GOAL_BORDER_WIDTH_MM = 20;
-	@Configurable(defValue = "false", comment = "Set spin after reflecting the ball on a collision")
+	@Configurable(defValue = "false", comment = "Set spin after reflecting the ball on a collision", unit = EConfigUnit.BOOLEAN)
 	private static boolean reflectSpin = false;
-	@Configurable(defValue = "0", comment = "[RPM] spin speed applied if sth is sticky to the ball")
+	@Configurable(defValue = "0", comment = "Spin speed applied if sth is sticky to the ball", unit = EConfigUnit.RPM)
 	private static double dribblingSpeed = 0.0;
 
 
@@ -88,7 +85,7 @@ public class BallCollisionHandler
 
 	private void addFieldBoundary(final List<ICollisionObject> objects)
 	{
-		double maxX = Geometry.getFieldLength() / 2 + Geometry.getBoundaryLength() - Geometry.getBallRadius();
+		double maxX = Geometry.getFieldLength() / 2 + Geometry.getBoundaryWidthGoalLine() - Geometry.getBallRadius();
 		double maxY = Geometry.getFieldWidth() / 2 + Geometry.getBoundaryWidth() - Geometry.getBallRadius();
 
 		objects.add(new LineSegmentCollisionObject(
@@ -131,7 +128,7 @@ public class BallCollisionHandler
 				-width / 2 - GOAL_BORDER_WIDTH_MM / 2).multiply(sign);
 
 		var backDistance = SumatraMath.max(
-				Geometry.getBoundaryWidth() - GOAL_BORDER_WIDTH_MM - Geometry.getLineWidth() / 2,
+				Geometry.getBoundaryWidthGoalLine() - GOAL_BORDER_WIDTH_MM - Geometry.getLineWidth() / 2,
 				goal.getDepth()
 		);
 

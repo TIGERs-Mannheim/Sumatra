@@ -1,10 +1,7 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.skillsystem.skills;
 
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.drawable.DrawableBotShape;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.math.AngleMath;
@@ -31,41 +28,41 @@ import lombok.extern.log4j.Log4j2;
 @Log4j2
 public class MoveWithBallSkill extends AMoveToSkill
 {
-	@Configurable(comment = "Min contact time [s] to reach before moving with ball", defValue = "0.2")
+	@Configurable(comment = "Min contact time to reach before moving with ball", defValue = "0.2", unit = EConfigUnit.TIME_S)
 	private static double minContactTime = 0.2;
 
-	@Configurable(comment = "How fast to accelerate when rotating with ball", defValue = "10.0")
+	@Configurable(comment = "How fast to accelerate when rotating with ball", defValue = "10.0", unit = EConfigUnit.VELOCITY_ANGULAR_RAD)
 	private static double rotationWithBallVel = 10.0;
 
-	@Configurable(comment = "How fast to accelerate when rotating with ball", defValue = "10.0")
+	@Configurable(comment = "How fast to accelerate when rotating with ball", defValue = "10.0", unit = EConfigUnit.ACCELERATION_ANGULAR_RAD)
 	private static double rotationWithBallAcc = 10.0;
 
-	@Configurable(comment = "How fast to drive when moving with ball", defValue = "1.5")
+	@Configurable(comment = "How fast to drive when moving with ball", defValue = "1.5", unit = EConfigUnit.VELOCITY_M)
 	private static double moveWithBallVel = 1.5;
 
-	@Configurable(comment = "How fast to accelerate when moving with ball", defValue = "1.0")
+	@Configurable(comment = "How fast to accelerate when moving with ball", defValue = "1.0", unit = EConfigUnit.ACCELERATION_M)
 	private static double moveWithBallAcc = 1.0;
 
-	@Configurable(comment = "How fast to drive when pushing the ball forward", defValue = "1.5")
+	@Configurable(comment = "How fast to drive when pushing the ball forward", defValue = "1.5", unit = EConfigUnit.VELOCITY_M)
 	private static double moveWithBallFwdVel = 1.5;
 
-	@Configurable(comment = "How fast to accelerate when pushing the ball forward", defValue = "1.0")
+	@Configurable(comment = "How fast to accelerate when pushing the ball forward", defValue = "1.0", unit = EConfigUnit.ACCELERATION_M)
 	private static double moveWithBallFwdAcc = 1.0;
 
 	@Getter
-	@Configurable(defValue = "true", comment = "If false, the ball is always pulled, turning with the ball by 180° if necessary")
+	@Configurable(defValue = "true", comment = "If false, the ball is always pulled, turning with the ball by 180° if necessary", unit = EConfigUnit.BOOLEAN)
 	private static boolean allowPushingTheBall = true;
 
-	@Configurable(defValue = "200", comment = "Min distance [mm] to final destination to update target angle")
+	@Configurable(defValue = "200", comment = "Min distance to final destination to update target angle", unit = EConfigUnit.DISTANCE_MM)
 	private static double minDistanceToFinalDestToUpdateTargetAngle = 200;
 
-	@Configurable(comment = "Factor that is applied on the default dribble force when pushing the ball", defValue = "1.0")
+	@Configurable(comment = "Factor that is applied on the default dribble force when pushing the ball", defValue = "1.0", unit = EConfigUnit.FACTOR)
 	private static double forwardDribbleForceFactor = 1.0;
 
-	@Configurable(comment = "Offset [m/s] that is added to the default dribble force when pushing the ball", defValue = "0.0")
+	@Configurable(comment = "Offset that is added to the default dribble force when pushing the ball", defValue = "0.0", unit = EConfigUnit.VELOCITY_M)
 	private static double forwardDribbleForceOffset = 0.0;
 
-	@Configurable(defValue = "DEFAULT")
+	@Configurable(defValue = "DEFAULT", unit = EConfigUnit.NO_UNIT)
 	private static EDribblerMode dribblerMode = EDribblerMode.DEFAULT;
 
 	private final TimestampTimer calmDownTimer = new TimestampTimer(0.5);
@@ -83,12 +80,14 @@ public class MoveWithBallSkill extends AMoveToSkill
 	{
 		super.doEntryActions();
 
-		getMoveCon().physicalObstaclesOnly();
-		getMoveCon().setBallObstacle(false);
-		getMoveCon().setFieldBorderObstacle(false);
-		getMoveCon().setGoalPostsObstacle(false);
-		getMoveConstraints().setVelMaxW(rotationWithBallVel);
-		getMoveConstraints().setAccMaxW(rotationWithBallAcc);
+		setMoveCon(getMoveCon()
+				.withPhysicalObstaclesOnly()
+				.withBallObstacle(false)
+				.withFieldBorderObstacle(false)
+				.withGoalPostsObstacle(false));
+		setMoveConstraints(getMoveConstraints()
+				.withVelMaxW(rotationWithBallVel)
+				.withAccMaxW(rotationWithBallAcc));
 
 		updateTargetAngle(getAngle());
 	}
@@ -102,8 +101,9 @@ public class MoveWithBallSkill extends AMoveToSkill
 
 		if (driveForward())
 		{
-			getMoveConstraints().setVelMax(moveWithBallFwdVel);
-			getMoveConstraints().setAccMax(moveWithBallFwdAcc);
+			setMoveConstraints(getMoveConstraints()
+					.withVelMax(moveWithBallFwdVel)
+					.withAccMax(moveWithBallFwdAcc));
 			setKickParams(getKick().withDribbleSpeed(
 					getBot().getBotParams().getDribblerSpecs().getDefaultSpeed(),
 					getBot().getBotParams().getDribblerSpecs().getDefaultForce() * forwardDribbleForceFactor
@@ -112,8 +112,9 @@ public class MoveWithBallSkill extends AMoveToSkill
 			);
 		} else
 		{
-			getMoveConstraints().setAccMax(moveWithBallAcc);
-			getMoveConstraints().setVelMax(moveWithBallVel);
+			setMoveConstraints(getMoveConstraints()
+					.withAccMax(moveWithBallAcc)
+					.withVelMax(moveWithBallVel));
 			setKickParams(getKick().withDribblerMode(dribblerMode));
 		}
 

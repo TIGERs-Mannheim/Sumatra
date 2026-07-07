@@ -1,10 +1,8 @@
-/*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra.vision;
 
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.ball.BallState;
 import edu.tigers.sumatra.drawable.DrawableAnnotation;
 import edu.tigers.sumatra.drawable.DrawableCircle;
@@ -43,7 +41,7 @@ public class BallFilter
 	private CircularFifoQueue<MergedBall> mergedBallHistory = new CircularFifoQueue<>(50);
 	private KickEvent lastKickEvent;
 
-	@Configurable(defValue = "false", comment = "Always use merged ball velocity instead of kick model velocity.")
+	@Configurable(defValue = "false", comment = "Always use merged ball velocity instead of kick model velocity.", unit = EConfigUnit.BOOLEAN)
 	private static boolean alwaysUseMergedBallVelocity = false;
 
 	static

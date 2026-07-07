@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai;
 
 import edu.tigers.sumatra.ai.athena.IPlayStrategy;
@@ -58,7 +54,7 @@ public class VisualizationFrame
 		matchStats = aiFrame.getTacticalField().getMatchStats();
 		offensiveStrategy = persistenceFriendly(aiFrame.getTacticalField().getOffensiveStrategy());
 		offensiveActions.putAll(aiFrame.getTacticalField().getOffensiveActions());
-		aiInfos.putAll(aiFrame.getAresData().getBotAiInformation());
+		aiInfos.putAll(aiFrame.getBotAiInformation());
 		playStrategy = aiFrame.getAthenaAiFrame().getPlayStrategy();
 		ballInterceptionInformationMap = aiFrame.getTacticalField().getBallInterceptionInformationMap().entrySet()
 				.stream().collect(Collectors.toMap(Map.Entry::getKey, e -> persistenceFriendly(e.getValue())));
@@ -94,7 +90,7 @@ public class VisualizationFrame
 	/**
 	 * @return the teamColor
 	 */
-	public final ETeamColor getTeamColor()
+	public ETeamColor getTeamColor()
 	{
 		return getAiTeam().getTeamColor();
 	}
@@ -110,8 +106,6 @@ public class VisualizationFrame
 	private BallInterceptionInformation persistenceFriendly(BallInterceptionInformation ballInterceptionInformation)
 	{
 		return ballInterceptionInformation.toBuilder()
-				.interceptionCorridors(new ArrayList<>(ballInterceptionInformation.getInterceptionCorridors()))
-				.zeroAxisChanges(new ArrayList<>(ballInterceptionInformation.getZeroAxisChanges()))
 				.initialIterations(new ArrayList<>(ballInterceptionInformation.getInitialIterations()))
 				.build();
 	}

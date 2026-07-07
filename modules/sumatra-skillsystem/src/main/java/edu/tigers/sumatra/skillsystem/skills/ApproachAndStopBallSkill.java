@@ -1,10 +1,7 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.skillsystem.skills;
 
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.ball.trajectory.IBallTrajectory;
 import edu.tigers.sumatra.bot.EDribbleTractionState;
 import edu.tigers.sumatra.drawable.DrawableArrow;
@@ -38,42 +35,40 @@ import java.util.List;
  */
 public class ApproachAndStopBallSkill extends AMoveToSkill
 {
-	@Configurable(comment = "Margin to our Penalty Area", defValue = "100.0")
+	@Configurable(comment = "Margin to our Penalty Area", defValue = "100.0", unit = EConfigUnit.DISTANCE_MM)
 	private static double marginToOurPenArea = 100.0;
-	@Configurable(comment = "Used dribbler mode to be used", defValue = "DEFAULT")
+	@Configurable(comment = "Used dribbler mode to be used", defValue = "DEFAULT", unit = EConfigUnit.NO_UNIT)
 	private static EDribblerMode usedDribblerMode = EDribblerMode.DEFAULT;
-	@Configurable(comment = "[m/s^2] Brake acc when stopping the ball", defValue = "3.0")
+	@Configurable(comment = "Brake acc when stopping the ball", defValue = "3.0", unit = EConfigUnit.ACCELERATION_M)
 	private static double stopAccMax = 3.0;
-	@Configurable(comment = "[m/s] Lower threshold for ball speed hysteresis", defValue = "0.1")
+	@Configurable(comment = "Lower threshold for ball speed hysteresis", defValue = "0.1", unit = EConfigUnit.VELOCITY_M)
 	private static double ballSpeedHysteresisLower = 0.1;
-	@Configurable(comment = "[m/s] Upper threshold for ball speed hysteresis", defValue = "0.6")
+	@Configurable(comment = "Upper threshold for ball speed hysteresis", defValue = "0.6", unit = EConfigUnit.VELOCITY_M)
 	private static double ballSpeedHysteresisUpper = 0.6;
 
 
-	@Configurable(comment = "[m/s] Velocity difference between ball and robot to aim for when hitting the ball", defValue = "0.3")
+	@Configurable(comment = "Velocity difference between ball and robot to aim for when hitting the ball", defValue = "0.3", unit = EConfigUnit.VELOCITY_M)
 	private static double approachSpeedDiff = 0.3;
-	@Configurable(comment = "[mm] If ball is closer than this distance no changes in how the ball will be approached will happen", defValue = "50")
+	@Configurable(comment = "If ball is closer than this distance no changes in how the ball will be approached will happen", defValue = "50", unit = EConfigUnit.DISTANCE_MM)
 	private static double approachNoStrategySwitchDistance = 50;
-	@Configurable(comment = "[s] If the bot is close to the ball traction must be created within this time, or the skill will try to freely rotate towards the ball", defValue = "0.2")
+	@Configurable(comment = "If the bot is close to the ball traction must be created within this time, or the skill will try to freely rotate towards the ball", defValue = "0.2", unit = EConfigUnit.TIME_S)
 	private static double approachFixedRotationTime = 0.2;
-	@Configurable(comment = "[s] If the bot is close to the ball traction must be created within this time, or the skill will start a complete retry", defValue = "0.4")
+	@Configurable(comment = "If the bot is close to the ball traction must be created within this time, or the skill will start a complete retry", defValue = "0.4", unit = EConfigUnit.TIME_S)
 	private static double approachFailureTime = 0.4;
-	@Configurable(comment = "[mm] Distance to the ball line to stop using primary direction", defValue = "150.0")
+	@Configurable(comment = "Distance to the ball line to stop using primary direction", defValue = "150.0", unit = EConfigUnit.DISTANCE_MM)
 	private static double approachStopPrimaryDirectionDistance = 150.0;
-	@Configurable(comment = "[m/s] Max velocity component orthogonal to tha ball direction to allow stop using of primary direction", defValue = "0.2")
+	@Configurable(comment = "Max velocity component orthogonal to tha ball direction to allow stop using of primary direction", defValue = "0.2", unit = EConfigUnit.VELOCITY_M)
 	private static double approachStopPrimaryOrthogonalVelocity = 0.2;
-	@Configurable(comment = "Use legacy calculations to determine the catchup destination", defValue = "false")
-	private static boolean approachRollingBallUseLegacyCalculations = false;
 
-	@Configurable(comment = "[s] Time the ball must be dribbled by the bot to be considered acquired", defValue = "0.05")
+	@Configurable(comment = "Time the ball must be dribbled by the bot to be considered acquired", defValue = "0.05", unit = EConfigUnit.TIME_S)
 	private static double acquireControlTractionTime = 0.05;
-	@Configurable(comment = "Minimum traction level required to be considered touching the ball", defValue = "LIGHT")
+	@Configurable(comment = "Minimum traction level required to be considered touching the ball", defValue = "LIGHT", unit = EConfigUnit.NO_UNIT)
 	private static EDribbleTractionState acquireControlMinTractionState = EDribbleTractionState.LIGHT;
-	@Configurable(comment = "[s] Timeout for acquireControl phase", defValue = "0.3")
+	@Configurable(comment = "Timeout for acquireControl phase", defValue = "0.3", unit = EConfigUnit.TIME_S)
 	private static double acquireControlTimeout = 0.3;
-	@Configurable(comment = "[s] Time the ball must be stopped to mark skill as successful", defValue = "0.1")
+	@Configurable(comment = "Time the ball must be stopped to mark skill as successful", defValue = "0.1", unit = EConfigUnit.TIME_S)
 	private static double successTime = 0.1;
-	@Configurable(comment = "Minimum dribble traction necessary to trigger succeed early", defValue = "STRONG")
+	@Configurable(comment = "Minimum dribble traction necessary to trigger succeed early", defValue = "STRONG", unit = EConfigUnit.NO_UNIT)
 	private static EDribbleTractionState succeedEarlyTraction = EDribbleTractionState.STRONG;
 
 	private final Hysteresis ballSpeedHysteresis = new Hysteresis(ballSpeedHysteresisLower, ballSpeedHysteresisUpper);
@@ -135,6 +130,12 @@ public class ApproachAndStopBallSkill extends AMoveToSkill
 	}
 
 
+	private boolean ballOutsideField()
+	{
+		return !Geometry.getField().withMargin(Geometry.getBallRadius()).isPointInShape(getBall().getPos());
+	}
+
+
 	private boolean isTouchingBall()
 	{
 		return getTBot().getRobotInfo().getDribbleTraction().getId() >= acquireControlMinTractionState.getId();
@@ -155,7 +156,13 @@ public class ApproachAndStopBallSkill extends AMoveToSkill
 
 	private IVector2 getCachedBallPos()
 	{
-		var timePassed = (getTimestamp() - cachedBallTrajectoryTimestamp) / 1e9;
+		return getCachedBallPosByTime(0);
+	}
+
+
+	private IVector2 getCachedBallPosByTime(double time)
+	{
+		var timePassed = time + (getTimestamp() - cachedBallTrajectoryTimestamp) / 1e9;
 		return cachedBallTrajectory.getPosByTime(timePassed).getXYVector();
 	}
 
@@ -180,8 +187,9 @@ public class ApproachAndStopBallSkill extends AMoveToSkill
 	public void doEntryActions()
 	{
 		super.doEntryActions();
-		getMoveCon().setBallObstacle(false);
-		getMoveCon().setGameStateObstacle(false);
+		setMoveCon(getMoveCon()
+				.withBallObstacle(false)
+				.withGameStateObstacle(false));
 
 		cachedBallDirection = Vector2.zero();
 		cachedBallTrajectory = getBall().getTrajectory();
@@ -217,18 +225,20 @@ public class ApproachAndStopBallSkill extends AMoveToSkill
 			var botShape = getTBot().getBotShape().withMargin(Geometry.getBallRadius());
 			if (botShape.isPointInShape(ballPos))
 			{
+				var oldBallPos = ballPos.addNew(ballVel.multiplyNew(-0.1 * 1000));
 				var ballExitsBotShapePos = ballPos.nearestToOpt(
-						botShape.intersectPerimeterPath(Lines.halfLineFromDirection(ballPos, ballVel))
+						botShape.intersectPerimeterPath(Lines.halfLineFromDirection(oldBallPos, ballVel))
 				).orElseGet(() -> botShape.nearestPointOutside(ballPos));
 
 				cachedBallTrajectory = Geometry.getBallFactory()
-						.createTrajectoryFromRollingBall(ballExitsBotShapePos, getVel());
+						.createTrajectoryFromRollingBall(ballExitsBotShapePos, getVel().multiplyNew(1000));
+				cachedBallTrajectoryTimestamp = getTimestamp();
 
 			}
 		}
 
 		// do not respect other bots, when on ball line
-		getMoveCon().setBotsObstacle((cachedBallTrajectory.distanceTo(getPos()) > 100));
+		setMoveCon(getMoveCon().withBotsObstacle((cachedBallTrajectory.distanceTo(getPos()) > 100)));
 
 		positionValidator.update(getWorldFrame(), getMoveCon());
 		positionValidator.getMarginToPenArea().put(ETeam.OPPONENTS, marginToTheirPenArea);
@@ -264,7 +274,11 @@ public class ApproachAndStopBallSkill extends AMoveToSkill
 			{
 				setSkillState(ESkillState.IN_PROGRESS);
 			}
-		} else if (isStateSwitchAllowed() && isBallVisible() && (ballMovesTowardsMe() || ballStoppedMoving()))
+		} else if (
+				isStateSwitchAllowed() && (
+						(isBallVisible() && (ballMovesTowardsMe() || ballStoppedMoving())) ||
+								ballOutsideField())
+		)
 		{
 			setSkillState(ESkillState.FAILURE);
 		} else
@@ -295,7 +309,7 @@ public class ApproachAndStopBallSkill extends AMoveToSkill
 	}
 
 
-	private void updateCatchupDestinationNew(IVector2 currentPosition, IVector2 wantedVelocity)
+	private void updateCatchupDestination(IVector2 currentPosition, IVector2 wantedVelocity)
 	{
 		var velLength = wantedVelocity.getLength2();
 		var breakDistance = 1000 * (0.5f * velLength * velLength / getTBot().getMoveConstraints().getAccMax());
@@ -308,9 +322,9 @@ public class ApproachAndStopBallSkill extends AMoveToSkill
 	{
 		var a0 = getTBot().getAngleByTime(0);
 		var v0 = getTBot().getAngularVel();
-		var a = v0 > 0 ? getMoveConstraints().getAccMax() : -getMoveConstraints().getAccMax();
+		var a = v0 > 0 ? getMoveConstraints().getAccMaxW() : -getMoveConstraints().getAccMaxW();
 		var t = -v0 / a;
-		var a1 = a0 + v0 * t + 0.5 * a * t * t;
+		var a1 = a0 + 0.5 * v0 * t;
 
 		return AngleMath.normalizeAngle(a1);
 	}
@@ -325,6 +339,9 @@ public class ApproachAndStopBallSkill extends AMoveToSkill
 
 	private class KeepDistToBall extends AState
 	{
+		private Double angle = null;
+
+
 		@Override
 		public void doUpdate()
 		{
@@ -335,12 +352,29 @@ public class ApproachAndStopBallSkill extends AMoveToSkill
 			var dir = Vector2.fromPoints(getCachedBallPos(), getPos());
 			var dest = getCachedBallPos().addNew(dir.scaleToNew(5 * distanceToBall));
 			updateDestination(validDest(dest));
-			updateLookAtTarget(getBall());
+			updateOrientation();
 
 			if (isBallVisible() && getCachedBallPos().distanceTo(getPos()) > distanceToBall)
 			{
 				triggerEvent(EEvent.SUCCESS);
 			}
+		}
+
+
+		private void updateOrientation()
+		{
+			if (isBallVisible())
+			{
+				updateLookAtTarget(getBall());
+				angle = null;
+				return;
+			}
+
+			if (angle == null)
+			{
+				angle = calcStopAngle();
+			}
+			updateTargetAngle(angle);
 		}
 	}
 
@@ -405,50 +439,48 @@ public class ApproachAndStopBallSkill extends AMoveToSkill
 			if (ballLine.distanceTo(getPos()) > approachStopPrimaryDirectionDistance
 					|| orthogonalSpeed > approachStopPrimaryOrthogonalVelocity)
 			{
-				updateLookAtTarget(getCachedBallPos());
-				getMoveConstraints().setPrimaryDirection(cachedBallDirection);
+				updateLookAtNonDynamicTarget(getCachedBallPos());
+				setMoveConstraints(getMoveConstraints().withPrimaryDirection(cachedBallDirection));
 			} else
 			{
 				if (!fixRotationTimer.isRunning())
 				{
 					// Far away -> Rotation not yet fixed
-					updateTargetAngle(cachedBallDirection.getAngle());
+					updateTargetAngle(cachedBallDirection.getAngle(0));
 				} else if (fixRotationTimer.isTimeUp(getWorldFrame().getTimestamp()) && isBallVisible())
 				{
 					// Too long close -> stop fixing the rotation (if the ball is visible)
-					updateLookAtTarget(getCachedBallPos());
+					updateLookAtNonDynamicTarget(getCachedBallPos());
 				}
-				getMoveConstraints().setPrimaryDirection(Vector2.zero());
+				setMoveConstraints(getMoveConstraints().withPrimaryDirection(Vector2.zero()));
 			}
 
 			var wantedVelocity = getCachedBallVel().addMagnitude(approachSpeedDiff);
-			if (approachRollingBallUseLegacyCalculations)
-			{
-				var targetSpeed = wantedVelocity.getLength2();
-				var ballSlideAcc = -Geometry.getBallParameters().getAccSlide() / 1000;
-				var dist = targetSpeed * targetSpeed / ballSlideAcc / 2 * 1000;
-				var dest = getCachedBallPos().addNew(wantedVelocity.scaleToNew(dist));
-				updateDestination(validDest(dest));
-			} else
-			{
-				updateCatchupDestinationNew(getCachedBallPos(), wantedVelocity);
-			}
+			updateCatchupDestination(getCachedBallPos(), wantedVelocity);
 		}
 
 
 		public void doLyingApproach()
 		{
-			getMoveConstraints().setPrimaryDirection(Vector2.zero());
+			setMoveConstraints(getMoveConstraints().withPrimaryDirection(Vector2.zero()));
 
-			updateDestination(validDest(getBall().getTrajectory().getPosByTime(0.1).getXYVector()));
-			updateLookAtTarget(getBall());
+			updateDestination(validDest(getCachedBallPosByTime(0.1)));
+			updateLookAtNonDynamicTarget(getCachedBallPos());
 		}
 
 
 		@Override
 		public void doExitActions()
 		{
-			getMoveConstraints().setPrimaryDirection(Vector2.zero());
+			setMoveConstraints(getMoveConstraints().withPrimaryDirection(Vector2.zero()));
+		}
+
+
+		private void updateLookAtNonDynamicTarget(IVector2 target)
+		{
+			// Do not use updateLookAtTarget, as it is not ensured that a new lookAtTarget is set every frame,
+			// and we want to keep the old direction if no update is received
+			updateTargetAngle(Vector2.fromPoints(getPos(), target).getAngle(0));
 		}
 	}
 
@@ -486,7 +518,7 @@ public class ApproachAndStopBallSkill extends AMoveToSkill
 			// Keep moving with constant velocity on a straight line till the ball is controlled
 			var timePassed = timeoutTime.getCurrentTime(tNow);
 			var expectedBotPositionNow = startPosition.addNew(startVelocity.multiplyNew(timePassed * 1000));
-			updateCatchupDestinationNew(expectedBotPositionNow, startVelocity);
+			updateCatchupDestination(expectedBotPositionNow, startVelocity);
 
 			var velLength = startVelocity.getLength2();
 			var breakDistance = 1000 * (0.5f * velLength * velLength / getTBot().getMoveConstraints().getAccMax());
@@ -532,8 +564,9 @@ public class ApproachAndStopBallSkill extends AMoveToSkill
 		{
 			setKickParams(KickParams.disarm().withDribblerMode(usedDribblerMode));
 
-			getMoveConstraints().setAccMax(stopAccMax);
-			getMoveConstraints().setBrkMax(stopAccMax);
+			setMoveConstraints(getMoveConstraints()
+					.withAccMax(stopAccMax)
+					.withBrkMax(stopAccMax));
 			setComeToAStop(true);
 			updateTargetAngle(angle);
 			updateDestination(validDest(pos));
@@ -557,8 +590,9 @@ public class ApproachAndStopBallSkill extends AMoveToSkill
 		@Override
 		public void doExitActions()
 		{
-			getMoveConstraints().setAccMax(getBot().getBotParams().getMovementLimits().getAccMax());
-			getMoveConstraints().setBrkMax(getBot().getBotParams().getMovementLimits().getBrkMax());
+			setMoveConstraints(getMoveConstraints()
+					.withAccMax(getBot().getBotParams().getMovementLimits().getAccMax())
+					.withBrkMax(getBot().getBotParams().getMovementLimits().getBrkMax()));
 			setComeToAStop(false);
 		}
 	}

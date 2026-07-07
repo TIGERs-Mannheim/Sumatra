@@ -1,10 +1,6 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.pathfinder.checker;
 
-import edu.tigers.sumatra.bot.IMoveConstraints;
+import edu.tigers.sumatra.bot.MoveConstraints;
 import edu.tigers.sumatra.drawable.DrawableAnnotation;
 import edu.tigers.sumatra.drawable.DrawablePoint;
 import edu.tigers.sumatra.drawable.ShapeMap;
@@ -56,7 +52,7 @@ public class PathCollisionChecker
 
 
 	public PathCollisionChecker append(
-			IMoveConstraints mc,
+			MoveConstraints mc,
 			double connectionTime,
 			IVector2 dest
 	)

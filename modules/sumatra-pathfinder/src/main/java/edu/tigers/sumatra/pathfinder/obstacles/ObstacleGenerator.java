@@ -1,11 +1,8 @@
-/*
- * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.pathfinder.obstacles;
 
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.geometry.RuleConstraints;
 import edu.tigers.sumatra.ids.BotID;
@@ -16,11 +13,14 @@ import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.movingrobot.IMovingRobot;
 import edu.tigers.sumatra.movingrobot.MovingRobotFactory;
+import edu.tigers.sumatra.movingrobot.MovingRobotParams;
 import edu.tigers.sumatra.pathfinder.EObstacleAvoidanceMode;
-import edu.tigers.sumatra.pathfinder.IMovementCon;
+import edu.tigers.sumatra.pathfinder.MovementCon;
+import edu.tigers.sumatra.pathfinder.PathFinderPrioMap;
 import edu.tigers.sumatra.referee.data.GameState;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
 import edu.tigers.sumatra.wp.data.WorldFrame;
+import lombok.Setter;
 
 import java.util.ArrayList;
 import java.util.EnumMap;
@@ -34,44 +34,43 @@ import java.util.Optional;
  */
 public class ObstacleGenerator
 {
-	@Configurable(defValue = "50.0", comment = "Default security distance [mm] to ball (in addition to ball radius)")
+	@Configurable(defValue = "50.0", comment = "Default security distance to ball (in addition to ball radius)", unit = EConfigUnit.DISTANCE_MM)
 	private static double defaultDistanceToBall = 50;
 
-	@Configurable(defValue = "1.0", comment = "Maximum time [s] to which opponent robots are considered")
+	@Configurable(defValue = "1.0", comment = "Maximum time to which opponent robots are considered", unit = EConfigUnit.TIME_S)
 	private static double opponentBotTimeHorizon = 1.0;
 
-	@Configurable(defValue = "0.5", comment = "Maximum time [s] to which opponent robots are predicted")
+	@Configurable(defValue = "0.5", comment = "Maximum time to which opponent robots are predicted", unit = EConfigUnit.TIME_S)
 	private static double opponentBotMaxMovingTimeHorizon = 0.5;
 
-	@Configurable(defValue = "0.1", comment = "Reaction time of opponent [s] for MovingRobots. Predicts constant velocity in this time.")
+	@Configurable(defValue = "0.1", comment = "Reaction time of opponent for MovingRobots. Predicts constant velocity in this time.", unit = EConfigUnit.TIME_S)
 	private static double opponentBotReactionTime = 0.1;
 
-	@Configurable(defValue = "0.4", comment = "Maximum time [s] to which opponent robots are predicted (const velocity)")
+	@Configurable(defValue = "0.4", comment = "Maximum time to which opponent robots are predicted (const velocity)", unit = EConfigUnit.TIME_S)
 	private static double opponentBotTimeHorizonForConstVel = 0.4;
 
-	@Configurable(defValue = "0.0", comment = "Maximum time [s] to which own robots are considered that have lower path priority")
+	@Configurable(defValue = "0.0", comment = "Maximum time to which own robots are considered that have lower path priority", unit = EConfigUnit.TIME_S)
 	private static double ownBotTimeHorizonOnPrio = 0.0;
 
-	@Configurable(defValue = "0.7", comment = "Min velocity [m/s] of our bot where it considers opponents as obstacle")
+	@Configurable(defValue = "0.7", comment = "Min velocity of our bot where it considers opponents as obstacle", unit = EConfigUnit.VELOCITY_M)
 	private static double minVelocity = 0.7;
 
-	@Configurable(defValue = "2.0", comment = "Assumed placement pass receive speed [m/s] for obstacle")
+	@Configurable(defValue = "2.0", comment = "Assumed placement pass receive speed for obstacle", unit = EConfigUnit.VELOCITY_M)
 	private static double placementPassReceiveSpeed = 2.0;
 
-	@Configurable(defValue = "30.0", comment = "Extra margin [mm] on the opponent penArea during free kick")
+	@Configurable(defValue = "30.0", comment = "Extra margin on the opponent penArea during free kick", unit = EConfigUnit.DISTANCE_MM)
 	private static double opponentPenAreaStandardExtraMargin = 30;
 
-	@Configurable(defValue = "true", comment = "Use tube for movingRobot obstacle")
+	@Configurable(defValue = "true", comment = "Use tube for movingRobot obstacle", unit = EConfigUnit.BOOLEAN)
 	private static boolean useTubeForMovingRobot = true;
 
-	@Configurable(defValue = "STOPPING_OPPONENTS", comment = "Type of opponent obstacle for normal behavior")
+	@Configurable(defValue = "STOPPING_OPPONENTS", comment = "Type of opponent obstacle for normal behavior", unit = EConfigUnit.NO_UNIT)
 	private static EOpponentObstacleType opponentObstacleTypeNormal = EOpponentObstacleType.ACCELERATING_OPPONENTS;
 
-	@Configurable(defValue = "BRAKING_OPPONENTS", comment = "Type of opponent obstacle for aggressive behavior")
+	@Configurable(defValue = "BRAKING_OPPONENTS", comment = "Type of opponent obstacle for aggressive behavior", unit = EConfigUnit.NO_UNIT)
 	private static EOpponentObstacleType opponentObstacleTypeAggressive = EOpponentObstacleType.BRAKING_OPPONENTS;
 
-
-	private IMovementCon moveCon;
+	private double additionalRobotRadius = 0;
 
 	private final List<IObstacle> obsGoalPostOur = new ArrayList<>();
 	private final List<IObstacle> obsGoalPostTheir = new ArrayList<>();
@@ -82,54 +81,65 @@ public class ObstacleGenerator
 	}
 
 
-	public ObstacleGenerator(final IMovementCon moveCon)
+	public ObstacleGenerator()
 	{
-		this.moveCon = moveCon;
-		createGoalPostOur();
-		createGoalPostTheir();
+		createGoalOur();
+		createGoalTheir();
 	}
 
 
-	private void createGoalPostOur()
+	private void createGoalOur()
 	{
 		IVector2 gpl = Geometry.getGoalOur().getLeftPost();
 		IVector2 gplb = gpl.addNew(Vector2.fromXY(-Geometry.getGoalOur().getDepth(), 0));
 		IVector2 gpr = Geometry.getGoalOur().getRightPost();
 		IVector2 gprb = gpr.addNew(Vector2.fromXY(-Geometry.getGoalOur().getDepth(), 0));
-		obsGoalPostOur.add(new TubeObstacle("goalPostOurLeft", Tube.create(gpl, gplb, Geometry.getBotRadius())));
-		obsGoalPostOur.add(new TubeObstacle("goalPostOurRight", Tube.create(gpr, gprb, Geometry.getBotRadius())));
+		IVector2 gplbw = gpl.addNew(Vector2.fromXY(-Geometry.getBoundaryWidthGoalLine(), 0));
+		IVector2 gprbw = gpr.addNew(Vector2.fromXY(-Geometry.getBoundaryWidthGoalLine(), 0));
+		obsGoalPostOur.add(new TubeObstacle("goalPostOurLeft", Tube.create(gpl, gplbw, Geometry.getBotRadius())));
+		obsGoalPostOur.add(new TubeObstacle("goalPostOurRight", Tube.create(gpr, gprbw, Geometry.getBotRadius())));
 		obsGoalPostOur.add(new TubeObstacle("goalPostOurBack", Tube.create(gplb, gprb, Geometry.getBotRadius())));
 	}
 
 
-	private void createGoalPostTheir()
+	private void createGoalTheir()
 	{
 		IVector2 gpl = Geometry.getGoalTheir().getLeftPost();
 		IVector2 gplb = gpl.addNew(Vector2.fromXY(Geometry.getGoalTheir().getDepth(), 0));
 		IVector2 gpr = Geometry.getGoalTheir().getRightPost();
 		IVector2 gprb = gpr.addNew(Vector2.fromXY(Geometry.getGoalTheir().getDepth(), 0));
-		obsGoalPostTheir.add(new TubeObstacle("goalPostTheirLeft", Tube.create(gpl, gplb, Geometry.getBotRadius())));
-		obsGoalPostTheir.add(new TubeObstacle("goalPostTheirRight", Tube.create(gpr, gprb, Geometry.getBotRadius())));
+		IVector2 gplbw = gpl.addNew(Vector2.fromXY(Geometry.getBoundaryWidthGoalLine(), 0));
+		IVector2 gprbw = gpr.addNew(Vector2.fromXY(Geometry.getBoundaryWidthGoalLine(), 0));
+		obsGoalPostTheir.add(new TubeObstacle("goalPostTheirLeft", Tube.create(gpl, gplbw, Geometry.getBotRadius())));
+		obsGoalPostTheir.add(new TubeObstacle("goalPostTheirRight", Tube.create(gpr, gprbw, Geometry.getBotRadius())));
 		obsGoalPostTheir.add(new TubeObstacle("goalPostTheirBack", Tube.create(gplb, gprb, Geometry.getBotRadius())));
 	}
 
 
 	private List<IObstacle> genOurBots(
 			final WorldFrame wFrame,
-			final BotID botId
+			final BotID botId,
+			final MovementCon moveCon,
+			final PathFinderPrioMap prioMap
 	)
 	{
 		return wFrame.getTigerBotsVisible().values().stream()
 				.filter(tBot -> !tBot.getBotId().equals(botId))
 				.filter(tBot -> !moveCon.getIgnoredBots().contains(tBot.getBotId()))
-				.map(tBot -> selectObstacleForOurBot(wFrame, botId, tBot))
+				.map(tBot -> selectObstacleForOurBot(wFrame, botId, tBot, moveCon, prioMap))
 				.toList();
 	}
 
 
-	private IObstacle selectObstacleForOurBot(WorldFrame wFrame, BotID botId, ITrackedBot bot)
+	private IObstacle selectObstacleForOurBot(
+			WorldFrame wFrame,
+			BotID botId,
+			ITrackedBot bot,
+			MovementCon moveCon,
+			PathFinderPrioMap prioMap
+	)
 	{
-		double radius = 2 * Geometry.getBotRadius();
+		double radius = 2 * Geometry.getBotRadius() + additionalRobotRadius;
 		var trajectory = bot.getRobotInfo().getTrajectory();
 		if (trajectory.isEmpty())
 		{
@@ -152,7 +162,7 @@ public class ObstacleGenerator
 			obs.setUseDynamicMargin(false);
 		}
 
-		if (moveCon.getPrioMap().isPreferred(botId, bot.getBotId()))
+		if (prioMap.isPreferred(botId, bot.getBotId()))
 		{
 			return new LimitedTimeObstacle(obs, ownBotTimeHorizonOnPrio);
 		}
@@ -160,22 +170,32 @@ public class ObstacleGenerator
 	}
 
 
-	private List<IObstacle> genTheirBots(WorldFrame wFrame)
+	private List<IObstacle> genTheirBots(WorldFrame wFrame, MovementCon moveCon)
 	{
-		return wFrame.getOpponentBots().values().stream()
+		return wFrame.getOpponentBotsVisible().values().stream()
 				.filter(tBot -> !moveCon.getIgnoredBots().contains(tBot.getBotId()))
-				.map(this::opponentObstacle)
+				.map(tBot -> opponentObstacle(tBot, moveCon))
 				.map(o -> (IObstacle) new LimitedTimeObstacle(o, opponentBotTimeHorizon))
 				.toList();
 	}
 
 
-	private IObstacle opponentObstacle(ITrackedBot tBot)
+	private IObstacle opponentObstacle(ITrackedBot tBot, MovementCon moveCon)
 	{
 		Map<EObstacleAvoidanceMode, EOpponentObstacleType> map = new EnumMap<>(EObstacleAvoidanceMode.class);
 		map.put(EObstacleAvoidanceMode.NORMAL, opponentObstacleTypeNormal);
+		map.put(EObstacleAvoidanceMode.SAFE, opponentObstacleTypeNormal);
 		map.put(EObstacleAvoidanceMode.AGGRESSIVE, opponentObstacleTypeAggressive);
+
 		EOpponentObstacleType type = map.get(moveCon.getObstacleAvoidanceMode());
+		if (moveCon.getObstacleAvoidanceMode() == EObstacleAvoidanceMode.SAFE)
+		{
+			additionalRobotRadius = Geometry.getBotRadius();
+		} else
+		{
+			additionalRobotRadius = 0;
+		}
+
 		AObstacle obstacle = switch (type)
 		{
 			case ACCELERATING_OPPONENTS -> movingRobotObstacle(tBot, acceleratingRobot(tBot));
@@ -220,7 +240,7 @@ public class ObstacleGenerator
 				tBot.getBotId(),
 				tBot.getPos(),
 				tBot.getVel(),
-				2 * Geometry.getBotRadius(),
+				2 * Geometry.getBotRadius() + additionalRobotRadius,
 				tBot.getMoveConstraints().getBrkMax(),
 				minVelocity
 		)
@@ -232,12 +252,15 @@ public class ObstacleGenerator
 	{
 		double speed = tBot.getVel().getLength2();
 		return MovingRobotFactory.acceleratingRobot(
-				tBot.getPos(),
-				speed < 0.5 ? Vector2.zero() : tBot.getVel(),
-				Math.max(tBot.getMoveConstraints().getVelMax(), speed),
-				tBot.getMoveConstraints().getAccMax(),
-				2 * Geometry.getBotRadius(),
-				opponentBotReactionTime
+				MovingRobotParams.builder()
+						.position(tBot.getPos())
+						.velocity(speed < 0.5 ? Vector2.zero() : tBot.getVel())
+						.vLimit(Math.max(tBot.getMoveConstraints().getVelMax(), speed))
+						.aLimit(tBot.getMoveConstraints().getAccMax())
+						.brkLimit(tBot.getMoveConstraints().getAccMax())
+						.radius(2 * Geometry.getBotRadius() + additionalRobotRadius)
+						.reactionTime(opponentBotReactionTime)
+						.build()
 		);
 	}
 
@@ -246,40 +269,47 @@ public class ObstacleGenerator
 	{
 		double speed = tBot.getVel().getLength2();
 		return MovingRobotFactory.stoppingRobot(
-				tBot.getPos(),
-				tBot.getVel(),
-				Math.max(tBot.getMoveConstraints().getVelMax(), speed),
-				tBot.getMoveConstraints().getAccMax(),
-				tBot.getMoveConstraints().getBrkMax(),
-				2 * Geometry.getBotRadius(),
-				opponentBotReactionTime
+				MovingRobotParams.builder()
+						.position(tBot.getPos())
+						.velocity(tBot.getVel())
+						.vLimit(Math.max(tBot.getMoveConstraints().getVelMax(), speed))
+						.aLimit(tBot.getMoveConstraints().getAccMax())
+						.brkLimit(tBot.getMoveConstraints().getBrkMax())
+						.radius(2 * Geometry.getBotRadius() + additionalRobotRadius)
+						.reactionTime(opponentBotReactionTime)
+						.build()
 		);
 	}
 
 
 	/**
-	 * Generate all required obstacles based on the current generator state and given input.
+	 * Generate all required obstacles for the given world state, game state and movement constraints.
 	 *
 	 * @param wFrame    the current world frame
 	 * @param forBotId  the id of the bot that the obstacle are for
 	 * @param gameState the current game state
+	 * @param moveCon   the movement constraints driving obstacle selection
+	 * @param prioMap   the path finder priority map
 	 * @return a list of the generated obstacles
 	 */
 	public List<IObstacle> generateObstacles(
 			final WorldFrame wFrame,
 			final BotID forBotId,
-			final GameState gameState)
+			final GameState gameState,
+			final MovementCon moveCon,
+			final PathFinderPrioMap prioMap
+	)
 	{
-		List<IObstacle> obstacles = generateStaticObstacles(gameState);
+		List<IObstacle> obstacles = generateStaticObstacles(gameState, moveCon);
 
 		if (moveCon.isOurBotsObstacle())
 		{
-			obstacles.addAll(genOurBots(wFrame, forBotId));
+			obstacles.addAll(genOurBots(wFrame, forBotId, moveCon, prioMap));
 		}
 
 		if (moveCon.isTheirBotsObstacle())
 		{
-			obstacles.addAll(genTheirBots(wFrame));
+			obstacles.addAll(genTheirBots(wFrame, moveCon));
 		}
 
 		if (moveCon.isBallObstacle())
@@ -361,7 +391,7 @@ public class ObstacleGenerator
 	}
 
 
-	private List<IObstacle> generateStaticObstacles(GameState gameState)
+	private List<IObstacle> generateStaticObstacles(GameState gameState, MovementCon moveCon)
 	{
 		List<IObstacle> obstacles = new ArrayList<>();
 

@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.metis.defense;
 
 import edu.tigers.sumatra.ai.metis.ACalculator;
@@ -41,7 +37,8 @@ public abstract class ADefenseThreatCalc extends ACalculator
 	}
 
 
-	protected Optional<ILineSegment> centerBackProtectionLine(final ILineSegment threatLine, double margin)
+	protected Optional<ILineSegment> centerBackProtectionLine(
+			final ILineSegment threatLine, double margin, double maxGoOutDistance)
 	{
 		if (centerBacksMustStayOnPenArea())
 		{
@@ -51,7 +48,8 @@ public abstract class ADefenseThreatCalc extends ACalculator
 				threatLine,
 				margin,
 				DefenseConstants.getMinGoOutDistance(),
-				DefenseConstants.getMaxGoOutDistance());
+				maxGoOutDistance
+		);
 		if (threatDefendingLine.getLength() < 1)
 		{
 			return Optional.empty();

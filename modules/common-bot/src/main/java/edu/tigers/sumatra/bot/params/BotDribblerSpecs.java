@@ -1,6 +1,3 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra.bot.params;
 
 import lombok.Data;
@@ -10,7 +7,7 @@ import lombok.Data;
  * Robot dribbler specifications.
  */
 @Data
-public class BotDribblerSpecs implements IBotDribblerSpecs
+public class BotDribblerSpecs
 {
 	private double defaultSpeed = 4;
 	private double defaultForce = 3.0;

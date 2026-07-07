@@ -1,11 +1,8 @@
-/*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.wp.util;
 
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.geometry.RuleConstraints;
 import edu.tigers.sumatra.ids.BotID;
@@ -23,13 +20,13 @@ import java.util.stream.Collectors;
  */
 public class BotLastTouchedBallCalculator
 {
-	@Configurable(comment = "Distance factor on ball velocity ", defValue = "50.0")
+	@Configurable(comment = "Distance factor on ball velocity", defValue = "50.0", unit = EConfigUnit.FACTOR)
 	private static double searchDistanceFactor = 50;
 
-	@Configurable(comment = "Max search distance in front of the ball [mm]", defValue = "100.0")
+	@Configurable(comment = "Max search distance in front of the ball", defValue = "100.0", unit = EConfigUnit.DISTANCE_MM)
 	private static double searchDistanceMaxFwd = 100;
 
-	@Configurable(comment = "Max search distance behind the ball [mm]", defValue = "10.0")
+	@Configurable(comment = "Max search distance behind the ball", defValue = "10.0", unit = EConfigUnit.DISTANCE_MM)
 	private static double searchDistanceMaxBwd = 10;
 
 	static

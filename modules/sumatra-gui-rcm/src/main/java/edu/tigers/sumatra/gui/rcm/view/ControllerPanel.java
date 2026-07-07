@@ -1,6 +1,3 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra.gui.rcm.view;
 
 import edu.tigers.sumatra.gui.rcm.presenter.IRCMConfigChangedObserver;
@@ -220,7 +217,7 @@ public class ControllerPanel extends JPanel
 						return;
 					}
 				}
-				log.info("Saving config to \"" + file.getAbsolutePath() + "\"");
+				log.info("Saving config to \"{}\"", file.getAbsolutePath());
 				for (IRCMConfigChangedObserver observer : observers)
 				{
 					observer.onSaveConfigAs(file);
@@ -248,7 +245,7 @@ public class ControllerPanel extends JPanel
 			if (returnVal == JFileChooser.APPROVE_OPTION)
 			{
 				final File file = fc.getSelectedFile();
-				log.info("Opening: " + file.getName());
+				log.info("Opening: {}", file.getName());
 				for (IRCMConfigChangedObserver observer : observers)
 				{
 					observer.onLoadConfig(file);

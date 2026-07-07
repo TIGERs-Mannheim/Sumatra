@@ -1,13 +1,7 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.gui.skills.presenter;
 
 import com.github.g3force.instanceables.IInstanceableObserver;
-import edu.tigers.sumatra.bot.IMoveConstraints;
 import edu.tigers.sumatra.bot.MoveConstraints;
-import edu.tigers.sumatra.bot.params.BotMovementLimits;
 import edu.tigers.sumatra.botmanager.botskills.ABotSkill;
 import edu.tigers.sumatra.botmanager.botskills.AMoveBotSkill;
 import edu.tigers.sumatra.botmanager.botskills.BotSkillLocalVelocity;
@@ -87,7 +81,7 @@ public class SkillsPresenter
 	@Override
 	public void onSetSpeed(final double x, final double y, final double w)
 	{
-		final IMoveConstraints mc = new MoveConstraints(new BotMovementLimits());
+		final MoveConstraints mc = MoveConstraints.ZERO;
 		AMoveBotSkill skill = new BotSkillLocalVelocity(Vector2.fromXY(x, y), w, mc);
 		final BotSkillWrapperSkill wrapperSkill = new BotSkillWrapperSkill(skill);
 		wrapperSkill.setKeepKickerDribbler(true);

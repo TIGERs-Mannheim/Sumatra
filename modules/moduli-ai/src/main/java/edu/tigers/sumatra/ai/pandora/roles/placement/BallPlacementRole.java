@@ -1,10 +1,7 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.pandora.roles.placement;
 
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.ai.common.KeepDistanceToBall;
 import edu.tigers.sumatra.ai.common.PointChecker;
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
@@ -19,6 +16,7 @@ import edu.tigers.sumatra.math.circle.Circle;
 import edu.tigers.sumatra.math.line.LineMath;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
+import edu.tigers.sumatra.skillsystem.data.RobotTarget;
 import edu.tigers.sumatra.skillsystem.skills.AMoveToSkill;
 import edu.tigers.sumatra.skillsystem.skills.ApproachAndStopBallSkill;
 import edu.tigers.sumatra.skillsystem.skills.DropBallSkill;
@@ -30,6 +28,7 @@ import edu.tigers.sumatra.skillsystem.skills.MoveWithBallSkill;
 import edu.tigers.sumatra.skillsystem.skills.ReceiveBallSkill;
 import edu.tigers.sumatra.skillsystem.skills.SingleTouchKickSkill;
 import edu.tigers.sumatra.skillsystem.skills.util.KickParams;
+import edu.tigers.sumatra.skillsystem.skills.util.RobotTargetChecker;
 import edu.tigers.sumatra.time.TimestampTimer;
 import lombok.Getter;
 import lombok.Setter;
@@ -44,19 +43,19 @@ import java.util.function.Supplier;
  */
 public class BallPlacementRole extends ARole
 {
-	@Configurable(defValue = "PULL_PUSH")
+	@Configurable(defValue = "PULL_PUSH", unit = EConfigUnit.NO_UNIT)
 	private static EBallHandling ballHandling = EBallHandling.PULL_PUSH;
 
-	@Configurable(defValue = "2.0")
+	@Configurable(defValue = "2.0", unit = EConfigUnit.VELOCITY_M)
 	private static double passEndSpeed = 2.0;
 
-	@Configurable(defValue = "0.5", comment = "Time in s to wait at the end")
+	@Configurable(defValue = "0.5", comment = "Time in s to wait at the end", unit = EConfigUnit.TIME_S)
 	private static double clearanceWaitTime = 0.5;
 
-	@Configurable(defValue = "50", comment = "Extra tolerance to subtract from the rule-defined placement tolerance")
+	@Configurable(defValue = "50", comment = "Extra tolerance to subtract from the rule-defined placement tolerance", unit = EConfigUnit.DISTANCE_MM)
 	private static double extraPlacementTolerance = 50;
 
-	@Configurable(defValue = "180", comment = "Angle [deg] that the robot can turn with the ball on dribbler while pulling")
+	@Configurable(defValue = "180", comment = "Angle that the robot can turn with the ball on dribbler while pulling", unit = EConfigUnit.ANGLE_DEG)
 	private static double maxRotateWhilePullAngle = 180;
 
 	@Setter
@@ -77,7 +76,7 @@ public class BallPlacementRole extends ARole
 		super(ERole.BALL_PLACEMENT);
 
 		var clearBallState = new ClearBallState();
-		var dropBallState = new BaseState<>(DropBallSkill::new);
+		var dropBallState = new BaseState<>(() -> new DropBallSkill(placementTolerance));
 		var receiveState = new BaseState<>(ReceiveBallSkill::new);
 		var prepareState = new PrepareState();
 		var decisionState = new RoleState<>(IdleSkill::new);
@@ -86,7 +85,7 @@ public class BallPlacementRole extends ARole
 		var moveWithBallState = new MoveWithBallState();
 		var passState = new PassState();
 
-		setInitialState(clearBallState);
+		setInitialState(dropBallState);
 
 		clearBallState.addTransition(
 				"ball cleared, but not yet on target",
@@ -181,7 +180,9 @@ public class BallPlacementRole extends ARole
 	private class PrepareState extends BaseState<MoveToSkill>
 	{
 		private final TimestampTimer calmDownTimer = new TimestampTimer(0.0);
+		private final RobotTargetChecker targetChecker = new RobotTargetChecker().setMinTimeAtDest(0.3);
 		private boolean calmedDown;
+		private RobotTarget robotTarget = new RobotTarget();
 
 
 		public PrepareState()
@@ -191,11 +192,10 @@ public class BallPlacementRole extends ARole
 
 
 		@Override
-		protected void onInit()
+		protected void onEntry()
 		{
-			super.onInit();
-			skill.setMinTimeAtDestForSuccess(0.3);
-			skill.updateLookAtTarget(getBall());
+			super.onEntry();
+			robotTarget = robotTarget.withLookAtTarget(getBall());
 
 			if (getBot().getBallContact().hadContact(0.2))
 			{
@@ -217,16 +217,19 @@ public class BallPlacementRole extends ARole
 			if (calmDownTimer.isTimeUp(getWFrame().getTimestamp()))
 			{
 				skill.setComeToAStop(false);
-				skill.updateDestination(getDest());
-				skill.getMoveCon().setBallObstacle(true);
+				robotTarget = robotTarget.withDestination(getDest());
+				skill.setMoveCon(skill.getMoveCon().withBallObstacle(true));
 				calmedDown = true;
 			}
+			skill.setRobotTarget(robotTarget);
 		}
 
 
 		public boolean success()
 		{
-			return calmedDown && skill.getSkillState() == ESkillState.SUCCESS;
+			return calmedDown && targetChecker.isTargetReached(
+					getWFrame(), getBotID(), robotTarget
+			);
 		}
 
 
@@ -274,9 +277,9 @@ public class BallPlacementRole extends ARole
 
 
 		@Override
-		protected void onInit()
+		protected void onEntry()
 		{
-			super.onInit();
+			super.onEntry();
 			currentPlacementPos = currentBallTarget;
 			updateTargetPose();
 		}
@@ -336,9 +339,9 @@ public class BallPlacementRole extends ARole
 
 
 		@Override
-		protected void onInit()
+		protected void onEntry()
 		{
-			super.onInit();
+			super.onEntry();
 			if (getBot().getBallContact().hadContact(0.2))
 			{
 				calmDownTimer.setDuration(clearanceWaitTime);
@@ -367,10 +370,10 @@ public class BallPlacementRole extends ARole
 			if (isCleared())
 			{
 				skill.updateLookAtTarget(getBall());
-				skill.getMoveCon().setBallObstacle(true);
+				skill.setMoveCon(skill.getMoveCon().withBallObstacle(true));
 
 				if (getBall().getVel().getLength2() < 0.1
-						&& ballTargetPos.distanceTo(getBall().getPos()) < placementTolerance + extraPlacementTolerance)
+						&& currentBallTarget.distanceTo(getBall().getPos()) < placementTolerance + extraPlacementTolerance)
 				{
 					clearedTimer.update(getWFrame().getTimestamp());
 				} else
@@ -388,7 +391,7 @@ public class BallPlacementRole extends ARole
 				}
 
 				ballPlacedAndCleared = getBall().getVel().getLength2() < 0.1
-						&& ballTargetPos.distanceTo(getBall().getPos()) < tolerance;
+						&& currentBallTarget.distanceTo(getBall().getPos()) < tolerance;
 
 				// find a valid destination, after having sufficient distance to the ball
 				// This is required to clear the stop radius in cases where the game is not continued
@@ -447,10 +450,11 @@ public class BallPlacementRole extends ARole
 
 
 		@Override
-		protected void onInit()
+		protected void onEntry()
 		{
-			skill.getMoveCon().physicalObstaclesOnly();
-			skill.getMoveCon().setBallObstacle(false);
+			skill.setMoveCon(skill.getMoveCon()
+					.withPhysicalObstaclesOnly()
+					.withBallObstacle(false));
 		}
 	}
 

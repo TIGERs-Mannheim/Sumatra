@@ -1,10 +1,7 @@
-/*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.metis.offense;
 
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.ai.metis.ACalculator;
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
 import edu.tigers.sumatra.ai.metis.targetrater.AngleRange;
@@ -38,7 +35,7 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class OffensiveBallAccessibilityCalc extends ACalculator
 {
-	@Configurable(defValue = "1 Y")
+	@Configurable(defValue = "1 Y", unit = EConfigUnit.BOT_ID)
 	private static BotID botToShowDebugShapesFor = BotID.createBotId(1, ETeamColor.YELLOW);
 
 	@Getter

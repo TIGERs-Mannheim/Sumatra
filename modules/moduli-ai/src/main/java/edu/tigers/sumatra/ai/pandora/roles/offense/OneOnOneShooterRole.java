@@ -1,10 +1,7 @@
-/*
- * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.pandora.roles.offense;
 
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
 import edu.tigers.sumatra.ai.metis.targetrater.AngleRangeRater;
 import edu.tigers.sumatra.ai.metis.targetrater.IRatedTarget;
@@ -21,8 +18,6 @@ import edu.tigers.sumatra.math.line.Lines;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.IVector3;
 import edu.tigers.sumatra.math.vector.Vector2;
-import edu.tigers.sumatra.skillsystem.skills.ESkillState;
-import edu.tigers.sumatra.skillsystem.skills.MoveToSkill;
 import edu.tigers.sumatra.skillsystem.skills.TouchKickSkill;
 import edu.tigers.sumatra.skillsystem.skills.util.KickParams;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
@@ -35,19 +30,19 @@ import java.util.Optional;
 
 public class OneOnOneShooterRole extends ARole
 {
-	@Configurable(comment = "Required score to execute a flat kick (0.0 - 1.0 best)", defValue = "0.3")
+	@Configurable(comment = "Required score to execute a flat kick", defValue = "0.3", unit = EConfigUnit.PERCENTAGE)
 	private static double requiredFlatKickScore = 0.3;
 
-	@Configurable(comment = "Distance to target behind keeper for a chip kick [mm]", defValue = "1000.0")
+	@Configurable(comment = "Distance to target behind keeper for a chip kick", defValue = "1000.0", unit = EConfigUnit.DISTANCE_MM)
 	private static double chipBehindKeeperDistance = 1000.0;
 
-	@Configurable(comment = "Poke velocity [m/s]", defValue = "1.2")
+	@Configurable(comment = "Poke velocity", defValue = "1.2", unit = EConfigUnit.VELOCITY_M)
 	private static double pokeVelocity = 1.2;
 
-	@Configurable(comment = "Distance to ball when approaching (>150mm) [mm]", defValue = "150")
+	@Configurable(comment = "Distance to ball when approaching (>150mm)", defValue = "150", unit = EConfigUnit.DISTANCE_MM)
 	private static double approachDistance = 150.0;
 
-	@Configurable(comment = "Some tolerance when the ball is considered approached [mm]", defValue = "-30")
+	@Configurable(comment = "Some tolerance when the ball is considered approached", defValue = "-30", unit = EConfigUnit.DISTANCE_MM)
 	private static double approachDistanceTolerance = -30;
 
 
@@ -72,18 +67,20 @@ public class OneOnOneShooterRole extends ARole
 
 
 		waitAtBallState.addTransition("isPenaltyActive", waitAtBallState::isPenaltyActive, approachBallState);
-		approachBallState.addTransition(ESkillState.SUCCESS, pokeBallState);
 		approachBallState.addTransition("isCloseToBall", approachBallState::isCloseToBall, pokeBallState);
-		approachBallState.addTransition(ESkillState.FAILURE, approachBallState);
 		approachBallState.addTransition("isGoodGoalKickAvailable", this::isGoodGoalKickAvailable, flatKickOnGoalState);
-		approachBallState.addTransition("isChipKickTheOnlyGoodPlanWeHave", this::isChipKickTheOnlyGoodPlanWeHave,
-				chipKickOnGoalState);
+		approachBallState.addTransition(
+				"isChipKickTheOnlyGoodPlanWeHave", this::isChipKickTheOnlyGoodPlanWeHave,
+				chipKickOnGoalState
+		);
 		approachBallState.addTransition("timeAlmostUp", this::timeAlmostUp, flatKickOnGoalState);
 
 		pokeBallState.addTransition("isBallHit", pokeBallState::isBallHit, approachBallState);
 		pokeBallState.addTransition("isGoodGoalKickAvailable", this::isGoodGoalKickAvailable, flatKickOnGoalState);
-		pokeBallState.addTransition("isChipKickTheOnlyGoodPlanWeHave", this::isChipKickTheOnlyGoodPlanWeHave,
-				chipKickOnGoalState);
+		pokeBallState.addTransition(
+				"isChipKickTheOnlyGoodPlanWeHave", this::isChipKickTheOnlyGoodPlanWeHave,
+				chipKickOnGoalState
+		);
 		pokeBallState.addTransition("timeAlmostUp", this::timeAlmostUp, flatKickOnGoalState);
 	}
 
@@ -113,8 +110,10 @@ public class OneOnOneShooterRole extends ARole
 
 		if (flatRatedTarget != null)
 		{
-			shapesList.add(new DrawableAnnotation(getPos().addNew(Vector2.fromX(250.0)),
-					String.format("Flat score: %.2f", flatRatedTarget.getScore())));
+			shapesList.add(new DrawableAnnotation(
+					getPos().addNew(Vector2.fromX(250.0)),
+					String.format("Flat score: %.2f", flatRatedTarget.getScore())
+			));
 
 			var toTarget = Lines.segmentFromPoints(getBall().getPos(), flatRatedTarget.getTarget());
 			shapesList.add(new DrawableLine(toTarget, Color.red));
@@ -124,8 +123,10 @@ public class OneOnOneShooterRole extends ARole
 		{
 			shapesList.add(new DrawableCircle(chipOpportunity.getTarget(), 50, Color.magenta));
 
-			shapesList.add(new DrawableAnnotation(getPos().addNew(Vector2.fromX(-250.0)),
-					String.format("Chip speed: %.2f", chipOpportunity.getKickSpeed())));
+			shapesList.add(new DrawableAnnotation(
+					getPos().addNew(Vector2.fromX(-250.0)),
+					String.format("Chip speed: %.2f", chipOpportunity.getKickSpeed())
+			));
 
 			shapesList.add(new DrawableLine(chipOpportunity.getBallTrajectory().getTravelLineRolling(), Color.magenta));
 		}
@@ -220,14 +221,8 @@ public class OneOnOneShooterRole extends ARole
 		IBallTrajectory ballTrajectory;
 	}
 
-	private class WaitAtBallState extends RoleState<MoveToSkill>
+	private class WaitAtBallState extends MoveState
 	{
-		public WaitAtBallState()
-		{
-			super(MoveToSkill::new);
-		}
-
-
 		@Override
 		protected void onUpdate()
 		{
@@ -235,7 +230,7 @@ public class OneOnOneShooterRole extends ARole
 					.subtractNew(Vector2.fromX(RuleConstraints.getStopRadius() + Geometry.getBotRadius() + 80));
 			skill.updateDestination(waitPos);
 			skill.updateLookAtTarget(getBall());
-			skill.getMoveCon().setPenaltyAreaOurObstacle(false);
+			skill.setMoveCon(skill.getMoveCon().withPenaltyAreaOurObstacle(false));
 		}
 
 
@@ -243,31 +238,27 @@ public class OneOnOneShooterRole extends ARole
 		{
 			return getAiFrame().getGameState().isPenalty();
 		}
-
-
 	}
 
-	private class ApproachBallState extends RoleState<MoveToSkill>
+	private class ApproachBallState extends MoveState
 	{
-		public ApproachBallState()
-		{
-			super(MoveToSkill::new);
-		}
-
+		IVector2 destination;
 
 		@Override
-		protected void onInit()
+		protected void onEntry()
 		{
-			skill.getMoveCon().setPenaltyAreaOurObstacle(false);
+			skill.setMoveCon(skill.getMoveCon().withPenaltyAreaOurObstacle(false));
 		}
 
 
 		@Override
 		protected void onUpdate()
 		{
-			IVector2 approachPos = LineMath.stepAlongLine(getBall().getPos(), Geometry.getGoalTheir().getCenter(),
-					-(Geometry.getBotRadius() + approachDistance));
-			skill.updateDestination(approachPos);
+			destination = LineMath.stepAlongLine(
+					getBall().getPos(), Geometry.getGoalTheir().getCenter(),
+					-(Geometry.getBotRadius() + approachDistance)
+			);
+			skill.updateDestination(destination);
 			skill.updateTargetAngle(
 					getBall().getPos().subtractNew(getBot().getBotKickerPos()).getAngle());
 		}
@@ -275,29 +266,24 @@ public class OneOnOneShooterRole extends ARole
 
 		public boolean isCloseToBall()
 		{
-			return skill.getDestination() != null && skill.getDestination().distanceTo(getBot().getPos())
+			return destination != null && destination.distanceTo(getBot().getPos())
 					< approachDistance + approachDistanceTolerance;
 		}
 	}
 
-	private class PokeBallState extends RoleState<MoveToSkill>
+	private class PokeBallState extends MoveState
 	{
 		private IVector2 relativePosTarget;
 		private double initialBallSpeed;
 
 
-		public PokeBallState()
-		{
-			super(MoveToSkill::new);
-		}
-
-
 		@Override
-		protected void onInit()
+		protected void onEntry()
 		{
 			relativePosTarget = Vector2.fromPoints(getBall().getPos(), getBot().getPos()).multiply(-1.0);
-			skill.getMoveCon().setBallObstacle(false);
-			skill.getMoveCon().setPenaltyAreaOurObstacle(false);
+			skill.setMoveCon(skill.getMoveCon()
+					.withBallObstacle(false)
+					.withPenaltyAreaOurObstacle(false));
 
 			initialBallSpeed = getBall().getVel().getLength();
 		}
@@ -328,7 +314,7 @@ public class OneOnOneShooterRole extends ARole
 
 
 		@Override
-		protected void onInit()
+		protected void onEntry()
 		{
 			skill.setTarget(getKickTarget());
 			skill.setDesiredKickParams(KickParams.maxStraight());
@@ -344,7 +330,7 @@ public class OneOnOneShooterRole extends ARole
 
 
 		@Override
-		protected void onInit()
+		protected void onEntry()
 		{
 			if (chipOpportunity == null)
 			{

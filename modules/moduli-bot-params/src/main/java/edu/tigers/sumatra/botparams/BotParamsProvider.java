@@ -1,10 +1,6 @@
-/*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.botparams;
 
-import edu.tigers.sumatra.bot.params.IBotParams;
+import edu.tigers.sumatra.bot.params.BotParams;
 
 
 public interface BotParamsProvider
@@ -15,5 +11,5 @@ public interface BotParamsProvider
 	 * @param label
 	 * @return
 	 */
-	IBotParams get(final EBotParamLabel label);
+	BotParams get(final EBotParamLabel label);
 }

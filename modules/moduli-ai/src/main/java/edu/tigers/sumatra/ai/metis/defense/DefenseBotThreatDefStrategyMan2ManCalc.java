@@ -1,10 +1,7 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.metis.defense;
 
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.ai.metis.botdistance.BotDistance;
 import edu.tigers.sumatra.ai.metis.defense.data.DefenseBallThreat;
 import edu.tigers.sumatra.ai.metis.defense.data.DefenseBotThreatDefStrategyData;
@@ -35,19 +32,19 @@ import java.util.function.Supplier;
 @RequiredArgsConstructor
 public class DefenseBotThreatDefStrategyMan2ManCalc extends ADefenseThreatCalc
 {
-	@Configurable(comment = "minimal distance to ball (excluding bot+ball radii)", defValue = "100.0")
+	@Configurable(comment = "minimal distance to ball (excluding bot+ball radii)", defValue = "100.0", unit = EConfigUnit.DISTANCE_MM)
 	private static double minDistanceToBall = 100.0;
 
-	@Configurable(comment = "minimal distance to marked opponent (excluding bot radii)", defValue = "50.0")
+	@Configurable(comment = "minimal distance to marked opponent (excluding bot radii)", defValue = "50.0", unit = EConfigUnit.DISTANCE_MM)
 	private static double minDistanceToOpponent = 50.0;
 
-	@Configurable(comment = "maximum distance to marked opponent", defValue = "500.0")
+	@Configurable(comment = "maximum distance to marked opponent", defValue = "500.0", unit = EConfigUnit.DISTANCE_MM)
 	private static double maxDistanceToOpponent = 500.0;
 
-	@Configurable(defValue = "true", comment = "Enable ball -> bot threats (man to man marking)")
+	@Configurable(defValue = "true", comment = "Enable ball -> bot threats (man to man marking)", unit = EConfigUnit.BOOLEAN)
 	private static boolean enabled = true;
 
-	@Configurable(defValue = "true", comment = "Enable man2man marking while stop")
+	@Configurable(defValue = "true", comment = "Enable man2man marking while stop", unit = EConfigUnit.BOOLEAN)
 	private static boolean man2manEnabledWhileStop = true;
 
 	private final Supplier<DefenseBallThreat> defenseBallThreat;
@@ -183,6 +180,7 @@ public class DefenseBotThreatDefStrategyMan2ManCalc extends ADefenseThreatCalc
 				bot,
 				threatLine.getPathEnd(),
 				threatLine,
+				line,
 				line,
 				defenseBallThreat.get()
 		));

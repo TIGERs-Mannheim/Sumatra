@@ -1,10 +1,7 @@
-/*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.metis.offense.action.moves;
 
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.ai.metis.offense.action.EActionViability;
 import edu.tigers.sumatra.ai.metis.offense.action.OffensiveActionViability;
 import edu.tigers.sumatra.ai.metis.offense.action.RatedOffensiveAction;
@@ -23,13 +20,13 @@ import java.util.function.Supplier;
 @RequiredArgsConstructor
 public class RedirectGoalKickActionMove extends AOffensiveActionMove
 {
-	@Configurable(defValue = "0.25")
+	@Configurable(defValue = "0.25", unit = EConfigUnit.PERCENTAGE)
 	private static double minGoalShotChanceForTrueViability = 0.25;
 
-	@Configurable(defValue = "0.05")
+	@Configurable(defValue = "0.05", unit = EConfigUnit.PERCENTAGE)
 	private static double minGoalShotChanceForPartiallyViability = 0.05;
 
-	@Configurable(defValue = "1.45")
+	@Configurable(defValue = "1.45", unit = EConfigUnit.FACTOR)
 	private static double bonusMultiplierForRedirectsOverDirectKicks = 1.45;
 
 	private final Supplier<Map<BotID, GoalKick>> bestGoalKickTargets;

@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
- */
-
 plugins {
     id 'sumatra.java'
     id 'java-library'
@@ -19,6 +15,10 @@ dependencies {
     api project(':moduli-wp')
     implementation project(':moduli-autoreferee')
     api project(':moduli-referee')
+
+    implementation(libs.com.github.jiconfont.jiconfont)
+    implementation(libs.com.github.jiconfont.jiconfont.font.awesome)
+    implementation(libs.com.github.jiconfont.jiconfont.swing)
 
     implementation(libs.org.apache.logging.log4j.log4j.api)
     implementation(libs.org.apache.logging.log4j.log4j.core)

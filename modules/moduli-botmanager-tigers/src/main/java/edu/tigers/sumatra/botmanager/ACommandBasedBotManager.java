@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.botmanager;
 
 import edu.tigers.sumatra.botmanager.basestation.BotCommand;
@@ -11,7 +7,7 @@ import edu.tigers.sumatra.botmanager.commands.ACommand;
 import edu.tigers.sumatra.botmanager.commands.ECommand;
 import edu.tigers.sumatra.botmanager.commands.basestation.BaseStationACommand;
 import edu.tigers.sumatra.botmanager.commands.basestation.BaseStationEthStats;
-import edu.tigers.sumatra.botmanager.commands.basestation.BaseStationWifiStats;
+import edu.tigers.sumatra.botmanager.commands.basestation.BaseStationWifiStatsV2;
 import edu.tigers.sumatra.botmanager.communication.ECommandVerdict;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.observer.EventDistributor;
@@ -37,14 +33,14 @@ public abstract class ACommandBasedBotManager extends BotManager implements ICom
 {
 	private static final int STAT_ENTRIES = 10;
 
-	private final Queue<BaseStationWifiStats> wifiStats = new LinkedList<>();
+	private final Queue<BaseStationWifiStatsV2> wifiStats = new LinkedList<>();
 	private final Queue<BaseStationEthStats> ethStats = new LinkedList<>();
 
 	private final EventDistributor<BotCommand> onIncomingBotCommand = new EventDistributor<>();
 	private final EventDistributor<BotCommand> onOutgoingBotCommand = new EventDistributor<>();
 	private final EventDistributor<ACommand> onIncomingCommand = new EventDistributor<>();
 	private final EventDistributor<ACommand> onOutgoingCommand = new EventDistributor<>();
-	private final EventDistributor<BaseStationWifiStats> onNewBaseStationWifiStats = new EventDistributor<>();
+	private final EventDistributor<BaseStationWifiStatsV2> onNewBaseStationWifiStats = new EventDistributor<>();
 	private final EventDistributor<BaseStationEthStats> onNewBaseStationEthStats = new EventDistributor<>();
 
 
@@ -93,7 +89,7 @@ public abstract class ACommandBasedBotManager extends BotManager implements ICom
 		{
 			case CMD_BASE_ACOMMAND -> processIncomingBaseACommand(cmd);
 			case CMD_BASE_PING -> { /* ignore */ }
-			case CMD_BASE_WIFI_STATS -> processIncomingBaseWifiStats(cmd);
+			case CMD_BASE_WIFI_STATS_V2 -> processIncomingBaseWifiStats(cmd);
 			case CMD_BASE_ETH_STATS -> processIncomingBaseEthStats(cmd);
 			default -> log.warn("Unhandled incoming command. ID: {}", cmd.getType());
 		}
@@ -149,22 +145,22 @@ public abstract class ACommandBasedBotManager extends BotManager implements ICom
 
 	private void processIncomingBaseWifiStats(final ACommand cmd)
 	{
-		BaseStationWifiStats incomingStats = (BaseStationWifiStats) cmd;
+		BaseStationWifiStatsV2 incomingStats = (BaseStationWifiStatsV2) cmd;
 
 		wifiStats.add(incomingStats);
 
-		BaseStationWifiStats stats;
+		BaseStationWifiStatsV2 stats;
 		if (wifiStats.size() > STAT_ENTRIES)
 		{
 			// this gives a nice report over the last second every 100ms :)
-			stats = new BaseStationWifiStats(incomingStats, wifiStats.remove());
+			stats = new BaseStationWifiStatsV2(incomingStats, wifiStats.remove());
 		} else
 		{
 			stats = incomingStats;
 		}
 
 		Set<BotID> curBots = new HashSet<>();
-		for (BaseStationWifiStats.BotStats botStats : stats.getBotStats())
+		for (BaseStationWifiStatsV2.BotStats botStats : stats.getBotStats())
 		{
 			BotID botId = botStats.getBotId();
 			if (botId.isBot())
@@ -229,7 +225,7 @@ public abstract class ACommandBasedBotManager extends BotManager implements ICom
 	}
 
 
-	public EventSubscriber<BaseStationWifiStats> getOnNewBaseStationWifiStats()
+	public EventSubscriber<BaseStationWifiStatsV2> getOnNewBaseStationWifiStats()
 	{
 		return onNewBaseStationWifiStats;
 	}

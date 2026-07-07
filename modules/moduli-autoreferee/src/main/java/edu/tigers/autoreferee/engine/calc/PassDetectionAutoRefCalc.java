@@ -1,11 +1,8 @@
-/*
- * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.autoreferee.engine.calc;
 
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.autoreferee.AutoRefFrame;
 import edu.tigers.autoreferee.EAutoRefShapesLayer;
 import edu.tigers.sumatra.drawable.DrawableAnnotation;
@@ -34,16 +31,16 @@ import java.util.Optional;
 @Log4j2
 public class PassDetectionAutoRefCalc implements IAutoRefereeCalc
 {
-	@Configurable(defValue = "false", comment = "Enable pass detection for passing challenge")
+	@Configurable(defValue = "false", comment = "Enable pass detection for passing challenge", unit = EConfigUnit.BOOLEAN)
 	private static boolean enabled = false;
 
-	@Configurable(defValue = "0.174533", comment = "Min direction change between passes to count a valid pass")
+	@Configurable(defValue = "0.174533", comment = "Min direction change between passes to count a valid pass", unit = EConfigUnit.ANGLE_RAD)
 	private static double minDirectionChange = 0.174533;
 
-	@Configurable(defValue = "1500", comment = "Min pass distance to count a valid pass")
+	@Configurable(defValue = "1500", comment = "Min pass distance to count a valid pass", unit = EConfigUnit.DISTANCE_MM)
 	private static double minDistance = 1500;
 
-	@Configurable(defValue = "150", comment = "[mm] Min pass hight to count as chip pass")
+	@Configurable(defValue = "150", comment = "Min pass hight to count as chip pass", unit = EConfigUnit.DISTANCE_MM)
 	private static double minHeight = 150;
 
 	static

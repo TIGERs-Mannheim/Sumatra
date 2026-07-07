@@ -1,10 +1,7 @@
-/*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.metis.pass;
 
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.ai.metis.ACalculator;
 import edu.tigers.sumatra.ai.metis.kicking.OngoingPass;
 import edu.tigers.sumatra.export.CSVExporter;
@@ -30,7 +27,7 @@ public class PassStatisticsExporterCalc extends ACalculator
 
 	private CSVExporter exporter = null;
 
-	@Configurable(defValue = "false")
+	@Configurable(defValue = "false", unit = EConfigUnit.BOOLEAN)
 	private static boolean activateRecording = false;
 
 
@@ -75,11 +72,11 @@ public class PassStatisticsExporterCalc extends ACalculator
 	{
 		List<Number> values = new ArrayList<>();
 		values.add(currentPass.getKickStartTime());
-		values.add(currentPass.getPass().getKick().getSource().x());
-		values.add(currentPass.getPass().getKick().getSource().y());
+		values.add(currentPass.getPass().getPass().getKick().getSource().x());
+		values.add(currentPass.getPass().getPass().getKick().getSource().y());
 		values.add(currentPass.getOriginatingZone().ordinal());
-		values.add(currentPass.getPass().getKick().getTarget().x());
-		values.add(currentPass.getPass().getKick().getTarget().y());
+		values.add(currentPass.getPass().getPass().getKick().getTarget().x());
+		values.add(currentPass.getPass().getPass().getKick().getTarget().y());
 		values.add(currentPass.getTargetZone().ordinal());
 
 		if (OngoingPassSuccessRater.isOngoingPassASuccess(getWFrame(), currentPass))
@@ -97,7 +94,7 @@ public class PassStatisticsExporterCalc extends ACalculator
 	private void initExporter()
 	{
 		String name = "./pass_data_" + getWFrame().getTeamColor().toString();
-		log.info("Started recording pass data: " + name);
+		log.info("Started recording pass data: {}", name);
 		exporter = new CSVExporter("./data/pass/", name, CSVExporter.EMode.AUTO_INCREMENT_FILE_NAME);
 
 		List<String> headers = new ArrayList<>();

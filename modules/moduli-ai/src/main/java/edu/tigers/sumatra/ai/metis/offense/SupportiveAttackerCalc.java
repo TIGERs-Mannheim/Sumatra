@@ -1,10 +1,7 @@
-/*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.metis.offense;
 
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.ai.metis.ACalculator;
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
 import edu.tigers.sumatra.ai.metis.pass.KickOrigin;
@@ -26,7 +23,7 @@ import edu.tigers.sumatra.pathfinder.TrajectoryGenerator;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import org.apache.commons.lang.Validate;
+import org.apache.commons.lang3.Validate;
 
 import java.awt.Color;
 import java.util.Collections;
@@ -46,31 +43,31 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class SupportiveAttackerCalc extends ACalculator
 {
-	@Configurable(defValue = "100.0")
+	@Configurable(defValue = "100.0", unit = EConfigUnit.DISTANCE_MM)
 	private static double marginOpponentPenAreaToDeactivateSupportiveAttacker = 100.0;
 
-	@Configurable(defValue = "2800.0", comment = "[mm]")
+	@Configurable(defValue = "2800.0", unit = EConfigUnit.DISTANCE_MM)
 	private static double marginAroundOurPenAreaToConsiderOpponentFinisherDangerous = 2800.0;
 
-	@Configurable(defValue = "400.0", comment = "[mm]")
+	@Configurable(defValue = "400.0", unit = EConfigUnit.DISTANCE_MM)
 	private static double opponentFinisherBlockerSelectionHystBot = 400.0;
 
-	@Configurable(defValue = "200.0", comment = "[mm]")
+	@Configurable(defValue = "200.0", unit = EConfigUnit.DISTANCE_MM)
 	private static double opponentFinisherBlockerSelectionHystPos = 200.0;
 
-	@Configurable(defValue = "0.4", comment = "[s]")
+	@Configurable(defValue = "0.4", unit = EConfigUnit.TIME_S)
 	private static double selectionHyst = 0.4;
 
-	@Configurable(defValue = "true")
+	@Configurable(defValue = "true", unit = EConfigUnit.BOOLEAN)
 	private static boolean activateSupportiveInterceptor = true;
 
-	@Configurable(comment = "enable supportive Attacker", defValue = "true")
+	@Configurable(comment = "enable supportive Attacker", defValue = "true", unit = EConfigUnit.BOOLEAN)
 	private static boolean enableSupportiveAttacker = true;
 
-	@Configurable(comment = "enable opponent finisher blocker", defValue = "true")
+	@Configurable(comment = "enable opponent finisher blocker", defValue = "true", unit = EConfigUnit.BOOLEAN)
 	private static boolean enableOpponentFinisherBlocker = true;
 
-	@Configurable(defValue = "1500.0")
+	@Configurable(defValue = "1500.0", unit = EConfigUnit.DISTANCE_MM)
 	private static double marginAroundOurPenAreaToDeactivateSupportiveAttackers = 1500;
 
 	private final Supplier<SkirmishStrategy> skirmishStrategy;

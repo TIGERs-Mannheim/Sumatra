@@ -1,17 +1,15 @@
-/*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.metis.offense.dribble;
 
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.ai.metis.ACalculator;
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
 import edu.tigers.sumatra.ai.metis.ballpossession.BallPossession;
 import edu.tigers.sumatra.ai.metis.ballpossession.EBallControl;
 import edu.tigers.sumatra.ai.metis.botdistance.BotDistance;
 import edu.tigers.sumatra.ai.metis.kicking.EBallReceiveMode;
+import edu.tigers.sumatra.ai.metis.kicking.EPassType;
 import edu.tigers.sumatra.ai.metis.kicking.KickFactory;
 import edu.tigers.sumatra.ai.metis.kicking.Pass;
 import edu.tigers.sumatra.drawable.DrawableAnnotation;
@@ -49,19 +47,19 @@ import java.util.function.Supplier;
 @RequiredArgsConstructor
 public class BallDribbleToPosCalc extends ACalculator
 {
-	@Configurable(comment = "[mm] No opponent closer than this to the ball -> it is not dangerous", defValue = "1800.0")
+	@Configurable(comment = "No opponent closer than this to the ball -> it is not dangerous", defValue = "1800.0", unit = EConfigUnit.DISTANCE_MM)
 	private static double opponentIsCloseDistance = 1800.0;
 
-	@Configurable(comment = "[mm] protectKick target distance", defValue = "800.0")
+	@Configurable(comment = "protectKick target distance", defValue = "800.0", unit = EConfigUnit.DISTANCE_MM)
 	private static double protectKickTargetDistance = 800.0;
 
-	@Configurable(comment = "[mm] consider only closest bot dist", defValue = "300.0")
+	@Configurable(comment = "consider only closest bot dist", defValue = "300.0", unit = EConfigUnit.DISTANCE_MM)
 	private static double considerOnlyClosestBotDist = 300.0;
 
-	@Configurable(comment = "[s] needed time to reach protect kick target", defValue = "1.2")
+	@Configurable(comment = "needed time to reach protect kick target", defValue = "1.2", unit = EConfigUnit.TIME_S)
 	private static double timeToReachProtectKickTarget = 1.2;
 
-	@Configurable(comment = "number of protect kick target samples per half", defValue = "5")
+	@Configurable(comment = "number of protect kick target samples per half", defValue = "5", unit = EConfigUnit.COUNT)
 	private static int numOfProtectKickSamplesPerHalf = 5;
 
 	static
@@ -198,7 +196,7 @@ public class BallDribbleToPosCalc extends ACalculator
 			getPassForKickTarget(kickTarget, opponentGoalFront).ifPresent(consideredPasses::add);
 		}
 
-		return consideredPasses.stream().max(Comparator.comparingDouble(Pass::getPreparationTime)).orElse(null);
+		return consideredPasses.stream().max(Comparator.comparingDouble(Pass::getOpponentPreparationTime)).orElse(null);
 	}
 
 
@@ -262,7 +260,7 @@ public class BallDribbleToPosCalc extends ACalculator
 			var kick = kickFactory.chip(getBall().getPos(), kickTarget, 1.7);
 			return Optional.of(
 					new Pass(
-							kick, BotID.noBot(), ballHandlingBots.get().getFirst(), 0, 0, minOpponentTime,
+							EPassType.CHIP, kick, BotID.noBot(), ballHandlingBots.get().getFirst(), 0, 0, minOpponentTime,
 							EBallReceiveMode.DONT_CARE
 					));
 		}

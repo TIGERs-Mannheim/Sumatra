@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.math.vector;
 
 import edu.tigers.sumatra.math.SumatraMath;
@@ -20,7 +16,6 @@ public class VectorDistinctStreamFilter
 	public static Predicate<IVector> byIsCloseTo()
 	{
 		return byIsCloseTo(SumatraMath.getEqualTol());
-
 	}
 
 

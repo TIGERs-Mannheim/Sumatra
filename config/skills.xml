@@ -1,1 +1,15 @@
-<?xml version="1.0" encoding="UTF-8"?><configuration/>
+<?xml version="1.0" encoding="UTF-8"?><edu.tigers.sumatra.skillsystem.skills base="edu.tigers.sumatra.skillsystem.skills">
+    <ApproachAndStopBallSkill>
+        <approachSpeedDiff>0.7</approachSpeedDiff>
+    </ApproachAndStopBallSkill>
+    <ATouchKickSkill>
+        <reversedKickSpeedDribbleCompensationFactor>0</reversedKickSpeedDribbleCompensationFactor>
+        <reversedKickSpeedDribbleCompensationReference>0</reversedKickSpeedDribbleCompensationReference>
+    </ATouchKickSkill>
+    <dribbling>
+        <DribbleKickSkill>
+            <accMax>2</accMax>
+            <accMaxW>10</accMaxW>
+        </DribbleKickSkill>
+    </dribbling>
+</edu.tigers.sumatra.skillsystem.skills>

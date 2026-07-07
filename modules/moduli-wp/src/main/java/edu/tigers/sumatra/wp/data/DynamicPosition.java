@@ -1,10 +1,5 @@
-/*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.wp.data;
 
-import com.github.cliftonlabs.json_simple.JsonObject;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.AObjectID;
 import edu.tigers.sumatra.ids.BallID;
@@ -19,7 +14,7 @@ import lombok.Builder;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.Value;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -82,7 +77,7 @@ public class DynamicPosition
 	 * @param swf
 	 * @return new updated instance
 	 */
-	public final DynamicPosition update(final SimpleWorldFrame swf)
+	public DynamicPosition update(final SimpleWorldFrame swf)
 	{
 		return toBuilder()
 				.pos(getLatestPos(swf))
@@ -126,8 +121,10 @@ public class DynamicPosition
 			}
 			if (useKickerPos)
 			{
-				return BotShape.getKickerCenterPos(botPos, botAngle,
-						bot.getCenter2DribblerDist() + Geometry.getBallRadius());
+				return BotShape.getKickerCenterPos(
+						botPos, botAngle,
+						bot.getCenter2DribblerDist() + Geometry.getBallRadius()
+				);
 			} else
 			{
 				return botPos;
@@ -225,16 +222,6 @@ public class DynamicPosition
 			}
 		}
 		return finalValues;
-	}
-
-
-	@SuppressWarnings("unchecked")
-	public JsonObject toJSON()
-	{
-		JsonObject jsonMapping = pos.toJSON();
-		jsonMapping.put("trackedId", trackedId == null ? "" : trackedId.getNumber());
-		jsonMapping.put("lookahead", lookahead);
-		return jsonMapping;
 	}
 
 

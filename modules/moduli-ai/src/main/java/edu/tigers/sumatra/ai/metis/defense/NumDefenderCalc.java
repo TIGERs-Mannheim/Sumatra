@@ -1,14 +1,14 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.metis.defense;
 
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.ai.metis.ACalculator;
+import edu.tigers.sumatra.ai.metis.ballpossession.BallPossession;
+import edu.tigers.sumatra.ai.metis.ballpossession.EBallPossession;
 import edu.tigers.sumatra.ai.metis.ballresponsibility.EBallResponsibility;
 import edu.tigers.sumatra.ai.metis.defense.data.DefenseBotThreatDefData;
 import edu.tigers.sumatra.ai.metis.defense.data.DefensePassDisruptionAssignment;
+import edu.tigers.sumatra.ai.metis.defense.data.EDefensePassDisruptionStrategyType;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.SumatraMath;
@@ -30,16 +30,17 @@ import java.util.function.Supplier;
 @RequiredArgsConstructor
 public class NumDefenderCalc extends ACalculator
 {
-	@Configurable(comment = "Minimum number of defenders to keep at all times", defValue = "2")
+	@Configurable(comment = "Minimum number of defenders to keep at all times", defValue = "2", unit = EConfigUnit.COUNT)
 	private static int minDefendersAtAllTimes = 2;
 
-	@Configurable(comment = "Minimum number of free bots available if ball responsibility is offense", defValue = "3")
+	@Configurable(comment = "Minimum number of free bots available if ball responsibility is offense", defValue = "3", unit = EConfigUnit.COUNT)
 	private static int minFreeBotsAtBallResponsibilityOffense = 3;
 
-	@Configurable(defValue = "1.5")
+	@Configurable(defValue = "1.5", unit = EConfigUnit.FACTOR)
 	private static double threatsToNumDefenderDivider = 1.5;
 
 	private final Supplier<EBallResponsibility> ballResponsibility;
+	private final Supplier<BallPossession> ballPossession;
 	private final Supplier<Integer> numDefenderForBall;
 	private final Supplier<List<BotID>> botsToInterchange;
 	private final Supplier<List<DefenseBotThreatDefData>> defenseBotThreats;
@@ -49,6 +50,8 @@ public class NumDefenderCalc extends ACalculator
 	@Getter
 	private int availableAttackers;
 	@Getter
+	int numDefenderForBallConsideringPassDisrupt;
+	@Getter
 	private int numDefender;
 
 
@@ -56,18 +59,13 @@ public class NumDefenderCalc extends ACalculator
 	public void doCalc()
 	{
 		int nAvailableBots = availableBots();
+		numDefenderForBallConsideringPassDisrupt = calcNumDefenderForBallConsideringPassDisrupt();
+
 		numDefender = defaultNumDefenders(nAvailableBots);
 
 		// clamp numDefender between minDefendersAtAllTimes and nAvailableBots
 		numDefender = Math.max(minDefendersAtAllTimes, numDefender);
 		numDefender = Math.min(nAvailableBots, numDefender);
-
-		// if offense has ball responsibility, but we used all supporters as defenders we release one here
-		if (ballResponsibility.get() == EBallResponsibility.OFFENSE)
-		{
-			numDefender = SumatraMath.cap(numDefender, 0, nAvailableBots - minFreeBotsAtBallResponsibilityOffense);
-		}
-
 		numDefender = SumatraMath.cap(numDefender, 0, nAvailableBots - numMinFreeBots());
 		availableAttackers = nAvailableBots - numDefender;
 	}
@@ -80,6 +78,17 @@ public class NumDefenderCalc extends ACalculator
 		return getWFrame().getTigerBotsAvailable().size()
 				- nKeeper
 				- botsToInterchange.get().size();
+	}
+
+
+	private int calcNumDefenderForBallConsideringPassDisrupt()
+	{
+		if (passDisruptionAssignment.get() != null && passDisruptionAssignment.get().getStrategyType()
+				== EDefensePassDisruptionStrategyType.DISRUPT_OPPONENT_RECEIVER)
+		{
+			return Math.max(1, numDefenderForBall.get() - 1);
+		}
+		return numDefenderForBall.get();
 	}
 
 
@@ -151,7 +160,7 @@ public class NumDefenderCalc extends ACalculator
 		int nBotThreats = defenseBotThreats.get().size();
 		int nBotThreatDefender = ((int) Math.ceil(nBotThreats / threatsToNumDefenderDivider));
 		int nDisrupt = passDisruptionAssignment.get() != null ? 1 : 0;
-		int nBallDefender = numDefenderForBall.get();
+		int nBallDefender = numDefenderForBallConsideringPassDisrupt;
 
 		if (ballResponsibility.get() == EBallResponsibility.KEEPER)
 		{
@@ -171,6 +180,15 @@ public class NumDefenderCalc extends ACalculator
 
 		if (ballResponsibility.get() == EBallResponsibility.OFFENSE)
 		{
+			var theyPossessBall = ballPossession.get().getEBallPossession() == EBallPossession.THEY;
+			var ballConsistentInOurHalf = Geometry.getFieldHalfOur().isPointInShape(getBall().getPos())
+					&& Geometry.getFieldHalfOur().isPointInShape(getBall().getTrajectory().getPosByTime(1).getXYVector());
+
+			if (theyPossessBall && ballConsistentInOurHalf)
+			{
+				return Math.min(minFreeBotsAtBallResponsibilityOffense, 1);
+			}
+
 			return minFreeBotsAtBallResponsibilityOffense;
 		}
 

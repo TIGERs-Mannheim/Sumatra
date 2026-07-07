@@ -1,6 +1,3 @@
-/*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra.cam.data;
 
 import lombok.Builder;
@@ -21,6 +18,7 @@ public class CamFieldSize
 	double goalWidth;
 	double goalDepth;
 	double boundaryWidth;
+	double boundaryWidthGoalLine;
 	List<CamFieldLine> fieldLines;
 	List<CamFieldArc> fieldArcs;
 	double penaltyAreaDepth;
@@ -31,4 +29,5 @@ public class CamFieldSize
 	double goalHeight;
 	double ballRadius;
 	double robotRadius;
+	double goalSubstitutionAreaWidth;
 }

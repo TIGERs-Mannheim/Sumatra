@@ -1,10 +1,8 @@
-/*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra.vision.kick.detectors;
 
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.cam.data.CamBall;
 import edu.tigers.sumatra.drawable.IDrawableShape;
 import edu.tigers.sumatra.math.AngleMath;
@@ -22,7 +20,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 
 /**
@@ -34,16 +31,16 @@ public class EarlyKickDetector implements IKickDetector
 
 	private Map<Integer, LinkedList<MergedBall>> camBallMap = new HashedMap<>();
 
-	@Configurable(comment = "Ball velocity threshold [mm/s]", defValue = "1000.0")
+	@Configurable(comment = "Ball velocity threshold", defValue = "1000.0", unit = EConfigUnit.VELOCITY_MM)
 	private static double velocityThreshold = 1000.0;
 
-	@Configurable(comment = "A bot must be within this radius [mm]", defValue = "150.0")
+	@Configurable(comment = "A bot must be within this radius", defValue = "150.0", unit = EConfigUnit.DISTANCE_MM)
 	private static double nearBotLimit = 150.0;
 
-	@Configurable(comment = "Fast ball direction change threshold [deg]", defValue = "20.0")
+	@Configurable(comment = "Fast ball direction change threshold", defValue = "20.0", unit = EConfigUnit.ANGLE_DEG)
 	private static double directionThreshold = 20.0;
 
-	@Configurable(comment = "Ball velocity threshold for direction change [mm/s]", defValue = "2000.0")
+	@Configurable(comment = "Ball velocity threshold for direction change", defValue = "2000.0", unit = EConfigUnit.VELOCITY_MM)
 	private static double velocityThresholdDirection = 2000.0;
 
 	static
@@ -56,7 +53,7 @@ public class EarlyKickDetector implements IKickDetector
 	public KickEvent addRecord(final MergedBall ball, final List<FilteredVisionBot> mergedRobots)
 	{
 		Optional<CamBall> camBall = ball.getLatestCamBall();
-		if (!camBall.isPresent())
+		if (camBall.isEmpty())
 		{
 			return null;
 		}

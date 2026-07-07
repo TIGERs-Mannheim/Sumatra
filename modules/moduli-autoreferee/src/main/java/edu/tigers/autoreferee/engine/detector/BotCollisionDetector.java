@@ -1,10 +1,7 @@
-/*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.autoreferee.engine.detector;
 
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.autoreferee.AutoRefUtil;
 import edu.tigers.autoreferee.IAutoRefFrame;
 import edu.tigers.sumatra.geometry.Geometry;
@@ -35,19 +32,19 @@ import java.util.Optional;
  */
 public class BotCollisionDetector extends AGameEventDetector
 {
-	@Configurable(comment = "[m/s] The velocity threshold above with a bot contact is considered a crash", defValue = "1.5")
+	@Configurable(comment = "The velocity threshold above with a bot contact is considered a crash", defValue = "1.5", unit = EConfigUnit.VELOCITY_M)
 	private static double crashVelThreshold = 1.5;
 
-	@Configurable(comment = "[m/s] The contact is only considered a crash if the speed of both bots differ by at least this value", defValue = "0.3")
+	@Configurable(comment = "The contact is only considered a crash if the speed of both bots differ by at least this value", defValue = "0.3", unit = EConfigUnit.VELOCITY_M)
 	private static double minSpeedDiff = 0.3;
 
-	@Configurable(comment = "[ms] Wait time before reporting a crash with a robot again", defValue = "2.0")
-	private static double crashCoolDownTimeMs = 2.0;
+	@Configurable(comment = "Wait time before reporting a crash with a robot again", defValue = "2.0", unit = EConfigUnit.TIME_S)
+	private static double crashCoolDownTimeS = 2.0;
 
-	@Configurable(comment = "Adjust the bot to bot distance that is considered a contact: dist * factor", defValue = "1.1")
+	@Configurable(comment = "Adjust the bot to bot distance that is considered a contact: dist * factor", defValue = "1.1", unit = EConfigUnit.FACTOR)
 	private static double minDistanceFactor = 1.1;
 
-	@Configurable(comment = "The lookahead [s] that is used to estimate the brake amount of each bot", defValue = "0.1")
+	@Configurable(comment = "The lookahead that is used to estimate the brake amount of each bot", defValue = "0.1", unit = EConfigUnit.TIME_S)
 	private static double botBrakeLookahead = 0.1;
 
 
@@ -192,7 +189,7 @@ public class BotCollisionDetector extends AGameEventDetector
 		if (lastViolators.containsKey(bot))
 		{
 			Long ts = lastViolators.get(bot);
-			return (curTS - ts) / 1e9 < crashCoolDownTimeMs;
+			return (curTS - ts) / 1e9 < crashCoolDownTimeS;
 		}
 		return false;
 	}
@@ -218,7 +215,8 @@ public class BotCollisionDetector extends AGameEventDetector
 		lastViolators.clear();
 	}
 
-	private class BotPair
+
+	private static class BotPair
 	{
 		ITrackedBot blueBot;
 		ITrackedBot yellowBot;

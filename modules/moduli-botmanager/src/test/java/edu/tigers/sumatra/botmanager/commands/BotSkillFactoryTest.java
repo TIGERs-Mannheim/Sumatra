@@ -14,7 +14,7 @@ class BotSkillFactoryTest
 	@Test
 	void parserTest()
 	{
-		var skill = new BotSkillGlobalPosition(Vector2.zero(), 0, new MoveConstraints());
+		var skill = new BotSkillGlobalPosition(Vector2.zero(), 0, MoveConstraints.ZERO);
 		var data = BotSkillFactory.getInstance().encode(skill);
 		var decoded = BotSkillFactory.getInstance().decode(data, skill.getType().getId());
 		assertThat(decoded).isNotNull();

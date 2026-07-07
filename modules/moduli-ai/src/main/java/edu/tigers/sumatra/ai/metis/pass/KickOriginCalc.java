@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.metis.pass;
 
 import edu.tigers.sumatra.ai.metis.ACalculator;
@@ -15,6 +11,8 @@ import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.circle.Circle;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2f;
+import edu.tigers.sumatra.wp.data.ITrackedBot;
+import edu.tigers.sumatra.wp.data.KickedBall;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -35,6 +33,7 @@ public class KickOriginCalc extends ACalculator
 	private final Supplier<Map<BotID, RatedBallInterception>> ballInterceptions;
 	private final Supplier<Boolean> tigerDribblingBall;
 	private final Supplier<List<BotID>> ballHandlingBots;
+	private final Supplier<KickedBall> detectedGoalKickOpponents;
 
 	@Getter
 	private Map<BotID, KickOrigin> kickOrigins;
@@ -61,6 +60,15 @@ public class KickOriginCalc extends ACalculator
 				&& !tigerDribblingBall.get())
 		{
 			return kickOriginCandidates;
+		} else if (detectedGoalKickOpponents.get() != null)
+		{
+			var ballLine = getBall().getTrajectory().getTravelLine();
+			return ballHandlingBots.get().stream()
+					.map(id -> getWFrame().getBot(id))
+					.collect(Collectors.toUnmodifiableMap(
+							ITrackedBot::getBotId,
+							bot -> new KickOrigin(ballLine.closestPointOnPath(bot.getPos()), bot.getBotId(), Double.POSITIVE_INFINITY)
+					));
 		} else
 		{
 			if (canBallBeKicked())
@@ -83,8 +91,10 @@ public class KickOriginCalc extends ACalculator
 				.filter(Objects::nonNull)
 				.collect(Collectors.toUnmodifiableMap(
 						e -> e.getBallInterception().getBotID(),
-						bi -> new KickOrigin(bi.getBallInterception().getPos(), bi.getBallInterception().getBotID(),
-								getImpactTime(bi.getBallInterception().getPos()))
+						bi -> new KickOrigin(
+								bi.getBallInterception().getPos(), bi.getBallInterception().getBotID(),
+								getImpactTime(bi.getBallInterception().getPos())
+						)
 				));
 	}
 
@@ -93,7 +103,7 @@ public class KickOriginCalc extends ACalculator
 	{
 		return !Geometry.getPenaltyAreaOur().withMargin(Geometry.getBotRadius() * 2)
 				.isPointInShapeOrBehind(getBall().getPos())
-				&& !Geometry.getPenaltyAreaTheir().withMargin(Geometry.getBallRadius())
+				&& !Geometry.getPenaltyAreaTheir().withMargin(-Geometry.getBotRadius())
 				.isPointInShapeOrBehind(getBall().getPos())
 				&& Geometry.getField().isPointInShape(getBall().getPos());
 	}

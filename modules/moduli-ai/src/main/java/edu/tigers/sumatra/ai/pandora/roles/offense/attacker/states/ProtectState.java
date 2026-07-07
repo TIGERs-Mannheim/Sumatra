@@ -1,12 +1,9 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.pandora.roles.offense.attacker.states;
 
 
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.ai.metis.offense.action.EOffensiveActionType;
 import edu.tigers.sumatra.ai.pandora.roles.offense.attacker.AttackerRole;
 import edu.tigers.sumatra.geometry.Geometry;
@@ -17,10 +14,10 @@ import edu.tigers.sumatra.skillsystem.skills.ProtectiveGetBallSkill;
 
 public class ProtectState extends AAttackerRoleState<ProtectiveGetBallSkill>
 {
-	@Configurable(defValue = "false")
+	@Configurable(defValue = "false", unit = EConfigUnit.BOOLEAN)
 	private static boolean requireStrongDribblerContactForProtect = false;
 
-	@Configurable(defValue = "false")
+	@Configurable(defValue = "false", unit = EConfigUnit.BOOLEAN)
 	private static boolean useAggressiveObstacleAvoidance = false;
 
 	static
@@ -42,7 +39,7 @@ public class ProtectState extends AAttackerRoleState<ProtectiveGetBallSkill>
 	{
 		if (useAggressiveObstacleAvoidance)
 		{
-			skill.getMoveCon().setObstacleAvoidanceMode(EObstacleAvoidanceMode.AGGRESSIVE);
+			skill.setMoveCon(skill.getMoveCon().withObstacleAvoidanceMode(EObstacleAvoidanceMode.AGGRESSIVE));
 		}
 		var action = getRole().getAction();
 		if (action != null)

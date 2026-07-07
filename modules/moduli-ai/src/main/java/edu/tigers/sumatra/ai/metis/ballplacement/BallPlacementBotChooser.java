@@ -1,11 +1,8 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.metis.ballplacement;
 
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.wp.data.ITrackedBall;
@@ -22,7 +19,7 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class BallPlacementBotChooser
 {
-	@Configurable(defValue = "1000", comment = "Max distance for single bot ball placement [mm]")
+	@Configurable(defValue = "1000", comment = "Max distance for single bot ball placement", unit = EConfigUnit.DISTANCE_MM)
 	private static double maxSingleBotBallPlacementDistance = 1000;
 
 	static

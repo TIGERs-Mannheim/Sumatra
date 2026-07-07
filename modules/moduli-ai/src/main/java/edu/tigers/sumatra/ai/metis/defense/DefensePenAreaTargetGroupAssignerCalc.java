@@ -1,10 +1,7 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.metis.defense;
 
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.ai.metis.ACalculator;
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
 import edu.tigers.sumatra.ai.metis.defense.data.DefensePenAreaPositionAssignment;
@@ -23,7 +20,7 @@ import edu.tigers.sumatra.time.TimestampTimer;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import org.apache.commons.lang.Validate;
+import org.apache.commons.lang3.Validate;
 
 import java.awt.Color;
 import java.util.ArrayList;
@@ -41,19 +38,19 @@ import java.util.stream.Stream;
 @RequiredArgsConstructor
 public class DefensePenAreaTargetGroupAssignerCalc extends ACalculator
 {
-	@Configurable(defValue = "350.0", comment = "[mm] Distance when a bot is considered close enough that other bots can leave the protected target")
+	@Configurable(defValue = "350.0", comment = "Distance when a bot is considered close enough that other bots can leave the protected target", unit = EConfigUnit.DISTANCE_MM)
 	private static double interchangeDist = 350.0;
 
-	@Configurable(defValue = "150.0", comment = "[mm] Distance when a new bot is considered close enough that other bots can leave the protected target")
+	@Configurable(defValue = "150.0", comment = "Distance when a new bot is considered close enough that other bots can leave the protected target", unit = EConfigUnit.DISTANCE_MM)
 	private static double interchangeDistNew = 150.0;
 
-	@Configurable(defValue = "1.0", comment = "[s] Time a first class defender is considered new")
+	@Configurable(defValue = "1.0", comment = "Time a first class defender is considered new", unit = EConfigUnit.TIME_S)
 	private static double firstClassNewTime = 1.0;
 
-	@Configurable(defValue = "1000.0", comment = "[mm] ")
+	@Configurable(defValue = "1000.0", unit = EConfigUnit.DISTANCE_MM)
 	private static double defenderClassDifferentiationDistance = 1000.0;
 
-	@Configurable(defValue = "1000.0", comment = "[mm] ")
+	@Configurable(defValue = "1000.0", unit = EConfigUnit.DISTANCE_MM)
 	private static double preferredDefenderBonus = 1000.0;
 
 	private final Supplier<Set<BotID>> penAreaDefenders;

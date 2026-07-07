@@ -1,6 +1,3 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra.gui.log.presenter;
 
 import edu.tigers.sumatra.gui.log.view.IFilterPanelObserver;
@@ -8,6 +5,7 @@ import edu.tigers.sumatra.gui.log.view.ISlidePanelObserver;
 import edu.tigers.sumatra.gui.log.view.LogPanel;
 import edu.tigers.sumatra.log.ILogEventConsumer;
 import edu.tigers.sumatra.log.SumatraAppender;
+import edu.tigers.sumatra.math.SumatraMath;
 import edu.tigers.sumatra.model.SumatraModel;
 import edu.tigers.sumatra.util.UiThrottler;
 import edu.tigers.sumatra.views.ISumatraViewPresenter;
@@ -18,6 +16,7 @@ import org.apache.logging.log4j.core.LogEvent;
 import org.apache.logging.log4j.core.LoggerContext;
 
 import javax.swing.SwingUtilities;
+import javax.swing.UIManager;
 import javax.swing.text.AttributeSet;
 import javax.swing.text.SimpleAttributeSet;
 import javax.swing.text.StyleConstants;
@@ -44,13 +43,18 @@ public class LogPresenter
 		implements ISumatraViewPresenter, IFilterPanelObserver, ISlidePanelObserver, ILogEventConsumer
 {
 	private static final String LOG_VIEW_APPENDER_NAME = "logView";
-	private static final Color DEFAULT_COLOR_ALL = new Color(0, 0, 0);
-	public static final Color DEFAULT_COLOR_FATAL = new Color(128, 0, 128);
-	public static final Color DEFAULT_COLOR_ERROR = new Color(255, 0, 0);
-	public static final Color DEFAULT_COLOR_WARN = new Color(0, 0, 255);
-	private static final Color DEFAULT_COLOR_INFO = new Color(0, 128, 0);
-	private static final Color DEFAULT_COLOR_DEBUG = new Color(96, 96, 96);
-	private static final Color DEFAULT_COLOR_TRACE = new Color(0, 0, 0);
+
+	private static final Color LIGHT_THEME_COLOR_FATAL = new Color(128, 0, 128);
+	private static final Color LIGHT_THEME_COLOR_ERROR = new Color(255, 0, 0);
+	private static final Color LIGHT_THEME_COLOR_WARN = new Color(0, 0, 255);
+	private static final Color LIGHT_THEME_COLOR_INFO = new Color(0, 128, 0);
+	private static final Color LIGHT_THEME_COLOR_TRACE = new Color(96, 96, 96);
+
+	private static final Color DARK_THEME_COLOR_FATAL = new Color(180, 0, 255);
+	private static final Color DARK_THEME_COLOR_ERROR =new Color(255, 25, 0);
+	private static final Color DARK_THEME_COLOR_WARN = new Color(0, 100, 255);
+	private static final Color DARK_THEME_COLOR_INFO = new Color(0, 170, 0);
+	private static final Color DARK_THEME_COLOR_TRACE =new Color(155, 155, 155);
 
 	private static final int DISPLAY_CAPACITY = 1000;
 	private static final String LOG_LEVEL_KEY = LogPresenter.class.getName() + ".loglevel";
@@ -88,23 +92,36 @@ public class LogPresenter
 			appender.addConsumer(this);
 		}
 
-		final StyleContext sc = StyleContext.getDefaultStyleContext();
-		attributeSets.put(Level.ALL,
-				sc.addAttribute(SimpleAttributeSet.EMPTY, StyleConstants.Foreground, DEFAULT_COLOR_ALL));
-		attributeSets.put(Level.FATAL,
-				sc.addAttribute(SimpleAttributeSet.EMPTY, StyleConstants.Foreground, DEFAULT_COLOR_FATAL));
-		attributeSets.put(Level.ERROR,
-				sc.addAttribute(SimpleAttributeSet.EMPTY, StyleConstants.Foreground, DEFAULT_COLOR_ERROR));
-		attributeSets.put(Level.WARN,
-				sc.addAttribute(SimpleAttributeSet.EMPTY, StyleConstants.Foreground, DEFAULT_COLOR_WARN));
-		attributeSets.put(Level.INFO,
-				sc.addAttribute(SimpleAttributeSet.EMPTY, StyleConstants.Foreground, DEFAULT_COLOR_INFO));
-		attributeSets.put(Level.DEBUG,
-				sc.addAttribute(SimpleAttributeSet.EMPTY, StyleConstants.Foreground, DEFAULT_COLOR_DEBUG));
-		attributeSets.put(Level.TRACE,
-				sc.addAttribute(SimpleAttributeSet.EMPTY, StyleConstants.Foreground, DEFAULT_COLOR_TRACE));
+		updateAttributeSets();
 
 		logAppendThrottler.start();
+		viewPanel.addPropertyChangeListener("foreground", _ -> updateAttributeSets());
+	}
+
+
+	private void updateAttributeSets()
+	{
+		var foreGround = UIManager.getColor("Label.foreground");
+		boolean isDarkTheme = SumatraMath.max(foreGround.getRed(), foreGround.getGreen(), foreGround.getBlue()) > 127;
+
+		var colorFatal = isDarkTheme ? DARK_THEME_COLOR_FATAL : LIGHT_THEME_COLOR_FATAL;
+		var colorError = isDarkTheme ? DARK_THEME_COLOR_ERROR : LIGHT_THEME_COLOR_ERROR;
+		var colorWarn = isDarkTheme ? DARK_THEME_COLOR_WARN : LIGHT_THEME_COLOR_WARN;
+		var colorInfo = isDarkTheme ? DARK_THEME_COLOR_INFO : LIGHT_THEME_COLOR_INFO;
+		var colorTrace = isDarkTheme ? DARK_THEME_COLOR_TRACE : LIGHT_THEME_COLOR_TRACE;
+
+		final StyleContext sc = StyleContext.getDefaultStyleContext();
+		attributeSets.put(Level.ALL, sc.addAttribute(SimpleAttributeSet.EMPTY, StyleConstants.Foreground, foreGround));
+		attributeSets.put(Level.FATAL, sc.addAttribute(SimpleAttributeSet.EMPTY, StyleConstants.Foreground, colorFatal));
+		attributeSets.put(Level.ERROR, sc.addAttribute(SimpleAttributeSet.EMPTY, StyleConstants.Foreground, colorError));
+		attributeSets.put(Level.WARN, sc.addAttribute(SimpleAttributeSet.EMPTY, StyleConstants.Foreground, colorWarn));
+		attributeSets.put(Level.INFO, sc.addAttribute(SimpleAttributeSet.EMPTY, StyleConstants.Foreground, colorInfo));
+		attributeSets.put(Level.DEBUG, sc.addAttribute(SimpleAttributeSet.EMPTY, StyleConstants.Foreground, foreGround));
+		attributeSets.put(Level.TRACE, sc.addAttribute(SimpleAttributeSet.EMPTY, StyleConstants.Foreground, colorTrace));
+
+		viewPanel.getFilterPanel().setColors(colorFatal, colorError, colorWarn);
+
+		SwingUtilities.invokeLater(this::reappendAllEvents);
 	}
 
 

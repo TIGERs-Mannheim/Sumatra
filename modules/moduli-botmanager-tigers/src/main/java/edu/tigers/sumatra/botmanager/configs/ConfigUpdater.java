@@ -1,11 +1,8 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.botmanager.configs;
 
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.botmanager.ICommandSink;
 import edu.tigers.sumatra.botmanager.bots.TigerBot;
 import edu.tigers.sumatra.botmanager.commands.ACommand;
@@ -27,7 +24,7 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class ConfigUpdater
 {
-	@Configurable(defValue = "250", comment = "[ms] Timeout for incoming config structures")
+	@Configurable(defValue = "250", comment = "Timeout for incoming config structures", unit = EConfigUnit.TIME_MS)
 	private static int incomingConfigsTimeout = 250;
 
 	static

@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.metis.defense;
 
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
@@ -27,6 +23,7 @@ public class DefenseBotThreatDefStrategyDataAccumulatorCalc extends ADefenseThre
 	private final Supplier<List<DefenseBotThreatDefStrategyData>> centerBackDefData;
 	private final Supplier<List<DefenseBotThreatDefStrategyData>> man2ManDefData;
 	private final Supplier<DefenseBallThreat> defenseBallThreat;
+	private final Supplier<List<ITrackedBot>> alternativeOpponentPassReceiver;
 
 	private final DefenseThreatRater defenseThreatRater = new DefenseThreatRater();
 
@@ -41,7 +38,7 @@ public class DefenseBotThreatDefStrategyDataAccumulatorCalc extends ADefenseThre
 	@Override
 	protected void doCalc()
 	{
-		updateOpponentDangerZoneHystereses();
+		updateOpponentDangerZoneHysteresis();
 		allDefenseBotThreatDefData = centerBackDefData.get().stream()
 				.map(this::buildThreatFromCenterBackData)
 				.sorted(Comparator.comparingDouble(DefenseBotThreatDefData::threatRating).reversed())
@@ -60,7 +57,7 @@ public class DefenseBotThreatDefStrategyDataAccumulatorCalc extends ADefenseThre
 	}
 
 
-	private void updateOpponentDangerZoneHystereses()
+	private void updateOpponentDangerZoneHysteresis()
 	{
 		for (ITrackedBot bot : getWFrame().getOpponentBots().values())
 		{
@@ -87,7 +84,11 @@ public class DefenseBotThreatDefStrategyDataAccumulatorCalc extends ADefenseThre
 		var m2mData = man2ManDefData.get().stream()
 				.filter(m2m -> m2m.threatID() == centerBackData.threatID())
 				.findAny();
-		var threatRating = defenseThreatRater.getThreatRatingOfRobot(defenseBallThreat.get().getPos(), bot);
+		var threatRating = defenseThreatRater.getThreatRatingOfRobot(
+				defenseBallThreat.get().getPos(),
+				bot,
+				alternativeOpponentPassReceiver.get()
+		);
 		getShapes(EAiShapesLayer.DEFENSE_THREAT_RATING).addAll(defenseThreatRater.drawShapes());
 		return new DefenseBotThreatDefData(bot, centerBackData, m2mData.orElse(null), threatRating);
 	}

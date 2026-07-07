@@ -1,8 +1,7 @@
-/*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.skillsystem.skills.util;
+
+
+import org.apache.commons.lang3.Validate;
 
 
 /**
@@ -12,17 +11,17 @@ public class DoubleChargingValue
 {
 	private final ChargingValue increasingValue;
 	private final ChargingValue decreasingValue;
-	
+
 	private ChargeMode chargeMode = ChargeMode.STALL;
-	
+
 	public enum ChargeMode
 	{
 		INCREASE,
 		DECREASE,
 		STALL
 	}
-	
-	
+
+
 	/**
 	 * @param defaultValue
 	 * @param increaseRate
@@ -30,9 +29,16 @@ public class DoubleChargingValue
 	 * @param lowerLimit
 	 * @param upperLimit
 	 */
-	public DoubleChargingValue(double defaultValue, double increaseRate, double decreaseRate,
-			double lowerLimit, double upperLimit)
+	public DoubleChargingValue(
+			double defaultValue, double increaseRate, double decreaseRate,
+			double lowerLimit, double upperLimit
+	)
 	{
+		Validate.isTrue(increaseRate > 0);
+		Validate.isTrue(decreaseRate < 0);
+		Validate.isTrue(lowerLimit <= upperLimit);
+		Validate.isTrue(lowerLimit <= defaultValue && defaultValue <= upperLimit);
+
 		increasingValue = ChargingValue.aChargingValue()
 				.withDefaultValue(defaultValue)
 				.withChargeRate(increaseRate)
@@ -44,8 +50,8 @@ public class DoubleChargingValue
 				.withLimit(lowerLimit)
 				.build();
 	}
-	
-	
+
+
 	/**
 	 * @param timestamp current timestamp
 	 */
@@ -55,20 +61,30 @@ public class DoubleChargingValue
 		{
 			decreasingValue.update(timestamp);
 			increasingValue.reset();
+
+			// Assign values vice versa to ensure both limits are always enforced
+			// (Necessary in rare cases, where timestamps might run back in time)
 			increasingValue.setValue(decreasingValue.getValue());
+			decreasingValue.setValue(increasingValue.getValue());
 		} else if (chargeMode == ChargeMode.INCREASE)
 		{
 			increasingValue.update(timestamp);
 			decreasingValue.reset();
+
+			// Assign values vice versa to ensure both limits are always enforced
+			// (Necessary in rare cases, where timestamps might run back in time)
 			decreasingValue.setValue(increasingValue.getValue());
+			increasingValue.setValue(decreasingValue.getValue());
 		} else
 		{
 			decreasingValue.updateStall(timestamp);
 			increasingValue.updateStall(timestamp);
 		}
+
+		Validate.isTrue(increasingValue.getValue() == decreasingValue.getValue());
 	}
-	
-	
+
+
 	/**
 	 * @return the current value
 	 */
@@ -76,14 +92,14 @@ public class DoubleChargingValue
 	{
 		return decreasingValue.getValue();
 	}
-	
-	
+
+
 	public void setChargeMode(final ChargeMode chargeMode)
 	{
 		this.chargeMode = chargeMode;
 	}
-	
-	
+
+
 	public void reset()
 	{
 		increasingValue.reset();

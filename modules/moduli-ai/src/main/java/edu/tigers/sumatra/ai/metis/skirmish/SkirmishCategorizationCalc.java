@@ -1,10 +1,7 @@
-/*
- * Copyright (c) 2009 - 2024, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.metis.skirmish;
 
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.ai.metis.ACalculator;
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
 import edu.tigers.sumatra.ai.metis.botdistance.BotDistance;
@@ -25,9 +22,9 @@ import java.util.function.Supplier;
 @RequiredArgsConstructor
 public class SkirmishCategorizationCalc extends ACalculator
 {
-	@Configurable(defValue = "300.0", comment = "[mm] ")
+	@Configurable(defValue = "300.0", unit = EConfigUnit.DISTANCE_MM)
 	private static double minSkirmishDistance = 300;
-	@Configurable(defValue = "400.0", comment = "[mm] ")
+	@Configurable(defValue = "400.0", unit = EConfigUnit.DISTANCE_MM)
 	private static double maxSkirmishDistance = 400;
 
 	private final Supplier<BotDistance> tigerClosestToBall;

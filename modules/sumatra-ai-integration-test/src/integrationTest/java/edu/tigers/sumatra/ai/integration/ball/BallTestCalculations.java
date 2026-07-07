@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.integration.ball;
 
 import edu.tigers.sumatra.ai.metis.kicking.KickSpeedFactory;

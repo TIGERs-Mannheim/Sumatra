@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.math.boundary;
 
 import edu.tigers.sumatra.math.I2DShape;
@@ -107,23 +103,47 @@ public interface IShapeBoundary extends Comparator<IVector2>
 	 */
 	double distanceBetween(final IVector2 p1, final IVector2 p2);
 
+	/**
+	 * Get the distance between the start and end point of the shape boundary along the shape
+	 */
+	double getLength();
 
 	/**
-	 * Step along the boundary from the boundary path
+	 * Step along the boundary path
 	 *
-	 * @param distance Must be greater than 0
+	 * @param distance Must be greater or equal to 0
 	 * @return The point on the boundary or empty if distance is smaller than zero, or gets out of bounds
 	 */
 	Optional<IVector2> stepAlongBoundary(double distance);
 
 
 	/**
-	 * Step along the boundary starting at a random point on the shape
+	 * Step along the boundary starting at an arbitrary point on the shape
 	 *
 	 * @param start
-	 * @param distance Must be greater than 0
+	 * @param distance Must be greater or equal to 0
 	 * @return The point on the boundary or empty if distance is smaller than zero, or gets out of bounds
 	 */
 	Optional<IVector2> stepAlongBoundary(final IVector2 start, final double distance);
+
+
+	/**
+	 * Step along the boundary and return the tangential direction at that point
+	 *
+	 * @param distance Must be greater or equal to 0 mm
+	 * @return The tangential direction of the path at the point on the boundary or empty if distance is smaller than
+	 * zero, or gets out of bounds
+	 */
+	Optional<IVector2> getTangentialDirection(double distance);
+
+	/**
+	 * Step along the boundary starting at an arbitrary point on the shape and return the tangential direction at that point
+	 *
+	 * @param start
+	 * @param distance Must be greater or equal to 0
+	 * @return The tangential direction of the path at the point on the boundary or empty if distance is smaller than
+	 * zero, or gets out of bounds
+	 */
+	Optional<IVector2> getTangentialDirection(final IVector2 start, final double distance);
 
 }

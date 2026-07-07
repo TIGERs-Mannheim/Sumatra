@@ -1,11 +1,8 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.sim.net;
 
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.ball.BallState;
 import edu.tigers.sumatra.drawable.ShapeMap;
 import edu.tigers.sumatra.geometry.Geometry;
@@ -45,13 +42,13 @@ public class SimNetClient
 {
 	private static final Logger log = LogManager.getLogger(SimNetClient.class);
 
-	@Configurable(defValue = "14242", comment = "The port of the simulation server to connect to")
+	@Configurable(defValue = "14242", comment = "The port of the simulation server to connect to", unit = EConfigUnit.NO_UNIT)
 	private static int port = 14242;
 
-	@Configurable(defValue = "localhost", comment = "The host of the simulation server to connect to")
+	@Configurable(defValue = "localhost", comment = "The host of the simulation server to connect to", unit = EConfigUnit.URL)
 	private static String host = "localhost";
 
-	@Configurable(defValue = "YELLOW;BLUE", comment = "The team color that will be controlled by this instance")
+	@Configurable(defValue = "YELLOW;BLUE", comment = "The team color that will be controlled by this instance", unit = EConfigUnit.NO_UNIT)
 	private static ETeamColor[] defaultTeamColors = { ETeamColor.YELLOW, ETeamColor.BLUE };
 
 	private static List<ETeamColor> startupTeamColors = null;

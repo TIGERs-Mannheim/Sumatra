@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2024, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.pandora.plays.test.kick;
 
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
@@ -249,8 +245,9 @@ public class TestStopBallPlay extends ABallPreparationPlay
 			}
 			dataEnd = DataPoint.create(getWorldFrame());
 			log.info(
-					"Total " + dataEnd.diff(dataStart) + " | Contact " + dataContact.diff(dataStart) + " | Stop "
-							+ dataEnd.diff(dataContact));
+					"Total {} | Contact {} | Stop {}", dataEnd.diff(dataStart), dataContact.diff(dataStart),
+					dataEnd.diff(dataContact)
+			);
 			stopExecution();
 		}
 	}

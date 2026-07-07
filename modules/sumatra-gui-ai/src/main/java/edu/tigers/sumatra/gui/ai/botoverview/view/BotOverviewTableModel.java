@@ -1,6 +1,3 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra.gui.ai.botoverview.view;
 
 import edu.tigers.sumatra.ai.data.EBotInformation;
@@ -8,6 +5,7 @@ import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.ids.ETeamColor;
 
 import javax.swing.table.AbstractTableModel;
+import java.io.Serial;
 import java.util.Arrays;
 import java.util.List;
 import java.util.SortedMap;
@@ -19,6 +17,7 @@ import java.util.concurrent.ConcurrentSkipListMap;
  */
 public class BotOverviewTableModel extends AbstractTableModel
 {
+	@Serial
 	private static final long serialVersionUID = 4712760313475190867L;
 	private final SortedMap<BotID, BotOverviewColumn> data = new ConcurrentSkipListMap<>(BotID.getComparator());
 	private BotID[] sortedBots = new BotID[0];

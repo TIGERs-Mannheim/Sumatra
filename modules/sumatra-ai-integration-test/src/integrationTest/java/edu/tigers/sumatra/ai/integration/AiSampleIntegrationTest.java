@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.integration;
 
 import edu.tigers.sumatra.referee.data.EGameState;
@@ -16,10 +12,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  */
 @Log4j2
-public class AiSampleIntegrationTest extends AAiIntegrationTest
+class AiSampleIntegrationTest extends AAiIntegrationTest
 {
 	@Test
-	public void testThreeIterations() throws Exception
+	void testThreeIterations() throws Exception
 	{
 		loadSnapshot("snapshots/aiSampleIntegration.snap");
 		nextFrame();
@@ -29,7 +25,7 @@ public class AiSampleIntegrationTest extends AAiIntegrationTest
 
 
 	@Test
-	public void testMetisOnly() throws Exception
+	void testMetisOnly() throws Exception
 	{
 		setGameState(GameState.RUNNING);
 		loadSnapshot("snapshots/aiSampleIntegration.snap");
@@ -39,7 +35,7 @@ public class AiSampleIntegrationTest extends AAiIntegrationTest
 
 
 	@Test
-	public void testAthenaOnly() throws Exception
+	void testAthenaOnly() throws Exception
 	{
 		setGameState(GameState.RUNNING);
 		loadSnapshot("snapshots/aiSampleIntegration.snap");
@@ -49,7 +45,7 @@ public class AiSampleIntegrationTest extends AAiIntegrationTest
 
 
 	@Test
-	public void testFinish() throws Exception
+	void testFinish() throws Exception
 	{
 		loadSnapshot("snapshots/aiSampleIntegration.snap");
 		finishFrame();
@@ -57,7 +53,7 @@ public class AiSampleIntegrationTest extends AAiIntegrationTest
 
 
 	@Test
-	public void testHalt() throws Exception
+	void testHalt() throws Exception
 	{
 		setGameState(GameState.HALT);
 		loadSnapshot("snapshots/aiSampleIntegration.snap");
@@ -67,9 +63,9 @@ public class AiSampleIntegrationTest extends AAiIntegrationTest
 
 
 	@Test
-	public void testLogger()
+	void testLogger()
 	{
 		log.error("Fake fail");
-		assertThat(logEventWatcher.getEvents(Level.ERROR)).hasSize(1);
+		assertThat(LOG_EVENT_WATCHER.getEvents(Level.ERROR)).hasSize(1);
 	}
 }

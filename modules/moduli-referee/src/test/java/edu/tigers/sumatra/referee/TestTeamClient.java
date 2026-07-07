@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.referee;
 
 
@@ -108,8 +104,7 @@ public class TestTeamClient
 
 		if (reply.getStatusCode() != SslGcRcon.ControllerReply.StatusCode.OK)
 		{
-			log.error(
-					"Server did not allow Registration: " + reply.getStatusCode().toString() + " - " + reply.getReason());
+			log.error("Server did not allow Registration: {} - {}", reply.getStatusCode(), reply.getReason());
 			return false;
 		} else
 		{

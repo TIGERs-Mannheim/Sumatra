@@ -1,9 +1,5 @@
-/*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra.botmanager.botskills;
 
-import edu.tigers.sumatra.bot.IMoveConstraints;
 import edu.tigers.sumatra.bot.MoveConstraints;
 import edu.tigers.sumatra.botmanager.botskills.data.DriveLimits;
 import edu.tigers.sumatra.botmanager.botskills.data.EKickerDevice;
@@ -60,7 +56,7 @@ public class BotSkillGlobalPosition extends AMoveBotSkill
 	 * @param orientation
 	 * @param mc
 	 */
-	public BotSkillGlobalPosition(final IVector2 xy, final double orientation, final IMoveConstraints mc)
+	public BotSkillGlobalPosition(final IVector2 xy, final double orientation, final MoveConstraints mc)
 	{
 		this();
 
@@ -197,16 +193,12 @@ public class BotSkillGlobalPosition extends AMoveBotSkill
 	@Override
 	public MoveConstraints getMoveConstraints()
 	{
-		MoveConstraints moveCon = new MoveConstraints();
-		moveCon.setVelMax(getVelMax());
-		moveCon.setVelMaxW(getVelMaxW());
-		moveCon.setAccMax(getAccMax());
-		moveCon.setAccMaxW(getAccMaxW());
-		moveCon.setJerkMax(DriveLimits.MAX_JERK);
-		moveCon.setJerkMaxW(DriveLimits.MAX_JERK_W);
-		moveCon.setPrimaryDirection(getPrimaryDirection());
-
-		return moveCon;
+		return MoveConstraints.ZERO
+				.withVelMax(getVelMax())
+				.withVelMaxW(getVelMaxW())
+				.withAccMax(getAccMax())
+				.withAccMaxW(getAccMaxW())
+				.withPrimaryDirection(getPrimaryDirection());
 	}
 
 

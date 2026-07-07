@@ -1,10 +1,7 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.metis.ballpossession;
 
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.ai.metis.ACalculator;
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
 import edu.tigers.sumatra.ai.metis.botdistance.BotDistance;
@@ -38,19 +35,19 @@ public class BallPossessionCalc extends ACalculator
 {
 	private static final double NEAR_BARRIER_TOLERANCE = 4;
 
-	@Configurable(comment = "Distance below which t_near starts to tick. (Bot to ball, air gap) [mm]", defValue = "40")
+	@Configurable(comment = "Distance below which t_near starts to tick. (Bot to ball, air gap)", defValue = "40", unit = EConfigUnit.DISTANCE_MM)
 	private static double distNear = 40;
 
-	@Configurable(comment = "Distance above which t_far starts to tick. (Bot to ball, air gap) [mm]", defValue = "80")
+	@Configurable(comment = "Distance above which t_far starts to tick. (Bot to ball, air gap)", defValue = "80", unit = EConfigUnit.DISTANCE_MM)
 	private static double distFar = 80;
 
-	@Configurable(comment = "Time until a near ball is considered to belong to a robot. [s]", defValue = "0.1")
+	@Configurable(comment = "Time until a near ball is considered to belong to a robot.", defValue = "0.1", unit = EConfigUnit.TIME_S)
 	private static double timeThresholdNear = 0.1;
 
-	@Configurable(comment = "Time until a far ball is considered to be lost by a robot. [s]", defValue = "1.5")
+	@Configurable(comment = "Time until a far ball is considered to be lost by a robot.", defValue = "1.5", unit = EConfigUnit.TIME_S)
 	private static double timeThresholdFar = 1.5;
 
-	@Configurable(comment = "Balls above max. height cannot change possession. [mm]", defValue = "120")
+	@Configurable(comment = "Balls above max. height cannot change possession.", defValue = "120", unit = EConfigUnit.DISTANCE_MM)
 	private static double maxHeight = 120;
 
 	private long tLast;
@@ -148,7 +145,7 @@ public class BallPossessionCalc extends ACalculator
 		double posX = 1.0;
 		getShapes(EAiShapesLayer.AI_BALL_POSSESSION).add(
 				new DrawableBorderText(Vector2.fromXY(posX, hudColor == ETeamColor.BLUE ? 10.3 : 12.0),
-						ballPossession.getEBallPossession().toString() + " control" + ballPossession.getOpponentBallControl())
+						ballPossession.getEBallPossession().toString() + " control " + ballPossession.getOpponentBallControl())
 						.setFontSize(EFontSize.MEDIUM)
 						.setColor(hudColor.getColor())
 		);

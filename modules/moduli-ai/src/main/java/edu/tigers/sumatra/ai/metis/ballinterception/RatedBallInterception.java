@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2024, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.metis.ballinterception;
 
 import lombok.AccessLevel;
@@ -14,6 +10,6 @@ import lombok.Value;
 public class RatedBallInterception
 {
 	BallInterception ballInterception;
-	double corridorLength;
-	double minCorridorSlackTime;
+	double slackTime;
+	boolean overshoot;
 }

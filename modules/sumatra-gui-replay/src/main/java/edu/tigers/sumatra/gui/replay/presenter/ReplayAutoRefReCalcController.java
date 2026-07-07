@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.gui.replay.presenter;
 
 import edu.tigers.autoreferee.AutoRefFramePreprocessor;
@@ -10,8 +6,8 @@ import edu.tigers.autoreferee.engine.PassiveAutoRefEngine;
 import edu.tigers.autoreferee.engine.detector.EGameEventDetectorType;
 import edu.tigers.sumatra.drawable.ShapeMapSource;
 import edu.tigers.sumatra.persistence.PersistenceDb;
-import edu.tigers.sumatra.views.ASumatraView;
 import edu.tigers.sumatra.views.ESumatraViewType;
+import edu.tigers.sumatra.views.SumatraView;
 import edu.tigers.sumatra.wp.IWorldFrameObserver;
 import edu.tigers.sumatra.wp.data.WorldFrameWrapper;
 
@@ -36,10 +32,10 @@ public class ReplayAutoRefReCalcController implements IReplayController
 	private boolean active = false;
 
 
-	public ReplayAutoRefReCalcController(List<IWorldFrameObserver> wFrameObservers, List<ASumatraView> sumatraViews)
+	public ReplayAutoRefReCalcController(List<IWorldFrameObserver> wFrameObservers, List<SumatraView> sumatraViews)
 	{
 		this.wFrameObservers = wFrameObservers;
-		for (ASumatraView view : sumatraViews)
+		for (SumatraView view : sumatraViews)
 		{
 			if (view.getType() == ESumatraViewType.REPLAY_CONTROL)
 			{

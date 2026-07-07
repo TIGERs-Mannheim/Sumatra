@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
-
 // This is not yet at the right place, but I don't know where it belongs :|
 
 package com.github.g3force.instanceables;

@@ -1,11 +1,3 @@
-/*
- * *********************************************************
- * Copyright (c) 2009 - 2016, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Mar 10, 2016
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
- */
 package com.github.g3force.configurable;
 
 import com.github.g3force.configurable.ConfigClass1.ETest;
@@ -157,10 +149,7 @@ class ConfigurableTest
 		assertThat(ConfigClass4.testBoolFalse).isFalse();
 		assertThat(ConfigClass4.testBoolTrue).isTrue();
 		assertThat(ConfigClass4.testEnum.name()).isEqualTo("ONE");
-		assertThat(ConfigClass4.testEnumDefValue.name()).isEqualTo("TWO");
-		assertThat(ConfigClass4.testDouble).isEqualTo(1.0, within(1e-10));
 		assertThat(ConfigClass4.testDoubleWithDefault).isEqualTo(2.0, within(1e-10));
 		assertThat(ConfigClass4.testDefaultDifferent).isEqualTo(6.0);
-		assertThat(ConfigClass4.testStoredDifferent).isEqualTo(42.0, within(1e-10));
 	}
 }

@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.skillsystem.skills.util;
 
 import edu.tigers.sumatra.geometry.Geometry;
@@ -13,7 +9,7 @@ import edu.tigers.sumatra.math.line.Lines;
 import edu.tigers.sumatra.math.penaltyarea.IPenaltyArea;
 import edu.tigers.sumatra.math.rectangle.IRectangle;
 import edu.tigers.sumatra.math.vector.IVector2;
-import edu.tigers.sumatra.pathfinder.IMovementCon;
+import edu.tigers.sumatra.pathfinder.MovementCon;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
 import edu.tigers.sumatra.wp.data.WorldFrame;
 import lombok.Setter;
@@ -30,13 +26,13 @@ public class PositionValidator
 	private static final double INSIDE_FIELD_MARGIN = -20;
 
 	private WorldFrame wFrame;
-	private IMovementCon moveCon;
+	private MovementCon moveCon;
 	private Map<ETeam, Double> marginToPenArea = new EnumMap<>(ETeam.class);
 	@Setter
 	private double marginToFieldBorder = INSIDE_FIELD_MARGIN;
 
 
-	public void update(final WorldFrame wFrame, final IMovementCon moveCon)
+	public void update(final WorldFrame wFrame, final MovementCon moveCon)
 	{
 		this.wFrame = wFrame;
 		this.moveCon = moveCon;
@@ -65,7 +61,7 @@ public class PositionValidator
 
 	public Optional<ITrackedBot> findCollidingOpponent(final IVector2 point)
 	{
-		return wFrame.getOpponentBots().values().stream()
+		return wFrame.getOpponentBotsVisible().values().stream()
 				.filter(tBot -> tBot.getPos().distanceTo(point) < Geometry.getBotRadius() * 2)
 				.findFirst();
 	}

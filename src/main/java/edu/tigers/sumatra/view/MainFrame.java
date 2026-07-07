@@ -1,13 +1,11 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.view;
 
 import edu.tigers.sumatra.AMainFrame;
 import edu.tigers.sumatra.gui.replay.view.ReplayLoadMenu;
 import edu.tigers.sumatra.model.SumatraModel;
 import edu.tigers.sumatra.view.toolbar.ToolBar;
+import jiconfont.icons.font_awesome.FontAwesome;
+import jiconfont.swing.IconFontSwing;
 import lombok.Getter;
 
 import javax.swing.ButtonGroup;
@@ -19,10 +17,9 @@ import javax.swing.WindowConstants;
 import java.awt.BorderLayout;
 import java.awt.event.KeyEvent;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 
 /**
@@ -41,6 +38,10 @@ public class MainFrame extends AMainFrame
 
 	private final transient ToolBar toolbar = new ToolBar();
 
+	static
+	{
+		IconFontSwing.register(FontAwesome.getIconFont());
+	}
 
 	public MainFrame()
 	{
@@ -95,16 +96,20 @@ public class MainFrame extends AMainFrame
 
 	public Map<LookAndFeelInfo, JRadioButtonMenuItem> setLookAndFeelItems(final Collection<LookAndFeelInfo> lafInfos)
 	{
-		var menuItems = lafInfos.stream()
-				.collect(Collectors.toMap(Function.identity(), info -> new JRadioButtonMenuItem(info.getName())));
+		menuLookAndFeel.removeAll();
+
+		Map<LookAndFeelInfo, JRadioButtonMenuItem> menuItems = new HashMap<>();
 
 		ButtonGroup group = new ButtonGroup();
-		menuItems.values().forEach(group::add);
+		for (LookAndFeelInfo info : lafInfos)
+		{
+			var menuItem = new JRadioButtonMenuItem(info.getName());
+			group.add(menuItem);
+			menuLookAndFeel.add(menuItem);
+			menuItems.put(info, menuItem);
+		}
 
-		menuLookAndFeel.removeAll();
-		menuItems.values().forEach(menuLookAndFeel::add);
-
-		return menuItems;
+		return Collections.unmodifiableMap(menuItems);
 	}
 
 

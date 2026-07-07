@@ -1,6 +1,3 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra.gui.botcenter.view;
 
 import edu.tigers.sumatra.gui.botcenter.view.basestation.BaseStationPanel;
@@ -55,8 +52,8 @@ public class BotCenterPanel extends JPanel
 	public void createPanel()
 	{
 		tabbedPane.addTab("Bot Overview", setupScrollPane(overviewPanel));
-		tabbedPane.addTab("Bot Details", botOverviewPanel);
-		tabbedPane.addTab("Saved Bot Configs", savedConfigsPanel);
+		tabbedPane.addTab("Bot Details", setupScrollPane(botOverviewPanel));
+		tabbedPane.addTab("Saved Bot Configs", setupScrollPane(savedConfigsPanel));
 
 		add(tabbedPane, BorderLayout.CENTER);
 	}

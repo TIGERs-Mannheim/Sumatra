@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.network;
 
 
@@ -18,7 +14,6 @@ import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 
 
 /**
@@ -45,7 +40,7 @@ public class MulticastUDPTransmitter implements AutoCloseable
 	{
 		try
 		{
-			return NetworkInterface.networkInterfaces().collect(Collectors.toUnmodifiableList());
+			return NetworkInterface.networkInterfaces().toList();
 		} catch (SocketException e)
 		{
 			log.error("Could not get available network interfaces", e);
@@ -88,6 +83,7 @@ public class MulticastUDPTransmitter implements AutoCloseable
 				@SuppressWarnings("squid:S2095") // closing resources: can not close resource here
 				var socket = new MulticastSocket();
 				socket.setNetworkInterface(nif);
+				socket.setTimeToLive(32);
 				sockets.add(new TargetSocket(socket));
 			}
 		} catch (IOException e)

@@ -1,18 +1,14 @@
-/*
- * Copyright (c) 2009 - 2019, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra.botmanager.commands.basestation;
-
-import java.net.InetAddress;
-import java.net.UnknownHostException;
-
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import edu.tigers.sumatra.botmanager.commands.ACommand;
 import edu.tigers.sumatra.botmanager.commands.ECommand;
 import edu.tigers.sumatra.botmanager.serial.SerialData;
 import edu.tigers.sumatra.botmanager.serial.SerialData.ESerialDataType;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 
 
 /**
@@ -73,7 +69,7 @@ public class BaseStationConfigV3 extends ACommand
 			addr = InetAddress.getByName(ip);
 		} catch (UnknownHostException err)
 		{
-			log.error("Unknown host: " + ip, err);
+			log.error("Unknown host: {}", ip, err);
 			return;
 		}
 
@@ -145,7 +141,7 @@ public class BaseStationConfigV3 extends ACommand
 	{
 		if ((maxBots > MAX_BOTS) || (maxBots == 0))
 		{
-			log.error("Invalid max bots: " + maxBots + ". Max is: " + MAX_BOTS);
+			log.error("Invalid max bots: {}. Max is: " + MAX_BOTS, maxBots);
 			return;
 		}
 

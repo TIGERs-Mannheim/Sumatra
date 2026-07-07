@@ -1,10 +1,7 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.pandora.roles.defense;
 
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.ai.common.KeepDistanceToBall;
 import edu.tigers.sumatra.ai.common.PointChecker;
 import edu.tigers.sumatra.ai.pandora.plays.EPlay;
@@ -38,7 +35,7 @@ import static edu.tigers.sumatra.ai.metis.EAiShapesLayer.DEFENSE_PENALTY_AREA_RO
  */
 public class DefenderPenAreaRole extends ADefenseRole
 {
-	@Configurable(defValue = "500.0")
+	@Configurable(defValue = "500.0", unit = EConfigUnit.DISTANCE_MM)
 	private static double moveToPenAreaMargin = 500;
 
 	/*
@@ -112,10 +109,11 @@ public class DefenderPenAreaRole extends ADefenseRole
 
 		@Override
 
-		protected void onInit()
+		protected void onEntry()
 		{
-			skill.getMoveCon().setPenaltyAreaOurObstacle(false);
-			skill.getMoveCon().setGoalPostsObstacle(true);
+			skill.setMoveCon(skill.getMoveCon()
+					.withPenaltyAreaOurObstacle(false)
+					.withGoalPostsObstacle(true));
 			curPos = getPos();
 		}
 
@@ -185,10 +183,12 @@ public class DefenderPenAreaRole extends ADefenseRole
 		{
 			skill.updateTargetAngle(getTargetAngle());
 			skill.updateDestination(validFinalDestination(destination));
-			skill.getMoveCon().setPenaltyAreaOurObstacle(!getAiFrame().getGameState().isStoppedGame());
-			skill.getMoveCon().setGoalPostsObstacle(true);
-			skill.getMoveCon().setIgnoredBots(nonCloseCompanions());
-			skill.getMoveCon().setBallObstacle(false);
+			skill.updateUseComeToAStopIfFaster(true);
+			skill.setMoveCon(skill.getMoveCon()
+					.withPenaltyAreaOurObstacle(!getAiFrame().getGameState().isStoppedGame())
+					.withGoalPostsObstacle(true)
+					.withIgnoredBots(nonCloseCompanions())
+					.withBallObstacle(false));
 		}
 
 
@@ -230,9 +230,10 @@ public class DefenderPenAreaRole extends ADefenseRole
 			skill.setPenAreaBoundary(penAreaBoundary);
 			skill.setKickParams(calcKickParams());
 			skill.setCompanions(companions());
-			skill.getMoveCon().setIgnoredBots(ignoredBots());
-			skill.getMoveCon().setObstacleAvoidanceMode(EObstacleAvoidanceMode.AGGRESSIVE);
-			skill.getMoveCon().setBallObstacle(false);
+			skill.setMoveCon(skill.getMoveCon()
+					.withIgnoredBots(ignoredBots())
+					.withObstacleAvoidanceMode(EObstacleAvoidanceMode.AGGRESSIVE)
+					.withBallObstacle(false));
 
 			getShapes(DEFENSE_PENALTY_AREA_ROLE).add(
 					new DrawableLine(finalDestination, getPos(), Color.GREEN)

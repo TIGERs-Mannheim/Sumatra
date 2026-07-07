@@ -1,18 +1,15 @@
-/*
- * Copyright (c) 2009 - 2019, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.teamclient;
 
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.ai.AAgent;
 import edu.tigers.sumatra.ai.AIInfoFrame;
 import edu.tigers.sumatra.ai.IAIObserver;
 import edu.tigers.sumatra.model.SumatraModel;
 import edu.tigers.sumatra.moduli.AModule;
 import edu.tigers.sumatra.util.Safe;
-import org.apache.commons.lang.Validate;
+import org.apache.commons.lang3.Validate;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -27,10 +24,10 @@ public class TeamClientModule extends AModule implements IAIObserver
 {
 	private static final int TIMEOUT = 2;
 
-	@Configurable(comment = "Our Team Name", defValue = "TIGERs Mannheim")
+	@Configurable(comment = "Our Team Name", defValue = "TIGERs Mannheim", unit = EConfigUnit.NO_UNIT)
 	private static String tigersTeamName = "TIGERs Mannheim";
 
-	@Configurable(comment = "Override simulation detection to always connect to any available team, even if the name does not match", defValue = "false")
+	@Configurable(comment = "Override simulation detection to always connect to any available team, even if the name does not match", defValue = "false", unit = EConfigUnit.BOOLEAN)
 	private static boolean connectToAnyTeamName = false;
 
 	private static final Logger log = LogManager.getLogger(TeamClientModule.class);
@@ -85,7 +82,7 @@ public class TeamClientModule extends AModule implements IAIObserver
 			{
 				if (!task.getActive())
 				{
-					log.debug("Restarting TeamClient for " + lastAiInfoFrame.getTeamColor());
+					log.debug("Restarting TeamClient for {}", lastAiInfoFrame.getTeamColor());
 					addTask(new TeamClientTask(lastAiInfoFrame.getTeamColor()));
 					tasks.remove(task);
 					return;
@@ -98,7 +95,7 @@ public class TeamClientModule extends AModule implements IAIObserver
 		// But only do this in Simulation or if we are TIGERs
 		if (newTaskShouldBeCreated(lastAiInfoFrame))
 		{
-			log.debug("Creating new TeamClient for " + lastAiInfoFrame.getTeamColor());
+			log.debug("Creating new TeamClient for {}", lastAiInfoFrame.getTeamColor());
 			addTask(new TeamClientTask(lastAiInfoFrame.getTeamColor()));
 		}
 	}

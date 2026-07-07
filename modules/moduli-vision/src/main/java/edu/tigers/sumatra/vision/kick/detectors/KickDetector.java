@@ -1,10 +1,8 @@
-/*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra.vision.kick.detectors;
 
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.drawable.DrawableAnnotation;
 import edu.tigers.sumatra.drawable.IDrawableShape;
 import edu.tigers.sumatra.ids.BotID;
@@ -21,7 +19,7 @@ import edu.tigers.sumatra.vision.kick.validators.InFrontValidator;
 import edu.tigers.sumatra.vision.kick.validators.IncreasingDistanceValidator;
 import edu.tigers.sumatra.vision.kick.validators.VelocityValidator;
 import edu.tigers.sumatra.vision.tracker.BallTracker.MergedBall;
-import org.apache.commons.lang.Validate;
+import org.apache.commons.lang3.Validate;
 import org.apache.commons.math3.util.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -52,7 +50,7 @@ public class KickDetector implements IKickDetector
 	private String lastKVText = "";
 	private IVector2 lastKnownBallPosition = Vector2f.ZERO_VECTOR;
 
-	@Configurable(defValue = "0.1", comment = "Minimum time between two kicks [s]")
+	@Configurable(defValue = "0.1", comment = "Minimum time between two kicks", unit = EConfigUnit.TIME_S)
 	private static double minDeltaTime = 0.1;
 
 	static

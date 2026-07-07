@@ -1,11 +1,8 @@
-/*
- * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.skillsystem.skills;
 
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.drawable.DrawableCircle;
 import edu.tigers.sumatra.drawable.DrawableQuadrilateral;
 import edu.tigers.sumatra.geometry.Geometry;
@@ -38,28 +35,25 @@ import java.util.Optional;
  */
 public class DefendingKeeper
 {
-	@Configurable(comment = "[m/s] Ball Speed wher Keeper react on his direction", defValue = "0.1")
+	@Configurable(comment = "Ball Speed wher Keeper react on his direction", defValue = "0.1", unit = EConfigUnit.VELOCITY_M)
 	private static double blockDecisionVelocity = 0.1;
 
-	@Configurable(comment = "[mm] offset to the Sides of the goalposts (BalVelIsDirToGoal State)", defValue = "180.0")
+	@Configurable(comment = "offset to the Sides of the goalposts (BalVelIsDirToGoal State)", defValue = "180.0", unit = EConfigUnit.DISTANCE_MM)
 	private static double goalAreaOffset = 180.0;
 
-	@Configurable(comment = "[m/s] Ball declared as shot after kick event", defValue = "0.5")
-	private static double maxKickTime = 0.5;
-
-	@Configurable(comment = "[mm] Distance from Opponent to Ball where Keeper beliefs Opponent could be in possession of the ball", defValue = "250.0")
+	@Configurable(comment = "Distance from Opponent to Ball where Keeper beliefs Opponent could be in possession of the ball", defValue = "250.0", unit = EConfigUnit.DISTANCE_MM)
 	private static double opponentBotBallPossessionDistance = 250.0;
 
-	@Configurable(comment = "[m/s] Speed limit of ball of ChipKickState", defValue = "0.8")
+	@Configurable(comment = "Speed limit of ball of ChipKickState", defValue = "0.8", unit = EConfigUnit.VELOCITY_M)
 	private static double chipKickDecisionVelocity = 0.8;
 
-	@Configurable(comment = "[mm] Additional area around PE where Opponent with Ball are very dangerous (GoOutState is triggered)", defValue = "300.0")
+	@Configurable(comment = "Additional area around PE where Opponent with Ball are very dangerous (GoOutState is triggered)", defValue = "300.0", unit = EConfigUnit.DISTANCE_MM)
 	private static double ballDangerZone = 300.0;
 
-	@Configurable(comment = "[mm] Additional distance to allow until ball reach goal line", defValue = "1000.0")
+	@Configurable(comment = "Additional distance to allow until ball reach goal line", defValue = "1000.0", unit = EConfigUnit.DISTANCE_MM)
 	private static double distToIntersectionTolerance = 1000;
 
-	@Configurable(comment = "[rad] Angle of the search triangle to look for opponent redirectors", defValue = "0.4")
+	@Configurable(comment = "Angle of the search triangle to look for opponent redirectors", defValue = "0.4", unit = EConfigUnit.ANGLE_RAD)
 	private static double opponentRedirectorSearchAngle = 0.4;
 
 	static
@@ -68,7 +62,6 @@ public class DefendingKeeper
 	}
 
 	private final ASkill drawingSkill;
-	private double lastTimeKicked = 0;
 	private WorldFrame worldFrame;
 	private BotID keeperID;
 
@@ -147,15 +140,9 @@ public class DefendingKeeper
 			boolean isBallVelocityIntersectingTheGoalLine = Math
 					.abs(intersect.get().y()) < ((Geometry.getGoalOur().getWidth() / 2) + goalAreaOffset);
 
-			worldFrame.getKickedBall().ifPresent(iKickEvent -> lastTimeKicked = iKickEvent.getTimestamp());
-			boolean isBallKicked = ((lastTimeKicked - worldFrame.getTimestamp()) / 1e9) < maxKickTime;
-
-			boolean isBallLeavingOpponent = !isOpponentNearBall() || isBallKicked;
-
 			return isBallOnOurSite
 					&& isBallVelocityIntersectingTheGoalLine
-					&& isBallFastEnough
-					&& isBallLeavingOpponent;
+					&& isBallFastEnough;
 		}
 		return false;
 	}
@@ -256,12 +243,40 @@ public class DefendingKeeper
 	}
 
 
+	/**
+	 * This enum represents the states, the keeper can be in.
+	 * They do the following
+	 */
 	protected enum ECriticalKeeperStates implements IEvent
 	{
+		/**
+		 * Nothing requires the keepers immediate attention.
+		 * The keeper should reposition itself between ball and goal to prevent a direct shot.
+		 */
 		NORMAL,
+
+		/**
+		 * A direct shot at the goal has been detected. The keeper shall directly intercept it.
+		 */
 		INTERCEPT_BALL,
+
+		/**
+		 * An offensive redirect has been detected. The shot after this one is intended for the goal.
+		 * The keeper shall move to defend this next shot by predicting where it will come from.
+		 */
 		DEFEND_REDIRECT,
+
+		/**
+		 * The opponent has bypassed all other defenses. The keeper is now the only thing standing between goal, opponent and ball.
+		 * Standing inside the goal now is not feasible because it cannot defend the entire goal area.
+		 * The keeper should instead rush the opponent to force a steep angle for the shot.
+		 */
 		GO_OUT,
+
+		/**
+		 * The keeper has caught the ball.
+		 * It should now stand still to prevent the ball from rolling in accidentally
+		 */
 		HAS_CONTACT,
 	}
 }

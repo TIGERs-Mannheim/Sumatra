@@ -1,10 +1,8 @@
-/*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra.vision;
 
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.ball.BallState;
 import edu.tigers.sumatra.bot.RobotInfo;
 import edu.tigers.sumatra.drawable.DrawableCircle;
@@ -56,9 +54,9 @@ import java.util.stream.Collectors;
 public class BallFilterPreprocessor
 {
 	private static final Logger log = LogManager.getLogger(BallFilterPreprocessor.class.getName());
-	@Configurable(defValue = "300.0", comment = "Minimum search radius for cam balls around last known position [mm]")
+	@Configurable(defValue = "300.0", comment = "Minimum search radius for cam balls around last known position", unit = EConfigUnit.DISTANCE_MM)
 	private static double minSearchRadius = 300.0;
-	@Configurable(defValue = "0.2", comment = "Factor by which a estimator must be better than the last one to use it")
+	@Configurable(defValue = "0.2", comment = "Factor by which a estimator must be better than the last one to use it", unit = EConfigUnit.FACTOR)
 	private static double estimatorSwitchHysteresis = 0.2;
 
 	static

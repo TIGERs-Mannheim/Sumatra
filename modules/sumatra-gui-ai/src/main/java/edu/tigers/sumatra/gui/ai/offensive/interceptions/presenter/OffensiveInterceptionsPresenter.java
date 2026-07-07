@@ -1,6 +1,3 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra.gui.ai.offensive.interceptions.presenter;
 
 import edu.tigers.sumatra.ai.AAgent;
@@ -57,6 +54,8 @@ public class OffensiveInterceptionsPresenter implements ISumatraViewPresenter, I
 
 		// fill interceptionsPanel here with data
 		Map<BotID, BallInterceptionInformation> info = frame.getBallInterceptionInformationMap();
+		interceptionsPanel.setEnableAutomaticSelectionOfInterceptingBotId(
+				viewPanel.getEnableAutomaticSelectionOfInterceptingBotId().isSelected());
 		interceptionsPanel.fillComboBox(info.keySet());
 		interceptionsPanel.setBallInterceptionsInformation(info);
 	}

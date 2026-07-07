@@ -1,13 +1,11 @@
-/*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.metis.pass;
 
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.ai.metis.ACalculator;
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
 import edu.tigers.sumatra.ai.metis.kicking.EBallReceiveMode;
+import edu.tigers.sumatra.ai.metis.kicking.EPassType;
 import edu.tigers.sumatra.ai.metis.pass.rating.EPassRating;
 import edu.tigers.sumatra.ai.metis.pass.rating.RatedPass;
 import edu.tigers.sumatra.ai.metis.targetrater.RotationTimeHelper;
@@ -39,10 +37,10 @@ public class PassFilteringCalc extends ACalculator
 {
 	private final Supplier<Map<KickOrigin, List<RatedPass>>> ratedPasses;
 
-	@Configurable(defValue = "0.08", comment = "[s]")
+	@Configurable(defValue = "0.08", unit = EConfigUnit.TIME_S)
 	private static double alwaysAllowSmallRotationTimeThreshold = 0.08;
 
-	@Configurable(defValue = "0.15", comment = "[s]")
+	@Configurable(defValue = "0.15", unit = EConfigUnit.TIME_S)
 	private static double rotationTimeSafetyMargin = 0.15;
 
 	@Getter
@@ -78,6 +76,12 @@ public class PassFilteringCalc extends ACalculator
 
 	private boolean isOrientationReachableOnTime(KickOrigin kickOrigin, RatedPass pass)
 	{
+		if (getBall().getVel().getLength() < 1.5)
+		{
+			// if ball vel is rather small we do not need to filter passes anymore
+			return true;
+		}
+
 		if (kickOrigin.getShooter().isUninitializedID() || Double.isInfinite(kickOrigin.getImpactTime()))
 		{
 			return true;
@@ -92,8 +96,10 @@ public class PassFilteringCalc extends ACalculator
 		} else
 		{
 			targetAngle = RedirectConsultantFactory.createDefault()
-					.getTargetAngle(getBall(), kickSource, pass.getPass().getKick().getTarget(),
-							pass.getPass().getKick().getKickVel().getLength2());
+					.getTargetAngle(
+							getBall(), kickSource, pass.getPass().getKick().getTarget(),
+							pass.getPass().getKick().getKickVel().getLength2()
+					);
 		}
 
 		double rotationTime = calcRotationTime(getWFrame().getTiger(kickOrigin.getShooter()), targetAngle);
@@ -109,13 +115,17 @@ public class PassFilteringCalc extends ACalculator
 		if (rotationTime + rotationTimeSafetyMargin > impactTime)
 		{
 			getShapes(EAiShapesLayer.PASS_RATING)
-					.add(new DrawableLine(kickSource, kickSource.addNew(Vector2.fromAngle(targetAngle).scaleToNew(300)),
-							new Color(255, 0, 0, 180)));
+					.add(new DrawableLine(
+							kickSource, kickSource.addNew(Vector2.fromAngle(targetAngle).scaleToNew(300)),
+							new Color(255, 0, 0, 180)
+					));
 			return false;
 		}
 		getShapes(EAiShapesLayer.PASS_RATING)
-				.add(new DrawableLine(kickSource, kickSource.addNew(Vector2.fromAngle(targetAngle).scaleToNew(300)),
-						new Color(71, 255, 0, 180)));
+				.add(new DrawableLine(
+						kickSource, kickSource.addNew(Vector2.fromAngle(targetAngle).scaleToNew(300)),
+						new Color(71, 255, 0, 180)
+				));
 
 		return true;
 	}
@@ -135,7 +145,7 @@ public class PassFilteringCalc extends ACalculator
 
 	private void drawRatedPass(final RatedPass ratedPass)
 	{
-		var color = new Color(0, 120, 100, 150);
+		var color = ratedPass.getPass().getType() == EPassType.THROUGH ? Color.YELLOW : new Color(0, 120, 100, 150);
 		var target = ratedPass.getPass().getKick().getTarget();
 		getShapes(EAiShapesLayer.PASS_SELECTION).add(new DrawableCircle(target, 30, color).setFill(true));
 
@@ -144,13 +154,22 @@ public class PassFilteringCalc extends ACalculator
 				Arrays.stream(EPassRating.values()).map(p -> passRatingToStr(ratedPass, p))
 						.collect(Collectors.joining(" | "));
 
-		var chipOffset = chip ? 6.0 : 0.0;
+		var receiveMode = ratedPass.getPass().getReceiveMode();
+		var opponentPreparationTime = ratedPass.getPass().getOpponentPreparationTime();
+		text = String.format(
+				"%s | m:%s | pt:%.2f", text, receiveMode == EBallReceiveMode.REDIRECT ? "d" : "c", opponentPreparationTime);
+		double offset = switch (ratedPass.getPass().getType())
+		{
+			case STRAIGHT -> 0.0;
+			case CHIP -> 6.0;
+			case THROUGH -> 12.0;
+		};
 		getShapes(EAiShapesLayer.PASS_RATING)
 				.add(new DrawableAnnotation(target, text)
 						.setColor(Color.black)
 						.withFontHeight(6)
 						.withCenterHorizontally(true)
-						.withOffset(Vector2.fromXY(0, 33 + chipOffset)));
+						.withOffset(Vector2.fromXY(0, 33 + offset)));
 	}
 
 

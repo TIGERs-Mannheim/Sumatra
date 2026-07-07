@@ -1,11 +1,3 @@
-/*
- * *********************************************************
- * Copyright (c) 2009 - 2016, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Mar 14, 2016
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
- */
 package com.github.g3force.configurable;
 
 
@@ -14,29 +6,20 @@ package com.github.g3force.configurable;
  */
 public class ConfigClass4
 {
-	@Configurable(comment = "Document this field")
+	@Configurable(comment = "Document this field", defValue = "false", unit = EConfigUnit.BOOLEAN)
 	static boolean testBoolFalse = false;
 
-	@Configurable(comment = "Document this field")
+	@Configurable(comment = "Document this field", defValue = "true", unit = EConfigUnit.BOOLEAN)
 	static boolean testBoolTrue = true;
 
-	@Configurable(comment = "Document this field")
+	@Configurable(comment = "Document this field", defValue = "ONE", unit = EConfigUnit.NO_UNIT)
 	static ETest testEnum = ETest.ONE;
 
-	@Configurable(comment = "Document this field", defValue = "TWO")
-	static ETest testEnumDefValue = ETest.ONE;
-
-	@Configurable(comment = "Document this field")
-	static double testDouble = 1;
-
-	@Configurable(comment = "Document this field", defValue = "2")
+	@Configurable(comment = "Document this field", defValue = "2", unit = EConfigUnit.NO_UNIT)
 	static double testDoubleWithDefault = 2;
 
-	@Configurable(comment = "Document this field", defValue = "6")
+	@Configurable(comment = "Document this field", defValue = "6", unit = EConfigUnit.NO_UNIT)
 	static double testDefaultDifferent = 5;
-
-	@Configurable(comment = "Document this field")
-	static double testStoredDifferent = 5;
 
 	static
 	{

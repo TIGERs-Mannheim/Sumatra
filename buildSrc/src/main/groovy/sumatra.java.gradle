@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
- */
-
 plugins {
     id 'java'
     id 'groovy' // apply to all due to issues when only applying to some projects
@@ -9,6 +5,13 @@ plugins {
 }
 
 repositories {
+    // Mirror of external dependencies, to speed up builds and avoid issues with unavailable repositories
+    // It is configured to proxy Maven Central and JitPack, so all dependencies from these repositories should be available in the mirror
+    maven {
+        url = 'https://repo.tigers-mannheim.de/releases'
+    }
+
+    // Fallback to external repositories, if the mirror is not available
     mavenCentral()
 
     maven {
@@ -27,8 +30,16 @@ dependencies {
 
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of(21)
+        languageVersion = JavaLanguageVersion.of(25)
     }
 }
 
 jar.archiveVersion.convention(null)
+
+idea {
+    module {
+        excludeDirs += file('data')
+        excludeDirs += file('bin')
+        excludeDirs += file('.settings')
+    }
+}

@@ -1,6 +1,3 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra.gui.ai.aicenter.view;
 
 import com.github.g3force.instanceables.InstanceablePanel;
@@ -25,8 +22,8 @@ import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import java.awt.Component;
 import java.awt.Dimension;
+import java.io.Serial;
 import java.util.Arrays;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 
@@ -36,6 +33,7 @@ import java.util.stream.IntStream;
 @Getter
 public class AthenaControlPanel extends JPanel
 {
+	@Serial
 	private static final long serialVersionUID = 8561402774656016979L;
 	public static final int NUM_ROWS = 10;
 
@@ -84,9 +82,12 @@ public class AthenaControlPanel extends JPanel
 		controlPanel.add(instanceablePanel, "wrap");
 		controlPanel.add(buttonPanel, "wrap");
 
+		JScrollPane controlScrollPane = new JScrollPane(controlPanel);
+		controlScrollPane.setPreferredSize(new Dimension(280,0));
+
 		add(tableScrollPane, "growy");
 		add(botIdListScrollPane, "growy");
-		add(controlPanel);
+		add(controlScrollPane, "growy");
 
 		buttonPanel.setLayout(new MigLayout());
 		buttonPanel.add(new JLabel("Plays:"), "wrap");
@@ -104,7 +105,7 @@ public class AthenaControlPanel extends JPanel
 	{
 		return Arrays.stream(EColumn.values())
 				.map(EColumn::getTitle)
-				.collect(Collectors.toList())
+				.toList()
 				.toArray(new String[] {});
 	}
 
@@ -144,6 +145,7 @@ public class AthenaControlPanel extends JPanel
 
 	private static class TableModel extends DefaultTableModel
 	{
+		@Serial
 		private static final long serialVersionUID = -3700170198897729348L;
 
 

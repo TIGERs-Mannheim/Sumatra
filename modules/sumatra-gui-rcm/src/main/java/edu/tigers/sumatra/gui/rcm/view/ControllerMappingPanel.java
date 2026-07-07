@@ -1,6 +1,3 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra.gui.rcm.view;
 
 import edu.tigers.sumatra.gui.rcm.presenter.IRCMConfigChangedObserver;
@@ -20,6 +17,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.FocusEvent;
 import java.awt.event.FocusListener;
+import java.io.Serial;
 import java.util.List;
 
 
@@ -29,6 +27,7 @@ import java.util.List;
 @Log4j2
 public class ControllerMappingPanel extends JPanel
 {
+	@Serial
 	private static final long serialVersionUID = -8086651107326508468L;
 	private final RcmActionMapping actionMapping;
 	private final List<IRCMConfigChangedObserver> observers;
@@ -154,7 +153,7 @@ public class ControllerMappingPanel extends JPanel
 					}
 				} catch (NumberFormatException err)
 				{
-					log.debug("No number in text field: " + txtField.getText(), err);
+					log.debug("No number in text field: {}", txtField.getText(), err);
 				}
 			}
 

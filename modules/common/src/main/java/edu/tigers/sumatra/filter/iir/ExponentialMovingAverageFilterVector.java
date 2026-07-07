@@ -1,12 +1,8 @@
-/*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra.filter.iir;
-
-import org.apache.commons.lang.Validate;
 
 import edu.tigers.sumatra.math.vector.IVectorN;
 import edu.tigers.sumatra.math.vector.VectorN;
+import org.apache.commons.lang3.Validate;
 
 
 /**
@@ -17,18 +13,18 @@ import edu.tigers.sumatra.math.vector.VectorN;
  * z = measurement
  * a = weighting factor for state between 0.0 and 1.0
  * This filter finds the long-term average value of noisy data.
- * 
+ *
  * @author AndreR <andre@ryll.cc>
  */
 public class ExponentialMovingAverageFilterVector
 {
 	private double		alpha;
 	protected IVectorN state;
-	
-	
+
+
 	/**
 	 * Create filter.
-	 * 
+	 *
 	 * @param alpha
 	 * @param numStates
 	 */
@@ -38,11 +34,11 @@ public class ExponentialMovingAverageFilterVector
 		this.alpha = alpha;
 		state = VectorN.zero(numStates);
 	}
-	
-	
+
+
 	/**
 	 * Create filter.
-	 * 
+	 *
 	 * @param alpha
 	 * @param state
 	 */
@@ -52,11 +48,11 @@ public class ExponentialMovingAverageFilterVector
 		this.alpha = alpha;
 		this.state = state;
 	}
-	
-	
+
+
 	/**
 	 * Update filter with new measurement.
-	 * 
+	 *
 	 * @param measurement
 	 * @return
 	 */
@@ -65,8 +61,8 @@ public class ExponentialMovingAverageFilterVector
 		state = state.multiplyNew(alpha).addNew(measurement.multiplyNew(1.0 - alpha));
 		return state;
 	}
-	
-	
+
+
 	/**
 	 * @return the alpha
 	 */
@@ -74,8 +70,8 @@ public class ExponentialMovingAverageFilterVector
 	{
 		return alpha;
 	}
-	
-	
+
+
 	/**
 	 * @param alpha the alpha to set
 	 */
@@ -83,8 +79,8 @@ public class ExponentialMovingAverageFilterVector
 	{
 		this.alpha = alpha;
 	}
-	
-	
+
+
 	/**
 	 * @return the state
 	 */
@@ -92,8 +88,8 @@ public class ExponentialMovingAverageFilterVector
 	{
 		return state;
 	}
-	
-	
+
+
 	/**
 	 * @param state the state to set
 	 */

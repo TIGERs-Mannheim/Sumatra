@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.network;
 
 
@@ -24,7 +20,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
  * Connect to a multicast group on all reasonable network interfaces, and receive {@link DatagramPacket}s on it.
  */
 @Log4j2
-public class MulticastUDPReceiver implements AutoCloseable
+public class MulticastUDPReceiver implements UDPReceiver
 {
 	private static final int SO_TIMEOUT = 500;
 	private static final String[] USELESS_PREFIXES = { "tap", "tun", "ham", "WAN" };
@@ -59,7 +55,7 @@ public class MulticastUDPReceiver implements AutoCloseable
 		{
 			if (isUselessInterface(iface))
 			{
-				log.debug("Filtered network interface: " + iface.getDisplayName());
+				log.debug("Filtered network interface: {}", iface.getDisplayName());
 				continue;
 			}
 			joinOnInterface(port, host, iface);
@@ -67,12 +63,14 @@ public class MulticastUDPReceiver implements AutoCloseable
 	}
 
 
+	@Override
 	public void addObserver(final IReceiverObserver observer)
 	{
 		observers.add(observer);
 	}
 
 
+	@Override
 	public void removeObserver(final IReceiverObserver observer)
 	{
 		observers.remove(observer);
@@ -97,7 +95,7 @@ public class MulticastUDPReceiver implements AutoCloseable
 		try
 		{
 			var ifaces = Collections.list(NetworkInterface.getNetworkInterfaces());
-			log.debug("Found " + ifaces.size() + " network interfaces");
+			log.debug("Found {} network interfaces", ifaces.size());
 			return ifaces;
 		} catch (SocketException err)
 		{
@@ -140,11 +138,12 @@ public class MulticastUDPReceiver implements AutoCloseable
 			log.debug("Multicast group {}:{} joined on nif {}", groupStr, port, iface.getDisplayName());
 		} catch (IOException err)
 		{
-			log.info("Could not create multicast socket on iface " + iface.getDisplayName() + " and port " + port, err);
+			log.info("Could not create multicast socket on iface {} and port {}", iface.getDisplayName(), port, err);
 		}
 	}
 
 
+	@Override
 	public void receive(final DatagramPacket store) throws IOException
 	{
 		if (currentSocket == null)

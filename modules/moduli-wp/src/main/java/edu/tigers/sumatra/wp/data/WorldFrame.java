@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.wp.data;
 
 import edu.tigers.sumatra.bot.RobotInfo;
@@ -29,7 +25,10 @@ import java.util.stream.Stream;
 public class WorldFrame extends SimpleWorldFrame
 {
 	private final Map<BotID, ITrackedBot> opponentBots;
+	private final Map<BotID, ITrackedBot> opponentBotsVisible;
 	private final Map<BotID, ITrackedBot> tigerBotsVisible;
+	private final Map<BotID, ITrackedBot> tigerBotsInSubstitutionArea;
+	private final Map<BotID, ITrackedBot> opponentBotsInSubstitutionArea;
 	private final Map<BotID, ITrackedBot> tigerBotsAvailable;
 	@Getter(AccessLevel.PRIVATE)
 	private final Map<BotID, ITrackedBot> allBots;
@@ -43,10 +42,13 @@ public class WorldFrame extends SimpleWorldFrame
 		this.teamColor = team.getTeamColor();
 		this.inverted = inverted;
 
-		opponentBots = computeOpponentBots(simpleWorldFrame, team);
+		opponentBotsVisible = computeOpponentBotsVisible(simpleWorldFrame, team);
+		opponentBotsInSubstitutionArea = computeOpponentInSubstitutionArea(opponentBotsVisible);
+		opponentBots = computeOpponentBots(opponentBotsVisible, opponentBotsInSubstitutionArea);
+		tigerBotsInSubstitutionArea = computeTigersInSubstitutionArea(simpleWorldFrame, team);
 		tigerBotsAvailable = computeTigersAvailable(simpleWorldFrame, team);
 		tigerBotsVisible = computeTigersVisible(simpleWorldFrame, team);
-		allBots = Stream.concat(opponentBots.entrySet().stream(), tigerBotsVisible.entrySet().stream())
+		allBots = Stream.concat(opponentBotsVisible.entrySet().stream(), tigerBotsVisible.entrySet().stream())
 				.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 	}
 
@@ -62,8 +64,11 @@ public class WorldFrame extends SimpleWorldFrame
 		super(original);
 		teamColor = original.getTeamColor();
 		inverted = original.isInverted();
+		opponentBotsInSubstitutionArea = original.getOpponentBotsInSubstitutionArea();
 		opponentBots = original.getOpponentBots();
+		opponentBotsVisible = original.getOpponentBotsVisible();
 		tigerBotsAvailable = original.getTigerBotsAvailable();
+		tigerBotsInSubstitutionArea = original.getTigerBotsInSubstitutionArea();
 		tigerBotsVisible = original.getTigerBotsVisible();
 		allBots = original.getAllBots();
 	}
@@ -83,21 +88,15 @@ public class WorldFrame extends SimpleWorldFrame
 	}
 
 
-	private Map<BotID, ITrackedBot> computeOpponentBots(final SimpleWorldFrame simpleWorldFrame, final EAiTeam aiTeam)
+	private Map<BotID, ITrackedBot> computeOpponentBots(
+			final Map<BotID, ITrackedBot> allOpponents,
+			final Map<BotID, ITrackedBot> opponentBotsInSubstitutionArea
+	)
 	{
-		Map<BotID, ITrackedBot> opponents = simpleWorldFrame.getBots().values().stream()
-				.filter(bot -> aiTeam.matchesColor(bot.getBotId().getTeamColor().opposite()))
+		Map<BotID, ITrackedBot> opponents = allOpponents.values().stream()
 				.filter(bot -> Geometry.getFieldWBorders().isPointInShape(bot.getPos()))
-				.map(bot -> {
-					RobotInfo info = RobotInfo.stubBuilder(bot.getBotId(), bot.getTimestamp())
-							.withBotParams(bot.getRobotInfo().getBotParams())
-							.build();
-					return TrackedBot.newCopyBuilder(bot)
-							.withBotInfo(info)
-							.withState(bot.getFilteredState().orElse(bot.getBotState()))
-							.build();
-				})
-				.collect(Collectors.toMap(TrackedBot::getBotId, Function.identity()));
+				.filter(bot -> !opponentBotsInSubstitutionArea.containsKey(bot.getBotId()))
+				.collect(Collectors.toMap(ITrackedBot::getBotId, Function.identity()));
 		return Collections.unmodifiableMap(opponents);
 	}
 
@@ -111,7 +110,44 @@ public class WorldFrame extends SimpleWorldFrame
 	}
 
 
-	private Map<BotID, ITrackedBot> computeTigersAvailable(final SimpleWorldFrame simpleWorldFrame, final EAiTeam aiTeam)
+	private Map<BotID, ITrackedBot> computeOpponentBotsVisible(
+			final SimpleWorldFrame simpleWorldFrame, final EAiTeam aiTeam)
+	{
+		Map<BotID, ITrackedBot> visible = simpleWorldFrame.getBots().values().stream()
+				.filter(bot -> aiTeam.opposite().matchesColor(bot.getTeamColor()))
+				.map(WorldFrame::withStubbedRobotInfo)
+				.collect(Collectors.toMap(ITrackedBot::getBotId, Function.identity()));
+		return Collections.unmodifiableMap(visible);
+	}
+
+
+	private Map<BotID, ITrackedBot> computeTigersInSubstitutionArea(
+			final SimpleWorldFrame simpleWorldFrame, final EAiTeam aiTeam)
+	{
+		Map<BotID, ITrackedBot> visible = simpleWorldFrame.getBots().values().stream()
+				.filter(bot -> aiTeam.matchesColor(bot.getTeamColor())
+						&& Geometry.getGoalSubstitutionAreaOur().withMargin(-Geometry.getBotRadius())
+						.isPointInShape(bot.getPos()))
+				.collect(Collectors.toMap(ITrackedBot::getBotId, Function.identity()));
+		return Collections.unmodifiableMap(visible);
+	}
+
+
+	private Map<BotID, ITrackedBot> computeOpponentInSubstitutionArea(
+			Map<BotID, ITrackedBot> allOpponents
+	)
+	{
+		Map<BotID, ITrackedBot> visible = allOpponents.values().stream()
+				.filter(bot -> Geometry.getGoalSubstitutionAreaTheir().withMargin(-Geometry.getBotRadius())
+						.isPointInShape(bot.getPos()))
+				.collect(Collectors.toMap(ITrackedBot::getBotId, Function.identity()));
+		return Collections.unmodifiableMap(visible);
+	}
+
+
+	private Map<BotID, ITrackedBot> computeTigersAvailable(
+			final SimpleWorldFrame simpleWorldFrame, final EAiTeam aiTeam
+	)
 	{
 		Map<BotID, ITrackedBot> visible = simpleWorldFrame.getBots().values().stream()
 				.filter(bot -> aiTeam.matchesColor(bot.getTeamColor()))
@@ -120,6 +156,18 @@ public class WorldFrame extends SimpleWorldFrame
 				.filter(bot -> !bot.isMalFunctioning())
 				.collect(Collectors.toMap(ITrackedBot::getBotId, Function.identity()));
 		return Collections.unmodifiableMap(visible);
+	}
+
+
+	private static ITrackedBot withStubbedRobotInfo(ITrackedBot bot)
+	{
+		RobotInfo info = RobotInfo.stubBuilder(bot.getBotId(), bot.getTimestamp())
+				.withBotParams(bot.getRobotInfo().getBotParams())
+				.build();
+		return TrackedBot.newCopyBuilder(bot)
+				.withBotInfo(info)
+				.withState(bot.getFilteredState().orElse(bot.getBotState()))
+				.build();
 	}
 
 

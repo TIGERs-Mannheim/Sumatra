@@ -1,24 +1,20 @@
-/*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.pandora.roles.offense;
 
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.ai.pandora.roles.ARole;
 import edu.tigers.sumatra.ai.pandora.roles.ERole;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.ETeam;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.pathfinder.EObstacleAvoidanceMode;
-import edu.tigers.sumatra.skillsystem.skills.MoveToSkill;
 import edu.tigers.sumatra.skillsystem.skills.util.PositionValidator;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
 
 
 public class DisruptOpponentRole extends ARole
 {
-	@Configurable(defValue = "1.5", comment = "val < 1: very aggressive, val > 1: less aggressive, val > 2: no contact!, val == 0: broken robots")
+	@Configurable(defValue = "1.5", comment = "val < 1: very aggressive, val > 1: less aggressive, val > 2: no contact!, val == 0: broken robots", unit = EConfigUnit.BOT_RADIUS)
 	private static double aggressiveness = 1.5;
 
 
@@ -29,22 +25,15 @@ public class DisruptOpponentRole extends ARole
 	}
 
 
-	private class DefaultState extends RoleState<MoveToSkill>
+	private class DefaultState extends MoveState
 	{
 		PositionValidator positionValidator = new PositionValidator();
 
 
-		DefaultState()
-		{
-			super(MoveToSkill::new);
-		}
-
-
 		@Override
-		protected void onInit()
+		protected void onEntry()
 		{
-			super.onInit();
-			skill.getMoveCon().setBallObstacle(false);
+			skill.setMoveCon(skill.getMoveCon().withBallObstacle(false));
 			positionValidator = new PositionValidator();
 			positionValidator.getMarginToPenArea().put(ETeam.BOTH, Geometry.getBotRadius() * 2.5);
 		}
@@ -55,7 +44,7 @@ public class DisruptOpponentRole extends ARole
 		{
 			super.onUpdate();
 			positionValidator.update(getWFrame(), skill.getMoveCon());
-			skill.getMoveCon().setObstacleAvoidanceMode(EObstacleAvoidanceMode.AGGRESSIVE);
+			skill.setMoveCon(skill.getMoveCon().withObstacleAvoidanceMode(EObstacleAvoidanceMode.AGGRESSIVE));
 
 			var information = getAiFrame().getTacticalField().getRedirectorDetectionInformation();
 			if (information.getOpponentReceiver() == null)

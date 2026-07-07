@@ -1,11 +1,8 @@
-/*
- * Copyright (c) 2009 - 2024, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.pandora.roles.placement;
 
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.drawable.DrawableLine;
 import edu.tigers.sumatra.drawable.DrawablePoint;
 import edu.tigers.sumatra.drawable.DrawableRectangle;
@@ -19,7 +16,7 @@ import edu.tigers.sumatra.math.rectangle.Rectangle;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
 import lombok.Getter;
-import org.apache.commons.lang.Validate;
+import org.apache.commons.lang3.Validate;
 
 import java.awt.Color;
 import java.util.ArrayList;
@@ -33,10 +30,10 @@ import java.util.Optional;
  */
 public class PullAwayDestCalc
 {
-	@Configurable(defValue = "250.0", comment = "[mm] If ball is closer than this distance to a boundary or goal wall, the ball is pulled away. Must be large enough that a bot can position itself between ball and obstacle easily.")
-	private static double pullAwayMargin = 250;
+	@Configurable(defValue = "300.0", comment = "If ball is closer than this distance to a boundary or goal wall, the ball is pulled away. Must be large enough that a bot can position itself between ball and obstacle easily.", unit = EConfigUnit.DISTANCE_MM)
+	private static double pullAwayMargin = 300;
 
-	@Configurable(defValue = "100.0", comment = "[mm] Extra distance to cover to accept ball is far enough from the next boundary")
+	@Configurable(defValue = "100.0", comment = "Extra distance to cover to accept ball is far enough from the next boundary", unit = EConfigUnit.DISTANCE_MM)
 	private static double pullAwayHysteresis = 100;
 
 	static
@@ -85,7 +82,7 @@ public class PullAwayDestCalc
 
 	private static double getPullAwayMargin()
 	{
-		return SumatraMath.max(Geometry.getBoundaryLength(), Geometry.getBoundaryWidth(), pullAwayMargin);
+		return pullAwayMargin;
 	}
 
 
@@ -111,7 +108,7 @@ public class PullAwayDestCalc
 				.forEach(pullAwayCorners::add);
 
 		// Goal outer corners
-		double goalToBoundaryOffset = Geometry.getBoundaryLength() - Geometry.getGoalOur().getDepth();
+		double goalToBoundaryOffset = Geometry.getBoundaryWidthGoalLine() - Geometry.getGoalOur().getDepth();
 		Geometry.getGoals().stream()
 				.flatMap(goal -> goal.getCorners().stream())
 				.map(corner -> corner.addMagnitude(Vector2.fromX(goalToBoundaryOffset)))
@@ -135,7 +132,7 @@ public class PullAwayDestCalc
 						.stream()
 						.map(goalPost -> Lines.segmentFromPoints(
 								goalPost,
-								goalPost.addMagnitude(Vector2.fromXY(Geometry.getBoundaryLength(), 0))
+								goalPost.addMagnitude(Vector2.fromXY(Geometry.getBoundaryWidthGoalLine(), 0))
 						))
 				)
 				.map(outerWall -> PullAwayArea.create(

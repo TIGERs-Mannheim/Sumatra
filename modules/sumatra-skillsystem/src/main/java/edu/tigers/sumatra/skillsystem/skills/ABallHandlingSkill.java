@@ -1,10 +1,7 @@
-/*
- * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.skillsystem.skills;
 
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.bot.EDribbleTractionState;
 import edu.tigers.sumatra.drawable.DrawableAnnotation;
 import edu.tigers.sumatra.drawable.DrawableLine;
@@ -33,44 +30,44 @@ import java.awt.Color;
 public class ABallHandlingSkill extends AMoveToSkill
 {
 
-	@Configurable(defValue = "-100")
+	@Configurable(defValue = "-100", unit = EConfigUnit.DISTANCE_MM)
 	private static double maxPushDistance = -100;
 
-	@Configurable(defValue = "30")
+	@Configurable(defValue = "30", unit = EConfigUnit.DISTANCE_MM)
 	private static double ballContactPushPullSpeed = 30;
 
-	@Configurable(defValue = "-20")
+	@Configurable(defValue = "-20", unit = EConfigUnit.DISTANCE_MM)
 	private static double nearBallPushDistance = -20;
 
-	@Configurable(defValue = "0.3")
+	@Configurable(defValue = "0.3", unit = EConfigUnit.TIME_S)
 	private static double aroundBallLookahead = 0.3;
 
-	@Configurable(defValue = "0.4")
-	private static double maxTargetOrientationStep = 0.4;
+	@Configurable(defValue = "0.6", unit = EConfigUnit.ANGLE_RAD)
+	private static double maxTargetOrientationStep = 0.6;
 
-	@Configurable(defValue = "1.3")
+	@Configurable(defValue = "1.3", unit = EConfigUnit.ANGLE_RAD)
 	private static double maxTargetOrientationStepStrong = 1.3;
 
-	@Configurable(comment = "The max margin to the ball for destinations", defValue = "70.0")
+	@Configurable(comment = "The max margin to the ball for destinations", defValue = "70.0", unit = EConfigUnit.DISTANCE_MM)
 	private static double maxMarginToBall = 70.0;
 
-	@Configurable(comment = "Tolerance [mm] to determine if bot is near ball", defValue = "20.0")
+	@Configurable(comment = "Tolerance to determine if bot is near ball", defValue = "20.0", unit = EConfigUnit.DISTANCE_MM)
 	private static double nearBallTolerance = 20.0;
 
 	@Getter
-	@Configurable(defValue = "0.10", comment = "The approximate tolerance when the angle is considered to be reached")
+	@Configurable(defValue = "0.10", comment = "The approximate tolerance when the angle is considered to be reached", unit = EConfigUnit.ANGLE_RAD)
 	private static double roughAngleTolerance = 0.10;
 
-	@Configurable(defValue = "0.4", comment = "The max time to wait until angle is considered reached while within tolerance")
+	@Configurable(defValue = "0.4", comment = "The max time to wait until angle is considered reached while within tolerance", unit = EConfigUnit.TIME_S)
 	private static double maxTimeTargetAngleReached = 0.4;
 
-	@Configurable(defValue = "1.1", comment = "[s] Reset timer time limit")
+	@Configurable(defValue = "1.1", comment = "Reset timer time limit", unit = EConfigUnit.TIME_S)
 	private static double resetTimerTime = 1.1;
 
-	@Configurable(defValue = "0.3", comment = "[s] Reset duration time limit")
+	@Configurable(defValue = "0.3", comment = "Reset duration time limit", unit = EConfigUnit.TIME_S)
 	private static double resetDurationTime = 0.3;
 
-	@Configurable(defValue = "5.7", comment = "[deg] orientation target overstep")
+	@Configurable(defValue = "5.7", comment = "orientation target overstep", unit = EConfigUnit.ANGLE_DEG)
 	private static double orientationTargetOverstep = 5.7;
 
 	private final TargetAngleReachedChecker targetAngleReachedChecker = new TargetAngleReachedChecker(
@@ -145,7 +142,7 @@ public class ABallHandlingSkill extends AMoveToSkill
 
 
 		@Override
-		public void doEntryActions()
+		public void onInit()
 		{
 			var dist2Ball = isNearBall() ? nearBallPushDistance : 0;
 
@@ -344,7 +341,6 @@ public class ABallHandlingSkill extends AMoveToSkill
 		@Override
 		protected void onInit()
 		{
-			super.onInit();
 			timer.start(getWorldFrame().getTimestamp());
 			resetTimer.reset();
 

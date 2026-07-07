@@ -1,6 +1,3 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra.gui.referee.view;
 
 import edu.tigers.sumatra.referee.proto.SslGcRefereeMessage;
@@ -15,6 +12,7 @@ import javax.swing.JScrollPane;
 import javax.swing.ListSelectionModel;
 import java.awt.Dimension;
 import java.awt.Font;
+import java.io.Serial;
 import java.text.DecimalFormat;
 import java.util.concurrent.TimeUnit;
 
@@ -24,6 +22,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class ShowRefereeMsgPanel extends JPanel
 {
+	@Serial
 	private static final long serialVersionUID = -508393753936993622L;
 	private static final int MAX_COMMANDS = 50;
 	private static final String SPAN_2 = "span 2";

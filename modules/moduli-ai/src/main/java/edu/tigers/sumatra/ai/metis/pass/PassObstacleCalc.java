@@ -1,10 +1,7 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.metis.pass;
 
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.ai.metis.ACalculator;
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
 import edu.tigers.sumatra.ai.metis.kicking.OngoingPass;
@@ -34,7 +31,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class PassObstacleCalc extends ACalculator
 {
-	@Configurable(defValue = "500", comment = "Radius of the pass obstacle [mm]. Should be large enough to compensate uncertainty of when the pass will be executed.")
+	@Configurable(defValue = "500", comment = "Radius of the pass obstacle. Should be large enough to compensate uncertainty of when the pass will be executed.", unit = EConfigUnit.DISTANCE_MM)
 	private static double passObstacleRadius = 500;
 
 	private final Supplier<Map<BotID, RatedOffensiveAction>> offensiveActions;
@@ -164,7 +161,7 @@ public class PassObstacleCalc extends ACalculator
 		return new TubeObstacle(
 				"Ongoing Pass", Tube.create(
 				getBall().getPos(),
-				ongoingPass.getPass().getKick().getTarget(),
+				ongoingPass.getPass().getPass().getKick().getTarget(),
 				2 * Geometry.getBotRadius() + Geometry.getBallRadius()
 		)
 		);

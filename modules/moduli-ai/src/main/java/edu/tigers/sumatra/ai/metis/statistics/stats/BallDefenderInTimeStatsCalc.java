@@ -1,11 +1,8 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.metis.statistics.stats;
 
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
 import edu.tigers.sumatra.ai.metis.defense.data.DefenseThreatAssignment;
 import edu.tigers.sumatra.ai.metis.defense.data.EDefenseThreatType;
@@ -21,9 +18,10 @@ import java.util.function.Supplier;
 
 public class BallDefenderInTimeStatsCalc extends AEventWatchingStatsCalc<BotID>
 {
-	@Configurable(comment = "[s] Time span after the receiver vanished in which it can still touch the ball to be counted", defValue = "0.5")
+	@Configurable(comment = "Time span after the receiver vanished in which it can still touch the ball to be counted",
+			defValue = "0.5", unit = EConfigUnit.TIME_S)
 	private static double timeAfterReceiverVanished = 0.5;
-	@Configurable(comment = "[s] DeadTime", defValue = "0.5")
+	@Configurable(comment = "DeadTime", defValue = "0.5", unit = EConfigUnit.TIME_S)
 	private static double deadTimeAfterOccurrence = 0.5;
 
 	static

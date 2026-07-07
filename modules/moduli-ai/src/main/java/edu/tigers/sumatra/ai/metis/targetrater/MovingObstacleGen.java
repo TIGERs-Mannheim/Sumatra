@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.metis.targetrater;
 
 import edu.tigers.sumatra.ball.trajectory.IFlatBallConsultant;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.geometry.RuleConstraints;
 import edu.tigers.sumatra.ids.BotID;
+import edu.tigers.sumatra.math.SumatraMath;
 import edu.tigers.sumatra.math.circle.ICircle;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.movingrobot.IMovingRobot;
 import edu.tigers.sumatra.movingrobot.MovingRobotFactory;
+import edu.tigers.sumatra.movingrobot.MovingRobotParams;
+import edu.tigers.sumatra.pathfinder.TrajectoryGenerator;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
 import lombok.Setter;
 
@@ -42,10 +41,16 @@ public class MovingObstacleGen
 	private double maxHorizon = Double.MAX_VALUE;
 
 	@Setter
-	private double opponentBotReactionTime = 0.1;
+	private Map<BotID, IVector2> customMovementDestinations = Map.of();
 
-	public List<ICircle> generateCircles(Collection<ITrackedBot> bots, IVector2 start,
-			Map<BotID, Double> reactionTimeBotHasBeforeKick)
+	@Setter
+	private double currentToMaxSpeedFactorForCustomMovementDestinations = 1.1;
+
+
+	public List<ICircle> generateCircles(
+			Collection<ITrackedBot> bots, IVector2 start,
+			Map<BotID, Double> reactionTimeBotHasBeforeKick
+	)
 	{
 		var ballConsultant = Geometry.getBallFactory().createFlatConsultant();
 		return bots.stream().map(e -> getMovingHorizon(start, reactionTimeBotHasBeforeKick, ballConsultant, e))
@@ -55,36 +60,70 @@ public class MovingObstacleGen
 
 	public List<ICircle> generateCircles(Collection<ITrackedBot> bots, IVector2 start, double timeToKick)
 	{
-		return generateCircles(bots, start,
-				bots.stream().collect(Collectors.toMap(ITrackedBot::getBotId, e -> timeToKick)));
+		return generateCircles(
+				bots, start,
+				bots.stream().collect(Collectors.toMap(ITrackedBot::getBotId, e -> timeToKick))
+		);
 	}
 
 
-	private ICircle getMovingHorizon(IVector2 start, Map<BotID, Double> reactionTimeBotHasBeforeKick,
-			IFlatBallConsultant ballConsultant, ITrackedBot bot)
+	private ICircle getMovingHorizon(
+			IVector2 start, Map<BotID, Double> reactionTimeBotHasBeforeKick,
+			IFlatBallConsultant ballConsultant, ITrackedBot bot
+	)
 	{
 		var timeBeforeKick = reactionTimeBotHasBeforeKick.get(bot.getBotId());
 		var deadTimeAfterKick = timeForBotToReact;
 		var reactionTimestamp = timeBeforeKick + deadTimeAfterKick;
-		var reactionPos = bot.getPosByTime(reactionTimestamp);
-		var reactionVel = bot.getVelByTime(reactionTimestamp);
+		IVector2 reactionPos;
+		IVector2 reactionVel;
+
+		if(bot.getCurrentTrajectory().isPresent() || !customMovementDestinations.containsKey(bot.getBotId()))
+		{
+			reactionPos = bot.getPosByTime(reactionTimestamp);
+			reactionVel = bot.getVelByTime(reactionTimestamp);
+		}
+		else {
+			var current = bot.getMoveConstraints();
+			var newVelMax = SumatraMath.cap(
+					bot.getVel().getLength() * currentToMaxSpeedFactorForCustomMovementDestinations,
+					0.1,
+					current.getVelMax()
+			);
+			var moveConstraints = current.withVelMax(newVelMax);
+
+			var traj = TrajectoryGenerator.generatePositionTrajectory(
+					bot,
+					customMovementDestinations.get(bot.getBotId()),
+					moveConstraints
+			);
+			reactionPos = traj.getPositionMM(reactionTimestamp);
+			reactionVel = traj.getVelocity(reactionTimestamp);
+		}
+
 
 		var movingRobot = MovingRobotFactory.acceleratingRobot(
-				reactionPos,
-				reactionVel,
-				bot.getRobotInfo().getBotParams().getMovementLimits().getVelMax(),
-				bot.getRobotInfo().getBotParams().getMovementLimits().getAccMax(),
-				Geometry.getBotRadius() + Geometry.getBallRadius(),
-				opponentBotReactionTime
+				MovingRobotParams.builder()
+						.position(reactionPos)
+						.velocity(reactionVel)
+						.vLimit(bot.getRobotInfo().getBotParams().getMovementLimits().getVelMax())
+						.aLimit(bot.getRobotInfo().getBotParams().getMovementLimits().getAccMax())
+						.brkLimit(bot.getRobotInfo().getBotParams().getMovementLimits().getAccMax())
+						.radius(Geometry.getBotRadius() + Geometry.getBallRadius())
+						.reactionTime(0)
+						.build()
 		);
 
 		var reactionDistance = reactionPos.distanceTo(start);
-		var reactionTimeAfterKick = Math.max(0,
+		var reactionTimeAfterKick = Math.max(
+				0,
 				noneOptimalDriveFactor * ballConsultant.getTimeForKick(reactionDistance, kickSpeed)
 						+ timeBeforeReactionUsageFactor * reactionTimestamp
-						- timeForBotToReact);
+						- timeForBotToReact
+		);
 		double horizon = reactionTimeAfterKick;
 		var t = bot.getCurrentTrajectory().isPresent() ? 0 : Math.min(maxHorizon, horizon);
+
 		return movingRobot.getMovingHorizon(t);
 	}
 }

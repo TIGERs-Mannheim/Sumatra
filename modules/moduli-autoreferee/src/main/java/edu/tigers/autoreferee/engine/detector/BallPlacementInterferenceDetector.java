@@ -1,10 +1,7 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.autoreferee.engine.detector;
 
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.autoreferee.AutoRefUtil;
 import edu.tigers.autoreferee.EAutoRefShapesLayer;
 import edu.tigers.sumatra.drawable.DrawableTube;
@@ -34,7 +31,7 @@ import java.util.stream.Collectors;
  */
 public class BallPlacementInterferenceDetector extends AGameEventDetector
 {
-	@Configurable(defValue = "2.0", comment = "The time [s] that a robot is allowed to stay within the forbidden area")
+	@Configurable(defValue = "2.0", comment = "The time that a robot is allowed to stay within the forbidden area", unit = EConfigUnit.TIME_S)
 	private static double violationTime = 2.0;
 
 	private final List<Violator> violators = new ArrayList<>();

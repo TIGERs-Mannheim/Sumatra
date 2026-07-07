@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.skillsystem.skills;
 
 
@@ -39,9 +35,10 @@ public class RotationSkill extends AMoveToSkill
 		super.doEntryActions();
 		this.initialOrientation = getAngle();
 
-		getMoveCon().setBallObstacle(false);
-		getMoveCon().setBotsObstacle(false);
-		getMoveCon().setGameStateObstacle(false);
+		setMoveCon(getMoveCon()
+				.withBallObstacle(false)
+				.withBotsObstacle(false)
+				.withGameStateObstacle(false));
 	}
 
 	@Override

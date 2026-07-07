@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.metis.statistics.stats;
 
 import edu.tigers.sumatra.ai.metis.ballpossession.EBallPossession;
@@ -23,6 +19,7 @@ public class MatchStats
 	Map<EBallPossession, Percentage> ballPossessionGeneral = new EnumMap<>(EBallPossession.class);
 	Map<EMatchStatistics, StatisticData> statistics = new EnumMap<>(EMatchStatistics.class);
 
+
 	/**
 	 * Default
 	 */
@@ -34,6 +31,7 @@ public class MatchStats
 		}
 	}
 
+
 	/**
 	 * This adds a specific type of Statistic data to be displayed in the statisticsPanel
 	 *
@@ -44,6 +42,7 @@ public class MatchStats
 	{
 		statistics.put(key, value);
 	}
+
 
 	/**
 	 * @return all contained bots

@@ -1,12 +1,10 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.metis.support;
 
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.ai.metis.ACalculator;
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
+import edu.tigers.sumatra.ai.metis.defense.DefenseConstants;
 import edu.tigers.sumatra.drawable.DrawablePoint;
 import edu.tigers.sumatra.drawable.DrawableRectangle;
 import edu.tigers.sumatra.geometry.Geometry;
@@ -27,23 +25,33 @@ import java.util.List;
 
 public class SupportKickoffPositionsCalc extends ACalculator
 {
-	@Configurable(comment = "Number of Sampling Points in X direction", defValue = "4")
+	@Configurable(comment = "Number of Sampling Points in X direction", defValue = "4", unit = EConfigUnit.COUNT)
 	private static int nSamplingPointsX = 4;
 
-	@Configurable(comment = "Number of Sampling Points in Y direction", defValue = "6")
+	@Configurable(comment = "Number of Sampling Points in Y direction", defValue = "6", unit = EConfigUnit.COUNT)
 	private static int nSamplingPointsY = 6;
 
-	@Configurable(comment = "Number of other TIGERs allowed next to a new position", defValue = "0")
+	@Configurable(comment = "Number of other TIGERs allowed next to a new position", defValue = "0", unit = EConfigUnit.COUNT)
 	private static int maxTigers = 0;
 
-	@Configurable(comment = "Number of Opponents allowed next to a new Position", defValue = "1")
+	@Configurable(comment = "Number of Opponents allowed next to a new Position", defValue = "1", unit = EConfigUnit.COUNT)
 	private static int maxOpponents = 1;
 
-	@Configurable(comment = "Area to look for other bots next to the new position", defValue = "1000.0")
+	@Configurable(comment = "Area to look for other bots next to the new position", defValue = "1000.0", unit = EConfigUnit.DISTANCE_MM)
 	private static double searchCircleSize = 1000.0;
 
-	@Configurable(comment = "X-offset to the center for the search area", defValue = "-1000.0")
-	private static double searchOffset = -1000.0;
+	@Configurable(comment = "Distance between the Center Line and movement destinations during our KickOffs", defValue = "900.0", unit = EConfigUnit.DISTANCE_MM)
+	private static double distanceToCenterLineKickoffUs = 900;
+
+	@Configurable(comment = "Distance between the Center Line and movement destinations during their KickOffs", defValue = "150.0", unit = EConfigUnit.DISTANCE_MM)
+	private static double distanceToCenterLineKickoffThem = 150;
+
+	@Configurable(comment = "Maximum xExtend of the search area (might not be reached on small fields)", defValue = "2000.0", unit = EConfigUnit.DISTANCE_MM)
+	private static double searchAreaXExtendMax = 2000;
+
+	@Configurable(comment = "Minimum xExtend of the search area (might be reached on extremely small fields)", defValue = "500.0", unit = EConfigUnit.DISTANCE_MM)
+	private static double searchAreaXExtendMin = 500;
+
 
 	@Getter
 	private List<IVector2> kickoffPositions = List.of();
@@ -68,16 +76,32 @@ public class SupportKickoffPositionsCalc extends ACalculator
 	@Override
 	protected void doCalc()
 	{
-		double centerX = searchOffset - 3 * Geometry.getBotRadius();
-		IRectangle searchRect = Rectangle.fromCenter(Vector2.fromX(centerX), -2 * searchOffset,
-				Geometry.getFieldWidth());
+		boolean isKickoffForUs = getAiFrame().getGameState().isKickoffOrPrepareKickoffForUs();
+		double xMax = isKickoffForUs ? -distanceToCenterLineKickoffUs : -distanceToCenterLineKickoffThem;
+		double xMinBasedOnDistanceToPenArea =
+				Geometry.getGoalOur().getCenter().x() + DefenseConstants.getMaxGoOutDistanceBall();
+		double xMinBasedOnDepth = xMax - searchAreaXExtendMax;
+
+		double xMin = SumatraMath.min(
+				xMax - searchAreaXExtendMin,
+				SumatraMath.max(xMinBasedOnDepth, xMinBasedOnDistanceToPenArea)
+		);
+
+		double xCenter = (xMax + xMin) / 2;
+		double xExtend = xMax - xMin;
+
+		IRectangle searchRect = Rectangle.fromCenter(Vector2.fromX(xCenter), xExtend, Geometry.getFieldWidth());
 		getShapes(EAiShapesLayer.SUPPORT_KICKOFF)
 				.add(new DrawableRectangle(searchRect, Color.CYAN));
 
-		List<Double> xCoords = SumatraMath.evenDistribution1D(centerX + searchOffset,
-				centerX - searchOffset, nSamplingPointsX);
-		List<Double> yCoords = SumatraMath.evenDistribution1D(-Geometry.getFieldWidth() / 2, Geometry.getFieldWidth() / 2,
-				nSamplingPointsY);
+		List<Double> xCoords = SumatraMath.evenDistribution1D(
+				xCenter - xExtend / 2,
+				xCenter + xExtend / 2, nSamplingPointsX
+		);
+		List<Double> yCoords = SumatraMath.evenDistribution1D(
+				-Geometry.getFieldWidth() / 2, Geometry.getFieldWidth() / 2,
+				nSamplingPointsY
+		);
 
 		kickoffPositions = Collections.unmodifiableList(searchKickoffPositions(xCoords, yCoords));
 	}

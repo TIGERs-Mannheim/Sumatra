@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
- */
-
 plugins {
     id 'sumatra.java'
     id 'sumatra.test'
@@ -35,6 +31,16 @@ dependencies {
     testImplementation(libs.org.openjdk.jmh.jmh.core)
     testRuntimeOnly(libs.commons.collections)
     testAnnotationProcessor(libs.org.openjdk.jmh.jmh.generator.annprocess)
+}
+
+// Silence Log4j2 GraalVmProcessor warning about missing GAV options.
+// We don't build native images, but the processor still runs here because
+// log4j-core is on the annotationProcessor classpath.
+compileJava {
+    options.compilerArgs += [
+            "-Alog4j.graalvm.groupId=edu.tigers.sumatra",
+            "-Alog4j.graalvm.artifactId=common",
+    ]
 }
 
 tasks.register("runBangBangTrajectoryBenchmark", JavaExec) {

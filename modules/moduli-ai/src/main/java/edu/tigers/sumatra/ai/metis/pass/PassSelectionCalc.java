@@ -1,15 +1,14 @@
-/*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.metis.pass;
 
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.ai.metis.ACalculator;
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
+import edu.tigers.sumatra.ai.metis.kicking.EPassType;
 import edu.tigers.sumatra.ai.metis.pass.rating.EPassRating;
 import edu.tigers.sumatra.ai.metis.pass.rating.RatedPass;
 import edu.tigers.sumatra.drawable.DrawableAnnotation;
+import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.math.vector.Vector2;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -35,7 +34,7 @@ public class PassSelectionCalc extends ACalculator
 	@Getter
 	private Map<KickOrigin, RatedPass> selectedPasses;
 
-	@Configurable(comment = "Secondary rating grouping factor", defValue = "0.95")
+	@Configurable(comment = "Secondary rating grouping factor", defValue = "0.95", unit = EConfigUnit.PERCENTAGE)
 	private static double secondaryRatingGroupingFactor = 0.95;
 
 
@@ -54,12 +53,14 @@ public class PassSelectionCalc extends ACalculator
 	}
 
 
-	private Optional<KickOrigin> getPreviousKickOrigin(Map<KickOrigin, RatedPass> previousSelectedPasses, KickOrigin kickOrigin)
+	private Optional<KickOrigin> getPreviousKickOrigin(
+			Map<KickOrigin, RatedPass> previousSelectedPasses, KickOrigin kickOrigin)
 	{
 		return previousSelectedPasses.keySet().stream()
 				.filter(e -> e.getPos().distanceTo(kickOrigin.getPos()) < 50)
 				.min(Comparator.comparingDouble(e -> e.getPos().distanceTo(kickOrigin.getPos())));
 	}
+
 
 	private Map<KickOrigin, RatedPass> selectPasses()
 	{
@@ -87,7 +88,7 @@ public class PassSelectionCalc extends ACalculator
 	}
 
 
-	private Map<KickOrigin,RatedPass> getPreviousPasses()
+	private Map<KickOrigin, RatedPass> getPreviousPasses()
 	{
 		return getAiFrame().getPrevFrame().getTacticalField().getSelectedPasses();
 	}
@@ -149,22 +150,25 @@ public class PassSelectionCalc extends ACalculator
 
 		// 5th phase: take what is left, we do not apply hysteresis for such looser passes on purpose
 		bestPass = passes.stream()
-				.filter(e -> e.getScore(EPassRating.INTERCEPTION) > 0.5 &&
+				.filter(e -> e.getScore(EPassRating.RECEIVABILITY) > 0.5 &&
+						e.getScore(EPassRating.INTERCEPTION) > 0.5 &&
 						e.getScore(EPassRating.PASSABILITY) > 0.5 &&
 						e.getMaxScore(EPassRating.PRESSURE, EPassRating.GOAL_KICK, EPassRating.REFLECT_GOAL_KICK) > 0.3)
 				.max(Comparator.comparingDouble(e -> e.getScore(EPassRating.INTERCEPTION)));
 		if (bestPass.isPresent())
 		{
 			getShapes(EAiShapesLayer.PASS_SELECTION).add(
-					new DrawableAnnotation(bestPass.get().getPass().getKick().getTarget(), "what is left",
-							Vector2.fromY(50)));
+					new DrawableAnnotation(
+							bestPass.get().getPass().getKick().getTarget(), "what is left",
+							Vector2.fromY(50)
+					));
 			return bestPass.get();
 		}
 
 		if (getAiFrame().getGameState().isFreeKickForUs() || getAiFrame().getGameState().isKickoffForUs())
 		{
 			return passes.stream()
-					.filter(p -> p.getPass().isChip())
+					.filter(p -> p.getPass().getType() == EPassType.CHIP)
 					.max(Comparator.<RatedPass>comparingDouble(e -> e.getScore(EPassRating.PASSABILITY))
 							.thenComparing(e -> e.getScore(EPassRating.INTERCEPTION))
 							.thenComparing(e -> e.getScore(EPassRating.REFLECT_GOAL_KICK))
@@ -180,31 +184,46 @@ public class PassSelectionCalc extends ACalculator
 	private boolean filterReflectPhase(RatedPass currentPass, RatedPass oldPass)
 	{
 		boolean applyHyst = shouldApplyHystForPass(currentPass, oldPass);
-		return currentPass.getScore(EPassRating.INTERCEPTION) > 0.35 - (applyHyst ? 0.2 : 0) &&
+		return currentPass.getScore(EPassRating.RECEIVABILITY) > 0.5 &&
+				currentPass.getScore(EPassRating.INTERCEPTION) > 0.35 - (applyHyst ? 0.2 : 0) &&
 				currentPass.getScore(EPassRating.REFLECT_GOAL_KICK) > 0.6 - (applyHyst ? 0.2 : 0) &&
 				currentPass.getScore(EPassRating.PASSABILITY) > 0.7 - (applyHyst ? 0.2 : 0);
 	}
 
+
 	private boolean filterGoalKickPhase(RatedPass currentPass, RatedPass oldPass)
 	{
 		boolean applyHyst = shouldApplyHystForPass(currentPass, oldPass);
-		return currentPass.getScore(EPassRating.INTERCEPTION) > 0.5 - (applyHyst ? 0.2 : 0) &&
+		return currentPass.getScore(EPassRating.RECEIVABILITY) > 0.5 &&
+				currentPass.getScore(EPassRating.INTERCEPTION) > 0.5 - (applyHyst ? 0.2 : 0) &&
 				currentPass.getScore(EPassRating.GOAL_KICK) > 0.6 - (applyHyst ? 0.1 : 0) &&
 				currentPass.getScore(EPassRating.PASSABILITY) > 0.7 - (applyHyst ? 0.3 : 0);
 	}
 
+
 	private boolean filterPressurePhase(RatedPass currentPass, RatedPass oldPass)
 	{
 		boolean applyHyst = shouldApplyHystForPass(currentPass, oldPass);
-		return currentPass.getScore(EPassRating.INTERCEPTION) > 0.5 - (applyHyst ? 0.2 : 0) &&
+		boolean isStandard = getAiFrame().getGameState().isFreeKickForUs() ||
+				getAiFrame().getGameState().isKickoffForUs();
+
+		// we are only interested in standards. So in this case kickOrigin = ball.
+		boolean isNearOurCorner =
+				Math.abs(getWFrame().getBall().getPos().x() - Geometry.getGoalOur().getCenter().x()) < 2000;
+
+		double interceptThreshold = (isStandard && isNearOurCorner) ? 0.7 : 0.5;
+		return currentPass.getScore(EPassRating.RECEIVABILITY) > 0.5 &&
+				currentPass.getScore(EPassRating.INTERCEPTION) > interceptThreshold - (applyHyst ? 0.2 : 0) &&
 				currentPass.getScore(EPassRating.PRESSURE) > 0.3 - (applyHyst ? 0.2 : 0) &&
 				currentPass.getScore(EPassRating.PASSABILITY) > 0.7 - (applyHyst ? 0.4 : 0);
 	}
 
+
 	private boolean filterFinisherPhase(RatedPass currentPass, RatedPass oldPass)
 	{
 		boolean applyHyst = shouldApplyHystForPass(currentPass, oldPass);
-		return currentPass.getScore(EPassRating.INTERCEPTION) > 0.5 - (applyHyst ? 0.2 : 0) &&
+		return currentPass.getScore(EPassRating.RECEIVABILITY) > 0.5 &&
+				currentPass.getScore(EPassRating.INTERCEPTION) > 0.5 - (applyHyst ? 0.2 : 0) &&
 				currentPass.getScore(EPassRating.FINISHER) > 0.7 - (applyHyst ? 0.1 : 0) &&
 				currentPass.getScore(EPassRating.PASSABILITY) > 0.7 - (applyHyst ? 0.3 : 0);
 	}

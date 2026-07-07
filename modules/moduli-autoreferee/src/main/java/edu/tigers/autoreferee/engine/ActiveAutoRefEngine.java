@@ -1,6 +1,3 @@
-/*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.autoreferee.engine;
 
 import edu.tigers.autoreferee.IAutoRefFrame;
@@ -140,7 +137,7 @@ public class ActiveAutoRefEngine extends AutoRefEngine
 	{
 		if (response.getResponse() != GameEventResponse.Response.OK)
 		{
-			log.warn("Game-controller response was not OK: " + response);
+			log.warn("Game-controller response was not OK: {}", response);
 		}
 	}
 }

@@ -1,11 +1,6 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra.botmanager.botskills;
 
-import edu.tigers.sumatra.bot.IMoveConstraints;
 import edu.tigers.sumatra.bot.MoveConstraints;
-import edu.tigers.sumatra.bot.params.BotMovementLimits;
 import edu.tigers.sumatra.botmanager.botskills.data.DriveLimits;
 import edu.tigers.sumatra.botmanager.botskills.data.EKickerDevice;
 import edu.tigers.sumatra.botmanager.botskills.data.EKickerMode;
@@ -56,13 +51,13 @@ public class BotSkillCircleBall extends AMoveBotSkill
 	/**
 	 * @param mc
 	 */
-	public BotSkillCircleBall(final IMoveConstraints mc)
+	public BotSkillCircleBall(final MoveConstraints mc)
 	{
 		this();
 		setAccMax(mc.getAccMax());
 		setAccMaxW(mc.getAccMaxW());
-		setJerkMaxW(mc.getJerkMaxW());
-		setJerkMax(mc.getJerkMax());
+		setJerkMax(DriveLimits.MAX_JERK);
+		setJerkMaxW(DriveLimits.MAX_JERK_W);
 	}
 
 
@@ -76,7 +71,7 @@ public class BotSkillCircleBall extends AMoveBotSkill
 	 * @param mc
 	 */
 	public BotSkillCircleBall(final double speed, final double radius, final double targetAngle,
-			final double friction, final IMoveConstraints mc)
+			final double friction, final MoveConstraints mc)
 	{
 		this(mc);
 
@@ -230,13 +225,9 @@ public class BotSkillCircleBall extends AMoveBotSkill
 	@Override
 	public MoveConstraints getMoveConstraints()
 	{
-		MoveConstraints moveCon = new MoveConstraints(new BotMovementLimits());
-		moveCon.setAccMax(getAccMax());
-		moveCon.setAccMaxW(getAccMaxW());
-		moveCon.setJerkMax(getJerkMax());
-		moveCon.setJerkMaxW(getJerkMaxW());
-
-		return moveCon;
+		return MoveConstraints.ZERO
+				.withAccMax(getAccMax())
+				.withAccMaxW(getAccMaxW());
 	}
 
 

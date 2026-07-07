@@ -1,10 +1,8 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra.vision;
 
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.bot.EBotType;
 import edu.tigers.sumatra.bot.RobotInfo;
 import edu.tigers.sumatra.cam.data.CamCalibration;
@@ -44,33 +42,33 @@ import java.util.stream.Collectors;
  */
 public class QualityInspector
 {
-	@Configurable(defValue = "true", comment = "Draw camera issues in quality layer.")
+	@Configurable(defValue = "true", comment = "Draw camera issues in quality layer.", unit = EConfigUnit.BOOLEAN)
 	private static boolean drawCameraIssues = true;
-	@Configurable(defValue = "true", comment = "Draw robot deviation issues in quality layer.")
+	@Configurable(defValue = "true", comment = "Draw robot deviation issues in quality layer.", unit = EConfigUnit.BOOLEAN)
 	private static boolean drawRobotDeviationIssues = true;
-	@Configurable(defValue = "true", comment = "Draw invisible robot issues in quality layer.")
+	@Configurable(defValue = "true", comment = "Draw invisible robot issues in quality layer.", unit = EConfigUnit.BOOLEAN)
 	private static boolean drawRobotInvisibleIssues = true;
-	@Configurable(defValue = "true", comment = "Draw height robot issues in quality layer.")
+	@Configurable(defValue = "true", comment = "Draw height robot issues in quality layer.", unit = EConfigUnit.BOOLEAN)
 	private static boolean drawRobotHeightIssues = true;
-	@Configurable(defValue = "true", comment = "Draw Camera FPS quality issues in quality layer.")
+	@Configurable(defValue = "true", comment = "Draw Camera FPS quality issues in quality layer.", unit = EConfigUnit.BOOLEAN)
 	private static boolean drawFpsIssues = true;
-	@Configurable(defValue = "true", comment = "Draw robot vision quality issues in quality layer.")
+	@Configurable(defValue = "true", comment = "Draw robot vision quality issues in quality layer.", unit = EConfigUnit.BOOLEAN)
 	private static boolean drawRobotQualityIssues = true;
-	@Configurable(defValue = "400.0", comment = "Maximum allowed camera height difference to median height. [mm]")
+	@Configurable(defValue = "400.0", comment = "Maximum allowed camera height difference to median height.", unit = EConfigUnit.DISTANCE_MM)
 	private static double maxHeightDifference = 400.0;
-	@Configurable(defValue = "50", comment = "Maximum allowed distance between a robot on two cameras. [mm]")
+	@Configurable(defValue = "50", comment = "Maximum allowed distance between a robot on two cameras.", unit = EConfigUnit.DISTANCE_MM)
 	private static double maxOverlapDist = 50;
-	@Configurable(defValue = "10", comment = "Time until issues are removed. [s]")
+	@Configurable(defValue = "10", comment = "Time until issues are removed.", unit = EConfigUnit.TIME_S)
 	private static double issueTimeout = 10;
-	@Configurable(defValue = "1", comment = "Robots faster than this will not be checked for position deviation. [m/s]")
+	@Configurable(defValue = "1", comment = "Robots faster than this will not be checked for position deviation.", unit = EConfigUnit.VELOCITY_M)
 	private static double maxSpeedForDeviation = 1;
-	@Configurable(defValue = "0.02", comment = "Maximum difference between different camera timestamps. [s]")
+	@Configurable(defValue = "0.02", comment = "Maximum difference between different camera timestamps.", unit = EConfigUnit.TIME_S)
 	private static double maxTimeDiffForDeviation = 0.02;
-	@Configurable(defValue = "1.5", comment = "Robots faster than this will be checked for invisibility. [m/s]")
+	@Configurable(defValue = "1.5", comment = "Robots faster than this will be checked for invisibility.", unit = EConfigUnit.VELOCITY_M)
 	private static double minSpeedForInvisibleCheck = 1.5;
-	@Configurable(defValue = "0.1", comment = "Time until an invisible fast robot is reported. [s]")
+	@Configurable(defValue = "0.1", comment = "Time until an invisible fast robot is reported.", unit = EConfigUnit.TIME_S)
 	private static double minInvisibleTime = 0.1;
-	@Configurable(defValue = "69.0", comment = "Minimal camera frames per second [fps]")
+	@Configurable(defValue = "69.0", comment = "Minimal camera frames per second", unit = EConfigUnit.FPS)
 	private static double minimumCamFps = 69.0;
 
 	static

@@ -1,12 +1,8 @@
-/*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.skillsystem.skills.util;
 
-import static edu.tigers.sumatra.skillsystem.skills.util.ChargingValue.aChargingValue;
-
 import edu.tigers.sumatra.math.Hysteresis;
+
+import static edu.tigers.sumatra.skillsystem.skills.util.ChargingValue.aChargingValue;
 
 
 /**
@@ -19,10 +15,10 @@ public class MinMarginChargeValue
 {
 	private final Hysteresis dist2DestHysteresis;
 	private final ChargingValue chargingValue;
-	
+
 	private double minMargin;
-	
-	
+
+
 	private MinMarginChargeValue(final Builder builder)
 	{
 		dist2DestHysteresis = new Hysteresis(builder.lowerThreshold, builder.upperThreshold);
@@ -33,8 +29,8 @@ public class MinMarginChargeValue
 				.build();
 		minMargin = builder.initValue;
 	}
-	
-	
+
+
 	/**
 	 * @return a new factory
 	 */
@@ -42,8 +38,8 @@ public class MinMarginChargeValue
 	{
 		return new Builder();
 	}
-	
-	
+
+
 	/**
 	 * @param dist distance between dest and bot
 	 * @param timestamp current timestamp
@@ -60,8 +56,8 @@ public class MinMarginChargeValue
 		}
 		minMargin = chargingValue.getValue();
 	}
-	
-	
+
+
 	/**
 	 * Reset charging value
 	 */
@@ -69,13 +65,13 @@ public class MinMarginChargeValue
 	{
 		chargingValue.reset();
 	}
-	
-	
+
+
 	public double getMinMargin()
 	{
 		return minMargin;
 	}
-	
+
 	/**
 	 * {@code MinMarginChargeValue} factory static inner class.
 	 */
@@ -87,13 +83,13 @@ public class MinMarginChargeValue
 		private double defaultValue = -1;
 		private double limit = Double.POSITIVE_INFINITY;
 		private Double initValue = null;
-		
-		
+
+
 		private Builder()
 		{
 		}
-		
-		
+
+
 		/**
 		 * Sets the {@code lowerThreshold} and returns a reference to this Builder so that the methods can be chained
 		 * together.
@@ -106,8 +102,8 @@ public class MinMarginChargeValue
 			this.lowerThreshold = lowerThreshold;
 			return this;
 		}
-		
-		
+
+
 		/**
 		 * Sets the {@code upperThreshold} and returns a reference to this Builder so that the methods can be chained
 		 * together.
@@ -120,8 +116,8 @@ public class MinMarginChargeValue
 			this.upperThreshold = upperThreshold;
 			return this;
 		}
-		
-		
+
+
 		/**
 		 * Sets the {@code chargeRate} and returns a reference to this Builder so that the methods can be chained
 		 * together.
@@ -134,8 +130,8 @@ public class MinMarginChargeValue
 			this.chargeRate = chargeRate;
 			return this;
 		}
-		
-		
+
+
 		/**
 		 * Sets the {@code defaultValue} and returns a reference to this Builder so that the methods can be chained
 		 * together.
@@ -148,8 +144,8 @@ public class MinMarginChargeValue
 			this.defaultValue = defaultValue;
 			return this;
 		}
-		
-		
+
+
 		/**
 		 * Sets the {@code limit} and returns a reference to this Builder so that the methods can be chained together.
 		 *
@@ -161,8 +157,8 @@ public class MinMarginChargeValue
 			this.limit = limit;
 			return this;
 		}
-		
-		
+
+
 		/**
 		 * Sets the {@code initValue} and returns a reference to this Builder so that the methods can be chained together.
 		 *
@@ -174,8 +170,8 @@ public class MinMarginChargeValue
 			this.initValue = initValue;
 			return this;
 		}
-		
-		
+
+
 		/**
 		 * Returns a {@code MinMarginChargeValue} built from the parameters previously set.
 		 *

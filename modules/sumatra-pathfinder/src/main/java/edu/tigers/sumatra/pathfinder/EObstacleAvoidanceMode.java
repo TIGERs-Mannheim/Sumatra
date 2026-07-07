@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.pathfinder;
 
 public enum EObstacleAvoidanceMode
@@ -14,4 +10,8 @@ public enum EObstacleAvoidanceMode
 	 * Optimized mode for aggressive behavior.
 	 */
 	AGGRESSIVE,
+	/**
+	 * Optimized for dribbling roles that should keep a safe distance to other bots
+	 */
+	SAFE,
 }

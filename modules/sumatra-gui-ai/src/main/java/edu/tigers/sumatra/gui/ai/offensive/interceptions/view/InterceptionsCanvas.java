@@ -1,16 +1,12 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.gui.ai.offensive.interceptions.view;
 
 import edu.tigers.sumatra.ai.metis.ballinterception.BallInterceptionInformation;
 import edu.tigers.sumatra.ai.metis.ballinterception.InterceptionIteration;
-import edu.tigers.sumatra.ai.metis.ballinterception.InterceptionZeroAxisCrossing;
 import edu.tigers.sumatra.ids.BotID;
 import lombok.Setter;
 
 import javax.swing.JPanel;
+import javax.swing.UIManager;
 import java.awt.BasicStroke;
 import java.awt.BorderLayout;
 import java.awt.Color;
@@ -84,8 +80,6 @@ public class InterceptionsCanvas extends JPanel
 		BallInterceptionInformation information = interceptionInformation.get(selectedBot);
 
 		drawDataSamples(g2, information);
-		drawZeroAxisIntersections(g2, information);
-		drawCorridors(g2, information);
 		drawWithoutBonusLines(g2, information);
 		drawOldPositionCross(g2, information);
 	}
@@ -174,64 +168,6 @@ public class InterceptionsCanvas extends JPanel
 	}
 
 
-	private void drawCorridors(final Graphics2D g2, final BallInterceptionInformation information)
-	{
-		for (var corr : information.getInterceptionCorridors())
-		{
-			g2.setColor(Color.BLUE.darker());
-			g2.setStroke(new BasicStroke(3));
-			Point start = convertDataPointToGUICoordinates(corr.getStartTime(), -2.0);
-			Point end = convertDataPointToGUICoordinates(Math.min(MAXX, corr.getEndTime()), -2.0);
-
-			if (end.x - start.x > 20)
-			{
-				drawArrow(g2, start.x, start.y, end.x, end.y, 8);
-				drawArrow(g2, end.x, start.y, start.x, end.y, 8);
-			} else
-			{
-				g2.drawLine(start.x, start.y, end.x, end.y);
-				g2.drawLine(end.x, start.y, start.x, end.y);
-			}
-			g2.setStroke(new BasicStroke(2));
-			g2.setColor(Color.BLACK);
-			String corridorWidthString = String.format("%.0fmm", corr.getWidth());
-			String corridorTimeString = String.format("%.2fs", corr.getEndTime() - corr.getStartTime());
-			int xOffset = 0;
-			if (end.x - start.x < 100)
-			{
-				xOffset = end.x - start.x;
-				if (start.x + 10 + xOffset > PADDING + axisW)
-				{
-					xOffset = -65;
-				}
-			}
-			g2.drawString(corridorWidthString, start.x + 10 + xOffset, start.y + 20);
-			g2.drawString(corridorTimeString, start.x + 10 + xOffset, start.y + 35);
-
-			g2.setStroke(new BasicStroke(4));
-			g2.setColor(new Color(255, 0, 0, 77));
-			if (!information.getInterceptionCorridors().isEmpty())
-			{
-				Point target1 = convertDataPointToGUICoordinates(information.getInterceptionTargetTime(), MINY);
-				Point target2 = convertDataPointToGUICoordinates(information.getInterceptionTargetTime(), MAXY);
-				g2.drawLine(target1.x, target1.y, target2.x, target2.y);
-			}
-		}
-	}
-
-
-	private void drawZeroAxisIntersections(final Graphics2D g2, final BallInterceptionInformation information)
-	{
-		g2.setColor(Color.BLUE.darker());
-		for (InterceptionZeroAxisCrossing point : information.getZeroAxisChanges())
-		{
-			Point data = convertDataPointToGUICoordinates(point.getBallTravelTime(), 0);
-			Point dataStart = convertDataPointToGUICoordinates(point.getBallTravelTime(), MINY);
-			g2.drawLine(data.x, data.y, dataStart.x, dataStart.y);
-		}
-	}
-
-
 	private void drawDataSamples(final Graphics2D g2, final BallInterceptionInformation information)
 	{
 		g2.setStroke(new BasicStroke(3));
@@ -245,7 +181,13 @@ public class InterceptionsCanvas extends JPanel
 			}
 			Point data = convertDataPointToGUICoordinates(point.getBallTravelTime(), point.getSlackTime());
 			Point dataStart = convertDataPointToGUICoordinates(point.getBallTravelTime(), MINY);
-			g2.setColor(new Color(141, 141, 141, 128));
+			if (point.isOvershooting())
+			{
+				g2.setColor(new Color(0, 141, 141, 128));
+			} else
+			{
+				g2.setColor(new Color(141, 141, 141, 128));
+			}
 			g2.drawLine(data.x, data.y, dataStart.x, dataStart.y);
 			g2.setColor(Color.BLACK);
 			if (old != null)
@@ -259,7 +201,7 @@ public class InterceptionsCanvas extends JPanel
 
 	private void drawAxisLabels(final Graphics2D g2)
 	{
-		g2.setColor(Color.black);
+		g2.setColor(UIManager.getColor("Label.foreground"));
 		double yStepSize = (1.0 / axisH) * 200;
 		for (double u = MINY; u < MAXY; u = u + yStepSize)
 		{
@@ -268,7 +210,8 @@ public class InterceptionsCanvas extends JPanel
 					PADDING - 10,
 					(int) (progress * (axisH) + PADDING),
 					PADDING,
-					(int) (progress * (axisH) + PADDING));
+					(int) (progress * (axisH) + PADDING)
+			);
 			String time = String.format("%.2f", u);
 			g2.drawString(time, PADDING - 30, (int) (progress * (axisH) + PADDING) - 3);
 		}
@@ -282,7 +225,8 @@ public class InterceptionsCanvas extends JPanel
 					(int) (progress * (axisW) + PADDING),
 					h - PADDING + 10,
 					(int) (progress * (axisW) + PADDING),
-					h - PADDING);
+					h - PADDING
+			);
 			String time = String.format("%.2f", u);
 			g2.drawString(time, (int) (progress * (axisW) + PADDING) - 15, h - PADDING + 25);
 		}
@@ -295,18 +239,18 @@ public class InterceptionsCanvas extends JPanel
 		Point zeroLine1 = convertDataPointToGUICoordinates(0, 0);
 		Point zeroLine2 = convertDataPointToGUICoordinates(MAXX, 0);
 
-		g2.setColor(new Color(215, 255, 187, 128));
+		g2.setColor(new Color(215, 255, 187, 228));
 		Point zeroLine3 = convertDataPointToGUICoordinates(MAXX, MINY);
 		Point zeroLine4 = convertDataPointToGUICoordinates(MAXX, MAXY);
 		g2.fillRect(zeroLine1.x, zeroLine1.y, zeroLine3.x - zeroLine1.x, zeroLine3.y - zeroLine1.y);
 
-		g2.setColor(new Color(255, 190, 190, 128));
+		g2.setColor(new Color(255, 190, 190, 228));
 		g2.fillRect(zeroLine1.x, zeroLine4.y, zeroLine4.x - zeroLine1.x, zeroLine1.y - zeroLine4.y);
 
 		g2.setColor(Color.RED.darker());
 		g2.drawLine(zeroLine1.x, zeroLine1.y, zeroLine2.x, zeroLine2.y);
 
-		g2.setColor(Color.BLACK);
+		g2.setColor(UIManager.getColor("Label.foreground"));
 		drawArrow(g2, PADDING, h - PADDING, PADDING, PADDING, 5);
 		drawArrow(g2, PADDING, h - PADDING, w - PADDING, h - PADDING, 5);
 	}
@@ -335,7 +279,9 @@ public class InterceptionsCanvas extends JPanel
 
 		// Draw horizontal arrow starting in (0, 0)
 		g.drawLine(0, 0, len - arrowTipSize, 0);
-		g.fillPolygon(new int[] { len, len - arrowTipSize, len - arrowTipSize, len },
-				new int[] { 0, -arrowTipSize, arrowTipSize, 0 }, 4);
+		g.fillPolygon(
+				new int[] { len, len - arrowTipSize, len - arrowTipSize, len },
+				new int[] { 0, -arrowTipSize, arrowTipSize, 0 }, 4
+		);
 	}
 }

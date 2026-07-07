@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.skillsystem;
 
 import com.github.g3force.instanceables.IInstanceableEnum;
@@ -30,7 +26,6 @@ import edu.tigers.sumatra.skillsystem.skills.ProtectiveGetBallSkill;
 import edu.tigers.sumatra.skillsystem.skills.RamboKeeperSkill;
 import edu.tigers.sumatra.skillsystem.skills.ReceiveBallSkill;
 import edu.tigers.sumatra.skillsystem.skills.RedirectBallSkill;
-import edu.tigers.sumatra.skillsystem.skills.RotateWithBallSkill;
 import edu.tigers.sumatra.skillsystem.skills.RotationSkill;
 import edu.tigers.sumatra.skillsystem.skills.SingleTouchKickSkill;
 import edu.tigers.sumatra.skillsystem.skills.TouchKickSkill;
@@ -94,10 +89,6 @@ public enum ESkill implements IInstanceableEnum
 			.setterParam(Double.class, "orientation", "0", MoveWithBallSkill::setFinalOrientation)
 	),
 	GET_BALL_CONTACT(ic(GetBallContactSkill.class)),
-
-	ROTATE_WITH_BALL(ic(RotateWithBallSkill.class)
-			.setterParam(IVector2.class, "protectionTarget", "0,0", RotateWithBallSkill::setProtectionTarget)
-	),
 
 	DRAG_BALL(ic(DragBallSkill.class)
 			.setterParam(IVector2.class, "destination", "0,0", DragBallSkill::setDestination)

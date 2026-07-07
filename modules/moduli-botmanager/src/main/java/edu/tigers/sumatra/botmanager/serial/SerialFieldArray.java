@@ -1,16 +1,12 @@
-/*
- * Copyright (c) 2009 - 2019, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra.botmanager.serial;
+
+import edu.tigers.sumatra.botmanager.serial.SerialData.ESerialDataType;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.util.Arrays;
-
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import edu.tigers.sumatra.botmanager.serial.SerialData.ESerialDataType;
 
 
 /**
@@ -142,8 +138,10 @@ public class SerialFieldArray extends ASerialField
 		long value = Array.getLong(array, pos);
 		if ((value < type.getMin()) || (value > type.getMax()))
 		{
-			log.warn(type + " " + field.getDeclaringClass().getSimpleName() + "::" + field.getName() + "[" + pos
-					+ "]" + " value is out of bounds (" + value + ")", new IllegalArgumentException());
+			log.warn(
+					"{} {}::{}[{}] value is out of bounds ({})", type, field.getDeclaringClass().getSimpleName(),
+					field.getName(), pos, value, new IllegalArgumentException()
+			);
 		}
 	}
 

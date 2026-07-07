@@ -1,9 +1,7 @@
-/*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.autoreferee.engine.detector;
 
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.autoreferee.generic.BotPosition;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.ETeamColor;
@@ -26,7 +24,7 @@ import java.util.Optional;
 @Log4j2
 public class BoundaryCrossingDetector extends AGameEventDetector
 {
-	@Configurable(defValue = "2.0", comment = "Delay until the Game Event is thrown [s]")
+	@Configurable(defValue = "2.0", comment = "Delay until the Game Event is thrown", unit = EConfigUnit.TIME_S)
 	private static double delay = 2.0;
 	private ETeamColor lastTouchedBy = ETeamColor.NEUTRAL;
 	private long ballLastSeen = 0;

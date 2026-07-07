@@ -1,6 +1,3 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.autoref.view.main;
 
 import edu.tigers.autoreferee.engine.detector.EGameEventDetectorType;

@@ -1,11 +1,8 @@
-/*
- * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.metis.pass;
 
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.ai.BaseAiFrame;
 import edu.tigers.sumatra.ai.common.PointChecker;
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
@@ -39,8 +36,10 @@ import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.math.vector.Vector2f;
 import edu.tigers.sumatra.movingrobot.MovingRobotFactory;
+import edu.tigers.sumatra.movingrobot.MovingRobotParams;
 import edu.tigers.sumatra.pathfinder.IPathFinder;
 import edu.tigers.sumatra.pathfinder.MovementCon;
+import edu.tigers.sumatra.pathfinder.PathFinderPrioMap;
 import edu.tigers.sumatra.pathfinder.finder.PathFinder;
 import edu.tigers.sumatra.pathfinder.finder.PathFinderInput;
 import edu.tigers.sumatra.pathfinder.finder.PathFinderResult;
@@ -70,43 +69,43 @@ public class PassGenerator
 	private static final Color FORBIDDEN_AREA_COLOR = new Color(212, 102, 6, 128);
 	private static final Color GENERATION_AREA_COLOR = new Color(6, 212, 188, 128);
 
-	@Configurable(defValue = "6", comment = "How many pass targets to choose per bot in addition to those from last frame")
+	@Configurable(defValue = "6", comment = "How many pass targets to choose per bot in addition to those from last frame", unit = EConfigUnit.COUNT)
 	private static int maxNewPassTargetsPerBot = 6;
 
-	@Configurable(defValue = "3", comment = "How many pass targets to choose per bot from last frame")
+	@Configurable(defValue = "3", comment = "How many pass targets to choose per bot from last frame", unit = EConfigUnit.COUNT)
 	private static int maxOldPassTargetsPerBot = 3;
 
-	@Configurable(defValue = "15", comment = "How many pass targets to generate per bot in addition to those from last frame")
-	private static int maxGeneratePassTargetsPerBot = 15;
+	@Configurable(defValue = "50", comment = "How many pass targets to generate per bot in addition to those from last frame", unit = EConfigUnit.COUNT)
+	private static int maxGeneratePassTargetsPerBot = 50;
 
-	@Configurable(defValue = "1500.0", comment = "Safety distance to keep to our penalty area")
+	@Configurable(defValue = "1500.0", comment = "Safety distance to keep to our penalty area", unit = EConfigUnit.DISTANCE_MM)
 	private static double safetyDistanceToPenaltyArea = 1500.0;
 
-	@Configurable(defValue = "200.0", comment = "Safety distance to their goal line")
+	@Configurable(defValue = "200.0", comment = "Safety distance to their goal line", unit = EConfigUnit.DISTANCE_MM)
 	private static double safetyDistanceToGoalLine = 200;
 
-	@Configurable(defValue = "1500.0", comment = " Min distance from pass target to Ball")
+	@Configurable(defValue = "1500.0", comment = " Min distance from pass target to Ball", unit = EConfigUnit.DISTANCE_MM)
 	private static double minDistanceToBall = 1500.0;
 
-	@Configurable(defValue = "1.5", comment = "Min allowed duration [s] until the ball enters our own penalty area")
+	@Configurable(defValue = "1.5", comment = "Min allowed duration until the ball enters our own penalty area", unit = EConfigUnit.TIME_S)
 	private static double minPassDurationUntilReachingPenaltyArea = 1.5;
 
-	@Configurable(defValue = "2.0", comment = "Max horizon [s] to use for the pass target generation radius")
+	@Configurable(defValue = "2.0", comment = "Max horizon to use for the pass target generation radius", unit = EConfigUnit.TIME_S)
 	private static double maxBotHorizon = 2.0;
 
-	@Configurable(defValue = "0.9", comment = "Relative amount of time based on approx. pass duration for the the pass target generation radius")
+	@Configurable(defValue = "0.9", comment = "Relative amount of time based on approx. pass duration for the the pass target generation radius", unit = EConfigUnit.FACTOR)
 	private static double relativeBotHorizon = 0.9;
 
-	@Configurable(defValue = "50.0", comment = "Min distance [mm] between generated positions")
+	@Configurable(defValue = "50.0", comment = "Min distance between generated positions", unit = EConfigUnit.DISTANCE_MM)
 	private static double minDistanceBetweenTargets = 50;
 
-	@Configurable(defValue = "0.08", comment = "Min angle tolerance for filtering passes during free kick")
+	@Configurable(defValue = "0.08", comment = "Min angle tolerance for filtering passes during free kick", unit = EConfigUnit.ANGLE_RAD)
 	private static double minAngleTolerance = 0.08;
 
-	@Configurable(defValue = "0.15", comment = "[s]")
+	@Configurable(defValue = "0.15", unit = EConfigUnit.TIME_S)
 	private static double minSlackTimeForPassReception = 0.15;
 
-	@Configurable(defValue = "-150", comment = "Margin around the field to include passes in")
+	@Configurable(defValue = "-150", comment = "Margin around the field to include passes in", unit = EConfigUnit.DISTANCE_MM)
 	private static double fieldMargin = -150;
 
 	private final IPathFinder finder = new PathFinder();
@@ -154,6 +153,7 @@ public class PassGenerator
 		this.aiFrame = aiFrame;
 		passFactory.update(getWFrame());
 		passCreator.update(getWFrame());
+		passCreator.setMaxPlannedBotVelAtReceive(OffensiveConstants.getMaxPlannedBotReceiveVelocity());
 		updatePenaltyAreaMargin();
 	}
 
@@ -209,12 +209,13 @@ public class PassGenerator
 
 	private boolean isReachable(IVector2 pos, BotID receiverId)
 	{
-		MovementCon moveCon = new MovementCon();
-		ObstacleGenerator obstacleGen = new ObstacleGenerator(moveCon);
+		MovementCon moveCon = MovementCon.DEFAULT;
+		ObstacleGenerator obstacleGen = new ObstacleGenerator();
 
 		var receiver = getWFrame().getBot(receiverId);
-		moveCon.update(receiver);
-		List<IObstacle> obstacles = obstacleGen.generateObstacles(getWFrame(), receiverId, getAiFrame().getGameState());
+		PathFinderPrioMap prioMap = PathFinderPrioMap.byBotId(receiver.getTeamColor());
+		List<IObstacle> obstacles = obstacleGen.generateObstacles(
+				getWFrame(), receiverId, getAiFrame().getGameState(), moveCon, prioMap);
 
 		PathFinderInput pathFinderInput = getPathFinderInput(
 				pos, receiverId, receiver.getMoveConstraints(),
@@ -413,22 +414,43 @@ public class PassGenerator
 				.straight(kickOrigin.getPos(), bot.getPos(), kickOrigin.getShooter(), botID, EBallReceiveMode.DONT_CARE)
 				.map(Pass::getDuration)
 				.orElse(Double.POSITIVE_INFINITY);
-		var t = Math.min(
-				maxBotHorizon,
-				minApproxPassDuration + kickOrigin.impactTimeOrZero() - minSlackTimeForPassReception
+		var t = SumatraMath.max(
+				passCreator.getDefaultMinPassDuration(),
+				SumatraMath.min(
+						maxBotHorizon,
+						minApproxPassDuration + kickOrigin.impactTimeOrZero() - minSlackTimeForPassReception
+				)
 		) * relativeBotHorizon;
 
 		double aLimit = bot.getMoveConstraints().getAccMax();
 		double vLimit = bot.getMoveConstraints().getVelMax();
 
-		return MovingRobotFactory.stoppingRobot(
-				bot.getBotKickerPos(Geometry.getBallRadius()),
-				bot.getVel(),
-				vLimit,
-				aLimit,
-				aLimit,
-				Geometry.getBotRadius(),
-				0
+		if (SumatraMath.isZero(OffensiveConstants.getMaxPlannedBotReceiveVelocity()))
+		{
+			return MovingRobotFactory.stoppingRobot(
+					MovingRobotParams.builder()
+							.position(bot.getBotKickerPos(Geometry.getBallRadius()))
+							.velocity(bot.getVel())
+							.vLimit(vLimit)
+							.aLimit(aLimit)
+							.brkLimit(aLimit)
+							.radius(Geometry.getBotRadius())
+							.reactionTime(0)
+							.build()
+			).getMovingHorizon(t);
+		}
+
+		return MovingRobotFactory.slowingDownRobot(
+				MovingRobotParams.builder()
+						.position(bot.getBotKickerPos(Geometry.getBallRadius()))
+						.velocity(bot.getVel())
+						.vLimit(vLimit)
+						.aLimit(aLimit)
+						.brkLimit(aLimit)
+						.radius(Geometry.getBotRadius())
+						.reactionTime(0)
+						.build(),
+				OffensiveConstants.getMaxPlannedBotReceiveVelocity()
 		).getMovingHorizon(t);
 	}
 
@@ -440,9 +462,14 @@ public class PassGenerator
 		PassTargetCandidate centerPassTargetCandidate = createPassTargetCandidate(circle.center(), botID);
 		passTargets.add(centerPassTargetCandidate);
 
-		int maxIterations = 0;
-		while (passTargets.size() < maxNewPassTargetsPerBot && maxIterations < maxGeneratePassTargetsPerBot)
+		long validTargets = passTargets.stream().filter(c -> c.getFirstFailedCheck() == null).count();
+		for (int i = 0; i < maxGeneratePassTargetsPerBot; i++)
 		{
+			if (validTargets >= maxNewPassTargetsPerBot)
+			{
+				break;
+			}
+
 			double angle = AngleMath.PI_TWO * rnd.nextDouble();
 			double radius = circle.radius() * rnd.nextDouble();
 			IVector2 targetPos = circle.center().addNew(Vector2.fromAngleLength(angle, radius));
@@ -450,8 +477,11 @@ public class PassGenerator
 			if (distanceToOtherCandidatesIsValid(candidate, passTargets))
 			{
 				passTargets.add(candidate);
+				if (candidate.getFirstFailedCheck() == null)
+				{
+					validTargets++;
+				}
 			}
-			maxIterations++;
 		}
 
 		return passTargets;

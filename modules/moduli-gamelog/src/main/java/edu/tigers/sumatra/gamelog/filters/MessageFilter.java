@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.gamelog.filters;
 
 import edu.tigers.sumatra.gamelog.EMessageType;

@@ -1,6 +1,3 @@
-/*
- * Copyright (c) 2009 - 2019, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra.persistence.log;
 
 import edu.tigers.sumatra.log.ILogEventConsumer;
@@ -15,7 +12,7 @@ import org.apache.logging.log4j.core.LoggerContext;
 /**
  * Storage for log events
  */
-public class PersistenceLogRecorder extends ABufferedPersistenceRecorder<PersistenceLogEvent>
+public class PersistenceLogRecorder extends ABufferedPersistenceRecorder<PersistenceLogCohort>
 		implements ILogEventConsumer
 {
 	private static final String APPENDER_NAME = "persistence";
@@ -26,14 +23,14 @@ public class PersistenceLogRecorder extends ABufferedPersistenceRecorder<Persist
 	 */
 	public PersistenceLogRecorder(PersistenceDb db)
 	{
-		super(db, PersistenceLogEvent.class);
+		super(db, PersistenceLogCohort.class);
 	}
 
 
 	@Override
 	public void onNewLogEvent(final LogEvent logEvent)
 	{
-		queue(new PersistenceLogEvent(logEvent));
+		queue(new PersistenceLogCohort(new PersistenceLogEvent(logEvent)));
 	}
 
 

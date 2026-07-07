@@ -1,10 +1,8 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.persistence.serializer;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.VarHandle;
 import java.nio.ByteBuffer;
 import java.util.EnumMap;
 
@@ -15,20 +13,19 @@ import java.util.EnumMap;
 @SuppressWarnings("rawtypes")
 public class EnumMapSerializer extends MapSerializer<EnumMap>
 {
+	private static final VarHandle KEY_TYPE_HANDLE = keyTypeHandle();
 
-	private static final long KEY_TYPE_OFFSET = getKeyTypeOffset();
 
-
-	@SuppressWarnings("deprecation")
-	private static long getKeyTypeOffset()
+	private static VarHandle keyTypeHandle()
 	{
 		try
 		{
-			// As EnumMap is inside the sealed java.base module, Unsafe is necessary for access.
-			return FieldSerializer.UNSAFE.objectFieldOffset(EnumMap.class.getDeclaredField("keyType"));
-		} catch (NoSuchFieldException e)
+			return MethodHandles
+					.privateLookupIn(EnumMap.class, MethodHandles.lookup())
+					.findVarHandle(EnumMap.class, "keyType", Class.class);
+		} catch (NoSuchFieldException | IllegalAccessException e)
 		{
-			throw new IllegalStateException("Could not get keyType field of EnumMap", e);
+			throw new IllegalStateException("Could not access EnumMap.keyType", e);
 		}
 	}
 
@@ -45,7 +42,7 @@ public class EnumMapSerializer extends MapSerializer<EnumMap>
 	{
 		stream.write(
 				genericSerializer
-						.getOrCreateSerializer((Class) FieldSerializer.UNSAFE.getObject(object, KEY_TYPE_OFFSET))
+						.getOrCreateSerializer((Class) KEY_TYPE_HANDLE.get(object))
 						.getId()
 		);
 		super.serialize(stream, object);

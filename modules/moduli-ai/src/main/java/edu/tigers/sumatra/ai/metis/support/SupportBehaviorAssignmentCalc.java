@@ -1,10 +1,7 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.metis.support;
 
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.ai.common.PointChecker;
 import edu.tigers.sumatra.ai.metis.ACalculator;
 import edu.tigers.sumatra.ai.metis.support.behaviors.BreakThroughDefenseBehavior;
@@ -30,7 +27,7 @@ import java.util.function.Supplier;
 @Log4j2
 public class SupportBehaviorAssignmentCalc extends ACalculator
 {
-	@Configurable(comment = "[mm]", defValue = "-2000.0")
+	@Configurable(defValue = "-2000.0", unit = EConfigUnit.DISTANCE_MM)
 	private static double xPosMidfieldSingleMidfieldSupporter = -2000;
 
 	private final Supplier<Map<EPlay, Set<BotID>>> desiredBots;

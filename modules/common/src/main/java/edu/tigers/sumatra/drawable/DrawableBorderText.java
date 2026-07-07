@@ -1,6 +1,3 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra.drawable;
 
 import edu.tigers.sumatra.math.vector.IVector2;
@@ -19,7 +16,7 @@ import java.awt.Graphics2D;
 @RequiredArgsConstructor
 public class DrawableBorderText extends ADrawable
 {
-	public static final int BORDER_TEXT_WIDTH = 750;
+	public static final int BORDER_TEXT_WIDTH = 900;
 
 	private final IVector2 pos;
 	private final String text;

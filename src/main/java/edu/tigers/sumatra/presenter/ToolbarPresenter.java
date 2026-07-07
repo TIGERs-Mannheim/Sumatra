@@ -1,16 +1,13 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.presenter;
 
 import edu.tigers.sumatra.ai.AAgent;
+import edu.tigers.sumatra.ai.IAIObserver;
 import edu.tigers.sumatra.ai.IVisualizationFrameObserver;
 import edu.tigers.sumatra.ai.VisualizationFrame;
 import edu.tigers.sumatra.ai.athena.EAIControlState;
 import edu.tigers.sumatra.botmanager.TigersBotManager;
 import edu.tigers.sumatra.botmanager.basestation.TigersBaseStation;
-import edu.tigers.sumatra.botmanager.commands.basestation.BaseStationWifiStats;
+import edu.tigers.sumatra.botmanager.commands.basestation.BaseStationWifiStatsV2;
 import edu.tigers.sumatra.botmanager.communication.ENetworkState;
 import edu.tigers.sumatra.clock.FpsCounter;
 import edu.tigers.sumatra.ids.EAiTeam;
@@ -43,7 +40,8 @@ import java.awt.event.KeyEvent;
  */
 @Log4j2
 public class ToolbarPresenter
-		implements ISumatraPresenter, IRecordObserver, IVisualizationFrameObserver, IWorldFrameObserver, IRefereeObserver
+		implements ISumatraPresenter, IRecordObserver, IVisualizationFrameObserver, IWorldFrameObserver, IRefereeObserver,
+		           IAIObserver
 {
 	private final ToolBar toolbar;
 
@@ -69,6 +67,7 @@ public class ToolbarPresenter
 	{
 		SumatraModel.getInstance().getModuleOpt(RecordManager.class).ifPresent(m -> m.addObserver(this));
 		SumatraModel.getInstance().getModuleOpt(AAgent.class).ifPresent(m -> m.addVisObserver(this));
+		SumatraModel.getInstance().getModuleOpt(AAgent.class).ifPresent(m -> m.addObserver(this));
 		SumatraModel.getInstance().getModuleOpt(AWorldPredictor.class).ifPresent(m -> m.addObserver(this));
 
 		SumatraModel.getInstance().getModuleOpt(TigersBotManager.class).ifPresent(b -> {
@@ -85,6 +84,7 @@ public class ToolbarPresenter
 	{
 		SumatraModel.getInstance().getModuleOpt(RecordManager.class).ifPresent(m -> m.removeObserver(this));
 		SumatraModel.getInstance().getModuleOpt(AAgent.class).ifPresent(m -> m.removeVisObserver(this));
+		SumatraModel.getInstance().getModuleOpt(AAgent.class).ifPresent(m -> m.removeObserver(this));
 		SumatraModel.getInstance().getModuleOpt(AWorldPredictor.class).ifPresent(m -> m.removeObserver(this));
 
 		SumatraModel.getInstance().getModuleOpt(TigersBotManager.class).ifPresent(b -> {
@@ -118,26 +118,24 @@ public class ToolbarPresenter
 
 
 	@Override
-	public void onStartStopRecord(final boolean recording)
+	public void onAiModeChanged(final EAiTeam aiTeam, final EAIControlState mode)
 	{
-		SwingUtilities.invokeLater(() -> toolbar.setRecordingEnabled(recording));
+		var mappedMode =
+				switch (mode)
+				{
+					case MATCH_MODE, TEST_MODE -> ToolBar.EAIControlState.ACTIVE;
+					case EMERGENCY_MODE -> ToolBar.EAIControlState.EMERGENCY_MODE;
+					case OFF -> ToolBar.EAIControlState.OFF;
+				};
+
+		SwingUtilities.invokeLater(() -> toolbar.onAiModeChanged(aiTeam, mappedMode));
 	}
 
 
-	private class HeapUpdater implements ActionListener
+	@Override
+	public void onStartStopRecord(final boolean recording)
 	{
-		@Override
-		public void actionPerformed(final ActionEvent e)
-		{
-			double curHeap = (Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()) / 1024.0 / 1024.0;
-			double totalMem = Runtime.getRuntime().totalMemory() / 1024.0 / 1024.0;
-			double maxHeap = Runtime.getRuntime().maxMemory() / 1024.0 / 1024.0;
-			SwingUtilities.invokeLater(() -> {
-				toolbar.getHeapBar().setMaximum((int) (totalMem));
-				toolbar.getHeapBar().setValue((int) (curHeap));
-				toolbar.getHeapLabel().setText(String.format("Mem: %6.1f/%6.1f|%6.1fMB", curHeap, totalMem, maxHeap));
-			});
-		}
+		SwingUtilities.invokeLater(() -> toolbar.setRecordingEnabled(recording));
 	}
 
 
@@ -220,7 +218,7 @@ public class ToolbarPresenter
 	}
 
 
-	private void onNewBaseStationWifiStats(final BaseStationWifiStats stats)
+	private void onNewBaseStationWifiStats(final BaseStationWifiStatsV2 stats)
 	{
 		wifiStatsThrottler.execute(
 				() -> {
@@ -236,5 +234,22 @@ public class ToolbarPresenter
 			toolbar.getBaseStationPanel().setState(newState.name());
 			toolbar.getBaseStationPanel().setOnline(newState == ENetworkState.ONLINE);
 		});
+	}
+
+
+	private class HeapUpdater implements ActionListener
+	{
+		@Override
+		public void actionPerformed(final ActionEvent e)
+		{
+			double curHeap = (Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()) / 1024.0 / 1024.0;
+			double totalMem = Runtime.getRuntime().totalMemory() / 1024.0 / 1024.0;
+			double maxHeap = Runtime.getRuntime().maxMemory() / 1024.0 / 1024.0;
+			SwingUtilities.invokeLater(() -> {
+				toolbar.getHeapBar().setMaximum((int) (totalMem));
+				toolbar.getHeapBar().setValue((int) (curHeap));
+				toolbar.getHeapLabel().setText(String.format("Mem: %6.1f/%6.1f|%6.1fMB", curHeap, totalMem, maxHeap));
+			});
+		}
 	}
 }

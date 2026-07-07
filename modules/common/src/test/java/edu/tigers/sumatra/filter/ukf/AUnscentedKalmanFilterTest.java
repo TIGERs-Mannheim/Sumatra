@@ -1,6 +1,3 @@
-/*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra.filter.ukf;
 
 import edu.tigers.sumatra.math.SumatraMath;

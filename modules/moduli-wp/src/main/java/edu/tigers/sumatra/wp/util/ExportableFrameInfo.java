@@ -1,14 +1,10 @@
-/*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.wp.util;
+
+import edu.tigers.sumatra.data.collector.IExportable;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-
-import edu.tigers.sumatra.data.collector.IExportable;
 
 
 /**
@@ -22,16 +18,16 @@ public class ExportableFrameInfo implements IExportable
 	private long tSent;
 	private long tRecorded;
 	private long camFrameId;
-	
-	
+
+
 	/**
 	 *
 	 */
 	public ExportableFrameInfo()
 	{
 	}
-	
-	
+
+
 	/**
 	 * @param frameId
 	 * @param camId
@@ -51,8 +47,8 @@ public class ExportableFrameInfo implements IExportable
 		this.tRecorded = tRecorded;
 		this.camFrameId = camFrameId;
 	}
-	
-	
+
+
 	/**
 	 * @param list
 	 * @return
@@ -66,8 +62,8 @@ public class ExportableFrameInfo implements IExportable
 				list.get(4).longValue(),
 				list.get(5).longValue());
 	}
-	
-	
+
+
 	@Override
 	public List<Number> getNumberList()
 	{
@@ -80,15 +76,15 @@ public class ExportableFrameInfo implements IExportable
 		numbers.add(camFrameId);
 		return numbers;
 	}
-	
-	
+
+
 	@Override
 	public List<String> getHeaders()
 	{
 		return Arrays.asList("frameId", "camId", "tCapture", "tSent", "tRecorded", "camFrameId");
 	}
-	
-	
+
+
 	/**
 	 * @return the frameId
 	 */
@@ -96,8 +92,8 @@ public class ExportableFrameInfo implements IExportable
 	{
 		return frameId;
 	}
-	
-	
+
+
 	/**
 	 * @param frameId the frameId to set
 	 */
@@ -105,8 +101,8 @@ public class ExportableFrameInfo implements IExportable
 	{
 		this.frameId = frameId;
 	}
-	
-	
+
+
 	/**
 	 * @return the camId
 	 */
@@ -114,8 +110,8 @@ public class ExportableFrameInfo implements IExportable
 	{
 		return camId;
 	}
-	
-	
+
+
 	/**
 	 * @param camId the camId to set
 	 */
@@ -123,8 +119,8 @@ public class ExportableFrameInfo implements IExportable
 	{
 		this.camId = camId;
 	}
-	
-	
+
+
 	/**
 	 * @return the tCapture
 	 */
@@ -132,8 +128,8 @@ public class ExportableFrameInfo implements IExportable
 	{
 		return tCapture;
 	}
-	
-	
+
+
 	/**
 	 * @param tCapture the tCapture to set
 	 */
@@ -141,8 +137,8 @@ public class ExportableFrameInfo implements IExportable
 	{
 		this.tCapture = tCapture;
 	}
-	
-	
+
+
 	/**
 	 * @return the tSent
 	 */
@@ -150,8 +146,8 @@ public class ExportableFrameInfo implements IExportable
 	{
 		return tSent;
 	}
-	
-	
+
+
 	/**
 	 * @param tSent the tSent to set
 	 */
@@ -159,8 +155,8 @@ public class ExportableFrameInfo implements IExportable
 	{
 		this.tSent = tSent;
 	}
-	
-	
+
+
 	/**
 	 * @return the tRecorded
 	 */
@@ -168,8 +164,8 @@ public class ExportableFrameInfo implements IExportable
 	{
 		return tRecorded;
 	}
-	
-	
+
+
 	/**
 	 * @param tRecorded the tRecorded to set
 	 */
@@ -177,8 +173,8 @@ public class ExportableFrameInfo implements IExportable
 	{
 		this.tRecorded = tRecorded;
 	}
-	
-	
+
+
 	/**
 	 * @return the camFrameId
 	 */
@@ -186,8 +182,8 @@ public class ExportableFrameInfo implements IExportable
 	{
 		return camFrameId;
 	}
-	
-	
+
+
 	/**
 	 * @param camFrameId the camFrameId to set
 	 */

@@ -1,9 +1,7 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra.ai.pandora.plays.test.kick;
 
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
 import edu.tigers.sumatra.ai.metis.kicking.EBallReceiveMode;
 import edu.tigers.sumatra.ai.metis.kicking.Kick;
@@ -11,6 +9,7 @@ import edu.tigers.sumatra.ai.metis.kicking.KickFactory;
 import edu.tigers.sumatra.ai.metis.kicking.Pass;
 import edu.tigers.sumatra.ai.metis.kicking.PassFactory;
 import edu.tigers.sumatra.ai.metis.offense.action.OffensiveAction;
+import edu.tigers.sumatra.ai.metis.pass.rating.RatedPass;
 import edu.tigers.sumatra.ai.pandora.plays.EPlay;
 import edu.tigers.sumatra.ai.pandora.roles.ARole;
 import edu.tigers.sumatra.ai.pandora.roles.move.MoveRole;
@@ -26,7 +25,7 @@ import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.statemachine.TransitionableState;
 import edu.tigers.sumatra.wp.data.KickedBall;
 import lombok.Setter;
-import org.apache.commons.lang.Validate;
+import org.apache.commons.lang3.Validate;
 
 import java.awt.Color;
 import java.util.ArrayList;
@@ -44,9 +43,9 @@ import java.util.stream.Collectors;
  */
 public abstract class APassingPlay extends ABallPreparationPlay
 {
-	@Configurable(defValue = "1.57", comment = "Max allowed redirect angle (rad)")
+	@Configurable(defValue = "1.57", comment = "Max allowed redirect angle", unit = EConfigUnit.ANGLE_RAD)
 	private static double maxAllowedRedirectAngle = 1.57;
-	@Configurable(defValue = "600", comment = "Tolerance [mm] for the ball target position")
+	@Configurable(defValue = "600", comment = "Tolerance for the ball target position", unit = EConfigUnit.DISTANCE_MM)
 	private static double ballTargetPosTolerance = 600;
 
 	private final PassFactory passFactory = new PassFactory();
@@ -226,7 +225,7 @@ public abstract class APassingPlay extends ABallPreparationPlay
 			if ((receiveMode == EReceiveMode.REDIRECT && redirectAngle < maxAllowedRedirectAngle)
 					|| getBall().getVel().getLength2() < 1)
 			{
-				attackerRole.setAction(OffensiveAction.buildPass(pass));
+				attackerRole.setAction(OffensiveAction.buildPass(RatedPass.builder().pass(pass).build()));
 			} else
 			{
 				attackerRole.setAction(OffensiveAction.buildReceive(pass.getKick().getSource()));
@@ -310,7 +309,7 @@ public abstract class APassingPlay extends ABallPreparationPlay
 		var dest = LineMath.stepAlongLine(origin, target, -dist);
 		moveRole.updateDestination(dest);
 		moveRole.updateLookAtTarget(target);
-		moveRole.getMoveCon().physicalObstaclesOnly();
+		moveRole.setMoveCon(moveRole.getMoveCon().withPhysicalObstaclesOnly());
 	}
 
 

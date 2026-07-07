@@ -1,10 +1,7 @@
-/*
- * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.pandora.plays.standard;
 
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.ai.pandora.plays.EPlay;
 import edu.tigers.sumatra.ai.pandora.roles.ARole;
 import edu.tigers.sumatra.ai.pandora.roles.move.MoveRole;
@@ -24,18 +21,17 @@ import java.util.List;
  */
 public class MaintenancePlay extends AMaintenancePlay
 {
-	@Configurable(comment = "Maintenance x position value relative to own field half", defValue = "0.5")
+	@Configurable(comment = "Maintenance x position value relative to own field half", defValue = "0.5", unit = EConfigUnit.FACTOR)
 	private static double defaultStartingXPos = 0.5;
 
-	@Configurable(comment = "Direction from startingPos with length", defValue = "0.0;-400.0")
+	@Configurable(comment = "Direction from startingPos with length", defValue = "0.0;-400.0", unit = EConfigUnit.VEC2)
 	private static IVector2 defaultDirection = Vector2.fromXY(0, -400);
 
-	@Configurable(comment = "Orientation of bots", defValue = "0.0")
+	@Configurable(comment = "Orientation of bots", defValue = "0.0", unit = EConfigUnit.ANGLE_DEG)
 	private static double defaultOrientation = 0;
 
-	@Configurable(comment = "Should bots show a T shape during maintenance?", defValue = "true")
+	@Configurable(comment = "Should bots show a T shape during maintenance?", defValue = "true", unit = EConfigUnit.BOOLEAN)
 	private static boolean useTShape = true;
-
 
 	@Setter
 	private double startingXPos = defaultStartingXPos;
@@ -43,6 +39,8 @@ public class MaintenancePlay extends AMaintenancePlay
 	private IVector2 direction = defaultDirection;
 	@Setter
 	private double orientation = defaultOrientation;
+
+	private boolean pauseFormationReached = false;
 
 
 	public MaintenancePlay()
@@ -62,13 +60,30 @@ public class MaintenancePlay extends AMaintenancePlay
 	protected void doUpdateAfterRoles()
 	{
 		super.doUpdateAfterRoles();
-		calculateActions();
+		List<MoveRole> roles = findRoles(MoveRole.class);
+		roles.forEach(role -> role.setMoveCon(role.getMoveCon().withPhysicalObstaclesOnly()));
+		if (pauseFormationReached)
+		{
+			roles.forEach(MoveRole::disableMotors);
+		} else
+		{
+			calculateActions();
+		}
+		if (roles.stream().allMatch(MoveRole::isDestinationReached))
+		{
+			pauseFormationReached = true;
+		}
+		if (getAiFrame().getGameState().isGameRunning() || getAiFrame().getGameState().isStop())
+		{
+			pauseFormationReached = false;
+		}
 	}
 
 
 	private void calculateActions()
 	{
 		List<MoveRole> roles = findRoles(MoveRole.class);
+		roles.forEach(MoveRole::disableMotorsWhenDestReached);
 		if (roles.isEmpty())
 		{
 			completionTimer.reset();

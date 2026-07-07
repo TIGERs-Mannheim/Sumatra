@@ -1,38 +1,34 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.presenter;
 
-import edu.tigers.autoref.view.ballspeed.BallSpeedView;
-import edu.tigers.autoref.view.gamelog.GameLogView;
-import edu.tigers.autoref.view.main.AutoRefView;
+import edu.tigers.autoref.presenter.AutoRefPresenter;
+import edu.tigers.autoref.presenter.BallSpeedPresenter;
+import edu.tigers.autoref.presenter.GameLogPresenter;
 import edu.tigers.autoreferee.module.AutoRefModule;
 import edu.tigers.sumatra.AModuliMainPresenter;
 import edu.tigers.sumatra.ai.AAgent;
 import edu.tigers.sumatra.ai.athena.EAIControlState;
 import edu.tigers.sumatra.botmanager.TigersBotManager;
-import edu.tigers.sumatra.config.ConfigEditorView;
-import edu.tigers.sumatra.gui.ai.aicenter.AICenterView;
-import edu.tigers.sumatra.gui.ai.botoverview.BotOverviewView;
-import edu.tigers.sumatra.gui.ai.offensive.interceptions.OffensiveInterceptionsView;
-import edu.tigers.sumatra.gui.ai.offensive.statistics.OffensiveStatisticsView;
-import edu.tigers.sumatra.gui.ai.offensive.strategy.OffensiveStrategyView;
-import edu.tigers.sumatra.gui.ai.statistics.StatisticsView;
-import edu.tigers.sumatra.gui.ai.support.SupportBehaviorsView;
-import edu.tigers.sumatra.gui.ai.visualizer.VisualizerAiView;
-import edu.tigers.sumatra.gui.ballanalyzer.BallAnalyserView;
-import edu.tigers.sumatra.gui.botcenter.BotCenterView;
-import edu.tigers.sumatra.gui.botparams.BotParamsView;
-import edu.tigers.sumatra.gui.kick.BallKickIdentView;
-import edu.tigers.sumatra.gui.log.LogView;
-import edu.tigers.sumatra.gui.logfile.LogfileView;
-import edu.tigers.sumatra.gui.rcm.RcmView;
-import edu.tigers.sumatra.gui.referee.RefereeView;
+import edu.tigers.sumatra.config.ConfigEditorPresenter;
+import edu.tigers.sumatra.gui.ai.aicenter.presenter.AICenterPresenter;
+import edu.tigers.sumatra.gui.ai.botoverview.presenter.BotOverviewPresenter;
+import edu.tigers.sumatra.gui.ai.offensive.interceptions.presenter.OffensiveInterceptionsPresenter;
+import edu.tigers.sumatra.gui.ai.offensive.statistics.presenter.OffensiveStatisticsPresenter;
+import edu.tigers.sumatra.gui.ai.offensive.strategy.presenter.OffensiveStrategyPresenter;
+import edu.tigers.sumatra.gui.ai.statistics.presenter.StatisticsPresenter;
+import edu.tigers.sumatra.gui.ai.support.presenter.SupportBehaviorsPresenter;
+import edu.tigers.sumatra.gui.ai.visualizer.presenter.VisualizerAiPresenter;
+import edu.tigers.sumatra.gui.ballanalyzer.presenter.VisionAnalyserPresenter;
+import edu.tigers.sumatra.gui.botcenter.presenter.BotCenterPresenter;
+import edu.tigers.sumatra.gui.botparams.presenter.BotParamsPresenter;
+import edu.tigers.sumatra.gui.kick.presenter.BallKickIdentPresenter;
+import edu.tigers.sumatra.gui.log.presenter.LogPresenter;
+import edu.tigers.sumatra.gui.logfile.presenter.LogfilePresenter;
+import edu.tigers.sumatra.gui.rcm.presenter.RCMPresenter;
+import edu.tigers.sumatra.gui.referee.presenter.RefereePresenter;
 import edu.tigers.sumatra.gui.replay.view.ReplayLoadMenu.IReplayLoadMenuObserver;
-import edu.tigers.sumatra.gui.sim.SimulationView;
-import edu.tigers.sumatra.gui.skills.SkillsView;
-import edu.tigers.sumatra.gui.timer.TimerView;
+import edu.tigers.sumatra.gui.sim.presenter.SimulationPresenter;
+import edu.tigers.sumatra.gui.skills.presenter.SkillsPresenter;
+import edu.tigers.sumatra.gui.timer.presenter.TimerPresenter;
 import edu.tigers.sumatra.model.SumatraModel;
 import edu.tigers.sumatra.persistence.PersistenceDb;
 import edu.tigers.sumatra.persistence.RecordManager;
@@ -45,7 +41,8 @@ import edu.tigers.sumatra.util.ShortcutsDialog;
 import edu.tigers.sumatra.view.AboutDialog;
 import edu.tigers.sumatra.view.MainFrame;
 import edu.tigers.sumatra.view.toolbar.IToolbarObserver;
-import edu.tigers.sumatra.views.ASumatraView;
+import edu.tigers.sumatra.views.ESumatraViewType;
+import edu.tigers.sumatra.views.SumatraView;
 import lombok.extern.log4j.Log4j2;
 
 import javax.swing.KeyStroke;
@@ -58,10 +55,9 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 
 /**
@@ -78,13 +74,17 @@ public class MainPresenter extends AModuliMainPresenter<MainFrame>
 
 	public MainPresenter()
 	{
+		String defaultLaf = SumatraModel.getInstance()
+				.getUserProperty(KEY_LAF_PROP, UIManager.getSystemLookAndFeelClassName());
+		applyLookAndFeel(defaultLaf);
+
 		super(new MainFrame(), createViews(), "main");
 		log.trace("Create MainPresenter");
 		toolbarPresenter = new ToolbarPresenter(getMainFrame().getToolbar());
 
 		getMainFrame().getMenuReplay().addObserver(this);
-		getMainFrame().getMenuItemSumatraShortcut().addActionListener(e -> new ShortcutsDialog(getMainFrame()));
-		getMainFrame().getMenuItemSumatraAbout().addActionListener(e -> new AboutDialog());
+		getMainFrame().getMenuItemSumatraShortcut().addActionListener(_ -> new ShortcutsDialog(getMainFrame()));
+		getMainFrame().getMenuItemSumatraAbout().addActionListener(_ -> new AboutDialog());
 		getMainFrame().getToolbar().addObserver(this);
 
 		SwingUtilities.invokeLater(() -> {
@@ -101,32 +101,32 @@ public class MainPresenter extends AModuliMainPresenter<MainFrame>
 	}
 
 
-	private static List<ASumatraView> createViews()
+	private static List<SumatraView> createViews()
 	{
 		return List.of(
-				new LogView(true),
-				new AICenterView(),
-				new BotCenterView(),
-				new ConfigEditorView(),
-				new RcmView(),
-				new RefereeView(),
-				new TimerView(),
-				new VisualizerAiView(),
-				new BotOverviewView(),
-				new StatisticsView(),
-				new OffensiveStrategyView(),
-				new OffensiveInterceptionsView(),
-				new SimulationView(),
-				new BallAnalyserView(),
-				new AutoRefView(),
-				new GameLogView(),
-				new BallSpeedView(),
-				new LogfileView(),
-				new OffensiveStatisticsView(),
-				new BotParamsView(),
-				new BallKickIdentView(),
-				new SupportBehaviorsView(),
-				new SkillsView()
+				new SumatraView(ESumatraViewType.LOG, () -> new LogPresenter(true)),
+				new SumatraView(ESumatraViewType.AI_CENTER, AICenterPresenter::new),
+				new SumatraView(ESumatraViewType.BOT_CENTER, BotCenterPresenter::new),
+				new SumatraView(ESumatraViewType.CONFIG_EDITOR, ConfigEditorPresenter::new),
+				new SumatraView(ESumatraViewType.RCM, RCMPresenter::new),
+				new SumatraView(ESumatraViewType.REFEREE, RefereePresenter::new),
+				new SumatraView(ESumatraViewType.TIMER, TimerPresenter::new),
+				new SumatraView(ESumatraViewType.VISUALIZER, VisualizerAiPresenter::new),
+				new SumatraView(ESumatraViewType.BOT_OVERVIEW, BotOverviewPresenter::new),
+				new SumatraView(ESumatraViewType.STATISTICS, StatisticsPresenter::new),
+				new SumatraView(ESumatraViewType.OFFENSIVE_STRATEGY, OffensiveStrategyPresenter::new),
+				new SumatraView(ESumatraViewType.OFFENSIVE_INTERCEPTIONS, OffensiveInterceptionsPresenter::new),
+				new SumatraView(ESumatraViewType.SIMULATION, SimulationPresenter::new),
+				new SumatraView(ESumatraViewType.VISION_ANALYSER, VisionAnalyserPresenter::new),
+				new SumatraView(ESumatraViewType.AUTOREFEREE, AutoRefPresenter::new),
+				new SumatraView(ESumatraViewType.AUTOREFEREE_GAME_LOG, GameLogPresenter::new),
+				new SumatraView(ESumatraViewType.BALL_SPEED, BallSpeedPresenter::new),
+				new SumatraView(ESumatraViewType.LOGFILE, LogfilePresenter::new),
+				new SumatraView(ESumatraViewType.OFFENSIVE_STATISTICS, OffensiveStatisticsPresenter::new),
+				new SumatraView(ESumatraViewType.BOT_PARAMS, BotParamsPresenter::new),
+				new SumatraView(ESumatraViewType.BALL_KICK_IDENT, BallKickIdentPresenter::new),
+				new SumatraView(ESumatraViewType.SUPPORT_BEHAVIORS, SupportBehaviorsPresenter::new),
+				new SumatraView(ESumatraViewType.SKILLS, SkillsPresenter::new)
 		);
 	}
 
@@ -143,7 +143,7 @@ public class MainPresenter extends AModuliMainPresenter<MainFrame>
 					.sorted()
 					.toList();
 			var menuItems = getMainFrame().setModuliItems(filenames);
-			menuItems.forEach((name, item) -> item.addActionListener(e -> SumatraModel.getInstance().startUpAsync(name)));
+			menuItems.forEach((name, item) -> item.addActionListener(_ -> SumatraModel.getInstance().startUpAsync(name)));
 			getMainFrame().setModuliItemSelected(SumatraModel.getInstance().getCurrentModuliConfig());
 		} catch (IOException e)
 		{
@@ -155,33 +155,21 @@ public class MainPresenter extends AModuliMainPresenter<MainFrame>
 	private void refreshLookAndFeelMenu()
 	{
 		var lafInfos = Arrays.stream(UIManager.getInstalledLookAndFeels())
-				.collect(Collectors.toMap(LookAndFeelInfo::getClassName, Function.identity()));
+				.sorted(Comparator.comparing(LookAndFeelInfo::getName))
+				.toList();
 
-		var menuItems = getMainFrame().setLookAndFeelItems(lafInfos.values());
-		menuItems.forEach((info, item) -> item.addActionListener(e -> setCurrentLookAndFeel(info)));
-
-		String userLafClassName = SumatraModel.getInstance()
-				.getUserProperty(KEY_LAF_PROP, UIManager.getSystemLookAndFeelClassName());
-		LookAndFeelInfo info = lafInfos.getOrDefault(
-				userLafClassName, lafInfos.get(UIManager.getSystemLookAndFeelClassName()));
-
-		setCurrentLookAndFeel(info);
+		var menuItems = getMainFrame().setLookAndFeelItems(lafInfos);
+		menuItems.forEach((info, item) -> item.addActionListener(_ -> setCurrentLookAndFeel(info)));
 	}
 
 
-	private void setCurrentLookAndFeel(final LookAndFeelInfo info)
+	private static void applyLookAndFeel(String lookAndFeelClassName)
 	{
-		log.trace("Loading look and feel: {}", info.getName());
+		log.trace("Loading look and feel: {}", lookAndFeelClassName);
+
 		try
 		{
-			UIManager.setLookAndFeel(info.getClassName());
-
-			// update visible components
-			final int state = getMainFrame().getExtendedState();
-			SwingUtilities.updateComponentTreeUI(getMainFrame());
-			getMainFrame().setExtendedState(state);
-			getMainFrame().setLookAndFeelItemSelected(info.getName());
-			SumatraModel.getInstance().setUserProperty(KEY_LAF_PROP, info.getClassName());
+			UIManager.setLookAndFeel(lookAndFeelClassName);
 		} catch (final ClassNotFoundException
 		               | InstantiationException
 		               | IllegalAccessException
@@ -189,6 +177,19 @@ public class MainPresenter extends AModuliMainPresenter<MainFrame>
 		{
 			log.error("Could not select look and feel.", err);
 		}
+	}
+
+
+	private void setCurrentLookAndFeel(final LookAndFeelInfo info)
+	{
+		applyLookAndFeel(info.getClassName());
+
+		// update visible components
+		final int state = getMainFrame().getExtendedState();
+		SwingUtilities.updateComponentTreeUI(getMainFrame());
+		getMainFrame().setExtendedState(state);
+		getMainFrame().setLookAndFeelItemSelected(info.getName());
+		SumatraModel.getInstance().setUserProperty(KEY_LAF_PROP, info.getClassName());
 	}
 
 

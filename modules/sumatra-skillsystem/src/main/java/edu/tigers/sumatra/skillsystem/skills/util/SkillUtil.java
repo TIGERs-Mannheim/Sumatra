@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2019, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.skillsystem.skills.util;
 
 import edu.tigers.sumatra.geometry.Geometry;

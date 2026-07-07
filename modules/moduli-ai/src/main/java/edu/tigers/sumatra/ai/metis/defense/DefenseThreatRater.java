@@ -1,11 +1,8 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.metis.defense;
 
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.drawable.ColorPickerFactory;
 import edu.tigers.sumatra.drawable.DrawableAnnotation;
 import edu.tigers.sumatra.drawable.DrawableCircle;
@@ -23,6 +20,7 @@ import edu.tigers.sumatra.math.line.Lines;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.movingrobot.MovingRobotFactory;
+import edu.tigers.sumatra.movingrobot.MovingRobotParams;
 import edu.tigers.sumatra.pathfinder.TrajectoryGenerator;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
 import lombok.Getter;
@@ -45,47 +43,51 @@ import java.util.stream.Stream;
  */
 public class DefenseThreatRater
 {
-	@Configurable(comment = "Weight to rate importance of the opponent redirect angle", defValue = "0.9")
+	@Configurable(comment = "Weight to rate importance of the opponent redirect angle", defValue = "0.9", unit = EConfigUnit.FACTOR)
 	private static double weightRedirectAngle = 0.9;
-	@Configurable(comment = "Weight to rate importance of the defense travel angle", defValue = "1.0")
+	@Configurable(comment = "Weight to rate importance of the defense travel angle", defValue = "1.0", unit = EConfigUnit.FACTOR)
 	private static double weightTravelAngle = 1.0;
-	@Configurable(comment = "Weight to rate importance of the opponent centralization", defValue = "1.0")
+	@Configurable(comment = "Weight to rate importance of the opponent centralization", defValue = "1.0", unit = EConfigUnit.FACTOR)
 	private static double weightCentralized = 1.0;
-	@Configurable(comment = "Weight to rate importance of opponents being at the boarder of our PenArea", defValue = "1.0")
+	@Configurable(comment = "Weight to rate importance of opponents being at the boarder of our PenArea", defValue = "1.0", unit = EConfigUnit.FACTOR)
 	private static double weightAtPenAreaBoarder = 1.0;
-	@Configurable(comment = "Weight to rate importance of pass distance", defValue = "0.5")
+	@Configurable(comment = "Weight to rate importance of pass distance", defValue = "0.5", unit = EConfigUnit.FACTOR)
 	private static double weightPassDistance = 0.5;
-	@Configurable(comment = "Weight to rate future potential", defValue = "1.0")
+	@Configurable(comment = "Weight to rate future potential", defValue = "1.0", unit = EConfigUnit.FACTOR)
 	private static double weightFuturePotential = 1.0;
+	@Configurable(comment = "Weight to rate alternative pass receiver", defValue = "2.0", unit = EConfigUnit.FACTOR)
+	private static double weightAlternativePassReceiver = 2.0;
 
-	@Configurable(comment = "[%] Control how much of the danger distance is a DropOff", defValue = "0.4")
-	private static double dangerDropOffPercentageRedirectAngle = 0.3;
-	@Configurable(comment = "[%] Control how much of the danger distance is a DropOff", defValue = "0.6")
-	private static double dangerDropOffPercentageTravelAngle = 0.5;
-	@Configurable(comment = "[%] Control how much of the danger distance is a DropOff", defValue = "0.6")
-	private static double dangerDropOffPercentageCentralized = 0.7;
+	@Configurable(comment = "Control how much of the danger distance is a DropOff", defValue = "0.4", unit = EConfigUnit.PERCENTAGE)
+	private static double dangerDropOffPercentageRedirectAngle = 0.4;
+	@Configurable(comment = "Control how much of the danger distance is a DropOff", defValue = "0.6", unit = EConfigUnit.PERCENTAGE)
+	private static double dangerDropOffPercentageTravelAngle = 0.6;
+	@Configurable(comment = "Control how much of the danger distance is a DropOff", defValue = "0.6", unit = EConfigUnit.PERCENTAGE)
+	private static double dangerDropOffPercentageCentralized = 0.6;
+	@Configurable(comment = "Control how much of the danger distance is a DropOff", defValue = "0.6", unit = EConfigUnit.PERCENTAGE)
+	private static double dangerDropOffPercentageAlternativePassReceiver = 0.6;
 	@Getter
-	@Configurable(comment = "[mm] X position on the field where major danger drop off happens.", defValue = "1000.0")
+	@Configurable(comment = "X position on the field where major danger drop off happens.", defValue = "1000.0", unit = EConfigUnit.DISTANCE_MM)
 	private static double dangerDropOffX = 1000.0;
-	@Configurable(comment = "[deg] Maximum angle where a good redirect is expected, larger angles start to get lucky", defValue = "45.0")
+	@Configurable(comment = "Maximum angle where a good redirect is expected, larger angles start to get lucky", defValue = "45.0", unit = EConfigUnit.ANGLE_DEG)
 	private static double maxGoodRedirectAngle = 45.0;
-	@Configurable(comment = "[deg] Maximum angle where a any sort of redirect is expected, larger angles are considered impossible", defValue = "75.0")
+	@Configurable(comment = "Maximum angle where a any sort of redirect is expected, larger angles are considered impossible", defValue = "75.0", unit = EConfigUnit.ANGLE_DEG)
 	private static double maxBadRedirectAngle = 75.0;
-	@Configurable(comment = "[rad] Redirect precision - If the goal is wider than this, we expect the opponent to hit it", defValue = "0.3")
+	@Configurable(comment = "Redirect precision - If the goal is wider than this, we expect the opponent to hit it", defValue = "0.3", unit = EConfigUnit.ANGLE_RAD)
 	private static double redirectPrecision = 0.3;
-	@Configurable(comment = "[%] How much of the distance a pass is covered is counted to be used in the pass distance score", defValue = "0.1")
+	@Configurable(comment = "How much of the distance a pass is covered is counted to be used in the pass distance score", defValue = "0.1", unit = EConfigUnit.PERCENTAGE)
 	private static double passDistanceWithinPenAreaUsageFactor = 0.1;
 
-	@Configurable(comment = "[mm] Optimal pass distance, longer/shorter passes travel too little distance or for too long", defValue = "2000.0")
+	@Configurable(comment = "Optimal pass distance, longer/shorter passes travel too little distance or for too long", defValue = "2000.0", unit = EConfigUnit.DISTANCE_MM)
 	private static double optimalPassDistance = 2000.0;
-	@Configurable(comment = "[s] Time we look ahead in the future to predict an opponent's potential", defValue = "1.2")
+	@Configurable(comment = "Time we look ahead in the future to predict an opponent's potential", defValue = "1.2", unit = EConfigUnit.TIME_S)
 	private static double timeToPredictFuture = 1.2;
-	@Configurable(comment = "Num Samples per bot to predict future potential", defValue = "25")
+	@Configurable(comment = "Num Samples per bot to predict future potential", defValue = "25", unit = EConfigUnit.COUNT)
 	private static int numSamplesToPredictFuture = 25;
-	@Configurable(comment = "[mm] Distance between the PenAreaBorder and where the PenAreaBorderScore takes effect", defValue = "400")
+	@Configurable(comment = "Distance between the PenAreaBorder and where the PenAreaBorderScore takes effect", defValue = "400", unit = EConfigUnit.DISTANCE_MM)
 	private static double penAreaDropoff = 400.0;
 
-	@Configurable(comment = "Draw debug shapes", defValue = "false")
+	@Configurable(comment = "Draw debug shapes", defValue = "false", unit = EConfigUnit.BOOLEAN)
 	private static boolean drawDebugShapes = false;
 
 	static
@@ -99,11 +101,15 @@ public class DefenseThreatRater
 	private List<IDrawableShape> shapes = new ArrayList<>();
 
 
-	public double getThreatRatingOfRobot(IVector2 ballPos, ITrackedBot threat)
+	public double getThreatRatingOfRobot(IVector2 ballPos, ITrackedBot threat, List<ITrackedBot> alternativePassReceiver)
 	{
 		shapes = new ArrayList<>();
-		var rating = getDetailedThreatRatingOfRobot(ballPos, threat);
-		shapes.add(rating.draw(threat.getPos().addNew(Vector2.fromX(Geometry.getBotRadius()))));
+		var rating = getDetailedThreatRatingOfRobot(
+				ballPos,
+				threat,
+				alternativePassReceiver.stream().map(ITrackedBot::getBotId).toList()
+		);
+		shapes.add(rating.draw(threat.getPos(), 1.2 * Geometry.getBotRadius(), false));
 		return rating.score;
 	}
 
@@ -112,7 +118,7 @@ public class DefenseThreatRater
 	{
 		shapes = new ArrayList<>();
 		var rating = getDetailedThreatRatingOfPosition(ballPos, threatPos);
-		shapes.add(rating.draw(threatPos));
+		shapes.add(rating.draw(threatPos, 0, true));
 		return rating.score;
 	}
 
@@ -132,8 +138,12 @@ public class DefenseThreatRater
 			}
 		}
 
-		shapes.add(new DrawableShapeBoundary(Geometry.getPenaltyAreaOur().withMargin(3 * Geometry.getBotRadius()), Color.PINK));
-		shapes.add(new DrawableShapeBoundary(Geometry.getPenaltyAreaOur().withMargin(3 * Geometry.getBotRadius() + penAreaDropoff), Color.PINK));
+		shapes.add(new DrawableShapeBoundary(
+				Geometry.getPenaltyAreaOur().withMargin(3 * Geometry.getBotRadius()),
+				Color.PINK
+		));
+		shapes.add(new DrawableShapeBoundary(
+				Geometry.getPenaltyAreaOur().withMargin(3 * Geometry.getBotRadius() + penAreaDropoff), Color.PINK));
 
 		shapes.add(new DrawableLine(
 				Vector2.fromXY(dangerDropOffX, -Geometry.getFieldWidth() / 2),
@@ -152,28 +162,30 @@ public class DefenseThreatRater
 	}
 
 
-	private CombinedRating getDetailedThreatRatingOfRobot(IVector2 ballPos, ITrackedBot threat)
+	private CombinedRating getDetailedThreatRatingOfRobot(
+			IVector2 ballPos, ITrackedBot threat, List<BotID> alternativePassReceiver)
 	{
 		rnd = new Random(threat.getTimestamp());
 		var opponentLookahead = DefenseConstants.getLookaheadBotThreats(threat.getVel().getLength());
 		var threatPos = threat.getPosByTime(opponentLookahead);
 		return combineRatings(Stream.concat(
-				raterWithoutTimeDependence(ballPos, threatPos),
-				raterWithTimeDependence(ballPos, threat, opponentLookahead)
+				raterWithoutRobotDependence(ballPos, threatPos),
+				raterWithRobotDependence(ballPos, threat, opponentLookahead, alternativePassReceiver)
 		));
 	}
 
 
-	private CombinedRating getDetailedThreatRatingOfPosition(IVector2 ballPos, IVector2 threatPos)
+	private CombinedRating getDetailedThreatRatingOfPosition(
+			IVector2 ballPos, IVector2 threatPos)
 	{
-		return combineRatings(raterWithoutTimeDependence(ballPos, threatPos));
+		return combineRatings(raterWithoutRobotDependence(ballPos, threatPos));
 	}
 
 
 	private CombinedRating combineRatings(Stream<Rater> raters)
 	{
 		var ratings = raters
-				.filter(rater -> rater.weight() > 0)
+				.filter(rater -> rater.weight.get() > 0)
 				.map(Rater::rate)
 				.toList();
 		double weightSum = ratings.stream().mapToDouble(Rating::weight).sum();
@@ -182,51 +194,59 @@ public class DefenseThreatRater
 	}
 
 
-	private Stream<Rater> raterWithoutTimeDependence(IVector2 ballPos, IVector2 threatPos)
+	private Stream<Rater> raterWithoutRobotDependence(
+			IVector2 ballPos, IVector2 threatPos)
 	{
 		return Stream.of(
 				new Rater(
 						"TRAVEL_ANGLE",
 						() -> calcTravelAngleScore(ballPos, threatPos),
-						weightTravelAngle,
+						() -> weightTravelAngle,
 						() -> calcDistanceToGoalFactor(threatPos, dangerDropOffPercentageTravelAngle)
 				),
 				new Rater(
 						"REDIRECT_ANGLE",
 						() -> calcRedirectAngleScore(ballPos, threatPos),
-						weightRedirectAngle,
+						() -> weightRedirectAngle,
 						() -> calcDistanceToGoalFactor(threatPos, dangerDropOffPercentageRedirectAngle)
 				),
 				new Rater(
 						"CENTRALIZED",
 						() -> calcCentralizedScore(threatPos),
-						weightCentralized,
+						() -> weightCentralized,
 						() -> calcDistanceToGoalFactor(threatPos, dangerDropOffPercentageCentralized)
 				),
 				new Rater(
 						"PEN_AREA_BORDER",
 						() -> calcAtBoarderScore(threatPos),
-						weightAtPenAreaBoarder,
+						() -> weightAtPenAreaBoarder,
 						() -> 1.0
 				),
 				new Rater(
 						"PASS_DISTANCE",
 						() -> calcPassDistanceScore(ballPos, threatPos),
-						weightPassDistance,
+						() -> weightPassDistance,
 						() -> 1.0
 				)
 		);
 	}
 
 
-	private Stream<Rater> raterWithTimeDependence(IVector2 ballPos, ITrackedBot threat, double opponentLookahead)
+	private Stream<Rater> raterWithRobotDependence(
+			IVector2 ballPos, ITrackedBot threat, double opponentLookahead, List<BotID> alternativePassReceiver)
 	{
 		return Stream.of(
 				new Rater(
 						"FUTURE_POTENTIAL",
 						() -> calcFuturePotentialScore(ballPos, threat, opponentLookahead),
-						weightFuturePotential,
+						() -> weightFuturePotential,
 						() -> 1.0
+				),
+				new Rater(
+						"ALT_PASS_RECEIVER",
+						() -> calcAlternativePassReceiver(threat, alternativePassReceiver),
+						() -> alternativePassReceiver.isEmpty() ? 0 : weightAlternativePassReceiver,
+						() -> calcDistanceToGoalFactor(threat.getPos(), dangerDropOffPercentageAlternativePassReceiver)
 				)
 		);
 	}
@@ -376,16 +396,24 @@ public class DefenseThreatRater
 	}
 
 
+	private double calcAlternativePassReceiver(ITrackedBot threat, List<BotID> alternativePassReceiver)
+	{
+		return alternativePassReceiver.contains(threat.getBotId()) ? 1 : 0;
+	}
+
+
 	private double calcFuturePotentialScore(IVector2 ballPos, ITrackedBot threat, double opponentLookahead)
 	{
 		var movingRobot = MovingRobotFactory.stoppingRobot(
-				threat.getPos(),
-				threat.getVel(),
-				threat.getMoveConstraints().getVelMax(),
-				threat.getMoveConstraints().getAccMax(),
-				threat.getMoveConstraints().getBrkMax(),
-				0,
-				opponentLookahead
+				MovingRobotParams.builder()
+						.position(threat.getPos())
+						.velocity(threat.getVel())
+						.vLimit(threat.getMoveConstraints().getVelMax())
+						.aLimit(threat.getMoveConstraints().getAccMax())
+						.brkLimit(threat.getMoveConstraints().getBrkMax())
+						.radius(0)
+						.reactionTime(opponentLookahead)
+						.build()
 		);
 
 		var circle = movingRobot.getMovingHorizon(timeToPredictFuture + opponentLookahead);
@@ -425,7 +453,7 @@ public class DefenseThreatRater
 					pos -> shapes.add(new DrawablePoint(pos.pos, colorPicker.getColor(pos.rating.score))));
 			shapes.add(new DrawableCircle(Circle.createCircle(mostDangerousPos.pos, 25), Color.CYAN));
 			shapes.add(new DrawableLine(mostDangerousPos.pos, threat.getPos(), Color.CYAN));
-			shapes.add(mostDangerousPos.rating.draw(mostDangerousPos.pos));
+			shapes.add(mostDangerousPos.rating.draw(mostDangerousPos.pos, 0, false));
 		}
 
 		mostDangerousPosPerBot.put(threat.getBotId(), mostDangerousPos.pos);
@@ -440,9 +468,8 @@ public class DefenseThreatRater
 
 	private record CombinedRating(double score, double weight, List<Rating> sources)
 	{
-		public IDrawableShape draw(IVector2 position)
+		public IDrawableShape draw(IVector2 position, double xOffset, boolean center)
 		{
-
 			var text = sources.stream()
 					.map(rating -> String.format(
 									"%.2f | %.2f | %.2f | - %s%n",
@@ -454,16 +481,19 @@ public class DefenseThreatRater
 					)
 					.collect(Collectors.joining());
 
-			return new DrawableAnnotation(position, text, false).withFontHeight(20);
+			return new DrawableAnnotation(position, text)
+					.withOffset(Vector2.fromX(xOffset))
+					.withCenterHorizontally(center)
+					.withFontHeight(20);
 		}
 	}
 
-	private record Rater(String name, Supplier<Double> rater, double weight, Supplier<Double> distanceFactor)
+	private record Rater(String name, Supplier<Double> rater, Supplier<Double> weight, Supplier<Double> distanceFactor)
 	{
 		Rating rate()
 		{
 			var factor = distanceFactor.get();
-			return new Rating(factor * rater.get(), weight, factor, this);
+			return new Rating(factor * rater.get(), weight.get(), factor, this);
 		}
 	}
 

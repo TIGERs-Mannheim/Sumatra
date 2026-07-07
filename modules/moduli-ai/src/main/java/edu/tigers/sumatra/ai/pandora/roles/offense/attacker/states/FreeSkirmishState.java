@@ -1,12 +1,9 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.pandora.roles.offense.attacker.states;
 
 
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
 import edu.tigers.sumatra.ai.pandora.roles.offense.attacker.AttackerRole;
 import edu.tigers.sumatra.drawable.DrawableCircle;
@@ -20,7 +17,7 @@ import java.awt.Color;
 
 public class FreeSkirmishState extends AAttackerRoleState<RotationSkill>
 {
-	@Configurable(defValue = "300.0", comment = "[mm] this value is absolutely arbitrary and unimportant.")
+	@Configurable(defValue = "300.0", comment = "this value is absolutely arbitrary and unimportant.", unit = EConfigUnit.DISTANCE_MM)
 	private static double helperTargetOffset = 300.0;
 
 	static

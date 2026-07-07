@@ -1,69 +1,75 @@
 [versions]
-com-fasterxml-jackson-core = "2.18.3"
-com-google-protobuf = "4.30.2"
-com-miglayout = "11.4.2"
-info-picocli = "4.7.6"
-io-humble = "0.3.0"
-org-apache-groovy = "4.0.26"
-org-apache-logging-log4j = "2.24.3"
-org-jacoco = "0.8.12"
-org-junit5 = "5.12.2"
+com-fasterxml-jackson-core = "2.21.2"
+com-google-protobuf = "4.34.1"
+com-miglayout = "11.4.3"
+info-picocli = "4.7.7"
+org-jcodec = "0.2.5"
+org-apache-groovy = "5.0.5"
+org-apache-logging-log4j = "2.25.4"
+org-jacoco = "0.8.13"
+org-junit5 = "6.0.3"
 org-openjdk-jmh = "1.37"
-org-spockframework = "2.3-groovy-4.0"
+org-spockframework = "2.4-groovy-5.0"
 plugin-github-release = "2.5.2"
+plugin-idea-ext = "1.4.1"
 plugin-jib = "3.4.5"
-plugin-protobuf = "0.9.5"
-plugin-sonar = "6.1.0.5360"
-plugin-version-catalog-update = "1.0.0"
+plugin-protobuf = "0.9.6"
+plugin-sonar = "7.2.3.7755"
+plugin-version-catalog-update = "1.1.0"
 
 [libraries]
-com-fasterxml-jackson-core-jackson-annotations = { module = "com.fasterxml.jackson.core:jackson-annotations", version.ref = "com-fasterxml-jackson-core" }
+com-fasterxml-jackson-core-jackson-annotations = "com.fasterxml.jackson.core:jackson-annotations:2.21"
 com-fasterxml-jackson-core-jackson-core = { module = "com.fasterxml.jackson.core:jackson-core", version.ref = "com-fasterxml-jackson-core" }
 com-fasterxml-jackson-core-jackson-databind = { module = "com.fasterxml.jackson.core:jackson-databind", version.ref = "com-fasterxml-jackson-core" }
-com-formdev-flatlaf = "com.formdev:flatlaf:3.1"
-com-github-haifengl = "com.github.haifengl:smile-core:4.3.0"
+com-formdev-flatlaf = "com.formdev:flatlaf:3.7.1"
+com-formdev-flatlaf-intellij-themes = "com.formdev:flatlaf-intellij-themes:3.7.1"
 com-github-TIGERs-Mannheim-infonode = "com.github.TIGERs-Mannheim:infonode:1.7.0"
 com-github-TIGERs-Mannheim-jinput = "com.github.TIGERs-Mannheim.jinput:jinput:2.0.10.1"
 com-github-TIGERs-Mannheim-matlabcontrol = "com.github.TIGERs-Mannheim.matlabcontrol:matlabcontrol:4.1.2"
-com-github-TIGERs-Mannheim-ssl-game-controller-maven = "com.github.TIGERs-Mannheim:ssl-game-controller-maven:3.16.1.0"
-com-google-guava = "com.google.guava:guava:33.4.7-jre"
+com-github-TIGERs-Mannheim-ssl-game-controller-maven = "com.github.TIGERs-Mannheim:ssl-game-controller-maven:3.20.2.0"
+com-github-cliftonlabs-json-simple = "com.github.cliftonlabs:json-simple:4.0.1"
+com-github-haifengl = "com.github.haifengl:smile-core:4.3.0"
+com-google-guava = "com.google.guava:guava:33.5.0-jre"
 com-google-protobuf-protobuf-java = { module = "com.google.protobuf:protobuf-java", version.ref = "com-google-protobuf" }
 com-google-protobuf-protobuf-java-util = { module = "com.google.protobuf:protobuf-java-util", version.ref = "com-google-protobuf" }
 com-google-protobuf-protoc = { module = "com.google.protobuf:protoc", version.ref = "com-google-protobuf" }
-com-github-cliftonlabs-json-simple = "com.github.cliftonlabs:json-simple:4.0.1"
+com-github-jiconfont-jiconfont = "com.github.jiconfont:jiconfont:1.0.0"
+com-github-jiconfont-jiconfont-font-awesome = "com.github.jiconfont:jiconfont-font_awesome:4.7.0.1"
+com-github-jiconfont-jiconfont-swing = "com.github.jiconfont:jiconfont-swing:1.0.1"
 com-jidesoft-jide-oss = "com.jidesoft:jide-oss:3.6.18"
 com-miglayout-miglayout-core = { module = "com.miglayout:miglayout-core", version.ref = "com-miglayout" }
 com-miglayout-miglayout-swing = { module = "com.miglayout:miglayout-swing", version.ref = "com-miglayout" }
-commons-codec = "commons-codec:commons-codec:1.18.0"
+commons-codec = "commons-codec:commons-codec:1.21.0"
 commons-collections = "commons-collections:commons-collections:3.2.2"
 commons-configuration = "commons-configuration:commons-configuration:1.10"
-commons-io = "commons-io:commons-io:2.19.0"
-commons-lang = "commons-lang:commons-lang:2.6"
+commons-io = "commons-io:commons-io:2.21.0"
+commons-lang = "org.apache.commons:commons-lang3:3.20.0"
+org-jcodec-jcodec = { module = "org.jcodec:jcodec", version.ref = "org-jcodec" }
+org-jcodec-jcodec-javase = { module = "org.jcodec:jcodec-javase", version.ref = "org-jcodec" }
 gov-nist-math-jama = "gov.nist.math:jama:1.0.3"
 info-picocli-picocli = { module = "info.picocli:picocli", version.ref = "info-picocli" }
 info-picocli-picocli-codegen = { module = "info.picocli:picocli-codegen", version.ref = "info-picocli" }
-io-humble-humble-video-noarch = { module = "io.humble:humble-video-noarch", version.ref = "io-humble" }
-jfreechart = { group = "org.jfree", name = "jfreechart", version = "1.5.5" }
+jfreechart = "org.jfree:jfreechart:1.5.6"
 net-jafama = "net.jafama:jafama:2.3.2"
 net-java-jinput = "net.java.jinput:jinput:2.0.10"
-net-lingala-zip4j = "net.lingala.zip4j:zip4j:2.11.5"
+net-lingala-zip4j = "net.lingala.zip4j:zip4j:2.11.6"
 net-sf-jchart2d = "net.sf.jchart2d:jchart2d:3.3.2"
 nl-jqno-equalsverifier = "nl.jqno.equalsverifier:equalsverifier:3.19.3"
-org-apache-commons-commons-collections4 = "org.apache.commons:commons-collections4:4.4"
+org-apache-commons-commons-collections4 = "org.apache.commons:commons-collections4:4.5.0"
 org-apache-commons-commons-math3 = "org.apache.commons:commons-math3:3.6.1"
 org-apache-groovy-groovy-bom = { module = "org.apache.groovy:groovy-bom", version.ref = "org-apache-groovy" }
 org-apache-logging-log4j-log4j-api = { module = "org.apache.logging.log4j:log4j-api", version.ref = "org-apache-logging-log4j" }
 org-apache-logging-log4j-log4j-core = { module = "org.apache.logging.log4j:log4j-core", version.ref = "org-apache-logging-log4j" }
-org-assertj-assertj-core = "org.assertj:assertj-core:3.27.3"
+org-assertj-assertj-core = "org.assertj:assertj-core:3.27.7"
 org-hamcrest = "org.hamcrest:hamcrest:3.0"
 org-influxdb-influxdb-java = "org.influxdb:influxdb-java:2.25"
-org-jgraph-jgraph-core = "org.jgrapht:jgrapht-core:1.5.2"
+org-jgraph-jgraph-core = "org.jgrapht:jgrapht-core:1.5.3"
 org-junit-bom = { module = "org.junit:junit-bom", version.ref = "org-junit5" }
-org-mockito-mockito-all = "org.mockito:mockito-all:1.10.19"
+org-mockito-mockito-core = "org.mockito:mockito-core:5.23.0"
 org-openjdk-jmh-jmh-core = { module = "org.openjdk.jmh:jmh-core", version.ref = "org-openjdk-jmh" }
 org-openjdk-jmh-jmh-generator-annprocess = { module = "org.openjdk.jmh:jmh-generator-annprocess", version.ref = "org-openjdk-jmh" }
 org-openjdk-jol-jol-core = "org.openjdk.jol:jol-core:0.17"
-org-projectlombok-lombok = "org.projectlombok:lombok:1.18.38"
+org-projectlombok-lombok = "org.projectlombok:lombok:1.18.44"
 org-spockframework-spock-bom = { module = "org.spockframework:spock-bom", version.ref = "org-spockframework" }
 org-swinglabs-swingx-swingx-all = "org.swinglabs.swingx:swingx-all:1.6.5-1"
 plugin-jib = { module = "com.google.cloud.tools:jib-gradle-plugin", version.ref = "plugin-jib" }
@@ -71,5 +77,6 @@ plugin-protobuf = { module = "com.google.protobuf:protobuf-gradle-plugin", versi
 
 [plugins]
 githubRelease = { id = "com.github.breadmoirai.github-release", version.ref = "plugin-github-release" }
+ideaExt = { id = "org.jetbrains.gradle.plugin.idea-ext", version.ref = "plugin-idea-ext" }
 sonar = { id = "org.sonarqube", version.ref = "plugin-sonar" }
 versionCatalogUpdate = { id = "nl.littlerobots.version-catalog-update", version.ref = "plugin-version-catalog-update" }

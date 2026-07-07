@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.wp.vis;
 
 import edu.tigers.sumatra.drawable.IShapeLayerIdentifier;
@@ -39,6 +35,8 @@ public final class EWpShapesLayer
 			F.category(FIELD).category(VISION).layerName("Raw Vision"));
 	public static final IShapeLayerIdentifier CAM_OBJECT_FILTER = F.create(
 			F.category(FIELD).category(VISION).layerName("CamObject Filter").visibleByDefault(true));
+	public static final IShapeLayerIdentifier VISION_SOURCE = F.create(
+			F.category(FIELD).category(VISION).layerName("Vision Source").visibleByDefault(true));
 
 	public static final IShapeLayerIdentifier BOTS = F.create(
 			F.category(FIELD).category(CAT_BOTS).layerName("Bots").visibleByDefault(true));

@@ -1,6 +1,3 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra.ai.pandora.plays;
 
 import com.github.g3force.instanceables.IInstanceableEnum;
@@ -14,6 +11,7 @@ import edu.tigers.sumatra.ai.pandora.plays.standard.BallPlacementPlay;
 import edu.tigers.sumatra.ai.pandora.plays.standard.CheeringPlay;
 import edu.tigers.sumatra.ai.pandora.plays.standard.MaintenancePlay;
 import edu.tigers.sumatra.ai.pandora.plays.standard.PenaltyThemPlay;
+import edu.tigers.sumatra.ai.pandora.plays.standard.PenaltyUsPlay;
 import edu.tigers.sumatra.ai.pandora.plays.standard.RobotInterchangePlay;
 import edu.tigers.sumatra.ai.pandora.plays.standard.cheerings.ECheeringPlays;
 import edu.tigers.sumatra.ai.pandora.plays.test.BallPlacementRandomTestPlay;
@@ -54,6 +52,7 @@ public enum EPlay implements IInstanceableEnum
 {
 	KEEPER(new InstanceableClass<>(KeeperPlay.class)),
 	PENALTY_THEM(new InstanceableClass<>(PenaltyThemPlay.class)),
+	PENALTY_US(ic(PenaltyUsPlay.class)),
 	BALL_PLACEMENT(new InstanceableClass<>(BallPlacementPlay.class)),
 	OFFENSIVE(new InstanceableClass<>(OffensivePlay.class)),
 	DEFENSIVE(new InstanceableClass<>(DefensePlay.class)),

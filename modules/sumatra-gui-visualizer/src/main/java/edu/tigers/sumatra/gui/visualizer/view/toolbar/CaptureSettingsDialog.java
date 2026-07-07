@@ -1,6 +1,3 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra.gui.visualizer.view.toolbar;
 
 import lombok.Getter;
@@ -34,7 +31,6 @@ public class CaptureSettingsDialog extends JDialog
 		setResizable(false);
 		setTitle("Capture settings");
 
-		// --- alignment: center on screen ---
 		Toolkit tk = Toolkit.getDefaultToolkit();
 		Dimension screenDimension = tk.getScreenSize();
 		this.setLocation((int) (screenDimension.getWidth() - getWidth()) / 2,

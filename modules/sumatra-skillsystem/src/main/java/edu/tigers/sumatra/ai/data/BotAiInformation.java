@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.data;
 
 import edu.tigers.sumatra.bot.BotLastKickState;
@@ -9,10 +5,10 @@ import edu.tigers.sumatra.bot.EBallObservationState;
 import edu.tigers.sumatra.bot.EDribbleTractionState;
 import edu.tigers.sumatra.bot.EFeature;
 import edu.tigers.sumatra.botmanager.botskills.data.EKickerDevice;
-import edu.tigers.sumatra.botmanager.commands.basestation.BaseStationWifiStats;
+import edu.tigers.sumatra.botmanager.commands.basestation.BaseStationWifiStatsV2;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.statemachine.IState;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import java.text.DecimalFormat;
 import java.util.Collections;
@@ -123,12 +119,6 @@ public class BotAiInformation
 	}
 
 
-	public void setVelocityMax(final double velocityMax)
-	{
-		map.put(EBotInformation.VELOCITY_MAX, vel2Str(velocityMax));
-	}
-
-
 	public void setVelocityLimit(final double velocityLimit)
 	{
 		map.put(EBotInformation.VELOCITY_LIMIT, vel2Str(velocityLimit));
@@ -140,15 +130,12 @@ public class BotAiInformation
 		map.put(EBotInformation.ACCELERATION_LIMIT, vel2Str(accelerationLimit));
 	}
 
+
 	public void setAngularVelocity(final double angularVelocity)
 	{
 		map.put(EBotInformation.ANGULAR_VELOCITY, vel2Str(angularVelocity));
 	}
 
-	public void setMaxAngularVelocity(final double maxW)
-	{
-		map.put(EBotInformation.ANGULAR_VEL_MAX, vel2Str(maxW));
-	}
 
 	public void setAngularVelocityLimit(final double angularVelocityLimit)
 	{
@@ -216,15 +203,24 @@ public class BotAiInformation
 		map.put(EBotInformation.AVG_PROC_TIME, String.valueOf(Math.round(avgProcTime * 1000)));
 	}
 
+
+	public void setDribblerSpeedFeedback(final double speed)
+	{
+		map.put(EBotInformation.DRIBBLER_SPEED_FEEDBACK, vel2Str(speed));
+	}
+
+
 	public void setDribbleForce(final double force)
 	{
 		map.put(EBotInformation.DRIBBLE_FORCE, DECIMAL_FORMAT.format(force));
 	}
 
+
 	public void setDribbleTraction(final EDribbleTractionState traction)
 	{
 		map.put(EBotInformation.DRIBBLE_TRACTION, traction.name());
 	}
+
 
 	public void setBallObservation(final EBallObservationState state)
 	{
@@ -237,12 +233,14 @@ public class BotAiInformation
 		map.put(EBotInformation.LAST_KICK, state.toString());
 	}
 
-	public void setBotStats(final BaseStationWifiStats.BotStats stats)
+
+	public void setBotStats(final BaseStationWifiStatsV2.BotStats stats)
 	{
-		map.put(EBotInformation.RF_TX_PACKETS, String.valueOf(stats.rf.txPackets));
-		map.put(EBotInformation.RF_RX_PACKETS, String.valueOf(stats.rf.rxPackets));
-		map.put(EBotInformation.RF_BOT_RSSI, String.valueOf(stats.getBotRssi()));
-		map.put(EBotInformation.RF_BS_RSSI, String.valueOf(stats.getBsRssi()));
+		map.put(EBotInformation.RF_TX_PACKETS, String.valueOf(stats.buf.txPacketsTotal));
+		map.put(EBotInformation.RF_RX_PACKETS, String.valueOf(stats.buf.rxPacketsTotal));
+		map.put(EBotInformation.RF_TX_PACKETS_LOST, String.valueOf(stats.ota.txPacketsLost));
+		map.put(EBotInformation.RF_RX_PACKETS_LOST, String.valueOf(stats.ota.rxPacketsLost));
+		map.put(EBotInformation.RF_BASE_RX_RSSI, String.valueOf(stats.getBaseRxRssi()));
 		map.put(EBotInformation.RF_LINK_QUALITY, vel2Str(stats.getLinkQuality() * 100.0));
 	}
 }

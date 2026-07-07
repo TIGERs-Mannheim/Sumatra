@@ -1,10 +1,8 @@
-/*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra.vision;
 
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.cam.data.CamCalibration;
 import edu.tigers.sumatra.cam.data.CamDetectionFrame;
 import edu.tigers.sumatra.cam.data.CamFieldSize;
@@ -45,13 +43,13 @@ public class ViewportArchitect
 	private Viewport field;
 
 
-	@Configurable(defValue = "400.0", comment = "Maximum camera overlap. [mm]")
+	@Configurable(defValue = "400.0", comment = "Maximum camera overlap.", unit = EConfigUnit.DISTANCE_MM)
 	private static double maxViewportOverlap = 400.0;
 
-	@Configurable(defValue = "DYNAMICALLY", comment = "Method to be used to construct viewports.")
+	@Configurable(defValue = "DYNAMICALLY", comment = "Method to be used to construct viewports.", unit = EConfigUnit.NO_UNIT)
 	private static EViewportConstruction viewportConstruction = EViewportConstruction.DYNAMICALLY;
 
-	@Configurable(defValue = "50.0", comment = "Update rate for viewport changes to base station (per camera). [Hz]")
+	@Configurable(defValue = "50.0", comment = "Update rate for viewport changes to base station (per camera)", unit = EConfigUnit.HZ)
 	private static double reportRate = 50.0;
 
 	static
@@ -95,7 +93,7 @@ public class ViewportArchitect
 		this.field = new Viewport(
 				Vector2f.ZERO_VECTOR,
 				Rectangle.fromCenter(Vector2f.ZERO_VECTOR, fieldSize.getFieldLength(), fieldSize.getFieldWidth())
-						.withMargin(fieldSize.getBoundaryWidth())
+						.withMarginXy(fieldSize.getBoundaryWidthGoalLine(), fieldSize.getBoundaryWidth())
 		);
 	}
 

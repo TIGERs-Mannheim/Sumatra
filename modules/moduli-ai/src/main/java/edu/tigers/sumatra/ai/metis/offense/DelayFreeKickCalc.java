@@ -1,10 +1,7 @@
-/*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.metis.offense;
 
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.ai.metis.ACalculator;
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
 import edu.tigers.sumatra.ai.metis.botdistance.BotDistance;
@@ -23,10 +20,10 @@ import java.util.function.Supplier;
 @RequiredArgsConstructor
 public class DelayFreeKickCalc extends ACalculator
 {
-	@Configurable(comment = "This time is subtracted from the time that is still left for the freekick action", defValue = "1.5")
+	@Configurable(comment = "This time is subtracted from the time that is still left for the freekick action", defValue = "1.5", unit = EConfigUnit.TIME_S)
 	private static double timeUntilKickOffset = 1.5;
 
-	@Configurable(comment = "time in seconds", defValue = "3.5")
+	@Configurable(defValue = "3.5", unit = EConfigUnit.TIME_S)
 	private static double maxDelayWaitTime = 3.5;
 
 	private final Supplier<BotDistance> tigerClosestToBall;

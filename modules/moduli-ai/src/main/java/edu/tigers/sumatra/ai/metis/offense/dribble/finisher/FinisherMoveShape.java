@@ -1,10 +1,7 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.metis.offense.dribble.finisher;
 
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.math.AngleMath;
 import edu.tigers.sumatra.math.SumatraMath;
@@ -34,10 +31,10 @@ public class FinisherMoveShape
 	private double width;
 	private double radius;
 
-	@Configurable(defValue = "600.0")
+	@Configurable(defValue = "600.0", unit = EConfigUnit.DISTANCE_MM)
 	private static double finisherMoveShapeCircleRadius = 600;
 
-	@Configurable(defValue = "200.0")
+	@Configurable(defValue = "200.0", unit = EConfigUnit.DISTANCE_MM)
 	private static double samplingStepDistanceOnFinisherMoveShape = 200;
 
 	@Getter

@@ -1,11 +1,8 @@
-/*
- * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.vision;
 
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.bot.BotBallState;
 import edu.tigers.sumatra.bot.EDribbleTractionState;
 import edu.tigers.sumatra.bot.EFeature;
@@ -64,34 +61,34 @@ public class VirtualBallProducer
 
 	private long lastFrameId = 0;
 
-	@Configurable(defValue = "750.0", comment = "Max. distance to last know ball location to create virtual balls")
+	@Configurable(defValue = "750.0", comment = "Max. distance to last know ball location to create virtual balls", unit = EConfigUnit.DISTANCE_MM)
 	private static double maxDistanceToLastKnownPos = 750.0;
 
-	@Configurable(defValue = "300.0", comment = "Max. distance of ball to observing robot")
+	@Configurable(defValue = "300.0", comment = "Max. distance of ball to observing robot", unit = EConfigUnit.DISTANCE_MM)
 	private static double maxDistanceToObserver = 300.0;
 
-	@Configurable(defValue = "0.05", comment = "Time in [s] after which virtual balls are generated from robot info")
+	@Configurable(defValue = "0.05", comment = "Time in after which virtual balls are generated from robot info", unit = EConfigUnit.TIME_S)
 	private static double delayToVirtualBalls = 0.05;
 
-	@Configurable(defValue = "10.0", comment = "Expand shadows by this amount in [mm] in all directions")
+	@Configurable(defValue = "10.0", comment = "Expand shadows by this amount in in all directions", unit = EConfigUnit.DISTANCE_MM)
 	private static double shadowMargin = 10.0;
 
-	@Configurable(defValue = "true", comment = "Use virtual balls which are detected in camera shadows.")
+	@Configurable(defValue = "true", comment = "Use virtual balls which are detected in camera shadows.", unit = EConfigUnit.BOOLEAN)
 	private static boolean useBallsInShadows = true;
 
-	@Configurable(defValue = "true", comment = "Use virtual balls which are close to the observer.")
+	@Configurable(defValue = "true", comment = "Use virtual balls which are close to the observer.", unit = EConfigUnit.BOOLEAN)
 	private static boolean useBallsNearby = true;
 
-	@Configurable(defValue = "false", comment = "Always add virtual balls, even if there are balls detected by vision.")
+	@Configurable(defValue = "false", comment = "Always add virtual balls, even if there are balls detected by vision.", unit = EConfigUnit.BOOLEAN)
 	private static boolean alwaysAddVirtualBalls = false;
 
-	@Configurable(defValue = "true", comment = "If any barrier is interrupted, drop all non-barrier virtual balls.")
+	@Configurable(defValue = "true", comment = "If any barrier is interrupted, drop all non-barrier virtual balls.", unit = EConfigUnit.BOOLEAN)
 	private static boolean preferBarrier = true;
 
-	@Configurable(defValue = "0.05", comment = "How long to treat barrier as interrupted after loosing contact in [s]. Only applies if not on bot cam")
+	@Configurable(defValue = "0.05", comment = "How long to treat barrier as interrupted after loosing contact in. Only applies if not on bot cam", unit = EConfigUnit.TIME_S)
 	private static double keepBarrierInterruptedTime = 0.05;
 
-	@Configurable(defValue = "90.0", comment = "Camera field of view")
+	@Configurable(defValue = "90.0", comment = "Camera field of view", unit = EConfigUnit.ANGLE_DEG)
 	private static double fieldOfViewDeg = 90.0;
 
 	static

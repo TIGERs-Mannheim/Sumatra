@@ -1,12 +1,10 @@
-/*
- * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.metis.pass.rating;
 
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.ai.metis.kicking.EBallReceiveMode;
+import edu.tigers.sumatra.ai.metis.kicking.EPassType;
 import edu.tigers.sumatra.ai.metis.kicking.Kick;
 import edu.tigers.sumatra.ai.metis.kicking.Pass;
 import edu.tigers.sumatra.ball.trajectory.IBallTrajectory;
@@ -27,6 +25,7 @@ import edu.tigers.sumatra.math.line.Lines;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.movingrobot.IMovingRobot;
 import edu.tigers.sumatra.movingrobot.MovingRobotFactory;
+import edu.tigers.sumatra.movingrobot.MovingRobotParams;
 import edu.tigers.sumatra.skillsystem.skills.util.KickParams;
 import edu.tigers.sumatra.wp.data.ITrackedBall;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
@@ -62,43 +61,43 @@ import java.util.stream.Stream;
 @Log4j2
 public class PassInterceptionMovingRobotRater extends APassRater
 {
-	@Configurable(defValue = "0.08", comment = "Reaction time of opponent [s] for slow robots. Predicts constant velocity in this time.")
+	@Configurable(defValue = "0.08", comment = "Reaction time of opponent for slow robots. Predicts constant velocity in this time.", unit = EConfigUnit.TIME_S)
 	private static double opponentBotReactionTimeSlowRobots = 0.08;
 
-	@Configurable(defValue = "0.0", comment = "Reaction time of opponent [s] for fast robots. Predicts constant velocity in this time.")
+	@Configurable(defValue = "0.0", comment = "Reaction time of opponent for fast robots. Predicts constant velocity in this time.", unit = EConfigUnit.TIME_S)
 	private static double opponentBotReactionTimeFastRobots = 0.0;
 
-	@Configurable(defValue = "0.5;1.0", comment = "Horizons [s] for drawing MovingRobots. Only for debugging.")
+	@Configurable(defValue = "0.5;1.0", comment = "Horizons for drawing MovingRobots. Only for debugging.", unit = EConfigUnit.TIME_S)
 	private static Double[] drawingHorizons = new Double[] { 0.5, 1.0 };
 
-	@Configurable(defValue = "0;1", comment = "Draw movingRobots for these bot ids only")
+	@Configurable(defValue = "0;1", comment = "Draw movingRobots for these bot ids only", unit = EConfigUnit.BOT_ID)
 	private static Integer[] drawShapesForBotIds = new Integer[] { 0, 1 };
 
-	@Configurable(defValue = "1.0", comment = "Factor on relative distance. Larger -> less pessimistic")
+	@Configurable(defValue = "1.0", comment = "Factor on relative distance. Larger -> less pessimistic", unit = EConfigUnit.FACTOR)
 	private static double scoringFactor = 1.0;
 
-	@Configurable(defValue = "30", comment = "Min distance [mm] between pass line and opponent robot (in addition to robot and ball radius")
+	@Configurable(defValue = "30", comment = "Min distance between pass line and opponent robot (in addition to robot and ball radius", unit = EConfigUnit.DISTANCE_MM)
 	private static double minDistToRobot = 30.0;
 
-	@Configurable(defValue = "0.1", comment = "Chip kick score penalty")
+	@Configurable(defValue = "0.1", comment = "Chip kick score penalty", unit = EConfigUnit.NO_UNIT)
 	private static double chipKickPenalty = 0.1;
 
-	@Configurable(defValue = "3000.0", comment = "[mm] max dist to pass source to consider own bots")
+	@Configurable(defValue = "3000.0", comment = "max dist to pass source to consider own bots", unit = EConfigUnit.DISTANCE_MM)
 	private static double maxDistToConsiderOwnBots = 3000.0;
 
-	@Configurable(defValue = "1.0", comment = "Velocity [m/s] of slow robots for lower scoring factor")
+	@Configurable(defValue = "1.0", comment = "Velocity of slow robots for lower scoring factor", unit = EConfigUnit.VELOCITY_M)
 	private static double slowRobotVel = 1.0;
 
-	@Configurable(defValue = "1.0", comment = "Acceleration [m/s^2] of slow robots for lower scoring factor")
+	@Configurable(defValue = "1.0", comment = "Acceleration of slow robots for lower scoring factor", unit = EConfigUnit.ACCELERATION_M)
 	private static double slowRobotAcc = 1.0;
 
-	@Configurable(defValue = "2.5", comment = "Break Acceleration [m/s^2] of slow robots for lower scoring factor")
+	@Configurable(defValue = "2.5", comment = "Break Acceleration of slow robots for lower scoring factor", unit = EConfigUnit.ACCELERATION_M)
 	private static double slowRobotBrkLimit = 2.5;
 
-	@Configurable(defValue = "true", comment = "Consider pass preparation time as additional horizon time")
+	@Configurable(defValue = "true", comment = "Consider pass preparation time as additional horizon time", unit = EConfigUnit.BOOLEAN)
 	private static boolean considerPassPreparationTime = true;
 
-	@Configurable(defValue = "SMALLEST", comment = "Determine how the sums of each bot are combined")
+	@Configurable(defValue = "SMALLEST", comment = "Determine how the sums of each bot are combined", unit = EConfigUnit.NO_UNIT)
 	private static RateCombinationType rateCombinationType = RateCombinationType.SMALLEST;
 
 	static
@@ -129,27 +128,33 @@ public class PassInterceptionMovingRobotRater extends APassRater
 				Collectors.toMap(
 						ITrackedBot::getBotId, bot ->
 								MovingRobotFactory.acceleratingRobot(
-										bot.getPos(),
-										bot.getVel(),
-										bot.getRobotInfo().getBotParams().getMovementLimits().getVelMax()
-												* robotMovementLimitFactor,
-										bot.getRobotInfo().getBotParams().getMovementLimits().getAccMax()
-												* robotMovementLimitFactor,
-										distToRobot,
-										opponentBotReactionTimeFastRobots
+										MovingRobotParams.builder()
+												.position(bot.getPos())
+												.velocity(bot.getVel())
+												.vLimit(bot.getRobotInfo().getBotParams().getMovementLimits().getVelMax()
+														* robotMovementLimitFactor)
+												.aLimit(bot.getRobotInfo().getBotParams().getMovementLimits().getAccMax()
+														* robotMovementLimitFactor)
+												.brkLimit(bot.getRobotInfo().getBotParams().getMovementLimits().getBrkMax()
+														* robotMovementLimitFactor)
+												.radius(distToRobot)
+												.reactionTime(opponentBotReactionTimeFastRobots)
+												.build()
 								)
 				));
 		movingRobotsSlow = consideredBots.stream().collect(
 				Collectors.toMap(
 						ITrackedBot::getBotId, tBot ->
 								MovingRobotFactory.stoppingRobot(
-										tBot.getPos(),
-										tBot.getVel(),
-										slowRobotVel * robotMovementLimitFactor,
-										slowRobotAcc * robotMovementLimitFactor,
-										slowRobotBrkLimit * robotMovementLimitFactor,
-										distToRobot,
-										opponentBotReactionTimeSlowRobots
+										MovingRobotParams.builder()
+												.position(tBot.getPos())
+												.velocity(tBot.getVel())
+												.vLimit(slowRobotVel * robotMovementLimitFactor)
+												.aLimit(slowRobotAcc * robotMovementLimitFactor)
+												.brkLimit(slowRobotBrkLimit * robotMovementLimitFactor)
+												.radius(distToRobot)
+												.reactionTime(opponentBotReactionTimeSlowRobots)
+												.build()
 								)
 				));
 	}
@@ -214,6 +219,7 @@ public class PassInterceptionMovingRobotRater extends APassRater
 				.aimingTolerance(0)
 				.build();
 		var pass = new Pass(
+				ballVel.z() > 0 ? EPassType.CHIP : EPassType.STRAIGHT,
 				kick,
 				BotID.noBot(),
 				BotID.noBot(),
@@ -282,7 +288,7 @@ public class PassInterceptionMovingRobotRater extends APassRater
 
 	private List<TimeRange> getTimeRanges(IBallTrajectory passTrajectory, Pass pass)
 	{
-		double timeOffset = (Geometry.getBotRadius() / 1000) / pass.getReceivingSpeed();
+		double timeOffset = (Geometry.getBotRadius() / 1000) / pass.getReceivingBallSpeed();
 		return passTrajectory.getTravelLinesInterceptableByRobot().stream()
 				.flatMap(this::removePenArea)
 				.map(segment -> new TimeRange(
@@ -330,7 +336,7 @@ public class PassInterceptionMovingRobotRater extends APassRater
 			return 1;
 		}
 
-		var scorePenalty = pass.isChip() ? chipKickPenalty : 0;
+		var scorePenalty = pass.getType() == EPassType.CHIP ? chipKickPenalty : 0;
 
 		var score = switch (rateCombinationType)
 		{
@@ -352,7 +358,7 @@ public class PassInterceptionMovingRobotRater extends APassRater
 		}
 
 		IMovingRobot movingRobot = movingRobotsFast.get(bot.getBotId());
-		double preparationTime = considerPassPreparationTime ? pass.getPreparationTime() : 0;
+		double preparationTime = considerPassPreparationTime ? pass.getOpponentPreparationTime() : 0;
 		double t = pass.getDuration() + preparationTime;
 		ICircle movingHorizon = movingRobot.getMovingHorizon(t);
 		return passLine.distanceTo(movingHorizon.center()) < movingHorizon.radius() + minDistToRobot;
@@ -419,7 +425,7 @@ public class PassInterceptionMovingRobotRater extends APassRater
 				return bot.getPosByTime(ballTravelTime).distanceTo(pos) > distToRobot ? 1 : 0;
 			}
 
-			double preparationTime = considerPassPreparationTime ? pass.getPreparationTime() : 0;
+			double preparationTime = considerPassPreparationTime ? pass.getOpponentPreparationTime() : 0;
 
 			double t;
 			double additionalReactionTime;

@@ -1,11 +1,7 @@
-/*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.sim.net;
 
 import edu.tigers.sumatra.ball.BallState;
-import edu.tigers.sumatra.bot.IMoveConstraints;
+import edu.tigers.sumatra.bot.MoveConstraints;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.ids.ETeamColor;
 import edu.tigers.sumatra.math.pose.Pose;
@@ -13,8 +9,6 @@ import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.IVector3;
 import edu.tigers.sumatra.math.vector.IVectorN;
 import edu.tigers.sumatra.sim.SimKickEvent;
-
-import java.util.stream.Collectors;
 
 
 /**
@@ -43,7 +37,7 @@ public final class LocalToProtoMapper
 		return SimCommon.VectorN.newBuilder()
 				.addAllX(v.getNumberList().stream()
 						.map(Number::doubleValue)
-						.collect(Collectors.toList()))
+						.toList())
 				.build();
 	}
 
@@ -101,15 +95,14 @@ public final class LocalToProtoMapper
 	}
 
 
-	public static SimBotActionOuterClass.DriveLimits mapDriveLimits(IMoveConstraints m)
+	public static SimBotActionOuterClass.DriveLimits mapDriveLimits(MoveConstraints m)
 	{
 		return SimBotActionOuterClass.DriveLimits.newBuilder()
 				.setVelMax(m.getVelMax())
 				.setAccMax(m.getAccMax())
-				.setJerkMax(m.getJerkMax())
+				.setBrkMax(m.getBrkMax())
 				.setVelMaxW(m.getVelMaxW())
 				.setAccMaxW(m.getAccMaxW())
-				.setJerkMaxW(m.getJerkMaxW())
 				.build();
 	}
 

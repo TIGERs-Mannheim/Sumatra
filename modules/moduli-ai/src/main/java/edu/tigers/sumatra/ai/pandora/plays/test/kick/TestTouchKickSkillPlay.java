@@ -1,10 +1,7 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.pandora.plays.test.kick;
 
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
 import edu.tigers.sumatra.ai.pandora.plays.EPlay;
 import edu.tigers.sumatra.ai.pandora.roles.move.MoveRole;
@@ -38,7 +35,7 @@ import java.util.Optional;
  */
 public class TestTouchKickSkillPlay extends ABallPreparationPlay
 {
-	@Configurable(defValue = "1000.0", comment = "[mm] distance between target and receiver")
+	@Configurable(defValue = "1000.0", comment = "distance between target and receiver", unit = EConfigUnit.DISTANCE_MM)
 	private static double distanceBetweenTargetAndReceiver = 1000.0;
 
 	private final IVector2 startPos;
@@ -165,7 +162,7 @@ public class TestTouchKickSkillPlay extends ABallPreparationPlay
 
 
 		@Override
-		public void doEntryActions()
+		public void onInit()
 		{
 			timer.reset();
 			var input = getCurrentSampleInput().orElseThrow();
@@ -173,7 +170,7 @@ public class TestTouchKickSkillPlay extends ABallPreparationPlay
 			switchRoles(getClosestToBall(), shooter);
 			shooter.updateDestination(getBall().getPos().addNew(Vector2.fromAngleLength(input.movementDirection, -200)));
 			shooter.updateTargetAngle(input.lookAtAngle);
-			shooter.getMoveCon().physicalObstaclesOnly();
+			shooter.setMoveCon(shooter.getMoveCon().withPhysicalObstaclesOnly());
 			shooterID = shooter.getBotID();
 
 			if (getRoles().size() == 1)
@@ -187,8 +184,9 @@ public class TestTouchKickSkillPlay extends ABallPreparationPlay
 				receiver.updateDestination(targetPos.addNew(
 						Vector2.fromPoints(startPos, targetPos).scaleTo(distanceBetweenTargetAndReceiver)));
 				receiver.updateLookAtTarget(getBall());
-				receiver.getMoveCon().physicalObstaclesOnly();
-				receiver.getMoveCon().setBallObstacle(false);
+				receiver.setMoveCon(receiver.getMoveCon()
+						.withPhysicalObstaclesOnly()
+						.withBallObstacle(false));
 				receiverID = receiver.getBotID();
 			}
 			timer.reset();
@@ -226,8 +224,9 @@ public class TestTouchKickSkillPlay extends ABallPreparationPlay
 					.filter(role -> role.getBotID() == shooterID)
 					.findAny().orElseThrow();
 			shooter.updateDestination(getBall().getPos().addNew(Vector2.fromAngleLength(input.movementDirection, 1000)));
-			shooter.getMoveCon().physicalObstaclesOnly();
-			shooter.getMoveCon().setBallObstacle(false);
+			shooter.setMoveCon(shooter.getMoveCon()
+					.withPhysicalObstaclesOnly()
+					.withBallObstacle(false));
 			shooter.setKickParams(KickParams.disarm().withDribblerMode(EDribblerMode.HIGH_POWER));
 			shooter.setVelMax(input.switchingVelocity);
 		}
@@ -294,8 +293,9 @@ public class TestTouchKickSkillPlay extends ABallPreparationPlay
 			switchRoles(oldShooter, newShooter);
 			newShooter.updateDestination(startPos);
 			newShooter.updateLookAtTarget(getBall());
-			newShooter.getMoveCon().physicalObstaclesOnly();
-			newShooter.getMoveCon().setBallObstacle(false);
+			newShooter.setMoveCon(newShooter.getMoveCon()
+					.withPhysicalObstaclesOnly()
+					.withBallObstacle(false));
 
 			receiver = findRoles(MoveRole.class).stream()
 					.filter(role -> role.getBotID() == receiverID)

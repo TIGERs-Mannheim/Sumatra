@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.metis.defense;
 
 import edu.tigers.sumatra.ai.metis.ACalculator;
@@ -68,8 +64,10 @@ public class DefenseThreatAssignmentSeparationCalc extends ACalculator
 	}
 
 
-	private Optional<DefenseThreatAssignment> getThreatAssignmentWithActualDefenders(DefenseThreatAssignment assignment,
-			Set<BotID> allDefender)
+	private Optional<DefenseThreatAssignment> getThreatAssignmentWithActualDefenders(
+			DefenseThreatAssignment assignment,
+			Set<BotID> allDefender
+	)
 	{
 		var assignedDefenders = assignment.getBotIds().stream().filter(allDefender::contains).collect(Collectors.toSet());
 		if (assignedDefenders.isEmpty())
@@ -113,24 +111,18 @@ public class DefenseThreatAssignmentSeparationCalc extends ACalculator
 
 	private boolean defenderIsOnPenArea(DefenseThreatAssignment assignment, BotID defenderID)
 	{
+		var gameState = getAiFrame().getGameState();
 		if (assignment.getThreat().getProtectionLine().isEmpty())
 		{
 			// protection not possible -> penalty area is only the fallback here
 			return true;
 		}
-		if (getAiFrame().getGameState().isStoppedGame())
+		if (gameState.isStoppedGame() && !(gameState.isStandardSituationForThem()
+				|| gameState.isNextStandardSituationForThem()))
 		{
 			return true;
 		}
-		if (defenderNeedsTransitionViaPenAreGroup(assignment, defenderID))
-		{
-			return true;
-		}
-		return switch (assignment.getThreat().getType())
-		{
-			case BALL, BOT_M2M -> false;
-			case BOT_CB -> getAiFrame().getGameState().isStandardSituationForThem();
-		};
+		return defenderNeedsTransitionViaPenAreGroup(assignment, defenderID);
 	}
 
 

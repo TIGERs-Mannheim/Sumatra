@@ -1,9 +1,7 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.autoreferee.engine.detector;
 
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.autoreferee.EAutoRefShapesLayer;
 import edu.tigers.autoreferee.generic.BotPosition;
 import edu.tigers.sumatra.drawable.DrawableCircle;
@@ -27,7 +25,7 @@ import java.util.stream.Collectors;
  */
 public class DribblingDetector extends AGameEventDetector
 {
-	@Configurable(comment = "[mm] Any dribbling distance above this value is considered a violation", defValue = "1000.0")
+	@Configurable(comment = "Any dribbling distance above this value is considered a violation", defValue = "1000.0", unit = EConfigUnit.DISTANCE_MM)
 	private static double maxDribblingLength = 1000.0;
 
 	private final Map<BotID, IVector2> currentContacts = new HashMap<>();

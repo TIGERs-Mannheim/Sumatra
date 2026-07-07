@@ -1,6 +1,3 @@
-/*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra.treetable;
 
 import javax.swing.JTree;
@@ -11,6 +8,7 @@ import javax.swing.event.TreeModelEvent;
 import javax.swing.event.TreeModelListener;
 import javax.swing.table.AbstractTableModel;
 import javax.swing.tree.TreePath;
+import java.io.Serial;
 
 
 /**
@@ -26,6 +24,7 @@ public class TreeTableModelAdapter extends AbstractTableModel
 	/**
 	 *
 	 */
+	@Serial
 	private static final long serialVersionUID = -6298333095243382630L;
 
 	private final JTree tree;

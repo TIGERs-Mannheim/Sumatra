@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.referee.gameevent;
 
 import com.github.g3force.instanceables.InstanceableClass;
@@ -38,7 +34,7 @@ public final class GameEventFactory
 			return Optional.of((IGameEvent) gameEvent.getInstanceableClass().newInstance(event));
 		} catch (InstanceableClass.NotCreateableException e)
 		{
-			log.warn("Could not convert game event: " + event, e);
+			log.warn("Could not convert game event: {}", event, e);
 		}
 		return Optional.empty();
 	}

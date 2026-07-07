@@ -1,14 +1,12 @@
-/*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.metis.offense;
 
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.ai.metis.ACalculator;
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
 import edu.tigers.sumatra.ai.metis.kicking.Pass;
 import edu.tigers.sumatra.ai.metis.offense.action.RatedOffensiveAction;
+import edu.tigers.sumatra.ai.metis.pass.rating.RatedPass;
 import edu.tigers.sumatra.drawable.DrawableCircle;
 import edu.tigers.sumatra.drawable.animated.AnimatedCrosshair;
 import edu.tigers.sumatra.drawable.animated.AnimationTimerSine;
@@ -27,6 +25,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -38,7 +37,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class PassReceiverCalc extends ACalculator
 {
-	@Configurable(comment = "[s] time to keep pass receivers active", defValue = "0.3")
+	@Configurable(comment = "time to keep pass receivers active", defValue = "0.3", unit = EConfigUnit.TIME_S)
 	private static double timeToKeepPastPassReceiversActive = 0.3;
 
 	private final Supplier<Map<BotID, RatedOffensiveAction>> offensiveActions;
@@ -72,18 +71,21 @@ public class PassReceiverCalc extends ACalculator
 		var passList = offensiveActions.get().values().stream()
 				.filter(this::isPassAction)
 				.map(e -> e.getAction().getPass())
-				.filter(e -> e.getReceiver().isBot())
+				.filter(Objects::nonNull)
+				.filter(e -> e.getPass().getReceiver().isBot())
 				.toList();
 
 		passList.forEach(e -> getShapes(EAiShapesLayer.OFFENSE_PASSING).add(
-				new AnimatedCrosshair(e.getKick().getTarget(),
+				new AnimatedCrosshair(
+						e.getPass().getKick().getTarget(),
 						new NumberAnimatorMinMax(30, 150, new AnimationTimerSine(Math.PI)),
 						new NumberAnimatorMinMax(0, Math.PI * 2.0, new AnimationTimerUp(2)),
 						new ColorAnimatorFixed(Color.BLACK),
 						new ColorAnimatorFixed(new Color(255, 255, 255, 0))
 				)));
 		passList.forEach(e -> getShapes(EAiShapesLayer.OFFENSE_PASSING).add(
-				new AnimatedCrosshair(e.getKick().getTarget(),
+				new AnimatedCrosshair(
+						e.getPass().getKick().getTarget(),
 						new NumberAnimatorMinMax(40, 210, new AnimationTimerSine(Math.PI)),
 						new NumberAnimatorMinMax(0, Math.PI * 2.0, new AnimationTimerUp(2)),
 						new ColorAnimatorFixed(Color.RED),
@@ -92,10 +94,12 @@ public class PassReceiverCalc extends ACalculator
 
 		for (var pass : passList)
 		{
-			passReceivingRobotStartTimes.put(pass.getReceiver(),
-					new PassWithTimestamp(pass, getWFrame().getTimestamp()));
+			passReceivingRobotStartTimes.put(
+					pass.getPass().getReceiver(),
+					new PassWithTimestamp(pass.getPass(), getWFrame().getTimestamp())
+			);
 		}
-		passList.stream().map(Pass::getReceiver).forEach(newPassReceivers::add);
+		passList.stream().map(RatedPass::getPass).map(Pass::getReceiver).forEach(newPassReceivers::add);
 		passReceivingRobotStartTimes.keySet().removeIf(id -> !getWFrame().getBots().containsKey(id));
 
 		supportPassReceivers = passReceivingRobotStartTimes.entrySet()
@@ -106,8 +110,10 @@ public class PassReceiverCalc extends ACalculator
 		// draw support pass receivers
 		supportPassReceivers.keySet().forEach(
 				e -> getShapes(EAiShapesLayer.SUPPORT_PASS_RECEIVER).add(new DrawableCircle(
-						Circle.createCircle(getWFrame().getBot(e).getPos(), 150)).setFill(true).setColor(new Color(195, 0,
-						255, 119))
+								Circle.createCircle(getWFrame().getBot(e).getPos(), 150)).setFill(true).setColor(new Color(
+								195, 0,
+								255, 119
+						))
 				));
 
 		passReceivers = Collections.unmodifiableList(newPassReceivers);

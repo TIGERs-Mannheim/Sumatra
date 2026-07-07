@@ -1,10 +1,7 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.metis.pass;
 
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.ai.metis.ACalculator;
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
 import edu.tigers.sumatra.ai.metis.kicking.Pass;
@@ -38,18 +35,19 @@ public class PassRatingCalc extends ACalculator
 {
 
 	@Configurable(defValue = "true", comment = "Use dynamic pass interception rating based on pass stats",
-			tags = { "pass" })
+			tags = { "pass" }, unit = EConfigUnit.BOOLEAN)
 	private static boolean useDynamicInterceptionRating = true;
 
 	@Configurable(defValue = "0.1", comment = "Hysteresis bonus multiplier for same receiver",
-			tags = { "hysteresis", "pass" })
+			tags = { "hysteresis", "pass" }, unit = EConfigUnit.FACTOR)
 	private static double hystBonusMultiplierBot = 0.1;
 
 	@Configurable(defValue = "0.15", comment = "Hysteresis bonus multiplier for same target",
-			tags = { "hysteresis", "pass" })
+			tags = { "hysteresis", "pass" }, unit = EConfigUnit.FACTOR)
 	private static double hystBonusMultiplierTarget = 0.15;
 
-	@Configurable(defValue = "false", comment = "Draw debug shapes", tags = { "debug", "pass" })
+	@Configurable(defValue = "false", comment = "Draw debug shapes", tags = { "debug",
+			"pass" }, unit = EConfigUnit.BOOLEAN)
 	private static boolean debugShapes = false;
 
 	private final Supplier<Map<KickOrigin, List<Pass>>> generatedPasses;
@@ -72,7 +70,10 @@ public class PassRatingCalc extends ACalculator
 				// Sort by distance to ball as rough estimate to get the closest bots first
 				.sorted(new BotDistanceComparator(getBall().getPos()))
 				.toList();
-		var consideredBotsIntercept = consideredBots.stream().filter(e -> e.getBotId() != getAiFrame().getKeeperOpponentId()).toList();
+		var consideredBotsIntercept = consideredBots
+				.stream()
+				.filter(e -> e.getBotId() != getAiFrame().getKeeperOpponentId())
+				.toList();
 		if (useDynamicInterceptionRating)
 		{
 			ratingFactory.updateDynamic(
@@ -80,14 +81,16 @@ public class PassRatingCalc extends ACalculator
 					consideredBotsIntercept,
 					passStats.get(),
 					offensiveZones.get(),
-					opponentMan2ManMarkers.get()
+					opponentMan2ManMarkers.get(),
+					getAiFrame().getKeeperOpponentId()
 			);
 		} else
 		{
 			ratingFactory.update(
 					consideredBots,
 					consideredBotsIntercept,
-					opponentMan2ManMarkers.get()
+					opponentMan2ManMarkers.get(),
+					getAiFrame().getKeeperOpponentId()
 			);
 		}
 		if (debugShapes)

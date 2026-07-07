@@ -1,10 +1,7 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.skillsystem.skills.dribbling;
 
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.bot.State;
 import edu.tigers.sumatra.drawable.DrawableAnnotation;
 import edu.tigers.sumatra.drawable.DrawableArrow;
@@ -12,7 +9,6 @@ import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.math.SumatraMath;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
-import edu.tigers.sumatra.pathfinder.EObstacleAvoidanceMode;
 import edu.tigers.sumatra.skillsystem.ESkillShapesLayer;
 import edu.tigers.sumatra.skillsystem.skills.AMoveToSkill;
 import edu.tigers.sumatra.skillsystem.skills.ESkillState;
@@ -30,36 +26,28 @@ import java.awt.Color;
  */
 public class DribbleKickSkill extends AMoveToSkill
 {
-	@Configurable(defValue = "0.2", comment = "The approximate tolerance when the angle is considered to be reached")
+	@Configurable(defValue = "0.2", comment = "The approximate tolerance when the angle is considered to be reached", unit = EConfigUnit.ANGLE_RAD)
 	private static double roughAngleTolerance = 0.2;
 
-	@Configurable(defValue = "0.08", comment = "The max time to wait until angle is considered reached while within tolerance")
+	@Configurable(defValue = "0.08", comment = "The max time to wait until angle is considered reached while within tolerance", unit = EConfigUnit.TIME_S)
 	private static double maxTimeTargetAngleReached = 0.08;
 
-	@Configurable(defValue = "1.2")
-	private static double initialVelMax = 1.2;
+	@Configurable(defValue = "1.5", unit = EConfigUnit.ACCELERATION_M)
+	private static double accMax = 1.5;
 
-	@Configurable(defValue = "5.0")
-	private static double initialAccMaxW = 5.0;
-
-	@Configurable(defValue = "1.5")
-	private static double initialAccMax = 1.5;
-
-	@Configurable(defValue = "3.0")
-	private static double accMax = 3.0;
-
-	@Configurable(defValue = "20.0")
+	@Configurable(defValue = "15.0", unit = EConfigUnit.ACCELERATION_ANGULAR_RAD)
 	private static double accMaxW = 15.0;
 
-	@Configurable(defValue = "25.0")
+	@Configurable(defValue = "2.0", unit = EConfigUnit.ACCELERATION_M)
+	private static double kickNowAccMax = 2.0;
+
+	@Configurable(defValue = "25.0", unit = EConfigUnit.ACCELERATION_ANGULAR_RAD)
 	private static double kickNowAccMaxW = 25.0;
 
 	private final TargetAngleReachedChecker targetAngleReachedChecker = new TargetAngleReachedChecker(
 			roughAngleTolerance, maxTimeTargetAngleReached);
 
 	private final TimestampTimer changeStateTimer = new TimestampTimer(0.1);
-
-	private final TimestampTimer safeOrientationLimitsTimer = new TimestampTimer(0.25);
 
 	@Setter
 	private IVector2 destination;
@@ -71,7 +59,14 @@ public class DribbleKickSkill extends AMoveToSkill
 	private boolean kickIfTargetOrientationReached = false;
 
 	@Setter
+	private boolean moveBackwards = false;
+
+	@Setter
 	private double forceKickSpeed = 0.0;
+
+	@Setter
+	private double defaultKickSpeed = KickParams.maxStraight().getKickSpeed();
+
 	private double finalTargetKickSpeed;
 
 	@Setter
@@ -82,26 +77,26 @@ public class DribbleKickSkill extends AMoveToSkill
 	public void doEntryActions()
 	{
 		super.doEntryActions();
-		getMoveCon().setBallObstacle(false);
-		safeOrientationLimitsTimer.reset();
+		setMoveCon(getMoveCon().withBallObstacle(false));
 	}
 
 
 	@Override
 	public void doUpdate()
 	{
-		// Base stats
-		getMoveCon().setObstacleAvoidanceMode(EObstacleAvoidanceMode.AGGRESSIVE);
-
 		updateDestination(destination);
 		double finalTargetOrientation = calculateAdjustedTargetOrientation();
 		updateTargetAngle(finalTargetOrientation);
+
+		setMoveConstraints(getMoveConstraints()
+				.withAccMaxW(accMaxW)
+				.withAccMax(accMax));
 
 		var orientation = getOrientationFromFilter();
 		if (kickIfTargetOrientationReached)
 		{
 			// Robot wants to kick, but has to orientate first. We want to do this a little bit faster now!
-			getMoveConstraints().setAccMaxW(kickNowAccMaxW);
+			setMoveConstraints(getMoveConstraints().withAccMaxW(kickNowAccMaxW).withAccMax(kickNowAccMax));
 
 			var angleTolerance = Math.max(roughAngleTolerance, -roughAngleTolerance);
 			targetAngleReachedChecker.setOuterAngleDiffTolerance(angleTolerance);
@@ -110,19 +105,14 @@ public class DribbleKickSkill extends AMoveToSkill
 					orientation,
 					getWorldFrame().getTimestamp()
 			);
-		}
 
-		safeOrientationLimitsTimer.update(getWorldFrame().getTimestamp());
-		if (!safeOrientationLimitsTimer.isTimeUp(getWorldFrame().getTimestamp()) && !kickIfTargetOrientationReached)
-		{
-			// we reduce our limits if we just started to dribble, the ball has still weak binding to the robot.
-			getMoveConstraints().setAccMaxW(initialAccMaxW);
-			getMoveConstraints().setAccMax(initialAccMax);
-			getMoveConstraints().setVelMax(initialVelMax);
-		} else
-		{
-			getMoveConstraints().setAccMaxW(accMaxW);
-			getMoveConstraints().setAccMax(accMax);
+			if (moveBackwards)
+			{
+				var moveBackwordsOffset = Vector2.fromAngle(getOrientationFromFilter()).scaleToNew(-800);
+				var botToDest = destination.subtractNew(getPos()).scaleToNew(300);
+				var backwardsMovePos = getPos().addNew(moveBackwordsOffset).addNew(botToDest);
+				updateDestination(backwardsMovePos);
+			}
 		}
 
 		getShapes().get(ESkillShapesLayer.DRIBBLING_KICK).add(new DrawableArrow(getPos(), target.subtractNew(getPos())));
@@ -180,7 +170,7 @@ public class DribbleKickSkill extends AMoveToSkill
 		double plannedBallVelAngle = target.subtractNew(getTBot().getBotKickerPos().addNew(ballOffset)).getAngle();
 		IVector2 plannedKick = Vector2.fromAngleLength(
 				plannedBallVelAngle,
-				KickParams.maxStraight().getKickSpeed()
+				defaultKickSpeed
 		);
 
 		IVector2 kick = plannedKick.subtractNew(getVel());

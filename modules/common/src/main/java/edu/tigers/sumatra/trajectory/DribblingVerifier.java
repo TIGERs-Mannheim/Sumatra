@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.trajectory;
 
 import edu.tigers.sumatra.drawable.DrawableAnnotation;

@@ -1,6 +1,3 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra.view;
 
 import net.miginfocom.swing.MigLayout;
@@ -10,6 +7,7 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.border.TitledBorder;
 import java.awt.Dimension;
+import java.io.Serial;
 import java.util.EnumMap;
 import java.util.Map;
 
@@ -19,6 +17,7 @@ import java.util.Map;
  */
 public class FpsPanel extends JPanel
 {
+	@Serial
 	private static final long serialVersionUID = -4915659461230793676L;
 	private static final int LABEL_WIDTH = 60;
 

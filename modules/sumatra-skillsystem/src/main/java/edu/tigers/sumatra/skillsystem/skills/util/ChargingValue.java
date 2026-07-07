@@ -1,11 +1,8 @@
-/*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.skillsystem.skills.util;
 
 
 import edu.tigers.sumatra.math.SumatraMath;
+import lombok.extern.log4j.Log4j2;
 
 import static java.lang.Double.POSITIVE_INFINITY;
 import static java.lang.Double.isFinite;
@@ -15,6 +12,7 @@ import static java.lang.Math.signum;
 /**
  * A charging value can be charged from a default value up to a limit with a constant charge rate.
  */
+@Log4j2
 public class ChargingValue
 {
 	private final double defaultValue;
@@ -57,7 +55,13 @@ public class ChargingValue
 	 */
 	public void setValue(final double value)
 	{
-		this.value = value;
+		if (isInLimit(value))
+		{
+			this.value = value;
+		} else
+		{
+			this.value = limit;
+		}
 	}
 
 
@@ -81,6 +85,11 @@ public class ChargingValue
 	{
 		if (tLastIncrease != 0)
 		{
+			if (timestamp < tLastIncrease)
+			{
+				log.warn("Negative time diff detected in ChargingValue: {} ms", (timestamp - tLastIncrease) * 1e-6);
+			}
+
 			long dt = timestamp - tLastIncrease;
 			double inc = chargeRate * dt / 1e9;
 			double newValue = value + inc;

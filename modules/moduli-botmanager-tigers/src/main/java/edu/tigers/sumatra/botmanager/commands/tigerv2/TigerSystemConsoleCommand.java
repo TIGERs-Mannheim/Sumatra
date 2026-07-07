@@ -1,24 +1,16 @@
-/*
- * *********************************************************
- * Copyright (c) 2009 - 2013, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 16.04.2013
- * Author(s): AndreR
- * *********************************************************
- */
 package edu.tigers.sumatra.botmanager.commands.tigerv2;
-
-import java.nio.charset.StandardCharsets;
 
 import edu.tigers.sumatra.botmanager.commands.ACommand;
 import edu.tigers.sumatra.botmanager.commands.ECommand;
 import edu.tigers.sumatra.botmanager.serial.SerialData;
 import edu.tigers.sumatra.botmanager.serial.SerialData.ESerialDataType;
 
+import java.nio.charset.StandardCharsets;
+
 
 /**
  * Simple command message to a tigerv2 bot.
- * 
+ *
  * @author AndreR
  */
 public class TigerSystemConsoleCommand extends ACommand
@@ -32,30 +24,30 @@ public class TigerSystemConsoleCommand extends ACommand
 		MAIN(1),
 		/** */
 		MEDIA(2);
-		
+
 		private final int id;
-		
-		
+
+
 		ConsoleCommandTarget(final int id)
 		{
 			this.id = id;
 		}
-		
-		
+
+
 		/**
 		 * Get id of source.
-		 * 
+		 *
 		 * @return
 		 */
 		public int getId()
 		{
 			return id;
 		}
-		
-		
+
+
 		/**
 		 * Convert an id to an enum.
-		 * 
+		 *
 		 * @param id 1 (MAIN) or 2 (MEDIA)
 		 * @return enum
 		 */
@@ -68,11 +60,11 @@ public class TigerSystemConsoleCommand extends ACommand
 					return s;
 				}
 			}
-			
+
 			return UNKNOWN;
 		}
 	}
-	
+
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
@@ -80,8 +72,8 @@ public class TigerSystemConsoleCommand extends ACommand
 	private int target;
 	@SerialData(type = ESerialDataType.TAIL)
 	private byte[] textData;
-	
-	
+
+
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
@@ -90,8 +82,8 @@ public class TigerSystemConsoleCommand extends ACommand
 	{
 		super(ECommand.CMD_SYSTEM_CONSOLE_COMMAND, true);
 	}
-	
-	
+
+
 	/**
 	 * @param target
 	 * @param command
@@ -102,13 +94,13 @@ public class TigerSystemConsoleCommand extends ACommand
 		setTarget(target);
 		setText(command);
 	}
-	
-	
+
+
 	// --------------------------------------------------------------------------
 	// --- methods --------------------------------------------------------------
 	// --------------------------------------------------------------------------
-	
-	
+
+
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
@@ -117,10 +109,10 @@ public class TigerSystemConsoleCommand extends ACommand
 	 */
 	public String getText()
 	{
-		return new String(textData, 0, textData.length, StandardCharsets.US_ASCII);
+		return new String(textData, StandardCharsets.US_ASCII);
 	}
-	
-	
+
+
 	/**
 	 * @param text the text to set
 	 */
@@ -128,8 +120,8 @@ public class TigerSystemConsoleCommand extends ACommand
 	{
 		textData = text.getBytes(StandardCharsets.US_ASCII);
 	}
-	
-	
+
+
 	/**
 	 * @return the target
 	 */
@@ -137,8 +129,8 @@ public class TigerSystemConsoleCommand extends ACommand
 	{
 		return ConsoleCommandTarget.getTargetConstant(target);
 	}
-	
-	
+
+
 	/**
 	 * @param target the target to set
 	 */
@@ -146,5 +138,5 @@ public class TigerSystemConsoleCommand extends ACommand
 	{
 		this.target = target.getId();
 	}
-	
+
 }

@@ -26,10 +26,9 @@ message SimBotAction {
 message DriveLimits {
     double velMax = 1;
     double accMax = 2;
-    double jerkMax = 3;
+    double brkMax = 7;
     double velMaxW = 4;
     double accMaxW = 5;
-    double jerkMaxW = 6;
 }
 
 enum DriveMode {

@@ -1,8 +1,7 @@
-/*
- * Copyright (c) 2009 - 2019, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.referee;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.security.InvalidKeyException;
 import java.security.KeyFactory;
@@ -15,9 +14,6 @@ import java.security.spec.InvalidKeySpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.Base64;
-
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 
 /**
@@ -82,7 +78,7 @@ public class MessageSigner
 
 		} catch (NoSuchAlgorithmException | InvalidKeySpecException | NullPointerException e)
 		{
-			log.warn("Generating private key failed for " + rawKey, e);
+			log.warn("Generating private key failed for {}", rawKey, e);
 		}
 
 		return null;
@@ -113,7 +109,7 @@ public class MessageSigner
 
 		} catch (NoSuchAlgorithmException | InvalidKeySpecException | NullPointerException e)
 		{
-			log.warn("Generating public key failed for " + rawKey, e);
+			log.warn("Generating public key failed for {}", rawKey, e);
 		}
 
 		return null;

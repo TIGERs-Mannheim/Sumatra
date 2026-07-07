@@ -1,6 +1,3 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra.gui.botcenter.view;
 
 import edu.tigers.sumatra.botmanager.ping.PingStats;
@@ -12,6 +9,7 @@ import javax.swing.JPanel;
 import javax.swing.JTextField;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.Serial;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -24,6 +22,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 public class BcBotPingPanel extends JPanel
 {
 	/**  */
+	@Serial
 	private static final long							serialVersionUID	= 4531411392390831333L;
 
 	private final JTextField							minDelay				= new JTextField();

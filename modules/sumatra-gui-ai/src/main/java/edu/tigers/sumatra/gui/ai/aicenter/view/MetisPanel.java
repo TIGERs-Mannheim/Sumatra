@@ -1,6 +1,3 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra.gui.ai.aicenter.view;
 
 import edu.tigers.sumatra.components.RoundedNumberRenderer;
@@ -18,6 +15,7 @@ import javax.swing.table.DefaultTableModel;
 import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.Dimension;
+import java.io.Serial;
 import java.util.Objects;
 
 
@@ -26,6 +24,7 @@ import java.util.Objects;
  */
 public class MetisPanel extends JPanel
 {
+	@Serial
 	private static final long serialVersionUID = 9125108113440167202L;
 	public static final int COL_CALCULATOR = 0;
 	public static final int COL_TIME_REL = 1;
@@ -119,6 +118,7 @@ public class MetisPanel extends JPanel
 
 	private static class MetisTableModel extends DefaultTableModel
 	{
+		@Serial
 		private static final long serialVersionUID = -3700170198897729348L;
 
 

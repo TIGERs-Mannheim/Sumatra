@@ -1,11 +1,8 @@
-/*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.metis.offense.action;
 
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.ai.metis.ACalculator;
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
 import edu.tigers.sumatra.ai.metis.ballpossession.BallPossession;
@@ -14,6 +11,7 @@ import edu.tigers.sumatra.ai.metis.kicking.Pass;
 import edu.tigers.sumatra.ai.metis.offense.action.moves.AOffensiveActionMove;
 import edu.tigers.sumatra.ai.metis.offense.action.moves.EOffensiveActionMove;
 import edu.tigers.sumatra.ai.metis.offense.action.moves.FinisherActionMove;
+import edu.tigers.sumatra.ai.metis.offense.action.moves.FinisherPassActionMove;
 import edu.tigers.sumatra.ai.metis.offense.action.moves.ForcedPassActionMove;
 import edu.tigers.sumatra.ai.metis.offense.action.moves.GoalKickActionMove;
 import edu.tigers.sumatra.ai.metis.offense.action.moves.LowChanceGoalKickActionMove;
@@ -60,25 +58,25 @@ public class OffensiveActionsCalc extends ACalculator
 	private static final DecimalFormat DF = new DecimalFormat("0.00");
 	private static final Color COLOR = Color.magenta;
 
-	@Configurable(defValue = "1.0")
+	@Configurable(defValue = "1.0", unit = EConfigUnit.FACTOR)
 	private static double viabilityMultiplierDirectKick = 1.0;
 
-	@Configurable(defValue = "0.8")
+	@Configurable(defValue = "0.8", unit = EConfigUnit.FACTOR)
 	private static double viabilityMultiplierStandardPass = 0.8;
 
-	@Configurable(defValue = "1.0")
+	@Configurable(defValue = "1.0", unit = EConfigUnit.FACTOR)
 	private static double viabilityMultiplierGoToOtherHalf = 1.0;
 
-	@Configurable(defValue = "0.35", comment = "[s]")
+	@Configurable(defValue = "0.35", unit = EConfigUnit.TIME_S)
 	private static double impactTimeActionLockThreshold = 0.35;
 
-	@Configurable(defValue = "1.6", comment = "Rotation time multiplier")
+	@Configurable(defValue = "1.6", comment = "Rotation time multiplier", unit = EConfigUnit.FACTOR)
 	private static double rotationTimeMultiplier = 1.6;
 
-	@Configurable(defValue = "PROTECT_MOVE")
+	@Configurable(defValue = "PROTECT_MOVE", unit = EConfigUnit.NO_UNIT)
 	private static EOffensiveActionMove forcedOffensiveActionMove = EOffensiveActionMove.PROTECT_MOVE;
 
-	@Configurable(comment = "Forces OffensiveActionsCalc to always activate the actionMove configured in forcedOffensiveActionMove", defValue = "false")
+	@Configurable(comment = "Forces OffensiveActionsCalc to always activate the actionMove configured in forcedOffensiveActionMove", defValue = "false", unit = EConfigUnit.BOOLEAN)
 	private static boolean activatedForcedOffensiveMove = false;
 
 	static
@@ -103,6 +101,7 @@ public class OffensiveActionsCalc extends ACalculator
 	private final Supplier<Boolean> tigerDribblingBall;
 	private final Supplier<BallPossession> ballPossession;
 	private final Supplier<Pass> protectPass;
+	private final Supplier<Map<KickOrigin, List<RatedPass>>> ratedPasses;
 
 	@Getter
 	private Map<BotID, RatedOffensiveAction> offensiveActions;
@@ -113,15 +112,23 @@ public class OffensiveActionsCalc extends ACalculator
 	{
 		register(EOffensiveActionMove.FORCED_PASS, new ForcedPassActionMove(selectedPasses));
 		register(EOffensiveActionMove.REDIRECT_GOAL_KICK, new RedirectGoalKickActionMove(bestRedirectGoalKickPerBot));
-		register(EOffensiveActionMove.FINISHER,
-				new FinisherActionMove(opponentClosestToBall, dribblingInformation, tigerDribblingBall));
+		register(
+				EOffensiveActionMove.FINISHER,
+				new FinisherActionMove(opponentClosestToBall, dribblingInformation, tigerDribblingBall)
+		);
 		register(EOffensiveActionMove.GOAL_KICK, new GoalKickActionMove(bestGoalKickPerBot));
 		register(EOffensiveActionMove.STANDARD_PASS, new StandardPassActionMove(selectedPasses, kickOrigins));
 		register(EOffensiveActionMove.LOW_CHANCE_GOAL_KICK, new LowChanceGoalKickActionMove(bestGoalKickPerBot));
-		register(EOffensiveActionMove.MOVE_BALL_TO_OPPONENT_HALF,
-				new MoveBallToOpponentHalfActionMove(opponentClosestToBall, kickOrigins, ballPossession));
-		register(EOffensiveActionMove.RECEIVE_BALL, new ReceiveBallActionMove(selectedPasses, kickOrigins));
+		register(
+				EOffensiveActionMove.MOVE_BALL_TO_OPPONENT_HALF,
+				new MoveBallToOpponentHalfActionMove(opponentClosestToBall, kickOrigins, ballPossession)
+		);
+		register(EOffensiveActionMove.RECEIVE_BALL, new ReceiveBallActionMove(kickOrigins));
 		register(EOffensiveActionMove.PROTECT_MOVE, new ProtectActionMove(kickOrigins, dribbleToPos, protectPass));
+		register(
+				EOffensiveActionMove.FINISHER_PASS_MOVE,
+				new FinisherPassActionMove(dribbleToPos, ratedPasses, kickOrigins)
+		);
 	}
 
 
@@ -196,8 +203,11 @@ public class OffensiveActionsCalc extends ACalculator
 						.orElse(actionMoves.get(EOffensiveActionMove.PROTECT_MOVE).calcAction(botId).orElse(null));
 			}
 
-			var actions = actionMoves.values().parallelStream().map(m -> m.calcAction(botId)).filter(Optional::isPresent)
+			var actions = actionMoves.values().parallelStream()
+					.map(m -> m.calcAction(botId)).filter(Optional::isPresent)
 					.map(Optional::get).toList();
+			// draw scheduled shapes (if we would do this during parallel processing, we would get race conditions)
+			actionMoves.values().forEach(AOffensiveActionMove::drawScheduled);
 			drawViabilityMap(botId, actions);
 
 			var bestAction = firstFullyViableAction(actions).or(() -> bestPartiallyViableAction(actions)).orElse(null);
@@ -205,6 +215,7 @@ public class OffensiveActionsCalc extends ACalculator
 			{
 				return bestAction;
 			}
+			// NEVER CHANGE THIS WARNING TEXT WITHOUT ADAPTING AAiIntegrationTest::assertNoWarnLogIgnoringDesperationOver9000()
 			log.warn("No offensive action has been declared... desperation level > 9000");
 		}
 
@@ -237,7 +248,8 @@ public class OffensiveActionsCalc extends ACalculator
 						bot.getAngleByTime(0),
 						getBall().getPos().subtractNew(bot.getPos()).getAngle(),
 						bot.getMoveConstraints().getVelMaxW(),
-						bot.getMoveConstraints().getAccMaxW());
+						bot.getMoveConstraints().getAccMaxW()
+				);
 				boolean isTurnToReceivePossibleInTime = rotationTime * rotationTimeMultiplier < impactTime;
 
 				var receiveAction = actionMoves.get(EOffensiveActionMove.RECEIVE_BALL).calcAction(botId);
@@ -294,10 +306,10 @@ public class OffensiveActionsCalc extends ACalculator
 		multiplierMap.put(EOffensiveActionMove.STANDARD_PASS, viabilityMultiplierStandardPass);
 		multiplierMap.put(EOffensiveActionMove.MOVE_BALL_TO_OPPONENT_HALF, viabilityMultiplierGoToOtherHalf);
 
-		Arrays.stream(EOffensiveActionMove.values()).forEach(v -> {
+		Arrays.stream(EOffensiveActionMove.values()).forEach(v ->
 			// Set remaining values to 1.0
-			multiplierMap.putIfAbsent(v, 1.0);
-		});
+				multiplierMap.putIfAbsent(v, 1.0)
+		);
 		return multiplierMap;
 	}
 

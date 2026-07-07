@@ -1,9 +1,7 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.metis.defense;
 
+import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
 import edu.tigers.sumatra.ai.metis.defense.data.DefenseBallThreat;
 import edu.tigers.sumatra.ai.metis.defense.data.DefenseBotThreat;
@@ -14,10 +12,13 @@ import edu.tigers.sumatra.drawable.DrawableCircle;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.StatisticsMath;
+import edu.tigers.sumatra.math.SumatraMath;
 import edu.tigers.sumatra.math.circle.Circle;
+import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.Validate;
 
 import java.awt.Color;
 import java.util.ArrayList;
@@ -34,6 +35,13 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class DefenseBotThreatCalc extends ADefenseThreatCalc
 {
+	@Configurable(comment = "additionally reduce the threat rating by this percentage if the same bot-strategy combination was chosen last frame", defValue = "-0.3", unit = EConfigUnit.PERCENTAGE)
+	private static double strategySelectionHysteresis = -0.3;
+	@Configurable(comment = "How many positions the selected def strategy must differ from previous frame till the hysteresis reaches 0", defValue = "2", unit = EConfigUnit.COUNT)
+	private static int strategySelectionHysteresisPositionDifference = 2;
+	@Configurable(comment = "DO NOT KEEP THIS ACTIVE, THIS IS TEST ONLY AND HURTS PERFORMANCE A LOT", defValue = "false", unit = EConfigUnit.BOOLEAN)
+	private static boolean checkIfThreatReductionRaterCacheIsWorking = false;
+
 	private final Supplier<List<DefenseBotThreatDefData>> inDangerZoneBotThreatsDefData;
 	private final Supplier<List<DefenseBotThreatDefData>> allBotThreatsDefData;
 	private final Supplier<DefenseBallThreat> defenseBallThreat;
@@ -46,11 +54,14 @@ public class DefenseBotThreatCalc extends ADefenseThreatCalc
 	private List<DefenseBotThreat> allMan2manBotThreats;
 	@Getter
 	private Map<Integer, Double> defenseThreatRatingForNumDefender;
+	private Map<Integer, Rating> internalDefenseThreatRatingForNumDefender;
 
 
 	@Override
 	public void doCalc()
 	{
+		defenseThreatReductionRater.onNewFrame();
+
 		allMan2manBotThreats = allBotThreatsDefData.get().stream()
 				.filter(data -> data.canBeOuterDefendedWithStrategy(EDefenseBotThreatDefStrategy.MAN_2_MAN_MARKER))
 				.map(data -> buildDefenseBotThreat(data, EDefenseBotThreatDefStrategy.MAN_2_MAN_MARKER))
@@ -59,17 +70,27 @@ public class DefenseBotThreatCalc extends ADefenseThreatCalc
 		var defendedBotThreatsWithRating = buildDefendedBotThreatsWithRating();
 		defenseBotThreats = defendedBotThreatsWithRating.stream().map(ThreatWithRating::threat).toList();
 
-		defenseThreatRatingForNumDefender = new HashMap<>();
-		defenseThreatRatingForNumDefender.put(
-				0, StatisticsMath.anyOccurs(
-						inDangerZoneBotThreatsDefData.get().stream().map(DefenseBotThreatDefData::threatRating))
+		internalDefenseThreatRatingForNumDefender = new HashMap<>();
+		internalDefenseThreatRatingForNumDefender.put(
+				0, new Rating(
+						StatisticsMath.anyOccurs(
+								inDangerZoneBotThreatsDefData.get().stream().map(DefenseBotThreatDefData::threatRating)), 0
+				)
 		);
 		for (var threatWithRating : defendedBotThreatsWithRating)
 		{
-			defenseThreatRatingForNumDefender.put(defenseThreatRatingForNumDefender.size(), threatWithRating.rating);
+			internalDefenseThreatRatingForNumDefender.put(
+					internalDefenseThreatRatingForNumDefender.size(), threatWithRating.rating);
 		}
-		defenseThreatRatingForNumDefender = Collections.unmodifiableMap(defenseThreatRatingForNumDefender);
+		internalDefenseThreatRatingForNumDefender = Collections.unmodifiableMap(
+				internalDefenseThreatRatingForNumDefender);
 		drawBotThreats();
+
+		defenseThreatRatingForNumDefender = internalDefenseThreatRatingForNumDefender.entrySet().stream()
+				.collect(Collectors.toMap(
+						Map.Entry::getKey,
+						entry -> entry.getValue().withoutBonus()
+				));
 	}
 
 
@@ -115,7 +136,7 @@ public class DefenseBotThreatCalc extends ADefenseThreatCalc
 				.toList()
 		);
 
-		return defensiveCandidates.stream().min(Comparator.comparingDouble(ThreatWithRating::rating));
+		return defensiveCandidates.stream().min(Comparator.comparingDouble(threat -> threat.rating.includingBonus()));
 	}
 
 
@@ -146,23 +167,65 @@ public class DefenseBotThreatCalc extends ADefenseThreatCalc
 	}
 
 
-	private double rateDefensiveCandidate(
+	private Rating rateDefensiveCandidate(
 			DefenseBotThreat candidate,
 			List<ThreatWithRating> defendedBotThreatsWithRating
 	)
 	{
-		var newDefendedBotThreats = defendedBotThreatsWithRating.stream().map(ThreatWithRating::threat)
+		var newDefendedBotThreats = defendedBotThreatsWithRating.stream()
+				.map(ThreatWithRating::threat)
 				.collect(Collectors.toList());
 		newDefendedBotThreats.add(candidate);
-		var rating = defenseThreatReductionRater.calcThreatRatingWanted(
+		newDefendedBotThreats = Collections.unmodifiableList(newDefendedBotThreats);
+
+		var rating = defenseThreatReductionRater.calcThreatRatingWantedWithCaching(
 				inDangerZoneBotThreatsDefData.get(),
 				newDefendedBotThreats,
 				defenseBallThreat.get(),
 				numBallDefender.get()
 		);
-		getShapes(EAiShapesLayer.DEFENSE_THREAT_RATING_REDUCTION)
-				.addAll(defenseThreatReductionRater.getShapes());
-		return rating;
+		if (checkIfThreatReductionRaterCacheIsWorking)
+		{
+			var ratingNoCache = defenseThreatReductionRater.calcThreatRatingWanted(
+					inDangerZoneBotThreatsDefData.get(),
+					newDefendedBotThreats,
+					defenseBallThreat.get(),
+					numBallDefender.get()
+			);
+
+			Validate.isTrue(rating == ratingNoCache, "%.5f != %.5f", ratingNoCache, rating);
+		}
+		getShapes(EAiShapesLayer.DEFENSE_THREAT_RATING_REDUCTION).addAll(defenseThreatReductionRater.getShapes());
+
+		var thisFrameNumber = defendedBotThreatsWithRating.size();
+		var factor = candidate.getThreatRating();
+		double bonus = findLastFrameOrderingNumber(candidate)
+				.map(lastFrameNumber -> Math.abs(lastFrameNumber - thisFrameNumber))
+				.map(diff -> SumatraMath.cap(1 - (diff / (double) strategySelectionHysteresisPositionDifference), 0, 1)
+						* strategySelectionHysteresis * factor)
+				.orElse(0.0);
+
+		return new Rating(rating, bonus);
+	}
+
+
+	private Optional<Integer> findLastFrameOrderingNumber(DefenseBotThreat candidate)
+	{
+		if (defenseBotThreats == null)
+		{
+			return Optional.empty();
+		}
+
+		for (int i = 0; i < defenseBotThreats.size(); i++)
+		{
+			var lastFrameThreat = defenseBotThreats.get(i);
+			if (lastFrameThreat.getBotID().equals(candidate.getBotID())
+					&& lastFrameThreat.getDefendStrategy().equals(candidate.getDefendStrategy()))
+			{
+				return Optional.of(i);
+			}
+		}
+		return Optional.empty();
 	}
 
 
@@ -179,20 +242,36 @@ public class DefenseBotThreatCalc extends ADefenseThreatCalc
 		});
 		for (var withRating : defenseBotThreats)
 		{
-			final var finalDefenderCount = defenderCount;
-			withRating.getProtectionPosition().ifPresent(pos -> {
-				shapes.add(new DrawableCircle(Circle.createCircle(pos, 1.25 * Geometry.getBotRadius()), Color.BLACK));
-				shapes.add(new DrawableAnnotation(
-						pos, String.format("%d", finalDefenderCount),
-						getWFrame().getTeamColor().getColor()
-				).withCenterHorizontally(true));
-			});
+			IVector2 protectionPos;
+			String strategyName;
+			var protectionPosOpt = withRating.getProtectionPosition();
+			if (protectionPosOpt.isPresent())
+			{
+				protectionPos = protectionPosOpt.get();
+				strategyName = withRating.getDefendStrategy().toString();
+			} else
+			{
+				protectionPos = Geometry.getPenaltyAreaOur().withMargin(Geometry.getBotRadius())
+						.projectPointOnToPenaltyAreaBorder(withRating.getPos());
+				strategyName = "PEN_AREA_DEFENDER";
+			}
+
+
+			shapes.add(
+					new DrawableCircle(Circle.createCircle(protectionPos, 1.25 * Geometry.getBotRadius()), Color.BLACK));
+			shapes.add(new DrawableAnnotation(
+					protectionPos, String.format("%d", defenderCount),
+					getWFrame().getTeamColor().getColor()
+			).withCenterHorizontally(true));
+
 			texts.get(withRating.getBotID()).append(
 					String.format(
-							"%n%d  |  %.2f->%.2f with %s", defenderCount,
-							defenseThreatRatingForNumDefender.get(defenderCount - 1),
-							defenseThreatRatingForNumDefender.get(defenderCount),
-							withRating.getDefendStrategy().toString()
+							"%n%d  |  %.2f->%.2f (%.2f->%.2f) with %s", defenderCount,
+							internalDefenseThreatRatingForNumDefender.get(defenderCount - 1).withoutBonus(),
+							internalDefenseThreatRatingForNumDefender.get(defenderCount).withoutBonus(),
+							internalDefenseThreatRatingForNumDefender.get(defenderCount).bonus(),
+							internalDefenseThreatRatingForNumDefender.get(defenderCount).includingBonus(),
+							strategyName
 					));
 			++defenderCount;
 			drawThreat(withRating);
@@ -205,7 +284,21 @@ public class DefenseBotThreatCalc extends ADefenseThreatCalc
 	}
 
 
-	private record ThreatWithRating(DefenseBotThreat threat, double rating)
+	private record Rating(double rating, double bonus)
+	{
+		double includingBonus()
+		{
+			return rating + bonus;
+		}
+
+
+		double withoutBonus()
+		{
+			return rating;
+		}
+	}
+
+	private record ThreatWithRating(DefenseBotThreat threat, Rating rating)
 	{
 	}
 }

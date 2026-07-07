@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.math.line;
 
 import edu.tigers.sumatra.math.circle.IArc;
@@ -267,5 +263,12 @@ final class LineSegment extends ALine implements ILineSegment
 	public double distanceFromStart(IVector2 pointOnPath)
 	{
 		return pointOnPath.distanceTo(getPathStart());
+	}
+
+
+	@Override
+	public IVector2 getTangentialDirection(double stepSize)
+	{
+		return directionVector();
 	}
 }

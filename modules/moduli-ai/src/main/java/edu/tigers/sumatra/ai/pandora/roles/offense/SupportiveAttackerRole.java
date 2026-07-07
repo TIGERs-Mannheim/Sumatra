@@ -1,16 +1,14 @@
-/*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.pandora.roles.offense;
 
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.ai.pandora.roles.ARole;
 import edu.tigers.sumatra.ai.pandora.roles.ERole;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.pathfinder.EObstacleAvoidanceMode;
-import org.apache.commons.lang.Validate;
+
+import java.util.Objects;
 
 
 /**
@@ -18,7 +16,7 @@ import org.apache.commons.lang.Validate;
  */
 public class SupportiveAttackerRole extends ARole
 {
-	@Configurable(defValue = "20.0", comment = "[mm] moves block point inside opponent pos. Higher number, more aggressive")
+	@Configurable(defValue = "20.0", comment = "moves block point inside opponent pos. Higher number, more aggressive", unit = EConfigUnit.DISTANCE_MM)
 	private static double aggressiveness = 20;
 
 
@@ -36,7 +34,7 @@ public class SupportiveAttackerRole extends ARole
 		protected void onUpdate()
 		{
 			IVector2 movePos = getTacticalField().getSupportiveAttackers().get(getBotID());
-			Validate.notNull(movePos);
+			Objects.requireNonNull(movePos);
 
 			if (getPos().distanceTo(movePos) < Geometry.getBotRadius() * 2)
 			{
@@ -49,7 +47,7 @@ public class SupportiveAttackerRole extends ARole
 
 			movePos = adjustMovePositionWhenItsInvalid(movePos);
 			skill.updateDestination(movePos);
-			skill.getMoveCon().setObstacleAvoidanceMode(EObstacleAvoidanceMode.NORMAL);
+			skill.setMoveCon(skill.getMoveCon().withObstacleAvoidanceMode(EObstacleAvoidanceMode.NORMAL));
 			skill.updateLookAtTarget(getWFrame().getBall());
 		}
 	}

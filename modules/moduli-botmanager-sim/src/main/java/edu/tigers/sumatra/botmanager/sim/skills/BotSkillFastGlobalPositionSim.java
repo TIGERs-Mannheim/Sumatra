@@ -1,9 +1,5 @@
-/*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra.botmanager.sim.skills;
 
-import edu.tigers.sumatra.bot.MoveConstraints;
 import edu.tigers.sumatra.botmanager.botskills.BotSkillFastGlobalPosition;
 import edu.tigers.sumatra.math.AngleMath;
 import edu.tigers.sumatra.math.vector.IVector2;
@@ -20,13 +16,11 @@ public class BotSkillFastGlobalPositionSim implements IBotSkillSim
 	@Setter
 	private boolean backwardOnly = true;
 
-	private boolean fastPosMode;
-
 
 	@Override
 	public void init(final BotSkillInput input)
 	{
-		fastPosMode = false;
+		// no state to initialize
 	}
 
 
@@ -48,8 +42,6 @@ public class BotSkillFastGlobalPositionSim implements IBotSkillSim
 			// almost at target position
 			targetPos.set(2, skill.getOrientation());
 			driveModeZ = EDriveMode.GLOBAL_POS;
-
-			fastPosMode = false;
 		} else
 		{
 			if (trajVelAbs < 0.01)
@@ -70,14 +62,6 @@ public class BotSkillFastGlobalPositionSim implements IBotSkillSim
 					// more oriented with the front in driving direction, go forward
 					targetOrient -= Math.PI;
 					targetOrient = AngleMath.normalizeAngle(targetOrient);
-					orientDiff = AngleMath
-							.normalizeAngle(
-									targetOrient - AngleMath.normalizeAngle(input.state().getPose().getOrientation()));
-				}
-
-				if ((Math.abs(orientDiff) < 0.1) && !fastPosMode)
-				{
-					fastPosMode = true;
 				}
 
 				targetPos.set(2, targetOrient);
@@ -85,15 +69,8 @@ public class BotSkillFastGlobalPositionSim implements IBotSkillSim
 			}
 		}
 
-		MoveConstraints moveCon = skill.getMoveConstraints();
-
-		if (fastPosMode)
-		{
-			moveCon.setAccMax(moveCon.getAccMaxFast());
-		}
-
 		return BotSkillOutput.Builder.create()
-				.driveLimits(moveCon)
+				.driveLimits(skill.getMoveConstraints())
 				.targetPos(targetPos)
 				.targetVelLocal(Vector3.fromXYZ(0, 0, localVelZ))
 				.modeXY(EDriveMode.GLOBAL_POS)

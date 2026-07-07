@@ -1,11 +1,8 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.metis.defense;
 
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.ai.BaseAiFrame;
 import edu.tigers.sumatra.ai.metis.defense.data.IDefenseThreat;
 import edu.tigers.sumatra.geometry.Geometry;
@@ -32,16 +29,16 @@ import java.util.stream.Collectors;
  */
 public class DesiredDefendersCalcUtil
 {
-	@Configurable(comment = " [mm] Min threshold - multiplied with num bots requested", defValue = "70.0")
+	@Configurable(comment = " Min threshold - multiplied with num bots requested", defValue = "70.0", unit = EConfigUnit.DISTANCE_MM)
 	private static double interceptionDistanceHysteresisMinPerBot = 70.0;
 
-	@Configurable(comment = "Min + this [mm] * botVel [m/s] is the threshold for switching to another threat", defValue = "300.0")
+	@Configurable(comment = "Min + this * botVel [m/s] is the threshold for switching to another threat", defValue = "300.0", unit = EConfigUnit.DISTANCE_MM)
 	private static double interceptionDistanceHysteresis = 300.0;
 
-	@Configurable(comment = "[%] maximum portion of the interception rating influenced by the velocity", defValue = "0.67")
+	@Configurable(comment = "maximum portion of the interception rating influenced by the velocity", defValue = "0.67", unit = EConfigUnit.PERCENTAGE)
 	private static double interceptionRatingMaxVelocityPortion = 0.67;
 
-	@Configurable(comment = "[mm] Distance to start reducing threat velocity impact", defValue = "2000.0")
+	@Configurable(comment = "Distance to start reducing threat velocity impact", defValue = "2000.0", unit = EConfigUnit.DISTANCE_MM)
 	private static double threatVelocityImpactReductionDistance = 2000.0;
 
 	static
@@ -103,7 +100,7 @@ public class DesiredDefendersCalcUtil
 			int numDefenders)
 	{
 		final ILineSegment protectionLine = threat.getProtectionLine()
-				.orElseGet(() -> getThreatDefendingLineForCenterBack(threat.getThreatLine()));
+				.orElseGet(() -> getThreatDefendingLineForCenterBack(threat));
 
 		return remainingDefenders.stream()
 				.map(botID -> getAiFrame().getWorldFrame().getBot(botID))
@@ -113,12 +110,12 @@ public class DesiredDefendersCalcUtil
 	}
 
 
-	private ILineSegment getThreatDefendingLineForCenterBack(final ILineSegment threatLine)
+	private ILineSegment getThreatDefendingLineForCenterBack(IDefenseThreat threat )
 	{
-		return DefenseMath.getProtectionLine(threatLine,
+		return DefenseMath.getProtectionLine(threat.getThreatLine(),
 				Geometry.getBotRadius() * 2,
 				Math.min(Geometry.getBotRadius() * 2, DefenseConstants.getMinGoOutDistance()),
-				DefenseConstants.getMaxGoOutDistance());
+				DefenseConstants.getMaxGoOutDistance(threat));
 	}
 
 
@@ -177,7 +174,7 @@ public class DesiredDefendersCalcUtil
 		// Invert it same direction is good -> 0, opposite is bad -> 1
 		directionFactor = 1 - directionFactor;
 
-		var velocitiesAdded = bot.getVel().getLength() + futureMovementDir.getLength();
+		var velocitiesAdded = bot.getVel().getLength() + threat.getVel().getLength();
 		// If both are fast or one extremely fast -> up to 2/3 of distance are influenced by velocity direction
 		// If both are slow velocity direction will take close to no influence and overall distance is more important
 		var velocityPortion = interceptionRatingMaxVelocityPortion * SumatraMath.relative(velocitiesAdded, 0, 5);

@@ -1,11 +1,8 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.gui.ai.visualizer.presenter;
 
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.BallID;
 import edu.tigers.sumatra.ids.BotID;
@@ -27,19 +24,16 @@ import java.util.Objects;
 
 public class RobotInteractor
 {
-	@Configurable(comment = "Consider physical obstacles only", defValue = "true")
+	@Configurable(comment = "Consider physical obstacles only", defValue = "true", unit = EConfigUnit.BOOLEAN)
 	private static boolean physicalObstacles = true;
 
-	@Configurable(comment = "Use fastPosMove for point'n click", defValue = "false")
-	private static boolean useFastPosMove = false;
-
-	@Configurable(comment = "Ball is obstacle for point'n click", defValue = "true")
+	@Configurable(comment = "Ball is obstacle for point'n click", defValue = "true", unit = EConfigUnit.BOOLEAN)
 	private static boolean ballObstacle = true;
 
-	@Configurable(comment = "Bots are obstacle for point'n click", defValue = "true")
+	@Configurable(comment = "Bots are obstacle for point'n click", defValue = "true", unit = EConfigUnit.BOOLEAN)
 	private static boolean botsObstacle = true;
 
-	@Configurable(comment = "Ball is obstacle for point'n click", defValue = "false")
+	@Configurable(comment = "Ball is obstacle for point'n click", defValue = "false", unit = EConfigUnit.BOOLEAN)
 	private static boolean penaltyAreaObstacle = false;
 
 	static
@@ -118,13 +112,13 @@ public class RobotInteractor
 		MovementCon moveCon = moveToSkill.getMoveCon();
 		if (physicalObstacles)
 		{
-			moveCon.physicalObstaclesOnly();
+			moveCon = moveCon.withPhysicalObstaclesOnly();
 		}
-		moveCon.setPenaltyAreaOurObstacle(penaltyAreaObstacle);
-		moveCon.setPenaltyAreaTheirObstacle(penaltyAreaObstacle);
-		moveCon.setBallObstacle(ballObstacle);
-		moveCon.setBotsObstacle(botsObstacle);
-		moveToSkill.getMoveConstraints().setFastMove(useFastPosMove);
+		moveToSkill.setMoveCon(moveCon
+				.withPenaltyAreaOurObstacle(penaltyAreaObstacle)
+				.withPenaltyAreaTheirObstacle(penaltyAreaObstacle)
+				.withBallObstacle(ballObstacle)
+				.withBotsObstacle(botsObstacle));
 		return moveToSkill;
 	}
 

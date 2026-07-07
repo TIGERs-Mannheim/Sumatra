@@ -1,6 +1,3 @@
-/*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - Tigers Mannheim
- */
 package edu.tigers.sumatra.planarcurve;
 
 /**

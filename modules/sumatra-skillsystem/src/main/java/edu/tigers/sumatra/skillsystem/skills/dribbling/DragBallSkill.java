@@ -1,10 +1,7 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.skillsystem.skills.dribbling;
 
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.bot.EDribbleTractionState;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.math.vector.IVector2;
@@ -24,19 +21,19 @@ import java.util.List;
  */
 public class DragBallSkill extends AMoveToSkill
 {
-	@Configurable(defValue = "1.0")
+	@Configurable(defValue = "1.0", unit = EConfigUnit.ACCELERATION_M)
 	private static double accMax = 1.0;
 
-	@Configurable(defValue = "20.0")
+	@Configurable(defValue = "20.0", unit = EConfigUnit.ACCELERATION_ANGULAR_RAD)
 	private static double accMaxW = 20.0;
 
-	@Configurable(defValue = "1.0")
+	@Configurable(defValue = "1.0", unit = EConfigUnit.ACCELERATION_M)
 	private static double initialAccMax = 1.0;
 
-	@Configurable(defValue = "1.2")
+	@Configurable(defValue = "1.2", unit = EConfigUnit.VELOCITY_M)
 	private static double velMax = 1.2;
 
-	@Configurable(defValue = "3.5")
+	@Configurable(defValue = "3.5", unit = EConfigUnit.VELOCITY_ANGULAR_RAD)
 	private static double velMaxW = 3.5;
 
 	@Setter
@@ -55,20 +52,21 @@ public class DragBallSkill extends AMoveToSkill
 	public void doEntryActions()
 	{
 		super.doEntryActions();
-		getMoveCon().setBallObstacle(false);
+		setMoveCon(getMoveCon().withBallObstacle(false));
 	}
 
 
 	@Override
 	public void doUpdate()
 	{
-		getMoveConstraints().setAccMaxW(accMaxW);
-		getMoveConstraints().setVelMax(velMax);
-		getMoveConstraints().setVelMaxW(velMaxW);
+		setMoveConstraints(getMoveConstraints()
+				.withAccMaxW(accMaxW)
+				.withVelMax(velMax)
+				.withVelMaxW(velMaxW));
 
 		if (getTBot().getRobotInfo().getDribbleTraction() == EDribbleTractionState.STRONG)
 		{
-			getMoveConstraints().setAccMax(accMax);
+			setMoveConstraints(getMoveConstraints().withAccMax(accMax));
 			if (destination != null)
 			{
 				updateDestination(destination);
@@ -77,11 +75,11 @@ public class DragBallSkill extends AMoveToSkill
 		} else
 		{
 			// no Destination set. AMoveToSkill initializes with getPos() as destination.
-			getMoveConstraints().setAccMax(initialAccMax);
+			setMoveConstraints(getMoveConstraints().withAccMax(initialAccMax));
 		}
 
-		getMoveCon().setCustomObstacles(
-				List.of(new FieldBorderObstacle(Geometry.getField().withMargin(-Geometry.getBotRadius() * 2.0))));
+		setMoveCon(getMoveCon().withCustomObstacles(
+				List.of(new FieldBorderObstacle(Geometry.getField().withMargin(-Geometry.getBotRadius() * 2.0)))));
 
 		if (!getTBot().getBallContact().hadRecentContact())
 		{

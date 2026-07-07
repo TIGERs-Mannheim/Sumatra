@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.metis.offense.situation.zone;
 
 
@@ -16,5 +12,5 @@ public enum EOffensiveZone
 	CLOSE_MIDFIELD_SIDE_MIRROR,
 	CLOSE_MIDFIELD_CENTER,
 	MIDFIELD,
-	BACKFIELD;
+	BACKFIELD,
 }

@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.wp.exporter;
 
 import edu.tigers.sumatra.cam.proto.SslVisionDetection;
@@ -140,6 +136,7 @@ public class SSLVisionSender extends AModule implements IWorldFrameObserver
 		field.setGoalWidth((int) Geometry.getGoalOur().getWidth());
 		field.setGoalDepth((int) Geometry.getGoalOur().getDepth());
 		field.setBoundaryWidth((int) Geometry.getBoundaryWidth());
+		field.setBoundaryWidthGoalLine((int) Geometry.getBoundaryWidthGoalLine());
 		field.setPenaltyAreaDepth((int) Geometry.getPenaltyAreaDepth());
 		field.setPenaltyAreaWidth((int) Geometry.getPenaltyAreaWidth());
 		field.setCenterCircleRadius((int) Geometry.getCenterCircle().radius());
@@ -148,6 +145,7 @@ public class SSLVisionSender extends AModule implements IWorldFrameObserver
 		field.setGoalHeight((int) Geometry.getGoalHeight());
 		field.setBallRadius((int) Geometry.getBallRadius());
 		field.setMaxRobotRadius((int) Geometry.getBotRadius());
+		field.setGoalSubstitutionAreaWidth((int) Geometry.getGoalSubstitutionAreaTheir().xExtent());
 
 		field.addAllFieldLines(createPenAreas());
 		field.addAllFieldLines(createFieldBorder());

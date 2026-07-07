@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.pandora.roles.test.move;
 
 import edu.tigers.sumatra.ai.pandora.roles.ARole;
@@ -52,7 +48,6 @@ public class MoveTestRole extends ARole
 	private final boolean continuousCapture;
 
 	private final IVector2 primaryDir;
-	private final boolean fastMove;
 	private final boolean rollOut;
 
 	private enum EEvent implements IEvent
@@ -83,7 +78,6 @@ public class MoveTestRole extends ARole
 			final double stopAngle,
 			final double angleStepDeg,
 			final double angleTurnDeg,
-			final boolean fastMove,
 			final int iterations,
 			final boolean rollOut,
 			final boolean continuousCapture)
@@ -92,7 +86,6 @@ public class MoveTestRole extends ARole
 		this.mode = mode;
 		this.continuousCapture = continuousCapture;
 		this.primaryDir = primaryDir;
-		this.fastMove = fastMove;
 		this.rollOut = rollOut;
 
 		double orientation = finalPos.subtractNew(initPos).getAngle(0);
@@ -108,7 +101,6 @@ public class MoveTestRole extends ARole
 		collectorObserver.parameters.put("stopAngle", String.format("%.2f", stopAngle));
 		collectorObserver.parameters.put("angleStepDeg", String.format("%.0f", angleStepDeg));
 		collectorObserver.parameters.put("angleTurnDeg", String.format("%.0f", angleTurnDeg));
-		collectorObserver.parameters.put("fastMove", String.valueOf(fastMove));
 		collectorObserver.parameters.put("iterations", String.valueOf(iterations));
 		collectorObserver.parameters.put("rollOut", String.valueOf(rollOut));
 
@@ -293,8 +285,9 @@ public class MoveTestRole extends ARole
 			MoveToSkill skill = MoveToSkill.createMoveToSkill();
 			skill.updateDestination(dest);
 			skill.updateTargetAngle(destOrientation);
-			skill.getMoveCon().physicalObstaclesOnly();
-			skill.getMoveCon().setBallObstacle(false);
+			skill.setMoveCon(skill.getMoveCon()
+					.withPhysicalObstaclesOnly()
+					.withBallObstacle(false));
 			setNewSkill(skill);
 		}
 
@@ -392,11 +385,13 @@ public class MoveTestRole extends ARole
 			MoveToSkill skill = MoveToSkill.createMoveToSkill();
 			skill.updateDestination(dest);
 			skill.updateTargetAngle(destOrientation);
-			skill.getMoveCon().physicalObstaclesOnly();
-			skill.getMoveCon().setBallObstacle(false);
-			skill.getMoveCon().setBotsObstacle(false);
-			skill.getMoveConstraints().setPrimaryDirection(primaryDir);
-			skill.getMoveConstraints().setFastMove(fastMove);
+			skill.setMoveCon(skill.getMoveCon()
+					.withPhysicalObstaclesOnly()
+					.withBallObstacle(false)
+					.withBotsObstacle(false));
+			skill.setMoveConstraints(skill.getMoveConstraints().toBuilder()
+					.primaryDirection(primaryDir)
+					.build());
 			return skill;
 		}
 

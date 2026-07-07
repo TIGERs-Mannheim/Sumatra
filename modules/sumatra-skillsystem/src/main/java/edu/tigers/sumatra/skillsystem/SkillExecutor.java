@@ -1,21 +1,20 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.skillsystem;
 
 import edu.tigers.sumatra.botmanager.bots.ABot;
-import edu.tigers.sumatra.botmanager.data.MatchCommand;
+import edu.tigers.sumatra.botmanager.data.MultimediaControl;
 import edu.tigers.sumatra.drawable.ShapeMap;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.ids.EAiTeam;
 import edu.tigers.sumatra.model.SumatraModel;
+import edu.tigers.sumatra.pathfinder.PathFinderPrioMap;
 import edu.tigers.sumatra.skillsystem.skills.ISkill;
 import edu.tigers.sumatra.skillsystem.skills.IdleSkill;
+import edu.tigers.sumatra.skillsystem.skills.SkillInput;
 import edu.tigers.sumatra.wp.IWorldFrameObserver;
 import edu.tigers.sumatra.wp.data.WorldFrameWrapper;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 import lombok.extern.log4j.Log4j2;
 import org.apache.logging.log4j.ThreadContext;
 
@@ -33,7 +32,7 @@ import java.util.concurrent.LinkedBlockingDeque;
  */
 @Log4j2
 @RequiredArgsConstructor(access = AccessLevel.PROTECTED)
-class SkillExecutor implements Runnable, IWorldFrameObserver
+public class SkillExecutor implements Runnable, IWorldFrameObserver
 {
 	private final BotID botID;
 	private final NewSkillSync newSkillSync = new NewSkillSync();
@@ -46,7 +45,11 @@ class SkillExecutor implements Runnable, IWorldFrameObserver
 	private List<ISkillExecutorPostHook> postHooks = new CopyOnWriteArrayList<>();
 	private Future<?> future = null;
 	private boolean notifiedBotRemoved = true;
-	private final MatchCommand matchCommand = new MatchCommand();
+
+	@Setter
+	private PathFinderPrioMap prioMap = PathFinderPrioMap.empty();
+	@Setter
+	private MultimediaControl multimediaControl = MultimediaControl.DEFAULT;
 
 
 	public void update(final WorldFrameWrapper wf, final ShapeMap shapeMap)
@@ -76,19 +79,21 @@ class SkillExecutor implements Runnable, IWorldFrameObserver
 				newSkill = null;
 			}
 		}
-		processNewSkill(nextSkill, wfw, currentBot, shapeMap);
-		processCurrentSkill(wfw, shapeMap, currentBot);
+		SkillInput input = new SkillInput(wfw, shapeMap, currentBot, prioMap, multimediaControl);
+		processNewSkill(nextSkill, input);
+		processCurrentSkill(input);
 		currentBot.setCurrentTrajectory(currentSkill.getCurrentTrajectory());
 		shapeMap.setInverted(wfw.getWorldFrame(EAiTeam.primary(botID.getTeamColor())).isInverted());
 		postHooks.forEach(h -> h.onSkillUpdated(currentBot, wfw.getTimestamp(), shapeMap));
 	}
 
 
-	private void processCurrentSkill(WorldFrameWrapper wf, ShapeMap shapeMap, ABot currentBot)
+	private void processCurrentSkill(SkillInput input)
 	{
-		executeSave(() -> currentSkill.update(wf, currentBot, shapeMap, matchCommand));
-		executeSave(() -> currentSkill.calcActions(wf.getTimestamp()));
-		executeSave(() -> currentBot.sendMatchCommand(matchCommand));
+		executeSave(() -> {
+			currentSkill.update(input);
+			currentSkill.calcActions();
+		});
 	}
 
 
@@ -120,8 +125,7 @@ class SkillExecutor implements Runnable, IWorldFrameObserver
 	}
 
 
-	private void processNewSkill(final ISkill skill, final WorldFrameWrapper wf, final ABot currentBot,
-			final ShapeMap shapeMap)
+	private void processNewSkill(ISkill skill, SkillInput input)
 	{
 		if (skill == null)
 		{
@@ -133,7 +137,7 @@ class SkillExecutor implements Runnable, IWorldFrameObserver
 			executeSave(currentSkill::calcExitActions);
 		}
 		skill.setCurrentTrajectory(currentSkill.getCurrentTrajectory());
-		executeSave(() -> skill.update(wf, currentBot, shapeMap, matchCommand));
+		executeSave(() -> skill.update(input));
 		executeSave(skill::calcEntryActions);
 		currentSkill = skill;
 	}
@@ -146,7 +150,7 @@ class SkillExecutor implements Runnable, IWorldFrameObserver
 			run.run();
 		} catch (Throwable err)
 		{
-			log.error("Exception in SkillExecutor " + botID, err);
+			log.error("Exception in SkillExecutor {}", botID, err);
 		}
 	}
 

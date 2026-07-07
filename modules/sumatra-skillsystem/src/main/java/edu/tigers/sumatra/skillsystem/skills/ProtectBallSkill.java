@@ -1,10 +1,7 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.skillsystem.skills;
 
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.ETeam;
 import edu.tigers.sumatra.math.line.LineMath;
@@ -23,7 +20,7 @@ import lombok.Setter;
  */
 public class ProtectBallSkill extends AMoveToSkill
 {
-	@Configurable(comment = "Distance to keep to the ball during protection", defValue = "10.0")
+	@Configurable(comment = "Distance to keep to the ball during protection", defValue = "10.0", unit = EConfigUnit.DISTANCE_MM)
 	private static double finalDist2BallDefault = 10;
 
 	private final PositionValidator positionValidator = new PositionValidator();
@@ -40,7 +37,7 @@ public class ProtectBallSkill extends AMoveToSkill
 	public void doEntryActions()
 	{
 		super.doEntryActions();
-		getMoveCon().setBallObstacle(false);
+		setMoveCon(getMoveCon().withBallObstacle(false));
 	}
 
 
@@ -86,8 +83,8 @@ public class ProtectBallSkill extends AMoveToSkill
 
 		updateDestination(dest);
 		updateTargetAngle(targetOrientation);
-		getMoveCon().setBotsObstacle(
-				getBall().getPos().distanceTo(getTBot().getBotKickerPos()) - Geometry.getBotRadius() > 50);
+		setMoveCon(getMoveCon().withBotsObstacle(
+				getBall().getPos().distanceTo(getTBot().getBotKickerPos()) - Geometry.getBotRadius() > 50));
 
 		super.doUpdate();
 	}

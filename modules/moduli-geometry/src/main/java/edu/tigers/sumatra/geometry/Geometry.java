@@ -1,11 +1,8 @@
-/*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.geometry;
 
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import com.google.protobuf.TextFormat;
 import edu.tigers.sumatra.ball.trajectory.BallFactory;
 import edu.tigers.sumatra.cam.SSLVisionCamGeometryTranslator;
@@ -39,7 +36,7 @@ public class Geometry
 {
 	private static final Path CONFIG_PATH = Path.of("config", "geometry");
 
-	@Configurable(defValue = "85.0")
+	@Configurable(defValue = "85.0", comment = "Distance from the opponent's center to the dribbler", unit = EConfigUnit.DISTANCE_MM)
 	private static double opponentCenter2DribblerDist = 85;
 	private static Geometry instance = defaultInstance();
 	private static ETeamColor negativeHalfTeam = ETeamColor.BLUE;
@@ -60,6 +57,9 @@ public class Geometry
 	private final IRectangle theirHalf;
 	private final BallFactory ballFactory;
 	private final BallParameters ballParameters;
+	private final IRectangle goalSubstitutionAreaOur;
+	private final IRectangle goalSubstitutionAreaTheir;
+
 
 	private CamGeometry lastCamGeometry;
 
@@ -70,7 +70,12 @@ public class Geometry
 		CamFieldSize fieldSize = lastCamGeometry.getFieldSize();
 
 		field = Rectangle.fromCenter(Vector2f.ZERO_VECTOR, fieldSize.getFieldLength(), fieldSize.getFieldWidth());
-		fieldWBorders = field.withMargin(fieldSize.getBoundaryWidth());
+
+		fieldWBorders = field.withMarginXy(
+				fieldSize.getBoundaryWidthGoalLine(),
+				fieldSize.getBoundaryWidth()
+		);
+
 		goalOur = new Goal(
 				Vector2f.fromXY(-fieldSize.getFieldLength() / 2, 0), fieldSize.getGoalWidth(),
 				fieldSize.getGoalDepth(),
@@ -117,6 +122,21 @@ public class Geometry
 				.build();
 
 		ballFactory = new BallFactory(params);
+
+
+		double gsa = fieldSize.getGoalSubstitutionAreaWidth();
+		double wallY = fieldWBorders.yExtent() / 2;
+		double wallX = fieldWBorders.xExtent() / 2;
+
+		goalSubstitutionAreaOur = Rectangle.fromPoints(
+				Vector2.fromXY(-wallX, wallY),
+				Vector2.fromXY(-(wallX - gsa), -wallY)
+		);
+
+		goalSubstitutionAreaTheir = Rectangle.fromPoints(
+				Vector2.fromXY(wallX, wallY),
+				Vector2.fromXY(wallX - gsa, -wallY)
+		);
 	}
 
 
@@ -129,6 +149,8 @@ public class Geometry
 								.fieldWidth(9000)
 								.goalWidth(1800)
 								.goalDepth(300)
+								.boundaryWidth(300)
+								.boundaryWidthGoalLine(600)
 								.penaltyAreaDepth(1800)
 								.penaltyAreaWidth(3600)
 								.centerCircleRadius(500)
@@ -137,6 +159,7 @@ public class Geometry
 								.goalHeight(155)
 								.ballRadius(21.5)
 								.robotRadius(90)
+								.goalSubstitutionAreaWidth(300)
 								.build())
 						.build()
 		);
@@ -187,8 +210,10 @@ public class Geometry
 	{
 		Path path = CONFIG_PATH.resolve(id + ".txt");
 		byte[] bytes = Files.readAllBytes(path);
-		SslVisionGeometry.SSL_GeometryData data = TextFormat.parse(new String(bytes),
-				SslVisionGeometry.SSL_GeometryData.class);
+		SslVisionGeometry.SSL_GeometryData data = TextFormat.parse(
+				new String(bytes),
+				SslVisionGeometry.SSL_GeometryData.class
+		);
 		SSLVisionCamGeometryTranslator translator = new SSLVisionCamGeometryTranslator();
 		return translator.fromProtobuf(data);
 	}
@@ -418,9 +443,9 @@ public class Geometry
 	/**
 	 * @return the boundaryLength
 	 */
-	public static double getBoundaryLength()
+	public static double getBoundaryWidthGoalLine()
 	{
-		return getBoundaryWidth();
+		return getLastCamGeometry().getFieldSize().getBoundaryWidthGoalLine();
 	}
 
 
@@ -462,6 +487,24 @@ public class Geometry
 	public static void setNegativeHalfTeam(ETeamColor negativeHalfTeam)
 	{
 		Geometry.negativeHalfTeam = negativeHalfTeam;
+	}
+
+
+	/**
+	 * @return Goal Substitution Area behind our goal
+	 */
+	public static IRectangle getGoalSubstitutionAreaOur()
+	{
+		return instance.goalSubstitutionAreaOur;
+	}
+
+
+	/**
+	 * @return Goal Substitution Area behind their goal
+	 */
+	public static IRectangle getGoalSubstitutionAreaTheir()
+	{
+		return instance.goalSubstitutionAreaTheir;
 	}
 
 

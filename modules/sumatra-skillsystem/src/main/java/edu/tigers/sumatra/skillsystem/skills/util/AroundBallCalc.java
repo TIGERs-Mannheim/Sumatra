@@ -1,17 +1,14 @@
-/*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.skillsystem.skills.util;
 
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.math.AngleMath;
 import edu.tigers.sumatra.math.line.Lines;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
-import org.apache.commons.lang.Validate;
+import org.apache.commons.lang3.Validate;
 
 import static java.lang.Math.abs;
 import static java.lang.Math.min;
@@ -23,7 +20,7 @@ import static java.lang.Math.signum;
  */
 public class AroundBallCalc
 {
-	@Configurable(defValue = "0.7")
+	@Configurable(defValue = "0.7", unit = EConfigUnit.ANGLE_RAD)
 	private static double shiftAngle = 0.7;
 
 	static

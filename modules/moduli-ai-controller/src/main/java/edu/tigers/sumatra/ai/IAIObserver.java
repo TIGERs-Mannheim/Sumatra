@@ -1,6 +1,3 @@
-/*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra.ai;
 
 import edu.tigers.sumatra.ai.athena.EAIControlState;
@@ -8,7 +5,7 @@ import edu.tigers.sumatra.ids.EAiTeam;
 
 
 /**
- * This interface is used to visualize AI decisions and path planing informations.
+ * This interface is used to visualize AI decisions and path planing information.
  * 
  * @author Oliver Steinbrecher <OST1988@aol.com>
  */

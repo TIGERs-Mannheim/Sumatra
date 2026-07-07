@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.pandora.roles.offense.attacker.states;
 
 
@@ -21,9 +17,9 @@ public class ReceiveState extends AAttackerRoleState<ReceiveBallSkill>
 
 
 	@Override
-	protected void onInit()
+	protected void onEntry()
 	{
-		super.onInit();
+		super.onEntry();
 		skill.setBallSpeedHysteresis(new Hysteresis(
 				OffensiveConstants.getAbortBallInterceptionVelThreshold(),
 				OffensiveConstants.getBallIsRollingThreshold()));
@@ -34,11 +30,12 @@ public class ReceiveState extends AAttackerRoleState<ReceiveBallSkill>
 	protected void doStandardUpdate()
 	{
 		// State is only activated when close. Let it hold its position!
-		skill.getMoveCon().setObstacleAvoidanceMode(EObstacleAvoidanceMode.AGGRESSIVE);
-		skill.getMoveCon().setTheirBotsObstacle(false);
+		skill.setMoveCon(skill.getMoveCon()
+				.withObstacleAvoidanceMode(EObstacleAvoidanceMode.AGGRESSIVE)
+				.withTheirBotsObstacle(false));
 		skill.setBallReceivingPosition(getRole().getAction().getBallContactPos());
 		skill.setMaxReceptionHeight(OffensiveConstants.getMaxInterceptHeight());
-		skill.setUseOvershoot(OffensiveConstants.isAllowOvershootingBallInterceptions());
+		skill.setUseTrajectoryTricks(OffensiveConstants.isAllowTrajectoryTricksWhileReceiving());
 	}
 }
 

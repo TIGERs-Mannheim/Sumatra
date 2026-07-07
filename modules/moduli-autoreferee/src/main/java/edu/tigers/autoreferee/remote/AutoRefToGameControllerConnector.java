@@ -1,6 +1,3 @@
-/*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.autoreferee.remote;
 
 import com.google.protobuf.ByteString;
@@ -11,7 +8,7 @@ import edu.tigers.sumatra.referee.proto.SslGcRcon;
 import edu.tigers.sumatra.referee.proto.SslGcRconAutoref;
 import edu.tigers.sumatra.thread.NamedThreadFactory;
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang.Validate;
+import org.apache.commons.lang3.Validate;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 

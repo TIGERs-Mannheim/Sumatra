@@ -1,17 +1,14 @@
-/*
- * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.pathfinder;
 
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.ids.ETeam;
 import edu.tigers.sumatra.pathfinder.obstacles.IObstacle;
-import edu.tigers.sumatra.wp.data.ITrackedBot;
-import lombok.Data;
+import lombok.Builder;
+import lombok.NonNull;
+import lombok.Value;
+import lombok.With;
+import org.apache.commons.lang3.Validate;
 
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -19,87 +16,117 @@ import java.util.Set;
 /**
  * Conditions on path planning.
  */
-@Data
-public final class MovementCon implements IMovementCon
+@Value
+@Builder(toBuilder = true)
+@With
+public class MovementCon
 {
-	private PathFinderPrioMap prioMap;
+	@Builder.Default
+	boolean penaltyAreaOurObstacle = true;
+	@Builder.Default
+	boolean penaltyAreaTheirObstacle = true;
+	@Builder.Default
+	boolean fieldBorderObstacle = true;
+	@Builder.Default
+	boolean ballObstacle = true;
+	@Builder.Default
+	boolean theirBotsObstacle = true;
+	@Builder.Default
+	boolean ourBotsObstacle = true;
+	@Builder.Default
+	boolean goalPostsObstacle = false;
+	@Builder.Default
+	boolean gameStateObstacle = true;
 
-	private boolean penaltyAreaOurObstacle = true;
-	private boolean penaltyAreaTheirObstacle = true;
-	private boolean fieldBorderObstacle = true;
-	private boolean ballObstacle = true;
-	private boolean theirBotsObstacle = true;
-	private boolean ourBotsObstacle = true;
-	private boolean goalPostsObstacle = false;
-	private boolean gameStateObstacle = true;
+	@Builder.Default
+	Double distanceToBall = null;
+	@Builder.Default
+	@NonNull
+	EObstacleAvoidanceMode obstacleAvoidanceMode = EObstacleAvoidanceMode.NORMAL;
 
-	private Double distanceToBall;
-	private EObstacleAvoidanceMode obstacleAvoidanceMode = EObstacleAvoidanceMode.NORMAL;
-
-	private Set<BotID> ignoredBots = new HashSet<>();
-	private List<IObstacle> customObstacles = Collections.emptyList();
+	@NonNull
+	@Builder.Default
+	Set<BotID> ignoredBots = Set.of();
+	@NonNull
+	@Builder.Default
+	List<IObstacle> customObstacles = List.of();
 
 
-	/**
-	 * Update dynamic targets/positions
-	 *
-	 * @param bot that is associated with this moveCon
-	 */
-	public void update(final ITrackedBot bot)
+	public static final MovementCon DEFAULT = MovementCon.builder().build();
+
+
+	@SuppressWarnings("java:S107")
+		// accepting too many parameters for builder
+	MovementCon(
+			boolean penaltyAreaOurObstacle,
+			boolean penaltyAreaTheirObstacle,
+			boolean fieldBorderObstacle,
+			boolean ballObstacle,
+			boolean theirBotsObstacle,
+			boolean ourBotsObstacle,
+			boolean goalPostsObstacle,
+			boolean gameStateObstacle,
+			Double distanceToBall,
+			@NonNull EObstacleAvoidanceMode obstacleAvoidanceMode,
+			@NonNull Set<BotID> ignoredBots,
+			@NonNull List<IObstacle> customObstacles
+	)
 	{
-		if (prioMap == null)
-		{
-			prioMap = PathFinderPrioMap.byBotId(bot.getTeamColor());
-		}
+		Validate.isTrue(
+				distanceToBall == null || distanceToBall >= 0,
+				"distanceToBall must be null or >=0: ", distanceToBall == null ? "null" : distanceToBall
+		);
+		this.penaltyAreaOurObstacle = penaltyAreaOurObstacle;
+		this.penaltyAreaTheirObstacle = penaltyAreaTheirObstacle;
+		this.fieldBorderObstacle = fieldBorderObstacle;
+		this.ballObstacle = ballObstacle;
+		this.theirBotsObstacle = theirBotsObstacle;
+		this.ourBotsObstacle = ourBotsObstacle;
+		this.goalPostsObstacle = goalPostsObstacle;
+		this.gameStateObstacle = gameStateObstacle;
+		this.distanceToBall = distanceToBall;
+		this.obstacleAvoidanceMode = obstacleAvoidanceMode;
+		this.ignoredBots = Set.copyOf(ignoredBots);
+		this.customObstacles = List.copyOf(customObstacles);
 	}
 
 
-	public void setBotsObstacle(final boolean obstacle)
+	public MovementCon withBotsObstacle(boolean obstacle)
 	{
-		theirBotsObstacle = obstacle;
-		ourBotsObstacle = obstacle;
+		return toBuilder()
+				.theirBotsObstacle(obstacle)
+				.ourBotsObstacle(obstacle)
+				.build();
 	}
 
 
-	public void setIgnoredBots(final Set<BotID> ignoredBots)
+	public MovementCon withPhysicalObstaclesOnly()
 	{
-		this.ignoredBots = Collections.unmodifiableSet(ignoredBots);
+		return toBuilder()
+				.fieldBorderObstacle(true)
+				.penaltyAreaOurObstacle(false)
+				.penaltyAreaTheirObstacle(false)
+				.goalPostsObstacle(true)
+				.gameStateObstacle(false)
+				.theirBotsObstacle(true)
+				.ourBotsObstacle(true)
+				.ballObstacle(true)
+				.build();
 	}
 
 
-	public void setCustomObstacles(final List<IObstacle> customObstacles)
+	public MovementCon withNoObstacles()
 	{
-		this.customObstacles = Collections.unmodifiableList(customObstacles);
-	}
-
-
-	/**
-	 * Set only physical objects as obstacles (no penArea, game state obstacles)
-	 */
-	public void physicalObstaclesOnly()
-	{
-		setFieldBorderObstacle(true);
-		setPenaltyAreaTheirObstacle(false);
-		setPenaltyAreaOurObstacle(false);
-		setGoalPostsObstacle(true);
-		setGameStateObstacle(false);
-		setBotsObstacle(true);
-		setBallObstacle(true);
-	}
-
-
-	/**
-	 * Disable all obstacles.
-	 */
-	public void noObstacles()
-	{
-		setFieldBorderObstacle(false);
-		setPenaltyAreaTheirObstacle(false);
-		setPenaltyAreaOurObstacle(false);
-		setGoalPostsObstacle(false);
-		setGameStateObstacle(false);
-		setBotsObstacle(false);
-		setBallObstacle(false);
+		return toBuilder()
+				.fieldBorderObstacle(false)
+				.penaltyAreaOurObstacle(false)
+				.penaltyAreaTheirObstacle(false)
+				.goalPostsObstacle(false)
+				.gameStateObstacle(false)
+				.theirBotsObstacle(false)
+				.ourBotsObstacle(false)
+				.ballObstacle(false)
+				.build();
 	}
 
 

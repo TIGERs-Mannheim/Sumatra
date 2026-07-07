@@ -1,23 +1,21 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.gui.visualizer.view.toolbar;
 
-import edu.tigers.sumatra.util.ImageScaler;
+import jiconfont.icons.font_awesome.FontAwesome;
+import jiconfont.swing.IconFontSwing;
 import lombok.Getter;
 import lombok.extern.log4j.Log4j2;
 
 import javax.swing.JButton;
 import javax.swing.JToggleButton;
 import javax.swing.JToolBar;
+import javax.swing.SwingUtilities;
+import javax.swing.UIManager;
+import java.awt.Color;
 
 
 @Log4j2
 public class VisualizerToolbar extends JToolBar
 {
-	@Getter
-	private final JToggleButton fancyDrawing = new JToggleButton();
 	@Getter
 	private final JToggleButton darkMode = new JToggleButton();
 	@Getter
@@ -50,74 +48,123 @@ public class VisualizerToolbar extends JToolBar
 	@Getter
 	private final CaptureSettingsDialog captureSettingsDialog = new CaptureSettingsDialog();
 
+	private boolean initialized = false;
+
 
 	public VisualizerToolbar()
 	{
 		setFloatable(false);
 
-		fancyDrawing.setIcon(ImageScaler.scaleSmallButtonImageIcon(
-				"/icons8-cool-expression-emoji-wearing-sunshades-shared-online-48.png"));
-		fancyDrawing.setToolTipText("Enable fancy drawing (antialiasing and interpolation)");
-		add(fancyDrawing);
+		updateIcons();
 
-		darkMode.setIcon(ImageScaler.scaleSmallButtonImageIcon("/icons8-dark-67.png"));
-		darkMode.setToolTipText("Enable dark mode");
+		// tooltips
+		darkMode.setToolTipText("Toggle dark mode");
+		borderOffset.setToolTipText("Add offset");
+
+		showShortcuts.setToolTipText("Show shortcuts");
+		captureSettings.setToolTipText("Capture settings");
+
+		turnCounterClockwise.setToolTipText("Rotate field 90° counter clockwise");
+		turnClockwise.setToolTipText("Rotate field 90° clockwise");
+		resetField.setToolTipText("Reset field view");
+
+		recordVideoFull.setToolTipText("Record full field video");
+		recordVideoSelection.setToolTipText("Record selection video");
+
+		takeScreenshotFull.setToolTipText("Screenshot full field");
+		takeScreenshotSelection.setToolTipText("Screenshot selection");
+
+		shapeSelection.setToolTipText("Toggle shape selection tree");
+
+		// actions
+		captureSettings.addActionListener(e -> captureSettingsDialog.setVisible(true));
+		showShortcuts.addActionListener(e -> new VisualizerShortcutsDialog());
+
+		// add
 		add(darkMode);
-
-		borderOffset.setIcon(ImageScaler.scaleSmallButtonImageIcon("/icons8-horizontal-line-64.png"));
-		borderOffset.setToolTipText("Add an offset");
 		add(borderOffset);
 
 		addSeparator();
 
-		showShortcuts.setIcon(ImageScaler.scaleSmallButtonImageIcon("/icons8-shortcut-50.png"));
-		showShortcuts.setToolTipText("Show shortcuts");
-		showShortcuts.addActionListener(e -> new VisualizerShortcutsDialog());
 		add(showShortcuts);
-
-		captureSettings.setIcon(ImageScaler.scaleSmallButtonImageIcon("/icons8-settings-64.png"));
-		captureSettings.setToolTipText("Capture settings");
-		captureSettings.addActionListener(e -> captureSettingsDialog.setVisible(true));
 		add(captureSettings);
 
 		addSeparator();
 
-		turnCounterClockwise.setIcon(ImageScaler.scaleSmallButtonImageIcon("/turn-up-solid.png"));
-		turnCounterClockwise.setToolTipText("Turn field 90 degrees counter clockwise");
 		add(turnCounterClockwise);
-
-		turnClockwise.setIcon(ImageScaler.scaleSmallButtonImageIcon("/turn-down-solid.png"));
-		turnClockwise.setToolTipText("Turn field 90 degrees clockwise");
 		add(turnClockwise);
-
-		resetField.setIcon(ImageScaler.scaleSmallButtonImageIcon("/chalkboard-solid.png"));
-		resetField.setToolTipText("Reset field view");
 		add(resetField);
 
 		addSeparator();
 
-		recordVideoFull.setIcon(ImageScaler.scaleSmallButtonImageIcon("/record-display-solid.png"));
-		recordVideoFull.setSelectedIcon(ImageScaler.scaleSmallButtonImageIcon("/recordActive.gif"));
-		recordVideoFull.setToolTipText("Record a video of the visualizer (full field)");
 		add(recordVideoFull);
-
-		recordVideoSelection.setIcon(ImageScaler.scaleSmallButtonImageIcon("/record-camera-solid.png"));
-		recordVideoSelection.setSelectedIcon(ImageScaler.scaleSmallButtonImageIcon("/recordActive.gif"));
-		recordVideoSelection.setToolTipText("Record a video of the visualizer (current selection)");
 		add(recordVideoSelection);
-
-		takeScreenshotFull.setIcon(ImageScaler.scaleSmallButtonImageIcon("/display-solid.png"));
-		takeScreenshotFull.setToolTipText("Take screenshot (full field)");
 		add(takeScreenshotFull);
-
-		takeScreenshotSelection.setIcon(ImageScaler.scaleSmallButtonImageIcon("/camera-solid.png"));
-		takeScreenshotSelection.setToolTipText("Take screenshot (current selection)");
 		add(takeScreenshotSelection);
 
 		addSeparator();
 
-		shapeSelection.setIcon(ImageScaler.scaleSmallButtonImageIcon("/icons8-shape-64.png"));
-		shapeSelection.setToolTipText("Show/hide the shape selection tree (ctrl + .)");
 		add(shapeSelection);
+
+		initialized = true;
+	}
+
+
+	private void updateLookAndFeelForDialog()
+	{
+		SwingUtilities.updateComponentTreeUI(captureSettingsDialog);
+	}
+
+
+	@Override
+	public void updateUI()
+	{
+		super.updateUI();
+		updateIcons();
+		if (captureSettingsDialog != null)
+		{
+			updateLookAndFeelForDialog();
+		}
+	}
+
+
+	private void updateIcons()
+	{
+		if (!initialized)
+		{
+			return;
+		}
+
+		Color c = UIManager.getColor("Label.foreground");
+
+		darkMode.setIcon(IconFontSwing.buildIcon(FontAwesome.ADJUST, 16, c));
+
+		borderOffset.setIcon(IconFontSwing.buildIcon(FontAwesome.ARROWS_V, 16, c));
+
+		showShortcuts.setIcon(IconFontSwing.buildIcon(FontAwesome.KEYBOARD_O, 16, c));
+
+		captureSettings.setIcon(
+				IconFontSwing.buildIcon(FontAwesome.COG, 16, c)
+		);
+
+		// counter clockwise
+		turnCounterClockwise.setIcon(
+				IconFontSwing.buildIcon(FontAwesome.UNDO, 16, c)
+		);
+
+		// clockwise
+		turnClockwise.setIcon(
+				IconFontSwing.buildIcon(FontAwesome.REPEAT, 16, c)
+		);
+
+		resetField.setIcon(IconFontSwing.buildIcon(FontAwesome.REFRESH, 16, c));
+
+		recordVideoFull.setIcon(IconFontSwing.buildIcon(FontAwesome.VIDEO_CAMERA, 16, c));
+		recordVideoSelection.setIcon(IconFontSwing.buildIcon(FontAwesome.VIDEO_CAMERA, 12, c));
+
+		takeScreenshotFull.setIcon(IconFontSwing.buildIcon(FontAwesome.CAMERA, 16, c));
+		takeScreenshotSelection.setIcon(IconFontSwing.buildIcon(FontAwesome.CAMERA, 12, c));
+
+		shapeSelection.setIcon(IconFontSwing.buildIcon(FontAwesome.OBJECT_GROUP, 16, c));
 	}
 }

@@ -1,11 +1,8 @@
-/*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.cam;
 
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.cam.data.CamBall;
 import edu.tigers.sumatra.cam.data.CamDetectionFrame;
 import edu.tigers.sumatra.cam.data.CamRobot;
@@ -34,7 +31,7 @@ public class CamDetectionConverter
 	private long frameId = 0;
 	private final HashMap<Integer, List<Double>> camToCaptureOffsets = new HashMap<>();
 
-	@Configurable(defValue = "true", comment = "Use camera capture timestamp if present")
+	@Configurable(defValue = "true", comment = "Use camera capture timestamp if present", unit = EConfigUnit.BOOLEAN)
 	private static boolean useCameraCaptureTimestamp = true;
 
 	static

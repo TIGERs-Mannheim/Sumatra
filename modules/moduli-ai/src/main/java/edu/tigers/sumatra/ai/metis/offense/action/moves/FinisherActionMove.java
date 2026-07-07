@@ -1,10 +1,7 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.metis.offense.action.moves;
 
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
 import edu.tigers.sumatra.ai.metis.botdistance.BotDistance;
 import edu.tigers.sumatra.ai.metis.kicking.KickFactory;
@@ -50,31 +47,31 @@ import java.util.stream.Stream;
 @RequiredArgsConstructor
 public class FinisherActionMove extends AOffensiveActionMove
 {
-	@Configurable(defValue = "0.25")
+	@Configurable(defValue = "0.25", unit = EConfigUnit.PERCENTAGE)
 	private static double finisherPenaltyScoreAdjustment = 0.25;
 
-	@Configurable(defValue = "0.35")
+	@Configurable(defValue = "0.35", unit = EConfigUnit.PERCENTAGE)
 	private static double wrongDirectionPenalty = 0.35;
 
-	@Configurable(defValue = "0.5")
+	@Configurable(defValue = "0.5", unit = EConfigUnit.PERCENTAGE)
 	private static double destinationBlockedMaxPenalty = 0.5;
 
-	@Configurable(defValue = "0.20")
+	@Configurable(defValue = "0.20", unit = EConfigUnit.PERCENTAGE)
 	private static double minScoreForPartialViability = 0.20;
 
-	@Configurable(defValue = "0.25")
+	@Configurable(defValue = "0.25", unit = EConfigUnit.PERCENTAGE)
 	private static double minScoreToKeepForcingTrueViability = 0.25;
 
-	@Configurable(defValue = "2.0")
+	@Configurable(defValue = "2.0", unit = EConfigUnit.FACTOR)
 	private static double keepFinisherActiveScoreMultiplier = 2.0;
 
-	@Configurable(defValue = "300.0")
+	@Configurable(defValue = "300.0", unit = EConfigUnit.DISTANCE_MM)
 	private static double botNearDestinationPenaltyMaxDistance = 300;
 
-	@Configurable(defValue = "160.0")
+	@Configurable(defValue = "160.0", unit = EConfigUnit.DISTANCE_MM)
 	private static double moveBorderPointsInsideDist = 160;
 
-	@Configurable(defValue = "true")
+	@Configurable(defValue = "true", unit = EConfigUnit.BOOLEAN)
 	private static boolean activateFinisherMoves = true;
 
 	private final IColorPicker colorPicker = ColorPickerFactory.greenRedGradient();
@@ -108,7 +105,7 @@ public class FinisherActionMove extends AOffensiveActionMove
 			{
 				getShapes(EAiShapesLayer.OFFENSE_FINISHER).add(
 						new DrawableAnnotation(getWFrame().getBot(botId).getPos(), "Forcing high Via"));
-				viability = EActionViability.PARTIALLY;
+				viability = EActionViability.TRUE;
 				finalScore = finalScore * 2.0;
 			} else if (finalScore < minScoreForPartialViability)
 			{

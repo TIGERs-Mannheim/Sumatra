@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.sim.collision.ball;
 
 import edu.tigers.sumatra.math.circle.ICircle;

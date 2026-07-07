@@ -1,6 +1,3 @@
-/*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra.ball.trajectory.chipped;
 
 import edu.tigers.sumatra.ball.BallParameters;
@@ -15,7 +12,7 @@ import edu.tigers.sumatra.math.vector.Vector3;
 import lombok.AllArgsConstructor;
 import lombok.Value;
 import lombok.With;
-import org.apache.commons.lang.Validate;
+import org.apache.commons.lang3.Validate;
 
 import java.util.List;
 

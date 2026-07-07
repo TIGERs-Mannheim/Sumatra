@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.pandora.roles.offense.attacker.states;
 
 import edu.tigers.sumatra.ai.metis.kicking.Kick;
@@ -28,9 +24,9 @@ public class ApproachBallLineState extends AAttackerRoleState<ApproachBallLineSk
 	{
 		skill.setMaximumReasonableRedirectAngle(OffensiveConstants.getMaximumReasonableRedirectAngle());
 		skill.setDesiredBallCatchPos(getRole().getAction().getBallContactPos());
-		skill.getMoveCon().setObstacleAvoidanceMode(EObstacleAvoidanceMode.AGGRESSIVE);
+		skill.setMoveCon(skill.getMoveCon().withObstacleAvoidanceMode(EObstacleAvoidanceMode.AGGRESSIVE));
 		skill.setApproachFailedMinBallVel(OffensiveConstants.getAbortBallInterceptionVelThreshold());
-		skill.setUseOvershoot(OffensiveConstants.isAllowOvershootingBallInterceptions());
+		skill.setUseTrajectoryTricks(OffensiveConstants.isAllowTrajectoryTricksWhileReceiving());
 
 		getRole().getAction().getKickOpt()
 				.map(Kick::getTarget)

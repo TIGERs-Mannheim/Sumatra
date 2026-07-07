@@ -1,11 +1,6 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra.botmanager.botskills;
 
-import edu.tigers.sumatra.bot.IMoveConstraints;
 import edu.tigers.sumatra.bot.MoveConstraints;
-import edu.tigers.sumatra.bot.params.BotMovementLimits;
 import edu.tigers.sumatra.botmanager.botskills.data.DriveLimits;
 import edu.tigers.sumatra.botmanager.botskills.data.EKickerDevice;
 import edu.tigers.sumatra.botmanager.botskills.data.EKickerMode;
@@ -47,14 +42,14 @@ public class BotSkillGlobalVelocity extends AMoveBotSkill
 	/**
 	 * @param mc
 	 */
-	public BotSkillGlobalVelocity(final IMoveConstraints mc)
+	public BotSkillGlobalVelocity(final MoveConstraints mc)
 	{
 		super(EBotSkill.GLOBAL_VELOCITY);
 
 		setAccMax(mc.getAccMax());
 		setAccMaxW(mc.getAccMaxW());
-		setJerkMaxW(mc.getJerkMaxW());
-		setJerkMax(mc.getJerkMax());
+		setJerkMax(DriveLimits.MAX_JERK);
+		setJerkMaxW(DriveLimits.MAX_JERK_W);
 	}
 
 
@@ -65,7 +60,7 @@ public class BotSkillGlobalVelocity extends AMoveBotSkill
 	 * @param orientation
 	 * @param mc
 	 */
-	public BotSkillGlobalVelocity(final IVector2 xy, final double orientation, final IMoveConstraints mc)
+	public BotSkillGlobalVelocity(final IVector2 xy, final double orientation, final MoveConstraints mc)
 	{
 		this(mc);
 
@@ -157,13 +152,9 @@ public class BotSkillGlobalVelocity extends AMoveBotSkill
 	@Override
 	public MoveConstraints getMoveConstraints()
 	{
-		MoveConstraints moveCon = new MoveConstraints(new BotMovementLimits());
-		moveCon.setAccMax(getAccMax());
-		moveCon.setAccMaxW(getAccMaxW());
-		moveCon.setJerkMax(getJerkMax());
-		moveCon.setJerkMaxW(getJerkMaxW());
-
-		return moveCon;
+		return MoveConstraints.ZERO
+				.withAccMax(getAccMax())
+				.withAccMaxW(getAccMaxW());
 	}
 
 

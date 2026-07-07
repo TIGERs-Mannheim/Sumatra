@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.metis;
 
 import edu.tigers.sumatra.drawable.IShapeLayerIdentifier;
@@ -36,6 +32,8 @@ public final class EAiShapesLayer
 			F.category(AI).layerName("Path finder priorities"));
 	public static final IShapeLayerIdentifier AI_BEST_GOAL_KICK = F.create(
 			F.category(AI).layerName("Best Goal Kick"));
+	public static final IShapeLayerIdentifier AI_BEST_REDIRECT_GOAL_KICK = F.create(
+			F.category(AI).layerName("Best Redirect Goal Kick"));
 	public static final IShapeLayerIdentifier AI_BALL_POSSESSION = F.create(
 			F.category(AI).layerName("Ball Possession"));
 	public static final IShapeLayerIdentifier AI_BALL_CONTACT = F.create(
@@ -48,6 +46,8 @@ public final class EAiShapesLayer
 			F.category(AI).layerName("Skirmish detection"));
 	public static final IShapeLayerIdentifier AI_SKIRMISH_STRATEGY = F.create(
 			F.category(AI).layerName("Skirmish strategy"));
+	public static final IShapeLayerIdentifier AI_SKIRMISH_RESULT = F.create(
+			F.category(AI).layerName("Skirmish result"));
 	public static final IShapeLayerIdentifier AI_WEAK_BOT = F.create(
 			F.category(AI).layerName("Weak bots"));
 	public static final IShapeLayerIdentifier AI_DIRECT_SHOT_DETECTION = F.create(
@@ -62,21 +62,25 @@ public final class EAiShapesLayer
 			F.category(AI).layerName("Redirector detection"));
 	public static final IShapeLayerIdentifier AI_MAINTENANCE = F.create(
 			F.category(AI).layerName("Maintenance"));
-	public static final IShapeLayerIdentifier AI_MULTIMEDIA = F.create(
-			F.category(AI).layerName("Multimedia"));
 	public static final IShapeLayerIdentifier AI_OPPONENT_CLASSIFIER = F.create(
 			F.category(AI).layerName("Opponent Classifier"));
+	public static final IShapeLayerIdentifier AI_SUBSTITUTIONAREA_BOTS = F.create(
+			F.category(AI).layerName("Bots in substitution area"));
 	public static final IShapeLayerIdentifier PENALTY_ONE_ON_ONE = F.create(
 			F.category(AI).layerName("One On One Shooter"));
+	public static final IShapeLayerIdentifier PENALTY_US_DESTINATIONS = F.create(
+			F.category(AI).layerName("Penalty bot destination logic"));
 
+	public static final IShapeLayerIdentifier SUPPORT_ROLE = F.create(
+			F.category(SUPPORT).layerName("Role"));
 	public static final IShapeLayerIdentifier SUPPORT_PASS_RECEIVER = F.create(
 			F.category(SUPPORT).layerName("pass receiver"));
 	public static final IShapeLayerIdentifier SUPPORT_FORCE_FIELD = F.create(
 			F.category(SUPPORT).layerName("force field").persistenceType(NEVER_PERSIST));
 	public static final IShapeLayerIdentifier SUPPORT_FORCE_FIELD_FLOW = F.create(
 			F.category(SUPPORT).layerName("force field flow"));
-	public static final IShapeLayerIdentifier SUPPORT_ACTIVE_ROLES = F.create(
-			F.category(SUPPORT).layerName("Role shapes"));
+	public static final IShapeLayerIdentifier SUPPORT_BRIDGE_POSITION_CALC = F.create(
+			F.category(SUPPORT).layerName("Bridge position calc"));
 	public static final IShapeLayerIdentifier SUPPORT_AGGRESSIVE_MAN_MARKER = F.create(
 			F.category(SUPPORT).layerName("Aggressive Man2Man Markers"));
 	public static final IShapeLayerIdentifier SUPPORT_ANGLE_RANGE = F.create(
@@ -127,6 +131,8 @@ public final class EAiShapesLayer
 			F.category(DEFENSE).layerName("NumDefenderForBall Debug").persistenceType(DEBUG_PERSIST));
 	public static final IShapeLayerIdentifier DEFENSE_CENTER_BACK = F.create(
 			F.category(DEFENSE).layerName("CenterBack"));
+	public static final IShapeLayerIdentifier DEFENSE_OUTER_DEFENDER = F.create(
+			F.category(DEFENSE).layerName("Outer Defender"));
 	public static final IShapeLayerIdentifier DEFENSE_PASS_RECEIVER = F.create(
 			F.category(DEFENSE).layerName("Pass Receiver"));
 	public static final IShapeLayerIdentifier DEFENSE_COVERAGE = F.create(
@@ -167,12 +173,10 @@ public final class EAiShapesLayer
 			F.category(OFFENSE).layerName("Finisher"));
 	public static final IShapeLayerIdentifier OFFENSE_ACCESSIBILITY = F.create(
 			F.category(OFFENSE).layerName("Accessibility").persistenceType(NEVER_PERSIST));
-	public static final IShapeLayerIdentifier OFFENSE_SITUATION = F.create(
-			F.category(OFFENSE).layerName("Situation"));
-	public static final IShapeLayerIdentifier OFFENSE_SITUATION_GRID = F.create(
-			F.category(OFFENSE).layerName("Situation Grid").persistenceType(NEVER_PERSIST));
 	public static final IShapeLayerIdentifier OFFENSE_PASSING = F.create(
 			F.category(OFFENSE).layerName("Passing"));
+	public static final IShapeLayerIdentifier OFFENSE_FINISHER_PASS = F.create(
+			F.category(OFFENSE).layerName("Finisher Pass"));
 	public static final IShapeLayerIdentifier OFFENSE_BALL_INTERCEPTION = F.create(
 			F.category(OFFENSE).layerName("Ball Interception"));
 	public static final IShapeLayerIdentifier OFFENSE_ACTION = F.create(

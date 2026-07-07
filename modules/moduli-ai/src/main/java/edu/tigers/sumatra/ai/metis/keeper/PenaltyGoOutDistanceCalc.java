@@ -1,10 +1,7 @@
-/*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.metis.keeper;
 
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.ai.metis.ACalculator;
 import edu.tigers.sumatra.ids.ETeamColor;
 import edu.tigers.sumatra.referee.proto.SslGcRefereeMessage;
@@ -15,7 +12,6 @@ import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 import static edu.tigers.sumatra.referee.proto.SslGcRefereeMessage.Referee.Command.NORMAL_START;
 import static edu.tigers.sumatra.referee.proto.SslGcRefereeMessage.Referee.Stage.PENALTY_SHOOTOUT;
@@ -32,9 +28,9 @@ import static edu.tigers.sumatra.referee.proto.SslGcRefereeMessage.Referee.Stage
 @Log4j2
 public class PenaltyGoOutDistanceCalc extends ACalculator
 {
-	@Configurable(comment = "Keeper rambo distance", defValue = "2000.0")
+	@Configurable(comment = "Keeper rambo distance", defValue = "2000.0", unit = EConfigUnit.DISTANCE_MM)
 	private double defaultKeeperRamboDistance = 2000;
-	@Configurable(comment = "Maximal keeper rambo distance", defValue = "5000.0")
+	@Configurable(comment = "Maximal keeper rambo distance", defValue = "5000.0", unit = EConfigUnit.DISTANCE_MM)
 	private double maxKeeperRamboDistance = 5000;
 
 	private List<ShootoutRound> lastShootoutRoundResults = new LinkedList<>();
@@ -71,7 +67,7 @@ public class PenaltyGoOutDistanceCalc extends ACalculator
 					lastStartTheirGoals < theirGoals);
 			List<ShootoutRound> overrideShootoutRounds = lastShootoutRoundResults.stream()
 					.filter(shootoutRound -> Math.abs(shootoutRound.ramboDistance - defaultKeeperRamboDistance) < 10e-10)
-					.collect(Collectors.toList());
+					.toList();
 			lastShootoutRoundResults.removeAll(overrideShootoutRounds);
 			lastShootoutRoundResults.add(lastShootoutRoundResult);
 
@@ -98,7 +94,7 @@ public class PenaltyGoOutDistanceCalc extends ACalculator
 		{
 			// If there is a positive Result in ShootoutResults
 			double ramboDistance = shootoutWithoutGoal.get().getRamboDistance();
-			log.info("Taking RamboDistance from positive memorized Result (" + ramboDistance + ")");
+			log.info("Taking RamboDistance from positive memorized Result ({})", ramboDistance);
 			return shootoutWithoutGoal.get().getRamboDistance();
 		} else
 		{
@@ -127,7 +123,7 @@ public class PenaltyGoOutDistanceCalc extends ACalculator
 				nextRamboDistance = lastRamboDistance + lengthInterval * 0.5;
 			}
 
-			log.info("Trying new RamboDistance (" + nextRamboDistance + ")");
+			log.info("Trying new RamboDistance ({})", nextRamboDistance);
 
 			return nextRamboDistance;
 		}

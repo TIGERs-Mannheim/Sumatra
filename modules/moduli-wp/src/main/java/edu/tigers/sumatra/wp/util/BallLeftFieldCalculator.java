@@ -1,11 +1,8 @@
-/*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.wp.util;
 
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.geometry.Goal;
 import edu.tigers.sumatra.math.line.Lines;
@@ -20,10 +17,10 @@ import java.util.LinkedList;
 
 public class BallLeftFieldCalculator
 {
-	@Configurable(comment = "Time [s] to wait before using ball positions, invaliding all positions just before a chip kick", defValue = "0.3")
+	@Configurable(comment = "Time to wait before using ball positions, invaliding all positions just before a chip kick", defValue = "0.3", unit = EConfigUnit.TIME_S)
 	private static double maxTimeToDetectChipKick = 0.3;
 
-	@Configurable(comment = "Time [s] between two ball positions to pass before comparing them in order to check if the ball left the field", defValue = "0.05")
+	@Configurable(comment = "Time between two ball positions to pass before comparing them in order to check if the ball left the field", defValue = "0.05", unit = EConfigUnit.TIME_S)
 	private static double minComparisonTimeSpan = 0.05;
 
 	static

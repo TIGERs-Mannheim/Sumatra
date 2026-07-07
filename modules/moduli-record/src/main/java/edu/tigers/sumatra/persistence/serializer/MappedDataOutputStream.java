@@ -1,12 +1,11 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.persistence.serializer;
 
 import java.io.IOException;
-import java.nio.BufferOverflowException;
+import java.lang.foreign.Arena;
+import java.lang.foreign.MemorySegment;
+import java.lang.foreign.ValueLayout;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
@@ -16,21 +15,27 @@ import java.nio.file.StandardOpenOption;
 /**
  * High-performance single copy data output (stream).
  * For this 1MiB memory maps (see mmap) at the end of the file are utilized to minimize copies.
- * Exception-based Buffer overflow handling is used to accelerate the significantly more frequent regular execution path
- * in the performance critical .write methods.
+ * Writes go directly to the {@link MemorySegment} via {@link ValueLayout} accessors instead of
+ * a wrapping {@link ByteBuffer}: the wrapper would re-validate the FFM scope on every put and
+ * carry its own position/limit state on top of the segment's bounds check.
  */
 public class MappedDataOutputStream implements AutoCloseable
 {
 	// BUFFER_SIZE needs to be a multiple of the system page size for best performance (x86: 4KiB, Apple ARM: 64KiB)
 	public static final long BUFFER_SIZE = 1024L * 1024; // 1MiB buffers
 
-	private static final ByteBuffer EMPTY = ByteBuffer.allocate(0);
+	private static final MemorySegment EMPTY = MemorySegment.ofArray(new byte[0]);
+	// Big-endian to match the byte order produced by the previous ByteBuffer-backed writes.
+	private static final ValueLayout.OfLong LONG_BE = ValueLayout.JAVA_LONG_UNALIGNED.withOrder(ByteOrder.BIG_ENDIAN);
+	private static final ValueLayout.OfInt INT_BE = ValueLayout.JAVA_INT_UNALIGNED.withOrder(ByteOrder.BIG_ENDIAN);
 
 	private final ByteBuffer bytes8 = ByteBuffer.allocate(8);
 	private final ByteBuffer bytes4 = ByteBuffer.allocate(4);
 
 	private final FileChannel channel;
-	private ByteBuffer buffer;
+	private MemorySegment segment;
+	private long position;
+	private Arena bufferArena;
 
 
 	public MappedDataOutputStream(Path path) throws IOException
@@ -40,51 +45,56 @@ public class MappedDataOutputStream implements AutoCloseable
 				path,
 				StandardOpenOption.CREATE, StandardOpenOption.SPARSE, StandardOpenOption.WRITE, StandardOpenOption.READ
 		);
-		buffer = EMPTY;
+		segment = EMPTY;
 	}
 
 
 	/**
-	 * Special constructor for /dev/null
+	 * Special constructor for /dev/null: pre-installs a fixed-size heap-backed segment so the
+	 * stream never tries to mmap a non-mappable path. Writes that exceed the segment's capacity
+	 * will trigger a regular allocateBuffer() call (which may then fail on /dev/null, but the
+	 * bootstrap metadata serializer is sized to fit).
 	 */
-	MappedDataOutputStream(Path path, ByteBuffer buffer) throws IOException
+	MappedDataOutputStream(Path path, MemorySegment scratch) throws IOException
 	{
 		this(path);
-		this.buffer = buffer;
+		this.segment = scratch;
 	}
 
 
 	public long getPos() throws IOException
 	{
-		return channel.size() - buffer.remaining();
+		return channel.size() - segment.byteSize() + position;
 	}
 
 
 	public void write(byte b) throws IOException
 	{
-		try
-		{
-			buffer.put(b);
-		} catch (BufferOverflowException e)
+		if (position >= segment.byteSize())
 		{
 			allocateBuffer();
-			buffer.put(b);
 		}
+		segment.set(ValueLayout.JAVA_BYTE, position, b);
+		position++;
 	}
 
 
 	public void write(byte[] b) throws IOException
 	{
-		try
+		long remaining = segment.byteSize() - position;
+		if (b.length <= remaining)
 		{
-			buffer.put(b);
-		} catch (BufferOverflowException e)
+			MemorySegment.copy(b, 0, segment, ValueLayout.JAVA_BYTE, position, b.length);
+			position += b.length;
+		} else
 		{
-			int split = Math.min(b.length, buffer.remaining());
-			buffer.put(b, 0, split);
+			int split = (int) remaining;
+			MemorySegment.copy(b, 0, segment, ValueLayout.JAVA_BYTE, position, split);
+			position += split;
 			allocateBuffer();
 			//Does not handle the special case of b being larger than the buffer sizes
-			buffer.put(b, split, b.length - split);
+			MemorySegment.copy(b, split, segment, ValueLayout.JAVA_BYTE, position, b.length - split);
+			position += b.length - split;
 		}
 	}
 
@@ -114,11 +124,13 @@ public class MappedDataOutputStream implements AutoCloseable
 
 	public void write(long l) throws IOException
 	{
-		try
+		if (position + Long.BYTES <= segment.byteSize())
 		{
-			buffer.putLong(l);
-		} catch (BufferOverflowException e)
+			segment.set(LONG_BE, position, l);
+			position += Long.BYTES;
+		} else
 		{
+			// Straddles a buffer boundary: serialise via a heap scratch and split-write byte-wise.
 			bytes8.clear();
 			bytes8.putLong(l);
 			write(bytes8.array());
@@ -141,10 +153,11 @@ public class MappedDataOutputStream implements AutoCloseable
 	public void write(float f) throws IOException
 	{
 		int i = Float.floatToIntBits(f);
-		try
+		if (position + Integer.BYTES <= segment.byteSize())
 		{
-			buffer.putInt(i);
-		} catch (BufferOverflowException e)
+			segment.set(INT_BE, position, i);
+			position += Integer.BYTES;
+		} else
 		{
 			bytes4.clear();
 			bytes4.putInt(i);
@@ -173,8 +186,10 @@ public class MappedDataOutputStream implements AutoCloseable
 	@Override
 	public void close() throws IOException
 	{
+		// getPos() reads segment.byteSize() / position, so capture before closeBuffer() wipes them.
+		long endPos = getPos();
 		closeBuffer();
-		channel.truncate(Math.max(getPos(), 0)); // Remove overallocation overhead, /dev/null can lead to negative sizes
+		channel.truncate(Math.max(endPos, 0)); // Remove overallocation overhead, /dev/null can lead to negative sizes
 		channel.close();
 	}
 
@@ -182,17 +197,35 @@ public class MappedDataOutputStream implements AutoCloseable
 	private void allocateBuffer() throws IOException
 	{
 		closeBuffer();
-		buffer = channel.map(FileChannel.MapMode.READ_WRITE, channel.size(), BUFFER_SIZE);
+		// Confined to the calling thread: PersistenceDb funnels all stream work — open, write,
+		// and close — through a single-threaded executor (PersistenceDb-IO). Allocation, every
+		// subsequent put, and arena.close() therefore share that thread, so we avoid the
+		// stamp-locked liveness check that shared arenas pay on every put.
+		Arena arena = Arena.ofConfined();
+		try
+		{
+			segment = channel.map(
+					FileChannel.MapMode.READ_WRITE, channel.size(), BUFFER_SIZE, arena);
+			bufferArena = arena;
+			position = 0;
+		} catch (Throwable t)
+		{
+			arena.close();
+			throw t;
+		}
 	}
 
 
 	private void closeBuffer()
 	{
-		if(buffer.isDirect())
+		if (bufferArena != null)
 		{
-			// The mapped buffer needs to be closed for Windows as Windows locks mapped file sections
-			// See https://stackoverflow.com/questions/25238110/how-to-properly-close-mappedbytebuffer
-			FieldSerializer.UNSAFE.invokeCleaner(buffer);
+			// Closing the arena unmaps the region — required on Windows where
+			// mapped sections lock the underlying file until released.
+			bufferArena.close();
+			bufferArena = null;
+			segment = EMPTY;
+			position = 0;
 		}
 	}
 }

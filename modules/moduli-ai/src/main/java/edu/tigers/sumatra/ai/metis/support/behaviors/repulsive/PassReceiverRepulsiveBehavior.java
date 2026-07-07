@@ -1,10 +1,7 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.metis.support.behaviors.repulsive;
 
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.ai.metis.offense.action.RatedOffensiveAction;
 import edu.tigers.sumatra.ai.pandora.plays.EPlay;
 import edu.tigers.sumatra.bot.BotState;
@@ -34,24 +31,24 @@ import java.util.stream.Collectors;
  */
 public class PassReceiverRepulsiveBehavior extends ARepulsiveBehavior
 {
-	@Configurable(comment = "Defines whether this behavior is active of not", defValue = "true")
+	@Configurable(comment = "Defines whether this behavior is active of not", defValue = "true", unit = EConfigUnit.BOOLEAN)
 	private static boolean enabled = true;
-	@Configurable(comment = "Whether force field should be drawn or not", defValue = "false")
+	@Configurable(comment = "Whether force field should be drawn or not", defValue = "false", unit = EConfigUnit.BOOLEAN)
 	private static boolean drawing = false;
-	@Configurable(comment = "Minimum Number of Supporter attracted by Ball", defValue = "1")
+	@Configurable(comment = "Minimum Number of Supporter attracted by Ball", defValue = "1", unit = EConfigUnit.COUNT)
 	private static int numberPassReceiversAtTheirGoal = 1;
-	@Configurable(comment = "Maximum Number of Supporter attracted by Ball", defValue = "3")
+	@Configurable(comment = "Maximum Number of Supporter attracted by Ball", defValue = "3", unit = EConfigUnit.COUNT)
 	private static int numberPassReceiversAtOwnGoal = 3;
-	@Configurable(comment = "Hysteresis offset for maximum number of PassReceivers", defValue = "1000.")
+	@Configurable(comment = "Hysteresis offset for maximum number of PassReceivers", defValue = "1000.", unit = EConfigUnit.DISTANCE_MM)
 	private static double hysteresisOffsetPassReceivers = 1000d;
-	@Configurable(comment = "[mm]", defValue = "3000.0")
+	@Configurable(defValue = "3000.0", unit = EConfigUnit.STD_DEVIATION_MM)
 	private static double sigmaBallReceiverForward = 3000;
-	@Configurable(comment = "[mm]", defValue = "-5000.0")
+	@Configurable(defValue = "-5000.0", unit = EConfigUnit.DISTANCE_MM)
 	private static double magnitudeBallReceiverForward = -5000.0;
-	@Configurable(comment = "half-life period for Score Rating [s]", defValue = "1.0")
+	@Configurable(comment = "half-life period for Score Rating", defValue = "1.0", unit = EConfigUnit.TIME_S)
 	private static double halfLifePeriodScoreRating = 1;
 
-	@Configurable(comment = "Hysteresis offset for inactive Pass Receiver", defValue = "2000.0")
+	@Configurable(comment = "Hysteresis offset for inactive Pass Receiver", defValue = "2000.0", unit = EConfigUnit.DISTANCE_MM)
 	private static double inactivePassReceiverOffset = 2000;
 
 	private final Supplier<Map<EPlay, Set<BotID>>> desiredBots;

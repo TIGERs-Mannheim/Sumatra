@@ -1,6 +1,3 @@
-/*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra.cam;
 
 import edu.tigers.sumatra.cam.data.CamCalibration;
@@ -81,6 +78,8 @@ public class SSLVisionCamGeometryTranslator
 				.goalWidth(field.getGoalWidth())
 				.goalDepth(field.getGoalDepth())
 				.boundaryWidth(field.getBoundaryWidth())
+				.boundaryWidthGoalLine(
+						field.hasBoundaryWidthGoalLine() ? field.getBoundaryWidthGoalLine() : field.getBoundaryWidth())
 				.fieldLines(fieldLines)
 				.fieldArcs(fieldArcs)
 				.penaltyAreaDepth(field.hasPenaltyAreaDepth() ?
@@ -97,6 +96,8 @@ public class SSLVisionCamGeometryTranslator
 				.goalHeight(field.hasGoalHeight() ? field.getGoalHeight() : 155)
 				.ballRadius(field.hasBallRadius() ? field.getBallRadius() : 21.5)
 				.robotRadius(field.hasMaxRobotRadius() ? field.getMaxRobotRadius() : 90)
+				.goalSubstitutionAreaWidth(
+						field.hasGoalSubstitutionAreaWidth() ? field.getGoalSubstitutionAreaWidth() : 300)
 				.build();
 	}
 
@@ -109,6 +110,7 @@ public class SSLVisionCamGeometryTranslator
 				.setGoalWidth((int) field.getGoalWidth())
 				.setGoalDepth((int) field.getGoalDepth())
 				.setBoundaryWidth((int) field.getBoundaryWidth())
+				.setBoundaryWidthGoalLine((int) field.getBoundaryWidthGoalLine())
 				.addAllFieldLines(field.getFieldLines().stream().map(this::toProtobuf).toList())
 				.addAllFieldArcs(field.getFieldArcs().stream().map(this::toProtobuf).toList())
 				.setPenaltyAreaDepth((int) field.getPenaltyAreaDepth())
@@ -119,6 +121,7 @@ public class SSLVisionCamGeometryTranslator
 				.setGoalHeight((int) field.getGoalHeight())
 				.setBallRadius((float) field.getBallRadius())
 				.setMaxRobotRadius((float) field.getRobotRadius())
+				.setGoalSubstitutionAreaWidth((int) field.getGoalSubstitutionAreaWidth())
 				.build();
 	}
 

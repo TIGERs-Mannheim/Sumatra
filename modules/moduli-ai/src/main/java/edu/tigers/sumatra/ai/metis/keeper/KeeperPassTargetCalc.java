@@ -1,10 +1,7 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.metis.keeper;
 
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.ai.metis.ACalculator;
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
 import edu.tigers.sumatra.ai.metis.ballresponsibility.EBallResponsibility;
@@ -52,18 +49,18 @@ import static edu.tigers.sumatra.pathfinder.TrajectoryGenerator.generatePosition
 @RequiredArgsConstructor
 public class KeeperPassTargetCalc extends ACalculator
 {
-	@Configurable(comment = "Number of targets to generate per frame", defValue = "10")
+	@Configurable(comment = "Number of targets to generate per frame", defValue = "10", unit = EConfigUnit.COUNT)
 	private static int targetsPerFrame = 10;
 
-	@Configurable(comment = "Hysteresis [s] for choosing better target", defValue = "0.1")
+	@Configurable(comment = "Hysteresis for choosing better target", defValue = "0.1", unit = EConfigUnit.TIME_S)
 	private static double hysteresis = 0.1;
 
-	@Configurable(comment = "Angle [deg] for possible pass target generation", defValue = "90")
+	@Configurable(comment = "Angle for possible pass target generation", defValue = "90", unit = EConfigUnit.ANGLE_DEG)
 	private static double angleRangeDeg = 90;
 
-	@Configurable(comment = "Opponent ball dist to chill", defValue = "1000.0")
+	@Configurable(comment = "Opponent ball dist to chill", defValue = "1000.0", unit = EConfigUnit.DISTANCE_MM)
 	private static double minOpponentBotDistToChill = 1000;
-	@Configurable(comment = "[mm] Roll distance after last touchdown of keeper chip", defValue = "500.0")
+	@Configurable(comment = "Roll distance after last touchdown of keeper chip", defValue = "500.0", unit = EConfigUnit.DISTANCE_MM)
 	private static double minRollDistanceAfterChip = 500;
 
 
@@ -121,26 +118,20 @@ public class KeeperPassTargetCalc extends ACalculator
 		{
 			passFactory.setAimingTolerance(0.0);
 		}
-		keeperPass = Optional.ofNullable(lastPassTarget).map(this::createKeeperPass).orElse(null);
+		keeperPass = Optional.ofNullable(lastPassTarget).flatMap(this::createKeeperPass).orElse(null);
 
 		drawShapes(ratedTargets, searchCircle, searchAngles);
 	}
 
 
-	private Pass createKeeperPass(SlackBot passTarget)
+	private Optional<Pass> createKeeperPass(SlackBot passTarget)
 	{
 		var keeper = getWFrame().getBot(getAiFrame().getKeeperId());
 		passFactory.setMaxReceivingBallSpeed(Double.POSITIVE_INFINITY);
 
-		if (kickSpeedFactory.maxChip(keeper) <= 0)
+		if (keeper.getRobotInfo().getBotParams().getKickerSpecs().getMaxAbsoluteChipVelocity() < 0.1)
 		{
-			return passFactory.straight(
-					getBall().getPos(),
-					passTarget.target,
-					getAiFrame().getKeeperId(),
-					passTarget.bot.getBotId(),
-					EBallReceiveMode.RECEIVE
-			).orElseThrow();
+			return Optional.empty();
 		}
 
 		return passFactory.chip(
@@ -149,7 +140,7 @@ public class KeeperPassTargetCalc extends ACalculator
 				getAiFrame().getKeeperId(),
 				passTarget.bot.getBotId(),
 				EBallReceiveMode.RECEIVE
-		).orElseThrow(); // with infinite max receiving speed, this should never fail
+		); // with infinite max receiving speed, this should never fail
 	}
 
 

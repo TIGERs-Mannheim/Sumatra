@@ -1,13 +1,8 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.metis.defense.data;
 
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.vector.IVector2;
 import lombok.Value;
-import lombok.experimental.Accessors;
 
 
 @Value
@@ -17,10 +12,8 @@ public class DefensePassDisruptionAssignment implements Comparable<DefensePassDi
 	BotID defenderId;
 	IVector2 interceptionPoint;
 	IVector2 movementDestination;
-	@Accessors(fluent = true)
-	boolean hasHighSuccessProbability;
-	boolean ignoreOpponentPassReceiverInPathPlanning;
-
+	boolean disruptPreferredOverBlocking;
+	boolean legalCollisionSpeed;
 	EDefensePassDisruptionStrategyType strategyType;
 
 

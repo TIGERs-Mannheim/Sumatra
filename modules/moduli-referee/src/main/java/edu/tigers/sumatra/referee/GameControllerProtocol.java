@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.referee;
 
 import com.google.protobuf.Message;
@@ -20,7 +16,7 @@ import java.util.List;
  * The communication is based on protobuf and features secure messages. To do so,
  * messages sent TO the server contain a secret token and a signature.
  * For more details about this protocol, visit the Repository of the official SSL-Game-Controller:
- * https://github.com/RoboCup-SSL/ssl-game-controller
+ * <a href="https://github.com/RoboCup-SSL/ssl-game-controller">...</a>
  */
 @Log4j2
 public class GameControllerProtocol
@@ -73,10 +69,10 @@ public class GameControllerProtocol
 				Thread.currentThread().interrupt();
 				return;
 			}
-			log.info("Reconnecting to " + hostname + ":" + port);
+			log.info("Reconnecting to {}:{}", hostname, port);
 		} else
 		{
-			log.info("Connecting to " + hostname + ":" + port);
+			log.info("Connecting to {}:{}", hostname, port);
 		}
 
 		long start = System.nanoTime();
@@ -86,7 +82,7 @@ public class GameControllerProtocol
 			{
 				long time = System.nanoTime() - start;
 				time /= 1_000_000; // Convert to ms
-				log.info("successfully connect to " + hostname + ":" + port + " after " + time + "ms");
+				log.info("successfully connect to {}:{} after {}ms", hostname, port, time);
 				return;
 			}
 

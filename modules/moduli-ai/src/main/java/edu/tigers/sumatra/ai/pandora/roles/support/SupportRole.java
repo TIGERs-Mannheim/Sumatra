@@ -1,24 +1,24 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.pandora.roles.support;
 
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.ai.common.PointChecker;
+import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
 import edu.tigers.sumatra.ai.metis.offense.action.EOffensiveActionType;
 import edu.tigers.sumatra.ai.metis.support.behaviors.ESupportBehavior;
 import edu.tigers.sumatra.ai.metis.support.behaviors.SupportBehaviorPosition;
 import edu.tigers.sumatra.ai.pandora.roles.ARole;
 import edu.tigers.sumatra.ai.pandora.roles.ERole;
+import edu.tigers.sumatra.drawable.DrawableTriangle;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.math.triangle.Triangle;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.pathfinder.obstacles.IObstacle;
-import edu.tigers.sumatra.skillsystem.skills.MoveToSkill;
+import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.log4j.Log4j2;
 
+import java.awt.Color;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -31,17 +31,17 @@ import java.util.stream.Stream;
 @Log4j2
 public class SupportRole extends ARole
 {
-	@Configurable(defValue = "true", comment = "Keep the current position during stop, as long as it is valid to reduce movement and the ball is in their half")
+	@Configurable(defValue = "true", comment = "Keep the current position during stop, as long as it is valid to reduce movement and the ball is in their half", unit = EConfigUnit.BOOLEAN)
 	private static boolean keepPositionInStopIfBallInTheirHalf = true;
 
-	@Configurable(defValue = "true", comment = "Keep the current position during stop, as long as it is valid to reduce movement and the ball is in our half")
+	@Configurable(defValue = "true", comment = "Keep the current position during stop, as long as it is valid to reduce movement and the ball is in our half", unit = EConfigUnit.BOOLEAN)
 	private static boolean keepPositionInStopIfBallInOurHalf = true;
 
-	@Configurable(defValue = "500", comment = "Distance [mm] to the ball to keep all the time")
+	@Configurable(defValue = "500", comment = "Distance to the ball to keep all the time", unit = EConfigUnit.DISTANCE_MM)
 	private static double distanceToBall = 500;
-	@Configurable(comment = "[rad/s] maximal angular velocity while relaxing", defValue = "3")
+	@Configurable(comment = "maximal angular velocity while relaxing", defValue = "3", unit = EConfigUnit.VELOCITY_ANGULAR_RAD)
 	private static double relaxStateMaxVelW = 3;
-	@Configurable(comment = "[rad/s2] maximal angular acceleration while relaxing", defValue = "10")
+	@Configurable(comment = "maximal angular acceleration while relaxing", defValue = "10", unit = EConfigUnit.ACCELERATION_ANGULAR_RAD)
 	private static double relaxStateMaxAccW = 10;
 	private final PointChecker pointChecker = new PointChecker()
 			.checkBallDistances()
@@ -51,11 +51,10 @@ public class SupportRole extends ARole
 			.checkInsideField()
 			.checkCustom(this::isNotBetweenFreeKickAndBall);
 	@Setter
+	@Getter
 	private SupportBehaviorPosition target;
 	@Setter
 	private ESupportBehavior behavior;
-	@Setter
-	private boolean avoidPassesFromOffensive = true;
 
 
 	public SupportRole()
@@ -85,28 +84,26 @@ public class SupportRole extends ARole
 		}
 
 		var blockedTriangle = Triangle.fromCorners(
-						Geometry.getGoalOur().getLeftPost(),
-						Geometry.getGoalOur().getRightPost(),
-						getBall().getPos()
+						Geometry.getGoalTheir().getLeftPost(),
+						Geometry.getGoalTheir().getRightPost(),
+						// Shift Ball pos inside to avoid extremely thin triangles when the ball is close to the goal line
+						Geometry.getField().withMargin(-100).nearestPointInside(getBall().getPos())
 				)
 				.withMargin(500);
+		getShapes(EAiShapesLayer.SUPPORT_ROLE).add(
+				new DrawableTriangle(blockedTriangle, new Color(255, 0, 0, 50)).setFill(true));
 		return !blockedTriangle.isPointInShape(position);
 	}
 
 
-	private class MoveToTargetState extends RoleState<MoveToSkill>
+	private class MoveToTargetState extends MoveState
 	{
-		public MoveToTargetState()
-		{
-			super(MoveToSkill::new);
-		}
-
-
 		@Override
 		protected void onUpdate()
 		{
-			skill.getMoveCon().setDistanceToBall(distanceToBall);
-			skill.getMoveCon().setCustomObstacles(createCustomObstacle());
+			skill.setMoveCon(skill.getMoveCon()
+					.withDistanceToBall(distanceToBall)
+					.withCustomObstacles(createCustomObstacle()));
 
 			if (target == null)
 			{
@@ -114,6 +111,7 @@ public class SupportRole extends ARole
 			}
 
 			skill.updateDestination(target.getPosition());
+			skill.updateUseComeToAStopIfFaster(behavior == ESupportBehavior.MAN_2_MAN_MARKING);
 			target.getLookAt().ifPresent(skill::updateLookAtTarget);
 		}
 
@@ -126,7 +124,7 @@ public class SupportRole extends ARole
 							.map(Map.Entry::getValue)
 							.flatMap(List::stream),
 					Optional.ofNullable(getTacticalField().getOngoingPassObstacle())
-							.filter(obstacle -> avoidPassesFromOffensive)
+							.filter(_ -> avoidPassesFromOffensive())
 							.stream()
 			).toList();
 		}
@@ -137,9 +135,15 @@ public class SupportRole extends ARole
 			return switch (type)
 			{
 				case KICK, DRIBBLE_KICK, REDIRECT_KICK -> true;
-				case PASS -> avoidPassesFromOffensive;
+				case PASS -> avoidPassesFromOffensive();
 				default -> false;
 			};
+		}
+
+
+		private boolean avoidPassesFromOffensive()
+		{
+			return behavior != ESupportBehavior.FAKE_PASS_RECEIVER;
 		}
 
 
@@ -154,20 +158,15 @@ public class SupportRole extends ARole
 		}
 	}
 
-	private class RelaxState extends RoleState<MoveToSkill>
+	private class RelaxState extends MoveState
 	{
-		private RelaxState()
-		{
-			super(MoveToSkill::new);
-		}
-
-
 		@Override
 		protected void onUpdate()
 		{
 			skill.updateTargetAngle(getBot().getAngleByTime(0) + 0.5);
-			skill.getMoveConstraints().setVelMaxW(relaxStateMaxVelW);
-			skill.getMoveConstraints().setAccMaxW(relaxStateMaxAccW);
+			skill.setMoveConstraints(skill.getMoveConstraints()
+					.withVelMaxW(relaxStateMaxVelW)
+					.withAccMaxW(relaxStateMaxAccW));
 		}
 
 

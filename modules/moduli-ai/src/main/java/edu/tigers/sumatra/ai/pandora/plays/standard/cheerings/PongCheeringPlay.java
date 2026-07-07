@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.pandora.plays.standard.cheerings;
 
 import edu.tigers.sumatra.ai.pandora.plays.standard.CheeringPlay;
@@ -133,7 +129,7 @@ public class PongCheeringPlay implements ICheeringPlay
 		var roles = play.getPermutedRoles();
 		for (int botId = 0; botId < roles.size(); botId++)
 		{
-			roles.get(botId).getMoveCon().setOurBotsObstacle(false);
+			roles.get(botId).setMoveCon(roles.get(botId).getMoveCon().withOurBotsObstacle(false));
 			roles.get(botId).updateDestination(positions.get(botId));
 		}
 	}

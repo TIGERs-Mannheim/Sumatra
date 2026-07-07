@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.skillsystem.skills.test;
 
 import edu.tigers.sumatra.bot.MoveConstraints;
@@ -47,10 +43,8 @@ public class IdentDelaysSkill extends AMoveSkill
 
 		tStart = getWorldFrame().getTimestamp();
 
-		moveConstraints = new MoveConstraints(getBot().getBotParams().getMovementLimits());
-
-		moveConstraints.setAccMaxW(DriveLimits.MAX_ACC_W);
-		moveConstraints.setJerkMaxW(DriveLimits.MAX_JERK_W);
+		moveConstraints = MoveConstraints.from(getBot().getBotParams().getMovementLimits())
+				.withAccMaxW(DriveLimits.MAX_ACC_W);
 
 		watch.start();
 	}
@@ -79,7 +73,7 @@ public class IdentDelaysSkill extends AMoveSkill
 			log.error(err.getMessage(), err);
 		} catch (MatlabInvocationException err)
 		{
-			log.error("Error evaluating matlab function: " + err.getMessage(), err);
+			log.error("Error evaluating matlab function: {}", err.getMessage(), err);
 		} catch (Exception err)
 		{
 			log.error("An error occurred.", err);

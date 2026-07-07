@@ -12,12 +12,8 @@
         "velMax": 3.0,
         "accMax": 3.0,
         "brkMax": 6.0,
-        "jerkMax": 20.0,
         "velMaxW": 20.0,
-        "accMaxW": 50.0,
-        "jerkMaxW": 1000.0,
-        "velMaxFast": 4.5,
-        "accMaxFast": 3.0
+        "accMaxW": 50.0
       },
       "dimensions": {
         "center2DribblerDist": 75.0,

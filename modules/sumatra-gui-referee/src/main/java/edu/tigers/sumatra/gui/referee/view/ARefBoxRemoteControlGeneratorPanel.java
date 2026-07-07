@@ -1,11 +1,9 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra.gui.referee.view;
 
 import edu.tigers.sumatra.referee.proto.SslGcApi;
 
 import javax.swing.JPanel;
+import java.io.Serial;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -15,6 +13,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
  */
 public abstract class ARefBoxRemoteControlGeneratorPanel extends JPanel
 {
+	@Serial
 	private static final long serialVersionUID = 4824407573372334034L;
 
 	private final transient List<IRefBoxRemoteControlRequestObserver> observers = new CopyOnWriteArrayList<>();

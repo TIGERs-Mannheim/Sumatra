@@ -1,6 +1,3 @@
-/*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra.math.botshape;
 
 import edu.tigers.sumatra.math.circle.ICircular;

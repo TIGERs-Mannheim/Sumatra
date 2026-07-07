@@ -22,13 +22,13 @@ rm -rf .mailmap ./.gitlab-ci.yml ./CONTRIBUTING.md gitlab-known-hosts
 # remove gradle cache
 rm -rf  .gradle
 
-# create archive
-tar czf ../Sumatra.tar.gz .
+echo create archive
+tar czf ../../Sumatra.tar.gz .
 
-# Copy to OSS repository
+echo Copy to OSS repository
 cd ..
 if [[ -d "${target_folder}" ]]; then
   cd "${target_folder}"
   rm -rf ./*
-  tar xf ../Sumatra/Sumatra.tar.gz .
+  tar xf ../Sumatra.tar.gz
 fi

@@ -1,9 +1,7 @@
-/*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra.ai.pandora.plays.standard;
 
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.ai.pandora.plays.APlay;
 import edu.tigers.sumatra.ai.pandora.plays.EPlay;
 import edu.tigers.sumatra.ai.pandora.roles.ARole;
@@ -28,7 +26,7 @@ import java.util.List;
  */
 public class PenaltyThemPlay extends APlay
 {
-	@Configurable(comment = "Distance to a-axis on line", defValue = "1000.0")
+	@Configurable(comment = "Distance to a-axis on line", defValue = "1000.0", unit = EConfigUnit.DISTANCE_MM)
 	private static double distanceToX = 1000;
 
 

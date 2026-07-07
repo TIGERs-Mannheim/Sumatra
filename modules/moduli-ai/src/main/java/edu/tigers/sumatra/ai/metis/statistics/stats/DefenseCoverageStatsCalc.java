@@ -1,11 +1,8 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.metis.statistics.stats;
 
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.ai.BaseAiFrame;
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
 import edu.tigers.sumatra.ai.metis.botdistance.BotDistance;
@@ -28,7 +25,7 @@ import java.util.function.Supplier;
 @RequiredArgsConstructor
 public class DefenseCoverageStatsCalc extends AStatsCalc
 {
-	@Configurable(comment = "Max time horizon to consider for moving robots", defValue = "0.1")
+	@Configurable(comment = "Max time horizon to consider for moving robots", defValue = "0.1", unit = EConfigUnit.TIME_S)
 	private static double maxHorizon = 0.1;
 
 	static

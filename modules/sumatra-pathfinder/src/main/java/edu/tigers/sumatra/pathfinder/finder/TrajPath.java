@@ -1,9 +1,6 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra.pathfinder.finder;
 
-import edu.tigers.sumatra.bot.IMoveConstraints;
+import edu.tigers.sumatra.bot.MoveConstraints;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.pathfinder.TrajectoryGenerator;
@@ -45,7 +42,7 @@ public class TrajPath implements ITrajectory<IVector2>
 	 * @return a new path
 	 */
 	public static TrajPath with(
-			final IMoveConstraints mc,
+			final MoveConstraints mc,
 			final IVector2 curPos,
 			final IVector2 curVel,
 			final IVector2 dest
@@ -66,7 +63,7 @@ public class TrajPath implements ITrajectory<IVector2>
 	 * @return a new path
 	 */
 	public TrajPath append(
-			final IMoveConstraints mc,
+			final MoveConstraints mc,
 			final double connectionTime,
 			final IVector2 dest)
 	{
@@ -86,7 +83,7 @@ public class TrajPath implements ITrajectory<IVector2>
 	 * @return
 	 */
 	public TrajPath relocate(
-			IMoveConstraints mc,
+			MoveConstraints mc,
 			IVector2 newStartPos,
 			IVector2 newStartVel)
 	{

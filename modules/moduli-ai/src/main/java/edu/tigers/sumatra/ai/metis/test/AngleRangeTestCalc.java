@@ -1,10 +1,7 @@
-/*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.metis.test;
 
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.ai.metis.ACalculator;
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
 import edu.tigers.sumatra.ai.metis.targetrater.AngleRange;
@@ -28,13 +25,13 @@ import java.util.List;
  */
 public class AngleRangeTestCalc extends ACalculator
 {
-	@Configurable(defValue = "false")
+	@Configurable(defValue = "false", unit = EConfigUnit.BOOLEAN)
 	private static boolean active = false;
 
-	@Configurable(comment = "Max time horizon to consider for moving robots", defValue = "2.0")
+	@Configurable(comment = "Max time horizon to consider for moving robots", defValue = "2.0", unit = EConfigUnit.TIME_S)
 	private static double maxHorizon = 2.0;
 
-	@Configurable(comment = "The time a robot needs to react to the ball movement", defValue = "0.3")
+	@Configurable(comment = "The time a robot needs to react to the ball movement", defValue = "0.3", unit = EConfigUnit.TIME_S)
 	private static double timeForBotToReact = 0.3;
 
 	private final MovingObstacleGen movingObstacleGen = new MovingObstacleGen();

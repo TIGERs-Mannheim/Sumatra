@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.pandora.plays.standard.cheerings;
 
 import edu.tigers.sumatra.ai.pandora.plays.standard.CheeringPlay;
@@ -82,7 +78,7 @@ public class BowlingCheeringPlay implements ICheeringPlay
 				return;
 			} else
 			{
-				r.getMoveCon().setOurBotsObstacle(false);
+				r.setMoveCon(r.getMoveCon().withOurBotsObstacle(false));
 			}
 		}
 

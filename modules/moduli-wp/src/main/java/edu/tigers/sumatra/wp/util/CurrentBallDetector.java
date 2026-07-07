@@ -1,13 +1,9 @@
-/*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.wp.util;
-
-import java.util.List;
 
 import edu.tigers.sumatra.cam.data.CamBall;
 import edu.tigers.sumatra.geometry.Geometry;
+
+import java.util.List;
 
 
 /**
@@ -16,8 +12,8 @@ import edu.tigers.sumatra.geometry.Geometry;
 public class CurrentBallDetector
 {
 	private CamBall lastSeenBall = new CamBall();
-	
-	
+
+
 	/**
 	 * @param balls
 	 * @return
@@ -39,7 +35,7 @@ public class CurrentBallDetector
 		{
 			return lastSeenBall;
 		}
-		
+
 		// note: dt may be negative if lastSeenBall is set manually
 		double dt = (selectedBall.getTimestamp() - lastSeenBall.getTimestamp()) / 1e9;
 		double dist = selectedBall.getPos().subtractNew(lastSeenBall.getPos()).getLength2() / 1000.0;
@@ -49,29 +45,29 @@ public class CurrentBallDetector
 			// high velocity, probably wrong ball
 			return lastSeenBall;
 		}
-		
+
 		double waitForNextBallTime = 0;
 		if (!Geometry.getFieldWBorders().isPointInShape(selectedBall.getPos().getXYVector()) &&
 				Geometry.getFieldWBorders().isPointInShape(lastSeenBall.getPos().getXYVector()))
 		{
 			waitForNextBallTime += 1;
 		}
-		
+
 		if (selectedBall.getCameraId() != lastSeenBall.getCameraId())
 		{
 			waitForNextBallTime += 0.05;
 		}
-		
+
 		if (dt < waitForNextBallTime)
 		{
 			return lastSeenBall;
 		}
-		
+
 		lastSeenBall = selectedBall;
 		return new CamBall(lastSeenBall);
 	}
-	
-	
+
+
 	/**
 	 * Reset the ball
 	 */

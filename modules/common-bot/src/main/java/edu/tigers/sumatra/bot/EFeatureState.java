@@ -1,11 +1,3 @@
-/*
- * *********************************************************
- * Copyright (c) 2009 - 2015, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Apr 25, 2015
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
- */
 package edu.tigers.sumatra.bot;
 
 
@@ -20,16 +12,16 @@ public enum EFeatureState
 	KAPUT(2),
 	/**  */
 	UNKNOWN(0xFF);
-	
+
 	private final int	id;
-	
-	
-	private EFeatureState(final int id)
+
+
+	EFeatureState(final int id)
 	{
 		this.id = id;
 	}
-	
-	
+
+
 	/**
 	 * @return the id
 	 */
@@ -37,11 +29,11 @@ public enum EFeatureState
 	{
 		return id;
 	}
-	
-	
+
+
 	/**
 	 * Convert an id to an enum.
-	 * 
+	 *
 	 * @param id
 	 * @return enum
 	 */
@@ -54,7 +46,7 @@ public enum EFeatureState
 				return s;
 			}
 		}
-		
+
 		return UNKNOWN;
 	}
 }

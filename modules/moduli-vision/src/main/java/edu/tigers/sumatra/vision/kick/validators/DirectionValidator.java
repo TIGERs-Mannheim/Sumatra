@@ -1,10 +1,8 @@
-/*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra.vision.kick.validators;
 
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.cam.data.CamBall;
 import edu.tigers.sumatra.math.AngleMath;
 import edu.tigers.sumatra.math.line.ILine;
@@ -37,7 +35,7 @@ import java.util.stream.Collectors;
  */
 public class DirectionValidator implements IKickValidator
 {
-	@Configurable(defValue = "45.0", comment = "Maximum angle difference for a valid kick")
+	@Configurable(defValue = "45.0", comment = "Maximum angle difference for a valid kick", unit = EConfigUnit.ANGLE_DEG)
 	private static double maxAngleDiff = 45.0;
 
 	private double lastAngDiffDeg = 0;

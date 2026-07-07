@@ -1,6 +1,3 @@
-/*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra.botmanager.commands;
 
 import com.github.g3force.instanceables.IInstanceableEnum;
@@ -12,7 +9,7 @@ import edu.tigers.sumatra.botmanager.commands.basestation.BaseStationCameraViewp
 import edu.tigers.sumatra.botmanager.commands.basestation.BaseStationConfigV3;
 import edu.tigers.sumatra.botmanager.commands.basestation.BaseStationEthStats;
 import edu.tigers.sumatra.botmanager.commands.basestation.BaseStationPing;
-import edu.tigers.sumatra.botmanager.commands.basestation.BaseStationWifiStats;
+import edu.tigers.sumatra.botmanager.commands.basestation.BaseStationWifiStatsV2;
 import edu.tigers.sumatra.botmanager.commands.tiger.TigerSystemPing;
 import edu.tigers.sumatra.botmanager.commands.tiger.TigerSystemPong;
 import edu.tigers.sumatra.botmanager.commands.tigerv2.TigerSystemAck;
@@ -70,11 +67,11 @@ public enum ECommand implements IInstanceableEnum
 	CMD_BASE_ACOMMAND(0x60, new InstanceableClass<>(BaseStationACommand.class)),
 	CMD_BASE_PING(0x61, new InstanceableClass<>(BaseStationPing.class)),
 	CMD_BASE_AUTH(0x62, new InstanceableClass<>(BaseStationAuth.class)),
-	CMD_BASE_WIFI_STATS(0x63, new InstanceableClass<>(BaseStationWifiStats.class)),
 	CMD_BASE_ETH_STATS(0x64, new InstanceableClass<>(BaseStationEthStats.class)),
 	CMD_BASE_CAM_VIEWPORT(0x65, new InstanceableClass<>(BaseStationCameraViewport.class)),
 	CMD_BASE_CONFIG_V3(0x66, new InstanceableClass<>(BaseStationConfigV3.class)),
-	CMD_BASE_BROADCAST(0x67, new InstanceableClass<>(BaseStationBroadcast.class));
+	CMD_BASE_BROADCAST(0x67, new InstanceableClass<>(BaseStationBroadcast.class)),
+	CMD_BASE_WIFI_STATS_V2(0x68, new InstanceableClass<>(BaseStationWifiStatsV2.class));
 
 	private final int id;
 	private final InstanceableClass<?> instanceableClass;

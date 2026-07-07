@@ -1,14 +1,13 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.pandora.roles.offense.attacker.states;
 
 
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
 import edu.tigers.sumatra.ai.metis.offense.action.OffensiveAction;
 import edu.tigers.sumatra.ai.metis.offense.dribble.DribbleToPos;
+import edu.tigers.sumatra.ai.metis.offense.dribble.finisher.FinisherMoveShape;
+import edu.tigers.sumatra.ai.metis.offense.dribble.finisher.FinisherMoveShapeObstacle;
 import edu.tigers.sumatra.ai.metis.targetrater.AngleRangeRater;
 import edu.tigers.sumatra.ai.metis.targetrater.IRatedTarget;
 import edu.tigers.sumatra.ai.pandora.roles.offense.attacker.AttackerRole;
@@ -16,11 +15,11 @@ import edu.tigers.sumatra.drawable.DrawableAnnotation;
 import edu.tigers.sumatra.drawable.DrawableArrow;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.math.line.Lines;
-import edu.tigers.sumatra.ai.metis.offense.dribble.finisher.FinisherMoveShape;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
-import edu.tigers.sumatra.ai.metis.offense.dribble.finisher.FinisherMoveShapeObstacle;
+import edu.tigers.sumatra.pathfinder.EObstacleAvoidanceMode;
 import edu.tigers.sumatra.pathfinder.obstacles.IObstacle;
+import edu.tigers.sumatra.pathfinder.obstacles.ObstacleGenerator;
 import edu.tigers.sumatra.skillsystem.skills.dribbling.DribbleKickSkill;
 import edu.tigers.sumatra.time.TimestampTimer;
 
@@ -33,9 +32,9 @@ import java.util.stream.Stream;
 
 public class DribblingKickState extends AAttackerRoleState<DribbleKickSkill>
 {
-	@Configurable(defValue = "-20.0")
+	@Configurable(defValue = "-20.0", unit = EConfigUnit.DISTANCE_MM)
 	private static double isInsideObstacleShapeOffset = -20;
-	@Configurable(defValue = "2.0", comment = "[m/s] if a dribbling violation is imminent and we do not roughly look towards opponent goal")
+	@Configurable(defValue = "2.0", comment = "if a dribbling violation is imminent and we do not roughly look towards opponent goal", unit = EConfigUnit.VELOCITY_M)
 	private static double violationImminentKickSpeed = 2.0;
 	private final TimestampTimer canShootClearanceTimer = new TimestampTimer(0.10);
 	private final TimestampTimer driveToFakePointTimer = new TimestampTimer(1.30);
@@ -58,9 +57,9 @@ public class DribblingKickState extends AAttackerRoleState<DribbleKickSkill>
 
 
 	@Override
-	public void doEntryActions()
+	protected void onEntry()
 	{
-		super.doEntryActions();
+		super.onEntry();
 		driveToFakePointTimer.reset();
 
 		alreadyReachedFakePoint = Math.random() > 0.5;
@@ -84,6 +83,8 @@ public class DribblingKickState extends AAttackerRoleState<DribbleKickSkill>
 				.scaleTo(getRole().getBot().getCenter2DribblerDist()));
 		Optional<IRatedTarget> bestGoalKick = getRatedTarget(botStateKickerPos);
 
+		skill.setMoveBackwards(true);
+
 		boolean canScoreGoalHere =
 				bestGoalKick.isPresent() && canGoalBeScored(bestGoalKick.get(), canShootClearanceTimer);
 		var action = getRole().getAction();
@@ -106,7 +107,9 @@ public class DribblingKickState extends AAttackerRoleState<DribbleKickSkill>
 				List<IObstacle> obstacles = new ArrayList<>();
 				obstacles.add(obstacleShape);
 
-				skill.getMoveCon().setCustomObstacles(obstacles);
+				skill.setMoveCon(skill.getMoveCon()
+						.withObstacleAvoidanceMode(EObstacleAvoidanceMode.SAFE)
+						.withCustomObstacles(obstacles));
 
 				bestGoalKick.ifPresent(e -> doDribbleSkill(botStateKickerPos, e, canScoreGoalHere));
 				handleDribblingViolations(canScoreGoalHere, action);
@@ -129,8 +132,10 @@ public class DribblingKickState extends AAttackerRoleState<DribbleKickSkill>
 			IVector2 fakePoint = action.getDribbleToPos().getDribbleKickData().getFakePoint();
 			skill.setDestination(fakePoint);
 			getRole().getShapes(EAiShapesLayer.OFFENSE_FINISHER)
-					.add(new DrawableAnnotation(getRole().getPos(), "move to fake",
-							Vector2.fromY(390)).setColor(Color.ORANGE));
+					.add(new DrawableAnnotation(
+							getRole().getPos(), "move to fake",
+							Vector2.fromY(390)
+					).setColor(Color.ORANGE));
 			if (getRole().getPos().distanceTo(fakePoint) < Geometry.getBotRadius() * 2)
 			{
 				alreadyReachedFakePoint = true;
@@ -140,8 +145,10 @@ public class DribblingKickState extends AAttackerRoleState<DribbleKickSkill>
 			// do the real thing
 			skill.setDestination(action.getDribbleToPos().getDribbleToDestination());
 			getRole().getShapes(EAiShapesLayer.OFFENSE_FINISHER)
-					.add(new DrawableAnnotation(getRole().getPos(), "move to real",
-							Vector2.fromY(390)).setColor(Color.ORANGE));
+					.add(new DrawableAnnotation(
+							getRole().getPos(), "move to real",
+							Vector2.fromY(390)
+					).setColor(Color.ORANGE));
 		}
 	}
 
@@ -151,20 +158,28 @@ public class DribblingKickState extends AAttackerRoleState<DribbleKickSkill>
 		boolean isUnavoidable = action.getDribbleToPos().getDribbleKickData().isViolationUnavoidable();
 		boolean isImminent = action.getDribbleToPos().getDribbleKickData().isViolationImminent();
 		getRole().getShapes(EAiShapesLayer.OFFENSE_FINISHER)
-				.add(new DrawableAnnotation(getRole().getPos(), "Is unavoidable: " + isUnavoidable,
-						Vector2.fromY(250)).setColor(Color.ORANGE));
+				.add(new DrawableAnnotation(
+						getRole().getPos(), "Is unavoidable: " + isUnavoidable,
+						Vector2.fromY(250)
+				).setColor(Color.ORANGE));
 		getRole().getShapes(EAiShapesLayer.OFFENSE_FINISHER)
-				.add(new DrawableAnnotation(getRole().getPos(), "Is imminent: " + isImminent,
-						Vector2.fromY(300)).setColor(Color.ORANGE));
+				.add(new DrawableAnnotation(
+						getRole().getPos(), "Is imminent: " + isImminent,
+						Vector2.fromY(300)
+				).setColor(Color.ORANGE));
 		lastValidDribbleToPos = action.getDribbleToPos();
 		skill.setKickIfTargetOrientationReached(canScoreGoalHere || isUnavoidable);
 		getRole().getShapes(EAiShapesLayer.OFFENSE_FINISHER)
-				.add(new DrawableAnnotation(getRole().getPos(), "can score now: " + canScoreGoalHere,
-						Vector2.fromY(340)).setColor(Color.ORANGE));
+				.add(new DrawableAnnotation(
+						getRole().getPos(), "can score now: " + canScoreGoalHere,
+						Vector2.fromY(340)
+				).setColor(Color.ORANGE));
 		if (isImminent)
 		{
-			var lookLine = Lines.halfLineFromDirection(getRole().getPos(),
-					Vector2.fromAngle(getRole().getBot().getOrientation()));
+			var lookLine = Lines.halfLineFromDirection(
+					getRole().getPos(),
+					Vector2.fromAngle(getRole().getBot().getOrientation())
+			);
 			if (Geometry.getGoalTheir().getGoalLine().intersect(lookLine).isPresent())
 			{
 
@@ -184,6 +199,7 @@ public class DribblingKickState extends AAttackerRoleState<DribbleKickSkill>
 	private Optional<IRatedTarget> getRatedTarget(IVector2 botStateKickerPos)
 	{
 		var rater = AngleRangeRater.forGoal(Geometry.getGoalTheir());
+		rater.setKeeperID(getRole().getAiFrame().getKeeperOpponentId());
 		rater.setTimeToKick(0.1); // We should already look towards the goal, but we cannot kick immediately.
 		rater.setObstacles(
 				Stream.concat(
@@ -200,9 +216,11 @@ public class DribblingKickState extends AAttackerRoleState<DribbleKickSkill>
 	private void doDribbleSkill(IVector2 botStateKickerPos, IRatedTarget bestGoalKick, boolean canScoreGoalHere)
 	{
 		IVector2 targetArrowDir = bestGoalKick.getTarget().subtractNew(botStateKickerPos);
-		getRole().getShapes(EAiShapesLayer.OFFENSE_DRIBBLE)
-				.add(new DrawableArrow(botStateKickerPos, targetArrowDir,
-						Color.PINK));
+		getRole().getShapes(EAiShapesLayer.OFFENSE_FINISHER)
+				.add(new DrawableArrow(
+						botStateKickerPos, targetArrowDir,
+						Color.PINK
+				));
 		if (canScoreGoalHere)
 		{
 			skill.setTarget(bestGoalKick.getTarget());
@@ -214,7 +232,7 @@ public class DribblingKickState extends AAttackerRoleState<DribbleKickSkill>
 	{
 		// move outwards first
 		List<IObstacle> obstacles = new ArrayList<>();
-		skill.getMoveCon().setCustomObstacles(obstacles);
+		skill.setMoveCon(skill.getMoveCon().withCustomObstacles(obstacles));
 
 		isMovingOutside = true;
 		IVector2 nearestPointOnShapeBorder = shape.stepOnShape(shape.getStepPositionOnShape(getRole().getPos()));

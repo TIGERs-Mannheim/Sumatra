@@ -1,11 +1,8 @@
-/*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.wp.data;
 
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import lombok.AllArgsConstructor;
 import lombok.Value;
 
@@ -23,10 +20,7 @@ public class BallContact
 	long visionStart;
 	long visionEnd;
 
-	@Configurable(
-			comment = "Time horizon [s] that is used to check if the Bot had ball contact",
-			defValue = "0.2"
-	)
+	@Configurable(comment = "Time horizon that is used to check if the Bot had ball contact",	defValue = "0.2", unit = EConfigUnit.TIME_S)
 	private static double recentContactHorizon = 0.2;
 
 	static

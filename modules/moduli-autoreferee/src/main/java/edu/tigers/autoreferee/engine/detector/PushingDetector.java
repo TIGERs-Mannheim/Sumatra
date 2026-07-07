@@ -1,6 +1,7 @@
 package edu.tigers.autoreferee.engine.detector;
 
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.autoreferee.EAutoRefShapesLayer;
 import edu.tigers.autoreferee.generic.BotPosition;
 import edu.tigers.sumatra.drawable.DrawableArrow;
@@ -15,10 +16,10 @@ import edu.tigers.sumatra.referee.data.EGameState;
 import edu.tigers.sumatra.referee.gameevent.BotPushedBot;
 import edu.tigers.sumatra.referee.gameevent.IGameEvent;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
-import org.apache.commons.lang.builder.EqualsBuilder;
-import org.apache.commons.lang.builder.HashCodeBuilder;
-import org.apache.commons.lang.builder.ToStringBuilder;
-import org.apache.commons.lang.builder.ToStringStyle;
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
+import org.apache.commons.lang3.builder.ToStringBuilder;
+import org.apache.commons.lang3.builder.ToStringStyle;
 
 import java.awt.Color;
 import java.util.Collection;
@@ -35,16 +36,16 @@ import java.util.stream.Collectors;
  */
 public class PushingDetector extends AGameEventDetector
 {
-	@Configurable(defValue = "10.0", comment = "Extra margin [mm] to allow between two bots such that they are detected as touching")
+	@Configurable(defValue = "10.0", comment = "Extra margin to allow between two bots such that they are detected as touching", unit = EConfigUnit.DISTANCE_MM)
 	private static double botExtraMargin = 10;
 
-	@Configurable(defValue = "200.0", comment = "Maximum allowed distance [mm] that a bot is allowed to push an opponent bot")
+	@Configurable(defValue = "200.0", comment = "Maximum allowed distance that a bot is allowed to push an opponent bot", unit = EConfigUnit.DISTANCE_MM)
 	private static double maxAllowedPushDistance = 200;
 
-	@Configurable(defValue = "0.7", comment = "Maximum absolute angle [rad] between pushed direction and attacker to opponent direction for counting violation")
+	@Configurable(defValue = "0.7", comment = "Maximum absolute angle between pushed direction and attacker to opponent direction for counting violation", unit = EConfigUnit.ANGLE_RAD)
 	private static double maxPushAngle = 0.7;
 
-	@Configurable(defValue = "2.0", comment = "Cool down time [s] until the same robot pair will not be redetected")
+	@Configurable(defValue = "2.0", comment = "Cool down time until the same robot pair will not be redetected", unit = EConfigUnit.TIME_S)
 	private static double detectionCoolDownTime = 2.0;
 
 	private Set<RobotPair> firstRobotPairs = new HashSet<>();

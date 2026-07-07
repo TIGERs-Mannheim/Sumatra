@@ -4,7 +4,8 @@ plugins {
 
 jib {
     from {
-        image = "ghcr.io/graalvm/jdk-community@sha256:57e5c4cf8536dac4346611691c31ea4828f3ff7bbb0d3695902b234f69ed99b5"
+        // JDK 25
+        image = "ghcr.io/graalvm/jdk-community@sha256:a3bdba6a313cddc89f7e1b2649140e898c68ba356994a9c317b96b01bcb9f982"
         platforms {
             platform {
                 architecture = 'amd64'
@@ -22,8 +23,5 @@ jib {
             password = System.getenv("CI_REGISTRY_PASSWORD") ?: ""
         }
     }
-    container.jvmFlags = [
-            '-Djava.net.preferIPv4Stack=true',
-            '-Dsun.java2d.d3d=false',
-    ]
+    container.jvmFlags = edu.tigers.sumatra.gradle.JvmArgs.ALL_JVM_ARGS
 }

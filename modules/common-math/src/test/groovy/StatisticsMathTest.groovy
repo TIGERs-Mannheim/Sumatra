@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
-
 
 import edu.tigers.sumatra.math.StatisticsMath
 import edu.tigers.sumatra.math.SumatraMath

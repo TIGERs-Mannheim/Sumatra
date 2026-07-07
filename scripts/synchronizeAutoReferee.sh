@@ -1,9 +1,5 @@
 #!/usr/bin/env bash
 
-#
-# Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
-#
-
 set -euo pipefail
 
 PROJECTS="

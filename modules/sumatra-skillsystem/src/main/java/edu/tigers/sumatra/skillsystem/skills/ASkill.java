@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.skillsystem.skills;
 
 import edu.tigers.sumatra.ai.data.BotAiInformation;
@@ -11,7 +7,6 @@ import edu.tigers.sumatra.botmanager.bots.ABot;
 import edu.tigers.sumatra.botmanager.bots.TigerBot;
 import edu.tigers.sumatra.botmanager.botskills.data.EKickerMode;
 import edu.tigers.sumatra.botmanager.data.MatchCommand;
-import edu.tigers.sumatra.botmanager.data.MultimediaControl;
 import edu.tigers.sumatra.drawable.ShapeMap;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.statemachine.AState;
@@ -20,7 +15,6 @@ import edu.tigers.sumatra.statemachine.IState;
 import edu.tigers.sumatra.statemachine.IStateMachine;
 import edu.tigers.sumatra.statemachine.StateMachine;
 import edu.tigers.sumatra.time.AverageTimeMeasure;
-import edu.tigers.sumatra.wp.data.WorldFrameWrapper;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
@@ -135,16 +129,16 @@ public abstract class ASkill implements ISkill
 
 
 	@Override
-	public void update(final WorldFrameWrapper wfw, final ABot bot, final ShapeMap shapeMap, MatchCommand matchCommand)
+	public void update(SkillInput input)
 	{
-		this.bot = bot;
-		this.shapeMap = shapeMap;
-		this.matchCommand = matchCommand;
+		this.bot = input.currentBot();
+		this.shapeMap = input.shapeMap();
+		matchCommand.setMultimediaControl(input.multimediaControl());
 	}
 
 
 	@Override
-	public final void calcActions(final long timestamp)
+	public final void calcActions()
 	{
 		averageTimeMeasure.resetMeasure();
 		averageTimeMeasure.startMeasure();
@@ -153,6 +147,8 @@ public abstract class ASkill implements ISkill
 		doCalcActionsAfterStateUpdate();
 		initialized = true;
 		averageTimeMeasure.stopMeasure();
+
+		bot.sendMatchCommand(matchCommand);
 	}
 
 
@@ -235,16 +231,6 @@ public abstract class ASkill implements ISkill
 	}
 
 
-	/**
-	 * @param control the mediaControl
-	 */
-	@Override
-	public final void setMultimediaControl(final MultimediaControl control)
-	{
-		matchCommand.setMultimediaControl(control);
-	}
-
-
 	@Override
 	public BotAiInformation getBotAiInfo()
 	{
@@ -257,7 +243,6 @@ public abstract class ASkill implements ISkill
 
 		var fb = bot.getLastReceivedBotFeedback();
 
-		aiInfo.setBallContact(fb.isBarrierInterrupted() ? "BARRIER" : "NO");
 		aiInfo.setBattery(fb.getBatteryLevelRelative());
 		aiInfo.setVersion(bot.getVersionString());
 		aiInfo.setHwId(fb.getHardwareId());
@@ -270,7 +255,7 @@ public abstract class ASkill implements ISkill
 
 		aiInfo.setVelocityLimit(getMatchCtrl().getSkill().getMoveConstraints().getVelMax());
 		aiInfo.setAngularVelocityLimit(getMatchCtrl().getSkill().getMoveConstraints().getVelMaxW());
-		aiInfo.setAccelerationLimit(getMatchCtrl().getSkill().getMoveConstraints().getAccMaxDerived());
+		aiInfo.setAccelerationLimit(getMatchCtrl().getSkill().getMoveConstraints().getAccMax());
 		aiInfo.setDribblerSpeed(getMatchCtrl().getSkill().getDribbleSpeed());
 		aiInfo.setKickerSpeed(
 				getMatchCtrl().getSkill().getMode() == EKickerMode.DISARM ? -1 : getMatchCtrl().getSkill().getKickSpeed());
@@ -282,7 +267,6 @@ public abstract class ASkill implements ISkill
 		aiInfo.setMaxProcTime(averageTimeMeasure.getMaxTime());
 		aiInfo.setAvgProcTime(averageTimeMeasure.getAverageTime());
 		aiInfo.setDribbleForce(getMatchCtrl().getSkill().getKickerDribbler().getDribblerForce());
-		aiInfo.setDribbleTraction(fb.getDribbleTraction());
 		aiInfo.setBallObservation(fb.getBallObservationState());
 		aiInfo.setLastKick(fb.getLastKick());
 
@@ -300,10 +284,5 @@ public abstract class ASkill implements ISkill
 	 */
 	private static class DefaultState extends AState
 	{
-	}
-
-	public Map<IEvent, Map<IState, IState>> getStateGraph()
-	{
-		return stateMachine.getTransitions();
 	}
 }

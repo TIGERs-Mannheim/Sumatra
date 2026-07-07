@@ -1,15 +1,9 @@
-/*
- * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra.skillsystem.skills;
 
-import com.github.g3force.configurable.Configurable;
-import edu.tigers.sumatra.math.AngleMath;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.skillsystem.skills.util.KickParams;
 import edu.tigers.sumatra.wp.data.DynamicPosition;
 import edu.tigers.sumatra.wp.data.ITrackedObject;
-import lombok.Setter;
 
 
 /**
@@ -17,18 +11,6 @@ import lombok.Setter;
  */
 public final class MoveToSkill extends AMoveToSkill
 {
-	@Configurable(defValue = "10.0", comment = "Position tolerance for skill state")
-	private static double positionTolerance = 10;
-
-	@Configurable(defValue = "0.1", comment = "Orientation tolerance for skill state")
-	private static double orientationTolerance = 0.1;
-
-	@Setter
-	private double minTimeAtDestForSuccess = 0;
-
-	private long tSuccess = 0;
-
-
 	/**
 	 * Create a new moveTo skill. For historical reasons, this is a static constructor.
 	 * The default constructor can also be used instead.
@@ -42,52 +24,16 @@ public final class MoveToSkill extends AMoveToSkill
 
 
 	@Override
-	public void doUpdate()
-	{
-		super.doUpdate();
-		updateSkillState();
-	}
-
-
-	private void updateSkillState()
-	{
-		if (!isInitialized()
-				|| (getDestination().distanceTo(getPos()) > positionTolerance)
-				|| (AngleMath.diffAbs(getTargetAngle(), getAngle()) > orientationTolerance))
-		{
-			tSuccess = 0;
-			setSkillState(ESkillState.IN_PROGRESS);
-			return;
-		}
-
-		if (tSuccess == 0)
-		{
-			tSuccess = getWorldFrame().getTimestamp();
-		}
-
-		if ((getWorldFrame().getTimestamp() - tSuccess) / 1e9 >= minTimeAtDestForSuccess)
-		{
-			setSkillState(ESkillState.SUCCESS);
-		} else
-		{
-			setSkillState(ESkillState.IN_PROGRESS);
-		}
-	}
-
-
-	@Override
 	public void updateDestination(final IVector2 destination)
 	{
 		super.updateDestination(destination);
-		updateSkillState();
 	}
 
 
 	@Override
-	public void updateTargetAngle(final double angle)
+	public void updateTargetAngle(final Double angle)
 	{
 		super.updateTargetAngle(angle);
-		updateSkillState();
 	}
 
 
@@ -95,7 +41,6 @@ public final class MoveToSkill extends AMoveToSkill
 	public void updateLookAtTarget(final DynamicPosition lookAtTarget)
 	{
 		super.updateLookAtTarget(lookAtTarget);
-		updateSkillState();
 	}
 
 
@@ -103,7 +48,6 @@ public final class MoveToSkill extends AMoveToSkill
 	public void updateLookAtTarget(final ITrackedObject object)
 	{
 		super.updateLookAtTarget(object);
-		updateSkillState();
 	}
 
 
@@ -111,52 +55,62 @@ public final class MoveToSkill extends AMoveToSkill
 	public void updateLookAtTarget(final IVector2 lookAtTarget)
 	{
 		super.updateLookAtTarget(lookAtTarget);
-		updateSkillState();
 	}
 
 
 	@Override
-	public IVector2 getDestination()
+	public void updateTargetTime(final Double targetTime)
 	{
-		return super.getDestination();
+		super.updateTargetTime(targetTime);
 	}
 
 
 	@Override
-	public Double getTargetAngle()
+	public void updateUseComeToAStopIfFaster(boolean useComeToAStopIfFaster)
 	{
-		return super.getTargetAngle();
+		super.updateUseComeToAStopIfFaster(useComeToAStopIfFaster);
 	}
 
 
 	public void setVelMax(final Double maxVel)
 	{
-		getMoveConstraints().setVelMax(maxVel);
+		if (maxVel != null)
+		{
+			setMoveConstraints(getMoveConstraints().withVelMax(maxVel));
+		}
 	}
 
 
 	public void setAccMax(final Double maxAcc)
 	{
-		getMoveConstraints().setAccMax(maxAcc);
+		if (maxAcc != null)
+		{
+			setMoveConstraints(getMoveConstraints().withAccMax(maxAcc));
+		}
 	}
 
 
-	public void setVelMaxW(final double maxVelW)
+	public void setVelMaxW(final Double maxVelW)
 	{
-		getMoveConstraints().setVelMaxW(maxVelW);
+		if (maxVelW != null)
+		{
+			setMoveConstraints(getMoveConstraints().withVelMaxW(maxVelW));
+		}
 	}
 
 
-	public void setAccMaxW(final double maxAccW)
+	public void setAccMaxW(final Double maxAccW)
 	{
-		getMoveConstraints().setAccMaxW(maxAccW);
+		if (maxAccW != null)
+		{
+			setMoveConstraints(getMoveConstraints().withAccMaxW(maxAccW));
+		}
 	}
 
 
 	@Override
 	public void setKickParams(final KickParams kickParams)
 	{
-		// allow setting kick params from outside directly
 		super.setKickParams(kickParams);
 	}
 }

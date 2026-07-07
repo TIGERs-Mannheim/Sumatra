@@ -1,10 +1,8 @@
-/*
- * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra.vision.kick.validators;
 
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.math.line.IHalfLine;
 import edu.tigers.sumatra.math.line.Lines;
 import edu.tigers.sumatra.math.vector.IVector2;
@@ -22,10 +20,10 @@ import java.util.List;
  */
 public class InFrontValidator implements IKickValidator
 {
-	@Configurable(defValue = "70.0", comment = "Minimum distance from bot to lead point on orientation line")
+	@Configurable(defValue = "70.0", comment = "Minimum distance from bot to lead point on orientation line", unit = EConfigUnit.DISTANCE_MM)
 	private static double minDistanceInFront = 70.0;
 
-	@Configurable(defValue = "40.0", comment = "Minimum distance from orientation line to ball position (distance is increased with distance from bot)")
+	@Configurable(defValue = "40.0", comment = "Minimum distance from orientation line to ball position (distance is increased with distance from bot)", unit = EConfigUnit.DISTANCE_MM)
 	private static double minDistanceOrthogonal = 40.0;
 
 	static

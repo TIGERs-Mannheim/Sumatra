@@ -1,6 +1,3 @@
-/*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra.ball.trajectory.flat;
 
 import edu.tigers.sumatra.ball.BallParameters;
@@ -16,7 +13,7 @@ import edu.tigers.sumatra.math.vector.Vector3f;
 import edu.tigers.sumatra.planarcurve.PlanarCurve;
 import edu.tigers.sumatra.planarcurve.PlanarCurveSegment;
 import lombok.Getter;
-import org.apache.commons.lang.Validate;
+import org.apache.commons.lang3.Validate;
 
 import java.util.ArrayList;
 import java.util.List;

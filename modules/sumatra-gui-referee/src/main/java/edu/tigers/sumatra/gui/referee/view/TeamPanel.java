@@ -1,6 +1,3 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra.gui.referee.view;
 
 import edu.tigers.sumatra.ids.BotID;
@@ -17,6 +14,7 @@ import javax.swing.JLabel;
 import javax.swing.JSpinner;
 import javax.swing.JTextField;
 import javax.swing.SpinnerNumberModel;
+import java.io.Serial;
 import java.util.concurrent.TimeUnit;
 
 
@@ -25,6 +23,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class TeamPanel extends ARefBoxRemoteControlGeneratorPanel
 {
+	@Serial
 	private static final long serialVersionUID = -4100647452685537602L;
 
 	private final JButton timeoutBtn;

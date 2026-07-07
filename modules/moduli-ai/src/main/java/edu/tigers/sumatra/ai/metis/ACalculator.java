@@ -1,6 +1,3 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra.ai.metis;
 
 import edu.tigers.sumatra.ai.BaseAiFrame;
@@ -60,7 +57,7 @@ public abstract class ACalculator
 				if ((lastException == null) || ((err.getMessage() != null)
 						&& !err.getMessage().equals(lastException.getMessage())))
 				{
-					log.error("Error in calculator " + getClass().getSimpleName(), err);
+					log.error("Error in calculator {}", getClass().getSimpleName(), err);
 				}
 				lastException = err;
 				reset();

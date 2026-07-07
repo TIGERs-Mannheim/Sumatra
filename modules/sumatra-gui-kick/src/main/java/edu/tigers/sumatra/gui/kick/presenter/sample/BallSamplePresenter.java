@@ -1,6 +1,3 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra.gui.kick.presenter.sample;
 
 import edu.tigers.sumatra.math.StatisticsMath;
@@ -24,10 +21,18 @@ public class BallSamplePresenter extends ASamplePresenter<BallModelSample>
 
 	public BallSamplePresenter(List<BallModelSample> samples, EBallModelIdentType type)
 	{
+		super(false);
 		this.type = type;
 
 		BallTableModel ballTableModel = new BallTableModel(samples);
 		init(samples, ballTableModel);
+	}
+
+
+	@Override
+	protected boolean isFilterOutBadSamplesImplemented()
+	{
+		return true;
 	}
 
 

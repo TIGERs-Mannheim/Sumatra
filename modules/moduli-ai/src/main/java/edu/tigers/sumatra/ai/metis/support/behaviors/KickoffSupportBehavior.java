@@ -1,10 +1,7 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.metis.support.behaviors;
 
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
 import edu.tigers.sumatra.ai.metis.kicking.EBallReceiveMode;
 import edu.tigers.sumatra.ai.metis.kicking.PassFactory;
@@ -28,15 +25,15 @@ import java.util.function.Supplier;
 @RequiredArgsConstructor
 public class KickoffSupportBehavior extends ASupportBehavior
 {
-	@Configurable(comment = "Defines if this behavior is enabled", defValue = "true")
+	@Configurable(comment = "Defines if this behavior is enabled", defValue = "true", unit = EConfigUnit.BOOLEAN)
 	private static boolean enabled = true;
-	@Configurable(comment = "How many possible targets should be considered by each bot", defValue = "4")
+	@Configurable(comment = "How many possible targets should be considered by each bot", defValue = "4", unit = EConfigUnit.COUNT)
 	private static int nClosestPoints = 4;
 
-	@Configurable(comment = "min distance to consider a possible target", defValue = "0.0")
+	@Configurable(comment = "min distance to consider a possible target", defValue = "0.0", unit = EConfigUnit.DISTANCE_MM)
 	private static double minDistanceToPoint = 0.0;
 
-	@Configurable(comment = "Min value for pass score", defValue = "0.25")
+	@Configurable(comment = "Min value for pass score", defValue = "0.25", unit = EConfigUnit.PERCENTAGE)
 	private static double passScoreThreshold = 0.25;
 
 	private final PassFactory passFactory = new PassFactory();
@@ -54,7 +51,9 @@ public class KickoffSupportBehavior extends ASupportBehavior
 		}
 
 		passFactory.update(getWFrame());
-		ratedPassFactory.update(getWFrame().getOpponentBots().values(), getWFrame().getOpponentBots().values(), Collections.emptyList());
+		ratedPassFactory.update(getWFrame().getOpponentBots().values(), getWFrame().getOpponentBots().values(), Collections.emptyList(),
+				getAiFrame().getKeeperOpponentId()
+		);
 
 		return possibleSupporterKickoffPositions.get().stream()
 				.sorted(Comparator.comparingDouble(point -> point.distanceToSqr(getWFrame().getBot(botID).getPos())))

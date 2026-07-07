@@ -1,6 +1,3 @@
-/*
- * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra.ai.pandora.roles.move;
 
 import edu.tigers.sumatra.ai.pandora.roles.ARole;
@@ -8,51 +5,55 @@ import edu.tigers.sumatra.ai.pandora.roles.ERole;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.VectorMath;
 import edu.tigers.sumatra.pathfinder.MovementCon;
-import edu.tigers.sumatra.skillsystem.skills.ESkillState;
+import edu.tigers.sumatra.skillsystem.data.RobotTarget;
 import edu.tigers.sumatra.skillsystem.skills.IdleSkill;
 import edu.tigers.sumatra.skillsystem.skills.MoveToSkill;
 import edu.tigers.sumatra.skillsystem.skills.util.KickParams;
-import edu.tigers.sumatra.statemachine.AState;
+import edu.tigers.sumatra.skillsystem.skills.util.RobotTargetChecker;
 import edu.tigers.sumatra.wp.data.DynamicPosition;
 import edu.tigers.sumatra.wp.data.ITrackedObject;
+import lombok.Getter;
 import lombok.Setter;
 
 
 /**
- * This is a generic move role. It is a wrapper around the {@link MoveToSkill} and provides methods to set
- * the move targets.
+ * This is a generic move role. It is a wrapper around the {@link MoveToSkill}
+ * and provides methods to set the move targets.
  */
 public class MoveRole extends ARole
 {
-	private final MoveToSkill skill;
+	private final RobotTargetChecker robotTargetChecker = new RobotTargetChecker();
+
 	@Setter
-	private DestinationAdjuster destinationAdjuster = (aiFrame, destination, botID) -> destination;
+	private DestinationAdjuster destinationAdjuster = (_, destination, _) -> destination;
+
+	private boolean disableMotorsWhenDestReached;
+	private boolean motorsEnabled = true;
+
+	private RobotTarget robotTarget = new RobotTarget();
+	@Getter
+	@Setter
+	private MovementCon moveCon = MovementCon.DEFAULT;
+	@Setter
+	private KickParams kickParams;
+	@Setter
+	private Double velMax;
+	@Setter
+	private Double accMax;
+	@Setter
+	private Double velMaxW;
+	@Setter
+	private Double accMaxW;
 
 
-	/**
-	 * Create a simple move role.
-	 */
 	public MoveRole()
 	{
 		super(ERole.MOVE);
-		setInitialState(new AState());
-		skill = MoveToSkill.createMoveToSkill();
-		setNewSkill(skill);
-	}
-
-
-	/**
-	 * @return the moveCon of the underlying skill
-	 */
-	public final MovementCon getMoveCon()
-	{
-		return skill.getMoveCon();
-	}
-
-
-	public final void setKickParams(KickParams kickParams)
-	{
-		skill.setKickParams(kickParams);
+		var moveState = new DefaultState();
+		var idleState = new RoleState<>(IdleSkill::new);
+		setInitialState(moveState);
+		moveState.addTransition(this::shouldIdle, idleState);
+		idleState.addTransition(() -> !shouldIdle(), moveState);
 	}
 
 
@@ -61,14 +62,24 @@ public class MoveRole extends ARole
 	 */
 	public final boolean isDestinationReached()
 	{
-		return skill.getDestination() == null
-				|| VectorMath.distancePP(getPos(), skill.getDestination()) < 70;
+		var destination = robotTarget.getDestination(getWFrame(), getBotID());
+		return destination == null || VectorMath.distancePP(getPos(), destination) < 70;
 	}
 
 
-	public final boolean isSkillStateSuccess()
+	public boolean isTargetReached()
 	{
-		return skill.getSkillState() == ESkillState.SUCCESS;
+		return robotTargetChecker.isTargetReached(
+				getWFrame(),
+				getBotID(),
+				robotTarget
+		);
+	}
+
+
+	public void setMinTimeAtDest(double seconds)
+	{
+		robotTargetChecker.setMinTimeAtDest(seconds);
 	}
 
 
@@ -78,7 +89,8 @@ public class MoveRole extends ARole
 	public void updateDestination(final IVector2 destination)
 	{
 		activateMotors();
-		skill.updateDestination(destinationAdjuster.adjustDestination(getAiFrame(), destination, getBotID()));
+		robotTarget = robotTarget.withDestination(
+				destinationAdjuster.adjustDestination(getAiFrame(), destination, getBotID()));
 	}
 
 
@@ -88,7 +100,7 @@ public class MoveRole extends ARole
 	public void updateTargetAngle(final double angle)
 	{
 		activateMotors();
-		skill.updateTargetAngle(angle);
+		robotTarget = robotTarget.withTargetAngle(angle);
 	}
 
 
@@ -100,7 +112,7 @@ public class MoveRole extends ARole
 	public void updateLookAtTarget(final DynamicPosition lookAtTarget)
 	{
 		activateMotors();
-		skill.updateLookAtTarget(lookAtTarget);
+		robotTarget = robotTarget.withLookAtTarget(lookAtTarget);
 	}
 
 
@@ -126,47 +138,52 @@ public class MoveRole extends ARole
 
 	public final IVector2 getDestination()
 	{
-		return skill.getDestination();
+		return robotTarget.getDestination(getWFrame(), getBotID());
 	}
 
 
-	public void setVelMax(final double maxVel)
-	{
-		skill.setVelMax(maxVel);
-	}
-
-
-	public void setAccMax(final double maxAcc)
-	{
-		skill.setAccMax(maxAcc);
-	}
-
-	public void setVelMaxW(final double maxVelW)
-	{
-		skill.setVelMaxW(maxVelW);
-	}
-
-
-	public void setAccMaxW(final double maxAccW)
-	{
-		skill.setAccMaxW(maxAccW);
-	}
-
-
+	/**
+	 * Disable motors until a new target is set.
+	 * Note: Even if the robot is manually moved, it will not move back until
+	 * the target is set again.
+	 */
 	public void disableMotors()
 	{
-		if (getCurrentSkill().getClass() != IdleSkill.class)
-		{
-			setNewSkill(new IdleSkill());
-		}
+		motorsEnabled = false;
 	}
 
 
 	private void activateMotors()
 	{
-		if (getCurrentSkill() != skill)
+		motorsEnabled = true;
+	}
+
+
+	public void disableMotorsWhenDestReached()
+	{
+		disableMotorsWhenDestReached = true;
+	}
+
+
+	private boolean shouldIdle()
+	{
+		return !motorsEnabled || (disableMotorsWhenDestReached && isTargetReached());
+	}
+
+
+	private class DefaultState extends MoveState
+	{
+		@Override
+		protected void onUpdate()
 		{
-			setNewSkill(skill);
+			skill.setRobotTarget(robotTarget);
+			skill.setMoveCon(moveCon);
+			skill.setKickParams(kickParams);
+			skill.setVelMax(velMax);
+			skill.setAccMax(accMax);
+			skill.setVelMaxW(velMaxW);
+			skill.setAccMaxW(accMaxW);
+			super.onUpdate();
 		}
 	}
 }

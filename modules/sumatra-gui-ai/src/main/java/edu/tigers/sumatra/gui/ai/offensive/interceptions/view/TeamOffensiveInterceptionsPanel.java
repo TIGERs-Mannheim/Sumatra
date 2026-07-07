@@ -1,11 +1,8 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.gui.ai.offensive.interceptions.view;
 
 import edu.tigers.sumatra.ai.metis.ballinterception.BallInterceptionInformation;
 import edu.tigers.sumatra.ids.BotID;
+import lombok.Setter;
 
 import javax.swing.BorderFactory;
 import javax.swing.JComboBox;
@@ -25,6 +22,9 @@ public class TeamOffensiveInterceptionsPanel extends JPanel
 
 	private transient List<BotID> bots = new ArrayList<>();
 
+	@Setter
+	private boolean enableAutomaticSelectionOfInterceptingBotId = true;
+
 
 	TeamOffensiveInterceptionsPanel()
 	{
@@ -38,6 +38,15 @@ public class TeamOffensiveInterceptionsPanel extends JPanel
 
 	public void setBallInterceptionsInformation(Map<BotID, BallInterceptionInformation> ballInterceptionsInformation)
 	{
+		if (enableAutomaticSelectionOfInterceptingBotId)
+		{
+			ballInterceptionsInformation.entrySet().stream()
+					.filter(e -> bots.contains(e.getKey()))
+					.filter(e -> e.getValue().getInitialIterations().stream()
+							.anyMatch(it -> it.getIncludedSlackTimeBonus() > 0))
+					.findFirst()
+					.ifPresent(e -> botBox.setSelectedItem(e.getKey()));
+		}
 		canvas.setInterceptionInformation(ballInterceptionsInformation);
 		canvas.repaint();
 	}
@@ -48,11 +57,11 @@ public class TeamOffensiveInterceptionsPanel extends JPanel
 		if (bots.stream().anyMatch(e -> !this.bots.contains(e)))
 		{
 			botBox.removeAllItems();
-			bots.forEach(e -> botBox.addItem(e));
+			bots.stream().sorted().forEach(e -> botBox.addItem(e));
 			this.bots = new ArrayList<>(bots);
 			if (!bots.isEmpty())
 			{
-				canvas.setSelectedBot(this.bots.get(0));
+				canvas.setSelectedBot(this.bots.getFirst());
 				canvas.repaint();
 			}
 		}

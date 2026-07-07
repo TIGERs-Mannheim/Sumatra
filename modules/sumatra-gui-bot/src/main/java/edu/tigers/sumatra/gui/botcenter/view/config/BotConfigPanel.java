@@ -1,6 +1,3 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra.gui.botcenter.view.config;
 
 import edu.tigers.sumatra.botmanager.configs.ConfigFile;
@@ -13,6 +10,7 @@ import javax.swing.JPanel;
 import javax.swing.JTabbedPane;
 import javax.swing.JTextField;
 import java.awt.BorderLayout;
+import java.io.Serial;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -26,6 +24,7 @@ import java.util.stream.IntStream;
  */
 public class BotConfigPanel extends JPanel
 {
+	@Serial
 	private static final long serialVersionUID = 7489653214102700549L;
 	private final List<IBotConfigPanelObserver> observers = new CopyOnWriteArrayList<>();
 	private final List<IBotConfigObserver> configObservers = new CopyOnWriteArrayList<>();
@@ -159,6 +158,7 @@ public class BotConfigPanel extends JPanel
 
 	private class ConfigFilePanel extends JPanel
 	{
+		@Serial
 		private static final long serialVersionUID = 3052423100929562898L;
 		private final List<JTextField> fields = new ArrayList<>();
 		private final List<JLabel> savedFields = new ArrayList<>();

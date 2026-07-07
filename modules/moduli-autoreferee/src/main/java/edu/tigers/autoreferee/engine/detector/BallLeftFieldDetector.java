@@ -1,14 +1,7 @@
-/*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.autoreferee.engine.detector;
 
-import java.util.List;
-import java.util.Optional;
-import java.util.Random;
-
 import com.github.g3force.configurable.Configurable;
-
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.autoreferee.generic.BotPosition;
 import edu.tigers.sumatra.geometry.NGeometry;
 import edu.tigers.sumatra.ids.ETeamColor;
@@ -21,13 +14,17 @@ import edu.tigers.sumatra.referee.gameevent.IGameEvent;
 import edu.tigers.sumatra.wp.data.BallLeftFieldPosition;
 import edu.tigers.sumatra.wp.data.TimedPosition;
 
+import java.util.List;
+import java.util.Optional;
+import java.util.Random;
+
 
 /**
  * This rule detects when the ball leaves the field. This rule also handles icing (aimless kick).
  */
 public class BallLeftFieldDetector extends AGameEventDetector
 {
-	@Configurable(comment = "[mm] A goalline off is only considered icing if the bot was located more than this value behind the kickoff line", defValue = "200.0")
+	@Configurable(comment = "A goalline off is only considered icing if the bot was located more than this value behind the kickoff line", defValue = "200.0", unit = EConfigUnit.DISTANCE_MM)
 	private static double icingKickoffLineThreshold = 200.0;
 	
 	

@@ -1,10 +1,7 @@
-/*
- * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.metis.offense.action.moves;
 
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.ai.metis.kicking.Kick;
 import edu.tigers.sumatra.ai.metis.offense.OffensiveConstants;
 import edu.tigers.sumatra.ai.metis.offense.action.EActionViability;
@@ -27,10 +24,10 @@ import java.util.function.Supplier;
 @RequiredArgsConstructor
 public class GoalKickActionMove extends AOffensiveActionMove
 {
-	@Configurable(comment = "This is the area around their penalty area where the ball is shot directly", defValue = "50.0")
+	@Configurable(comment = "This is the area around their penalty area where the ball is shot directly", defValue = "50.0", unit = EConfigUnit.DISTANCE_MM)
 	private static double defaultMarginAroundPenaltyAreaForDirectShot = 50.0;
 
-	@Configurable(defValue = "0.1")
+	@Configurable(defValue = "0.1", unit = EConfigUnit.PERCENTAGE)
 	private static double minGoalChanceForPartiallyViability = 0.1;
 
 	private final Supplier<Map<BotID, GoalKick>> bestGoalKickTargets;

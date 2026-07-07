@@ -1,14 +1,12 @@
-/*
- * Copyright (c) 2009 - 2023, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.metis.keeper;
 
 import com.github.g3force.configurable.Configurable;
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.ai.metis.ACalculator;
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
 import edu.tigers.sumatra.ai.metis.ballinterception.BallInterceptor;
 import edu.tigers.sumatra.ai.metis.ballinterception.InterceptionFinderParameters;
+import edu.tigers.sumatra.ai.metis.ballinterception.PreviousBallInterception;
 import edu.tigers.sumatra.ai.metis.ballinterception.RatedBallInterception;
 import edu.tigers.sumatra.ball.trajectory.IBallTrajectory;
 import edu.tigers.sumatra.geometry.Geometry;
@@ -25,13 +23,13 @@ import java.util.Set;
 
 public class KeeperBallInterceptionCalc extends ACalculator
 {
-	@Configurable(defValue = "-0.3", comment = "[s] Time difference between keeper reaching the intercept pos vs. ball travel time")
+	@Configurable(defValue = "-0.3", comment = "Time difference between keeper reaching the intercept pos vs. ball travel time", unit = EConfigUnit.TIME_S)
 	private static double slackTime = -0.3;
-	@Configurable(defValue = "0.1", comment = "[s]")
+	@Configurable(defValue = "0.1", unit = EConfigUnit.TIME_S)
 	private static double oldTargetInterceptionBaseBonus = 0.1;
 
 	private BallInterceptor ballInterceptor;
-	private IVector2 previousInterceptionPosition = null;
+	private PreviousBallInterception previousInterceptionPosition = null;
 	@Getter
 	private RatedBallInterception keeperBallInterception;
 	private IBallTrajectory ballTrajectory;
@@ -41,7 +39,7 @@ public class KeeperBallInterceptionCalc extends ACalculator
 	public KeeperBallInterceptionCalc()
 	{
 		ballInterceptor = new BallInterceptor(
-				botID -> Optional.empty(),
+				_ -> Optional.empty(),
 				this::getPreviousInterceptionTarget,
 				this::findBallTrajectory,
 				Color.BLUE
@@ -90,7 +88,10 @@ public class KeeperBallInterceptionCalc extends ACalculator
 
 		if (keeperBallInterception != null)
 		{
-			previousInterceptionPosition = keeperBallInterception.getBallInterception().getPos();
+			previousInterceptionPosition = new PreviousBallInterception(
+					keeperBallInterception.getBallInterception()
+							.getPos(), keeperBallInterception.isOvershoot()
+			);
 		} else
 		{
 			previousInterceptionPosition = null;
@@ -106,7 +107,7 @@ public class KeeperBallInterceptionCalc extends ACalculator
 	}
 
 
-	private Optional<IVector2> getPreviousInterceptionTarget(BotID botID)
+	private Optional<PreviousBallInterception> getPreviousInterceptionTarget(BotID botID)
 	{
 		if (botID != lastKeeper)
 		{

@@ -1,12 +1,7 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.pathfinder;
 
 import edu.tigers.sumatra.drawable.IShapeLayerIdentifier;
 import edu.tigers.sumatra.drawable.ShapeLayerFactory;
-import edu.tigers.sumatra.drawable.ShapeLayerIdentifier;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 
@@ -41,56 +36,51 @@ public final class EPathFinderShapesLayer
 
 	public static IShapeLayerIdentifier obstacleCheckPoints(String obstacleId)
 	{
-		return F.create(
-				ShapeLayerIdentifier.builder()
-						.layerName(obstacleId)
-						.orderId(113)
-						.category(MOVEMENT)
-						.category(PATH_FINDER)
-						.category("Check point checked")
-						.persistenceType(DEBUG_PERSIST)
+		return F.create(F.category(MOVEMENT)
+				.category(PATH_FINDER)
+				.category("Check point checked")
+				.layerName(obstacleId)
+				.orderId(113)
+				.persistenceType(DEBUG_PERSIST)
 		);
 	}
 
 
 	public static IShapeLayerIdentifier obstacleCheckPointsCollision(String obstacleId)
 	{
-		return F.create(
-				ShapeLayerIdentifier.builder()
-						.layerName(obstacleId)
-						.orderId(112)
-						.category(MOVEMENT)
-						.category(PATH_FINDER)
-						.category("Check point w/ collision")
-						.persistenceType(DEBUG_PERSIST)
+		return F.create(F.category(MOVEMENT)
+				.category(PATH_FINDER)
+				.category("Check point w/ collision")
+				.layerName(obstacleId)
+				.orderId(112)
+				.persistenceType(DEBUG_PERSIST)
 		);
 	}
 
 
 	public static IShapeLayerIdentifier obstacleCheckPointsNoCollision(String obstacleId)
 	{
-		return F.create(
-				ShapeLayerIdentifier.builder()
-						.layerName(obstacleId)
-						.orderId(111)
-						.category(MOVEMENT)
-						.category(PATH_FINDER)
-						.category("Check point w/o collision")
-						.persistenceType(DEBUG_PERSIST)
+		return F.create(F.category(MOVEMENT)
+				.category(PATH_FINDER)
+				.category("Check point w/o collision")
+				.layerName(obstacleId)
+				.orderId(111)
+				.persistenceType(DEBUG_PERSIST)
 		);
 	}
 
 
 	public static IShapeLayerIdentifier obstacle(String obstacleId)
 	{
-		return F.create(
-				ShapeLayerIdentifier.builder()
-						.layerName(obstacleId)
-						.orderId(100)
-						.category(MOVEMENT)
-						.category(PATH_FINDER)
-						.category("Obstacles")
-						.persistenceType(DEBUG_PERSIST)
+		return F.create(F.category(MOVEMENT)
+				.category(PATH_FINDER)
+				.category("Obstacles")
+				.layerName(obstacleId)
+				.orderId(100)
+				.category(MOVEMENT)
+				.category(PATH_FINDER)
+				.category("Obstacles")
+				.persistenceType(DEBUG_PERSIST)
 		);
 	}
 }

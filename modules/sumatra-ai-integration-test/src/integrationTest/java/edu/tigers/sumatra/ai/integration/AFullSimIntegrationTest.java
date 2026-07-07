@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2009 - 2025, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.ai.integration;
 
 import com.github.g3force.configurable.ConfigRegistration;
@@ -16,13 +12,14 @@ import edu.tigers.sumatra.ai.athena.EAIControlState;
 import edu.tigers.sumatra.ai.integration.blocker.AiSimTimeBlocker;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.ids.EAiTeam;
+import edu.tigers.sumatra.ids.ETeamColor;
 import edu.tigers.sumatra.log.LogEventWatcher;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.model.SumatraModel;
 import edu.tigers.sumatra.persistence.EPersistenceKeyType;
 import edu.tigers.sumatra.persistence.PersistenceAsyncRecorder;
 import edu.tigers.sumatra.persistence.PersistenceDb;
-import edu.tigers.sumatra.persistence.log.PersistenceLogEvent;
+import edu.tigers.sumatra.persistence.log.PersistenceLogCohort;
 import edu.tigers.sumatra.persistence.log.PersistenceLogRecorder;
 import edu.tigers.sumatra.referee.AReferee;
 import edu.tigers.sumatra.referee.control.GcEventFactory;
@@ -128,10 +125,10 @@ public abstract class AFullSimIntegrationTest implements IWorldFrameObserver, IA
 		SimulationHelper.resetSimulation();
 
 		PersistenceDb db = PersistenceDb.withCustomLocation(Paths.get("../../" + PersistenceDb.getDefaultBasePath(),
-				PersistenceDb.getDefaultName("FRIENDLY", "NORMAL_FIRST_HALF", "yellow", "blue") + "_"
+				PersistenceDb.getDefaultName("FRIENDLY", "yellow", "blue") + "_"
 						+ testInfo.getDisplayName()));
 		db.add(PersistenceAiFrame.class, EPersistenceKeyType.SUMATRA_TIMESTAMP);
-		db.add(PersistenceLogEvent.class, EPersistenceKeyType.ARBITRARY);
+		db.add(PersistenceLogCohort.class, EPersistenceKeyType.ARBITRARY);
 		db.add(PersistenceShapeMapFrame.class, EPersistenceKeyType.SUMATRA_TIMESTAMP);
 		db.add(WorldFrameWrapper.class, EPersistenceKeyType.SUMATRA_TIMESTAMP);
 
@@ -265,6 +262,11 @@ public abstract class AFullSimIntegrationTest implements IWorldFrameObserver, IA
 		SumatraModel.getInstance().getModule(AReferee.class).sendGameControllerEvent(GcEventFactory.command(command));
 	}
 
+
+	protected void sendRefereeGiveYellowCard(ETeamColor team)
+	{
+		SumatraModel.getInstance().getModule(AReferee.class).sendGameControllerEvent(GcEventFactory.yellowCard(team));
+	}
 
 	protected void assertNoWarningsOrErrors()
 	{

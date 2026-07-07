@@ -1,12 +1,8 @@
-/*
- * Copyright (c) 2009 - 2019, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.rcm;
 
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
-
+import com.github.g3force.configurable.EConfigUnit;
 import edu.tigers.sumatra.bot.MoveConstraints;
 import edu.tigers.sumatra.botmanager.botskills.AMoveBotSkill;
 import edu.tigers.sumatra.botmanager.botskills.BotSkillLocalVelocity;
@@ -19,19 +15,19 @@ import edu.tigers.sumatra.proto.BotActionCommandProtos;
 
 public class SimplifiedMoveController extends AMoveController
 {
-	@Configurable(defValue = "3.0")
+	@Configurable(defValue = "3.0", unit = EConfigUnit.ACCELERATION_M)
 	private static double accDef = 3;
-	@Configurable(defValue = "4.0")
+	@Configurable(defValue = "4.0", unit = EConfigUnit.ACCELERATION_M)
 	private static double accMax = 4;
 
-	@Configurable(defValue = "4.0")
+	@Configurable(defValue = "4.0", unit = EConfigUnit.ACCELERATION_M)
 	private static double dccDef = 4;
-	@Configurable(defValue = "10.0")
+	@Configurable(defValue = "10.0", unit = EConfigUnit.ACCELERATION_M)
 	private static double dccMax = 10;
 
-	@Configurable(defValue = "1.5")
+	@Configurable(defValue = "1.5", unit = EConfigUnit.VELOCITY_M)
 	private static double speedMaxLow = 1.5;
-	@Configurable(defValue = "3.5")
+	@Configurable(defValue = "3.5", unit = EConfigUnit.VELOCITY_M)
 	private static double speedMaxHigh = 3.5;
 
 	static
@@ -103,7 +99,7 @@ public class SimplifiedMoveController extends AMoveController
 	private AMoveBotSkill moveWithLocalVel(final double acc, final IVector2 outVel, final double rotate)
 	{
 		final BotSkillLocalVelocity skill = new BotSkillLocalVelocity(outVel, rotate,
-				new MoveConstraints(controllerState.getBot().getBotParams().getMovementLimits()));
+				MoveConstraints.from(controllerState.getBot().getBotParams().getMovementLimits()));
 		skill.setAccMax(acc);
 		return skill;
 	}

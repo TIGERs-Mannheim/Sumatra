@@ -1,8 +1,9 @@
-/*
- * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra.control.motor;
 
+import edu.tigers.sumatra.math.vector.IVector3;
+import edu.tigers.sumatra.math.vector.IVectorN;
+import edu.tigers.sumatra.math.vector.Vector3;
+import edu.tigers.sumatra.math.vector.VectorN;
 import org.apache.commons.math3.analysis.function.Cos;
 import org.apache.commons.math3.analysis.function.Sin;
 import org.apache.commons.math3.linear.Array2DRowRealMatrix;
@@ -10,11 +11,6 @@ import org.apache.commons.math3.linear.ArrayRealVector;
 import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.linear.RealVector;
 import org.apache.commons.math3.linear.SingularValueDecomposition;
-
-import edu.tigers.sumatra.math.vector.IVector3;
-import edu.tigers.sumatra.math.vector.IVectorN;
-import edu.tigers.sumatra.math.vector.Vector3;
-import edu.tigers.sumatra.math.vector.VectorN;
 
 
 /**

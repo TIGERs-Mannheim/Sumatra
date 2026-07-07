@@ -1,6 +1,3 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
 package edu.tigers.sumatra.ai;
 
 import edu.tigers.sumatra.botmanager.data.MultimediaControl;
@@ -99,7 +96,7 @@ public class BaseAiFrame
 	/**
 	 * @return
 	 */
-	public final BotID getKeeperId()
+	public BotID getKeeperId()
 	{
 		return BotID.createBotId(refereeMsg.getTeamInfo(aiTeam.getTeamColor()).getGoalie(), aiTeam.getTeamColor());
 	}
@@ -108,7 +105,7 @@ public class BaseAiFrame
 	/**
 	 * @return
 	 */
-	public final BotID getKeeperOpponentId()
+	public BotID getKeeperOpponentId()
 	{
 		return BotID.createBotId(refereeMsg.getTeamInfo(aiTeam.getTeamColor().opposite()).getGoalie(),
 				aiTeam.getTeamColor().opposite());
@@ -118,7 +115,7 @@ public class BaseAiFrame
 	/**
 	 * @return the teamColor
 	 */
-	public final ETeamColor getTeamColor()
+	public ETeamColor getTeamColor()
 	{
 		return aiTeam.getTeamColor();
 	}
@@ -127,7 +124,7 @@ public class BaseAiFrame
 	/**
 	 * @return the simpleWorldFrame
 	 */
-	public final SimpleWorldFrame getSimpleWorldFrame()
+	public SimpleWorldFrame getSimpleWorldFrame()
 	{
 		return worldFrameWrapper.getSimpleWorldFrame();
 	}
@@ -139,7 +136,7 @@ public class BaseAiFrame
 	 * @param shapeLayer the shape layer
 	 * @return the shape list for the given layer
 	 */
-	public final List<IDrawableShape> getShapes(IShapeLayerIdentifier shapeLayer)
+	public List<IDrawableShape> getShapes(IShapeLayerIdentifier shapeLayer)
 	{
 		return shapeMap.get(shapeLayer);
 	}

@@ -1,11 +1,8 @@
-/*
- * Copyright (c) 2009 - 2022, DHBW Mannheim - TIGERs Mannheim
- */
-
 package edu.tigers.sumatra.persistence;
 
 import edu.tigers.sumatra.ai.PersistenceAiFrame;
 import edu.tigers.sumatra.model.SumatraModel;
+import edu.tigers.sumatra.persistence.log.PersistenceLogCohort;
 import edu.tigers.sumatra.persistence.log.PersistenceLogEvent;
 import edu.tigers.sumatra.persistence.processors.AiFrameSizeAnalyzer;
 import edu.tigers.sumatra.persistence.processors.BotFeedbackAnalyzer;
@@ -41,7 +38,7 @@ public class PersistenceDbAnalyzer implements AutoCloseable
 		db.add(PersistenceCamDetectionFrame.class, EPersistenceKeyType.ARBITRARY);
 		db.add(PersistenceShapeMapFrame.class, EPersistenceKeyType.SUMATRA_TIMESTAMP);
 		db.add(WorldFrameWrapper.class, EPersistenceKeyType.SUMATRA_TIMESTAMP);
-		db.add(PersistenceLogEvent.class, EPersistenceKeyType.ARBITRARY);
+		db.add(PersistenceLogCohort.class, EPersistenceKeyType.ARBITRARY);
 	}
 
 
